@@ -13,7 +13,9 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(chmod +x /c/EspaceRestreint/Workspaces/AiTeam/SoManAgent/scripts/*.sh)"
+      "Bash(chmod +x /c/EspaceRestreint/Workspaces/AiTeam/SoManAgent/scripts/*.sh)",
+      "Bash(chmod +x /c/EspaceRestreint/Workspaces/AiTeam/SoManAgent/scripts/*.sh /c/EspaceRestreint/Workspaces/AiTeam/SoManAgent/scripts/*.php)",
+      "Bash(php84 /c/EspaceRestreint/Workspaces/AiTeam/SoManAgent/scripts/help.php)"
     ]
   }
 }

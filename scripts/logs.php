@@ -1,0 +1,24 @@
+#!/usr/bin/env php
+<?php
+// Description: Affiche les logs d'un conteneur Docker en temps réel
+// Usage: php scripts/logs.php [php|node|db|nginx]
+// Usage: php scripts/logs.php php
+// Usage: php scripts/logs.php db --tail 50
+
+$root = dirname(__DIR__);
+chdir($root);
+
+$allowed  = ['php', 'node', 'db', 'nginx'];
+$service  = 'php';
+$extraArgs = '';
+
+foreach (array_slice($argv, 1) as $arg) {
+    if (in_array($arg, $allowed, true)) {
+        $service = $arg;
+    } elseif (str_starts_with($arg, '--')) {
+        $extraArgs .= ' ' . escapeshellarg($arg);
+    }
+}
+
+passthru("docker compose logs -f $extraArgs " . escapeshellarg($service), $code);
+exit($code);
