@@ -1,38 +1,38 @@
-# Référence API REST
+# REST API Reference
 
-> Voir aussi : [Architecture](architecture.md) · [Entités](entites.md)
+> See also: [Architecture](architecture.md) · [Entities](entities.md)
 
-**Base URL** : `http://localhost:8080/api`
-**Format** : JSON (`Content-Type: application/json`)
-**Authentification** : aucune (accès local uniquement)
+**Base URL**: `http://localhost:8080/api`
+**Format**: JSON (`Content-Type: application/json`)
+**Authentication**: none (local access only)
 
 ---
 
-## Santé
+## Health
 
 ### `GET /api/health`
-Vérifie que l'application est démarrée.
+Checks that the application is running.
 
-**Réponse 200 :**
+**Response 200:**
 ```json
 { "status": "ok", "version": "1.0.0", "app": "SoManAgent" }
 ```
 
 ### `GET /api/health/connectors`
-Vérifie l'accessibilité de chaque connecteur IA configuré.
+Checks the availability of each configured AI connector.
 
-**Réponse 200 (tout OK) :**
+**Response 200 (all OK):**
 ```json
 { "status": "ok", "connectors": { "claude_api": true, "claude_cli": false } }
 ```
-**Réponse 207 (dégradé) :** même format, `status: "degraded"`.
+**Response 207 (degraded):** same format, `status: "degraded"`.
 
 ---
 
-## Projets
+## Projects
 
 ### `GET /api/projects`
-Liste tous les projets.
+Lists all projects.
 
 ```json
 [
@@ -48,14 +48,14 @@ Liste tous les projets.
 ```
 
 ### `POST /api/projects`
-Crée un projet.
+Creates a project.
 
-**Corps :** `{ "name": "MonSaaS", "description": "..." }`
-**Réponse 201 :** `{ "id": "...", "name": "..." }`
-**Erreur 422 :** si `name` absent.
+**Body:** `{ "name": "MonSaaS", "description": "..." }`
+**Response 201:** `{ "id": "...", "name": "..." }`
+**Error 422:** if `name` is missing.
 
 ### `GET /api/projects/{id}`
-Détail d'un projet avec ses modules.
+Project detail with its modules.
 
 ```json
 {
@@ -78,47 +78,47 @@ Détail d'un projet avec ses modules.
 ```
 
 ### `PUT /api/projects/{id}`
-Met à jour un projet. Corps : `{ "name": "...", "description": "..." }`
+Updates a project. Body: `{ "name": "...", "description": "..." }`
 
 ### `DELETE /api/projects/{id}`
-Supprime un projet (cascade sur ses modules). **204 No Content.**
+Deletes a project (cascades to its modules). **204 No Content.**
 
 ---
 
-## Modules (sous-ressource de Projet)
+## Modules (sub-resource of Project)
 
 ### `POST /api/projects/{id}/modules`
-Ajoute un module à un projet.
+Adds a module to a project.
 
-**Corps :**
+**Body:**
 ```json
 {
   "name": "api-php",
-  "description": "API REST",
+  "description": "REST API",
   "repositoryUrl": "https://github.com/user/api-php",
   "stack": "PHP 8.4, Symfony 7.2"
 }
 ```
-**Réponse 201 :** `{ "id": "...", "name": "...", "repositoryUrl": "...", "status": "active" }`
+**Response 201:** `{ "id": "...", "name": "...", "repositoryUrl": "...", "status": "active" }`
 
 ### `PUT /api/projects/modules/{id}`
-Met à jour un module. Mêmes champs que la création.
+Updates a module. Same fields as creation.
 
 ### `DELETE /api/projects/modules/{id}`
-Supprime un module. **204 No Content.**
+Deletes a module. **204 No Content.**
 
 ---
 
-## Équipes
+## Teams
 
 ### `GET /api/teams`
-Liste toutes les équipes (avec compteur de rôles).
+Lists all teams (with role count).
 
 ### `POST /api/teams`
-Crée une équipe. Corps : `{ "name": "...", "description": "..." }`
+Creates a team. Body: `{ "name": "...", "description": "..." }`
 
 ### `GET /api/teams/{id}`
-Détail avec liste des rôles :
+Detail with list of roles:
 ```json
 {
   "id": "...",
@@ -130,20 +130,20 @@ Détail avec liste des rôles :
 ```
 
 ### `PUT /api/teams/{id}` / `DELETE /api/teams/{id}`
-Mise à jour / suppression.
+Update / delete.
 
 ### `POST /api/teams/{id}/roles`
-Ajoute un rôle. Corps : `{ "name": "Reviewer", "description": "...", "skillSlug": "code-reviewer" }`
+Adds a role. Body: `{ "name": "Reviewer", "description": "...", "skillSlug": "code-reviewer" }`
 
 ### `PUT /api/teams/roles/{id}` / `DELETE /api/teams/roles/{id}`
-Mise à jour / suppression d'un rôle.
+Update / delete a role.
 
 ---
 
 ## Agents
 
 ### `GET /api/agents`
-Liste tous les agents.
+Lists all agents.
 
 ```json
 [{
@@ -157,26 +157,26 @@ Liste tous les agents.
 ```
 
 ### `POST /api/agents`
-Crée un agent.
+Creates an agent.
 
 ```json
 {
   "name": "Claude Reviewer",
   "connector": "claude_api",
   "config": { "model": "claude-opus-4-5", "temperature": 0.3 },
-  "roleId": "uuid-du-role"
+  "roleId": "uuid-of-the-role"
 }
 ```
 
 ### `GET /api/agents/{id}` · `PUT /api/agents/{id}` · `DELETE /api/agents/{id}`
-CRUD standard.
+Standard CRUD.
 
 ---
 
 ## Skills
 
 ### `GET /api/skills`
-Liste tous les skills (sans contenu pour alléger).
+Lists all skills (without content for lighter payload).
 
 ```json
 [{
@@ -184,41 +184,41 @@ Liste tous les skills (sans contenu pour alléger).
   "slug": "code-reviewer",
   "name": "Code Reviewer",
   "source": "imported",
-  "sourceLabel": "Importé (skills.sh)",
+  "sourceLabel": "Imported (skills.sh)",
   "updatedAt": "..."
 }]
 ```
 
 ### `GET /api/skills/{id}`
-Détail avec contenu complet du SKILL.md.
+Detail with full SKILL.md content.
 
 ### `POST /api/skills/import`
-Importe un skill depuis skills.sh.
-Corps : `{ "source": "anthropics/code-reviewer" }`
+Imports a skill from skills.sh.
+Body: `{ "source": "anthropics/code-reviewer" }`
 
 ### `POST /api/skills`
-Crée un skill custom.
-Corps : `{ "slug": "mon-skill", "name": "...", "content": "---\n...", "description": "..." }`
+Creates a custom skill.
+Body: `{ "slug": "my-skill", "name": "...", "content": "---\n...", "description": "..." }`
 
 ### `PUT /api/skills/{id}/content`
-Met à jour le contenu SKILL.md.
-Corps : `{ "content": "---\nname: ...\n---\n\n..." }`
+Updates the SKILL.md content.
+Body: `{ "content": "---\nname: ...\n---\n\n..." }`
 
 ### `DELETE /api/skills/{id}`
-Supprime un skill. **204 No Content.**
+Deletes a skill. **204 No Content.**
 
 ---
 
-## Codes d'erreur
+## Error Codes
 
-| Code | Signification |
+| Code | Meaning |
 |---|---|
-| 400 | Requête malformée (JSON invalide) |
-| 404 | Ressource introuvable |
-| 422 | Données invalides (champ obligatoire manquant) |
-| 500 | Erreur serveur |
+| 400 | Malformed request (invalid JSON) |
+| 404 | Resource not found |
+| 422 | Invalid data (missing required field) |
+| 500 | Server error |
 
-Format d'erreur :
+Error format:
 ```json
-{ "error": "Message décrivant l'erreur" }
+{ "error": "Message describing the error" }
 ```

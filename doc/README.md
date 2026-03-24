@@ -1,72 +1,72 @@
 # SoManAgent — Documentation
 
-**SoManAgent** (Squad of Managed Agents) est une application web de gestion d'équipes d'agents IA pour le développement logiciel.
+**SoManAgent** (Squad of Managed Agents) is a web application for managing AI agent teams in software development.
 
-Elle permet de constituer des équipes génériques d'agents IA, de leur assigner des rôles et des skills, puis de les orchestrer via des workflows pour produire du code, effectuer des revues, générer des tests, etc.
+It lets you assemble generic AI agent teams, assign them roles and skills, then orchestrate them through workflows to produce code, perform reviews, generate tests, and more.
 
 ---
 
 ## Navigation
 
-### Documentation fonctionnelle — comprendre SoManAgent
+### Functional documentation — understanding SoManAgent
 
 | Document | Description |
 |---|---|
-| [Présentation](fonctionnel/presentation.md) | Qu'est-ce que SoManAgent, à quoi ça sert |
-| [Concepts clés](fonctionnel/concepts.md) | Glossaire : Projet, Module, Équipe, Rôle, Agent, Skill, Workflow |
-| [Équipes et rôles](fonctionnel/equipes-et-roles.md) | Créer et gérer des équipes, définir des rôles |
-| [Skills](fonctionnel/skills.md) | Importer, créer et éditer des skills |
-| [Agents IA](fonctionnel/agents.md) | Configurer les agents et leurs connecteurs |
-| [Workflows](fonctionnel/workflows.md) | Définir et exécuter des workflows |
+| [Overview](functional/overview.md) | What SoManAgent is and what it does |
+| [Key concepts](functional/concepts.md) | Glossary: Project, Module, Team, Role, Agent, Skill, Workflow |
+| [Teams & roles](functional/teams-and-roles.md) | Creating and managing teams, defining roles |
+| [Skills](functional/skills.md) | Importing, creating and editing skills |
+| [AI Agents](functional/agents.md) | Configuring agents and their connectors |
+| [Workflows](functional/workflows.md) | Defining and running workflows |
 
-### Documentation technique — comprendre le code
-
-| Document | Description |
-|---|---|
-| [Architecture](technique/architecture.md) | Structure du code, conventions, architecture hexagonale |
-| [Entités](technique/entites.md) | Modèle de données, entités Doctrine et leurs relations |
-| [API REST](technique/api.md) | Référence complète de tous les endpoints |
-| [Adaptateurs](technique/adaptateurs.md) | Ports hexagonaux et leurs implémentations |
-| [Configuration](technique/configuration.md) | Variables d'environnement, fichier .env |
-
-### Documentation développement — travailler sur SoManAgent
+### Technical documentation — understanding the code
 
 | Document | Description |
 |---|---|
-| [Installation](developpement/installation.md) | Prérequis et mise en route complète |
-| [Scripts](developpement/scripts.md) | Scripts disponibles dans `scripts/` |
-| [Commandes Symfony](developpement/commandes.md) | Commandes `bin/console` disponibles |
+| [Architecture](technical/architecture.md) | Code structure, conventions, hexagonal architecture |
+| [Entities](technical/entities.md) | Data model, Doctrine entities and their relationships |
+| [REST API](technical/api.md) | Complete reference for all endpoints |
+| [Adapters](technical/adapters.md) | Hexagonal ports and their implementations |
+| [Configuration](technical/configuration.md) | Environment variables, .env file |
+
+### Development documentation — working on SoManAgent
+
+| Document | Description |
+|---|---|
+| [Installation](development/installation.md) | Prerequisites and full setup |
+| [Scripts](development/scripts.md) | Available scripts in `scripts/` |
+| [Symfony commands](development/commands.md) | Available `bin/console` commands |
 
 ---
 
-## Démarrage rapide
+## Quick start
 
 ```bash
-# 1. Copier et configurer l'environnement
+# 1. Copy and configure the environment
 cp .env.example .env
-# éditer .env : CLAUDE_API_KEY, GITHUB_TOKEN, etc.
+# Edit .env: CLAUDE_API_KEY, GITHUB_TOKEN, etc.
 
-# 2. Installation complète
+# 2. Full installation
 php scripts/setup.php
 
-# 3. Vérifier que tout fonctionne
+# 3. Verify everything works
 php scripts/health.php
 ```
 
-**API** : `http://localhost:8080/api/health`
-**Interface** : `http://localhost:5173`
+**API**: `http://localhost:8080/api/health`
+**UI**: `http://localhost:5173`
 
 ---
 
-## Structure du projet
+## Project structure
 
 ```
 somanagent/
-├── backend/          # API PHP (Symfony 7.2)
-├── frontend/         # Interface web (React + TypeScript)
-├── skills/           # Skills locaux (SKILL.md)
-│   ├── imported/     # Importés depuis skills.sh
-│   └── custom/       # Créés dans SoManAgent
-├── scripts/          # Scripts de maintenance
-└── doc/              # Cette documentation
+├── backend/          # PHP API (Symfony 7.2)
+├── frontend/         # Web UI (React + TypeScript)
+├── skills/           # Local skills (SKILL.md format)
+│   ├── imported/     # Imported from skills.sh
+│   └── custom/       # Created in SoManAgent
+├── scripts/          # Maintenance scripts
+└── doc/              # This documentation
 ```

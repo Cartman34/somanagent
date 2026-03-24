@@ -1,18 +1,18 @@
-# Architecture technique
+# Technical Architecture
 
-> Voir aussi : [Entités](entites.md) · [Adaptateurs](adaptateurs.md) · [API REST](api.md)
+> See also: [Entities](entities.md) · [Adapters](adapters.md) · [REST API](api.md)
 
-## Vue d'ensemble
+## Overview
 
-SoManAgent est une application **full-stack** composée de :
-- Un **backend PHP** (Symfony 7.2) exposant une API REST
-- Un **frontend React + TypeScript** (Vite)
-- Une **base de données PostgreSQL** 16
-- Un dossier `skills/` contenant les fichiers SKILL.md
+SoManAgent is a **full-stack** application composed of:
+- A **PHP backend** (Symfony 7.2) exposing a REST API
+- A **React + TypeScript frontend** (Vite)
+- A **PostgreSQL 16** database
+- A `skills/` directory containing SKILL.md files
 
-## Architecture hexagonale (partielle)
+## Hexagonal Architecture (Partial)
 
-L'architecture hexagonale est appliquée **uniquement aux points d'intégration externe** (IA, VCS, Skills), pas à l'ensemble de l'application. Symfony et Doctrine sont des choix fixes.
+The hexagonal architecture is applied **only to external integration points** (AI, VCS, Skills), not to the entire application. Symfony and Doctrine are fixed choices.
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -29,13 +29,13 @@ L'architecture hexagonale est appliquée **uniquement aux points d'intégration 
 └─────────────────────────────────────────────────────┘
 ```
 
-Les **Ports** sont des interfaces PHP (`src/Port/`). Les **Adapters** sont leurs implémentations (`src/Adapter/`). Symfony injecte le bon adapter via la configuration `services.yaml`.
+**Ports** are PHP interfaces (`src/Port/`). **Adapters** are their implementations (`src/Adapter/`). Symfony injects the correct adapter via the `services.yaml` configuration.
 
-## Structure du backend (`backend/src/`)
+## Backend Structure (`backend/src/`)
 
 ```
 src/
-├── Entity/          Entités Doctrine (9 classes)
+├── Entity/          Doctrine entities (9 classes)
 │                    Project, Module, Team, Role, Agent,
 │                    Skill, Workflow, WorkflowStep, AuditLog
 │
@@ -43,37 +43,37 @@ src/
 │                    ConnectorType, ModuleStatus, SkillSource,
 │                    WorkflowTrigger, WorkflowStepStatus, AuditAction
 │
-├── ValueObject/     Objets immuables non persistés
+├── ValueObject/     Immutable non-persisted objects
 │                    AgentConfig, Prompt, AgentResponse
 │
 ├── Repository/      Doctrine ServiceEntityRepository (9)
 │
-├── Port/            Interfaces hexagonales (3)
+├── Port/            Hexagonal interfaces (3)
 │                    AgentPort, VCSPort, SkillPort
 │
-├── Adapter/         Implémentations concrètes
+├── Adapter/         Concrete implementations
 │   ├── AI/          ClaudeApiAdapter, ClaudeCliAdapter
 │   ├── VCS/         GitHubAdapter, GitLabAdapter
 │   └── Skill/       SkillsShAdapter
 │
-├── Service/         Logique métier
+├── Service/         Business logic
 │                    ProjectService, TeamService, AgentService,
 │                    SkillService, AuditService, AgentPortRegistry
 │
-├── Controller/      Endpoints REST (thin controllers)
+├── Controller/      REST endpoints (thin controllers)
 │                    HealthController, ProjectController, TeamController,
 │                    AgentController, SkillController
 │
-├── Command/         Commandes Symfony console
+├── Command/         Symfony console commands
 │                    HealthCheckCommand, ImportSkillCommand, SeedWebTeamCommand
 │
-└── ValueObject/     (voir ci-dessus)
+└── ValueObject/     (see above)
 ```
 
-## Conventions de code
+## Code Conventions
 
 ### Controllers
-Les controllers sont **fins** : ils décodent la requête, appellent un service, retournent JSON.
+Controllers are **thin**: they decode the request, call a service, and return JSON.
 
 ```php
 #[Route('/api/projects', methods: ['POST'])]
@@ -86,7 +86,7 @@ public function create(Request $request): JsonResponse
 ```
 
 ### Services
-Les services contiennent la logique métier et appellent les repositories.
+Services contain the business logic and call the repositories.
 
 ```php
 public function create(string $name, ?string $description): Project
@@ -99,8 +99,8 @@ public function create(string $name, ?string $description): Project
 }
 ```
 
-### Entités
-Les entités utilisent des **UUID v7** générés dans le constructeur, des **attributs Doctrine** comme métadonnées, et des **lifecycle callbacks** pour `updatedAt`.
+### Entities
+Entities use **UUID v7** generated in the constructor, **Doctrine attributes** as metadata, and **lifecycle callbacks** for `updatedAt`.
 
 ```php
 #[ORM\Entity(repositoryClass: ProjectRepository::class)]
@@ -121,22 +121,22 @@ class Project
 }
 ```
 
-### Ports et Adapters
-Les adapters implémentent le port. La sélection se fait via `AgentPortRegistry` (tagged services Symfony) pour les agents IA, et via injection directe pour VCS.
+### Ports and Adapters
+Adapters implement the port. Selection is handled via `AgentPortRegistry` (Symfony tagged services) for AI agents, and via direct injection for VCS.
 
-## Stack technique
+## Tech Stack
 
-| Composant | Technologie | Version |
+| Component | Technology | Version |
 |---|---|---|
 | Backend | PHP + Symfony | 8.4 / 7.2 |
 | ORM | Doctrine | 3.x |
-| Base de données | PostgreSQL | 16 |
+| Database | PostgreSQL | 16 |
 | Frontend | React + TypeScript | 18 / 5 |
-| Build frontend | Vite | 5 |
+| Frontend build | Vite | 5 |
 | HTTP client | Guzzle | 7 |
-| Conteneurisation | Docker + Compose | — |
+| Containerisation | Docker + Compose | — |
 
-## Flux de données
+## Data Flow
 
 ```
 React (fetch)
@@ -154,5 +154,5 @@ PHP-FPM (Symfony)
      │       │
      │       └──→ AgentPortRegistry ──→ Claude API / CLI
      │
-     └── Response JSON
+     └── JSON Response
 ```
