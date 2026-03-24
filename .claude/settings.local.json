@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker --version)",
+      "Bash(docker compose:*)",
+      "Bash(php --version)",
+      "Bash(composer --version)",
+      "Bash(composer require:*)",
+      "Bash(php bin/console doctrine:migrations:diff --no-interaction)",
+      "Bash(/c/tools/php84/php.exe --version)",
+      "Bash(/c/tools/php84/php.exe bin/console doctrine:migrations:diff --no-interaction)",
+      "Bash(__NEW_LINE_ff04cb67cadecd7d__ touch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(chmod +x /c/EspaceRestreint/Workspaces/AiTeam/SoManAgent/scripts/*.sh)"
+    ]
+  }
+}

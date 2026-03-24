@@ -1,60 +1,60 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Types partagés SoManAgent
+// Types partagés SoManAgent — alignés sur les réponses de l'API PHP
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface Project {
   id: string
   name: string
   description: string | null
-  modules: Module[]
+  modules: number | Module[]   // compteur sur /api/projects, tableau sur /api/projects/{id}
   createdAt: string
   updatedAt: string
 }
 
 export interface Module {
   id: string
-  projectId: string
   name: string
   description: string | null
-  techStack: string | null
   repositoryUrl: string | null
-  repositoryBranch: string | null
-  status: 'active' | 'archived' | 'paused'
-  createdAt: string
-  updatedAt: string
+  stack: string | null
+  status: 'active' | 'archived'
 }
 
 export interface Team {
   id: string
   name: string
   description: string | null
-  roles: Role[]
+  roles: number | Role[]
   createdAt: string
   updatedAt: string
 }
 
 export interface Role {
   id: string
-  teamId: string
   name: string
   description: string | null
-  skillSlug: string
-}
-
-export interface Agent {
-  id: string
-  name: string
-  connectorName: string
-  config: AgentConfig
-  createdAt: string
-  updatedAt: string
+  skillSlug: string | null
 }
 
 export interface AgentConfig {
   model: string
   max_tokens: number
   temperature: number
+  timeout: number
   extra?: Record<string, unknown>
+}
+
+export interface Agent {
+  id: string
+  name: string
+  description: string | null
+  connector: 'claude_api' | 'claude_cli'
+  connectorLabel: string
+  isActive: boolean
+  role: { id: string; name: string } | null
+  config: AgentConfig
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Skill {
@@ -62,13 +62,26 @@ export interface Skill {
   slug: string
   name: string
   description: string | null
-  content: string
-  metadata: Record<string, unknown>
   source: 'imported' | 'custom'
-  originRef: string | null
-  localPath: string
+  sourceLabel: string
+  originalSource: string | null
+  content?: string       // présent uniquement sur GET /api/skills/{id}
+  filePath?: string
   createdAt: string
   updatedAt: string
+}
+
+export interface WorkflowStep {
+  id: string
+  stepOrder: number
+  name: string
+  roleSlug: string | null
+  skillSlug: string | null
+  inputConfig: Record<string, unknown>
+  outputKey: string
+  condition: string | null
+  status: 'pending' | 'running' | 'done' | 'error' | 'skipped'
+  lastOutput: string | null
 }
 
 export interface Workflow {
@@ -76,21 +89,11 @@ export interface Workflow {
   name: string
   description: string | null
   trigger: 'manual' | 'vcs_event' | 'scheduled'
+  team: { id: string; name: string } | null
+  isActive: boolean
   steps: WorkflowStep[]
-  isDryRun: boolean
   createdAt: string
   updatedAt: string
-}
-
-export interface WorkflowStep {
-  stepKey: string
-  name: string
-  roleId: string
-  skillSlug: string
-  outputKey: string
-  inputSource: 'previous_step' | 'vcs' | 'manual' | 'context'
-  dependsOn: string | null
-  condition: string | null
 }
 
 export interface AuditLog {
@@ -98,16 +101,11 @@ export interface AuditLog {
   action: string
   entityType: string
   entityId: string | null
-  context: Record<string, unknown>
-  result: string | null
-  errorMessage: string | null
-  occurredAt: string
+  data: Record<string, unknown> | null
+  createdAt: string
 }
 
-// ─── Réponses API paginées ────────────────────────────────────────────────────
-export interface PaginatedResponse<T> {
-  data: T[]
-  total: number
-  page: number
-  perPage: number
+export interface ConnectorHealth {
+  status: 'ok' | 'degraded'
+  connectors: Record<string, boolean>
 }
