@@ -1,0 +1,21 @@
+# Normalisation des fins de ligne (Windows <-> Linux)
+* text=auto eol=lf
+
+# Binaires
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+
+# Scripts shell exécutables
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Skills (toujours LF)
+*.md text eol=lf
+skills/**/*.md text eol=lf

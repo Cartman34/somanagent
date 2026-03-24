@@ -1,0 +1,42 @@
+# === ENVIRONNEMENT ===
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# === BACKEND SYMFONY ===
+backend/vendor/
+backend/var/
+backend/config/jwt/
+backend/.env.local
+backend/.env.*.local
+
+# === FRONTEND REACT ===
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.env.local
+
+# === SKILLS ===
+skills/imported/
+# Les skills custom sont versionnés
+!skills/custom/.gitkeep
+!skills/imported/.gitkeep
+
+# === DOCKER ===
+docker/data/
+
+# === IDE ===
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# === LOGS ===
+*.log
+logs/
+
+# === OS ===
+desktop.ini

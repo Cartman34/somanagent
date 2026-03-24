@@ -1,0 +1,89 @@
+services:
+
+  # ============================================================
+  # PHP-FPM (Symfony API)
+  # ============================================================
+  php:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    container_name: somanagent_php
+    restart: unless-stopped
+    working_dir: /var/www/backend
+    volumes:
+      - ./backend:/var/www/backend
+      - ./skills:/var/www/skills
+    environment:
+      - APP_ENV=${APP_ENV:-dev}
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - somanagent
+
+  # ============================================================
+  # Nginx (reverse proxy)
+  # ============================================================
+  nginx:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    container_name: somanagent_nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./backend:/var/www/backend
+    depends_on:
+      - php
+    networks:
+      - somanagent
+
+  # ============================================================
+  # Node.js (React frontend dev server + skills CLI)
+  # ============================================================
+  node:
+    build:
+      context: ./docker/node
+      dockerfile: Dockerfile
+    container_name: somanagent_node
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - ./skills:/skills
+      - /app/node_modules
+    command: npm run dev -- --host 0.0.0.0
+    networks:
+      - somanagent
+
+  # ============================================================
+  # PostgreSQL
+  # ============================================================
+  db:
+    image: postgres:16-alpine
+    container_name: somanagent_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-somanagent}
+      POSTGRES_USER: ${POSTGRES_USER:-somanagent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+    volumes:
+      - ./docker/data/postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-somanagent}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - somanagent
+
+networks:
+  somanagent:
+    driver: bridge
