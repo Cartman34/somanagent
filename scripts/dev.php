@@ -4,6 +4,8 @@
 // Usage: php scripts/dev.php
 // Usage: php scripts/dev.php --stop
 
+require_once __DIR__ . '/_bootstrap.php';
+
 $root = dirname(__DIR__);
 chdir($root);
 

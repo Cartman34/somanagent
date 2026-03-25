@@ -5,6 +5,8 @@
 // Usage: php scripts/logs.php php
 // Usage: php scripts/logs.php db --tail 50
 
+require_once __DIR__ . '/_bootstrap.php';
+
 $root = dirname(__DIR__);
 chdir($root);
 

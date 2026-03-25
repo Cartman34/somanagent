@@ -4,6 +4,8 @@
 // Usage: php scripts/setup.php
 // Usage: php scripts/setup.php --skip-frontend
 
+require_once __DIR__ . '/_bootstrap.php';
+
 $root = dirname(__DIR__);
 chdir($root);
 
@@ -33,6 +35,10 @@ function run(string $cmd, bool $failOnError = true): int {
 echo str_repeat('═', 50) . "\n";
 echo "     SoManAgent — Initial setup\n";
 echo str_repeat('═', 50) . "\n";
+
+// PHP version check
+step('Checking PHP version');
+run('bash scripts/check-php.sh');
 
 // .env
 step('Checking .env file');

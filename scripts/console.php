@@ -5,6 +5,8 @@
 // Usage: php scripts/console.php doctrine:migrations:migrate --no-interaction
 // Usage: php scripts/console.php cache:clear
 
+require_once __DIR__ . '/_bootstrap.php';
+
 $root = dirname(__DIR__);
 chdir($root);
 
