@@ -72,6 +72,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-somanagent}
       POSTGRES_USER: ${POSTGRES_USER:-somanagent}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      # Subdirectory inside the mount avoids "directory not empty" on Windows/WSL
+      PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - ./docker/data/postgres:/var/lib/postgresql/data
     ports:
