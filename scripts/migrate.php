@@ -4,24 +4,39 @@
 // Usage: php scripts/migrate.php
 // Usage: php scripts/migrate.php --dry-run
 
-require_once __DIR__ . '/src/Bootstrap.php';
+require_once __DIR__ . '/src/Application.php';
 
+try {
+    $app = new Application();
+    $app->boot();
+} catch (\RuntimeException $e) {
+    fwrite(STDERR, "\n❌ " . $e->getMessage() . "\n\n");
+    exit(1);
+}
+
+$c    = $app->console;
 $root = dirname(__DIR__);
 chdir($root);
 
 $dryRun = in_array('--dry-run', $argv, true);
 
-echo "▶ Doctrine migrations" . ($dryRun ? ' (dry-run)' : '') . "...\n";
+$c->step('Doctrine migrations' . ($dryRun ? ' (dry-run)' : ''));
 
-$args = ['doctrine:migrations:migrate', '--no-interaction'];
-if ($dryRun) {
-    $args[] = '--dry-run';
+try {
+    $args = ['doctrine:migrations:migrate', '--no-interaction'];
+    if ($dryRun) {
+        $args[] = '--dry-run';
+    }
+
+    // -T: disable pseudo-TTY allocation (non-interactive command through a pipe)
+    $escapedArgs = implode(' ', array_map('escapeshellarg', $args));
+    $code        = $app->runCommand("docker compose exec -T php php bin/console $escapedArgs");
+
+    if ($code !== 0) {
+        throw new \RuntimeException("Migration command failed (exit $code).");
+    }
+
+    $c->ok('Migrations complete.');
+} catch (\RuntimeException $e) {
+    $c->fail($e->getMessage());
 }
-
-$cmd = 'docker compose exec php php bin/console ' . implode(' ', array_map('escapeshellarg', $args));
-passthru($cmd, $code);
-
-if ($code === 0) {
-    echo "  ✓ Migrations complete.\n";
-}
-exit($code);

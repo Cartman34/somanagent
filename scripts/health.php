@@ -4,8 +4,17 @@
 // Usage: php scripts/health.php
 // Usage: php scripts/health.php --url http://localhost:8080
 
-require_once __DIR__ . '/src/Bootstrap.php';
+require_once __DIR__ . '/src/Application.php';
 
+try {
+    $app = new Application();
+    $app->boot();
+} catch (\RuntimeException $e) {
+    fwrite(STDERR, "\n❌ " . $e->getMessage() . "\n\n");
+    exit(1);
+}
+
+$c    = $app->console;
 $root = dirname(__DIR__);
 chdir($root);
 
@@ -16,43 +25,42 @@ foreach (array_slice($argv, 1) as $i => $arg) {
     }
 }
 
-function get(string $url): array {
+$get = static function (string $url): array {
     $ctx = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]);
     $raw = @file_get_contents($url, false, $ctx);
     if ($raw === false) {
-        return ['error' => 'Cannot reach ' . $url];
+        throw new \RuntimeException("Cannot reach $url");
     }
-    return json_decode($raw, true) ?? ['error' => 'Non-JSON response'];
-}
-
-echo "▶ Checking SoManAgent ($baseUrl)...\n\n";
-
-// General health
-$app = get("$baseUrl/api/health");
-if (isset($app['error'])) {
-    echo "  ❌ Application unreachable: {$app['error']}\n";
-    echo "     → Run: php scripts/dev.php\n";
-    exit(1);
-}
-echo "  ✓ Application  : {$app['app']} v{$app['version']}\n";
-
-// Connectors
-$connectors = get("$baseUrl/api/health/connectors");
-if (!isset($connectors['connectors'])) {
-    echo "  ⚠  Connectors: unable to check\n";
-    exit(0);
-}
-
-echo "\n  Connectors:\n";
-$allOk = true;
-foreach ($connectors['connectors'] as $name => $ok) {
-    $icon   = $ok ? '✓' : '✗';
-    $status = $ok ? 'OK' : 'UNREACHABLE';
-    echo "    $icon $name : $status\n";
-    if (!$ok) {
-        $allOk = false;
+    $data = json_decode($raw, true);
+    if ($data === null) {
+        throw new \RuntimeException("Non-JSON response from $url");
     }
-}
+    return $data;
+};
 
-echo "\n  Overall status: " . ($allOk ? "✓ OK" : "⚠  Degraded") . "\n";
-exit($allOk ? 0 : 1);
+$c->step("Checking SoManAgent ($baseUrl)");
+
+try {
+    $app = $get("$baseUrl/api/health");
+    $c->ok("Application  : {$app['app']} v{$app['version']}");
+
+    $connectors = $get("$baseUrl/api/health/connectors");
+
+    $c->line();
+    $c->line('  Connectors:');
+    $allOk = true;
+    foreach ($connectors['connectors'] as $name => $ok) {
+        $icon   = $ok ? '✓' : '✗';
+        $status = $ok ? 'OK' : 'UNREACHABLE';
+        $c->line("    $icon  $name : $status");
+        if (!$ok) {
+            $allOk = false;
+        }
+    }
+
+    $c->line();
+    $c->line('  Overall status: ' . ($allOk ? '✓ OK' : '⚠  Degraded'));
+    exit($allOk ? 0 : 1);
+} catch (\RuntimeException $e) {
+    $c->fail($e->getMessage() . "\n     → Run: php scripts/dev.php");
+}

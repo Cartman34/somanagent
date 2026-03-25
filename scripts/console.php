@@ -5,19 +5,26 @@
 // Usage: php scripts/console.php doctrine:migrations:migrate --no-interaction
 // Usage: php scripts/console.php cache:clear
 
-require_once __DIR__ . '/src/Bootstrap.php';
+require_once __DIR__ . '/src/Application.php';
 
+try {
+    $app = new Application();
+    $app->boot();
+} catch (\RuntimeException $e) {
+    fwrite(STDERR, "\n❌ " . $e->getMessage() . "\n\n");
+    exit(1);
+}
+
+$c    = $app->console;
 $root = dirname(__DIR__);
 chdir($root);
 
 if ($argc < 2) {
-    echo "Usage: php scripts/console.php <command> [args...]\n";
-    echo "Ex:    php scripts/console.php doctrine:migrations:migrate --no-interaction\n";
+    $c->line('Usage: php scripts/console.php <command> [args...]');
+    $c->line('Ex:    php scripts/console.php doctrine:migrations:migrate --no-interaction');
     exit(1);
 }
 
-$args = array_slice($argv, 1);
-$cmd  = 'docker compose exec php php bin/console ' . implode(' ', array_map('escapeshellarg', $args));
-
-passthru($cmd, $code);
+$escapedArgs = implode(' ', array_map('escapeshellarg', array_slice($argv, 1)));
+$code        = $app->runCommand("docker compose exec -T php php bin/console $escapedArgs");
 exit($code);

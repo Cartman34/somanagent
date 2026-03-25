@@ -1,0 +1,18 @@
+# PostgreSQL data directory — owned by the postgres user (mode 700),
+# not readable by Docker daemon. Must never be part of a build context.
+docker/data/
+
+# Git and IDE internals
+.git/
+.idea/
+.vscode/
+
+# Development-only files
+node_modules/
+frontend/node_modules/
+frontend/dist/
+backend/var/cache/
+backend/var/log/
+
+# Local environment (contains secrets)
+.env

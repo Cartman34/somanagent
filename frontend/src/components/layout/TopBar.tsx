@@ -16,8 +16,13 @@ export default function TopBar() {
   const title = pageTitles[segment] ?? 'SoManAgent'
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center px-6">
-      <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
+    <header
+      className="h-14 flex items-center px-6"
+      style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}
+    >
+      <h1 className="text-base font-semibold" style={{ color: 'var(--text)' }}>
+        {title}
+      </h1>
     </header>
   )
 }

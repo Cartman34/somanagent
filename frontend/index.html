@@ -7,7 +7,16 @@
     <title>SoManAgent</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <!-- Apply saved theme before React hydrates to avoid flash-of-unstyled-content -->
+    <script>
+      (function () {
+        var t = localStorage.getItem('sma-theme')
+        if (t && t !== 'terminal') {
+          document.documentElement.setAttribute('data-theme', t)
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

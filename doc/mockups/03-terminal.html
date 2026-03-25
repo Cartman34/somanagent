@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SoManAgent — Charte 3 : Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green:       #4ade80;
+  --green-dim:   rgba(74,222,128,.12);
+  --green-dark:  #22c55e;
+  --bg:          #060a06;
+  --surface:     #0a100a;
+  --surface-2:   #0f180f;
+  --sidebar-bg:  #070c07;
+  --sidebar-w:   240px;
+  --text:        #e2ffe2;
+  --muted:       #4a7a4a;
+  --border:      #1a2e1a;
+  --radius:      4px;
+}
+
+body {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  background: var(--bg); color: var(--text);
+  display: flex; height: 100vh; overflow: hidden; font-size: 13px;
+}
+
+/* Scanlines overlay for CRT feel */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px);
+  pointer-events: none; z-index: 9999;
+}
+
+.sidebar {
+  width: var(--sidebar-w); flex-shrink: 0;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+}
+
+.sidebar-logo {
+  padding: 18px 16px; border-bottom: 1px solid var(--border);
+}
+.logo-ascii {
+  color: var(--green); font-size: 10px; line-height: 1.3;
+  text-shadow: 0 0 8px var(--green);
+}
+.logo-sub { color: var(--muted); font-size: 10px; margin-top: 6px; }
+
+.sidebar-section { padding: 12px 10px 4px; }
+.sidebar-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; padding: 0 6px; margin-bottom: 6px; }
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 8px; border-radius: var(--radius); cursor: pointer;
+  color: var(--muted); font-size: 12px; font-weight: 500;
+  transition: all .12s; text-decoration: none;
+}
+.nav-item:hover { background: var(--surface-2); color: var(--text); }
+.nav-item.active { background: var(--green-dim); color: var(--green); }
+.nav-item.active::before { content: '> '; color: var(--green); }
+.nav-icon { width: 14px; height: 14px; }
+.nav-badge { margin-left: auto; color: var(--green); font-size: 10px; border: 1px solid var(--green); padding: 0 4px; border-radius: 2px; }
+
+.sidebar-footer { margin-top: auto; padding: 12px; border-top: 1px solid var(--border); }
+.user-row { color: var(--muted); font-size: 11px; }
+.user-prompt { color: var(--green); margin-bottom: 2px; }
+
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.topbar {
+  height: 44px; background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 20px; gap: 12px;
+}
+.topbar-crumbs { font-size: 12px; color: var(--muted); }
+.topbar-crumbs span { color: var(--green); }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.icon-btn { padding: 3px 8px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-family: inherit; font-size: 11px; cursor: pointer; border-radius: var(--radius); }
+.icon-btn:hover { border-color: var(--green); color: var(--green); }
+
+.content { flex: 1; overflow-y: auto; padding: 20px; }
+
+.page-header { margin-bottom: 20px; display: flex; align-items: flex-start; justify-content: space-between; }
+.page-title { font-size: 14px; font-weight: 700; color: var(--green); text-shadow: 0 0 10px rgba(74,222,128,.4); }
+.page-title::before { content: '# '; color: var(--muted); }
+.page-desc { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: var(--radius); font-size: 12px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; transition: all .12s; }
+.btn-primary { background: transparent; color: var(--green); border: 1px solid var(--green); text-shadow: 0 0 6px rgba(74,222,128,.4); }
+.btn-primary::before { content: '$ '; }
+.btn-primary:hover { background: var(--green-dim); box-shadow: 0 0 12px rgba(74,222,128,.2); }
+.btn-secondary { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--muted); }
+
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px;
+}
+.stat-card:hover { border-color: var(--green); }
+.stat-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+.stat-value { font-size: 28px; font-weight: 700; color: var(--green); margin: 6px 0 4px; text-shadow: 0 0 14px rgba(74,222,128,.4); }
+.stat-delta { font-size: 10px; color: var(--muted); }
+.stat-delta.up { color: var(--green-dark); }
+
+.grid-2 { display: grid; grid-template-columns: 3fr 2fr; gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.card-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.card-title { font-size: 11px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: .08em; }
+.card-title::before { content: '// '; color: var(--muted); }
+
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  padding: 8px 14px; text-align: left;
+  font-size: 9px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .1em;
+  border-bottom: 1px solid var(--border);
+}
+tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 12px; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--surface-2); }
+.agent-name { color: var(--green); font-weight: 500; }
+.agent-name::before { content: './'; color: var(--muted); }
+
+.badge { display: inline-flex; align-items: center; padding: 1px 7px; border-radius: var(--radius); font-size: 10px; font-weight: 600; border: 1px solid; font-family: inherit; }
+.badge-green  { color: var(--green); border-color: rgba(74,222,128,.3); background: rgba(74,222,128,.06); }
+.badge-violet { color: #a78bfa; border-color: rgba(167,139,250,.3); background: rgba(167,139,250,.06); }
+.badge-blue   { color: #60a5fa; border-color: rgba(96,165,250,.3); background: rgba(96,165,250,.06); }
+.badge-orange { color: #fb923c; border-color: rgba(251,146,60,.3); background: rgba(251,146,60,.06); }
+.badge-gray   { color: var(--muted); border-color: var(--border); background: transparent; }
+
+.connector-list { padding: 0; }
+.connector-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 12px; }
+.connector-row:last-child { border-bottom: none; }
+.connector-name { color: var(--text); display: flex; align-items: center; gap: 8px; }
+.connector-name::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 5px var(--green); }
+.connector-name.warn::before { background: #fb923c; box-shadow: 0 0 5px #fb923c; }
+
+/* Blinking cursor */
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.cursor { display: inline-block; width: 8px; height: 14px; background: var(--green); animation: blink 1s infinite; vertical-align: middle; }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-ascii">╔═╗┌─┐╔╦╗┌─┐┌┐┌
+╚═╗│ │║║║├─┤│││
+╚═╝└─┘╩ ╩┴ ┴┘└┘</div>
+    <div class="logo-sub">Agent v0.1.0 &bull; AI Orchestrator</div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">:: workspace</div>
+    <a class="nav-item active" href="#">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      dashboard
+    </a>
+    <a class="nav-item" href="#">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h12"/></svg>
+      projects <span class="nav-badge">4</span>
+    </a>
+    <a class="nav-item" href="#">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      teams
+    </a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">:: automation</div>
+    <a class="nav-item" href="#">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+      agents
+    </a>
+    <a class="nav-item" href="#">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg>
+      skills
+    </a>
+    <a class="nav-item" href="#">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      workflows
+    </a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">:: system</div>
+    <a class="nav-item" href="#">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      audit_log
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="user-row">
+      <div class="user-prompt">john@somanagent:~$</div>
+      <div>role: admin &bull; session active</div>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <span class="topbar-crumbs">somanagent / <span>dashboard</span></span>
+    <div class="topbar-right">
+      <button class="icon-btn">[alerts]</button>
+      <button class="icon-btn">[config]</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="page-header">
+      <div>
+        <div class="page-title">dashboard<span class="cursor"></span></div>
+        <div class="page-desc">// system status &bull; 2026-03-25 09:41:02 UTC</div>
+      </div>
+      <button class="btn btn-primary">spawn agent</button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">active_agents</div>
+        <div class="stat-value">12</div>
+        <div class="stat-delta up">+2 this_week</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">workflows_run</div>
+        <div class="stat-value">348</div>
+        <div class="stat-delta up">+18%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">skills_loaded</div>
+        <div class="stat-value">27</div>
+        <div class="stat-delta">3 imported</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">projects</div>
+        <div class="stat-value">4</div>
+        <div class="stat-delta">1 sprint active</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">recent agents</span>
+          <button class="btn btn-secondary" style="padding:3px 8px;font-size:11px">[list all]</button>
+        </div>
+        <table>
+          <thead><tr><th>process</th><th>connector</th><th>status</th><th>last_exec</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="agent-name">CodeReviewer</span></td>
+              <td><span class="badge badge-violet">claude_cli</span></td>
+              <td><span class="badge badge-green">RUNNING</span></td>
+              <td style="color:var(--muted)">00:02:14 ago</td>
+            </tr>
+            <tr>
+              <td><span class="agent-name">DocWriter</span></td>
+              <td><span class="badge badge-blue">openai</span></td>
+              <td><span class="badge badge-green">RUNNING</span></td>
+              <td style="color:var(--muted)">00:14:07 ago</td>
+            </tr>
+            <tr>
+              <td><span class="agent-name">TestGen</span></td>
+              <td><span class="badge badge-violet">claude_cli</span></td>
+              <td><span class="badge badge-orange">IDLE</span></td>
+              <td style="color:var(--muted)">01:02:33 ago</td>
+            </tr>
+            <tr>
+              <td><span class="agent-name">DataAnalyst</span></td>
+              <td><span class="badge badge-gray">ollama</span></td>
+              <td><span class="badge badge-gray">PAUSED</span></td>
+              <td style="color:var(--muted)">03:17:09 ago</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">connectors</span>
+          <span class="badge badge-green">3/4 UP</span>
+        </div>
+        <div class="connector-list">
+          <div class="connector-row">
+            <div class="connector-name">claude_cli</div>
+            <span class="badge badge-green">OK</span>
+          </div>
+          <div class="connector-row">
+            <div class="connector-name">openai</div>
+            <span class="badge badge-green">OK</span>
+          </div>
+          <div class="connector-row">
+            <div class="connector-name warn">ollama</div>
+            <span class="badge badge-orange">WARN</span>
+          </div>
+          <div class="connector-row">
+            <div class="connector-name">github</div>
+            <span class="badge badge-green">OK</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

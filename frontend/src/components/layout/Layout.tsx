@@ -4,7 +4,7 @@ import TopBar from './TopBar'
 
 export default function Layout() {
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <TopBar />

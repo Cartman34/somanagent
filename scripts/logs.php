@@ -5,8 +5,17 @@
 // Usage: php scripts/logs.php php
 // Usage: php scripts/logs.php db --tail 50
 
-require_once __DIR__ . '/src/Bootstrap.php';
+require_once __DIR__ . '/src/Application.php';
 
+try {
+    $app = new Application();
+    $app->boot();
+} catch (\RuntimeException $e) {
+    fwrite(STDERR, "\n❌ " . $e->getMessage() . "\n\n");
+    exit(1);
+}
+
+$c    = $app->console;
 $root = dirname(__DIR__);
 chdir($root);
 
@@ -22,5 +31,9 @@ foreach (array_slice($argv, 1) as $arg) {
     }
 }
 
-passthru("docker compose logs -f $extraArgs " . escapeshellarg($service), $code);
+$c->info("Streaming logs for service: $service  (Ctrl+C to stop)");
+
+// runCommand() applies CRLF conversion in WSL pipe mode, giving clean output
+// even when tailing logs from a Windows terminal.
+$code = $app->runCommand("docker compose logs -f $extraArgs " . escapeshellarg($service));
 exit($code);

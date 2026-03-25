@@ -15,7 +15,14 @@
       "Bash(git push:*)",
       "Bash(chmod +x /c/EspaceRestreint/Workspaces/AiTeam/SoManAgent/scripts/*.sh)",
       "Bash(chmod +x /c/EspaceRestreint/Workspaces/AiTeam/SoManAgent/scripts/*.sh /c/EspaceRestreint/Workspaces/AiTeam/SoManAgent/scripts/*.php)",
-      "Bash(php84 /c/EspaceRestreint/Workspaces/AiTeam/SoManAgent/scripts/help.php)"
+      "Bash(php84 /c/EspaceRestreint/Workspaces/AiTeam/SoManAgent/scripts/help.php)",
+      "Bash(where claude:*)",
+      "Bash(npm list:*)",
+      "Bash(wsl -l -v)",
+      "Bash(wsl php:*)",
+      "Bash(git rm:*)",
+      "Bash(wsl bash:*)",
+      "Bash(wsl -e chmod +x /mnt/c/EspaceRestreint/Workspaces/AiTeam/SoManAgent/scripts/wsl-migrate.sh)"
     ]
   }
 }

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SoManAgent — Theme Gallery</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#e0e0e0;min-height:100vh;padding:40px 24px}
+h1{font-size:22px;font-weight:700;color:#fff;margin-bottom:6px}
+.sub{font-size:13px;color:#666;margin-bottom:36px;font-family:'JetBrains Mono',monospace}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+.card{
+  border-radius:12px;overflow:hidden;border:1px solid #222;
+  text-decoration:none;transition:transform .2s,border-color .2s;
+  display:block;
+}
+.card:hover{transform:translateY(-4px);border-color:#444}
+.preview{
+  height:180px;display:flex;align-items:center;justify-content:center;
+  font-size:28px;letter-spacing:.02em;font-weight:700;position:relative;
+  overflow:hidden;
+}
+/* Per-theme preview styles */
+.preview-terminal{background:#060a06;color:#4ade80;font-family:'JetBrains Mono',monospace;text-shadow:0 0 16px rgba(74,222,128,.5)}
+.preview-terminal::before{content:'> ';color:rgba(74,222,128,.4)}
+.preview-slate{background:linear-gradient(135deg,#f1f5f9,#e2e8f0);color:#4f46e5}
+.preview-obsidian{background:#09090b;color:#8b5cf6;text-shadow:0 0 14px rgba(139,92,246,.4)}
+.preview-aurora{background:linear-gradient(135deg,#0c0515,#1a0530);color:#a855f7;text-shadow:0 0 14px rgba(168,85,247,.5)}
+.preview-aurora::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 60% at 30% 30%,rgba(120,40,200,.25),transparent 60%)}
+.preview-neo{background:#04040d;color:#00f5ff;font-family:'JetBrains Mono',monospace;text-shadow:0 0 16px rgba(0,245,255,.5)}
+.preview-neo::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(0,245,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,255,.04) 1px,transparent 1px);background-size:24px 24px}
+.preview-chalk{background:#faf7f2;color:#c2780a}
+
+.accent-bar{height:3px}
+.bar-terminal{background:linear-gradient(90deg,#4ade80,transparent)}
+.bar-slate{background:linear-gradient(90deg,#4f46e5,transparent)}
+.bar-obsidian{background:linear-gradient(90deg,#8b5cf6,transparent)}
+.bar-aurora{background:linear-gradient(90deg,#a855f7,#6366f1,transparent)}
+.bar-neo{background:linear-gradient(90deg,#00f5ff,#ff00c8,transparent)}
+.bar-chalk{background:linear-gradient(90deg,#c2780a,transparent)}
+
+.info{background:#111;padding:14px 16px}
+.theme-name{font-size:14px;font-weight:700;color:#fff;margin-bottom:3px}
+.theme-desc{font-size:11px;color:#555;line-height:1.4;margin-bottom:10px}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font-size:10px;padding:2px 7px;border-radius:10px;border:1px solid #333;color:#666}
+</style>
+</head>
+<body>
+<h1>SoManAgent — Theme Gallery</h1>
+<div class="sub">// CSS custom properties · data-theme attribute · useTheme() hook · ThemeSwitcher component</div>
+
+<div class="grid">
+
+  <a class="card" href="01-slate.html">
+    <div class="preview preview-slate">Slate</div>
+    <div class="accent-bar bar-slate"></div>
+    <div class="info">
+      <div class="theme-name">Slate</div>
+      <div class="theme-desc">Clean light interface. The refined default for professional daily use. Cards on white, indigo accent.</div>
+      <div class="tags">
+        <span class="tag">light</span><span class="tag">Inter</span><span class="tag">indigo #4f46e5</span><span class="tag">radius-12px</span>
+      </div>
+    </div>
+  </a>
+
+  <a class="card" href="02-obsidian.html">
+    <div class="preview preview-obsidian">Obsidian</div>
+    <div class="accent-bar bar-obsidian"></div>
+    <div class="info">
+      <div class="theme-name">Obsidian</div>
+      <div class="theme-desc">Pro dark mode inspired by Linear and Vercel. Charcoal surfaces, violet accent with subtle glow.</div>
+      <div class="tags">
+        <span class="tag">dark</span><span class="tag">Inter</span><span class="tag">violet #8b5cf6</span><span class="tag">radius-10px</span>
+      </div>
+    </div>
+  </a>
+
+  <a class="card" href="03-terminal.html" style="border-color:#1a2e1a">
+    <div class="preview preview-terminal">Terminal</div>
+    <div class="accent-bar bar-terminal"></div>
+    <div class="info">
+      <div class="theme-name">Terminal ← active in app</div>
+      <div class="theme-desc">Phosphor green on near-black. JetBrains Mono everywhere. CLI aesthetic with scanlines and ASCII accents.</div>
+      <div class="tags">
+        <span class="tag">dark</span><span class="tag">JetBrains Mono</span><span class="tag">green #4ade80</span><span class="tag">radius-4px</span>
+      </div>
+    </div>
+  </a>
+
+  <a class="card" href="04-aurora.html">
+    <div class="preview preview-aurora"><span style="position:relative;z-index:1">Aurora</span></div>
+    <div class="accent-bar bar-aurora"></div>
+    <div class="info">
+      <div class="theme-name">Aurora</div>
+      <div class="theme-desc">Glassmorphism on deep violet. Ambient glow, translucent surfaces, animated pulse indicators.</div>
+      <div class="tags">
+        <span class="tag">dark</span><span class="tag">Inter</span><span class="tag">purple #a855f7</span><span class="tag">glass</span><span class="tag">radius-14px</span>
+      </div>
+    </div>
+  </a>
+
+  <a class="card" href="05-neo.html">
+    <div class="preview preview-neo"><span style="position:relative;z-index:1">Neo</span></div>
+    <div class="accent-bar bar-neo"></div>
+    <div class="info">
+      <div class="theme-name">Neo</div>
+      <div class="theme-desc">Cyberpunk grid on near-black. Cyan primary + magenta secondary accent. Corner-clip cards, glow effects.</div>
+      <div class="tags">
+        <span class="tag">dark</span><span class="tag">JetBrains Mono</span><span class="tag">cyan #00f5ff</span><span class="tag">magenta accent</span><span class="tag">radius-3px</span>
+      </div>
+    </div>
+  </a>
+
+  <a class="card" href="06-chalk.html">
+    <div class="preview preview-chalk">Chalk</div>
+    <div class="accent-bar bar-chalk"></div>
+    <div class="info">
+      <div class="theme-name">Chalk</div>
+      <div class="theme-desc">Warm cream paper aesthetic. Amber accent, soft shadows, large border-radius. Notion-adjacent feel.</div>
+      <div class="tags">
+        <span class="tag">light</span><span class="tag">Inter</span><span class="tag">amber #c2780a</span><span class="tag">radius-16px</span><span class="tag">warm</span>
+      </div>
+    </div>
+  </a>
+
+</div>
+
+<div style="margin-top:40px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#333;line-height:1.8">
+  <div>// To apply a theme in the app: click the palette icon (🎨) in the sidebar footer</div>
+  <div>// To add a new theme: add CSS variables block to index.css + entry in useTheme.ts + a mockup here</div>
+  <div>// Variables: --bg --surface --surface2 --sidebar --border --text --muted --brand --brand-dim --brand-hover --brand-text --shadow --radius --radius-card --font-body</div>
+</div>
+</body>
+</html>

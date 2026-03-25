@@ -8,7 +8,7 @@ import {
   GitBranch,
   ScrollText,
 } from 'lucide-react'
-import clsx from 'clsx'
+import ThemeSwitcher from '@/components/ui/ThemeSwitcher'
 
 const navigation = [
   { to: '/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
@@ -22,41 +22,64 @@ const navigation = [
 
 export default function Sidebar() {
   return (
-    <aside className="w-64 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col">
+    <aside
+      className="w-64 flex-shrink-0 flex flex-col"
+      style={{ background: 'var(--sidebar)', borderRight: '1px solid var(--border)' }}
+    >
       {/* Logo */}
-      <div className="h-16 flex items-center px-6 border-b border-gray-200">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center">
-            <Bot className="w-5 h-5 text-white" />
+      <div
+        className="h-16 flex items-center px-5"
+        style={{ borderBottom: '1px solid var(--border)' }}
+      >
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-8 h-8 flex items-center justify-center flex-shrink-0"
+            style={{
+              background: 'var(--brand)',
+              borderRadius: 'var(--radius)',
+              color: 'var(--brand-text)',
+            }}
+          >
+            <Bot className="w-4 h-4" />
           </div>
-          <span className="font-bold text-gray-900">SoManAgent</span>
+          <span className="font-bold text-sm" style={{ color: 'var(--text)' }}>
+            SoManAgent
+          </span>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-2 py-3 overflow-y-auto" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
         {navigation.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
-            className={({ isActive }) =>
-              clsx(
-                'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-brand-50 text-brand-700'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-              )
-            }
+            className="flex items-center gap-3 px-3 py-2 text-sm font-medium transition-colors"
+            style={({ isActive }) => ({
+              borderRadius: 'var(--radius)',
+              background: isActive ? 'var(--brand-dim)' : 'transparent',
+              color: isActive ? 'var(--brand)' : 'var(--muted)',
+            })}
           >
-            <Icon className="w-5 h-5 flex-shrink-0" />
-            {label}
+            {({ isActive }) => (
+              <>
+                <Icon className="w-4 h-4 flex-shrink-0" style={{ opacity: isActive ? 1 : 0.7 }} />
+                {label}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
 
-      {/* Version */}
-      <div className="px-6 py-4 border-t border-gray-200">
-        <p className="text-xs text-gray-400">Version 0.1.0</p>
+      {/* Footer: version + theme switcher */}
+      <div
+        className="px-4 py-3 flex items-center justify-between"
+        style={{ borderTop: '1px solid var(--border)' }}
+      >
+        <span className="text-xs" style={{ color: 'var(--muted)' }}>
+          v0.1.0
+        </span>
+        <ThemeSwitcher />
       </div>
     </aside>
   )

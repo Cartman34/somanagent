@@ -48,8 +48,8 @@ services:
   # ============================================================
   node:
     build:
-      context: ./docker/node
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/node/Dockerfile
     container_name: somanagent_node
     restart: unless-stopped
     working_dir: /app
