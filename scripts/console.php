@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
-// Description: Exécute une commande Symfony bin/console dans le conteneur PHP Docker
-// Usage: php scripts/console.php <commande> [args...]
+// Description: Run a Symfony bin/console command inside the PHP Docker container
+// Usage: php scripts/console.php <command> [args...]
 // Usage: php scripts/console.php doctrine:migrations:migrate --no-interaction
 // Usage: php scripts/console.php cache:clear
 
@@ -9,7 +9,7 @@ $root = dirname(__DIR__);
 chdir($root);
 
 if ($argc < 2) {
-    echo "Usage: php scripts/console.php <commande> [args...]\n";
+    echo "Usage: php scripts/console.php <command> [args...]\n";
     echo "Ex:    php scripts/console.php doctrine:migrations:migrate --no-interaction\n";
     exit(1);
 }

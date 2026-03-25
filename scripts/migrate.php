@@ -1,6 +1,6 @@
 #!/usr/bin/env php
 <?php
-// Description: Exécute les migrations Doctrine dans le conteneur PHP
+// Description: Run Doctrine migrations inside the PHP container
 // Usage: php scripts/migrate.php
 // Usage: php scripts/migrate.php --dry-run
 
@@ -9,7 +9,7 @@ chdir($root);
 
 $dryRun = in_array('--dry-run', $argv, true);
 
-echo "▶ Migrations Doctrine" . ($dryRun ? ' (dry-run)' : '') . "...\n";
+echo "▶ Doctrine migrations" . ($dryRun ? ' (dry-run)' : '') . "...\n";
 
 $args = ['doctrine:migrations:migrate', '--no-interaction'];
 if ($dryRun) {
@@ -20,6 +20,6 @@ $cmd = 'docker compose exec php php bin/console ' . implode(' ', array_map('esca
 passthru($cmd, $code);
 
 if ($code === 0) {
-    echo "  ✓ Migrations terminées.\n";
+    echo "  ✓ Migrations complete.\n";
 }
 exit($code);

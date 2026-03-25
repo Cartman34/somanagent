@@ -1,15 +1,15 @@
 #!/usr/bin/env php
 <?php
-// Description: Affiche la liste de tous les scripts disponibles avec leur description et exemples d'usage
+// Description: List all available scripts with their description and usage examples
 // Usage: php scripts/help.php
-// Usage: php scripts/help.php <nom-du-script>
+// Usage: php scripts/help.php <script-name>
 
 $root       = dirname(__DIR__);
 $scriptsDir = "$root/scripts";
 
 /**
- * Parse les annotations d'entête d'un fichier script.
- * Formats supportés :
+ * Parse the header annotations of a script file.
+ * Supported formats:
  *   PHP  : // Description: ...  /  // Usage: ...
  *   Bash : # Description: ...   /  # Usage: ...
  *
@@ -25,7 +25,7 @@ function parseHeader(string $file): array
         if ($i === 0 && str_starts_with($line, '#!')) continue; // shebang
         if (trim($line) === '<?php') continue;
 
-        // Commentaire PHP ou Bash
+        // PHP or Bash comment
         $content = null;
         if (str_starts_with($line, '// ')) {
             $content = substr($line, 3);
@@ -34,7 +34,7 @@ function parseHeader(string $file): array
         } elseif ($line === '#' || $line === '//') {
             continue;
         } else {
-            break; // fin du bloc d'entête
+            break; // end of header block
         }
 
         if (str_starts_with($content, 'Description: ')) {
@@ -53,7 +53,7 @@ function colorize(string $text, string $color): string
     return ($colors[$color] ?? '') . $text . $colors['reset'];
 }
 
-// Collecter tous les scripts
+// Collect all scripts
 $scripts = [];
 foreach (scandir($scriptsDir) as $file) {
     if ($file === '.' || $file === '..') continue;
@@ -63,7 +63,7 @@ foreach (scandir($scriptsDir) as $file) {
 }
 ksort($scripts);
 
-// Filtre sur un script précis
+// Filter on a specific script
 if ($argc > 1) {
     $search = $argv[1];
     $found  = false;
@@ -78,14 +78,14 @@ if ($argc > 1) {
         }
     }
     if (!$found) {
-        echo "Script \"$search\" introuvable.\n";
+        echo "Script \"$search\" not found.\n";
         exit(1);
     }
     exit(0);
 }
 
-// Affichage global
-echo "\n" . colorize('SoManAgent — Scripts disponibles', 'bold') . "\n";
+// Full listing
+echo "\n" . colorize('SoManAgent — Available scripts', 'bold') . "\n";
 echo str_repeat('─', 60) . "\n\n";
 
 foreach ($scripts as $name => $meta) {
@@ -101,4 +101,4 @@ foreach ($scripts as $name => $meta) {
     echo "\n";
 }
 
-echo "  " . colorize('Détails : ', 'cyan') . "php scripts/help.php <nom-du-script>\n\n";
+echo "  " . colorize('Details: ', 'cyan') . "php scripts/help.php <script-name>\n\n";

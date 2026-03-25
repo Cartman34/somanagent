@@ -1,6 +1,6 @@
 #!/usr/bin/env php
 <?php
-// Description: Vérifie l'état de l'application et de ses connecteurs via l'API
+// Description: Check application and connector health via the API
 // Usage: php scripts/health.php
 // Usage: php scripts/health.php --url http://localhost:8080
 
@@ -18,39 +18,39 @@ function get(string $url): array {
     $ctx = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]);
     $raw = @file_get_contents($url, false, $ctx);
     if ($raw === false) {
-        return ['error' => 'Impossible de joindre ' . $url];
+        return ['error' => 'Cannot reach ' . $url];
     }
-    return json_decode($raw, true) ?? ['error' => 'Réponse non-JSON'];
+    return json_decode($raw, true) ?? ['error' => 'Non-JSON response'];
 }
 
-echo "▶ Vérification de SoManAgent ($baseUrl)...\n\n";
+echo "▶ Checking SoManAgent ($baseUrl)...\n\n";
 
-// Health général
+// General health
 $app = get("$baseUrl/api/health");
 if (isset($app['error'])) {
-    echo "  ❌ Application inaccessible : {$app['error']}\n";
-    echo "     → Lancez : php scripts/dev.php\n";
+    echo "  ❌ Application unreachable: {$app['error']}\n";
+    echo "     → Run: php scripts/dev.php\n";
     exit(1);
 }
 echo "  ✓ Application  : {$app['app']} v{$app['version']}\n";
 
-// Connecteurs
+// Connectors
 $connectors = get("$baseUrl/api/health/connectors");
 if (!isset($connectors['connectors'])) {
-    echo "  ⚠  Connecteurs : impossible de vérifier\n";
+    echo "  ⚠  Connectors: unable to check\n";
     exit(0);
 }
 
-echo "\n  Connecteurs :\n";
+echo "\n  Connectors:\n";
 $allOk = true;
 foreach ($connectors['connectors'] as $name => $ok) {
     $icon   = $ok ? '✓' : '✗';
-    $status = $ok ? 'OK' : 'INJOIGNABLE';
+    $status = $ok ? 'OK' : 'UNREACHABLE';
     echo "    $icon $name : $status\n";
     if (!$ok) {
         $allOk = false;
     }
 }
 
-echo "\n  Statut global : " . ($allOk ? "✓ OK" : "⚠  Dégradé") . "\n";
+echo "\n  Overall status: " . ($allOk ? "✓ OK" : "⚠  Degraded") . "\n";
 exit($allOk ? 0 : 1);

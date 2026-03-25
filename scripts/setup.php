@@ -1,6 +1,6 @@
 #!/usr/bin/env php
 <?php
-// Description: Installation complète de SoManAgent (première mise en route)
+// Description: Full setup of SoManAgent (first run)
 // Usage: php scripts/setup.php
 // Usage: php scripts/setup.php --skip-frontend
 
@@ -25,33 +25,33 @@ function fail(string $msg, int $code = 1): never {
 function run(string $cmd, bool $failOnError = true): int {
     passthru($cmd, $code);
     if ($failOnError && $code !== 0) {
-        fail("Commande échouée : $cmd", $code);
+        fail("Command failed: $cmd", $code);
     }
     return $code;
 }
 
 echo str_repeat('═', 50) . "\n";
-echo "     SoManAgent — Setup initial\n";
+echo "     SoManAgent — Initial setup\n";
 echo str_repeat('═', 50) . "\n";
 
 // .env
-step('Vérification du fichier .env');
+step('Checking .env file');
 if (!file_exists("$root/.env")) {
     copy("$root/.env.example", "$root/.env");
-    ok('.env créé depuis .env.example — remplissez les valeurs avant de continuer.');
-    echo "  → Éditez .env puis relancez ce script.\n";
+    ok('.env created from .env.example — fill in the values before continuing.');
+    echo "  → Edit .env then re-run this script.\n";
     exit(0);
 } else {
-    ok('.env déjà présent');
+    ok('.env already present');
 }
 
 // Docker
-step('Démarrage des conteneurs Docker');
+step('Starting Docker containers');
 run('docker compose up -d --build');
-ok('Conteneurs démarrés');
+ok('Containers started');
 
-// Attente PostgreSQL
-step('Attente de PostgreSQL');
+// Wait for PostgreSQL
+step('Waiting for PostgreSQL');
 $tries = 0;
 do {
     sleep(1);
@@ -60,26 +60,26 @@ do {
 } while ($code !== 0 && $tries < 30);
 
 if ($code !== 0) {
-    fail('PostgreSQL ne répond pas après 30 secondes.');
+    fail('PostgreSQL did not respond after 30 seconds.');
 }
-ok("PostgreSQL prêt ($tries s)");
+ok("PostgreSQL ready ({$tries}s)");
 
 // Migrations
-step('Migrations Doctrine');
+step('Running Doctrine migrations');
 run('php scripts/console.php doctrine:migrations:migrate --no-interaction');
-ok('Migrations exécutées');
+ok('Migrations complete');
 
 // Frontend
 if (!$skipFrontend) {
-    step('Installation des dépendances frontend (npm)');
+    step('Installing frontend dependencies (npm)');
     run('docker compose exec -T node npm install');
-    ok('npm install terminé');
+    ok('npm install done');
 } else {
-    echo "  → Frontend ignoré (--skip-frontend)\n";
+    echo "  → Frontend skipped (--skip-frontend)\n";
 }
 
 echo "\n" . str_repeat('═', 50) . "\n";
-echo "  ✓ SoManAgent est prêt !\n\n";
+echo "  ✓ SoManAgent is ready!\n\n";
 echo "  API  →  http://localhost:8080/api/health\n";
 echo "  UI   →  http://localhost:5173\n";
 echo str_repeat('═', 50) . "\n\n";
