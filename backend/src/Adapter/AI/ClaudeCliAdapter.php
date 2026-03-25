@@ -19,10 +19,12 @@ class ClaudeCliAdapter implements AgentPort
         $start = microtime(true);
 
         $process = new Process(
-            command: ['claude', '--print', '--model', $config->model, $prompt->build()],
+            command: ['claude', '--print', '--model', $config->model],
             timeout: $config->timeout,
         );
 
+        // Pass prompt via stdin — avoids argument length limits and shell escaping issues
+        $process->setInput($prompt->build());
         $process->run();
 
         $durationMs = (microtime(true) - $start) * 1000;
