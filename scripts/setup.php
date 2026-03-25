@@ -86,6 +86,12 @@ try {
     $run('docker compose up -d --build');
     $c->ok('Containers started');
 
+    // PHP dependencies — run before waiting for PostgreSQL since it doesn't
+    // need the database, and vendor/ must exist before any Symfony command runs.
+    $c->step('Installing PHP dependencies (composer)');
+    $run('docker compose exec -T php composer install');
+    $c->ok('Composer dependencies installed');
+
     // Wait for PostgreSQL — poll Docker healthcheck (cross-platform, no /dev/null)
     $c->step('Waiting for PostgreSQL');
     $tries  = 0;
@@ -105,11 +111,6 @@ try {
         );
     }
     $c->ok("PostgreSQL ready ({$tries}s)");
-
-    // PHP dependencies
-    $c->step('Installing PHP dependencies (composer)');
-    $run('docker compose exec -T php composer install');
-    $c->ok('Composer dependencies installed');
 
     // Migrations
     $c->step('Running Doctrine migrations');
