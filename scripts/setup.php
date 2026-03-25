@@ -4,7 +4,7 @@
 // Usage: php scripts/setup.php
 // Usage: php scripts/setup.php --skip-frontend
 
-require_once __DIR__ . '/_bootstrap.php';
+require_once __DIR__ . '/src/Bootstrap.php';
 
 $root = dirname(__DIR__);
 chdir($root);

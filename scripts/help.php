@@ -53,14 +53,15 @@ function colorize(string $text, string $color): string
     return ($colors[$color] ?? '') . $text . $colors['reset'];
 }
 
-// Collect all scripts (skip internal helpers prefixed with _)
+// Collect all scripts — only direct files, not sub-directories (e.g. src/)
 $scripts = [];
 foreach (scandir($scriptsDir) as $file) {
     if ($file === '.' || $file === '..') continue;
-    if (str_starts_with($file, '_')) continue;
+    $fullPath = "$scriptsDir/$file";
+    if (!is_file($fullPath)) continue;
     $ext = pathinfo($file, PATHINFO_EXTENSION);
     if (!in_array($ext, ['php', 'sh'], true)) continue;
-    $scripts[$file] = parseHeader("$scriptsDir/$file");
+    $scripts[$file] = parseHeader($fullPath);
 }
 ksort($scripts);
 
