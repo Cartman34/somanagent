@@ -1,13 +1,13 @@
 import { useLocation } from 'react-router-dom'
 
 const pageTitles: Record<string, string> = {
-  '/dashboard':  'Tableau de bord',
-  '/projects':   'Projets',
-  '/teams':      'Équipes',
+  '/dashboard':  'Dashboard',
+  '/projects':   'Projects',
+  '/teams':      'Teams',
   '/agents':     'Agents',
   '/skills':     'Skills',
   '/workflows':  'Workflows',
-  '/audit':      'Journal d\'audit',
+  '/audit':      'Audit log',
 }
 
 export default function TopBar() {

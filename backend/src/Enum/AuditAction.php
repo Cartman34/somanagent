@@ -36,6 +36,8 @@ enum AuditAction: string
 
     // Workflows
     case WorkflowCreated       = 'workflow.created';
+    case WorkflowUpdated       = 'workflow.updated';
+    case WorkflowDeleted       = 'workflow.deleted';
     case WorkflowRun           = 'workflow.run';
     case WorkflowDryRun        = 'workflow.dry_run';
     case WorkflowStepCompleted = 'workflow.step.completed';

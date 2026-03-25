@@ -22,13 +22,16 @@ class AgentController extends AbstractController
     public function list(): JsonResponse
     {
         return $this->json(array_map(fn($a) => [
-            'id'          => (string) $a->getId(),
-            'name'        => $a->getName(),
-            'description' => $a->getDescription(),
-            'connector'   => $a->getConnector()->value,
-            'isActive'    => $a->isActive(),
-            'role'        => $a->getRole() ? ['id' => (string) $a->getRole()->getId(), 'name' => $a->getRole()->getName()] : null,
-            'config'      => $a->getAgentConfig()->toArray(),
+            'id'             => (string) $a->getId(),
+            'name'           => $a->getName(),
+            'description'    => $a->getDescription(),
+            'connector'      => $a->getConnector()->value,
+            'connectorLabel' => $a->getConnector()->label(),
+            'isActive'       => $a->isActive(),
+            'role'           => $a->getRole() ? ['id' => (string) $a->getRole()->getId(), 'name' => $a->getRole()->getName()] : null,
+            'config'         => $a->getAgentConfig()->toArray(),
+            'createdAt'      => $a->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            'updatedAt'      => $a->getUpdatedAt()->format(\DateTimeInterface::ATOM),
         ], $this->agentService->findAll()));
     }
 

@@ -11,13 +11,13 @@ import {
 import clsx from 'clsx'
 
 const navigation = [
-  { to: '/dashboard',  label: 'Tableau de bord', icon: LayoutDashboard },
-  { to: '/projects',   label: 'Projets',          icon: FolderKanban },
-  { to: '/teams',      label: 'Équipes',           icon: Users },
-  { to: '/agents',     label: 'Agents',            icon: Bot },
-  { to: '/skills',     label: 'Skills',            icon: BookOpen },
-  { to: '/workflows',  label: 'Workflows',         icon: GitBranch },
-  { to: '/audit',      label: 'Journal d\'audit',  icon: ScrollText },
+  { to: '/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
+  { to: '/projects',   label: 'Projects',   icon: FolderKanban },
+  { to: '/teams',      label: 'Teams',      icon: Users },
+  { to: '/agents',     label: 'Agents',     icon: Bot },
+  { to: '/skills',     label: 'Skills',     icon: BookOpen },
+  { to: '/workflows',  label: 'Workflows',  icon: GitBranch },
+  { to: '/audit',      label: 'Audit log',  icon: ScrollText },
 ]
 
 export default function Sidebar() {

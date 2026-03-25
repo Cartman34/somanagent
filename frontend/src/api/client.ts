@@ -9,7 +9,7 @@ const apiClient = axios.create({
   timeout: 30_000,
 })
 
-// Intercepteur de réponse : normalise les erreurs
+// Response interceptor: normalize errors
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -17,7 +17,7 @@ apiClient.interceptors.response.use(
       error.response?.data?.message ||
       error.response?.data?.error ||
       error.message ||
-      'Une erreur est survenue'
+      'An error occurred'
     return Promise.reject(new Error(message))
   }
 )

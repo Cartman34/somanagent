@@ -91,7 +91,7 @@ export interface Workflow {
   trigger: 'manual' | 'vcs_event' | 'scheduled'
   team: { id: string; name: string } | null
   isActive: boolean
-  steps: WorkflowStep[]
+  steps: WorkflowStep[] | number  // count in list, full array in detail
   createdAt: string
   updatedAt: string
 }
