@@ -50,17 +50,19 @@ step('Starting Docker containers');
 run('docker compose up -d --build');
 ok('Containers started');
 
-// Wait for PostgreSQL
+// Wait for PostgreSQL — poll Docker healthcheck status (cross-platform)
 step('Waiting for PostgreSQL');
 $tries = 0;
 do {
     sleep(1);
     $tries++;
-    exec('docker compose exec -T db pg_isready -U somanagent -q 2>/dev/null', $out, $code);
-} while ($code !== 0 && $tries < 30);
+    exec('docker inspect --format={{.State.Health.Status}} somanagent_db 2>&1', $out, $code);
+    $status = trim($out[0] ?? '');
+    $out = [];
+} while ($status !== 'healthy' && $tries < 30);
 
-if ($code !== 0) {
-    fail('PostgreSQL did not respond after 30 seconds.');
+if ($status !== 'healthy') {
+    fail('PostgreSQL did not become healthy after 30 seconds. Run: docker compose logs db');
 }
 ok("PostgreSQL ready ({$tries}s)");
 
