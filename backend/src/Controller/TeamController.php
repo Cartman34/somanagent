@@ -23,7 +23,7 @@ class TeamController extends AbstractController
             'id'          => (string) $t->getId(),
             'name'        => $t->getName(),
             'description' => $t->getDescription(),
-            'roles'       => $t->getRoles()->count(),
+            'agentCount'  => $t->getAgents()->count(),
             'createdAt'   => $t->getCreatedAt()->format(\DateTimeInterface::ATOM),
         ], $this->teamService->findAll()));
     }
@@ -52,12 +52,12 @@ class TeamController extends AbstractController
             'id'          => (string) $team->getId(),
             'name'        => $team->getName(),
             'description' => $team->getDescription(),
-            'roles'       => array_map(fn($r) => [
-                'id'          => (string) $r->getId(),
-                'name'        => $r->getName(),
-                'description' => $r->getDescription(),
-                'skillSlug'   => $r->getSkillSlug(),
-            ], $team->getRoles()->toArray()),
+            'agents'      => array_map(fn($a) => [
+                'id'        => (string) $a->getId(),
+                'name'      => $a->getName(),
+                'isActive'  => $a->isActive(),
+                'role'      => $a->getRole() ? ['id' => (string) $a->getRole()->getId(), 'name' => $a->getRole()->getName(), 'slug' => $a->getRole()->getSlug()] : null,
+            ], $team->getAgents()->toArray()),
             'createdAt'   => $team->getCreatedAt()->format(\DateTimeInterface::ATOM),
             'updatedAt'   => $team->getUpdatedAt()->format(\DateTimeInterface::ATOM),
         ]);
@@ -88,10 +88,10 @@ class TeamController extends AbstractController
         return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 
-    // --- Rôles ---
+    // --- Membres ---
 
-    #[Route('/{id}/roles', name: 'role_create', methods: ['POST'])]
-    public function addRole(string $id, Request $request): JsonResponse
+    #[Route('/{id}/agents', name: 'team_add_agent', methods: ['POST'])]
+    public function addAgent(string $id, Request $request): JsonResponse
     {
         $team = $this->teamService->findById($id);
         if ($team === null) {
@@ -99,36 +99,33 @@ class TeamController extends AbstractController
         }
 
         $data = $request->toArray();
-        if (empty($data['name'])) {
-            return $this->json(['error' => 'Le champ "name" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        if (empty($data['agentId'])) {
+            return $this->json(['error' => 'Le champ "agentId" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $role = $this->teamService->addRole($team, $data['name'], $data['description'] ?? null, $data['skillSlug'] ?? null);
-        return $this->json(['id' => (string) $role->getId(), 'name' => $role->getName()], Response::HTTP_CREATED);
+        $agent = $this->teamService->findAgentById($data['agentId']);
+        if ($agent === null) {
+            return $this->json(['error' => 'Agent introuvable.'], Response::HTTP_NOT_FOUND);
+        }
+
+        $this->teamService->addAgent($team, $agent);
+        return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 
-    #[Route('/roles/{id}', name: 'role_update', methods: ['PUT'])]
-    public function updateRole(string $id, Request $request): JsonResponse
+    #[Route('/{id}/agents/{agentId}', name: 'team_remove_agent', methods: ['DELETE'])]
+    public function removeAgent(string $id, string $agentId): JsonResponse
     {
-        $role = $this->teamService->findRoleById($id);
-        if ($role === null) {
-            return $this->json(['error' => 'Rôle introuvable.'], Response::HTTP_NOT_FOUND);
+        $team = $this->teamService->findById($id);
+        if ($team === null) {
+            return $this->json(['error' => 'Équipe introuvable.'], Response::HTTP_NOT_FOUND);
         }
 
-        $data = $request->toArray();
-        $this->teamService->updateRole($role, $data['name'] ?? $role->getName(), $data['description'] ?? null, $data['skillSlug'] ?? null);
-        return $this->json(['id' => (string) $role->getId(), 'name' => $role->getName()]);
-    }
-
-    #[Route('/roles/{id}', name: 'role_delete', methods: ['DELETE'])]
-    public function deleteRole(string $id): JsonResponse
-    {
-        $role = $this->teamService->findRoleById($id);
-        if ($role === null) {
-            return $this->json(['error' => 'Rôle introuvable.'], Response::HTTP_NOT_FOUND);
+        $agent = $this->teamService->findAgentById($agentId);
+        if ($agent === null) {
+            return $this->json(['error' => 'Agent introuvable.'], Response::HTTP_NOT_FOUND);
         }
 
-        $this->teamService->removeRole($role->getTeam(), $role);
+        $this->teamService->removeAgent($team, $agent);
         return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 }

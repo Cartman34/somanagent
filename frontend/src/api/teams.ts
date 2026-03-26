@@ -1,15 +1,9 @@
 import apiClient from './client'
-import type { Team, Role } from '@/types'
+import type { Team } from '@/types'
 
 export interface TeamPayload {
   name: string
   description?: string
-}
-
-export interface RolePayload {
-  name: string
-  description?: string
-  skillSlug?: string
 }
 
 export const teamsApi = {
@@ -37,17 +31,11 @@ export const teamsApi = {
     await apiClient.delete(`/teams/${id}`)
   },
 
-  addRole: async (teamId: string, payload: RolePayload): Promise<Role> => {
-    const { data } = await apiClient.post(`/teams/${teamId}/roles`, payload)
-    return data
+  addAgent: async (teamId: string, agentId: string): Promise<void> => {
+    await apiClient.post(`/teams/${teamId}/agents`, { agentId })
   },
 
-  updateRole: async (roleId: string, payload: RolePayload): Promise<Role> => {
-    const { data } = await apiClient.put(`/teams/roles/${roleId}`, payload)
-    return data
-  },
-
-  deleteRole: async (roleId: string): Promise<void> => {
-    await apiClient.delete(`/teams/roles/${roleId}`)
+  removeAgent: async (teamId: string, agentId: string): Promise<void> => {
+    await apiClient.delete(`/teams/${teamId}/agents/${agentId}`)
   },
 }

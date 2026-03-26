@@ -12,14 +12,10 @@ import Modal from '@/components/ui/Modal'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import PageHeader from '@/components/ui/PageHeader'
 
-function fmt(date: string) {
-  return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-}
-
 const triggerLabels: Record<string, string> = {
-  manual: 'Manual',
-  vcs_event: 'VCS event',
-  scheduled: 'Scheduled',
+  manual: 'Manuel',
+  vcs_event: 'Événement VCS',
+  scheduled: 'Planifié',
 }
 
 const triggerColors: Record<string, string> = {
@@ -60,28 +56,28 @@ function WorkflowForm({
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit({ name, description: description || undefined, trigger, isActive }) }} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-        <input className="input" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Code review workflow" />
+        <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+        <input className="input" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Workflow de revue de code" />
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
         <textarea className="input resize-none" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Trigger</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Déclencheur</label>
         <select className="input" value={trigger} onChange={(e) => setTrigger(e.target.value as WorkflowPayload['trigger'])}>
-          <option value="manual">Manual</option>
-          <option value="vcs_event">VCS event (push, PR…)</option>
-          <option value="scheduled">Scheduled</option>
+          <option value="manual">Manuel</option>
+          <option value="vcs_event">Événement VCS (push, PR…)</option>
+          <option value="scheduled">Planifié</option>
         </select>
       </div>
       <label className="flex items-center gap-2 cursor-pointer">
         <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
-        <span className="text-sm text-gray-700">Workflow active</span>
+        <span className="text-sm text-gray-700">Workflow actif</span>
       </label>
       <div className="flex justify-end gap-3 pt-2">
-        <button type="button" onClick={onCancel} className="btn-secondary">Cancel</button>
-        <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Saving…' : 'Save'}</button>
+        <button type="button" onClick={onCancel} className="btn-secondary">Annuler</button>
+        <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Enregistrement…' : 'Enregistrer'}</button>
       </div>
     </form>
   )
@@ -122,10 +118,10 @@ function WorkflowsList() {
     <>
       <PageHeader
         title="Workflows"
-        description="Define multi-step sequences executed by your agent teams."
+        description="Définissez des séquences multi-étapes exécutées par vos équipes d'agents."
         action={
           <button className="btn-primary" onClick={() => setCreateOpen(true)}>
-            <Plus className="w-4 h-4" /> New workflow
+            <Plus className="w-4 h-4" /> Nouveau workflow
           </button>
         }
       />
@@ -133,9 +129,9 @@ function WorkflowsList() {
       {workflows?.length === 0 ? (
         <EmptyState
           icon={GitBranch}
-          title="No workflows yet"
-          description="Create a workflow to orchestrate your agents step by step."
-          action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> New workflow</button>}
+          title="Aucun workflow"
+          description="Créez un workflow pour orchestrer vos agents étape par étape."
+          action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> Nouveau workflow</button>}
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -149,10 +145,10 @@ function WorkflowsList() {
                   {wf.name}
                 </Link>
                 <div className="flex gap-1 flex-shrink-0">
-                  <button onClick={() => setEditTarget(wf)} className="p-1.5 text-gray-400 hover:text-gray-600" title="Edit">
+                  <button onClick={() => setEditTarget(wf)} className="p-1.5 text-gray-400 hover:text-gray-600" title="Modifier">
                     <Pencil className="w-4 h-4" />
                   </button>
-                  <button onClick={() => setDeleteTarget(wf)} className="p-1.5 text-gray-400 hover:text-red-500" title="Delete">
+                  <button onClick={() => setDeleteTarget(wf)} className="p-1.5 text-gray-400 hover:text-red-500" title="Supprimer">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -168,13 +164,13 @@ function WorkflowsList() {
               <div className="mt-auto flex items-center justify-between text-xs text-gray-400">
                 <span>
                   {typeof wf.steps === 'number'
-                    ? `${wf.steps} step${wf.steps !== 1 ? 's' : ''}`
-                    : `${wf.steps.length} step${wf.steps.length !== 1 ? 's' : ''}`}
+                    ? `${wf.steps} étape${wf.steps !== 1 ? 's' : ''}`
+                    : `${wf.steps.length} étape${wf.steps.length !== 1 ? 's' : ''}`}
                 </span>
                 <div className="flex items-center gap-1">
                   {wf.isActive
-                    ? <><CheckCircle className="w-3.5 h-3.5 text-green-500" /> Active</>
-                    : <><XCircle className="w-3.5 h-3.5 text-gray-300" /> Inactive</>}
+                    ? <><CheckCircle className="w-3.5 h-3.5 text-green-500" /> Actif</>
+                    : <><XCircle className="w-3.5 h-3.5 text-gray-300" /> Inactif</>}
                 </div>
               </div>
             </div>
@@ -182,11 +178,11 @@ function WorkflowsList() {
         </div>
       )}
 
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="New workflow">
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Nouveau workflow">
         <WorkflowForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} onCancel={() => setCreateOpen(false)} />
       </Modal>
 
-      <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title="Edit workflow">
+      <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title="Modifier le workflow">
         {editTarget && (
           <WorkflowForm
             initial={{ name: editTarget.name, description: editTarget.description ?? '', trigger: editTarget.trigger, isActive: editTarget.isActive }}
@@ -201,7 +197,7 @@ function WorkflowsList() {
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
-        message={`Delete workflow "${deleteTarget?.name}"? This action cannot be undone.`}
+        message={`Supprimer le workflow "${deleteTarget?.name}" ? Cette action est irréversible.`}
         loading={deleteMutation.isPending}
       />
     </>
@@ -220,7 +216,7 @@ function WorkflowDetail() {
   })
 
   if (isLoading) return <PageSpinner />
-  if (error || !workflow) return <ErrorMessage message={(error as Error)?.message ?? 'Workflow not found'} onRetry={() => refetch()} />
+  if (error || !workflow) return <ErrorMessage message={(error as Error)?.message ?? 'Workflow introuvable'} onRetry={() => refetch()} />
 
   return (
     <>
@@ -230,25 +226,26 @@ function WorkflowDetail() {
 
       <PageHeader title={workflow.name} description={workflow.description ?? undefined} />
 
-      {/* Meta */}
+      {/* Métadonnées */}
       <div className="flex items-center gap-3 mb-6 flex-wrap">
         <span className={triggerColors[workflow.trigger]}>{triggerLabels[workflow.trigger]}</span>
-        {workflow.team && <span className="badge-gray">Team: {workflow.team.name}</span>}
+        {workflow.team && <span className="badge-gray">Équipe : {workflow.team.name}</span>}
         {workflow.isActive
-          ? <span className="badge-green">Active</span>
-          : <span className="badge-gray">Inactive</span>}
+          ? <span className="badge-green">Actif</span>
+          : <span className="badge-gray">Inactif</span>}
       </div>
 
-      {/* Steps */}
-      <h2 className="text-base font-semibold text-gray-900 mb-3">Steps ({workflow.steps.length})</h2>
-
-      {workflow.steps.length === 0 ? (
-        <EmptyState icon={GitBranch} title="No steps" description="Steps are defined when running the workflow." />
-      ) : (
-        <div className="space-y-3">
-          {workflow.steps
-            .sort((a, b) => a.stepOrder - b.stepOrder)
-            .map((step) => (
+      {/* Étapes */}
+      {(() => {
+        const steps = Array.isArray(workflow.steps) ? workflow.steps : []
+        return (
+          <>
+            <h2 className="text-base font-semibold text-gray-900 mb-3">Étapes ({steps.length})</h2>
+            {steps.length === 0 ? (
+              <EmptyState icon={GitBranch} title="Aucune étape" description="Les étapes sont définies lors de l'exécution du workflow." />
+            ) : (
+              <div className="space-y-3">
+                {[...steps].sort((a, b) => a.stepOrder - b.stepOrder).map((step) => (
               <div key={step.id} className="card p-4 flex gap-4 items-start">
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500">
                   {step.stepOrder}
@@ -261,7 +258,7 @@ function WorkflowDetail() {
                   <div className="flex flex-wrap gap-2 text-xs">
                     {step.roleSlug && <span className="badge-blue">{step.roleSlug}</span>}
                     {step.skillSlug && <span className="badge-orange">{step.skillSlug}</span>}
-                    <span className="badge-gray">out: {step.outputKey}</span>
+                    <span className="badge-gray">sortie : {step.outputKey}</span>
                   </div>
                   {step.lastOutput && (
                     <pre className="mt-2 text-xs text-gray-500 bg-gray-50 rounded p-2 overflow-x-auto max-h-24 font-mono">
@@ -269,10 +266,13 @@ function WorkflowDetail() {
                     </pre>
                   )}
                 </div>
+                </div>
+                ))}
               </div>
-            ))}
-        </div>
-      )}
+            )}
+          </>
+        )
+      })()}
     </>
   )
 }

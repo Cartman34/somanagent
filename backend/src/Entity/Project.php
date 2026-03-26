@@ -25,6 +25,9 @@ class Project
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $description = null;
 
+    #[ORM\Column(length: 512, nullable: true)]
+    private ?string $repositoryUrl = null;
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
@@ -51,26 +54,19 @@ class Project
         $this->updatedAt = new \DateTimeImmutable();
     }
 
-    public function getId(): Uuid                { return $this->id; }
-    public function getName(): string            { return $this->name; }
-    public function getDescription(): ?string    { return $this->description; }
+    public function getId(): Uuid                      { return $this->id; }
+    public function getName(): string                  { return $this->name; }
+    public function getDescription(): ?string          { return $this->description; }
+    public function getRepositoryUrl(): ?string        { return $this->repositoryUrl; }
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
     public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
 
     /** @return Collection<int, Module> */
     public function getModules(): Collection { return $this->modules; }
 
-    public function setName(string $name): static
-    {
-        $this->name = $name;
-        return $this;
-    }
-
-    public function setDescription(?string $description): static
-    {
-        $this->description = $description;
-        return $this;
-    }
+    public function setName(string $name): static               { $this->name = $name; return $this; }
+    public function setDescription(?string $d): static          { $this->description = $d; return $this; }
+    public function setRepositoryUrl(?string $url): static      { $this->repositoryUrl = $url; return $this; }
 
     public function addModule(Module $module): static
     {

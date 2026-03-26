@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Repository\RoleRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 
@@ -16,9 +18,8 @@ class Role
     #[ORM\Column(type: 'uuid')]
     private Uuid $id;
 
-    #[ORM\ManyToOne(targetEntity: Team::class, inversedBy: 'roles')]
-    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    private Team $team;
+    #[ORM\Column(length: 100, unique: true)]
+    private string $slug;
 
     #[ORM\Column(length: 255)]
     private string $name;
@@ -27,29 +28,47 @@ class Role
     private ?string $description = null;
 
     /**
-     * Slug du skill associé à ce rôle (ex: "code-reviewer").
-     * Nullable : un rôle peut être défini sans skill assigné.
+     * Skills associés à ce rôle (many-to-many).
+     * Un rôle peut requérir plusieurs compétences.
+     *
+     * @var Collection<int, Skill>
      */
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $skillSlug = null;
+    #[ORM\ManyToMany(targetEntity: Skill::class)]
+    #[ORM\JoinTable(name: 'role_skill')]
+    private Collection $skills;
 
-    public function __construct(Team $team, string $name, ?string $description = null, ?string $skillSlug = null)
+    public function __construct(string $slug, string $name, ?string $description = null)
     {
         $this->id          = Uuid::v7();
-        $this->team        = $team;
+        $this->slug        = $slug;
         $this->name        = $name;
         $this->description = $description;
-        $this->skillSlug   = $skillSlug;
+        $this->skills      = new ArrayCollection();
     }
 
-    public function getId(): Uuid            { return $this->id; }
-    public function getTeam(): Team          { return $this->team; }
-    public function getName(): string        { return $this->name; }
+    public function getId(): Uuid             { return $this->id; }
+    public function getSlug(): string         { return $this->slug; }
+    public function getName(): string         { return $this->name; }
     public function getDescription(): ?string { return $this->description; }
-    public function getSkillSlug(): ?string  { return $this->skillSlug; }
 
-    public function setTeam(Team $team): static               { $this->team = $team; return $this; }
+    /** @return Collection<int, Skill> */
+    public function getSkills(): Collection { return $this->skills; }
+
+    public function setSlug(string $slug): static             { $this->slug = $slug; return $this; }
     public function setName(string $name): static             { $this->name = $name; return $this; }
     public function setDescription(?string $d): static        { $this->description = $d; return $this; }
-    public function setSkillSlug(?string $slug): static       { $this->skillSlug = $slug; return $this; }
+
+    public function addSkill(Skill $skill): static
+    {
+        if (!$this->skills->contains($skill)) {
+            $this->skills->add($skill);
+        }
+        return $this;
+    }
+
+    public function removeSkill(Skill $skill): static
+    {
+        $this->skills->removeElement($skill);
+        return $this;
+    }
 }

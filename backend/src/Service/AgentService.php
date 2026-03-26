@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\Agent;
+use App\Entity\Team;
 use App\Enum\AuditAction;
 use App\Enum\ConnectorType;
 use App\Repository\AgentRepository;
 use App\Repository\RoleRepository;
+use App\Repository\TeamRepository;
 use App\ValueObject\AgentConfig;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -19,6 +21,7 @@ class AgentService
         private readonly EntityManagerInterface $em,
         private readonly AgentRepository        $agentRepository,
         private readonly RoleRepository         $roleRepository,
+        private readonly TeamRepository         $teamRepository,
         private readonly AuditService           $audit,
     ) {}
 
@@ -40,12 +43,21 @@ class AgentService
 
         $this->em->persist($agent);
         $this->em->flush();
-        $this->audit->log(AuditAction::AgentCreated, 'Agent', (string) $agent->getId(), ['name' => $name, 'connector' => $connector->value]);
+        $this->audit->log(AuditAction::AgentCreated, 'Agent', (string) $agent->getId(), [
+            'name'      => $name,
+            'connector' => $connector->value,
+        ]);
         return $agent;
     }
 
-    public function update(Agent $agent, string $name, ?string $description, ConnectorType $connector, AgentConfig $config, ?string $roleId): Agent
-    {
+    public function update(
+        Agent         $agent,
+        string        $name,
+        ?string       $description,
+        ConnectorType $connector,
+        AgentConfig   $config,
+        ?string       $roleId,
+    ): Agent {
         $agent->setName($name)->setDescription($description)->setConnector($connector)->setAgentConfig($config);
 
         $role = $roleId ? $this->roleRepository->find(Uuid::fromString($roleId)) : null;

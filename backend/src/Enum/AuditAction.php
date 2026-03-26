@@ -17,11 +17,16 @@ enum AuditAction: string
     case ModuleDeleted = 'module.deleted';
 
     // Équipes
-    case TeamCreated = 'team.created';
-    case TeamUpdated = 'team.updated';
-    case TeamDeleted = 'team.deleted';
-    case RoleAdded   = 'team.role.added';
-    case RoleRemoved = 'team.role.removed';
+    case TeamCreated      = 'team.created';
+    case TeamUpdated      = 'team.updated';
+    case TeamDeleted      = 'team.deleted';
+    case TeamAgentAdded   = 'team.agent.added';
+    case TeamAgentRemoved = 'team.agent.removed';
+
+    // Rôles
+    case RoleCreated = 'role.created';
+    case RoleUpdated = 'role.updated';
+    case RoleDeleted = 'role.deleted';
 
     // Agents
     case AgentCreated = 'agent.created';
@@ -44,4 +49,24 @@ enum AuditAction: string
     case WorkflowStepFailed    = 'workflow.step.failed';
     case WorkflowCompleted     = 'workflow.completed';
     case WorkflowFailed        = 'workflow.failed';
+
+    // Features
+    case FeatureCreated = 'feature.created';
+    case FeatureUpdated = 'feature.updated';
+    case FeatureDeleted = 'feature.deleted';
+
+    // Tâches
+    case TaskCreated          = 'task.created';
+    case TaskUpdated          = 'task.updated';
+    case TaskDeleted          = 'task.deleted';
+    case TaskAssigned         = 'task.assigned';
+    case TaskStatusChanged    = 'task.status_changed';
+    case TaskProgressUpdated  = 'task.progress_updated';
+    case TaskValidationAsked  = 'task.validation_asked';
+    case TaskValidated        = 'task.validated';
+    case TaskRejected         = 'task.rejected';
+    case TaskReprioritized    = 'task.reprioritized';
+
+    // Chat
+    case ChatMessageSent = 'chat.message_sent';
 }

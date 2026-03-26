@@ -1,224 +1,236 @@
-# REST API Reference
+# Référence API REST
 
-> See also: [Architecture](architecture.md) · [Entities](entities.md)
+> Voir aussi : [Architecture](architecture.md) · [Entités](entities.md)
 
-**Base URL**: `http://localhost:8080/api`
-**Format**: JSON (`Content-Type: application/json`)
-**Authentication**: none (local access only)
+**Base URL** : `http://localhost:8080/api`
+**Format** : JSON (`Content-Type: application/json`)
+**Authentification** : aucune (accès local uniquement)
 
 ---
 
-## Health
+## Santé
 
 ### `GET /api/health`
-Checks that the application is running.
-
-**Response 200:**
 ```json
 { "status": "ok", "version": "1.0.0", "app": "SoManAgent" }
 ```
 
 ### `GET /api/health/connectors`
-Checks the availability of each configured AI connector.
-
-**Response 200 (all OK):**
 ```json
 { "status": "ok", "connectors": { "claude_api": true, "claude_cli": false } }
 ```
-**Response 207 (degraded):** same format, `status: "degraded"`.
 
 ---
 
-## Projects
+## Projets
 
 ### `GET /api/projects`
-Lists all projects.
-
 ```json
-[
-  {
-    "id": "019...",
-    "name": "MonSaaS",
-    "description": null,
-    "modules": 3,
-    "createdAt": "2026-03-24T10:00:00+00:00",
-    "updatedAt": "2026-03-24T10:00:00+00:00"
-  }
-]
+[{ "id": "...", "name": "MonSaaS", "description": null, "repositoryUrl": "https://github.com/…", "modules": 3, "createdAt": "…", "updatedAt": "…" }]
 ```
 
 ### `POST /api/projects`
-Creates a project.
+**Body :** `{ "name": "MonSaaS", "description": "…", "repositoryUrl": "https://github.com/…" }`
+**201 :** `{ "id": "…", "name": "…", "repositoryUrl": "…" }`
 
-**Body:** `{ "name": "MonSaaS", "description": "..." }`
-**Response 201:** `{ "id": "...", "name": "..." }`
-**Error 422:** if `name` is missing.
-
-### `GET /api/projects/{id}`
-Project detail with its modules.
-
-```json
-{
-  "id": "...",
-  "name": "MonSaaS",
-  "description": null,
-  "modules": [
-    {
-      "id": "...",
-      "name": "api-php",
-      "description": null,
-      "repositoryUrl": "https://github.com/user/api-php",
-      "stack": "PHP 8.4, Symfony 7.2",
-      "status": "active"
-    }
-  ],
-  "createdAt": "...",
-  "updatedAt": "..."
-}
-```
-
-### `PUT /api/projects/{id}`
-Updates a project. Body: `{ "name": "...", "description": "..." }`
-
-### `DELETE /api/projects/{id}`
-Deletes a project (cascades to its modules). **204 No Content.**
-
----
-
-## Modules (sub-resource of Project)
+### `GET /api/projects/{id}` · `PUT /api/projects/{id}` · `DELETE /api/projects/{id}`
+PUT accepte les mêmes champs que POST. DELETE cascade les modules et features.
 
 ### `POST /api/projects/{id}/modules`
-Adds a module to a project.
-
-**Body:**
 ```json
-{
-  "name": "api-php",
-  "description": "REST API",
-  "repositoryUrl": "https://github.com/user/api-php",
-  "stack": "PHP 8.4, Symfony 7.2"
-}
+{ "name": "api-php", "repositoryUrl": "https://…", "stack": "PHP 8.4, Symfony 7" }
 ```
-**Response 201:** `{ "id": "...", "name": "...", "repositoryUrl": "...", "status": "active" }`
 
-### `PUT /api/projects/modules/{id}`
-Updates a module. Same fields as creation.
-
-### `DELETE /api/projects/modules/{id}`
-Deletes a module. **204 No Content.**
+### `PUT /api/projects/modules/{id}` · `DELETE /api/projects/modules/{id}`
 
 ---
 
-## Teams
+## Rôles
+
+### `GET /api/roles`
+```json
+[{ "id": "…", "slug": "dev-php", "name": "Développeur PHP", "description": "…", "skills": [{ "id": "…", "name": "…" }] }]
+```
+
+### `POST /api/roles`
+**Body :** `{ "slug": "dev-php", "name": "Développeur PHP", "description": "…" }`
+
+### `GET /api/roles/{id}` · `PUT /api/roles/{id}` · `DELETE /api/roles/{id}`
+
+### `POST /api/roles/{id}/skills`
+**Body :** `{ "skillId": "uuid" }`
+
+### `DELETE /api/roles/{id}/skills/{skillId}`
+
+---
+
+## Équipes
 
 ### `GET /api/teams`
-Lists all teams (with role count).
+```json
+[{ "id": "…", "name": "Équipe Web", "description": "…", "agentCount": 9, "createdAt": "…" }]
+```
 
 ### `POST /api/teams`
-Creates a team. Body: `{ "name": "...", "description": "..." }`
+**Body :** `{ "name": "Équipe Web", "description": "…" }`
 
 ### `GET /api/teams/{id}`
-Detail with list of roles:
 ```json
 {
-  "id": "...",
-  "name": "Web Dev Team",
-  "roles": [
-    { "id": "...", "name": "Reviewer", "description": "...", "skillSlug": "code-reviewer" }
+  "id": "…",
+  "name": "Équipe Web",
+  "agents": [
+    { "id": "…", "name": "PHP — David", "isActive": true, "role": { "id": "…", "name": "Développeur PHP", "slug": "dev-php" } }
   ]
 }
 ```
 
-### `PUT /api/teams/{id}` / `DELETE /api/teams/{id}`
-Update / delete.
+### `PUT /api/teams/{id}` · `DELETE /api/teams/{id}`
 
-### `POST /api/teams/{id}/roles`
-Adds a role. Body: `{ "name": "Reviewer", "description": "...", "skillSlug": "code-reviewer" }`
+### `POST /api/teams/{id}/agents`
+**Body :** `{ "agentId": "uuid" }`  **204 No Content**
 
-### `PUT /api/teams/roles/{id}` / `DELETE /api/teams/roles/{id}`
-Update / delete a role.
+### `DELETE /api/teams/{id}/agents/{agentId}`
+**204 No Content**
 
 ---
 
 ## Agents
 
 ### `GET /api/agents`
-Lists all agents.
-
 ```json
 [{
-  "id": "...",
-  "name": "Claude Reviewer",
-  "connector": "claude_api",
-  "isActive": true,
-  "role": { "id": "...", "name": "Reviewer" },
-  "config": { "model": "claude-opus-4-5", "max_tokens": 8192, "temperature": 0.3, "timeout": 120 }
+  "id": "…", "name": "PHP — David", "connector": "claude_api", "isActive": true,
+  "role": { "id": "…", "name": "Développeur PHP", "slug": "dev-php" },
+  "config": { "model": "claude-sonnet-4-6", "max_tokens": 4096, "temperature": 0.7, "timeout": 120 }
 }]
 ```
 
 ### `POST /api/agents`
-Creates an agent.
-
 ```json
-{
-  "name": "Claude Reviewer",
-  "connector": "claude_api",
-  "config": { "model": "claude-opus-4-5", "temperature": 0.3 },
-  "roleId": "uuid-of-the-role"
-}
+{ "name": "PHP — David", "connector": "claude_api", "roleId": "uuid", "config": { "model": "claude-sonnet-4-6" } }
 ```
 
 ### `GET /api/agents/{id}` · `PUT /api/agents/{id}` · `DELETE /api/agents/{id}`
-Standard CRUD.
 
 ---
 
-## Skills
+## Features
 
-### `GET /api/skills`
-Lists all skills (without content for lighter payload).
-
+### `GET /api/projects/{projectId}/features`
 ```json
-[{
-  "id": "...",
-  "slug": "code-reviewer",
-  "name": "Code Reviewer",
-  "source": "imported",
-  "sourceLabel": "Imported (skills.sh)",
-  "updatedAt": "..."
-}]
+[{ "id": "…", "name": "Auth OAuth", "status": "open", "createdAt": "…" }]
 ```
 
-### `GET /api/skills/{id}`
-Detail with full SKILL.md content.
+### `POST /api/projects/{projectId}/features`
+**Body :** `{ "name": "Auth OAuth", "description": "…" }`
 
-### `POST /api/skills/import`
-Imports a skill from skills.sh.
-Body: `{ "source": "anthropics/code-reviewer" }`
-
-### `POST /api/skills`
-Creates a custom skill.
-Body: `{ "slug": "my-skill", "name": "...", "content": "---\n...", "description": "..." }`
-
-### `PUT /api/skills/{id}/content`
-Updates the SKILL.md content.
-Body: `{ "content": "---\nname: ...\n---\n\n..." }`
-
-### `DELETE /api/skills/{id}`
-Deletes a skill. **204 No Content.**
+### `GET /api/features/{id}` · `PUT /api/features/{id}` · `DELETE /api/features/{id}`
 
 ---
 
-## Error Codes
+## Tâches
 
-| Code | Meaning |
-|---|---|
-| 400 | Malformed request (invalid JSON) |
-| 404 | Resource not found |
-| 422 | Invalid data (missing required field) |
-| 500 | Server error |
+### `GET /api/projects/{projectId}/tasks`
+Retourne les tâches racines (sans parent).
 
-Error format:
+### `POST /api/projects/{projectId}/tasks`
 ```json
-{ "error": "Message describing the error" }
+{
+  "title": "Implémenter OAuth2",
+  "type": "user_story",
+  "priority": "high",
+  "featureId": "uuid",
+  "parentId": "uuid",
+  "assignedAgentId": "uuid"
+}
+```
+
+### `GET /api/tasks/{id}`
+Retourne la tâche avec `children` (sous-tâches) et `logs`.
+
+### `PUT /api/tasks/{id}`
+Mise à jour des champs modifiables.
+
+### `PATCH /api/tasks/{id}/status`
+**Body :** `{ "status": "in_progress" }`
+
+### `PATCH /api/tasks/{id}/progress`
+**Body :** `{ "progress": 75 }`
+
+### `PATCH /api/tasks/{id}/priority`
+**Body :** `{ "priority": "critical" }`
+
+### `POST /api/tasks/{id}/validate`
+Passe le statut à `done` (100%). Validation manuelle par l'humain.
+
+### `POST /api/tasks/{id}/reject`
+**Body :** `{ "reason": "Critères non remplis." }` — repasse à `in_progress`.
+
+### `POST /api/tasks/{id}/request-validation`
+**Body :** `{ "comment": "Prêt pour revue." }` — passe à `review`.
+
+### `DELETE /api/tasks/{id}`
+
+---
+
+## Chat
+
+### `GET /api/projects/{projectId}/chat/{agentId}`
+Retourne l'historique de conversation (200 derniers messages).
+
+### `POST /api/projects/{projectId}/chat/{agentId}`
+**Body :** `{ "content": "Peux-tu créer l'US pour le module auth ?" }`
+**201 :** message créé.
+
+---
+
+## Tokens
+
+### `GET /api/tokens/summary?from=2026-01-01&to=2026-12-31`
+```json
+{
+  "total": { "input": 12500, "output": 8300, "calls": 47 },
+  "byAgent": [{ "agentId": "…", "totalInput": "3200", "totalOutput": "2100", "calls": "12" }]
+}
+```
+
+### `GET /api/tokens/agents/{agentId}?limit=100`
+Détail des appels pour un agent.
+
+---
+
+## Compétences (Skills)
+
+### `GET /api/skills` · `POST /api/skills` · `GET /api/skills/{id}`
+### `PUT /api/skills/{id}/content` · `DELETE /api/skills/{id}`
+### `POST /api/skills/import` — Body : `{ "source": "anthropics/code-reviewer" }`
+
+---
+
+## Workflows
+
+### `GET /api/workflows` · `POST /api/workflows`
+### `GET /api/workflows/{id}` · `PUT /api/workflows/{id}` · `DELETE /api/workflows/{id}`
+
+---
+
+## Audit
+
+### `GET /api/audit`
+Paramètres : `page`, `limit`.
+
+---
+
+## Codes d'erreur
+
+| Code | Signification |
+|---|---|
+| 400 | Requête malformée |
+| 404 | Ressource introuvable |
+| 422 | Données invalides (champ obligatoire manquant) |
+| 500 | Erreur serveur |
+
+```json
+{ "error": "Message décrivant l'erreur" }
 ```

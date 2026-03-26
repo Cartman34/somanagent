@@ -4,20 +4,28 @@ import {
   FolderKanban,
   Users,
   Bot,
+  UserCog,
   BookOpen,
   GitBranch,
   ScrollText,
+  ListTodo,
+  Layers,
+  Coins,
 } from 'lucide-react'
 import ThemeSwitcher from '@/components/ui/ThemeSwitcher'
 
 const navigation = [
-  { to: '/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
-  { to: '/projects',   label: 'Projects',   icon: FolderKanban },
-  { to: '/teams',      label: 'Teams',      icon: Users },
-  { to: '/agents',     label: 'Agents',     icon: Bot },
-  { to: '/skills',     label: 'Skills',     icon: BookOpen },
-  { to: '/workflows',  label: 'Workflows',  icon: GitBranch },
-  { to: '/audit',      label: 'Audit log',  icon: ScrollText },
+  { to: '/dashboard',  label: 'Tableau de bord', icon: LayoutDashboard },
+  { to: '/projects',   label: 'Projets',          icon: FolderKanban },
+  { to: '/tasks',      label: 'Tâches',           icon: ListTodo },
+  { to: '/features',   label: 'Features',         icon: Layers },
+  { to: '/teams',      label: 'Équipes',          icon: Users },
+  { to: '/agents',     label: 'Agents',           icon: Bot },
+  { to: '/roles',      label: 'Rôles',            icon: UserCog },
+  { to: '/skills',     label: 'Compétences',      icon: BookOpen },
+  { to: '/workflows',  label: 'Workflows',        icon: GitBranch },
+  { to: '/tokens',     label: 'Tokens',           icon: Coins },
+  { to: '/audit',      label: 'Journal d\'audit', icon: ScrollText },
 ]
 
 export default function Sidebar() {
@@ -71,13 +79,13 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* Footer: version + theme switcher */}
+      {/* Footer */}
       <div
         className="px-4 py-3 flex items-center justify-between"
         style={{ borderTop: '1px solid var(--border)' }}
       >
         <span className="text-xs" style={{ color: 'var(--muted)' }}>
-          v0.1.0
+          v0.2.0
         </span>
         <ThemeSwitcher />
       </div>

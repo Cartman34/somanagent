@@ -21,18 +21,19 @@ class ProjectService
         private readonly AuditService           $audit,
     ) {}
 
-    public function create(string $name, ?string $description = null): Project
+    public function create(string $name, ?string $description = null, ?string $repositoryUrl = null): Project
     {
         $project = new Project($name, $description);
+        $project->setRepositoryUrl($repositoryUrl);
         $this->em->persist($project);
         $this->em->flush();
         $this->audit->log(AuditAction::ProjectCreated, 'Project', (string) $project->getId(), ['name' => $name]);
         return $project;
     }
 
-    public function update(Project $project, string $name, ?string $description): Project
+    public function update(Project $project, string $name, ?string $description, ?string $repositoryUrl = null): Project
     {
-        $project->setName($name)->setDescription($description);
+        $project->setName($name)->setDescription($description)->setRepositoryUrl($repositoryUrl);
         $this->em->flush();
         $this->audit->log(AuditAction::ProjectUpdated, 'Project', (string) $project->getId(), ['name' => $name]);
         return $project;

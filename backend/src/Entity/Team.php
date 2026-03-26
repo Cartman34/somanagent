@@ -31,9 +31,15 @@ class Team
     #[ORM\Column]
     private \DateTimeImmutable $updatedAt;
 
-    #[ORM\OneToMany(targetEntity: Role::class, mappedBy: 'team', cascade: ['persist', 'remove'], orphanRemoval: true)]
-    #[ORM\OrderBy(['name' => 'ASC'])]
-    private Collection $roles;
+    /**
+     * Agents membres de cette équipe (many-to-many).
+     * Un agent peut appartenir à plusieurs équipes.
+     *
+     * @var Collection<int, Agent>
+     */
+    #[ORM\ManyToMany(targetEntity: Agent::class, inversedBy: 'teams')]
+    #[ORM\JoinTable(name: 'agent_team')]
+    private Collection $agents;
 
     public function __construct(string $name, ?string $description = null)
     {
@@ -42,7 +48,7 @@ class Team
         $this->description = $description;
         $this->createdAt   = new \DateTimeImmutable();
         $this->updatedAt   = new \DateTimeImmutable();
-        $this->roles       = new ArrayCollection();
+        $this->agents      = new ArrayCollection();
     }
 
     #[ORM\PreUpdate]
@@ -51,30 +57,32 @@ class Team
         $this->updatedAt = new \DateTimeImmutable();
     }
 
-    public function getId(): Uuid                    { return $this->id; }
-    public function getName(): string                { return $this->name; }
-    public function getDescription(): ?string        { return $this->description; }
+    public function getId(): Uuid                      { return $this->id; }
+    public function getName(): string                  { return $this->name; }
+    public function getDescription(): ?string          { return $this->description; }
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
     public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
 
-    /** @return Collection<int, Role> */
-    public function getRoles(): Collection { return $this->roles; }
+    /** @return Collection<int, Agent> */
+    public function getAgents(): Collection { return $this->agents; }
 
-    public function setName(string $name): static               { $this->name = $name; return $this; }
-    public function setDescription(?string $d): static          { $this->description = $d; return $this; }
+    public function setName(string $name): static      { $this->name = $name; return $this; }
+    public function setDescription(?string $d): static { $this->description = $d; return $this; }
 
-    public function addRole(Role $role): static
+    public function addAgent(Agent $agent): static
     {
-        if (!$this->roles->contains($role)) {
-            $this->roles->add($role);
-            $role->setTeam($this);
+        if (!$this->agents->contains($agent)) {
+            $this->agents->add($agent);
+            $agent->addTeam($this);
         }
         return $this;
     }
 
-    public function removeRole(Role $role): static
+    public function removeAgent(Agent $agent): static
     {
-        $this->roles->removeElement($role);
+        if ($this->agents->removeElement($agent)) {
+            $agent->removeTeam($this);
+        }
         return $this;
     }
 }

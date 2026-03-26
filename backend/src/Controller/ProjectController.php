@@ -19,34 +19,37 @@ class ProjectController extends AbstractController
     #[Route('', name: 'project_list', methods: ['GET'])]
     public function list(): JsonResponse
     {
-        $projects = $this->projectService->findAll();
-
         return $this->json(array_map(fn($p) => [
-            'id'          => (string) $p->getId(),
-            'name'        => $p->getName(),
-            'description' => $p->getDescription(),
-            'modules'     => $p->getModules()->count(),
-            'createdAt'   => $p->getCreatedAt()->format(\DateTimeInterface::ATOM),
-            'updatedAt'   => $p->getUpdatedAt()->format(\DateTimeInterface::ATOM),
-        ], $projects));
+            'id'            => (string) $p->getId(),
+            'name'          => $p->getName(),
+            'description'   => $p->getDescription(),
+            'repositoryUrl' => $p->getRepositoryUrl(),
+            'modules'       => $p->getModules()->count(),
+            'createdAt'     => $p->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            'updatedAt'     => $p->getUpdatedAt()->format(\DateTimeInterface::ATOM),
+        ], $this->projectService->findAll()));
     }
 
     #[Route('', name: 'project_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         $data = $request->toArray();
-
         if (empty($data['name'])) {
             return $this->json(['error' => 'Le champ "name" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $project = $this->projectService->create($data['name'], $data['description'] ?? null);
+        $project = $this->projectService->create(
+            $data['name'],
+            $data['description'] ?? null,
+            $data['repositoryUrl'] ?? null,
+        );
 
         return $this->json([
-            'id'          => (string) $project->getId(),
-            'name'        => $project->getName(),
-            'description' => $project->getDescription(),
-            'createdAt'   => $project->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            'id'            => (string) $project->getId(),
+            'name'          => $project->getName(),
+            'description'   => $project->getDescription(),
+            'repositoryUrl' => $project->getRepositoryUrl(),
+            'createdAt'     => $project->getCreatedAt()->format(\DateTimeInterface::ATOM),
         ], Response::HTTP_CREATED);
     }
 
@@ -54,16 +57,16 @@ class ProjectController extends AbstractController
     public function get(string $id): JsonResponse
     {
         $project = $this->projectService->findById($id);
-
         if ($project === null) {
             return $this->json(['error' => 'Projet introuvable.'], Response::HTTP_NOT_FOUND);
         }
 
         return $this->json([
-            'id'          => (string) $project->getId(),
-            'name'        => $project->getName(),
-            'description' => $project->getDescription(),
-            'modules'     => array_map(fn($m) => [
+            'id'            => (string) $project->getId(),
+            'name'          => $project->getName(),
+            'description'   => $project->getDescription(),
+            'repositoryUrl' => $project->getRepositoryUrl(),
+            'modules'       => array_map(fn($m) => [
                 'id'            => (string) $m->getId(),
                 'name'          => $m->getName(),
                 'description'   => $m->getDescription(),
@@ -71,8 +74,8 @@ class ProjectController extends AbstractController
                 'stack'         => $m->getStack(),
                 'status'        => $m->getStatus()->value,
             ], $project->getModules()->toArray()),
-            'createdAt'   => $project->getCreatedAt()->format(\DateTimeInterface::ATOM),
-            'updatedAt'   => $project->getUpdatedAt()->format(\DateTimeInterface::ATOM),
+            'createdAt'     => $project->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            'updatedAt'     => $project->getUpdatedAt()->format(\DateTimeInterface::ATOM),
         ]);
     }
 
@@ -84,9 +87,13 @@ class ProjectController extends AbstractController
             return $this->json(['error' => 'Projet introuvable.'], Response::HTTP_NOT_FOUND);
         }
 
-        $data    = $request->toArray();
-        $project = $this->projectService->update($project, $data['name'] ?? $project->getName(), $data['description'] ?? null);
-
+        $data = $request->toArray();
+        $this->projectService->update(
+            $project,
+            $data['name'] ?? $project->getName(),
+            $data['description'] ?? null,
+            $data['repositoryUrl'] ?? null,
+        );
         return $this->json(['id' => (string) $project->getId(), 'name' => $project->getName()]);
     }
 
@@ -112,13 +119,12 @@ class ProjectController extends AbstractController
             return $this->json(['error' => 'Projet introuvable.'], Response::HTTP_NOT_FOUND);
         }
 
-        $data   = $request->toArray();
+        $data = $request->toArray();
         if (empty($data['name'])) {
             return $this->json(['error' => 'Le champ "name" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $module = $this->projectService->addModule($project, $data['name'], $data['description'] ?? null, $data['repositoryUrl'] ?? null, $data['stack'] ?? null);
-
         return $this->json([
             'id'            => (string) $module->getId(),
             'name'          => $module->getName(),
@@ -137,7 +143,6 @@ class ProjectController extends AbstractController
 
         $data   = $request->toArray();
         $module = $this->projectService->updateModule($module, $data['name'] ?? $module->getName(), $data['description'] ?? null, $data['repositoryUrl'] ?? null, $data['stack'] ?? null);
-
         return $this->json(['id' => (string) $module->getId(), 'name' => $module->getName()]);
     }
 

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use App\Entity\Role;
+use App\Entity\Agent;
 use App\Entity\Team;
 use App\Enum\AuditAction;
-use App\Repository\RoleRepository;
+use App\Repository\AgentRepository;
 use App\Repository\TeamRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -17,7 +17,7 @@ class TeamService
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly TeamRepository         $teamRepository,
-        private readonly RoleRepository         $roleRepository,
+        private readonly AgentRepository        $agentRepository,
         private readonly AuditService           $audit,
     ) {}
 
@@ -46,29 +46,23 @@ class TeamService
         $this->audit->log(AuditAction::TeamDeleted, 'Team', $id);
     }
 
-    public function addRole(Team $team, string $name, ?string $description = null, ?string $skillSlug = null): Role
+    public function addAgent(Team $team, Agent $agent): void
     {
-        $role = new Role($team, $name, $description, $skillSlug);
-        $team->addRole($role);
-        $this->em->persist($role);
+        $team->addAgent($agent);
         $this->em->flush();
-        $this->audit->log(AuditAction::RoleAdded, 'Role', (string) $role->getId(), ['team' => (string) $team->getId(), 'name' => $name]);
-        return $role;
+        $this->audit->log(AuditAction::TeamAgentAdded, 'Team', (string) $team->getId(), [
+            'agent' => (string) $agent->getId(),
+            'agentName' => $agent->getName(),
+        ]);
     }
 
-    public function updateRole(Role $role, string $name, ?string $description, ?string $skillSlug): Role
+    public function removeAgent(Team $team, Agent $agent): void
     {
-        $role->setName($name)->setDescription($description)->setSkillSlug($skillSlug);
+        $team->removeAgent($agent);
         $this->em->flush();
-        return $role;
-    }
-
-    public function removeRole(Team $team, Role $role): void
-    {
-        $id = (string) $role->getId();
-        $team->removeRole($role);
-        $this->em->flush();
-        $this->audit->log(AuditAction::RoleRemoved, 'Role', $id, ['team' => (string) $team->getId()]);
+        $this->audit->log(AuditAction::TeamAgentRemoved, 'Team', (string) $team->getId(), [
+            'agent' => (string) $agent->getId(),
+        ]);
     }
 
     /** @return Team[] */
@@ -82,8 +76,8 @@ class TeamService
         return $this->teamRepository->find(Uuid::fromString($id));
     }
 
-    public function findRoleById(string $id): ?Role
+    public function findAgentById(string $id): ?Agent
     {
-        return $this->roleRepository->find(Uuid::fromString($id));
+        return $this->agentRepository->find(Uuid::fromString($id));
     }
 }

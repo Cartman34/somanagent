@@ -16,7 +16,7 @@ async function fetchAuditLogs(page: number): Promise<{ data: AuditLog[]; total: 
 }
 
 function fmtDate(date: string) {
-  return new Date(date).toLocaleString('en-US', {
+  return new Date(date).toLocaleString('fr-FR', {
     year: 'numeric', month: 'short', day: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })
@@ -63,15 +63,15 @@ export default function AuditPage() {
   return (
     <>
       <PageHeader
-        title="Audit log"
-        description="All actions performed in the application."
+        title="Journal d'audit"
+        description="Toutes les actions effectuées dans l'application."
       />
 
       {logs.length === 0 ? (
         <EmptyState
           icon={ScrollText}
-          title="No audit events yet"
-          description="Events will appear here as you interact with the application."
+          title="Aucun événement"
+          description="Les événements apparaîtront ici lors de vos interactions avec l'application."
         />
       ) : (
         <div className="card overflow-hidden">
@@ -79,7 +79,7 @@ export default function AuditPage() {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Action</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600 hidden sm:table-cell">Entity</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600 hidden sm:table-cell">Entité</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">ID</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Date</th>
               </tr>
@@ -104,7 +104,7 @@ export default function AuditPage() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
               <p className="text-xs text-gray-500">
-                {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total} events
+                {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} sur {total} événements
               </p>
               <div className="flex gap-1">
                 <button

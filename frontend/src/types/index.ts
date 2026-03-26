@@ -6,7 +6,8 @@ export interface Project {
   id: string
   name: string
   description: string | null
-  modules: number | Module[]   // compteur sur /api/projects, tableau sur /api/projects/{id}
+  repositoryUrl: string | null
+  modules: number | Module[]
   createdAt: string
   updatedAt: string
 }
@@ -24,16 +25,31 @@ export interface Team {
   id: string
   name: string
   description: string | null
-  roles: number | Role[]
+  agentCount: number
+  agents?: AgentSummary[]
   createdAt: string
   updatedAt: string
 }
 
 export interface Role {
   id: string
+  slug: string
   name: string
   description: string | null
-  skillSlug: string | null
+  skills?: SkillSummary[]
+}
+
+export interface SkillSummary {
+  id: string
+  name: string
+  slug?: string
+}
+
+export interface AgentSummary {
+  id: string
+  name: string
+  isActive: boolean
+  role: { id: string; name: string; slug: string } | null
 }
 
 export interface AgentConfig {
@@ -51,7 +67,7 @@ export interface Agent {
   connector: 'claude_api' | 'claude_cli'
   connectorLabel: string
   isActive: boolean
-  role: { id: string; name: string } | null
+  role: { id: string; name: string; slug: string } | null
   config: AgentConfig
   createdAt: string
   updatedAt: string
@@ -65,10 +81,70 @@ export interface Skill {
   source: 'imported' | 'custom'
   sourceLabel: string
   originalSource: string | null
-  content?: string       // présent uniquement sur GET /api/skills/{id}
+  content?: string
   filePath?: string
   createdAt: string
   updatedAt: string
+}
+
+export interface Feature {
+  id: string
+  name: string
+  description: string | null
+  status: 'open' | 'in_progress' | 'closed'
+  project?: { id: string; name: string }
+  createdAt: string
+  updatedAt: string
+}
+
+export type TaskType     = 'user_story' | 'bug' | 'task'
+export type TaskStatus   = 'backlog' | 'todo' | 'in_progress' | 'review' | 'done' | 'cancelled'
+export type TaskPriority = 'low' | 'medium' | 'high' | 'critical'
+
+export interface Task {
+  id: string
+  title: string
+  description: string | null
+  type: TaskType
+  status: TaskStatus
+  priority: TaskPriority
+  progress: number
+  feature: { id: string; name: string } | null
+  parent: { id: string; title: string } | null
+  assignedAgent: { id: string; name: string } | null
+  children?: Task[]
+  logs?: TaskLog[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface TaskLog {
+  action: string
+  content: string | null
+  createdAt: string
+}
+
+export interface ChatMessage {
+  id: string
+  author: 'human' | 'agent'
+  content: string
+  createdAt: string
+}
+
+export interface TokenUsageEntry {
+  id: string
+  model: string
+  inputTokens: number
+  outputTokens: number
+  totalTokens: number
+  durationMs: number | null
+  task: { id: string; title: string } | null
+  createdAt: string
+}
+
+export interface TokenSummary {
+  total: { input: number; output: number; calls: number }
+  byAgent: Array<{ agentId: string; totalInput: string; totalOutput: string; calls: string }>
 }
 
 export interface WorkflowStep {
@@ -91,7 +167,7 @@ export interface Workflow {
   trigger: 'manual' | 'vcs_event' | 'scheduled'
   team: { id: string; name: string } | null
   isActive: boolean
-  steps: WorkflowStep[] | number  // count in list, full array in detail
+  steps: WorkflowStep[] | number
   createdAt: string
   updatedAt: string
 }

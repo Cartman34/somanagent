@@ -29,7 +29,7 @@ function ImportForm({
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(value.trim()) }} className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Skill identifier *
+          Identifiant de la compétence *
         </label>
         <input
           className="input font-mono"
@@ -39,16 +39,16 @@ function ImportForm({
           placeholder="owner/skill-name"
         />
         <p className="text-xs text-gray-400 mt-1">
-          Format: <code>owner/skill-name</code> as listed on{' '}
+          Format : <code>owner/skill-name</code> tel que référencé sur{' '}
           <a href="https://skills.sh" target="_blank" rel="noreferrer" className="text-brand-600 hover:underline">
             skills.sh
           </a>
         </p>
       </div>
       <div className="flex justify-end gap-3 pt-2">
-        <button type="button" onClick={onCancel} className="btn-secondary">Cancel</button>
+        <button type="button" onClick={onCancel} className="btn-secondary">Annuler</button>
         <button type="submit" className="btn-primary" disabled={loading}>
-          {loading ? 'Importing…' : <><Download className="w-4 h-4" /> Import</>}
+          {loading ? 'Importation…' : <><Download className="w-4 h-4" /> Importer</>}
         </button>
       </div>
     </form>
@@ -101,7 +101,7 @@ function CreateSkillForm({
     <form onSubmit={(e) => { e.preventDefault(); onSubmit({ name, slug, description: description || undefined, content }) }} className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
           <input className="input" value={name} onChange={(e) => handleNameChange(e.target.value)} required placeholder="Code Review" />
         </div>
         <div>
@@ -111,10 +111,10 @@ function CreateSkillForm({
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-        <input className="input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Short description…" />
+        <input className="input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Courte description…" />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Content (SKILL.md)</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Contenu (SKILL.md)</label>
         <textarea
           className="input font-mono text-xs resize-none"
           rows={12}
@@ -123,8 +123,8 @@ function CreateSkillForm({
         />
       </div>
       <div className="flex justify-end gap-3 pt-2">
-        <button type="button" onClick={onCancel} className="btn-secondary">Cancel</button>
-        <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Creating…' : 'Create'}</button>
+        <button type="button" onClick={onCancel} className="btn-secondary">Annuler</button>
+        <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Création…' : 'Créer'}</button>
       </div>
     </form>
   )
@@ -175,15 +175,15 @@ function SkillsList() {
   return (
     <>
       <PageHeader
-        title="Skills"
-        description="Import skills from the registry or create your own."
+        title="Compétences"
+        description="Importez des compétences depuis le registre ou créez les vôtres."
         action={
           <div className="flex gap-2">
             <button className="btn-secondary" onClick={() => setImportOpen(true)}>
-              <Download className="w-4 h-4" /> Import
+              <Download className="w-4 h-4" /> Importer
             </button>
             <button className="btn-primary" onClick={() => setCreateOpen(true)}>
-              <Plus className="w-4 h-4" /> Create
+              <Plus className="w-4 h-4" /> Créer
             </button>
           </div>
         }
@@ -192,12 +192,12 @@ function SkillsList() {
       {skills?.length === 0 ? (
         <EmptyState
           icon={BookOpen}
-          title="No skills yet"
-          description="Import skills from skills.sh or create custom ones for your agents."
+          title="Aucune compétence"
+          description="Importez depuis skills.sh ou créez des compétences personnalisées pour vos agents."
           action={
             <div className="flex gap-2">
-              <button className="btn-secondary" onClick={() => setImportOpen(true)}><Download className="w-4 h-4" /> Import</button>
-              <button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> Create</button>
+              <button className="btn-secondary" onClick={() => setImportOpen(true)}><Download className="w-4 h-4" /> Importer</button>
+              <button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> Créer</button>
             </div>
           }
         />
@@ -207,7 +207,7 @@ function SkillsList() {
           {imported.length > 0 && (
             <section>
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                Imported from registry ({imported.length})
+                Importées du registre ({imported.length})
               </h2>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {imported.map((skill) => (
@@ -221,7 +221,7 @@ function SkillsList() {
           {custom.length > 0 && (
             <section>
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                Custom skills ({custom.length})
+                Compétences personnalisées ({custom.length})
               </h2>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {custom.map((skill) => (
@@ -234,7 +234,7 @@ function SkillsList() {
       )}
 
       {/* Import modal */}
-      <Modal open={importOpen} onClose={() => { setImportOpen(false); setImportError(null) }} title="Import a skill">
+      <Modal open={importOpen} onClose={() => { setImportOpen(false); setImportError(null) }} title="Importer une compétence">
         {importError && (
           <div className="mb-4 p-3 rounded-lg bg-red-50 text-sm text-red-700">{importError}</div>
         )}
@@ -246,7 +246,7 @@ function SkillsList() {
       </Modal>
 
       {/* Create modal */}
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Create a skill" size="lg">
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Créer une compétence" size="lg">
         <CreateSkillForm
           onSubmit={(d) => createMutation.mutate(d)}
           loading={createMutation.isPending}
@@ -259,7 +259,7 @@ function SkillsList() {
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
-        message={`Delete skill "${deleteTarget?.name}"? This action cannot be undone.`}
+        message={`Supprimer la compétence "${deleteTarget?.name}" ? Cette action est irréversible.`}
         loading={deleteMutation.isPending}
       />
     </>
@@ -277,10 +277,10 @@ function SkillCard({ skill, onEdit, onDelete }: { skill: Skill; onEdit: () => vo
           <p className="text-xs font-mono text-gray-400">{skill.slug}</p>
         </div>
         <div className="flex gap-1 flex-shrink-0">
-          <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-brand-600" title="Edit content">
+          <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-brand-600" title="Modifier le contenu">
             <Pencil className="w-3.5 h-3.5" />
           </button>
-          <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-500" title="Delete">
+          <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-500" title="Supprimer">
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -324,23 +324,23 @@ function SkillEditor() {
   })
 
   if (isLoading) return <PageSpinner />
-  if (error || !skill) return <ErrorMessage message={(error as Error)?.message ?? 'Skill not found'} onRetry={() => refetch()} />
+  if (error || !skill) return <ErrorMessage message={(error as Error)?.message ?? 'Compétence introuvable'} onRetry={() => refetch()} />
 
   return (
     <>
       <div className="flex items-center justify-between mb-4">
         <Link to="/skills" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
-          <ArrowLeft className="w-4 h-4" /> Skills
+          <ArrowLeft className="w-4 h-4" /> Compétences
         </Link>
         <div className="flex items-center gap-3">
-          {saved && <span className="text-sm text-green-600 font-medium">Saved ✓</span>}
+          {saved && <span className="text-sm text-green-600 font-medium">Enregistré ✓</span>}
           <button
             className="btn-primary"
             onClick={() => saveMutation.mutate(content ?? '')}
             disabled={saveMutation.isPending}
           >
             <Save className="w-4 h-4" />
-            {saveMutation.isPending ? 'Saving…' : 'Save'}
+            {saveMutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
           </button>
         </div>
       </div>

@@ -74,28 +74,28 @@ export default function DashboardPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="Projects"
+          label="Projets"
           value={projects?.length ?? 0}
           icon={FolderKanban}
           to="/projects"
           color="bg-blue-500"
         />
         <StatCard
-          label="Teams"
+          label="Équipes"
           value={teams?.length ?? 0}
           icon={Users}
           to="/teams"
           color="bg-indigo-500"
         />
         <StatCard
-          label={`Agents (${activeAgents} active)`}
+          label={`Agents (${activeAgents} actif${activeAgents !== 1 ? 's' : ''})`}
           value={agents?.length ?? 0}
           icon={Bot}
           to="/agents"
           color="bg-violet-500"
         />
         <StatCard
-          label="Skills"
+          label="Compétences"
           value={skills?.length ?? 0}
           icon={BookOpen}
           to="/skills"
@@ -108,7 +108,7 @@ export default function DashboardPage() {
         <div className="flex items-center gap-2 mb-4">
           <Activity className="w-5 h-5" style={{ color: 'var(--muted)' }} />
           <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>
-            System health
+            État du système
           </h2>
         </div>
 
@@ -128,7 +128,7 @@ export default function DashboardPage() {
                 Backend API
               </p>
               <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                {health ? `v${health.version} — ${health.status}` : 'Unreachable'}
+                {health ? `v${health.version} — ${health.status}` : 'Inaccessible'}
               </p>
             </div>
           </div>
@@ -151,7 +151,7 @@ export default function DashboardPage() {
                       {name}
                     </p>
                     <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                      {ok ? 'Operational' : 'Unavailable'}
+                      {ok ? 'Opérationnel' : 'Indisponible'}
                     </p>
                   </div>
                 </div>
@@ -163,38 +163,38 @@ export default function DashboardPage() {
       {/* Quick links */}
       <div className="card p-6">
         <h2 className="text-base font-semibold mb-4" style={{ color: 'var(--text)' }}>
-          Quick start
+          Démarrage rapide
         </h2>
         <ol className="space-y-2 text-sm list-decimal list-inside" style={{ color: 'var(--muted)' }}>
           <li>
             <Link to="/teams" className="hover:underline" style={{ color: 'var(--brand)' }}>
-              Create a team
+              Créer une équipe
             </Link>{' '}
-            and add roles to it
+            et y ajouter des rôles
           </li>
           <li>
             <Link to="/skills" className="hover:underline" style={{ color: 'var(--brand)' }}>
-              Import or create skills
+              Importer ou créer des compétences
             </Link>{' '}
-            to assign to roles
+            à associer aux rôles
           </li>
           <li>
             <Link to="/agents" className="hover:underline" style={{ color: 'var(--brand)' }}>
-              Configure agents
+              Configurer des agents
             </Link>{' '}
-            and link them to roles
+            et les associer à des rôles
           </li>
           <li>
             <Link to="/projects" className="hover:underline" style={{ color: 'var(--brand)' }}>
-              Create a project
+              Créer un projet
             </Link>{' '}
-            and add modules (PHP API, Android, etc.)
+            et y ajouter des modules (API PHP, Android, etc.)
           </li>
           <li>
             <Link to="/workflows" className="hover:underline" style={{ color: 'var(--brand)' }}>
-              Define workflows
+              Définir des workflows
             </Link>{' '}
-            to orchestrate your agents
+            pour orchestrer vos agents
           </li>
         </ol>
       </div>
