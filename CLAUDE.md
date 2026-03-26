@@ -294,27 +294,63 @@ docker compose exec php vendor/bin/phpunit
 
 ---
 
+## Language Convention
+
+- **UI labels, page titles, button text:** French (the application's target language is French)
+- **Everything technical — code, PHPDoc/JSDoc, CLAUDE.md, script output, routes, error messages, comments, commit messages:** English
+
+This applies regardless of the language used when talking to Claude. When in doubt: if it appears in the UI → French; if it appears in the source or terminal → English.
+
+---
+
+## Claude Scripts (`scripts/claude/`)
+
+These scripts are designed to reduce token consumption. **Use them systematically before reading source files directly.**
+
+| Script | Purpose | Replaces |
+|---|---|---|
+| `php scripts/claude/db-schema.php` | Schema of all Doctrine entities | Reading 10+ Entity files |
+| `php scripts/claude/api-routes.php` | All REST routes | Grepping Controllers |
+| `php scripts/claude/frontend-map.php` | Routes, pages and API clients | Glob + reading App.tsx + pages |
+| `php scripts/claude/grep-usage.php <term>` | Search a term across the codebase | Repeated grep calls |
+| `php scripts/claude/status.php` | Docker, migrations, schema, git | Multiple manual commands |
+
+Common options: `--json` (db-schema, api-routes, frontend-map), `--backend`/`--frontend` (grep-usage), `--context N` (grep-usage).
+
+### Maintenance rule
+
+**These scripts parse source files dynamically** — they do not need to be updated when you modify entities, controllers, or pages.
+
+**Exception:** if you add a new directory for controllers, entities, or pages outside the default paths (`backend/src/Entity/`, `backend/src/Controller/`, `frontend/src/pages/`), update the paths in the relevant scripts.
+
+---
+
 ## Notes for Claude
 
-1. **Always work from `~/projects/somanagent`** — WSL native filesystem is critical for Docker performance.
-
-2. **Use the Application/Console pattern** for new scripts:
+1. **Use the Application/Console pattern** for new scripts:
    - No `exit()` inside functions, throw exceptions instead
    - Let Application::boot() handle WSL redirect
    - Use `$console->step()`, `$console->ok()`, `$console->fail()` for output
    - Use `$app->runCommand()` for subprocess calls (auto-CRLF in WSL pipe mode)
 
-3. **React Query is the data layer** — don't use `fetch()` directly, always use the API client modules in `frontend/src/api/`.
+2. **React Query is the data layer** — don't use `fetch()` directly, always use the API client modules in `frontend/src/api/`.
 
-4. **Theming is automatic** — don't hardcode colors. Use semantic CSS class names (`.btn-primary`, `.card`) or inline Tailwind utilities that are remapped (`.text-gray-900` → `var(--text)`).
+3. **Theming is automatic** — don't hardcode colors. Use semantic CSS class names (`.btn-primary`, `.card`) or inline Tailwind utilities that are remapped (`.text-gray-900` → `var(--text)`).
 
-5. **Audit everything** — all changes to Projects, Teams, Agents, Skills, Workflows must call `AuditService::log()` so the audit log stays consistent.
+4. **Audit everything** — all changes to Projects, Teams, Agents, Skills, Workflows must call `AuditService::log()` so the audit log stays consistent.
 
-6. **Prefer OOP instances over static methods** — use instances when there's meaningful state (e.g., `Console`); static methods are OK for stateless utilities (e.g., `Environment`).
+5. **Prefer OOP instances over static methods** — use instances when there's meaningful state (e.g., `Console`); static methods are OK for stateless utilities (e.g., `Environment`).
 
-7. **Exception-driven error handling** — catch exceptions at the top level (in scripts), never mid-function.
+6. **Exception-driven error handling** — catch exceptions at the top level (in scripts), never mid-function.
 
-8. **Environment auto-detection** — scripts auto-detect Windows/WSL/Linux and act accordingly; users don't need to think about it.
+7. **Environment auto-detection** — scripts auto-detect Windows/WSL/Linux and act accordingly; users don't need to think about it.
+
+8. **File paths — always use UNC format:**
+   - `Read`, `Write`, `Edit`, `Grep`, `Glob` tools: `\\wsl.localhost\Ubuntu-24.04\home\sowapps\projects\somanagent\...`
+   - `Bash` and git commands: `cd "//wsl.localhost/Ubuntu-24.04/home/sowapps/projects/somanagent" && ...`
+   - Never use `wsl -d Ubuntu-24.04 -e bash -c "..."` — it triggers unnecessary permission prompts.
+
+9. **Git staging — always use `git add .`** unless files need to be added individually for a specific reason.
 
 ---
 

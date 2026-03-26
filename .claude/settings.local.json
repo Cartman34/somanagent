@@ -1,6 +1,12 @@
 {
   "permissions": {
     "allow": [
+      "Write",
+      "Read",
+      "Edit",
+      "Glob",
+      "Greb",
+      "Search",
       "Bash(docker --version)",
       "Bash(docker compose:*)",
       "Bash(php --version)",
@@ -22,7 +28,25 @@
       "Bash(wsl php:*)",
       "Bash(git rm:*)",
       "Bash(wsl bash:*)",
-      "Bash(wsl -e chmod +x /mnt/c/EspaceRestreint/Workspaces/AiTeam/SoManAgent/scripts/wsl-migrate.sh)"
+      "Bash(wsl -e chmod +x /mnt/c/EspaceRestreint/Workspaces/AiTeam/SoManAgent/scripts/wsl-migrate.sh)",
+      "Bash(wsl -d Ubuntu-24.04 -e bash -c \"cd ~/projects/somanagent && git push\")",
+      "Read(///wsl.localhost/Ubuntu-24.04/home/sowapps/projects/somanagent/**)",
+      "Bash(rm \"//wsl.localhost/Ubuntu-24.04/home/sowapps/projects/somanagent/test_write.txt\")",
+      "Bash(\\\\wsl.localhost\\Ubuntu-24.04\\home\\sowapps\\projects\\somanagent/**)",
+      "Bash(/home/sowapps/projects/somanagent/**)",
+      "Search(/home/sowapps/projects/somanagent/**)",
+      "Read(/home/sowapps/projects/somanagent/**)",
+      "Write(/home/sowapps/projects/somanagent/**)",
+      "Edit(/home/sowapps/projects/somanagent/**)",
+      "Write(\\\\wsl.localhost\\Ubuntu-24.04\\home\\sowapps\\projects\\somanagent\\**)",
+      "Edit(\\\\wsl.localhost\\Ubuntu-24.04\\home\\sowapps\\projects\\somanagent\\**)",
+      "Read(///wsl.localhost/Ubuntu-24.04/home/sowapps/projects/somanagent/Roaming/Claude/**)",
+      "Read(///wsl.localhost/Ubuntu-24.04/home/sowapps/projects/somanagent/$HOME/.claude/**)",
+      "Read(///wsl.localhost/Ubuntu-24.04/home/sowapps/projects/somanagent/$HOME/**)",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(ls *)",
+      "Bash(find *)"
     ]
   }
 }
