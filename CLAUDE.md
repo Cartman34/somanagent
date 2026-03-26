@@ -6,8 +6,6 @@
 
 **Current Phase:** Phase 2B (React frontend with real API data via React Query)
 
-**Working Directory:** `~/projects/somanagent` (WSL native filesystem — **critical for Docker performance**)
-
 ---
 
 ## Tech Stack
@@ -24,11 +22,13 @@
 
 ## Critical Performance Note
 
-⚠️ **The project MUST run from `~/projects/somanagent` in WSL native filesystem.**
+**The project MUST run from `~/projects/somanagent` in WSL native filesystem.**  
+**This is not the path you edit the file, this is the path in the WSL.**  
+**Your path must be starting with `\\wsl.localhost\` or you must alert the user about using the wrong path.**  
 
 **Why:** Docker bind mounts from `/mnt/c/...` (Windows NTFS accessed through WSL) use the 9P protocol over Hyper-V virtio, causing 5-20x slower I/O. WSL native ext4 gives near-native Linux speed.
 
-**Migration:** If ever cloned to `/mnt/c/...`, run `bash scripts/wsl-migrate.sh --dest ~/projects/somanagent` to copy to WSL.
+**Migration:** If ever cloned to `/mnt/c/...`, run `bash scripts/wsl-migrate.sh --dest {path}` with `{path}`, your main working path, to copy to WSL.
 
 ---
 
@@ -342,15 +342,29 @@ Common options: `--json` (db-schema, api-routes, frontend-map), `--backend`/`--f
 5. **Prefer OOP instances over static methods** — use instances when there's meaningful state (e.g., `Console`); static methods are OK for stateless utilities (e.g., `Environment`).
 
 6. **Exception-driven error handling** — catch exceptions at the top level (in scripts), never mid-function.
-
+   
 7. **Environment auto-detection** — scripts auto-detect Windows/WSL/Linux and act accordingly; users don't need to think about it.
-
-8. **File paths — always use UNC format:**
-   - `Read`, `Write`, `Edit`, `Grep`, `Glob` tools: `\\wsl.localhost\Ubuntu-24.04\home\sowapps\projects\somanagent\...`
-   - `Bash` and git commands: `cd "//wsl.localhost/Ubuntu-24.04/home/sowapps/projects/somanagent" && ...`
-   - Never use `wsl -d Ubuntu-24.04 -e bash -c "..."` — it triggers unnecessary permission prompts.
+   
+8. **File paths — always use relative path:** — For files in the project. Do not `cd` to any subfolder of the projet and do not use `wsl -d Ubuntu-24.04 -e bash -c "..."`
 
 9. **Git staging — always use `git add .`** unless files need to be added individually for a specific reason.
+
+10. **Keep `doc/` up to date** — the `doc/` folder is the project's living documentation and must be maintained alongside code changes. It is organized as follows:
+
+    | Folder | Content |
+    |---|---|
+    | `doc/functional/` | Functional documentation: concepts, features, business rules (what the app does) |
+    | `doc/technical/` | Technical documentation: architecture, data model, API, adapters, configuration |
+    | `doc/development/` | Developer guides: installation, scripts, Symfony commands |
+    | `doc/mockups/` | UI theme mockups (HTML files, one per theme) |
+
+    **Rules:**
+    - When adding or modifying an entity, update `doc/technical/entities.md`.
+    - When adding or modifying an API endpoint, update `doc/technical/api.md`.
+    - When adding a new concept or feature visible to the user, update or create the relevant file in `doc/functional/`.
+    - When adding a new script or Symfony command, update the relevant file in `doc/development/`.
+    - When adding a new UI theme, add a mockup in `doc/mockups/` and update `doc/mockups/index.html`.
+    - `doc/README.md` is the index — update it if a new file is added to `doc/`.
 
 ---
 
