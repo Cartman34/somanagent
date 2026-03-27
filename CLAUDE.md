@@ -291,6 +291,9 @@ docker compose exec php vendor/bin/phpunit
 - **Files:** One component per file unless tightly coupled
 - **JSDoc:** Every exported component and every non-trivial internal function must have a JSDoc comment. The reader must understand the component's role, its key props and any important behaviour **without reading the JSX**.
 
+### Encoding
+- **All files must be UTF-8** — no BOM, no Latin-1 or Windows-1252. This applies to PHP, TypeScript, Markdown, JSON, YAML, shell scripts, and any other text file in the project. If a file contains corrupted bytes (e.g. `\xb7` for `·`, `\x97` for `—`), fix them before committing.
+
 ### CSS
 - **Layered:** `@layer base`, `@layer components`, `@layer utilities` for Tailwind integration
 - **Un-layered:** Custom overrides (highest priority) placed after `@tailwind utilities`
