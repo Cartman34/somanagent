@@ -17,4 +17,21 @@ class AgentRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Agent::class);
     }
+
+    /**
+     * Returns all active agents that hold the given role slug.
+     *
+     * @return Agent[]
+     */
+    public function findActiveByRoleSlug(string $roleSlug): array
+    {
+        return $this->createQueryBuilder('a')
+            ->join('a.role', 'r')
+            ->where('r.slug = :slug')
+            ->andWhere('a.isActive = true')
+            ->setParameter('slug', $roleSlug)
+            ->orderBy('a.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }

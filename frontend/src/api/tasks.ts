@@ -67,6 +67,21 @@ export const tasksApi = {
     return data
   },
 
+  /** Returns available agents for executing this story in its current status. */
+  listExecuteAgents: async (id: string): Promise<{ id: string; name: string; role: { slug: string; name: string } | null }[]> => {
+    const { data } = await apiClient.get(`/tasks/${id}/execute`)
+    return data
+  },
+
+  /**
+   * Dispatches the story to an agent for execution.
+   * If agentId is omitted, the backend auto-selects the first available agent with the right role.
+   */
+  execute: async (id: string, agentId?: string): Promise<{ task: Task; agent: { id: string; name: string }; skill: string }> => {
+    const { data } = await apiClient.post(`/tasks/${id}/execute`, agentId ? { agentId } : {})
+    return data
+  },
+
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/tasks/${id}`)
   },

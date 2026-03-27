@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Plus, ListTodo, ChevronRight, CheckCircle, XCircle, Clock,
-  AlertTriangle, GitBranch, User, ArrowRight, Layers,
+  AlertTriangle, GitBranch, User, ArrowRight, Layers, Play,
 } from 'lucide-react'
 import { tasksApi } from '@/api/tasks'
 import { projectsApi } from '@/api/projects'
@@ -117,14 +117,101 @@ function TaskForm({ initial, onSubmit, loading, onCancel }: {
   )
 }
 
+// ─── Execute modal ────────────────────────────────────────────────────────────
+
+/** Modal shown before dispatching an agent — lets the user pick from available agents. */
+function ExecuteModal({ task, onClose, onExecuted }: {
+  task: Task
+  onClose: () => void
+  onExecuted: () => void
+}) {
+  const [selectedAgentId, setSelectedAgentId] = useState<string>('')
+  const [result, setResult] = useState<{ agentName: string; skill: string } | null>(null)
+
+  const { data: agents, isLoading: loadingAgents } = useQuery({
+    queryKey: ['task-execute-agents', task.id],
+    queryFn:  () => tasksApi.listExecuteAgents(task.id),
+  })
+
+  const executeMutation = useMutation({
+    mutationFn: () => tasksApi.execute(task.id, selectedAgentId || undefined),
+    onSuccess: (data) => {
+      setResult({ agentName: data.agent.name, skill: data.skill })
+      onExecuted()
+    },
+  })
+
+  if (result) {
+    return (
+      <div className="space-y-4 text-sm text-center py-4">
+        <CheckCircle className="w-10 h-10 text-green-500 mx-auto" />
+        <p className="font-medium text-gray-900">Agent dispatché</p>
+        <p className="text-gray-500">
+          <strong>{result.agentName}</strong> exécute <code className="bg-gray-100 px-1 rounded">{result.skill}</code>
+        </p>
+        <p className="text-xs text-gray-400">Le résultat apparaîtra dans les tâches techniques une fois le traitement terminé.</p>
+        <button onClick={onClose} className="btn-primary mx-auto">Fermer</button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-gray-600">
+        Sélectionnez un agent pour exécuter <strong>"{task.title}"</strong>.
+        L'agent sera choisi automatiquement si vous ne sélectionnez pas.
+      </p>
+
+      {loadingAgents ? (
+        <p className="text-sm text-gray-400">Chargement des agents…</p>
+      ) : agents && agents.length > 0 ? (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Agent</label>
+          <select className="input" value={selectedAgentId} onChange={(e) => setSelectedAgentId(e.target.value)}>
+            <option value="">— Auto-sélection —</option>
+            {agents.map((a) => (
+              <option key={a.id} value={a.id}>{a.name}{a.role ? ` (${a.role.name})` : ''}</option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        <p className="text-sm text-red-600">Aucun agent disponible avec le rôle requis.</p>
+      )}
+
+      {executeMutation.isError && (
+        <p className="text-sm text-red-600">
+          {(executeMutation.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Erreur lors de l\'exécution.'}
+        </p>
+      )}
+
+      <div className="flex justify-end gap-3 pt-2">
+        <button onClick={onClose} className="btn-secondary">Annuler</button>
+        <button
+          onClick={() => executeMutation.mutate()}
+          disabled={executeMutation.isPending || (agents?.length === 0)}
+          className="btn-primary"
+        >
+          {executeMutation.isPending ? 'Dispatch…' : 'Lancer l\'agent'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── Story card (Kanban) ──────────────────────────────────────────────────────
 
-function StoryCard({ task, onTransition, onDelete, transitioning }: {
+/** Statuses that can trigger an automated agent execution. */
+const EXECUTABLE_STATUSES: StoryStatus[] = ['approved', 'graphic_design', 'development', 'code_review']
+
+function StoryCard({ task, onTransition, onDelete, transitioning, onExecute }: {
   task: Task
   onTransition: (task: Task, status: StoryStatus) => void
   onDelete: (task: Task) => void
   transitioning: boolean
+  onExecute: (task: Task) => void
 }) {
+  const canExecute = task.storyStatus !== null && EXECUTABLE_STATUSES.includes(task.storyStatus)
+
   return (
     <div className="card p-3 space-y-2 text-sm">
       <div className="flex items-start justify-between gap-2">
@@ -160,7 +247,7 @@ function StoryCard({ task, onTransition, onDelete, transitioning }: {
         </div>
       )}
 
-      {task.storyStatusAllowedTransitions.length > 0 && (
+      {(task.storyStatusAllowedTransitions.length > 0 || canExecute) && (
         <div className="flex flex-wrap gap-1 pt-1 border-t border-gray-100">
           {task.storyStatusAllowedTransitions.map((next) => (
             <button
@@ -173,6 +260,16 @@ function StoryCard({ task, onTransition, onDelete, transitioning }: {
               {transitioning ? '…' : (STORY_TRANSITION_LABELS[next] ?? next)}
             </button>
           ))}
+          {canExecute && (
+            <button
+              onClick={() => onExecute(task)}
+              className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded bg-[var(--brand)] text-white hover:opacity-90 transition-opacity"
+              title="Lancer l'agent"
+            >
+              <Play className="w-2.5 h-2.5" />
+              Lancer l'agent
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -181,10 +278,16 @@ function StoryCard({ task, onTransition, onDelete, transitioning }: {
 
 // ─── Story board (Kanban) ─────────────────────────────────────────────────────
 
-function StoryBoard({ stories, onTransition, onDelete, pendingTaskId }: {
+/**
+ * Kanban board with one column per StoryStatus.
+ * Renders empty columns so the user always sees the full lifecycle.
+ * The `pendingTaskId` disables transition buttons on the card currently being updated.
+ */
+function StoryBoard({ stories, onTransition, onDelete, onExecute, pendingTaskId }: {
   stories: Task[]
   onTransition: (task: Task, status: StoryStatus) => void
   onDelete: (task: Task) => void
+  onExecute: (task: Task) => void
   pendingTaskId: string | null
 }) {
   if (stories.length === 0) {
@@ -212,6 +315,7 @@ function StoryBoard({ stories, onTransition, onDelete, pendingTaskId }: {
                   task={task}
                   onTransition={onTransition}
                   onDelete={onDelete}
+                  onExecute={onExecute}
                   transitioning={pendingTaskId === task.id}
                 />
               ))}
@@ -228,6 +332,10 @@ function StoryBoard({ stories, onTransition, onDelete, pendingTaskId }: {
 
 // ─── Task list row ────────────────────────────────────────────────────────────
 
+/**
+ * Single row for a technical task (type=task) in the task list tab.
+ * Shows status icon, type badge, priority, assigned agent/role, parent story title, and progress bar.
+ */
 function TaskRow({ task, onDelete }: {
   task: Task
   onDelete: (t: Task) => void
@@ -270,7 +378,8 @@ export default function TasksPage() {
   const [createOpen, setCreateOpen]       = useState(false)
   const [deleteTask, setDeleteTask]       = useState<Task | null>(null)
   const [transitionError, setTransitionError] = useState<string | null>(null)
-  const [pendingTaskId, setPendingTaskId] = useState<string | null>(null)
+  const [pendingTaskId, setPendingTaskId]     = useState<string | null>(null)
+  const [executeTask, setExecuteTask]         = useState<Task | null>(null)
 
   const { data: projects } = useQuery({ queryKey: ['projects'], queryFn: projectsApi.list })
   const { data: tasks, isLoading, error, refetch } = useQuery({
@@ -355,6 +464,7 @@ export default function TasksPage() {
                 stories={stories}
                 onTransition={(task, status) => transitionMutation.mutate({ id: task.id, status })}
                 onDelete={setDeleteTask}
+                onExecute={setExecuteTask}
                 pendingTaskId={pendingTaskId}
               />
             </>
@@ -385,6 +495,16 @@ export default function TasksPage() {
           onCancel={() => setCreateOpen(false)}
         />
       </Modal>
+
+      {executeTask && (
+        <Modal open={!!executeTask} onClose={() => setExecuteTask(null)} title="Lancer l'agent">
+          <ExecuteModal
+            task={executeTask}
+            onClose={() => setExecuteTask(null)}
+            onExecuted={() => { invalidate(); }}
+          />
+        </Modal>
+      )}
 
       <ConfirmDialog
         open={!!deleteTask}
