@@ -39,7 +39,8 @@
       "Bash(sudo chmod:*)",
       "Bash(sudo tee:*)",
       "Bash(sudo apt:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(python3 -c \":*)"
     ]
   }
 }

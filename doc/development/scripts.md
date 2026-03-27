@@ -24,6 +24,7 @@ php scripts/help.php migrate.php
 | `console.php` | PHP | Run a Symfony command |
 | `logs.php` | PHP | Display Docker logs |
 | `health.php` | PHP | Check application status |
+| `wsl-codex-install.sh` | Bash | Install or upgrade OpenAI Codex CLI inside WSL |
 
 ## Script Details
 
@@ -106,6 +107,24 @@ Queries the API to check the application and connector status.
 ```bash
 php scripts/health.php
 php scripts/health.php --url http://my-server:8080
+```
+
+---
+
+### `wsl-codex-install.sh`
+Installs or upgrades the OpenAI Codex CLI directly inside WSL, so it can later be started from a native Linux shell in the project.
+
+```bash
+bash scripts/wsl-codex-install.sh
+bash scripts/wsl-codex-install.sh --skip-login
+```
+
+After installation:
+
+```bash
+codex --login
+cd ~/projects/somanagent
+codex
 ```
 
 ## Script Header Convention

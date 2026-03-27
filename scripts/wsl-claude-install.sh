@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Description: install claude CLI on WSL (required for remote control in WSL)
-# Usage: ./scripts/win-install.sh
+# Usage: ./scripts/wsl-claude-install.sh
+# TODO Update to install it directly from WSL and no more from windows git bash
 
 set -euo pipefail
 
