@@ -1,0 +1,26 @@
+framework:
+    messenger:
+        failure_transport: failed
+
+        transports:
+            # Transport principal — Redis en dev/prod, configurable via .env
+            async:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                retry_strategy:
+                    max_retries: 3
+                    delay: 2000        # 2s entre les tentatives
+                    multiplier: 2      # backoff exponentiel
+
+            # File des messages échoués après max_retries
+            failed: '%env(MESSENGER_FAILED_DSN)%'
+
+        routing:
+            # Les messages d'exécution agent passent tous par le transport async
+            App\Message\AgentTaskMessage: async
+
+when@test:
+    framework:
+        messenger:
+            transports:
+                async: 'in-memory://'
+                failed: 'in-memory://'
