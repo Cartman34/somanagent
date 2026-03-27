@@ -8,8 +8,10 @@ use App\Enum\StoryStatus;
 use App\Enum\TaskPriority;
 use App\Enum\TaskStatus;
 use App\Enum\TaskType;
+use App\Repository\AgentRepository;
 use App\Repository\TaskLogRepository;
 use App\Service\ProjectService;
+use App\Service\StoryExecutionService;
 use App\Service\TaskService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -21,9 +23,11 @@ use Symfony\Component\Routing\Attribute\Route;
 class TaskController extends AbstractController
 {
     public function __construct(
-        private readonly TaskService    $taskService,
-        private readonly ProjectService $projectService,
-        private readonly TaskLogRepository $taskLogRepository,
+        private readonly TaskService           $taskService,
+        private readonly ProjectService        $projectService,
+        private readonly StoryExecutionService $storyExecutionService,
+        private readonly AgentRepository       $agentRepository,
+        private readonly TaskLogRepository     $taskLogRepository,
     ) {}
 
     #[Route('/projects/{projectId}/tasks', name: 'task_list', methods: ['GET'])]
@@ -227,6 +231,77 @@ class TaskController extends AbstractController
         }
 
         return $this->json($this->serialize($task));
+    }
+
+    /**
+     * Returns the list of available agents for executing the story in its current status.
+     * Used by the frontend to populate the agent selector before dispatching.
+     */
+    #[Route('/tasks/{id}/execute', name: 'task_execute_agents', methods: ['GET'])]
+    public function executeAgents(string $id): JsonResponse
+    {
+        $task = $this->taskService->findById($id);
+        if ($task === null) {
+            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+        }
+
+        if (!$task->isStory()) {
+            return $this->json(['error' => 'Cette tâche n\'est pas une story ou un bug.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        if (!$this->storyExecutionService->canExecute($task)) {
+            return $this->json(['error' => 'Aucune exécution automatique disponible pour ce statut.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $agents = $this->storyExecutionService->availableAgents($task);
+
+        return $this->json(array_map(fn($a) => [
+            'id'   => (string) $a->getId(),
+            'name' => $a->getName(),
+            'role' => $a->getRole() ? ['slug' => $a->getRole()->getSlug(), 'name' => $a->getRole()->getName()] : null,
+        ], $agents));
+    }
+
+    /**
+     * Dispatches an AgentTaskMessage for this story.
+     * Body: { agentId?: string }  — if omitted, the first available agent with the right role is used.
+     * Transitions the story status if required by the execution config (e.g. approved → planning).
+     */
+    #[Route('/tasks/{id}/execute', name: 'task_execute', methods: ['POST'])]
+    public function execute(string $id, Request $request): JsonResponse
+    {
+        $task = $this->taskService->findById($id);
+        if ($task === null) {
+            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+        }
+
+        if (!$task->isStory()) {
+            return $this->json(['error' => 'Cette tâche n\'est pas une story ou un bug.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $data  = $request->toArray();
+        $agent = null;
+
+        if (!empty($data['agentId'])) {
+            $agent = $this->agentRepository->find($data['agentId']);
+            if ($agent === null) {
+                return $this->json(['error' => 'Agent introuvable.'], Response::HTTP_NOT_FOUND);
+            }
+        }
+
+        try {
+            $result = $this->storyExecutionService->execute($task, $agent);
+        } catch (\RuntimeException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (\LogicException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        return $this->json([
+            'task'  => $this->serialize($task),
+            'agent' => ['id' => (string) $result['agent']->getId(), 'name' => $result['agent']->getName()],
+            'skill' => $result['skill'],
+        ]);
     }
 
     #[Route('/tasks/{id}', name: 'task_delete', methods: ['DELETE'])]
