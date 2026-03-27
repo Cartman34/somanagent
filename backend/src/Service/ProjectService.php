@@ -62,12 +62,8 @@ class ProjectService
     {
         $project->setName($name)->setDescription($description)->setRepositoryUrl($repositoryUrl);
 
-        if ($teamId !== null) {
-            $team = $this->teamRepository->find(Uuid::fromString($teamId));
-            $project->setTeam($team);
-        } else {
-            $project->setTeam(null);
-        }
+        $team = $teamId !== null ? $this->teamRepository->find(Uuid::fromString($teamId)) : null;
+        $project->setTeam($team);
 
         $this->em->flush();
         $this->audit->log(AuditAction::ProjectUpdated, 'Project', (string) $project->getId(), ['name' => $name]);

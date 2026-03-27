@@ -92,12 +92,10 @@ class AgentRepository extends ServiceEntityRepository
             ->createQuery(
                 'SELECT COUNT(l.id) FROM App\Entity\TaskLog l
                  JOIN l.task t
-                 WHERE t.assignedAgent = :agent AND l.action LIKE :pattern
-                 ORDER BY l.createdAt DESC'
+                 WHERE t.assignedAgent = :agent AND l.action LIKE :pattern'
             )
             ->setParameter('agent', $agent)
             ->setParameter('pattern', '%error%')
-            ->setMaxResults(1)
             ->getSingleScalarResult();
 
         return $count > 0;
