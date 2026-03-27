@@ -7,6 +7,7 @@ export interface Project {
   name: string
   description: string | null
   repositoryUrl: string | null
+  team: { id: string; name: string } | null
   modules: number | Module[]
   createdAt: string
   updatedAt: string
@@ -176,6 +177,13 @@ export interface Workflow {
   steps: WorkflowStep[] | number
   createdAt: string
   updatedAt: string
+}
+
+export type AgentRuntimeStatus = 'working' | 'idle' | 'error'
+
+export interface AgentStatus {
+  status: AgentRuntimeStatus
+  activeTaskCount: number
 }
 
 export interface AuditLog {

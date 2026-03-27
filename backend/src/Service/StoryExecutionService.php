@@ -10,17 +10,24 @@ use App\Entity\TaskLog;
 use App\Enum\StoryStatus;
 use App\Message\AgentTaskMessage;
 use App\Repository\AgentRepository;
+use App\Repository\WorkflowStepRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 
 /**
  * Orchestrates the agent execution for a user story or bug.
  *
- * Maps the current storyStatus to the appropriate agent role and skill,
- * optionally advances the story to its next status, then dispatches an
- * AgentTaskMessage to the async Messenger transport (Redis).
+ * Maps the current storyStatus to the appropriate agent role and skill via two strategies,
+ * applied in priority order:
  *
- * Supported states:
+ *  1. **Workflow-driven (F3):** if the story's project has a team with a workflow containing
+ *     a step whose `storyStatusTrigger` matches the current storyStatus, that step's
+ *     roleSlug and skillSlug are used, and the agent search is scoped to the team (F2).
+ *
+ *  2. **Hardcoded fallback (backwards-compatible):** if no workflow step is found, the
+ *     built-in EXECUTION_MAP is used with a global agent search.
+ *
+ * Supported statuses:
  *  - approved      → lead-tech  / tech-planning   → transitions to planning
  *  - graphic_design → ui-ux-designer / ui-design  → stays (agent completes after)
  *  - development   → php-dev   / php-backend-dev  → stays (agent completes after)
@@ -29,7 +36,8 @@ use Symfony\Component\Messenger\MessageBusInterface;
 final class StoryExecutionService
 {
     /**
-     * Maps storyStatus.value → [roleSlug, skillSlug, ?StoryStatus to transition to before dispatch].
+     * Fallback mapping: storyStatus.value → [roleSlug, skillSlug, ?StoryStatus to transition to].
+     * Used when no matching workflow step is found for the project's team.
      *
      * @var array<string, array{role: string, skill: string, transition: StoryStatus|null}>
      */
@@ -42,25 +50,46 @@ final class StoryExecutionService
 
     public function __construct(
         private readonly AgentRepository        $agentRepository,
+        private readonly WorkflowStepRepository $workflowStepRepository,
         private readonly MessageBusInterface    $bus,
         private readonly EntityManagerInterface $em,
     ) {}
 
     /**
-     * Checks whether this story's current status has an automated execution defined.
+     * Checks whether this story's current status has an automated execution defined
+     * (either via a workflow step or the hardcoded fallback map).
+     *
+     * @param Task $story The story or bug to check
+     * @return bool       True if automated execution is available
      */
     public function canExecute(Task $story): bool
     {
-        return $story->isStory()
-            && $story->getStoryStatus() !== null
-            && isset(self::EXECUTION_MAP[$story->getStoryStatus()->value]);
+        if (!$story->isStory() || $story->getStoryStatus() === null) {
+            return false;
+        }
+
+        $storyStatus = $story->getStoryStatus();
+
+        // Check workflow-driven config first (F3)
+        $team = $story->getProject()->getTeam();
+        if ($team !== null) {
+            $step = $this->workflowStepRepository->findByTeamAndStoryStatus($team, $storyStatus);
+            if ($step !== null && $step->getRoleSlug() !== null && $step->getSkillSlug() !== null) {
+                return true;
+            }
+        }
+
+        // Fall back to hardcoded map
+        return isset(self::EXECUTION_MAP[$storyStatus->value]);
     }
 
     /**
-     * Returns the available agents for this story's current status, or an empty array
-     * if no execution config exists for the current status.
+     * Returns the available agents for this story's current status.
+     * Agents are scoped to the project's team when one is assigned (F2), otherwise global.
+     * Returns an empty array if no execution config exists for the current status.
      *
-     * @return Agent[]
+     * @param Task $story The story or bug
+     * @return Agent[]    Available agents for execution
      */
     public function availableAgents(Task $story): array
     {
@@ -68,8 +97,14 @@ final class StoryExecutionService
             return [];
         }
 
-        $config = self::EXECUTION_MAP[$story->getStoryStatus()->value];
-        return $this->agentRepository->findActiveByRoleSlug($config['role']);
+        ['role' => $roleSlug] = $this->resolveConfig($story);
+        $team = $story->getProject()->getTeam();
+
+        if ($team !== null) {
+            return $this->agentRepository->findActiveByRoleSlugAndTeam($roleSlug, $team);
+        }
+
+        return $this->agentRepository->findActiveByRoleSlug($roleSlug);
     }
 
     /**
@@ -79,6 +114,8 @@ final class StoryExecutionService
      * - Optionally transitions the story status before dispatching
      * - Dispatches an AgentTaskMessage to the async transport
      *
+     * @param Task       $story The story or bug to execute
+     * @param Agent|null $agent Specific agent to use, or null to auto-select
      * @throws \RuntimeException if no execution config or no available agent
      * @throws \LogicException   if the story status transition is not allowed
      *
@@ -92,36 +129,77 @@ final class StoryExecutionService
             );
         }
 
-        $config = self::EXECUTION_MAP[$story->getStoryStatus()->value];
+        ['role' => $roleSlug, 'skill' => $skillSlug, 'transition' => $transition] = $this->resolveConfig($story);
+        $team = $story->getProject()->getTeam();
 
         if ($agent === null) {
-            $agents = $this->agentRepository->findActiveByRoleSlug($config['role']);
+            $agents = $team !== null
+                ? $this->agentRepository->findActiveByRoleSlugAndTeam($roleSlug, $team)
+                : $this->agentRepository->findActiveByRoleSlug($roleSlug);
+
             if (empty($agents)) {
                 throw new \RuntimeException(
-                    sprintf('No active agent found with role "%s".', $config['role'])
+                    sprintf(
+                        'No active agent found with role "%s"%s.',
+                        $roleSlug,
+                        $team !== null ? ' in team "' . $team->getName() . '"' : ''
+                    )
                 );
             }
             $agent = $agents[0];
         }
 
         // Transition story status if needed (e.g. approved → planning)
-        if ($config['transition'] !== null) {
-            $story->transitionStoryTo($config['transition']);
+        if ($transition !== null) {
+            $story->transitionStoryTo($transition);
         }
 
         $this->em->persist(new TaskLog(
             $story,
             'execution_dispatched',
-            sprintf('Agent %s dispatché avec le skill %s', $agent->getName(), $config['skill']),
+            sprintf('Agent %s dispatché avec le skill %s', $agent->getName(), $skillSlug),
         ));
         $this->em->flush();
 
         $this->bus->dispatch(new AgentTaskMessage(
             taskId:    (string) $story->getId(),
             agentId:   (string) $agent->getId(),
-            skillSlug: $config['skill'],
+            skillSlug: $skillSlug,
         ));
 
-        return ['agent' => $agent, 'skill' => $config['skill']];
+        return ['agent' => $agent, 'skill' => $skillSlug];
+    }
+
+    /**
+     * Resolves the execution configuration (roleSlug, skillSlug, transition) for the story's
+     * current status. Tries workflow-driven config first (F3), falls back to EXECUTION_MAP.
+     *
+     * @param Task $story The story whose storyStatus drives the lookup
+     * @return array{role: string, skill: string, transition: StoryStatus|null}
+     * @throws \RuntimeException if no config is found (should be gated by canExecute())
+     */
+    private function resolveConfig(Task $story): array
+    {
+        $storyStatus = $story->getStoryStatus();
+        $team        = $story->getProject()->getTeam();
+
+        if ($team !== null) {
+            $step = $this->workflowStepRepository->findByTeamAndStoryStatus($team, $storyStatus);
+            if ($step !== null && $step->getRoleSlug() !== null && $step->getSkillSlug() !== null) {
+                return [
+                    'role'       => $step->getRoleSlug(),
+                    'skill'      => $step->getSkillSlug(),
+                    'transition' => null, // workflow steps do not define auto-transitions yet
+                ];
+            }
+        }
+
+        if (!isset(self::EXECUTION_MAP[$storyStatus->value])) {
+            throw new \RuntimeException(
+                sprintf('No execution config for storyStatus "%s".', $storyStatus->value)
+            );
+        }
+
+        return self::EXECUTION_MAP[$storyStatus->value];
     }
 }

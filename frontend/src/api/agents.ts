@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { Agent, AgentConfig } from '@/types'
+import type { Agent, AgentConfig, AgentStatus } from '@/types'
 
 export interface AgentPayload {
   name: string
@@ -33,5 +33,14 @@ export const agentsApi = {
 
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/agents/${id}`)
+  },
+
+  /**
+   * Returns the derived runtime status of an agent.
+   * Status is computed server-side from active tasks and recent error logs.
+   */
+  getStatus: async (id: string): Promise<AgentStatus> => {
+    const { data } = await apiClient.get(`/agents/${id}/status`)
+    return data
   },
 }

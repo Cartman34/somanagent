@@ -9,6 +9,7 @@ use App\Entity\Project;
 use App\Enum\AuditAction;
 use App\Repository\ModuleRepository;
 use App\Repository\ProjectRepository;
+use App\Repository\TeamRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -18,22 +19,56 @@ class ProjectService
         private readonly EntityManagerInterface $em,
         private readonly ProjectRepository      $projectRepository,
         private readonly ModuleRepository       $moduleRepository,
+        private readonly TeamRepository         $teamRepository,
         private readonly AuditService           $audit,
     ) {}
 
-    public function create(string $name, ?string $description = null, ?string $repositoryUrl = null): Project
+    /**
+     * Creates a new project and optionally assigns a team.
+     *
+     * @param string      $name          Project name
+     * @param string|null $description   Optional description
+     * @param string|null $repositoryUrl Optional repository URL
+     * @param string|null $teamId        Optional team UUID to assign
+     */
+    public function create(string $name, ?string $description = null, ?string $repositoryUrl = null, ?string $teamId = null): Project
     {
         $project = new Project($name, $description);
         $project->setRepositoryUrl($repositoryUrl);
+
+        if ($teamId !== null) {
+            $team = $this->teamRepository->find(Uuid::fromString($teamId));
+            if ($team !== null) {
+                $project->setTeam($team);
+            }
+        }
+
         $this->em->persist($project);
         $this->em->flush();
         $this->audit->log(AuditAction::ProjectCreated, 'Project', (string) $project->getId(), ['name' => $name]);
         return $project;
     }
 
-    public function update(Project $project, string $name, ?string $description, ?string $repositoryUrl = null): Project
+    /**
+     * Updates an existing project's fields and optionally reassigns its team.
+     *
+     * @param Project     $project       Project to update
+     * @param string      $name          New name
+     * @param string|null $description   New description (null clears it)
+     * @param string|null $repositoryUrl New repository URL (null clears it)
+     * @param string|null $teamId        Team UUID to assign, or null to detach current team
+     */
+    public function update(Project $project, string $name, ?string $description, ?string $repositoryUrl = null, ?string $teamId = null): Project
     {
         $project->setName($name)->setDescription($description)->setRepositoryUrl($repositoryUrl);
+
+        if ($teamId !== null) {
+            $team = $this->teamRepository->find(Uuid::fromString($teamId));
+            $project->setTeam($team);
+        } else {
+            $project->setTeam(null);
+        }
+
         $this->em->flush();
         $this->audit->log(AuditAction::ProjectUpdated, 'Project', (string) $project->getId(), ['name' => $name]);
         return $project;

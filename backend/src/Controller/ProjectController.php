@@ -24,6 +24,7 @@ class ProjectController extends AbstractController
             'name'          => $p->getName(),
             'description'   => $p->getDescription(),
             'repositoryUrl' => $p->getRepositoryUrl(),
+            'team'          => $p->getTeam() ? ['id' => (string) $p->getTeam()->getId(), 'name' => $p->getTeam()->getName()] : null,
             'modules'       => $p->getModules()->count(),
             'createdAt'     => $p->getCreatedAt()->format(\DateTimeInterface::ATOM),
             'updatedAt'     => $p->getUpdatedAt()->format(\DateTimeInterface::ATOM),
@@ -42,6 +43,7 @@ class ProjectController extends AbstractController
             $data['name'],
             $data['description'] ?? null,
             $data['repositoryUrl'] ?? null,
+            $data['teamId'] ?? null,
         );
 
         return $this->json([
@@ -49,6 +51,7 @@ class ProjectController extends AbstractController
             'name'          => $project->getName(),
             'description'   => $project->getDescription(),
             'repositoryUrl' => $project->getRepositoryUrl(),
+            'team'          => $project->getTeam() ? ['id' => (string) $project->getTeam()->getId(), 'name' => $project->getTeam()->getName()] : null,
             'createdAt'     => $project->getCreatedAt()->format(\DateTimeInterface::ATOM),
         ], Response::HTTP_CREATED);
     }
@@ -66,6 +69,7 @@ class ProjectController extends AbstractController
             'name'          => $project->getName(),
             'description'   => $project->getDescription(),
             'repositoryUrl' => $project->getRepositoryUrl(),
+            'team'          => $project->getTeam() ? ['id' => (string) $project->getTeam()->getId(), 'name' => $project->getTeam()->getName()] : null,
             'modules'       => array_map(fn($m) => [
                 'id'            => (string) $m->getId(),
                 'name'          => $m->getName(),
@@ -93,8 +97,13 @@ class ProjectController extends AbstractController
             $data['name'] ?? $project->getName(),
             $data['description'] ?? null,
             $data['repositoryUrl'] ?? null,
+            array_key_exists('teamId', $data) ? ($data['teamId'] ?: null) : ($project->getTeam() ? (string) $project->getTeam()->getId() : null),
         );
-        return $this->json(['id' => (string) $project->getId(), 'name' => $project->getName()]);
+        return $this->json([
+            'id'   => (string) $project->getId(),
+            'name' => $project->getName(),
+            'team' => $project->getTeam() ? ['id' => (string) $project->getTeam()->getId(), 'name' => $project->getTeam()->getName()] : null,
+        ]);
     }
 
     #[Route('/{id}', name: 'project_delete', methods: ['DELETE'])]
