@@ -12,4 +12,9 @@ enum TaskStatus: string
     case Review     = 'review';
     case Done       = 'done';
     case Cancelled  = 'cancelled';
+
+    public function isDone(): bool
+    {
+        return $this === self::Done || $this === self::Cancelled;
+    }
 }

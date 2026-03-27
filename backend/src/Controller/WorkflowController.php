@@ -26,7 +26,9 @@ class WorkflowController extends AbstractController
             'description' => $w->getDescription(),
             'trigger'     => $w->getTrigger()->value,
             'team'        => $w->getTeam() ? ['id' => (string) $w->getTeam()->getId(), 'name' => $w->getTeam()->getName()] : null,
-            'isActive'    => $w->isActive(),
+            'status'      => $w->getStatus()->value,
+            'isEditable'  => $w->isEditable(),
+            'isUsable'    => $w->isUsable(),
             'steps'       => $w->getSteps()->count(),
             'createdAt'   => $w->getCreatedAt()->format(\DateTimeInterface::ATOM),
         ], $this->workflowService->findAll()));
@@ -40,20 +42,15 @@ class WorkflowController extends AbstractController
             return $this->json(['error' => 'The "name" field is required.'], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $trigger = WorkflowTrigger::tryFrom($data['trigger'] ?? 'manual') ?? WorkflowTrigger::Manual;
-
+        $trigger  = WorkflowTrigger::tryFrom($data['trigger'] ?? 'manual') ?? WorkflowTrigger::Manual;
         $workflow = $this->workflowService->create(
             $data['name'],
             $trigger,
             $data['description'] ?? null,
             $data['teamId'] ?? null,
-            $data['isActive'] ?? true,
         );
 
-        return $this->json([
-            'id'   => (string) $workflow->getId(),
-            'name' => $workflow->getName(),
-        ], Response::HTTP_CREATED);
+        return $this->json(['id' => (string) $workflow->getId(), 'name' => $workflow->getName()], Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', name: 'workflow_get', methods: ['GET'])]
@@ -70,7 +67,9 @@ class WorkflowController extends AbstractController
             'description' => $workflow->getDescription(),
             'trigger'     => $workflow->getTrigger()->value,
             'team'        => $workflow->getTeam() ? ['id' => (string) $workflow->getTeam()->getId(), 'name' => $workflow->getTeam()->getName()] : null,
-            'isActive'    => $workflow->isActive(),
+            'status'      => $workflow->getStatus()->value,
+            'isEditable'  => $workflow->isEditable(),
+            'isUsable'    => $workflow->isUsable(),
             'steps'       => array_map(fn($s) => [
                 'id'          => (string) $s->getId(),
                 'stepOrder'   => $s->getStepOrder(),
@@ -80,8 +79,6 @@ class WorkflowController extends AbstractController
                 'inputConfig' => $s->getInputConfig(),
                 'outputKey'   => $s->getOutputKey(),
                 'condition'   => $s->getCondition(),
-                'status'      => $s->getStatus()->value,
-                'lastOutput'  => $s->getLastOutput(),
             ], $workflow->getSteps()->toArray()),
             'createdAt'   => $workflow->getCreatedAt()->format(\DateTimeInterface::ATOM),
             'updatedAt'   => $workflow->getUpdatedAt()->format(\DateTimeInterface::ATOM),
@@ -96,6 +93,10 @@ class WorkflowController extends AbstractController
             return $this->json(['error' => 'Workflow not found.'], Response::HTTP_NOT_FOUND);
         }
 
+        if (!$workflow->isEditable()) {
+            return $this->json(['error' => 'This workflow is locked and cannot be modified.'], Response::HTTP_CONFLICT);
+        }
+
         $data    = $request->toArray();
         $trigger = WorkflowTrigger::tryFrom($data['trigger'] ?? $workflow->getTrigger()->value) ?? $workflow->getTrigger();
 
@@ -105,10 +106,26 @@ class WorkflowController extends AbstractController
             $trigger,
             $data['description'] ?? null,
             $data['teamId'] ?? null,
-            $data['isActive'] ?? $workflow->isActive(),
         );
 
         return $this->json(['id' => (string) $workflow->getId(), 'name' => $workflow->getName()]);
+    }
+
+    #[Route('/{id}/validate', name: 'workflow_validate', methods: ['POST'])]
+    public function validate(string $id): JsonResponse
+    {
+        $workflow = $this->workflowService->findById($id);
+        if ($workflow === null) {
+            return $this->json(['error' => 'Workflow not found.'], Response::HTTP_NOT_FOUND);
+        }
+
+        try {
+            $this->workflowService->validate($workflow);
+        } catch (\LogicException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_CONFLICT);
+        }
+
+        return $this->json(['id' => (string) $workflow->getId(), 'status' => $workflow->getStatus()->value]);
     }
 
     #[Route('/{id}', name: 'workflow_delete', methods: ['DELETE'])]
@@ -117,6 +134,10 @@ class WorkflowController extends AbstractController
         $workflow = $this->workflowService->findById($id);
         if ($workflow === null) {
             return $this->json(['error' => 'Workflow not found.'], Response::HTTP_NOT_FOUND);
+        }
+
+        if (!$workflow->isEditable()) {
+            return $this->json(['error' => 'This workflow is locked and cannot be deleted.'], Response::HTTP_CONFLICT);
         }
 
         $this->workflowService->delete($workflow);
