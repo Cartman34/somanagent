@@ -6,7 +6,7 @@
 
 A workflow is a **reusable automation template** — a sequence of steps executed by agents in a defined order. Each step assigns a task to an agent (identified by its role), providing the right skill and the right context.
 
-> **Important distinction:** A Workflow is a *template* that defines *how* an automation runs. It is not the same as a Story's lifecycle. A Story has a `storyStatus` field that tracks *where it is* in development. In a future milestone (F3), story execution will be driven by workflow steps instead of the current hardcoded mapping.
+> **Important distinction:** A Workflow is a *template* that defines *how* an automation runs. It is not the same as a Story's lifecycle. A Story has a `storyStatus` field that tracks *where it is* in development. Each workflow step has a `storyStatusTrigger` field that links it to the appropriate stage of the story lifecycle.
 
 → See [Key Concepts — Workflow Template vs Story Lifecycle](concepts.md#workflow-template-vs-story-lifecycle)
 
@@ -83,6 +83,31 @@ Then add the steps (to be defined).
 { "source": "previous_step", "key": "review_report" }  // Output of a previous step
 { "source": "manual", "prompt": "Your text..." }        // Manually entered text
 ```
+
+## Workflow Status
+
+A workflow has a lifecycle of its own, independent of the story lifecycle:
+
+| Status | Description | Editable | Usable |
+|---|---|---|---|
+| `draft` | Being configured | ✅ Yes | ❌ No |
+| `validated` | Ready for story execution | ❌ No | ✅ Yes |
+| `locked` | Locked (currently executing) | ❌ No | ✅ Yes |
+
+**Validating a workflow:** On the workflow detail page, a "Valider" button appears when the status is `draft`. Clicking it calls `POST /api/workflows/{id}/validate` and transitions the workflow to `validated`.
+
+## Visual Lifecycle Pipeline
+
+The workflow detail page displays a **visual pipeline** showing the full story lifecycle (`new → ready → approved → planning → graphic_design → development → code_review → done`). Each stage where a workflow step has a matching `storyStatusTrigger` is highlighted (brand colour), showing the assigned role and skill. Stages without a matching step appear as muted numbered nodes.
+
+This gives a clear overview of which stages are automated and which require manual intervention.
+
+## Step Fields
+
+Each step includes:
+- `storyStatusTrigger` — the story status that triggers this step (e.g. `approved`, `development`)
+- `status` — step execution state (`pending`, `running`, `done`, `error`, `skipped`)
+- `lastOutput` — last output produced by this step
 
 ## Step Statuses
 

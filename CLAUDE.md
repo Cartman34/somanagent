@@ -4,7 +4,7 @@
 
 **SoManAgent** is an agent orchestration platform that manages autonomous AI agents, their skills, workflows, and team assignments.
 
-**Current Phase:** Phase 3 complete — Story lifecycle + async agent execution. UX Sprint pending.
+**Current Phase:** UX Sprints 1–3 complete — Project Hub, Monitoring, Workflow Visual UI. Phase 4 (VCS) next.
 
 ---
 
@@ -42,7 +42,7 @@ somanagent/                      # Project Root
 │       ├── components/
 │       │   ├── layout/          # Sidebar, TopBar (themed with CSS variables)
 │       │   └── ui/              # Modal, ConfirmDialog, EmptyState, PageHeader, etc.
-│       ├── pages/               # DashboardPage, ProjectsPage, TeamsPage, AgentsPage, SkillsPage, WorkflowsPage, AuditPage
+│       ├── pages/               # DashboardPage, ProjectsPage, ProjectDetailPage (7-tab hub), TeamsPage, AgentsPage, SkillsPage, WorkflowsPage, AuditPage
 │       ├── hooks/               # useTheme (localStorage-persisted theme switching)
 │       └── index.css            # Tailwind + theme tokens (Terminal default) + gray remapping
 ├── backend/                     # Symfony REST API
@@ -179,8 +179,11 @@ All endpoints return JSON, versioned if needed.
 - `GET /api/teams`, `POST /api/teams`, `PUT /api/teams/{id}`, `DELETE /api/teams/{id}`
 - `GET /api/agents`, `POST /api/agents`, `PUT /api/agents/{id}`, `DELETE /api/agents/{id}`
 - `GET /api/skills`, `POST /api/skills`, `PUT /api/skills/{id}`, `DELETE /api/skills/{id}`, `POST /api/skills/{id}/content`
-- `GET /api/workflows`, `POST /api/workflows`, `PUT /api/workflows/{id}`, `DELETE /api/workflows/{id}`
-- `GET /api/audit` - Paginated audit log
+- `GET /api/workflows`, `POST /api/workflows`, `PUT /api/workflows/{id}`, `DELETE /api/workflows/{id}`, `POST /api/workflows/{id}/validate`
+- `GET /api/projects/{id}/audit` - Project audit log (paginated, filtered on project + its tasks)
+- `GET /api/projects/{id}/tokens` - Token usage summary + entries for a project
+- `GET /api/tasks/{id}` - Task detail with `children`, `logs`, and `tokenUsage`
+- `GET /api/audit` - Global paginated audit log
 
 ### Services
 - `ProjectService`, `TeamService`, `AgentService`, `SkillService`, `WorkflowService`
@@ -400,17 +403,17 @@ new → ready → approved → planning → [graphic_design →] development →
 - **`StoryStatus`** = the actual lifecycle state of a user story. It lives on the `Task` entity. Managed by `TaskService::transitionStory()`.
 - **`Workflow`** = a reusable *template* that describes which agent roles execute at each automated stage. It is a configuration object, not an execution record.
 
-The `Workflow` is assigned to a `Team`. When a project uses a team, its workflow template defines the `(roleSlug, skillSlug)` mapping for each story stage. Currently `StoryExecutionService` has this mapping **hardcoded** — migrating it to read from the project's workflow is a planned fix (F3).
+The `Workflow` is assigned to a `Team`. When a project uses a team, its workflow template defines the `(roleSlug, skillSlug)` mapping for each story stage. Currently `StoryExecutionService` has this mapping **hardcoded** — migrating it to read from the project's workflow is a planned fix (F3, Phase 4).
+
+A workflow has a `status` field (`draft` → `validated` → `locked`). Only `validated` and `locked` workflows are usable for story execution. The Validate button is available in the workflow detail page when status is `draft`.
 
 ---
 
 ## Project → Team Relationship (known gap)
 
-**Current state:** `Project` has no `team_id` in the database. `StoryExecutionService` finds agents globally (any active agent with the right role).
+**Current state:** `Project` has a `team_id` column (added in Foundations F1). `StoryExecutionService` scopes agent search to the project's team (F2).
 
-**Planned fix (F1 + F2):** Add `Project.team` (ManyToOne → Team) + migration, then scope `StoryExecutionService` to the project's team.
-
-**Impact:** Until F1 is done, all active agents with the right role are eligible for story execution, regardless of project.
+**Remaining:** `StoryExecutionService` still uses a hardcoded roleSlug/skillSlug map (F3 — reads from workflow steps — planned for Phase 4).
 
 ---
 
@@ -430,40 +433,40 @@ Computed in the API response for the project team view.
 
 ## Roadmap
 
-### Foundations (blocking UX)
+### Foundations (F1–F4) — DONE
 
-| ID | Task |
-|---|---|
-| F1 | Add `Project.team` (ManyToOne → Team) + Doctrine migration |
-| F2 | `StoryExecutionService`: scope agent search to project's team |
-| F3 | `StoryExecutionService`: read roleSlug/skillSlug from workflow steps instead of hardcoded map |
-| F4 | Agent runtime status endpoint (derived from task/tasklog state) |
+| ID | Task | Status |
+|---|---|---|
+| F1 | Add `Project.team` (ManyToOne → Team) + Doctrine migration | ✅ Done |
+| F2 | `StoryExecutionService`: scope agent search to project's team | ✅ Done |
+| F3 | `StoryExecutionService`: read roleSlug/skillSlug from workflow steps | ✅ Done |
+| F4 | Agent runtime status endpoint (derived from task/tasklog state) | ✅ Done |
 
-### UX Sprint 1 — Project Hub
+### UX Sprint 1 — Project Hub — DONE
 
-| ID | Task |
-|---|---|
-| U1 | Remove Features and Tasks from sidebar — navigation only from project page |
-| U2 | Project page: **General** tab — assign team + workflow |
-| U3 | Project page: **Board** tab — story kanban (storyStatus columns) + backlog toggle |
-| U4 | Project page: **Tâches** tab — technical subtasks generated by agents |
-| U5 | Project page: **Équipe** tab — agents, roles, skills readable, `idle/working/error` status |
-| U6 | Project page: **Modules** tab — add / archive modules |
+| ID | Task | Status |
+|---|---|---|
+| U1 | Remove Features and Tasks from sidebar — navigation only from project page | ✅ Done |
+| U2 | Project page: **General** tab — assign team + workflow | ✅ Done |
+| U3 | Project page: **Board** tab — story kanban (storyStatus columns) + backlog toggle | ✅ Done |
+| U4 | Project page: **Tâches** tab — technical subtasks generated by agents | ✅ Done |
+| U5 | Project page: **Équipe** tab — agents, roles, skills readable, `idle/working/error` status | ✅ Done |
+| U6 | Project page: **Modules** tab — add / archive modules | ✅ Done |
 
-### UX Sprint 2 — Monitoring
+### UX Sprint 2 — Monitoring — DONE
 
-| ID | Task |
-|---|---|
-| U7 | Project page: **Audit** tab — filtered on project tasks |
-| U8 | Project page: **Tokens** tab — token usage by task / by agent |
-| U9 | Task detail drawer — description, storyStatus, logs, errors, subtasks, token consumption |
+| ID | Task | Status |
+|---|---|---|
+| U7 | Project page: **Audit** tab — filtered on project tasks | ✅ Done |
+| U8 | Project page: **Tokens** tab — token usage by task / by agent | ✅ Done |
+| U9 | Task detail drawer — description, storyStatus, logs, errors, subtasks, token consumption | ✅ Done |
 
-### UX Sprint 3 — Workflow UI
+### UX Sprint 3 — Workflow Visual UI — DONE
 
-| ID | Task |
-|---|---|
-| U10 | Workflow page: visual full lifecycle (`new → ready → approved → steps → done`), agent steps highlighted |
-| U11 | Workflow page: show `draft/validated/locked` status + Validate button |
+| ID | Task | Status |
+|---|---|---|
+| U10 | Workflow page: visual lifecycle pipeline (`new → … → done`), agent steps highlighted | ✅ Done |
+| U11 | Workflow page: `draft/validated/locked` status badge + Validate button | ✅ Done |
 
 ### Phase 4 — VCS
 

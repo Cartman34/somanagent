@@ -219,6 +219,20 @@ Détail des appels pour un agent.
 ### `GET /api/workflows` · `POST /api/workflows`
 ### `GET /api/workflows/{id}` · `PUT /api/workflows/{id}` · `DELETE /api/workflows/{id}`
 
+### `POST /api/workflows/{id}/validate`
+Passe le workflow du statut `draft` à `validated`. Retourne `{ id, status }`.
+Erreur 409 si le workflow n'est pas en statut `draft` ou ne remplit pas les conditions de validation.
+
+### Statuts de workflow
+
+| Statut | Description |
+|---|---|
+| `draft` | En cours de configuration — modifiable |
+| `validated` | Validé — utilisable pour l'exécution de stories |
+| `locked` | Verrouillé (en cours d'exécution) — non modifiable |
+
+Les champs `isEditable` (draft) et `isUsable` (validated ou locked) sont retournés par l'API pour piloter l'interface.
+
 ---
 
 ## Audit
