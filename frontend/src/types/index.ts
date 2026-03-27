@@ -100,6 +100,7 @@ export interface Feature {
 export type TaskType     = 'user_story' | 'bug' | 'task'
 export type TaskStatus   = 'backlog' | 'todo' | 'in_progress' | 'review' | 'done' | 'cancelled'
 export type TaskPriority = 'low' | 'medium' | 'high' | 'critical'
+export type StoryStatus  = 'new' | 'ready' | 'approved' | 'planning' | 'graphic_design' | 'development' | 'code_review' | 'done'
 
 export interface Task {
   id: string
@@ -107,11 +108,16 @@ export interface Task {
   description: string | null
   type: TaskType
   status: TaskStatus
+  storyStatus: StoryStatus | null
+  storyStatusAllowedTransitions: StoryStatus[]
   priority: TaskPriority
   progress: number
+  branchName: string | null
   feature: { id: string; name: string } | null
   parent: { id: string; title: string } | null
   assignedAgent: { id: string; name: string } | null
+  assignedRole: { id: string; name: string; slug: string } | null
+  addedBy: { id: string; name: string } | null
   children?: Task[]
   logs?: TaskLog[]
   createdAt: string

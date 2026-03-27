@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { Task, TaskStatus, TaskPriority, TaskType } from '@/types'
+import type { Task, TaskStatus, TaskPriority, TaskType, StoryStatus } from '@/types'
 
 export interface TaskPayload {
   title: string
@@ -59,6 +59,11 @@ export const tasksApi = {
 
   requestValidation: async (id: string, comment?: string): Promise<Task> => {
     const { data } = await apiClient.post(`/tasks/${id}/request-validation`, { comment })
+    return data
+  },
+
+  transitionStory: async (id: string, status: StoryStatus): Promise<Task> => {
+    const { data } = await apiClient.post(`/tasks/${id}/story-transition`, { status })
     return data
   },
 
