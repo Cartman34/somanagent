@@ -165,8 +165,11 @@ export interface WorkflowStep {
   outputKey: string
   condition: string | null
   status: 'pending' | 'running' | 'done' | 'error' | 'skipped'
+  storyStatusTrigger: string | null
   lastOutput: string | null
 }
+
+export type WorkflowStatus = 'draft' | 'validated' | 'locked'
 
 export interface Workflow {
   id: string
@@ -174,6 +177,9 @@ export interface Workflow {
   description: string | null
   trigger: 'manual' | 'vcs_event' | 'scheduled'
   team: { id: string; name: string } | null
+  status: WorkflowStatus
+  isEditable: boolean
+  isUsable: boolean
   isActive: boolean
   steps: WorkflowStep[] | number
   createdAt: string

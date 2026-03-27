@@ -33,4 +33,10 @@ export const workflowsApi = {
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/workflows/${id}`)
   },
+
+  /** Transitions a draft workflow to 'validated' status. */
+  validate: async (id: string): Promise<{ id: string; status: string }> => {
+    const { data } = await apiClient.post(`/workflows/${id}/validate`)
+    return data
+  },
 }
