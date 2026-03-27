@@ -4,7 +4,11 @@
 
 ## What is a workflow?
 
-A workflow is a **sequence of steps** executed by agents in a defined order. Each step assigns a task to an agent (identified by its role), providing the right skill and the right context.
+A workflow is a **reusable automation template** — a sequence of steps executed by agents in a defined order. Each step assigns a task to an agent (identified by its role), providing the right skill and the right context.
+
+> **Important distinction:** A Workflow is a *template* that defines *how* an automation runs. It is not the same as a Story's lifecycle. A Story has a `storyStatus` field that tracks *where it is* in development. In a future milestone (F3), story execution will be driven by workflow steps instead of the current hardcoded mapping.
+
+→ See [Key Concepts — Workflow Template vs Story Lifecycle](concepts.md#workflow-template-vs-story-lifecycle)
 
 ## Triggers
 

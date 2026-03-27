@@ -12,7 +12,9 @@ A **Project** represents an overall software product (e.g. "MySaaS", "MobileApp"
 
 - A project has a name and an optional description
 - A project contains one or more **Modules**
-- A project can be associated with one or more **Teams**
+- A project is associated with exactly one **Team** (planned: currently not yet stored in DB — see [Roadmap F1](#roadmap))
+
+> **Note (gap):** The data model does not yet link Project → Team. The `StoryExecutionService` currently uses a hardcoded role mapping instead of reading the workflow steps from the project's team. This will be fixed in foundation milestone F1–F3.
 
 ---
 
@@ -65,6 +67,39 @@ An Agent:
 - Has an active/inactive status
 
 An Agent corresponds to "an AI with its parameters". Multiple agents can use the same connector with different configurations (e.g. a "creative" agent with high temperature, a "precise" agent with low temperature).
+
+### Agent Runtime Status
+
+An agent's runtime status is **derived** from its task and log history — no dedicated field is stored:
+
+| Status | Condition |
+|---|---|
+| `working` | Has at least one task with status `in_progress` |
+| `error` | Has a recent `TaskLog` entry with action `execution_error` (and no subsequent `in_progress` task) |
+| `idle` | Neither of the above |
+
+→ Endpoint: `GET /api/agents/{id}/status` (planned — Foundation F4)
+
+---
+
+## Story / Bug
+
+A **Story** (user story) or **Bug** is a task of type `story` or `bug`. Unlike regular tasks, stories follow a structured lifecycle managed by a **story status** (`StoryStatus`).
+
+### Story Lifecycle
+
+| StoryStatus | Description | Agent execution available |
+|---|---|---|
+| `new` | Just created, not yet ready for work | No |
+| `ready` | Ready to be estimated/approved | No |
+| `approved` | Approved by PO — triggers tech planning | Yes (lead-tech / tech-planning) |
+| `planning` | Tech planning in progress | No (agent is working) |
+| `graphic_design` | UI/UX design phase | Yes (ui-ux-designer / ui-design) |
+| `development` | Active development | Yes (php-dev / php-backend-dev) |
+| `code_review` | Code review phase | Yes (lead-tech / code-reviewer) |
+| `done` | Fully completed | No |
+
+Status transitions are validated server-side via `StoryStatus::allowedTransitions()`.
 
 ---
 
@@ -133,11 +168,25 @@ The log can be consulted via the web interface or the API (`GET /api/audit`).
 
 ---
 
+## Workflow Template vs Story Lifecycle
+
+These are two distinct concepts that are **not the same**:
+
+| Concept | What it is | Stored where |
+|---|---|---|
+| **Workflow** | A reusable automation template (e.g. "Code Review") | `Workflow` + `WorkflowStep` entities |
+| **Story Lifecycle** | The progression states of a specific story | `Task.storyStatus` (enum) |
+
+A Workflow describes *how* a type of automation runs (steps, roles, conditions). A Story's lifecycle describes *where it is* in its development journey. In a future milestone, the story lifecycle will be **driven by workflow steps** instead of the current hardcoded mapping in `StoryExecutionService`.
+
+---
+
 ## Relationship Summary
 
 ```
 Project
   └── Module (1..n)
+  └── Team (1) ← planned (F1)
 
 Team
   └── Role (1..n)
@@ -146,10 +195,27 @@ Team
 Agent
   └── Role (optional)
   └── ConnectorType → AI Adapter
+  └── RuntimeStatus (derived: working / error / idle)
 
-Workflow
+Task (Story/Bug)
+  └── StoryStatus (lifecycle)
+  └── TaskDependency (DAG of subtasks)
+  └── TaskLog (execution history)
+
+Workflow (template)
   └── Team
   └── WorkflowStep (1..n)
         ├── roleSlug  → Role → Agent
         └── skillSlug → Skill
 ```
+
+---
+
+## Roadmap
+
+| ID | Description | Status |
+|---|---|---|
+| F1 | Link Project → Team (DB migration) | Planned |
+| F2 | Scope agent search to project's team | Planned |
+| F3 | Drive story execution from workflow steps | Planned |
+| F4 | Agent runtime status endpoint | Planned |
