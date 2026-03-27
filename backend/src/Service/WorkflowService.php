@@ -23,13 +23,11 @@ class WorkflowService
 
     public function create(
         string          $name,
-        WorkflowTrigger $trigger    = WorkflowTrigger::Manual,
+        WorkflowTrigger $trigger     = WorkflowTrigger::Manual,
         ?string         $description = null,
         ?string         $teamId      = null,
-        bool            $isActive    = true,
     ): Workflow {
         $workflow = new Workflow($name, $trigger, $description);
-        $workflow->setIsActive($isActive);
 
         if ($teamId !== null) {
             $team = $this->teamRepository->find(Uuid::fromString($teamId));
@@ -51,12 +49,10 @@ class WorkflowService
         WorkflowTrigger $trigger,
         ?string         $description = null,
         ?string         $teamId      = null,
-        bool            $isActive    = true,
     ): Workflow {
         $workflow->setName($name)
             ->setTrigger($trigger)
-            ->setDescription($description)
-            ->setIsActive($isActive);
+            ->setDescription($description);
 
         if ($teamId !== null) {
             $team = $this->teamRepository->find(Uuid::fromString($teamId));
@@ -68,6 +64,14 @@ class WorkflowService
         $this->em->flush();
         $this->audit->log(AuditAction::WorkflowUpdated, 'Workflow', (string) $workflow->getId());
 
+        return $workflow;
+    }
+
+    public function validate(Workflow $workflow): Workflow
+    {
+        $workflow->validate();
+        $this->em->flush();
+        $this->audit->log(AuditAction::WorkflowUpdated, 'Workflow', (string) $workflow->getId(), ['status' => 'validated']);
         return $workflow;
     }
 

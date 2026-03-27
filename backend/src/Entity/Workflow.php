@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\WorkflowStatus;
 use App\Enum\WorkflowTrigger;
 use App\Repository\WorkflowRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -33,8 +34,13 @@ class Workflow
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?Team $team = null;
 
-    #[ORM\Column]
-    private bool $isActive = true;
+    /**
+     * draft    → éditable, non utilisable
+     * validated → non éditable, applicable aux US
+     * locked   → non éditable, déjà utilisé (au moins une US l'utilise)
+     */
+    #[ORM\Column(enumType: WorkflowStatus::class)]
+    private WorkflowStatus $status = WorkflowStatus::Draft;
 
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
@@ -66,26 +72,64 @@ class Workflow
         $this->updatedAt = new \DateTimeImmutable();
     }
 
-    public function getId(): Uuid                    { return $this->id; }
-    public function getName(): string                { return $this->name; }
-    public function getDescription(): ?string        { return $this->description; }
-    public function getTrigger(): WorkflowTrigger    { return $this->trigger; }
-    public function getTeam(): ?Team                 { return $this->team; }
-    public function isActive(): bool                 { return $this->isActive; }
+    public function getId(): Uuid                      { return $this->id; }
+    public function getName(): string                  { return $this->name; }
+    public function getDescription(): ?string          { return $this->description; }
+    public function getTrigger(): WorkflowTrigger      { return $this->trigger; }
+    public function getTeam(): ?Team                   { return $this->team; }
+    public function getStatus(): WorkflowStatus        { return $this->status; }
+    public function isEditable(): bool                 { return $this->status->isEditable(); }
+    public function isUsable(): bool                   { return $this->status->isUsable(); }
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
     public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
 
     /** @return Collection<int, WorkflowStep> */
     public function getSteps(): Collection { return $this->steps; }
 
-    public function setName(string $name): static                 { $this->name = $name; return $this; }
-    public function setDescription(?string $d): static            { $this->description = $d; return $this; }
-    public function setTrigger(WorkflowTrigger $t): static        { $this->trigger = $t; return $this; }
-    public function setTeam(?Team $team): static                  { $this->team = $team; return $this; }
-    public function setIsActive(bool $active): static             { $this->isActive = $active; return $this; }
+    public function setName(string $name): static
+    {
+        $this->assertEditable();
+        $this->name = $name;
+        return $this;
+    }
+
+    public function setDescription(?string $d): static
+    {
+        $this->assertEditable();
+        $this->description = $d;
+        return $this;
+    }
+
+    public function setTrigger(WorkflowTrigger $t): static
+    {
+        $this->assertEditable();
+        $this->trigger = $t;
+        return $this;
+    }
+
+    public function setTeam(?Team $team): static       { $this->team = $team; return $this; }
+
+    public function validate(): static
+    {
+        if ($this->status !== WorkflowStatus::Draft) {
+            throw new \LogicException("Only a draft workflow can be validated.");
+        }
+        $this->status = WorkflowStatus::Validated;
+        return $this;
+    }
+
+    public function lock(): static
+    {
+        if ($this->status === WorkflowStatus::Draft) {
+            throw new \LogicException("A draft workflow cannot be locked directly. Validate it first.");
+        }
+        $this->status = WorkflowStatus::Locked;
+        return $this;
+    }
 
     public function addStep(WorkflowStep $step): static
     {
+        $this->assertEditable();
         if (!$this->steps->contains($step)) {
             $this->steps->add($step);
             $step->setWorkflow($this);
@@ -95,7 +139,15 @@ class Workflow
 
     public function removeStep(WorkflowStep $step): static
     {
+        $this->assertEditable();
         $this->steps->removeElement($step);
         return $this;
+    }
+
+    private function assertEditable(): void
+    {
+        if (!$this->status->isEditable()) {
+            throw new \LogicException("Workflow '{$this->name}' is {$this->status->value} and cannot be modified.");
+        }
     }
 }
