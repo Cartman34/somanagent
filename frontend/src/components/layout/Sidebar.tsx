@@ -8,8 +8,6 @@ import {
   BookOpen,
   GitBranch,
   ScrollText,
-  ListTodo,
-  Layers,
   Coins,
 } from 'lucide-react'
 import ThemeSwitcher from '@/components/ui/ThemeSwitcher'
@@ -17,8 +15,6 @@ import ThemeSwitcher from '@/components/ui/ThemeSwitcher'
 const navigation = [
   { to: '/dashboard',  label: 'Tableau de bord', icon: LayoutDashboard },
   { to: '/projects',   label: 'Projets',          icon: FolderKanban },
-  { to: '/tasks',      label: 'Tâches',           icon: ListTodo },
-  { to: '/features',   label: 'Features',         icon: Layers },
   { to: '/teams',      label: 'Équipes',          icon: Users },
   { to: '/agents',     label: 'Agents',           icon: Bot },
   { to: '/roles',      label: 'Rôles',            icon: UserCog },
