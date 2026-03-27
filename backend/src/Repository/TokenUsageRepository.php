@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Agent;
+use App\Entity\Project;
+use App\Entity\Task;
 use App\Entity\TokenUsage;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -43,5 +45,48 @@ class TokenUsageRepository extends ServiceEntityRepository
     public function findByAgent(Agent $agent, int $limit = 100): array
     {
         return $this->findBy(['agent' => $agent], ['createdAt' => 'DESC'], $limit);
+    }
+
+    /**
+     * Returns token usage entries for all tasks belonging to the given project.
+     *
+     * @return TokenUsage[]
+     */
+    public function findByProject(Project $project, int $limit = 100): array
+    {
+        return $this->createQueryBuilder('tu')
+            ->join('tu.task', 't')
+            ->where('t.project = :project')
+            ->setParameter('project', $project)
+            ->orderBy('tu.createdAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Aggregates token usage by agent for the given project.
+     * Returns ['agentId' => string, 'totalInput' => int, 'totalOutput' => int, 'calls' => int][]
+     */
+    public function sumByProjectAndAgent(Project $project): array
+    {
+        return $this->createQueryBuilder('tu')
+            ->select('IDENTITY(tu.agent) as agentId, SUM(tu.inputTokens) as totalInput, SUM(tu.outputTokens) as totalOutput, COUNT(tu.id) as calls')
+            ->join('tu.task', 't')
+            ->where('t.project = :project')
+            ->setParameter('project', $project)
+            ->groupBy('tu.agent')
+            ->getQuery()
+            ->getArrayResult();
+    }
+
+    /**
+     * Returns token usage entries for a single task.
+     *
+     * @return TokenUsage[]
+     */
+    public function findByTask(Task $task, int $limit = 50): array
+    {
+        return $this->findBy(['task' => $task], ['createdAt' => 'DESC'], $limit);
     }
 }
