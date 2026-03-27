@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Enum\ConnectorType;
+use App\Repository\AgentRepository;
 use App\Service\AgentService;
 use App\ValueObject\AgentConfig;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -16,7 +17,10 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/agents')]
 class AgentController extends AbstractController
 {
-    public function __construct(private readonly AgentService $agentService) {}
+    public function __construct(
+        private readonly AgentService    $agentService,
+        private readonly AgentRepository $agentRepository,
+    ) {}
 
     #[Route('', name: 'agent_list', methods: ['GET'])]
     public function list(): JsonResponse
@@ -98,5 +102,40 @@ class AgentController extends AbstractController
 
         $this->agentService->delete($agent);
         return $this->json(null, Response::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * Returns the runtime status of an agent derived from its task and log history.
+     *
+     * Status values:
+     *  - working: the agent has at least one task currently in_progress
+     *  - error:   the agent has a recent error log entry and no active task
+     *  - idle:    neither of the above
+     *
+     * @param string $id Agent UUID
+     * @return JsonResponse { status: 'working'|'idle'|'error', activeTaskCount: int }
+     */
+    #[Route('/{id}/status', name: 'agent_status', methods: ['GET'])]
+    public function status(string $id): JsonResponse
+    {
+        $agent = $this->agentService->findById($id);
+        if ($agent === null) {
+            return $this->json(['error' => 'Agent introuvable.'], Response::HTTP_NOT_FOUND);
+        }
+
+        $activeTaskCount = $this->agentRepository->countInProgressTasks($agent);
+
+        if ($activeTaskCount > 0) {
+            $runtimeStatus = 'working';
+        } elseif ($this->agentRepository->hasRecentErrorLog($agent)) {
+            $runtimeStatus = 'error';
+        } else {
+            $runtimeStatus = 'idle';
+        }
+
+        return $this->json([
+            'status'          => $runtimeStatus,
+            'activeTaskCount' => $activeTaskCount,
+        ]);
     }
 }

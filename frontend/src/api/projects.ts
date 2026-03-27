@@ -4,6 +4,7 @@ import type { Project, Module } from '@/types'
 export interface ProjectPayload {
   name: string
   description?: string
+  teamId?: string | null
 }
 
 export interface ModulePayload {

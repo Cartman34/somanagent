@@ -79,13 +79,28 @@ Returns:
 
 ## How an Agent Call Works
 
-When a workflow step is executed:
+When a story is dispatched for execution:
 
-1. SoManAgent identifies the agent assigned to the step's role
+1. SoManAgent identifies the agent assigned to the story's current status role
 2. Retrieves the content of the associated SKILL.md
 3. Builds a `Prompt` (skill + context + task instruction)
 4. Sends it via the configured connector (`ClaudeApiAdapter` or `ClaudeCliAdapter`)
 5. Receives an `AgentResponse` with the content + metadata (tokens, duration)
-6. Records it in the audit log
+6. Records it in the audit log (via `TaskLog`)
+7. For `tech-planning` skill: parses JSON output, creates subtasks + dependency DAG, sets branch name
 
 → See [Adapters](../technical/adapters.md) for implementation details.
+
+## Agent Runtime Status
+
+An agent's runtime status is derived from its task and log history:
+
+| Status | Meaning |
+|---|---|
+| `working` | Has at least one `in_progress` task |
+| `error` | Has a recent `execution_error` log entry with no subsequent active task |
+| `idle` | Neither of the above |
+
+→ Endpoint: `GET /api/agents/{id}/status` (planned — Foundation F4)
+
+→ See [Key Concepts — Agent Runtime Status](concepts.md#agent-runtime-status)

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\StoryStatus;
 use App\Enum\WorkflowStepStatus;
 use App\Repository\WorkflowStepRepository;
 use Doctrine\ORM\Mapping as ORM;
@@ -64,6 +65,15 @@ class WorkflowStep
     private WorkflowStepStatus $status;
 
     /**
+     * Story status that triggers this step in the story lifecycle.
+     * When set, StoryExecutionService uses this step's roleSlug/skillSlug instead of
+     * the hardcoded EXECUTION_MAP, scoped to the project's team workflow.
+     * Null = this step is not part of the story lifecycle automation.
+     */
+    #[ORM\Column(enumType: StoryStatus::class, nullable: true)]
+    private ?StoryStatus $storyStatusTrigger = null;
+
+    /**
      * Output de la dernière exécution (texte brut ou JSON).
      */
     #[ORM\Column(type: 'text', nullable: true)]
@@ -91,9 +101,10 @@ class WorkflowStep
     public function getSkillSlug(): ?string            { return $this->skillSlug; }
     public function getInputConfig(): array            { return $this->inputConfig; }
     public function getOutputKey(): string             { return $this->outputKey; }
-    public function getCondition(): ?string            { return $this->condition; }
-    public function getStatus(): WorkflowStepStatus   { return $this->status; }
-    public function getLastOutput(): ?string           { return $this->lastOutput; }
+    public function getCondition(): ?string             { return $this->condition; }
+    public function getStatus(): WorkflowStepStatus    { return $this->status; }
+    public function getStoryStatusTrigger(): ?StoryStatus { return $this->storyStatusTrigger; }
+    public function getLastOutput(): ?string            { return $this->lastOutput; }
 
     public function setWorkflow(Workflow $w): static              { $this->workflow = $w; return $this; }
     public function setStepOrder(int $order): static              { $this->stepOrder = $order; return $this; }
@@ -102,9 +113,10 @@ class WorkflowStep
     public function setSkillSlug(?string $slug): static           { $this->skillSlug = $slug; return $this; }
     public function setInputConfig(array $config): static         { $this->inputConfig = $config; return $this; }
     public function setOutputKey(string $key): static             { $this->outputKey = $key; return $this; }
-    public function setCondition(?string $cond): static           { $this->condition = $cond; return $this; }
-    public function setStatus(WorkflowStepStatus $s): static      { $this->status = $s; return $this; }
-    public function setLastOutput(?string $output): static        { $this->lastOutput = $output; return $this; }
+    public function setCondition(?string $cond): static                    { $this->condition = $cond; return $this; }
+    public function setStatus(WorkflowStepStatus $s): static               { $this->status = $s; return $this; }
+    public function setStoryStatusTrigger(?StoryStatus $s): static         { $this->storyStatusTrigger = $s; return $this; }
+    public function setLastOutput(?string $output): static                 { $this->lastOutput = $output; return $this; }
 
     public function markRunning(): static   { return $this->setStatus(WorkflowStepStatus::Running); }
     public function markDone(string $output): static

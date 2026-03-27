@@ -4,7 +4,7 @@
 
 **SoManAgent** is an agent orchestration platform that manages autonomous AI agents, their skills, workflows, and team assignments.
 
-**Current Phase:** Phase 2B (React frontend with real API data via React Query)
+**Current Phase:** Phase 3 complete — Story lifecycle + async agent execution. UX Sprint pending.
 
 ---
 
@@ -277,6 +277,7 @@ docker compose exec php vendor/bin/phpunit
 - **Exceptions:** Throw `\RuntimeException` or domain-specific exceptions; never `exit()` inside methods (let the script decide)
 - **OOP:** Classes are final by default unless inheritance is intentional; favor composition
 - **Type Hints:** Full return types (`public function foo(): string`)
+- **PHPDoc:** Every public method must have a PHPDoc block. The reader must understand what the method does, its parameters and return value **without reading the implementation**. Minimum: one-line description + `@param` / `@return` / `@throws` when non-obvious.
 
 ### React/TypeScript
 - **Components:** Default exports, PascalCase naming
@@ -285,6 +286,7 @@ docker compose exec php vendor/bin/phpunit
 - **State:** React hooks (`useState`, `useEffect`, `useContext`)
 - **Styling:** Tailwind utility classes + custom `.card`, `.btn-primary`, `.badge-*` classes
 - **Files:** One component per file unless tightly coupled
+- **JSDoc:** Every exported component and every non-trivial internal function must have a JSDoc comment. The reader must understand the component's role, its key props and any important behaviour **without reading the JSX**.
 
 ### CSS
 - **Layered:** `@layer base`, `@layer components`, `@layer utilities` for Tailwind integration
@@ -368,9 +370,109 @@ Common options: `--json` (db-schema, api-routes, frontend-map), `--backend`/`--f
 
 ---
 
-## Next Phases (Post-Phase 2B)
+## Story Lifecycle (StoryStatus)
 
-- **Phase 3:** Workflow execution engine (run, pause, resume, dry-run modes)
-- **Phase 4:** VCS integration (GitHub/GitLab webhooks, branch management)
+User stories and bugs follow a fixed lifecycle managed by `StoryStatus` enum:
+
+```
+new → ready → approved → planning → [graphic_design →] development → code_review → done
+```
+
+| Status | Trigger | Actor |
+|---|---|---|
+| `new` | Created | Human / Agent |
+| `ready` | Marked ready | PO Agent or human |
+| `approved` | Validated for development | Human |
+| `planning` | Agent dispatched (tech-planning skill) | StoryExecutionService |
+| `graphic_design` | Optional — needsDesign=true in plan | Agent |
+| `development` | Active development | Agent(s) |
+| `code_review` | Code submitted for review | Agent |
+| `done` | Review passed | Agent / Human |
+
+**Automated statuses** (`approved`, `graphic_design`, `development`, `code_review`): a "Lancer l'agent" button appears on the story card → opens `ExecuteModal` → dispatches `AgentTaskMessage` to Redis.
+
+---
+
+## Workflow Template vs Story Lifecycle
+
+**Key distinction — do not confuse these two:**
+
+- **`StoryStatus`** = the actual lifecycle state of a user story. It lives on the `Task` entity. Managed by `TaskService::transitionStory()`.
+- **`Workflow`** = a reusable *template* that describes which agent roles execute at each automated stage. It is a configuration object, not an execution record.
+
+The `Workflow` is assigned to a `Team`. When a project uses a team, its workflow template defines the `(roleSlug, skillSlug)` mapping for each story stage. Currently `StoryExecutionService` has this mapping **hardcoded** — migrating it to read from the project's workflow is a planned fix (F3).
+
+---
+
+## Project → Team Relationship (known gap)
+
+**Current state:** `Project` has no `team_id` in the database. `StoryExecutionService` finds agents globally (any active agent with the right role).
+
+**Planned fix (F1 + F2):** Add `Project.team` (ManyToOne → Team) + migration, then scope `StoryExecutionService` to the project's team.
+
+**Impact:** Until F1 is done, all active agents with the right role are eligible for story execution, regardless of project.
+
+---
+
+## Agent Runtime Status
+
+An agent's **operational state** is derived (not stored):
+
+| State | Condition |
+|---|---|
+| `working` | Has ≥1 task with `status=in_progress` AND `assignedAgent=this` |
+| `error` | Has recent `TaskLog` with action `agent_error` or `planning_parse_error` |
+| `idle` | Neither of the above |
+
+Computed in the API response for the project team view.
+
+---
+
+## Roadmap
+
+### Foundations (blocking UX)
+
+| ID | Task |
+|---|---|
+| F1 | Add `Project.team` (ManyToOne → Team) + Doctrine migration |
+| F2 | `StoryExecutionService`: scope agent search to project's team |
+| F3 | `StoryExecutionService`: read roleSlug/skillSlug from workflow steps instead of hardcoded map |
+| F4 | Agent runtime status endpoint (derived from task/tasklog state) |
+
+### UX Sprint 1 — Project Hub
+
+| ID | Task |
+|---|---|
+| U1 | Remove Features and Tasks from sidebar — navigation only from project page |
+| U2 | Project page: **General** tab — assign team + workflow |
+| U3 | Project page: **Board** tab — story kanban (storyStatus columns) + backlog toggle |
+| U4 | Project page: **Tâches** tab — technical subtasks generated by agents |
+| U5 | Project page: **Équipe** tab — agents, roles, skills readable, `idle/working/error` status |
+| U6 | Project page: **Modules** tab — add / archive modules |
+
+### UX Sprint 2 — Monitoring
+
+| ID | Task |
+|---|---|
+| U7 | Project page: **Audit** tab — filtered on project tasks |
+| U8 | Project page: **Tokens** tab — token usage by task / by agent |
+| U9 | Task detail drawer — description, storyStatus, logs, errors, subtasks, token consumption |
+
+### UX Sprint 3 — Workflow UI
+
+| ID | Task |
+|---|---|
+| U10 | Workflow page: visual full lifecycle (`new → ready → approved → steps → done`), agent steps highlighted |
+| U11 | Workflow page: show `draft/validated/locked` status + Validate button |
+
+### Phase 4 — VCS
+
+| ID | Task |
+|---|---|
+| V1 | `MockVcsAdapter` — simulated Git branch creation on planning |
+| V2 | Branch name displayed on story card with link |
+
+### Future Phases
+
 - **Phase 5:** Skill marketplace (publish, discover, version control for skills)
-- **Phase 6:** Monitoring & observability (logs, metrics, alerts)
+- **Phase 6:** Monitoring & observability (structured logs, metrics, alerts)
