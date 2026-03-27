@@ -43,6 +43,12 @@ PUT accepte les mêmes champs que POST. DELETE cascade les modules et features.
 
 ### `PUT /api/projects/modules/{id}` · `DELETE /api/projects/modules/{id}`
 
+### `GET /api/projects/{id}/audit?page=1&limit=25`
+Journal d'audit filtré sur le projet et ses tâches (entityType `Project` ou `Task`). Retourne `{ data, total, page, limit }`.
+
+### `GET /api/projects/{id}/tokens`
+Consommation de tokens pour ce projet. Retourne `{ summary: { total, byAgent }, entries }`.
+
 ---
 
 ## Rôles
@@ -147,7 +153,7 @@ Retourne les tâches racines (sans parent).
 ```
 
 ### `GET /api/tasks/{id}`
-Retourne la tâche avec `children` (sous-tâches) et `logs`.
+Retourne la tâche avec `children` (sous-tâches), `logs` et `tokenUsage` (consommation de tokens).
 
 ### `PUT /api/tasks/{id}`
 Mise à jour des champs modifiables.
