@@ -180,7 +180,6 @@ export interface Workflow {
   status: WorkflowStatus
   isEditable: boolean
   isUsable: boolean
-  isActive: boolean
   steps: WorkflowStep[] | number
   createdAt: string
   updatedAt: string

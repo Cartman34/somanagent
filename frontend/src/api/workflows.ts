@@ -6,7 +6,6 @@ export interface WorkflowPayload {
   description?: string
   trigger: 'manual' | 'vcs_event' | 'scheduled'
   teamId?: string
-  isActive?: boolean
 }
 
 export const workflowsApi = {
