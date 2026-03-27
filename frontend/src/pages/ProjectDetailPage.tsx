@@ -1,16 +1,18 @@
-import { useState } from 'react'
+import { useState, type ComponentType } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  ArrowLeft, Plus, Layers, ListTodo, Code2, Globe,
-  ChevronDown, ChevronRight, Trash2, MessageSquarePlus,
+  ArrowLeft, Plus, Code2, Globe, XCircle, CheckCircle, Clock,
+  AlertTriangle, ChevronRight, GitBranch, User, ArrowRight,
+  Layers, Play, ListTodo, Users, Settings, Kanban, Zap,
+  Loader2, AlertCircle,
 } from 'lucide-react'
 import { projectsApi } from '@/api/projects'
-import { featuresApi } from '@/api/features'
 import { tasksApi } from '@/api/tasks'
-import type { FeaturePayload } from '@/api/features'
+import { teamsApi } from '@/api/teams'
+import { agentsApi } from '@/api/agents'
 import type { TaskPayload } from '@/api/tasks'
-import type { Feature, Task, TaskStatus, TaskType, TaskPriority, Module } from '@/types'
+import type { Task, TaskStatus, TaskPriority, TaskType, StoryStatus, Module, AgentSummary } from '@/types'
 import { PageSpinner } from '@/components/ui/Spinner'
 import ErrorMessage from '@/components/ui/ErrorMessage'
 import EmptyState from '@/components/ui/EmptyState'
@@ -20,263 +22,339 @@ import PageHeader from '@/components/ui/PageHeader'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const TYPE_BADGE: Record<TaskType, string>      = { user_story: 'badge-blue', bug: 'badge-red', task: 'badge-green' }
-const TYPE_LABELS: Record<TaskType, string>     = { user_story: 'US', bug: 'Bug', task: 'Tâche' }
-const STATUS_LABELS: Record<TaskStatus, string> = { backlog: 'Backlog', todo: 'À faire', in_progress: 'En cours', review: 'Revue', done: 'Terminé', cancelled: 'Annulé' }
-const STATUS_BADGE: Record<TaskStatus, string>  = { backlog: 'badge-gray', todo: 'badge-blue', in_progress: 'badge-orange', review: 'badge-orange', done: 'badge-green', cancelled: 'badge-gray' }
-const FEATURE_STATUS_LABELS: Record<string, string> = { open: 'Ouverte', in_progress: 'En cours', closed: 'Fermée' }
-const FEATURE_STATUS_BADGE: Record<string, string>  = { open: 'badge-blue', in_progress: 'badge-orange', closed: 'badge-green' }
-const PRIORITY_LABELS: Record<string, string> = { low: 'Faible', medium: 'Normale', high: 'Haute', critical: 'Critique' }
-const PRIORITY_COLOR: Record<string, string>  = { low: 'text-gray-400', medium: 'text-blue-500', high: 'text-orange-500', critical: 'text-red-600' }
+const TYPE_BADGE:  Record<TaskType, string>    = { user_story: 'badge-blue', bug: 'badge-red', task: 'badge-green' }
+const TYPE_LABELS: Record<TaskType, string>    = { user_story: 'US', bug: 'Bug', task: 'Tâche' }
+const PRIORITY_LABELS: Record<TaskPriority, string> = { low: 'Faible', medium: 'Normale', high: 'Haute', critical: 'Critique' }
+const PRIORITY_COLOR:  Record<TaskPriority, string> = { low: 'text-gray-400', medium: 'text-blue-500', high: 'text-orange-500', critical: 'text-red-600' }
+const STATUS_LABELS: Record<TaskStatus, string> = {
+  backlog: 'Backlog', todo: 'À faire', in_progress: 'En cours',
+  review: 'Revue', done: 'Terminé', cancelled: 'Annulé',
+}
 
-// ─── Task Row ─────────────────────────────────────────────────────────────────
+const STORY_COLUMNS: { key: StoryStatus; label: string; color: string; bg: string }[] = [
+  { key: 'new',            label: 'Nouvelle',      color: 'text-gray-500',   bg: 'bg-gray-50'   },
+  { key: 'ready',          label: 'Prête',          color: 'text-blue-500',   bg: 'bg-blue-50'   },
+  { key: 'approved',       label: 'Approuvée',      color: 'text-indigo-500', bg: 'bg-indigo-50' },
+  { key: 'planning',       label: 'Planification',  color: 'text-purple-500', bg: 'bg-purple-50' },
+  { key: 'graphic_design', label: 'Conception',     color: 'text-pink-500',   bg: 'bg-pink-50'   },
+  { key: 'development',    label: 'Développement',  color: 'text-orange-500', bg: 'bg-orange-50' },
+  { key: 'code_review',    label: 'Revue de code',  color: 'text-yellow-600', bg: 'bg-yellow-50' },
+  { key: 'done',           label: 'Terminée',       color: 'text-green-600',  bg: 'bg-green-50'  },
+]
 
-function TaskRow({ task, onDelete }: { task: Task; onDelete: (t: Task) => void }) {
+const STORY_TRANSITION_LABELS: Partial<Record<StoryStatus, string>> = {
+  ready: 'Marquer prête', approved: 'Approuver', planning: 'Lancer planification',
+  graphic_design: 'Conception graphique', development: 'Développement',
+  code_review: 'Revue de code', done: 'Terminer',
+}
+
+const EXECUTABLE_STATUSES: StoryStatus[] = ['approved', 'graphic_design', 'development', 'code_review']
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function ProgressBar({ value }: { value: number }) {
   return (
-    <div className="flex items-center gap-3 py-2 px-3 rounded" style={{ background: 'var(--surface2)' }}>
-      <span className={`${TYPE_BADGE[task.type]} text-xs flex-shrink-0`}>{TYPE_LABELS[task.type]}</span>
-      <span className="flex-1 text-sm truncate" style={{ color: 'var(--text)' }}>{task.title}</span>
-      <span className={`text-xs flex-shrink-0 ${PRIORITY_COLOR[task.priority]}`}>{PRIORITY_LABELS[task.priority]}</span>
-      <span className={`${STATUS_BADGE[task.status]} text-xs flex-shrink-0`}>{STATUS_LABELS[task.status]}</span>
-      {task.assignedAgent && (
-        <span className="text-xs flex-shrink-0 hidden sm:inline" style={{ color: 'var(--muted)' }}>
-          → {task.assignedAgent.name}
-        </span>
+    <div className="w-full bg-gray-100 rounded-full h-1">
+      <div className="h-1 rounded-full" style={{ width: `${value}%`, background: 'var(--brand)' }} />
+    </div>
+  )
+}
+
+function StatusIcon({ status }: { status: TaskStatus }) {
+  if (status === 'done')       return <CheckCircle className="w-4 h-4 text-green-500" />
+  if (status === 'cancelled')  return <XCircle className="w-4 h-4 text-gray-400" />
+  if (status === 'in_progress' || status === 'review') return <Clock className="w-4 h-4 text-blue-500" />
+  if (status === 'backlog')    return <AlertTriangle className="w-4 h-4 text-gray-300" />
+  return <ChevronRight className="w-4 h-4 text-gray-400" />
+}
+
+// ─── Execute modal ────────────────────────────────────────────────────────────
+
+/**
+ * Modal shown before dispatching a story to an agent.
+ * Fetches available agents for the story's current status, lets the user pick one,
+ * then dispatches via POST /tasks/{id}/execute.
+ */
+function ExecuteModal({ task, onClose, onExecuted }: {
+  task: Task
+  onClose: () => void
+  onExecuted: () => void
+}) {
+  const [selectedAgentId, setSelectedAgentId] = useState('')
+  const [result, setResult] = useState<{ agentName: string; skill: string } | null>(null)
+
+  const { data: agents, isLoading: loadingAgents } = useQuery({
+    queryKey: ['task-execute-agents', task.id],
+    queryFn:  () => tasksApi.listExecuteAgents(task.id),
+  })
+
+  const executeMutation = useMutation({
+    mutationFn: () => tasksApi.execute(task.id, selectedAgentId || undefined),
+    onSuccess: (data) => { setResult({ agentName: data.agent.name, skill: data.skill }); onExecuted() },
+  })
+
+  if (result) {
+    return (
+      <div className="space-y-4 text-sm text-center py-4">
+        <CheckCircle className="w-10 h-10 text-green-500 mx-auto" />
+        <p className="font-medium text-gray-900">Agent dispatché</p>
+        <p className="text-gray-500">
+          <strong>{result.agentName}</strong> exécute <code className="bg-gray-100 px-1 rounded">{result.skill}</code>
+        </p>
+        <button onClick={onClose} className="btn-primary mx-auto">Fermer</button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-gray-600">
+        Sélectionnez un agent pour exécuter <strong>"{task.title}"</strong>.
+        L'agent sera choisi automatiquement si vous ne sélectionnez pas.
+      </p>
+      {loadingAgents ? (
+        <p className="text-sm text-gray-400">Chargement des agents…</p>
+      ) : agents && agents.length > 0 ? (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Agent</label>
+          <select className="input" value={selectedAgentId} onChange={(e) => setSelectedAgentId(e.target.value)}>
+            <option value="">— Auto-sélection —</option>
+            {agents.map((a) => (
+              <option key={a.id} value={a.id}>{a.name}{a.role ? ` (${a.role.name})` : ''}</option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        <p className="text-sm text-red-600">Aucun agent disponible avec le rôle requis.</p>
       )}
-      <button
-        onClick={() => onDelete(task)}
-        className="p-1 flex-shrink-0"
-        style={{ color: 'var(--muted)' }}
-        title="Supprimer"
-      >
-        <Trash2 className="w-3 h-3" />
+      {executeMutation.isError && (
+        <p className="text-sm text-red-600">
+          {(executeMutation.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Erreur lors de l\'exécution.'}
+        </p>
+      )}
+      <div className="flex justify-end gap-3 pt-2">
+        <button onClick={onClose} className="btn-secondary">Annuler</button>
+        <button
+          onClick={() => executeMutation.mutate()}
+          disabled={executeMutation.isPending || agents?.length === 0}
+          className="btn-primary"
+        >
+          {executeMutation.isPending ? 'Dispatch…' : "Lancer l'agent"}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Story card (Kanban) ──────────────────────────────────────────────────────
+
+/**
+ * Kanban card for a user story or bug.
+ * Shows type badge, priority, branch name, assigned role, progress bar,
+ * allowed story transitions as buttons, and a "Lancer l'agent" button for executable statuses.
+ */
+function StoryCard({ task, onTransition, onDelete, onExecute, transitioning }: {
+  task: Task
+  onTransition: (task: Task, status: StoryStatus) => void
+  onDelete: (task: Task) => void
+  onExecute: (task: Task) => void
+  transitioning: boolean
+}) {
+  const canExecute = task.storyStatus !== null && EXECUTABLE_STATUSES.includes(task.storyStatus)
+
+  return (
+    <div className="card p-3 space-y-2 text-sm">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className={`${TYPE_BADGE[task.type]} text-xs`}>{TYPE_LABELS[task.type]}</span>
+          <span className={`text-xs font-medium ${PRIORITY_COLOR[task.priority]}`}>{PRIORITY_LABELS[task.priority]}</span>
+        </div>
+        <button onClick={() => onDelete(task)} className="p-0.5 text-gray-300 hover:text-red-400 flex-shrink-0" title="Supprimer">
+          <XCircle className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      <p className="font-medium leading-snug" style={{ color: 'var(--text)' }}>{task.title}</p>
+
+      {task.branchName && (
+        <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--muted)' }}>
+          <GitBranch className="w-3 h-3" />
+          <code className="font-mono truncate">{task.branchName}</code>
+        </div>
+      )}
+      {task.assignedRole && (
+        <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--muted)' }}>
+          <User className="w-3 h-3" /><span>{task.assignedRole.name}</span>
+        </div>
+      )}
+      {task.progress > 0 && (
+        <div className="space-y-0.5">
+          <ProgressBar value={task.progress} />
+          <span className="text-xs" style={{ color: 'var(--muted)' }}>{task.progress}%</span>
+        </div>
+      )}
+      {(task.storyStatusAllowedTransitions.length > 0 || canExecute) && (
+        <div className="flex flex-wrap gap-1 pt-1 border-t" style={{ borderColor: 'var(--border)' }}>
+          {task.storyStatusAllowedTransitions.map((next) => (
+            <button
+              key={next}
+              onClick={() => onTransition(task, next)}
+              disabled={transitioning}
+              className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded border hover:border-[var(--brand)] hover:text-[var(--brand)] transition-colors disabled:opacity-40 disabled:cursor-wait"
+              style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
+            >
+              <ArrowRight className="w-2.5 h-2.5" />
+              {transitioning ? '…' : (STORY_TRANSITION_LABELS[next] ?? next)}
+            </button>
+          ))}
+          {canExecute && (
+            <button
+              onClick={() => onExecute(task)}
+              className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded"
+              style={{ background: 'var(--brand)', color: 'white' }}
+            >
+              <Play className="w-2.5 h-2.5" /> Lancer l'agent
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Story board (Kanban) ─────────────────────────────────────────────────────
+
+/**
+ * Kanban board with one column per StoryStatus.
+ * The `pendingTaskId` disables transition buttons on the card being updated to prevent double-clicks.
+ */
+function StoryBoard({ stories, onTransition, onDelete, onExecute, pendingTaskId }: {
+  stories: Task[]
+  onTransition: (task: Task, status: StoryStatus) => void
+  onDelete: (task: Task) => void
+  onExecute: (task: Task) => void
+  pendingTaskId: string | null
+}) {
+  if (stories.length === 0) {
+    return <EmptyState icon={Layers} title="Aucune story ni bug" description="Créez une user story ou un bug via le bouton ci-dessus." />
+  }
+  return (
+    <div className="flex gap-3 overflow-x-auto pb-4">
+      {STORY_COLUMNS.map((col) => {
+        const cards = stories.filter((s) => s.storyStatus === col.key)
+        return (
+          <div key={col.key} className="flex-shrink-0 w-60">
+            <div className={`flex items-center justify-between px-3 py-1.5 rounded-t-lg ${col.bg}`}>
+              <span className={`text-xs font-semibold ${col.color}`}>{col.label}</span>
+              {cards.length > 0 && <span className={`text-xs font-medium ${col.color} opacity-60`}>{cards.length}</span>}
+            </div>
+            <div className="space-y-2 min-h-16 rounded-b-lg p-2 border border-t-0" style={{ background: 'var(--surface2)', borderColor: 'var(--border)' }}>
+              {cards.map((task) => (
+                <StoryCard
+                  key={task.id}
+                  task={task}
+                  onTransition={onTransition}
+                  onDelete={onDelete}
+                  onExecute={onExecute}
+                  transitioning={pendingTaskId === task.id}
+                />
+              ))}
+              {cards.length === 0 && <p className="text-xs text-center py-3" style={{ color: 'var(--muted)' }}>—</p>}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─── Task row (technical tasks) ───────────────────────────────────────────────
+
+/**
+ * Single row for a technical task in the Tâches tab.
+ * Shows status icon, type badge, title, priority, assigned agent/role, parent story title, and progress bar.
+ */
+function TechTaskRow({ task, onDelete }: { task: Task; onDelete: (t: Task) => void }) {
+  return (
+    <div className="px-4 py-3 flex items-center gap-3">
+      <StatusIcon status={task.status} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`${TYPE_BADGE[task.type]} text-xs`}>{TYPE_LABELS[task.type]}</span>
+          <p className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>{task.title}</p>
+        </div>
+        <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+          <span className="text-xs" style={{ color: 'var(--muted)' }}>{STATUS_LABELS[task.status]}</span>
+          <span className={`text-xs font-medium ${PRIORITY_COLOR[task.priority]}`}>{PRIORITY_LABELS[task.priority]}</span>
+          {task.assignedAgent && <span className="text-xs" style={{ color: 'var(--muted)' }}>→ {task.assignedAgent.name}</span>}
+          {task.assignedRole  && <span className="text-xs italic" style={{ color: 'var(--muted)' }}>({task.assignedRole.name})</span>}
+          {task.parent        && <span className="text-xs opacity-50" style={{ color: 'var(--muted)' }}>↑ {task.parent.title}</span>}
+        </div>
+        {task.progress > 0 && (
+          <div className="mt-1.5 flex items-center gap-2">
+            <ProgressBar value={task.progress} />
+            <span className="text-xs whitespace-nowrap" style={{ color: 'var(--muted)' }}>{task.progress}%</span>
+          </div>
+        )}
+      </div>
+      <button onClick={() => onDelete(task)} className="p-1.5 flex-shrink-0" style={{ color: 'var(--muted)' }} title="Supprimer">
+        <XCircle className="w-3.5 h-3.5" />
       </button>
     </div>
   )
 }
 
-// ─── Feature Section ──────────────────────────────────────────────────────────
+// ─── Agent status badge ───────────────────────────────────────────────────────
 
-function FeatureSection({
-  feature,
-  userStories,
-  onAddUS,
-  onDeleteTask,
-  onDeleteFeature,
-}: {
-  feature: Feature
-  userStories: Task[]
-  onAddUS: (featureId: string) => void
-  onDeleteTask: (t: Task) => void
-  onDeleteFeature: (f: Feature) => void
-}) {
-  const [open, setOpen] = useState(true)
+/**
+ * Fetches and displays the runtime status of a single agent.
+ * Auto-refreshes every 30 seconds.
+ */
+function AgentStatusBadge({ agentId }: { agentId: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['agent-status', agentId],
+    queryFn:  () => agentsApi.getStatus(agentId),
+    refetchInterval: 30_000,
+  })
 
-  return (
-    <div className="card overflow-hidden">
-      <div
-        className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none"
-        style={{ borderBottom: open ? '1px solid var(--border)' : 'none' }}
-        onClick={() => setOpen(!open)}
-      >
-        {open
-          ? <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--muted)' }} />
-          : <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--muted)' }} />}
-        <span className="font-semibold text-sm flex-1" style={{ color: 'var(--text)' }}>{feature.name}</span>
-        <span className={`${FEATURE_STATUS_BADGE[feature.status]} text-xs`}>{FEATURE_STATUS_LABELS[feature.status]}</span>
-        <span className="text-xs ml-2" style={{ color: 'var(--muted)' }}>{userStories.length} US</span>
-        <button
-          onClick={(e) => { e.stopPropagation(); onDeleteFeature(feature) }}
-          className="p-1 ml-1"
-          style={{ color: 'var(--muted)' }}
-          title="Supprimer la feature"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
-      </div>
+  if (isLoading) return <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: 'var(--muted)' }} />
 
-      {open && (
-        <div className="p-3 space-y-2">
-          {feature.description && (
-            <p className="text-xs px-1 pb-1" style={{ color: 'var(--muted)' }}>{feature.description}</p>
-          )}
-          {userStories.length === 0 ? (
-            <p className="text-xs px-1 py-2 text-center" style={{ color: 'var(--muted)' }}>
-              Aucune user story — ajoutez-en une ci-dessous.
-            </p>
-          ) : (
-            userStories.map((us) => <TaskRow key={us.id} task={us} onDelete={onDeleteTask} />)
-          )}
-          <button
-            onClick={() => onAddUS(feature.id)}
-            className="flex items-center gap-1.5 text-xs mt-1 px-3 py-2 rounded w-full transition-colors"
-            style={{ color: 'var(--brand)', background: 'var(--brand-dim)' }}
-          >
-            <Plus className="w-3.5 h-3.5" /> Ajouter une user story
-          </button>
-        </div>
-      )}
-    </div>
-  )
+  const status = data?.status ?? 'idle'
+  if (status === 'working') return <span className="badge-orange text-xs">En travail</span>
+  if (status === 'error')   return <span className="badge-red text-xs">Erreur</span>
+  return <span className="badge-green text-xs">Disponible</span>
 }
 
-// ─── Demand Form (guided, 3 steps) ────────────────────────────────────────────
+// ─── Task creation form ───────────────────────────────────────────────────────
 
-function DemandForm({
-  onSubmit,
-  loading,
-  onCancel,
-}: {
-  onSubmit: (title: string, description: string, context: string) => void
-  loading: boolean
-  onCancel: () => void
-}) {
-  const [step, setStep] = useState(1)
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [context, setContext] = useState('')
-
-  return (
-    <div className="space-y-5">
-      {/* Progress bar */}
-      <div className="flex gap-1.5">
-        {[1, 2, 3].map((s) => (
-          <div
-            key={s}
-            className="flex-1 h-1 rounded-full transition-colors"
-            style={{ background: s <= step ? 'var(--brand)' : 'var(--border)' }}
-          />
-        ))}
-      </div>
-
-      {step === 1 && (
-        <div>
-          <p className="text-sm font-medium mb-3" style={{ color: 'var(--text)' }}>
-            Quel est votre besoin en quelques mots ?
-          </p>
-          <input
-            className="input"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Ex : Permettre aux utilisateurs de se connecter via Google"
-            autoFocus
-          />
-        </div>
-      )}
-
-      {step === 2 && (
-        <div>
-          <p className="text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-            Décrivez l'objectif et le résultat attendu.
-          </p>
-          <p className="text-xs mb-3" style={{ color: 'var(--muted)' }}>
-            Expliquez pourquoi c'est nécessaire et ce que vous souhaitez obtenir.
-          </p>
-          <textarea
-            className="input resize-none"
-            rows={4}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Actuellement, les utilisateurs doivent créer un compte manuellement…"
-            autoFocus
-          />
-        </div>
-      )}
-
-      {step === 3 && (
-        <div>
-          <p className="text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>
-            Contexte et utilisateurs concernés
-          </p>
-          <p className="text-xs mb-3" style={{ color: 'var(--muted)' }}>
-            Qui sont les utilisateurs concernés ? Y a-t-il des contraintes particulières ?
-          </p>
-          <textarea
-            className="input resize-none"
-            rows={3}
-            value={context}
-            onChange={(e) => setContext(e.target.value)}
-            placeholder="Ex : Utilisateurs finaux grand public, pas d'accès admin requis…"
-            autoFocus
-          />
-          <p className="text-xs mt-3 p-3 rounded-lg" style={{ background: 'var(--brand-dim)', color: 'var(--brand)' }}>
-            Cette demande sera transmise à l'agent PO pour reformulation en user stories et features.
-          </p>
-        </div>
-      )}
-
-      <div className="flex justify-between gap-3 pt-1">
-        <button type="button" onClick={onCancel} className="btn-secondary">Annuler</button>
-        <div className="flex gap-2">
-          {step > 1 && (
-            <button type="button" onClick={() => setStep((s) => s - 1)} className="btn-secondary">
-              ← Retour
-            </button>
-          )}
-          {step < 3 ? (
-            <button
-              type="button"
-              onClick={() => setStep((s) => s + 1)}
-              className="btn-primary"
-              disabled={step === 1 && !title.trim()}
-            >
-              Suivant →
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => onSubmit(title, description, context)}
-              className="btn-primary"
-              disabled={loading || !title.trim()}
-            >
-              {loading ? 'Envoi…' : 'Soumettre au PO →'}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Task Form ────────────────────────────────────────────────────────────────
-
-function TaskForm({
-  featureId,
-  defaultType = 'user_story',
-  onSubmit,
-  loading,
-  onCancel,
-}: {
-  featureId?: string
-  defaultType?: TaskType
+function TaskForm({ initial, onSubmit, loading, onCancel }: {
+  initial?: Partial<TaskPayload>
   onSubmit: (d: TaskPayload) => void
   loading: boolean
   onCancel: () => void
 }) {
-  const [title, setTitle]       = useState('')
-  const [type, setType]         = useState<TaskType>(defaultType)
-  const [priority, setPriority] = useState<TaskPriority>('medium')
+  const [title, setTitle]             = useState(initial?.title ?? '')
+  const [description, setDescription] = useState(initial?.description ?? '')
+  const [type, setType]               = useState<TaskType>(initial?.type ?? 'user_story')
+  const [priority, setPriority]       = useState<TaskPriority>(initial?.priority ?? 'medium')
 
   return (
-    <form
-      onSubmit={(e) => { e.preventDefault(); onSubmit({ title, type, priority, featureId }) }}
-      className="space-y-3"
-    >
+    <form onSubmit={(e) => { e.preventDefault(); onSubmit({ title, description: description || undefined, type, priority }) }} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Titre *</label>
-        <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} required autoFocus />
+        <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Titre *</label>
+        <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="En tant qu'utilisateur, je veux..." />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Type</label>
           <select className="input" value={type} onChange={(e) => setType(e.target.value as TaskType)}>
             <option value="user_story">User Story</option>
-            <option value="task">Tâche</option>
             <option value="bug">Bug</option>
+            <option value="task">Tâche technique</option>
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Priorité</label>
+          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Priorité</label>
           <select className="input" value={priority} onChange={(e) => setPriority(e.target.value as TaskPriority)}>
             <option value="low">Faible</option>
             <option value="medium">Normale</option>
@@ -285,159 +363,128 @@ function TaskForm({
           </select>
         </div>
       </div>
-      <div className="flex justify-end gap-3 pt-1">
+      <div>
+        <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Description</label>
+        <textarea className="input resize-none" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+      </div>
+      <div className="flex justify-end gap-3 pt-2">
         <button type="button" onClick={onCancel} className="btn-secondary">Annuler</button>
-        <button type="submit" className="btn-primary" disabled={loading}>
-          {loading ? 'Enregistrement…' : 'Enregistrer'}
-        </button>
+        <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Enregistrement…' : 'Enregistrer'}</button>
       </div>
     </form>
   )
 }
 
-// ─── Feature Form ─────────────────────────────────────────────────────────────
+// ─── Main page ────────────────────────────────────────────────────────────────
 
-function FeatureForm({
-  onSubmit,
-  loading,
-  onCancel,
-}: {
-  onSubmit: (d: FeaturePayload) => void
-  loading: boolean
-  onCancel: () => void
-}) {
-  const [name, setName]               = useState('')
-  const [description, setDescription] = useState('')
+type Tab = 'general' | 'board' | 'tasks' | 'team' | 'modules'
 
-  return (
-    <form
-      onSubmit={(e) => { e.preventDefault(); onSubmit({ name, description: description || undefined, status: 'open' }) }}
-      className="space-y-3"
-    >
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
-        <input
-          className="input"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          autoFocus
-          placeholder="Ex : Authentification, Dashboard…"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-        <textarea
-          className="input resize-none"
-          rows={2}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-      </div>
-      <div className="flex justify-end gap-3 pt-1">
-        <button type="button" onClick={onCancel} className="btn-secondary">Annuler</button>
-        <button type="submit" className="btn-primary" disabled={loading}>
-          {loading ? 'Enregistrement…' : 'Enregistrer'}
-        </button>
-      </div>
-    </form>
-  )
-}
+const TABS: { key: Tab; label: string; icon: ComponentType<{ className?: string }> }[] = [
+  { key: 'general', label: 'Général',      icon: Settings  },
+  { key: 'board',   label: 'Board',        icon: Kanban    },
+  { key: 'tasks',   label: 'Tâches',       icon: ListTodo  },
+  { key: 'team',    label: 'Équipe',       icon: Users     },
+  { key: 'modules', label: 'Modules',      icon: Code2     },
+]
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
-
-type Tab = 'features' | 'tasks' | 'modules'
-
+/**
+ * Project detail hub page with 5 tabs: Général, Board, Tâches, Équipe, Modules.
+ * Stories/bugs kanban and technical tasks are accessible directly from this page,
+ * scoped to the project — no need to navigate to a global Tasks page.
+ */
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
   const qc = useQueryClient()
 
-  const [tab, setTab]                       = useState<Tab>('features')
-  const [demandOpen, setDemandOpen]         = useState(false)
-  const [addFeatureOpen, setAddFeatureOpen] = useState(false)
-  const [addTaskModal, setAddTaskModal]     = useState<{ featureId?: string; type: TaskType } | null>(null)
-  const [deleteTaskTarget, setDeleteTaskTarget]       = useState<Task | null>(null)
-  const [deleteFeatureTarget, setDeleteFeatureTarget] = useState<Feature | null>(null)
+  const [tab, setTab]                         = useState<Tab>('board')
+  const [createOpen, setCreateOpen]           = useState(false)
+  const [deleteTask, setDeleteTask]           = useState<Task | null>(null)
+  const [transitionError, setTransitionError] = useState<string | null>(null)
+  const [pendingTaskId, setPendingTaskId]     = useState<string | null>(null)
+  const [executeTask, setExecuteTask]         = useState<Task | null>(null)
+  // null = user hasn't changed the selection yet → falls back to project.team?.id
+  const [selectedTeamId, setSelectedTeamId]   = useState<string | null>(null)
+  const [teamSaveError, setTeamSaveError]     = useState<string | null>(null)
 
-  const {
-    data: project,
-    isLoading: loadingProject,
-    error: errorProject,
-    refetch: refetchProject,
-  } = useQuery({
+  // ── Data queries ─────────────────────────────────────────────────────────────
+
+  const { data: project, isLoading: loadingProject, error: errorProject, refetch: refetchProject } = useQuery({
     queryKey: ['projects', id],
-    queryFn: () => projectsApi.get(id!),
-    enabled: !!id,
+    queryFn:  () => projectsApi.get(id!),
+    enabled:  !!id,
   })
 
-  const { data: features = [], isLoading: loadingFeatures } = useQuery({
-    queryKey: ['features', id],
-    queryFn: () => featuresApi.listByProject(id!),
-    enabled: !!id,
-  })
-
-  const { data: tasks = [], isLoading: loadingTasks } = useQuery({
+  const { data: tasks = [], isLoading: loadingTasks, error: errorTasks } = useQuery({
     queryKey: ['tasks', id],
-    queryFn: () => tasksApi.listByProject(id!),
-    enabled: !!id,
+    queryFn:  () => tasksApi.listByProject(id!),
+    enabled:  !!id,
   })
 
-  const createFeatureMutation = useMutation({
-    mutationFn: (d: FeaturePayload) => featuresApi.create(id!, d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['features', id] }); setAddFeatureOpen(false) },
+  const { data: teamDetail } = useQuery({
+    queryKey: ['teams', project?.team?.id],
+    queryFn:  () => teamsApi.get(project!.team!.id),
+    enabled:  !!project?.team?.id && tab === 'team',
   })
 
-  const createTaskMutation = useMutation({
+  const { data: teamsList = [] } = useQuery({
+    queryKey: ['teams'],
+    queryFn:  teamsApi.list,
+    enabled:  tab === 'general',
+  })
+
+  // ── Mutations ─────────────────────────────────────────────────────────────────
+
+  const invalidateTasks = () => qc.invalidateQueries({ queryKey: ['tasks', id] })
+
+  const createMutation = useMutation({
     mutationFn: (d: TaskPayload) => tasksApi.create(id!, d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tasks', id] }); setAddTaskModal(null) },
+    onSuccess:  () => { invalidateTasks(); setCreateOpen(false) },
   })
 
-  const deleteTaskMutation = useMutation({
-    mutationFn: (tid: string) => tasksApi.delete(tid),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tasks', id] }); setDeleteTaskTarget(null) },
-  })
-
-  const deleteFeatureMutation = useMutation({
-    mutationFn: (fid: string) => featuresApi.delete(fid),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['features', id] })
-      qc.invalidateQueries({ queryKey: ['tasks', id] })
-      setDeleteFeatureTarget(null)
+  const transitionMutation = useMutation({
+    mutationFn: ({ taskId, status }: { taskId: string; status: StoryStatus }) => {
+      setPendingTaskId(taskId)
+      setTransitionError(null)
+      return tasksApi.transitionStory(taskId, status)
+    },
+    onSuccess: () => { invalidateTasks(); setPendingTaskId(null) },
+    onError: (err: unknown) => {
+      setPendingTaskId(null)
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+      setTransitionError(msg ?? 'Transition impossible.')
     },
   })
 
-  const createDemandMutation = useMutation({
-    mutationFn: (d: TaskPayload) => tasksApi.create(id!, d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tasks', id] }); setDemandOpen(false) },
+  const deleteMutation = useMutation({
+    mutationFn: (taskId: string) => tasksApi.delete(taskId),
+    onSuccess:  () => { invalidateTasks(); setDeleteTask(null) },
   })
+
+  const updateTeamMutation = useMutation({
+    mutationFn: (teamId: string | null) => projectsApi.update(id!, {
+      name:        project!.name,
+      description: project!.description ?? undefined,
+      teamId:      teamId,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['projects', id] })
+      setTeamSaveError(null)
+    },
+    onError: () => setTeamSaveError('Impossible de sauvegarder l\'équipe.'),
+  })
+
+  // ── Derived data ───────────────────────────────────────────────────────────────
 
   if (loadingProject) return <PageSpinner />
   if (errorProject || !project) {
     return <ErrorMessage message={(errorProject as Error)?.message ?? 'Projet introuvable'} onRetry={() => refetchProject()} />
   }
 
-  // Derived data
-  const userStories  = tasks.filter((t) => t.type === 'user_story')
-  const otherTasks   = tasks.filter((t) => t.type !== 'user_story')
-  const modules      = Array.isArray(project.modules) ? (project.modules as Module[]) : []
-  const doneTasks    = tasks.filter((t) => t.status === 'done').length
-  const progress     = tasks.length > 0 ? Math.round((doneTasks / tasks.length) * 100) : 0
+  const stories   = tasks.filter((t) => t.type === 'user_story' || t.type === 'bug')
+  const techTasks = tasks.filter((t) => t.type === 'task')
+  const modules   = Array.isArray(project.modules) ? (project.modules as Module[]) : []
 
-  const usByFeature: Record<string, Task[]> = {}
-  const unassignedUS: Task[] = []
-  for (const us of userStories) {
-    if (us.feature) {
-      usByFeature[us.feature.id] = [...(usByFeature[us.feature.id] ?? []), us]
-    } else {
-      unassignedUS.push(us)
-    }
-  }
-
-  const tabs: { key: Tab; label: string; count: number }[] = [
-    { key: 'features', label: 'Features & User Stories', count: features.length },
-    { key: 'tasks',    label: 'Tâches',                  count: otherTasks.length },
-    { key: 'modules',  label: 'Modules',                 count: modules.length },
-  ]
+  // ── Render ─────────────────────────────────────────────────────────────────────
 
   return (
     <>
@@ -449,19 +496,22 @@ export default function ProjectDetailPage() {
         title={project.name}
         description={project.description ?? undefined}
         action={
-          <button className="btn-primary" onClick={() => setDemandOpen(true)}>
-            <MessageSquarePlus className="w-4 h-4" /> Nouvelle demande
-          </button>
+          (tab === 'board' || tab === 'tasks') ? (
+            <button className="btn-primary" onClick={() => setCreateOpen(true)}>
+              <Plus className="w-4 h-4" />
+              {tab === 'board' ? 'Nouvelle story' : 'Nouvelle tâche'}
+            </button>
+          ) : undefined
         }
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
         {[
-          { label: 'Features',      value: features.length },
-          { label: 'User Stories',  value: userStories.length },
-          { label: 'Tâches',        value: otherTasks.length },
-          { label: 'Progression',   value: `${progress} %` },
+          { label: 'Stories & Bugs', value: stories.length },
+          { label: 'Tâches',         value: techTasks.length },
+          { label: 'Modules',        value: modules.length },
+          { label: 'Équipe',         value: project.team?.name ?? '—' },
         ].map(({ label, value }) => (
           <div key={label} className="card p-3 text-center">
             <p className="text-xl font-bold" style={{ color: 'var(--text)' }}>{value}</p>
@@ -470,213 +520,229 @@ export default function ProjectDetailPage() {
         ))}
       </div>
 
-      {/* Tabs */}
+      {/* Tab bar */}
       <div className="flex gap-0 mb-5 border-b" style={{ borderColor: 'var(--border)' }}>
-        {tabs.map(({ key, label, count }) => (
+        {TABS.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             onClick={() => setTab(key)}
-            className="px-4 py-2.5 text-sm font-medium transition-colors -mb-px border-b-2"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors -mb-px border-b-2"
             style={{
               borderColor: tab === key ? 'var(--brand)' : 'transparent',
-              color: tab === key ? 'var(--brand)' : 'var(--muted)',
+              color:       tab === key ? 'var(--brand)' : 'var(--muted)',
             }}
           >
+            <Icon className="w-3.5 h-3.5" />
             {label}
-            <span
-              className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full"
-              style={{ background: 'var(--surface2)', color: 'var(--muted)' }}
-            >
-              {count}
-            </span>
           </button>
         ))}
       </div>
 
-      {/* ── Tab: Features & User Stories ── */}
-      {tab === 'features' && (
-        <div className="space-y-4">
-          {loadingFeatures || loadingTasks ? <PageSpinner /> : (
-            features.length === 0 && unassignedUS.length === 0 ? (
-              <EmptyState
-                icon={Layers}
-                title="Aucune feature"
-                description="Créez des features pour organiser vos user stories."
-                action={
-                  <button className="btn-primary" onClick={() => setAddFeatureOpen(true)}>
-                    <Plus className="w-4 h-4" /> Nouvelle feature
-                  </button>
-                }
-              />
-            ) : (
-              <>
-                {features.map((feature) => (
-                  <FeatureSection
-                    key={feature.id}
-                    feature={feature}
-                    userStories={usByFeature[feature.id] ?? []}
-                    onAddUS={(fid) => setAddTaskModal({ featureId: fid, type: 'user_story' })}
-                    onDeleteTask={setDeleteTaskTarget}
-                    onDeleteFeature={setDeleteFeatureTarget}
-                  />
+      {/* ── Tab: Général ── */}
+      {tab === 'general' && (
+        <div className="max-w-lg space-y-6">
+          <div className="card p-5 space-y-4">
+            <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Informations</h3>
+            <div>
+              <p className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>Nom</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{project.name}</p>
+            </div>
+            {project.description && (
+              <div>
+                <p className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>Description</p>
+                <p className="text-sm" style={{ color: 'var(--text)' }}>{project.description}</p>
+              </div>
+            )}
+          </div>
+
+          <div className="card p-5 space-y-4">
+            <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Équipe assignée</h3>
+            <p className="text-xs" style={{ color: 'var(--muted)' }}>
+              L'équipe détermine les agents disponibles pour l'exécution des stories.
+            </p>
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Équipe</label>
+              <select
+                className="input"
+                value={selectedTeamId ?? (project.team?.id ?? '')}
+                onChange={(e) => setSelectedTeamId(e.target.value)}
+              >
+                <option value="">— Aucune équipe —</option>
+                {teamsList.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
-
-                {unassignedUS.length > 0 && (
-                  <div className="card overflow-hidden">
-                    <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
-                      <span className="text-sm font-semibold" style={{ color: 'var(--muted)' }}>
-                        User stories sans feature ({unassignedUS.length})
-                      </span>
-                    </div>
-                    <div className="p-3 space-y-2">
-                      {unassignedUS.map((us) => <TaskRow key={us.id} task={us} onDelete={setDeleteTaskTarget} />)}
-                    </div>
-                  </div>
-                )}
-              </>
-            )
-          )}
-
-          <button
-            className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg transition-colors"
-            style={{ color: 'var(--brand)', background: 'var(--brand-dim)' }}
-            onClick={() => setAddFeatureOpen(true)}
-          >
-            <Plus className="w-4 h-4" /> Nouvelle feature
-          </button>
+              </select>
+            </div>
+            {teamSaveError && (
+              <p className="text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />{teamSaveError}
+              </p>
+            )}
+            <button
+              className="btn-primary"
+              disabled={updateTeamMutation.isPending}
+              onClick={() => {
+                const effectiveId = selectedTeamId ?? (project.team?.id ?? '')
+                updateTeamMutation.mutate(effectiveId || null)
+              }}
+            >
+              {updateTeamMutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
+            </button>
+          </div>
         </div>
+      )}
+
+      {/* ── Tab: Board ── */}
+      {tab === 'board' && (
+        <>
+          {transitionError && (
+            <div className="mb-3 px-3 py-2 rounded flex items-center justify-between text-sm" style={{ background: 'rgba(239,68,68,0.1)', color: '#dc2626', border: '1px solid rgba(239,68,68,0.3)' }}>
+              <span>{transitionError}</span>
+              <button onClick={() => setTransitionError(null)}><XCircle className="w-4 h-4" /></button>
+            </div>
+          )}
+          {loadingTasks ? <PageSpinner /> : errorTasks ? (
+            <ErrorMessage message={(errorTasks as Error).message} />
+          ) : (
+            <StoryBoard
+              stories={stories}
+              onTransition={(task, status) => transitionMutation.mutate({ taskId: task.id, status })}
+              onDelete={setDeleteTask}
+              onExecute={setExecuteTask}
+              pendingTaskId={pendingTaskId}
+            />
+          )}
+        </>
       )}
 
       {/* ── Tab: Tâches ── */}
       {tab === 'tasks' && (
-        <div className="space-y-4">
-          {loadingTasks ? <PageSpinner /> : otherTasks.length === 0 ? (
-            <EmptyState
-              icon={ListTodo}
-              title="Aucune tâche"
-              description="Créez des tâches et des bugs pour ce projet."
-              action={
-                <button className="btn-primary" onClick={() => setAddTaskModal({ type: 'task' })}>
-                  <Plus className="w-4 h-4" /> Nouvelle tâche
-                </button>
-              }
-            />
-          ) : (
-            <div className="card divide-y" style={{ borderColor: 'var(--border)' }}>
-              {otherTasks.map((task) => (
-                <div key={task.id} className="px-4 py-2.5">
-                  <TaskRow task={task} onDelete={setDeleteTaskTarget} />
-                </div>
-              ))}
-            </div>
-          )}
+        loadingTasks ? <PageSpinner /> : techTasks.length === 0 ? (
+          <EmptyState
+            icon={ListTodo}
+            title="Aucune tâche technique"
+            description="Les tâches techniques sont créées automatiquement lors de la planification d'une story, ou manuellement."
+          />
+        ) : (
+          <div className="card divide-y" style={{ borderColor: 'var(--border)' }}>
+            {techTasks.map((t) => <TechTaskRow key={t.id} task={t} onDelete={setDeleteTask} />)}
+          </div>
+        )
+      )}
 
-          <button
-            className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg transition-colors"
-            style={{ color: 'var(--brand)', background: 'var(--brand-dim)' }}
-            onClick={() => setAddTaskModal({ type: 'task' })}
-          >
-            <Plus className="w-4 h-4" /> Nouvelle tâche
-          </button>
-        </div>
+      {/* ── Tab: Équipe ── */}
+      {tab === 'team' && (
+        !project.team ? (
+          <EmptyState
+            icon={Users}
+            title="Aucune équipe assignée"
+            description="Assignez une équipe dans l'onglet Général pour voir les agents disponibles."
+            action={<button className="btn-secondary" onClick={() => setTab('general')}><Settings className="w-4 h-4" /> Configurer</button>}
+          />
+        ) : !teamDetail ? (
+          <PageSpinner />
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 mb-2">
+              <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{teamDetail.name}</h3>
+              {teamDetail.description && (
+                <span className="text-sm" style={{ color: 'var(--muted)' }}>{teamDetail.description}</span>
+              )}
+            </div>
+            {(!teamDetail.agents || teamDetail.agents.length === 0) ? (
+              <EmptyState
+                icon={Users}
+                title="Aucun agent dans cette équipe"
+                description="Ajoutez des agents depuis la page Équipes."
+              />
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {(teamDetail.agents as AgentSummary[]).map((agent) => (
+                  <div key={agent.id} className="card p-4 flex items-center gap-3">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-semibold"
+                      style={{ background: 'var(--brand-dim)', color: 'var(--brand)' }}
+                    >
+                      {agent.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>{agent.name}</p>
+                        <AgentStatusBadge agentId={agent.id} />
+                      </div>
+                      {agent.role && (
+                        <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--muted)' }}>{agent.role.name}</p>
+                      )}
+                      {!agent.isActive && (
+                        <span className="badge-gray text-xs mt-1 inline-block">Inactif</span>
+                      )}
+                    </div>
+                    <Zap className="w-4 h-4 flex-shrink-0" style={{ color: agent.isActive ? 'var(--brand)' : 'var(--muted)', opacity: agent.isActive ? 1 : 0.3 }} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )
       )}
 
       {/* ── Tab: Modules ── */}
       {tab === 'modules' && (
-        <div>
-          {modules.length === 0 ? (
-            <EmptyState
-              icon={Code2}
-              title="Aucun module"
-              description="Les modules représentent les composants logiciels du projet (API, client mobile, etc.)."
-            />
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {modules.map((mod) => (
-                <div key={mod.id} className="card p-4 flex flex-col gap-2">
-                  <p className="font-medium text-sm" style={{ color: 'var(--text)' }}>{mod.name}</p>
-                  {mod.description && <p className="text-xs" style={{ color: 'var(--muted)' }}>{mod.description}</p>}
-                  {mod.stack && <span className="badge-blue self-start">{mod.stack}</span>}
-                  {mod.repositoryUrl && (
-                    <a
-                      href={mod.repositoryUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-xs"
-                      style={{ color: 'var(--brand)' }}
-                    >
-                      <Globe className="w-3 h-3" /> Dépôt
-                    </a>
-                  )}
-                  <div className="mt-auto">
-                    <span className={mod.status === 'active' ? 'badge-green' : 'badge-gray'}>
-                      {mod.status === 'active' ? 'Actif' : 'Archivé'}
-                    </span>
-                  </div>
+        modules.length === 0 ? (
+          <EmptyState icon={Code2} title="Aucun module" description="Les modules représentent les composants logiciels du projet (API, client mobile, etc.)." />
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {modules.map((mod) => (
+              <div key={mod.id} className="card p-4 flex flex-col gap-2">
+                <p className="font-medium text-sm" style={{ color: 'var(--text)' }}>{mod.name}</p>
+                {mod.description && <p className="text-xs" style={{ color: 'var(--muted)' }}>{mod.description}</p>}
+                {mod.stack && <span className="badge-blue self-start">{mod.stack}</span>}
+                {mod.repositoryUrl && (
+                  <a href={mod.repositoryUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs" style={{ color: 'var(--brand)' }}>
+                    <Globe className="w-3 h-3" /> Dépôt
+                  </a>
+                )}
+                <div className="mt-auto">
+                  <span className={mod.status === 'active' ? 'badge-green' : 'badge-gray'}>
+                    {mod.status === 'active' ? 'Actif' : 'Archivé'}
+                  </span>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              </div>
+            ))}
+          </div>
+        )
       )}
 
       {/* ── Modals ── */}
-      <Modal open={addFeatureOpen} onClose={() => setAddFeatureOpen(false)} title="Nouvelle feature">
-        <FeatureForm
-          onSubmit={(d) => createFeatureMutation.mutate(d)}
-          loading={createFeatureMutation.isPending}
-          onCancel={() => setAddFeatureOpen(false)}
-        />
-      </Modal>
-
       <Modal
-        open={!!addTaskModal}
-        onClose={() => setAddTaskModal(null)}
-        title={addTaskModal?.type === 'user_story' ? 'Nouvelle user story' : 'Nouvelle tâche'}
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        title={tab === 'board' ? 'Nouvelle story / bug' : 'Nouvelle tâche technique'}
       >
-        {addTaskModal && (
-          <TaskForm
-            featureId={addTaskModal.featureId}
-            defaultType={addTaskModal.type}
-            onSubmit={(d) => createTaskMutation.mutate(d)}
-            loading={createTaskMutation.isPending}
-            onCancel={() => setAddTaskModal(null)}
-          />
-        )}
-      </Modal>
-
-      <Modal open={demandOpen} onClose={() => setDemandOpen(false)} title="Nouvelle demande">
-        <DemandForm
-          onSubmit={(title, description, context) => {
-            const fullDesc = [description, context ? `Contexte : ${context}` : '']
-              .filter(Boolean)
-              .join('\n\n')
-            createDemandMutation.mutate({
-              title: `[Demande] ${title}`,
-              description: fullDesc || undefined,
-              type: 'task',
-              priority: 'high',
-            })
-          }}
-          loading={createDemandMutation.isPending}
-          onCancel={() => setDemandOpen(false)}
+        <TaskForm
+          initial={{ type: tab === 'board' ? 'user_story' : 'task' }}
+          onSubmit={(d) => createMutation.mutate(d)}
+          loading={createMutation.isPending}
+          onCancel={() => setCreateOpen(false)}
         />
       </Modal>
 
-      <ConfirmDialog
-        open={!!deleteTaskTarget}
-        onClose={() => setDeleteTaskTarget(null)}
-        onConfirm={() => deleteTaskTarget && deleteTaskMutation.mutate(deleteTaskTarget.id)}
-        message={`Supprimer "${deleteTaskTarget?.title}" ? Cette action est irréversible.`}
-        loading={deleteTaskMutation.isPending}
-      />
+      {executeTask && (
+        <Modal open onClose={() => setExecuteTask(null)} title="Lancer l'agent">
+          <ExecuteModal
+            task={executeTask}
+            onClose={() => setExecuteTask(null)}
+            onExecuted={() => invalidateTasks()}
+          />
+        </Modal>
+      )}
 
       <ConfirmDialog
-        open={!!deleteFeatureTarget}
-        onClose={() => setDeleteFeatureTarget(null)}
-        onConfirm={() => deleteFeatureTarget && deleteFeatureMutation.mutate(deleteFeatureTarget.id)}
-        message={`Supprimer la feature "${deleteFeatureTarget?.name}" ? Cette action est irréversible.`}
-        loading={deleteFeatureMutation.isPending}
+        open={!!deleteTask}
+        onClose={() => setDeleteTask(null)}
+        onConfirm={() => deleteTask && deleteMutation.mutate(deleteTask.id)}
+        message={`Supprimer "${deleteTask?.title}" ? Cette action est irréversible.`}
+        loading={deleteMutation.isPending}
       />
     </>
   )
