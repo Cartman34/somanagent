@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Repository\AuditLogRepository;
 use App\Service\ProjectService;
+use App\Service\TokenUsageService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -14,7 +16,11 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/projects')]
 class ProjectController extends AbstractController
 {
-    public function __construct(private readonly ProjectService $projectService) {}
+    public function __construct(
+        private readonly ProjectService    $projectService,
+        private readonly AuditLogRepository $auditLogRepository,
+        private readonly TokenUsageService  $tokenUsageService,
+    ) {}
 
     #[Route('', name: 'project_list', methods: ['GET'])]
     public function list(): JsonResponse
@@ -116,6 +122,52 @@ class ProjectController extends AbstractController
 
         $this->projectService->delete($project);
         return $this->json(null, Response::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * Returns the audit log entries scoped to the project and its tasks, paginated.
+     */
+    #[Route('/{id}/audit', name: 'project_audit', methods: ['GET'])]
+    public function audit(string $id, Request $request): JsonResponse
+    {
+        $project = $this->projectService->findById($id);
+        if ($project === null) {
+            return $this->json(['error' => 'Projet introuvable.'], Response::HTTP_NOT_FOUND);
+        }
+
+        $page  = max(1, (int) $request->query->get('page', 1));
+        $limit = min(100, max(1, (int) $request->query->get('limit', 25)));
+
+        $logs  = $this->auditLogRepository->findByProject($project, $limit, ($page - 1) * $limit);
+        $total = $this->auditLogRepository->countByProject($project);
+
+        return $this->json([
+            'data'  => array_map(fn($log) => [
+                'id'         => (string) $log->getId(),
+                'action'     => $log->getAction()->value,
+                'entityType' => $log->getEntityType(),
+                'entityId'   => $log->getEntityId(),
+                'data'       => $log->getData(),
+                'createdAt'  => $log->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            ], $logs),
+            'total' => $total,
+            'page'  => $page,
+            'limit' => $limit,
+        ]);
+    }
+
+    /**
+     * Returns token usage for this project: a summary by agent and recent individual entries.
+     */
+    #[Route('/{id}/tokens', name: 'project_tokens', methods: ['GET'])]
+    public function tokens(string $id): JsonResponse
+    {
+        $project = $this->projectService->findById($id);
+        if ($project === null) {
+            return $this->json(['error' => 'Projet introuvable.'], Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->json($this->tokenUsageService->getProjectTokens($project));
     }
 
     // --- Modules ---

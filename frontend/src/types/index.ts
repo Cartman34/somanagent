@@ -121,6 +121,7 @@ export interface Task {
   addedBy: { id: string; name: string } | null
   children?: Task[]
   logs?: TaskLog[]
+  tokenUsage?: TokenUsageEntry[]
   createdAt: string
   updatedAt: string
 }
