@@ -22,9 +22,9 @@
 
 ## Critical Performance Note
 
-**The project MUST run from `~/projects/somanagent` in WSL native filesystem.**  
-**This is not the path you edit the file, this is the path in the WSL.**  
-**Your path must be starting with `\\wsl.localhost\` or you must alert the user about using the wrong path.**  
+**The project MUST run from `~/projects/somanagent` in WSL native filesystem. This is your real working directory in the WSL, use command, write, read from this path.**
+**You don't need to change directory with `cd` between these paths**
+**Alert user if you are not in the WSL**
 
 **Why:** Docker bind mounts from `/mnt/c/...` (Windows NTFS accessed through WSL) use the 9P protocol over Hyper-V virtio, causing 5-20x slower I/O. WSL native ext4 gives near-native Linux speed.
 
@@ -35,7 +35,7 @@
 ## Directory Structure
 
 ```
-~/projects/somanagent/
+somanagent/                      # Project Root
 ├── frontend/                    # React SPA
 │   └── src/
 │       ├── api/                 # Axios clients (projects, teams, agents, skills, workflows, health)

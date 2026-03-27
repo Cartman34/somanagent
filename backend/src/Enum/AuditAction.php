@@ -49,6 +49,7 @@ enum AuditAction: string
     case WorkflowStepFailed    = 'workflow.step.failed';
     case WorkflowCompleted     = 'workflow.completed';
     case WorkflowFailed        = 'workflow.failed';
+    case WorkflowCancelled     = 'workflow.cancelled';
 
     // Features
     case FeatureCreated = 'feature.created';
