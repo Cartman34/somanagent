@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Enum\StoryStatus;
 use App\Enum\TaskPriority;
 use App\Enum\TaskStatus;
 use App\Enum\TaskType;
@@ -197,6 +198,37 @@ class TaskController extends AbstractController
         return $this->json($this->serialize($task));
     }
 
+    #[Route('/tasks/{id}/story-transition', name: 'task_story_transition', methods: ['POST'])]
+    public function storyTransition(string $id, Request $request): JsonResponse
+    {
+        $task = $this->taskService->findById($id);
+        if ($task === null) {
+            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+        }
+
+        if (!$task->isStory()) {
+            return $this->json(['error' => 'Cette tâche n\'est pas une user story ou un bug.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $data = $request->toArray();
+        if (empty($data['status'])) {
+            return $this->json(['error' => 'Le champ "status" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $next = StoryStatus::tryFrom($data['status']);
+        if ($next === null) {
+            return $this->json(['error' => "Statut story inconnu : {$data['status']}."], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        try {
+            $this->taskService->transitionStory($task, $next);
+        } catch (\LogicException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        return $this->json($this->serialize($task));
+    }
+
     #[Route('/tasks/{id}', name: 'task_delete', methods: ['DELETE'])]
     public function delete(string $id): JsonResponse
     {
@@ -217,11 +249,18 @@ class TaskController extends AbstractController
             'description'   => $task->getDescription(),
             'type'          => $task->getType()->value,
             'status'        => $task->getStatus()->value,
+            'storyStatus'   => $task->getStoryStatus()?->value,
+            'storyStatusAllowedTransitions' => $task->getStoryStatus()
+                ? array_map(fn($s) => $s->value, $task->getStoryStatus()->allowedTransitions())
+                : [],
             'priority'      => $task->getPriority()->value,
             'progress'      => $task->getProgress(),
+            'branchName'    => $task->getBranchName(),
             'feature'       => $task->getFeature() ? ['id' => (string) $task->getFeature()->getId(), 'name' => $task->getFeature()->getName()] : null,
             'parent'        => $task->getParent() ? ['id' => (string) $task->getParent()->getId(), 'title' => $task->getParent()->getTitle()] : null,
             'assignedAgent' => $task->getAssignedAgent() ? ['id' => (string) $task->getAssignedAgent()->getId(), 'name' => $task->getAssignedAgent()->getName()] : null,
+            'assignedRole'  => $task->getAssignedRole() ? ['id' => (string) $task->getAssignedRole()->getId(), 'name' => $task->getAssignedRole()->getName(), 'slug' => $task->getAssignedRole()->getSlug()] : null,
+            'addedBy'       => $task->getAddedBy() ? ['id' => (string) $task->getAddedBy()->getId(), 'name' => $task->getAddedBy()->getName()] : null,
             'createdAt'     => $task->getCreatedAt()->format(\DateTimeInterface::ATOM),
             'updatedAt'     => $task->getUpdatedAt()->format(\DateTimeInterface::ATOM),
         ];

@@ -10,6 +10,7 @@ use App\Entity\Project;
 use App\Entity\Task;
 use App\Entity\TaskLog;
 use App\Enum\AuditAction;
+use App\Enum\StoryStatus;
 use App\Enum\TaskPriority;
 use App\Enum\TaskStatus;
 use App\Enum\TaskType;
@@ -170,6 +171,18 @@ class TaskService
         $this->log($task, 'rejected', $reason ?? 'Tâche rejetée, retour en cours.');
         $this->em->flush();
         $this->audit->log(AuditAction::TaskRejected, 'Task', (string) $task->getId(), ['reason' => $reason]);
+        return $task;
+    }
+
+    /**
+     * @throws \LogicException si la transition n'est pas autorisée
+     */
+    public function transitionStory(Task $task, StoryStatus $next): Task
+    {
+        $task->transitionStoryTo($next);
+        $this->log($task, 'story_transition', "Statut story → {$next->value}");
+        $this->em->flush();
+        $this->audit->log(AuditAction::TaskUpdated, 'Task', (string) $task->getId(), ['story_status' => $next->value]);
         return $task;
     }
 
