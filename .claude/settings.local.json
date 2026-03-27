@@ -34,10 +34,12 @@
       "Bash(xargs ls:*)",
       "Bash(git checkout:*)",
       "Bash(curl *)",
+      "Bash(sed *)",
       "Bash(sudo dd:*)",
       "Bash(sudo chmod:*)",
       "Bash(sudo tee:*)",
-      "Bash(sudo apt:*)"
+      "Bash(sudo apt:*)",
+      "Bash(git pull:*)"
     ]
   }
 }

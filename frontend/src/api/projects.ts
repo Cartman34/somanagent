@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { Project, Module } from '@/types'
+import type { Project, Module, AuditLog, TokenUsageEntry } from '@/types'
 
 export interface ProjectPayload {
   name: string
@@ -52,5 +52,24 @@ export const projectsApi = {
 
   deleteModule: async (moduleId: string): Promise<void> => {
     await apiClient.delete(`/projects/modules/${moduleId}`)
+  },
+
+  /**
+   * Returns the audit log scoped to this project and its tasks, paginated.
+   */
+  getAudit: async (projectId: string, page = 1, limit = 25): Promise<{ data: AuditLog[]; total: number; page: number; limit: number }> => {
+    const { data } = await apiClient.get(`/projects/${projectId}/audit`, { params: { page, limit } })
+    return data
+  },
+
+  /**
+   * Returns token usage summary (by agent) and recent entries for this project.
+   */
+  getTokens: async (projectId: string): Promise<{
+    summary: { total: { input: number; output: number; calls: number }; byAgent: { agentId: string; agentName: string; totalInput: number; totalOutput: number; calls: number }[] }
+    entries: TokenUsageEntry[]
+  }> => {
+    const { data } = await apiClient.get(`/projects/${projectId}/tokens`)
+    return data
   },
 }

@@ -5,14 +5,15 @@ import {
   ArrowLeft, Plus, Code2, Globe, XCircle, CheckCircle, Clock,
   AlertTriangle, ChevronRight, GitBranch, User, ArrowRight,
   Layers, Play, ListTodo, Users, Settings, Kanban, Zap,
-  Loader2, AlertCircle,
+  Loader2, AlertCircle, History, Coins, X, FileText,
+  ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { projectsApi } from '@/api/projects'
 import { tasksApi } from '@/api/tasks'
 import { teamsApi } from '@/api/teams'
 import { agentsApi } from '@/api/agents'
 import type { TaskPayload } from '@/api/tasks'
-import type { Task, TaskStatus, TaskPriority, TaskType, StoryStatus, Module, AgentSummary } from '@/types'
+import type { Task, TaskStatus, TaskPriority, TaskType, StoryStatus, Module, AgentSummary, TokenUsageEntry } from '@/types'
 import { PageSpinner } from '@/components/ui/Spinner'
 import ErrorMessage from '@/components/ui/ErrorMessage'
 import EmptyState from '@/components/ui/EmptyState'
@@ -49,6 +50,14 @@ const STORY_TRANSITION_LABELS: Partial<Record<StoryStatus, string>> = {
 }
 
 const EXECUTABLE_STATUSES: StoryStatus[] = ['approved', 'graphic_design', 'development', 'code_review']
+
+const AUDIT_ACTION_LABELS: Record<string, string> = {
+  'project.created': 'Projet créé', 'project.updated': 'Projet modifié', 'project.deleted': 'Projet supprimé',
+  'task.created': 'Tâche créée', 'task.updated': 'Tâche modifiée', 'task.deleted': 'Tâche supprimée',
+  'task.assigned': 'Tâche assignée', 'task.status_changed': 'Statut changé', 'task.progress_updated': 'Progression mise à jour',
+  'task.validation_asked': 'Validation demandée', 'task.validated': 'Tâche validée', 'task.rejected': 'Tâche rejetée',
+  'task.reprioritized': 'Priorité modifiée',
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -153,11 +162,12 @@ function ExecuteModal({ task, onClose, onExecuted }: {
  * Shows type badge, priority, branch name, assigned role, progress bar,
  * allowed story transitions as buttons, and a "Lancer l'agent" button for executable statuses.
  */
-function StoryCard({ task, onTransition, onDelete, onExecute, transitioning }: {
+function StoryCard({ task, onTransition, onDelete, onExecute, onOpen, transitioning }: {
   task: Task
   onTransition: (task: Task, status: StoryStatus) => void
   onDelete: (task: Task) => void
   onExecute: (task: Task) => void
+  onOpen: (task: Task) => void
   transitioning: boolean
 }) {
   const canExecute = task.storyStatus !== null && EXECUTABLE_STATUSES.includes(task.storyStatus)
@@ -174,7 +184,11 @@ function StoryCard({ task, onTransition, onDelete, onExecute, transitioning }: {
         </button>
       </div>
 
-      <p className="font-medium leading-snug" style={{ color: 'var(--text)' }}>{task.title}</p>
+      <button
+        className="text-left font-medium leading-snug hover:underline w-full"
+        style={{ color: 'var(--text)' }}
+        onClick={() => onOpen(task)}
+      >{task.title}</button>
 
       {task.branchName && (
         <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--muted)' }}>
@@ -228,11 +242,12 @@ function StoryCard({ task, onTransition, onDelete, onExecute, transitioning }: {
  * Kanban board with one column per StoryStatus.
  * The `pendingTaskId` disables transition buttons on the card being updated to prevent double-clicks.
  */
-function StoryBoard({ stories, onTransition, onDelete, onExecute, pendingTaskId }: {
+function StoryBoard({ stories, onTransition, onDelete, onExecute, onOpen, pendingTaskId }: {
   stories: Task[]
   onTransition: (task: Task, status: StoryStatus) => void
   onDelete: (task: Task) => void
   onExecute: (task: Task) => void
+  onOpen: (task: Task) => void
   pendingTaskId: string | null
 }) {
   if (stories.length === 0) {
@@ -256,6 +271,7 @@ function StoryBoard({ stories, onTransition, onDelete, onExecute, pendingTaskId 
                   onTransition={onTransition}
                   onDelete={onDelete}
                   onExecute={onExecute}
+                  onOpen={onOpen}
                   transitioning={pendingTaskId === task.id}
                 />
               ))}
@@ -274,14 +290,14 @@ function StoryBoard({ stories, onTransition, onDelete, onExecute, pendingTaskId 
  * Single row for a technical task in the Tâches tab.
  * Shows status icon, type badge, title, priority, assigned agent/role, parent story title, and progress bar.
  */
-function TechTaskRow({ task, onDelete }: { task: Task; onDelete: (t: Task) => void }) {
+function TechTaskRow({ task, onDelete, onOpen }: { task: Task; onDelete: (t: Task) => void; onOpen: (t: Task) => void }) {
   return (
     <div className="px-4 py-3 flex items-center gap-3">
       <StatusIcon status={task.status} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`${TYPE_BADGE[task.type]} text-xs`}>{TYPE_LABELS[task.type]}</span>
-          <p className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>{task.title}</p>
+          <button className="text-sm font-medium truncate hover:underline text-left" style={{ color: 'var(--text)' }} onClick={() => onOpen(task)}>{task.title}</button>
         </div>
         <div className="flex items-center gap-3 mt-0.5 flex-wrap">
           <span className="text-xs" style={{ color: 'var(--muted)' }}>{STATUS_LABELS[task.status]}</span>
@@ -375,9 +391,158 @@ function TaskForm({ initial, onSubmit, loading, onCancel }: {
   )
 }
 
+// ─── Task detail drawer ───────────────────────────────────────────────────────
+
+/**
+ * Right-side drawer showing the full detail of a task: description, storyStatus,
+ * execution logs, subtasks (children), and token consumption.
+ * Fetches GET /api/tasks/{id} which returns children + logs + tokenUsage.
+ */
+function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }) {
+  const [logsExpanded, setLogsExpanded] = useState(true)
+
+  const { data: task, isLoading } = useQuery({
+    queryKey: ['task-detail', taskId],
+    queryFn: () => tasksApi.get(taskId),
+  })
+
+  return (
+    <div className="fixed inset-0 z-40 flex justify-end" onClick={onClose}>
+      <div
+        className="w-full max-w-lg h-full flex flex-col shadow-2xl overflow-y-auto"
+        style={{ background: 'var(--surface)' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b flex-shrink-0" style={{ borderColor: 'var(--border)' }}>
+          <h2 className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>
+            {isLoading ? 'Chargement…' : (task?.title ?? '—')}
+          </h2>
+          <button onClick={onClose} className="p-1 ml-2 flex-shrink-0" style={{ color: 'var(--muted)' }}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {isLoading && <div className="p-6"><Loader2 className="w-5 h-5 animate-spin mx-auto" style={{ color: 'var(--muted)' }} /></div>}
+
+        {task && (
+          <div className="flex-1 p-5 space-y-5">
+            {/* Badges */}
+            <div className="flex flex-wrap gap-2">
+              <span className={`${TYPE_BADGE[task.type]} text-xs`}>{TYPE_LABELS[task.type]}</span>
+              <span className={`text-xs font-medium ${PRIORITY_COLOR[task.priority]}`}>{PRIORITY_LABELS[task.priority]}</span>
+              {task.storyStatus && (
+                <span className="badge-blue text-xs">{STORY_COLUMNS.find(c => c.key === task.storyStatus)?.label ?? task.storyStatus}</span>
+              )}
+              <span className="text-xs" style={{ color: 'var(--muted)' }}>{STATUS_LABELS[task.status]}</span>
+            </div>
+
+            {/* Description */}
+            {task.description && (
+              <div>
+                <p className="text-xs font-medium mb-1" style={{ color: 'var(--muted)' }}>Description</p>
+                <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--text)' }}>{task.description}</p>
+              </div>
+            )}
+
+            {/* Branch */}
+            {task.branchName && (
+              <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--muted)' }}>
+                <GitBranch className="w-3.5 h-3.5 flex-shrink-0" />
+                <code className="font-mono">{task.branchName}</code>
+              </div>
+            )}
+
+            {/* Subtasks */}
+            {task.children && task.children.length > 0 && (
+              <div>
+                <p className="text-xs font-medium mb-2" style={{ color: 'var(--muted)' }}>Sous-tâches ({task.children.length})</p>
+                <div className="space-y-1">
+                  {task.children.map((c) => (
+                    <div key={c.id} className="flex items-center gap-2 text-xs px-3 py-2 rounded" style={{ background: 'var(--surface2)' }}>
+                      <StatusIcon status={c.status} />
+                      <span className="truncate" style={{ color: 'var(--text)' }}>{c.title}</span>
+                      <span className="ml-auto flex-shrink-0" style={{ color: 'var(--muted)' }}>{PRIORITY_LABELS[c.priority]}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Logs */}
+            {task.logs && task.logs.length > 0 && (
+              <div>
+                <button
+                  className="flex items-center gap-1.5 text-xs font-medium mb-2 w-full text-left"
+                  style={{ color: 'var(--muted)' }}
+                  onClick={() => setLogsExpanded(!logsExpanded)}
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  Journal d'exécution ({task.logs.length})
+                  {logsExpanded ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
+                </button>
+                {logsExpanded && (
+                  <div className="space-y-2 border-l-2 pl-3" style={{ borderColor: 'var(--border)' }}>
+                    {task.logs.map((log, i) => {
+                      const isError = log.action.includes('error') || log.action.includes('failed')
+                      return (
+                        <div key={i} className="text-xs">
+                          <div className="flex items-center gap-1.5">
+                            {isError
+                              ? <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0" />
+                              : <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                            }
+                            <span className={`font-medium ${isError ? 'text-red-600' : ''}`} style={isError ? {} : { color: 'var(--text)' }}>
+                              {log.action}
+                            </span>
+                            <span className="ml-auto flex-shrink-0" style={{ color: 'var(--muted)' }}>
+                              {new Date(log.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          {log.content && (
+                            <pre className="mt-1 text-xs overflow-x-auto p-2 rounded" style={{ background: 'var(--surface2)', color: 'var(--muted)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: '8rem' }}>
+                              {log.content.length > 500 ? log.content.slice(0, 500) + '…' : log.content}
+                            </pre>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Token usage */}
+            {task.tokenUsage && task.tokenUsage.length > 0 && (
+              <div>
+                <p className="text-xs font-medium mb-2" style={{ color: 'var(--muted)' }}>Tokens consommés</p>
+                <div className="space-y-1.5">
+                  {(task.tokenUsage as TokenUsageEntry[]).map((u) => (
+                    <div key={u.id} className="flex items-center gap-3 text-xs px-3 py-2 rounded" style={{ background: 'var(--surface2)' }}>
+                      <span className="truncate" style={{ color: 'var(--muted)' }}>{u.model}</span>
+                      <span className="ml-auto flex-shrink-0 font-medium" style={{ color: 'var(--brand)' }}>
+                        {u.totalTokens.toLocaleString()} tok
+                      </span>
+                      {u.durationMs !== null && (
+                        <span className="flex-shrink-0" style={{ color: 'var(--muted)' }}>
+                          {(u.durationMs / 1000).toFixed(1)}s
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-type Tab = 'general' | 'board' | 'tasks' | 'team' | 'modules'
+type Tab = 'general' | 'board' | 'tasks' | 'team' | 'modules' | 'audit' | 'tokens'
 
 const TABS: { key: Tab; label: string; icon: ComponentType<{ className?: string }> }[] = [
   { key: 'general', label: 'Général',      icon: Settings  },
@@ -385,6 +550,8 @@ const TABS: { key: Tab; label: string; icon: ComponentType<{ className?: string 
   { key: 'tasks',   label: 'Tâches',       icon: ListTodo  },
   { key: 'team',    label: 'Équipe',       icon: Users     },
   { key: 'modules', label: 'Modules',      icon: Code2     },
+  { key: 'audit',   label: 'Audit',        icon: History   },
+  { key: 'tokens',  label: 'Tokens',       icon: Coins     },
 ]
 
 /**
@@ -405,6 +572,8 @@ export default function ProjectDetailPage() {
   // null = user hasn't changed the selection yet → falls back to project.team?.id
   const [selectedTeamId, setSelectedTeamId]   = useState<string | null>(null)
   const [teamSaveError, setTeamSaveError]     = useState<string | null>(null)
+  const [auditPage, setAuditPage]             = useState(1)
+  const [drawerTaskId, setDrawerTaskId]       = useState<string | null>(null)
 
   // ── Data queries ─────────────────────────────────────────────────────────────
 
@@ -430,6 +599,18 @@ export default function ProjectDetailPage() {
     queryKey: ['teams'],
     queryFn:  teamsApi.list,
     enabled:  tab === 'general',
+  })
+
+  const { data: auditData, isLoading: loadingAudit } = useQuery({
+    queryKey: ['project-audit', id, auditPage],
+    queryFn:  () => projectsApi.getAudit(id!, auditPage),
+    enabled:  !!id && tab === 'audit',
+  })
+
+  const { data: tokensData, isLoading: loadingTokens } = useQuery({
+    queryKey: ['project-tokens', id],
+    queryFn:  () => projectsApi.getTokens(id!),
+    enabled:  !!id && tab === 'tokens',
   })
 
   // ── Mutations ─────────────────────────────────────────────────────────────────
@@ -609,6 +790,7 @@ export default function ProjectDetailPage() {
               onTransition={(task, status) => transitionMutation.mutate({ taskId: task.id, status })}
               onDelete={setDeleteTask}
               onExecute={setExecuteTask}
+              onOpen={(task) => setDrawerTaskId(task.id)}
               pendingTaskId={pendingTaskId}
             />
           )}
@@ -625,7 +807,7 @@ export default function ProjectDetailPage() {
           />
         ) : (
           <div className="card divide-y" style={{ borderColor: 'var(--border)' }}>
-            {techTasks.map((t) => <TechTaskRow key={t.id} task={t} onDelete={setDeleteTask} />)}
+            {techTasks.map((t) => <TechTaskRow key={t.id} task={t} onDelete={setDeleteTask} onOpen={(t) => setDrawerTaskId(t.id)} />)}
           </div>
         )
       )}
@@ -713,6 +895,142 @@ export default function ProjectDetailPage() {
         )
       )}
 
+      {/* ── Tab: Audit ── */}
+      {tab === 'audit' && (
+        loadingAudit ? <PageSpinner /> : !auditData || auditData.data.length === 0 ? (
+          <EmptyState icon={History} title="Aucune entrée d'audit" description="Les actions sur ce projet et ses tâches apparaîtront ici." />
+        ) : (
+          <div className="space-y-3">
+            <div className="card divide-y" style={{ borderColor: 'var(--border)' }}>
+              {auditData.data.map((entry) => (
+                <div key={entry.id} className="px-4 py-3 flex items-start gap-3">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'var(--brand-dim)' }}>
+                    <History className="w-3.5 h-3.5" style={{ color: 'var(--brand)' }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>
+                      {AUDIT_ACTION_LABELS[entry.action] ?? entry.action}
+                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-xs" style={{ color: 'var(--muted)' }}>{entry.entityType}</span>
+                      {entry.data && Object.keys(entry.data).length > 0 && (
+                        <span className="text-xs" style={{ color: 'var(--muted)' }}>
+                          {Object.entries(entry.data).map(([k, v]) => `${k}: ${String(v)}`).join(', ')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-xs flex-shrink-0" style={{ color: 'var(--muted)' }}>
+                    {new Date(entry.createdAt).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              ))}
+            </div>
+            {/* Pagination */}
+            {auditData.total > auditData.limit && (
+              <div className="flex items-center justify-between text-sm" style={{ color: 'var(--muted)' }}>
+                <span>{auditData.total} entrées</span>
+                <div className="flex gap-2">
+                  <button
+                    className="btn-secondary py-1"
+                    disabled={auditPage <= 1}
+                    onClick={() => setAuditPage(p => p - 1)}
+                  >Précédent</button>
+                  <span className="px-2 py-1">{auditPage} / {Math.ceil(auditData.total / auditData.limit)}</span>
+                  <button
+                    className="btn-secondary py-1"
+                    disabled={auditPage >= Math.ceil(auditData.total / auditData.limit)}
+                    onClick={() => setAuditPage(p => p + 1)}
+                  >Suivant</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      )}
+
+      {/* ── Tab: Tokens ── */}
+      {tab === 'tokens' && (
+        loadingTokens ? <PageSpinner /> : !tokensData ? null : (
+          <div className="space-y-5">
+            {/* Summary */}
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: 'Tokens entrée', value: tokensData.summary.total.input.toLocaleString() },
+                { label: 'Tokens sortie', value: tokensData.summary.total.output.toLocaleString() },
+                { label: 'Appels',        value: tokensData.summary.total.calls },
+              ].map(({ label, value }) => (
+                <div key={label} className="card p-4 text-center">
+                  <p className="text-xl font-bold" style={{ color: 'var(--text)' }}>{value}</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>{label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* By agent */}
+            {tokensData.summary.byAgent.length > 0 && (
+              <div className="card overflow-hidden">
+                <div className="px-4 py-2 border-b text-xs font-semibold" style={{ color: 'var(--muted)', borderColor: 'var(--border)' }}>
+                  Répartition par agent
+                </div>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-xs border-b" style={{ color: 'var(--muted)', borderColor: 'var(--border)' }}>
+                      <th className="px-4 py-2 text-left font-medium">Agent</th>
+                      <th className="px-4 py-2 text-right font-medium">Entrée</th>
+                      <th className="px-4 py-2 text-right font-medium">Sortie</th>
+                      <th className="px-4 py-2 text-right font-medium">Appels</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y" style={{ borderColor: 'var(--border)' }}>
+                    {tokensData.summary.byAgent.map((row) => (
+                      <tr key={row.agentId ?? 'unknown'}>
+                        <td className="px-4 py-2 font-medium" style={{ color: 'var(--text)' }}>{row.agentName}</td>
+                        <td className="px-4 py-2 text-right" style={{ color: 'var(--muted)' }}>{row.totalInput.toLocaleString()}</td>
+                        <td className="px-4 py-2 text-right" style={{ color: 'var(--muted)' }}>{row.totalOutput.toLocaleString()}</td>
+                        <td className="px-4 py-2 text-right" style={{ color: 'var(--muted)' }}>{row.calls}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Recent entries */}
+            {tokensData.entries.length > 0 && (
+              <div className="card overflow-hidden">
+                <div className="px-4 py-2 border-b text-xs font-semibold" style={{ color: 'var(--muted)', borderColor: 'var(--border)' }}>
+                  Entrées récentes
+                </div>
+                <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+                  {tokensData.entries.map((u) => (
+                    <div key={u.id} className="px-4 py-3 flex items-center gap-3 text-sm">
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate font-medium" style={{ color: 'var(--text)' }}>{u.task?.title ?? '—'}</p>
+                        <p className="text-xs" style={{ color: 'var(--muted)' }}>{u.model}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="font-medium" style={{ color: 'var(--brand)' }}>{u.totalTokens.toLocaleString()} tok</p>
+                        {u.durationMs !== null && (
+                          <p className="text-xs" style={{ color: 'var(--muted)' }}>{(u.durationMs / 1000).toFixed(1)}s</p>
+                        )}
+                      </div>
+                      <span className="text-xs flex-shrink-0" style={{ color: 'var(--muted)' }}>
+                        {new Date(u.createdAt).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {tokensData.summary.total.calls === 0 && (
+              <EmptyState icon={Coins} title="Aucune consommation" description="Les tokens consommés par les agents sur ce projet s'afficheront ici." />
+            )}
+          </div>
+        )
+      )}
+
       {/* ── Modals ── */}
       <Modal
         open={createOpen}
@@ -744,6 +1062,11 @@ export default function ProjectDetailPage() {
         message={`Supprimer "${deleteTask?.title}" ? Cette action est irréversible.`}
         loading={deleteMutation.isPending}
       />
+
+      {/* ── Task drawer ── */}
+      {drawerTaskId && (
+        <TaskDrawer taskId={drawerTaskId} onClose={() => setDrawerTaskId(null)} />
+      )}
     </>
   )
 }

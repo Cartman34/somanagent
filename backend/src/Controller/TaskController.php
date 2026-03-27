@@ -13,6 +13,7 @@ use App\Repository\TaskLogRepository;
 use App\Service\ProjectService;
 use App\Service\StoryExecutionService;
 use App\Service\TaskService;
+use App\Service\TokenUsageService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -28,6 +29,7 @@ class TaskController extends AbstractController
         private readonly StoryExecutionService $storyExecutionService,
         private readonly AgentRepository       $agentRepository,
         private readonly TaskLogRepository     $taskLogRepository,
+        private readonly TokenUsageService     $tokenUsageService,
     ) {}
 
     #[Route('/projects/{projectId}/tasks', name: 'task_list', methods: ['GET'])]
@@ -82,16 +84,18 @@ class TaskController extends AbstractController
             return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
         }
 
-        $children = $this->taskService->findChildren($task);
-        $logs     = $this->taskLogRepository->findByTask($task);
+        $children    = $this->taskService->findChildren($task);
+        $logs        = $this->taskLogRepository->findByTask($task);
+        $tokenUsage  = $this->tokenUsageService->findByTask($task);
 
         return $this->json(array_merge($this->serialize($task), [
-            'children' => array_map(fn($c) => $this->serialize($c), $children),
-            'logs'     => array_map(fn($l) => [
+            'children'   => array_map(fn($c) => $this->serialize($c), $children),
+            'logs'       => array_map(fn($l) => [
                 'action'    => $l->getAction(),
                 'content'   => $l->getContent(),
                 'createdAt' => $l->getCreatedAt()->format(\DateTimeInterface::ATOM),
             ], $logs),
+            'tokenUsage' => $tokenUsage,
         ]));
     }
 
