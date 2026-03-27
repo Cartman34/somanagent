@@ -119,10 +119,11 @@ function TaskForm({ initial, onSubmit, loading, onCancel }: {
 
 // ─── Story card (Kanban) ──────────────────────────────────────────────────────
 
-function StoryCard({ task, onTransition, onDelete }: {
+function StoryCard({ task, onTransition, onDelete, transitioning }: {
   task: Task
   onTransition: (task: Task, status: StoryStatus) => void
   onDelete: (task: Task) => void
+  transitioning: boolean
 }) {
   return (
     <div className="card p-3 space-y-2 text-sm">
@@ -165,10 +166,11 @@ function StoryCard({ task, onTransition, onDelete }: {
             <button
               key={next}
               onClick={() => onTransition(task, next)}
-              className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded border border-gray-200 hover:border-[var(--brand)] hover:text-[var(--brand)] transition-colors"
+              disabled={transitioning}
+              className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded border border-gray-200 hover:border-[var(--brand)] hover:text-[var(--brand)] transition-colors disabled:opacity-40 disabled:cursor-wait"
             >
               <ArrowRight className="w-2.5 h-2.5" />
-              {STORY_TRANSITION_LABELS[next] ?? next}
+              {transitioning ? '…' : (STORY_TRANSITION_LABELS[next] ?? next)}
             </button>
           ))}
         </div>
@@ -179,10 +181,11 @@ function StoryCard({ task, onTransition, onDelete }: {
 
 // ─── Story board (Kanban) ─────────────────────────────────────────────────────
 
-function StoryBoard({ stories, onTransition, onDelete }: {
+function StoryBoard({ stories, onTransition, onDelete, pendingTaskId }: {
   stories: Task[]
   onTransition: (task: Task, status: StoryStatus) => void
   onDelete: (task: Task) => void
+  pendingTaskId: string | null
 }) {
   if (stories.length === 0) {
     return (
@@ -204,7 +207,13 @@ function StoryBoard({ stories, onTransition, onDelete }: {
             </div>
             <div className="space-y-2 min-h-16 bg-gray-50/40 rounded-b-lg p-2 border border-t-0 border-gray-100">
               {cards.map((task) => (
-                <StoryCard key={task.id} task={task} onTransition={onTransition} onDelete={onDelete} />
+                <StoryCard
+                  key={task.id}
+                  task={task}
+                  onTransition={onTransition}
+                  onDelete={onDelete}
+                  transitioning={pendingTaskId === task.id}
+                />
               ))}
               {cards.length === 0 && (
                 <p className="text-xs text-gray-300 text-center py-3">—</p>
@@ -256,10 +265,12 @@ function TaskRow({ task, onDelete }: {
 
 export default function TasksPage() {
   const qc = useQueryClient()
-  const [projectId, setProjectId]   = useState('')
-  const [tab, setTab]               = useState<'stories' | 'tasks'>('stories')
-  const [createOpen, setCreateOpen] = useState(false)
-  const [deleteTask, setDeleteTask] = useState<Task | null>(null)
+  const [projectId, setProjectId]         = useState('')
+  const [tab, setTab]                     = useState<'stories' | 'tasks'>('stories')
+  const [createOpen, setCreateOpen]       = useState(false)
+  const [deleteTask, setDeleteTask]       = useState<Task | null>(null)
+  const [transitionError, setTransitionError] = useState<string | null>(null)
+  const [pendingTaskId, setPendingTaskId] = useState<string | null>(null)
 
   const { data: projects } = useQuery({ queryKey: ['projects'], queryFn: projectsApi.list })
   const { data: tasks, isLoading, error, refetch } = useQuery({
@@ -270,10 +281,19 @@ export default function TasksPage() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['tasks', projectId] })
 
-  const createMutation     = useMutation({ mutationFn: (d: TaskPayload) => tasksApi.create(projectId, d), onSuccess: () => { invalidate(); setCreateOpen(false) } })
+  const createMutation = useMutation({ mutationFn: (d: TaskPayload) => tasksApi.create(projectId, d), onSuccess: () => { invalidate(); setCreateOpen(false) } })
   const transitionMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: StoryStatus }) => tasksApi.transitionStory(id, status),
-    onSuccess: invalidate,
+    mutationFn: ({ id, status }: { id: string; status: StoryStatus }) => {
+      setPendingTaskId(id)
+      setTransitionError(null)
+      return tasksApi.transitionStory(id, status)
+    },
+    onSuccess: () => { invalidate(); setPendingTaskId(null) },
+    onError: (err: unknown) => {
+      setPendingTaskId(null)
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+      setTransitionError(msg ?? 'Transition impossible.')
+    },
   })
   const deleteMutation = useMutation({ mutationFn: (id: string) => tasksApi.delete(id), onSuccess: () => { invalidate(); setDeleteTask(null) } })
 
@@ -322,11 +342,22 @@ export default function TasksPage() {
           </div>
 
           {tab === 'stories' && (
-            <StoryBoard
-              stories={stories}
-              onTransition={(task, status) => transitionMutation.mutate({ id: task.id, status })}
-              onDelete={setDeleteTask}
-            />
+            <>
+              {transitionError && (
+                <div className="mb-3 px-3 py-2 rounded bg-red-50 border border-red-200 text-sm text-red-700 flex items-center justify-between">
+                  <span>{transitionError}</span>
+                  <button onClick={() => setTransitionError(null)} className="ml-2 text-red-400 hover:text-red-600">
+                    <XCircle className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+              <StoryBoard
+                stories={stories}
+                onTransition={(task, status) => transitionMutation.mutate({ id: task.id, status })}
+                onDelete={setDeleteTask}
+                pendingTaskId={pendingTaskId}
+              />
+            </>
           )}
 
           {tab === 'tasks' && (
