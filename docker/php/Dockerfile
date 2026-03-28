@@ -2,6 +2,7 @@ FROM php:8.4-fpm-alpine
 
 # Dépendances système
 RUN apk add --no-cache \
+    bash \
     git \
     curl \
     unzip \
