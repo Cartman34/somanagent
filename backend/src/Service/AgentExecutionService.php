@@ -39,6 +39,7 @@ final class AgentExecutionService
         private readonly RoleRepository        $roleRepository,
         private readonly TaskLogRepository     $taskLogRepository,
         private readonly TaskService           $taskService,
+        private readonly AgentContextBuilder   $contextBuilder,
         private readonly PlanningOutputParser  $planningParser,
         private readonly EntityManagerInterface $em,
         private readonly LoggerInterface       $logger,
@@ -146,43 +147,12 @@ final class AgentExecutionService
             $instruction .= "\n\n" . $task->getDescription();
         }
 
-        $context = [
-            'task' => [
-                'type'      => $task->getType()->value,
-                'priority'  => $task->getPriority()->value,
-                'status'    => $task->getStatus()->value,
-                'story'     => $task->getStoryStatus()?->value,
-                'branch'    => $task->getBranchName(),
-                'parent'    => $task->getParent()?->getTitle(),
-            ],
-            'agent_identity' => [
-                'name'        => $agent->getName(),
-                'description' => $agent->getDescription(),
-                'role'        => $agent->getRole()?->getName(),
-                'role_slug'   => $agent->getRole()?->getSlug(),
-                'role_mission' => $agent->getRole()?->getDescription(),
-            ],
-            'execution' => [
-                'skill' => $skillSlug,
-            ],
-        ];
-
-        if ($task->getProject() !== null) {
-            $context['project'] = [
-                'name'        => $task->getProject()->getName(),
-                'description' => $task->getProject()->getDescription(),
-                'team'        => $task->getProject()->getTeam()?->getName(),
-                'modules'     => array_map(
-                    static fn($module) => $module->getName(),
-                    $task->getProject()->getModules()->toArray(),
-                ),
-            ];
-        }
-
-        $conversation = $this->buildConversationContext($task);
-        if ($conversation !== []) {
-            $context['ticket_conversation'] = $conversation;
-        }
+        $context = $this->contextBuilder->buildForTask(
+            task: $task,
+            agent: $agent,
+            skillSlug: $skillSlug,
+            ticketComments: $this->buildConversationContext($task),
+        );
 
         return Prompt::create($skillContent, $instruction, $context);
     }
@@ -197,16 +167,7 @@ final class AgentExecutionService
 
         $slice = array_slice($comments, -12);
 
-        return array_map(static fn(TaskLog $log) => [
-            'author'          => $log->getAuthorName() ?? $log->getAuthorType() ?? 'system',
-            'author_type'     => $log->getAuthorType(),
-            'action'          => $log->getAction(),
-            'requires_answer' => $log->requiresAnswer(),
-            'reply_to'        => $log->getReplyToLogId()?->toRfc4122(),
-            'context'         => $log->getMetadata()['context'] ?? null,
-            'content'         => $log->getContent(),
-            'created_at'      => $log->getCreatedAt()->format(\DateTimeInterface::ATOM),
-        ], $slice);
+        return $slice;
     }
 
     /**
