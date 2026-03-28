@@ -14,6 +14,7 @@ use App\Repository\AgentRepository;
 use App\Repository\WorkflowStepRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Orchestrates the agent execution for a user story or bug.
@@ -54,6 +55,8 @@ final class StoryExecutionService
         private readonly AgentRepository        $agentRepository,
         private readonly WorkflowStepRepository $workflowStepRepository,
         private readonly MessageBusInterface    $bus,
+        private readonly RequestCorrelationService $requestCorrelation,
+        private readonly LogService             $logService,
         private readonly EntityManagerInterface $em,
     ) {}
 
@@ -171,11 +174,37 @@ final class StoryExecutionService
         ]));
         $this->em->flush();
 
+        $requestRef = $this->requestCorrelation->getCurrentRequestRef();
+        $traceRef = Uuid::v7()->toRfc4122();
+
         $this->bus->dispatch(new AgentTaskMessage(
             taskId:    (string) $story->getId(),
             agentId:   (string) $agent->getId(),
             skillSlug: $skillSlug,
+            requestRef: $requestRef,
+            traceRef: $traceRef,
         ));
+
+        $this->logService->record(
+            source: 'backend',
+            category: 'runtime',
+            level: 'info',
+            title: 'Agent task dispatched',
+            // Stored in DB for the in-app log UI, so the human-facing message stays in French.
+            message: sprintf('Dispatch de %s vers %s avec le skill %s', $story->getTitle(), $agent->getName(), $skillSlug),
+            options: [
+                'project_id' => (string) $story->getProject()->getId(),
+                'task_id' => (string) $story->getId(),
+                'agent_id' => (string) $agent->getId(),
+                'request_ref' => $requestRef,
+                'trace_ref' => $traceRef,
+                'context' => [
+                    'story_status' => $story->getStoryStatus()?->value,
+                    'skill_slug' => $skillSlug,
+                    'role_slug' => $roleSlug,
+                ],
+            ],
+        );
 
         return ['agent' => $agent, 'skill' => $skillSlug];
     }

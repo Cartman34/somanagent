@@ -10,6 +10,8 @@ use App\Repository\AgentRepository;
 use App\Repository\TaskRepository;
 use App\Repository\TaskLogRepository;
 use App\Service\AgentExecutionService;
+use App\Service\LogService;
+use App\Service\RequestCorrelationService;
 use App\Service\StoryExecutionService;
 use App\Service\TaskService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -33,6 +35,8 @@ final class RedispatchTaskCommand extends Command
         private readonly TaskService            $taskService,
         private readonly StoryExecutionService  $storyExecutionService,
         private readonly AgentExecutionService  $agentExecutionService,
+        private readonly RequestCorrelationService $requestCorrelation,
+        private readonly LogService             $logService,
         private readonly AgentRepository        $agentRepository,
         private readonly TaskRepository         $taskRepository,
         private readonly TaskLogRepository      $taskLogRepository,
@@ -96,6 +100,9 @@ final class RedispatchTaskCommand extends Command
         }
 
         if ($sync) {
+            $requestRef = $this->requestCorrelation->getCurrentRequestRef() ?? Uuid::v7()->toRfc4122();
+            $traceRef = Uuid::v7()->toRfc4122();
+
             $this->em->persist(new TaskLog(
                 $task,
                 'execution_redispatched_sync',
@@ -104,6 +111,27 @@ final class RedispatchTaskCommand extends Command
             $this->em->flush();
 
             try {
+                $this->logService->record(
+                    source: 'backend',
+                    category: 'runtime',
+                    level: 'info',
+                    title: 'Agent task redispatched synchronously',
+                    // Stored in DB for the in-app log UI, so the human-facing message stays in French.
+                    message: sprintf('Relance synchrone de %s vers %s avec le skill %s', $task->getTitle(), $agent->getName(), $skillSlug),
+                    options: [
+                        'project_id' => (string) $task->getProject()->getId(),
+                        'task_id' => (string) $task->getId(),
+                        'agent_id' => (string) $agent->getId(),
+                        'request_ref' => $requestRef,
+                        'trace_ref' => $traceRef,
+                        'context' => [
+                            'entry_point' => 'cli',
+                            'redispatch_mode' => 'sync',
+                            'skill_slug' => $skillSlug,
+                        ],
+                    ],
+                );
+
                 $this->agentExecutionService->execute($task, $agent, $skillSlug);
             } catch (\Throwable $e) {
                 $this->taskService->failExecution($task, $e->getMessage());
@@ -133,11 +161,37 @@ final class RedispatchTaskCommand extends Command
         ));
         $this->em->flush();
 
+        $requestRef = $this->requestCorrelation->getCurrentRequestRef() ?? Uuid::v7()->toRfc4122();
+        $traceRef = Uuid::v7()->toRfc4122();
+
         $this->bus->dispatch(new AgentTaskMessage(
             taskId: (string) $task->getId(),
             agentId: (string) $agent->getId(),
             skillSlug: $skillSlug,
+            requestRef: $requestRef,
+            traceRef: $traceRef,
         ));
+
+        $this->logService->record(
+            source: 'backend',
+            category: 'runtime',
+            level: 'info',
+            title: 'Agent task redispatched',
+            // Stored in DB for the in-app log UI, so the human-facing message stays in French.
+            message: sprintf('Relance CLI de %s vers %s avec le skill %s', $task->getTitle(), $agent->getName(), $skillSlug),
+            options: [
+                'project_id' => (string) $task->getProject()->getId(),
+                'task_id' => (string) $task->getId(),
+                'agent_id' => (string) $agent->getId(),
+                'request_ref' => $requestRef,
+                'trace_ref' => $traceRef,
+                'context' => [
+                    'entry_point' => 'cli',
+                    'redispatch_mode' => 'async',
+                    'skill_slug' => $skillSlug,
+                ],
+            ],
+        );
 
         $io->success(sprintf(
             'Tâche remise en file avec %s (%s).',
