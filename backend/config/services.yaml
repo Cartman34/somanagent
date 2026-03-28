@@ -1,5 +1,6 @@
 parameters:
     skills_dir: '%kernel.project_dir%/../skills'
+    messenger_agent_task_max_retries: 3
 
 services:
     _defaults:
@@ -32,3 +33,7 @@ services:
     App\Service\SkillService:
         arguments:
             $skillsDir: '%skills_dir%'
+
+    App\Service\TaskExecutionService:
+        arguments:
+            $messengerAgentTaskMaxRetries: '%messenger_agent_task_max_retries%'

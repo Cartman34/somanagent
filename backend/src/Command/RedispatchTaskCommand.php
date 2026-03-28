@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
-use App\Entity\TaskLog;
+use App\Enum\TaskExecutionTrigger;
 use App\Message\AgentTaskMessage;
 use App\Repository\AgentRepository;
 use App\Repository\TaskRepository;
@@ -13,8 +13,8 @@ use App\Service\AgentExecutionService;
 use App\Service\LogService;
 use App\Service\RequestCorrelationService;
 use App\Service\StoryExecutionService;
+use App\Service\TaskExecutionService;
 use App\Service\TaskService;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -37,11 +37,11 @@ final class RedispatchTaskCommand extends Command
         private readonly AgentExecutionService  $agentExecutionService,
         private readonly RequestCorrelationService $requestCorrelation,
         private readonly LogService             $logService,
+        private readonly TaskExecutionService   $taskExecutionService,
         private readonly AgentRepository        $agentRepository,
         private readonly TaskRepository         $taskRepository,
         private readonly TaskLogRepository      $taskLogRepository,
         private readonly MessageBusInterface    $bus,
-        private readonly EntityManagerInterface $em,
     ) {
         parent::__construct();
     }
@@ -102,13 +102,31 @@ final class RedispatchTaskCommand extends Command
         if ($sync) {
             $requestRef = $this->requestCorrelation->getCurrentRequestRef() ?? Uuid::v7()->toRfc4122();
             $traceRef = Uuid::v7()->toRfc4122();
+            $execution = $this->taskExecutionService->createExecution(
+                task: $task,
+                requestedAgent: $agent,
+                skillSlug: $skillSlug,
+                triggerType: TaskExecutionTrigger::Redispatch,
+                requestRef: $requestRef,
+                traceRef: $traceRef,
+                workflowStepKey: $task->getStoryStatus()?->value,
+                maxAttempts: 1,
+            );
 
-            $this->em->persist(new TaskLog(
-                $task,
-                'execution_redispatched_sync',
-                sprintf('Relance synchrone par commande avec %s (%s)', $agent->getName(), $skillSlug),
-            ));
-            $this->em->flush();
+            $this->taskExecutionService->logDispatch(
+                execution: $execution,
+                action: 'execution_redispatched_sync',
+                // Stored in DB for the in-app log UI, so the human-facing message stays in French.
+                content: sprintf('Relance synchrone par commande avec %s (%s)', $agent->getName(), $skillSlug),
+            );
+
+            $attempt = $this->taskExecutionService->startAttempt(
+                execution: $execution,
+                attemptNumber: 1,
+                agent: $agent,
+                requestRef: $requestRef,
+                messengerReceiver: 'sync',
+            );
 
             try {
                 $this->logService->record(
@@ -125,6 +143,7 @@ final class RedispatchTaskCommand extends Command
                         'request_ref' => $requestRef,
                         'trace_ref' => $traceRef,
                         'context' => [
+                            'task_execution_id' => (string) $execution->getId(),
                             'entry_point' => 'cli',
                             'redispatch_mode' => 'sync',
                             'skill_slug' => $skillSlug,
@@ -133,7 +152,9 @@ final class RedispatchTaskCommand extends Command
                 );
 
                 $this->agentExecutionService->execute($task, $agent, $skillSlug);
+                $this->taskExecutionService->markSucceeded($execution, $attempt);
             } catch (\Throwable $e) {
+                $this->taskExecutionService->markFailed($execution, $attempt, $e->getMessage(), false, 'execution');
                 $this->taskService->failExecution($task, $e->getMessage());
                 $io->error(sprintf(
                     'Échec de la relance synchrone avec %s (%s) : %s',
@@ -154,20 +175,29 @@ final class RedispatchTaskCommand extends Command
             return Command::SUCCESS;
         }
 
-        $this->em->persist(new TaskLog(
-            $task,
-            'execution_redispatched',
-            sprintf('Relance en file par commande avec %s (%s)', $agent->getName(), $skillSlug),
-        ));
-        $this->em->flush();
-
         $requestRef = $this->requestCorrelation->getCurrentRequestRef() ?? Uuid::v7()->toRfc4122();
         $traceRef = Uuid::v7()->toRfc4122();
+        $execution = $this->taskExecutionService->createExecution(
+            task: $task,
+            requestedAgent: $agent,
+            skillSlug: $skillSlug,
+            triggerType: TaskExecutionTrigger::Redispatch,
+            requestRef: $requestRef,
+            traceRef: $traceRef,
+            workflowStepKey: $task->getStoryStatus()?->value,
+        );
+        $this->taskExecutionService->logDispatch(
+            execution: $execution,
+            action: 'execution_redispatched',
+            // Stored in DB for the in-app log UI, so the human-facing message stays in French.
+            content: sprintf('Relance en file par commande avec %s (%s)', $agent->getName(), $skillSlug),
+        );
 
         $this->bus->dispatch(new AgentTaskMessage(
             taskId: (string) $task->getId(),
             agentId: (string) $agent->getId(),
             skillSlug: $skillSlug,
+            taskExecutionId: (string) $execution->getId(),
             requestRef: $requestRef,
             traceRef: $traceRef,
         ));
@@ -186,6 +216,7 @@ final class RedispatchTaskCommand extends Command
                 'request_ref' => $requestRef,
                 'trace_ref' => $traceRef,
                 'context' => [
+                    'task_execution_id' => (string) $execution->getId(),
                     'entry_point' => 'cli',
                     'redispatch_mode' => 'async',
                     'skill_slug' => $skillSlug,

@@ -36,6 +36,28 @@ function levelTone(level: string): 'red' | 'orange' | 'blue' | 'gray' {
   return 'gray'
 }
 
+function readMessengerMeta(context: Record<string, unknown> | null | undefined) {
+  const attempt = typeof context?.messenger_attempt === 'number'
+    ? context.messenger_attempt
+    : typeof context?.messenger_attempt === 'string'
+      ? Number(context.messenger_attempt)
+      : null
+  const retryCount = typeof context?.messenger_retry_count === 'number'
+    ? context.messenger_retry_count
+    : typeof context?.messenger_retry_count === 'string'
+      ? Number(context.messenger_retry_count)
+      : null
+  const isRetry = context?.messenger_is_retry === true
+    || context?.messenger_is_retry === 'true'
+
+  return {
+    attempt: Number.isFinite(attempt) ? attempt : null,
+    retryCount: Number.isFinite(retryCount) ? retryCount : null,
+    isRetry,
+    receiver: typeof context?.messenger_receiver === 'string' ? context.messenger_receiver : null,
+  }
+}
+
 function JsonBlock({ value }: { value: unknown }) {
   if (value == null) return <span style={{ color: 'var(--muted)' }}>Aucune donnée</span>
 
@@ -87,6 +109,8 @@ function EntityLinks({ occurrence }: { occurrence: LogOccurrence }) {
 }
 
 function EventCard({ event }: { event: LogEvent }) {
+  const messenger = readMessengerMeta(event.context)
+
   return (
     <div className="rounded-xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
       <div className="flex flex-wrap items-center gap-2">
@@ -96,6 +120,16 @@ function EventCard({ event }: { event: LogEvent }) {
         <span className="rounded-full px-2 py-1 text-xs" style={badgeStyle(event.category === 'error' ? 'red' : 'blue')}>
           {event.category}
         </span>
+        {messenger.attempt !== null && (
+          <span className="rounded-full px-2 py-1 text-xs" style={badgeStyle(messenger.isRetry ? 'orange' : 'gray')}>
+            tentative {messenger.attempt}
+          </span>
+        )}
+        {messenger.isRetry && (
+          <span className="rounded-full px-2 py-1 text-xs" style={badgeStyle('orange')}>
+            retry
+          </span>
+        )}
         <span className="text-xs" style={{ color: 'var(--muted)' }}>{event.source}</span>
         <span className="ml-auto text-xs" style={{ color: 'var(--muted)' }}>{fmtDate(event.occurredAt)}</span>
       </div>
@@ -149,6 +183,8 @@ function OccurrenceDetail({ occurrenceId }: { occurrenceId: string }) {
   if (error) return <ErrorMessage message={(error as Error).message} />
   if (!data) return null
 
+  const occurrenceMessenger = readMessengerMeta(data.occurrence.contextSnapshot)
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
       <div className="shrink-0 rounded-xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
@@ -176,6 +212,12 @@ function OccurrenceDetail({ occurrenceId }: { occurrenceId: string }) {
             <p className="mt-1 text-sm" style={{ color: 'var(--text)' }}>
               {fmtDate(data.occurrence.firstSeenAt)} → {fmtDate(data.occurrence.lastSeenAt)}
             </p>
+            {occurrenceMessenger.attempt !== null && (
+              <p className="mt-2 text-sm" style={{ color: 'var(--text)' }}>
+                Dernière tentative connue : {occurrenceMessenger.attempt}
+                {occurrenceMessenger.isRetry ? ' (retry)' : ' (premier passage)'}
+              </p>
+            )}
           </div>
           <div>
             <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Navigation</p>

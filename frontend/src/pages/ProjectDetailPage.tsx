@@ -13,7 +13,7 @@ import { tasksApi } from '@/api/tasks'
 import { teamsApi } from '@/api/teams'
 import { agentsApi } from '@/api/agents'
 import type { ProjectRequestPayload, ProjectRequestResult, TaskPayload } from '@/api/tasks'
-import type { Task, TaskStatus, TaskPriority, TaskType, StoryStatus, Module, AgentSummary, TokenUsageEntry } from '@/types'
+import type { Task, TaskExecution, TaskStatus, TaskPriority, TaskType, StoryStatus, Module, AgentSummary, TokenUsageEntry } from '@/types'
 import { PageSpinner } from '@/components/ui/Spinner'
 import ErrorMessage from '@/components/ui/ErrorMessage'
 import EmptyState from '@/components/ui/EmptyState'
@@ -60,6 +60,16 @@ const AUDIT_ACTION_LABELS: Record<string, string> = {
   'task.assigned': 'Tâche assignée', 'task.status_changed': 'Statut changé', 'task.progress_updated': 'Progression mise à jour',
   'task.validation_asked': 'Validation demandée', 'task.validated': 'Tâche validée', 'task.rejected': 'Tâche rejetée',
   'task.reprioritized': 'Priorité modifiée',
+}
+
+const EXECUTION_STATUS_LABELS: Record<TaskExecution['status'], string> = {
+  pending: 'En attente',
+  running: 'En cours',
+  retrying: 'En retry',
+  succeeded: 'Réussie',
+  failed: 'Échouée',
+  dead_letter: 'Dead letter',
+  cancelled: 'Annulée',
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -522,6 +532,7 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
 
         {task && (() => {
           const logs = task.logs ?? []
+          const executions = task.executions ?? []
           const commentLogs = logs.filter((log) => log.kind === 'comment')
           const commentIndex = new Map(commentLogs.map((log) => [log.id, log]))
           const totalTokens = (task.tokenUsage ?? []).reduce((sum, entry) => sum + entry.totalTokens, 0)
@@ -638,6 +649,97 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
                       <StatusIcon status={c.status} />
                       <span className="truncate" style={{ color: 'var(--text)' }}>{c.title}</span>
                       <span className="ml-auto flex-shrink-0" style={{ color: 'var(--muted)' }}>{PRIORITY_LABELS[c.priority]}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {executions.length > 0 && (
+              <div>
+                <p className="text-xs font-medium mb-2" style={{ color: 'var(--muted)' }}>
+                  Exécutions agent ({executions.length})
+                </p>
+                <div className="space-y-2">
+                  {executions.map((execution) => (
+                    <div key={execution.id} className="rounded border p-4" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="rounded px-2 py-1" style={{ background: 'var(--surface)', color: 'var(--text)' }}>
+                          {EXECUTION_STATUS_LABELS[execution.status]}
+                        </span>
+                        <span style={{ color: 'var(--muted)' }}>
+                          {execution.currentAttempt}/{execution.maxAttempts} tentative{execution.maxAttempts > 1 ? 's' : ''}
+                        </span>
+                        <span style={{ color: 'var(--muted)' }}>
+                          {execution.triggerType}
+                        </span>
+                        {execution.skillSlug && (
+                          <span style={{ color: 'var(--muted)' }}>
+                            {execution.skillSlug}
+                          </span>
+                        )}
+                        <span className="ml-auto font-mono" style={{ color: 'var(--muted)' }}>
+                          {execution.traceRef}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 grid gap-3 md:grid-cols-2 text-xs" style={{ color: 'var(--muted)' }}>
+                        <div>
+                          Agent demandé : {execution.requestedAgent?.name ?? 'auto'}
+                        </div>
+                        <div>
+                          Agent effectif : {execution.effectiveAgent?.name ?? 'n/a'}
+                        </div>
+                        <div>
+                          Début : {execution.startedAt ? new Date(execution.startedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : 'n/a'}
+                        </div>
+                        <div>
+                          Fin : {execution.finishedAt ? new Date(execution.finishedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                        </div>
+                      </div>
+
+                      <div className="mt-3 space-y-2 border-l-2 pl-3" style={{ borderColor: 'var(--border)' }}>
+                        {execution.attempts.map((attempt) => {
+                          const tone = attempt.status === 'failed' ? '#dc2626' : attempt.status === 'succeeded' ? '#16a34a' : 'var(--text)'
+                          return (
+                            <div key={attempt.id} className="text-xs">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-medium" style={{ color: tone }}>
+                                  Tentative {attempt.attemptNumber} {attempt.status === 'failed' ? 'KO' : attempt.status === 'succeeded' ? 'OK' : 'en cours'}
+                                </span>
+                                {attempt.willRetry && (
+                                  <span className="rounded px-2 py-0.5" style={{ background: 'rgba(245,158,11,0.14)', color: '#b45309' }}>
+                                    Retry prévu
+                                  </span>
+                                )}
+                                {attempt.messengerReceiver && (
+                                  <span style={{ color: 'var(--muted)' }}>
+                                    {attempt.messengerReceiver}
+                                  </span>
+                                )}
+                                <span className="ml-auto" style={{ color: 'var(--muted)' }}>
+                                  {attempt.finishedAt
+                                    ? new Date(attempt.finishedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                                    : attempt.startedAt
+                                      ? new Date(attempt.startedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                                      : '—'}
+                                </span>
+                              </div>
+                              {attempt.errorMessage && (
+                                <p className="mt-1 whitespace-pre-wrap break-words" style={{ color: 'var(--muted)' }}>
+                                  {attempt.errorMessage}
+                                </p>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      {execution.status === 'dead_letter' && (
+                        <p className="mt-3 text-xs" style={{ color: '#dc2626' }}>
+                          Retries épuisés pour cette exécution.
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>

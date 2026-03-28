@@ -14,6 +14,7 @@ final class AgentTaskMessage
         public readonly string $taskId,
         public readonly string $agentId,
         public readonly string $skillSlug,
+        public readonly ?string $taskExecutionId = null,
         public readonly ?string $requestRef = null,
         public readonly ?string $traceRef = null,
     ) {}

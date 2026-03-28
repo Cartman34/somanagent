@@ -7,7 +7,7 @@ framework:
             async:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 retry_strategy:
-                    max_retries: 3
+                    max_retries: '%messenger_agent_task_max_retries%'
                     delay: 2000        # 2s entre les tentatives
                     multiplier: 2      # backoff exponentiel
 
