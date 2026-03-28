@@ -77,6 +77,18 @@ final class AgentContextBuilder
 
     private function buildProjectAgentContext(Project $project, Agent $agent): array
     {
+        $roleSlug = $agent->getRole()?->getSlug();
+
+        $roleNotes = match ($roleSlug) {
+            'product-owner' => [
+                'scope' => 'Tu es responsable de la reformulation produit et du cadrage fonctionnel.',
+                'constraint' => 'Tu ne prends pas de décision technique de ton propre chef.',
+                'allowed' => 'Tu peux relayer des contraintes techniques explicitement fournies et ajouter du périmètre fonctionnel comme les plateformes, langues ou profils utilisateurs.',
+                'handoff' => 'Les arbitrages techniques, l’analyse technique et le découpage appartiennent au Lead Tech.',
+            ],
+            default => [],
+        };
+
         return [
             'identity' => [
                 'agent_name'        => $agent->getName(),
@@ -116,6 +128,7 @@ final class AgentContextBuilder
             'operating_notes' => [
                 'identity_is_known' => 'Tu connais déjà ton identité, ton rôle et le projet grâce à ce contexte.',
                 'do_not_ask_identity_again' => 'Ne redemande pas qui tu es, quel rôle tu joues ou sur quel projet tu travailles sauf si le contexte est explicitement contradictoire.',
+                'role_constraints' => $roleNotes,
             ],
         ];
     }
