@@ -45,6 +45,6 @@ $c->line('  API  →  http://localhost:8080/api/health');
 $c->line('  UI   →  http://localhost:5173');
 $c->line('  DB   →  localhost:5432  (somanagent / somanagent)');
 $c->line();
-$c->line('  Logs  : php scripts/logs.php [php|node|db|nginx]');
+$c->line('  Logs  : php scripts/logs.php [php|worker|node|db|nginx]');
 $c->line('  Stop  : php scripts/dev.php --stop');
 $c->line();

@@ -1,0 +1,2 @@
+# Ignore actual auth data — only the directory structure (.gitkeep) is tracked
+.claude.json

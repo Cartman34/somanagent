@@ -16,6 +16,7 @@ use App\Enum\TaskStatus;
 use App\Enum\TaskType;
 use App\Repository\AgentRepository;
 use App\Repository\FeatureRepository;
+use App\Repository\RoleRepository;
 use App\Repository\TaskRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -27,6 +28,7 @@ class TaskService
         private readonly TaskRepository         $taskRepository,
         private readonly FeatureRepository      $featureRepository,
         private readonly AgentRepository        $agentRepository,
+        private readonly RoleRepository         $roleRepository,
         private readonly AuditService           $audit,
     ) {}
 
@@ -72,6 +74,33 @@ class TaskService
             'type'    => $type->value,
             'project' => (string) $project->getId(),
         ]);
+        return $task;
+    }
+
+    public function createProductOwnerRequest(
+        Project      $project,
+        string       $title,
+        ?string      $description = null,
+        TaskPriority $priority    = TaskPriority::Medium,
+    ): Task {
+        $task = new Task($project, TaskType::UserStory, $title, $description, $priority);
+
+        $productOwnerRole = $this->roleRepository->findOneBy(['slug' => 'product-owner']);
+        if ($productOwnerRole !== null) {
+            $task->setAssignedRole($productOwnerRole);
+        }
+
+        $this->em->persist($task);
+        $this->log($task, 'request_created', "Demande métier créée : {$title}");
+        $this->em->flush();
+
+        $this->audit->log(AuditAction::TaskCreated, 'Task', (string) $task->getId(), [
+            'title'   => $title,
+            'type'    => TaskType::UserStory->value,
+            'project' => (string) $project->getId(),
+            'source'  => 'project_request',
+        ]);
+
         return $task;
     }
 
@@ -153,6 +182,31 @@ class TaskService
         $this->log($task, 'validation_asked', $comment ?? 'Validation manuelle demandée.');
         $this->em->flush();
         $this->audit->log(AuditAction::TaskValidationAsked, 'Task', (string) $task->getId());
+        return $task;
+    }
+
+    /**
+     * Records an execution failure on the task and moves it back to backlog.
+     */
+    public function failExecution(Task $task, string $message): Task
+    {
+        $oldStatus = $task->getStatus();
+        $task->setStatus(TaskStatus::Backlog);
+        $this->log($task, 'execution_error', $message);
+        $this->em->flush();
+
+        if ($oldStatus !== TaskStatus::Backlog) {
+            $this->audit->log(AuditAction::TaskStatusChanged, 'Task', (string) $task->getId(), [
+                'from' => $oldStatus->value,
+                'to'   => TaskStatus::Backlog->value,
+                'reason' => 'execution_error',
+            ]);
+        }
+
+        $this->audit->log(AuditAction::TaskUpdated, 'Task', (string) $task->getId(), [
+            'execution_error' => $message,
+        ]);
+
         return $task;
     }
 

@@ -60,6 +60,45 @@ class AgentRepository extends ServiceEntityRepository
     }
 
     /**
+     * Returns all active agents whose role includes the given skill slug.
+     *
+     * @return Agent[]
+     */
+    public function findActiveBySkillSlug(string $skillSlug): array
+    {
+        return $this->createQueryBuilder('a')
+            ->join('a.role', 'r')
+            ->join('r.skills', 's')
+            ->where('s.slug = :slug')
+            ->andWhere('a.isActive = true')
+            ->setParameter('slug', $skillSlug)
+            ->orderBy('a.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Returns active agents in the given team whose role includes the given skill slug.
+     *
+     * @return Agent[]
+     */
+    public function findActiveBySkillSlugAndTeam(string $skillSlug, Team $team): array
+    {
+        return $this->createQueryBuilder('a')
+            ->join('a.role', 'r')
+            ->join('r.skills', 's')
+            ->join('a.teams', 't')
+            ->where('s.slug = :slug')
+            ->andWhere('a.isActive = true')
+            ->andWhere('t = :team')
+            ->setParameter('slug', $skillSlug)
+            ->setParameter('team', $team)
+            ->orderBy('a.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Returns the number of tasks currently in_progress assigned to this agent.
      * Used to derive the agent's runtime status (working / idle / error).
      *

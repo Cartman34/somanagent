@@ -8,6 +8,7 @@ use App\Message\AgentTaskMessage;
 use App\Repository\AgentRepository;
 use App\Repository\TaskRepository;
 use App\Service\AgentExecutionService;
+use App\Service\TaskService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Uid\Uuid;
@@ -23,6 +24,7 @@ final class AgentTaskHandler
         private readonly AgentRepository       $agentRepository,
         private readonly TaskRepository        $taskRepository,
         private readonly AgentExecutionService $executionService,
+        private readonly TaskService           $taskService,
         private readonly LoggerInterface       $logger,
     ) {}
 
@@ -44,6 +46,8 @@ final class AgentTaskHandler
         try {
             $this->executionService->execute($task, $agent, $message->skillSlug);
         } catch (\Throwable $e) {
+            $this->taskService->failExecution($task, $e->getMessage());
+
             $this->logger->error('AgentTaskHandler: execution failed', [
                 'task'      => $task->getTitle(),
                 'agent'     => $agent->getName(),

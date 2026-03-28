@@ -63,6 +63,12 @@ export default function DashboardPage() {
     retry: false,
   })
 
+  const { data: claudeCliAuth } = useQuery({
+    queryKey: ['health', 'claude-cli-auth'],
+    queryFn: healthApi.claudeCliAuth,
+    retry: false,
+  })
+
   const loading = loadingProjects || loadingTeams || loadingAgents || loadingSkills
 
   if (loading) return <PageSpinner />
@@ -157,6 +163,27 @@ export default function DashboardPage() {
                 </div>
               ))
             : null}
+
+          <div
+            className="flex items-center gap-3 p-3 rounded-lg"
+            style={{ background: 'var(--surface2)' }}
+          >
+            {claudeCliAuth?.loggedIn ? (
+              <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+            ) : (
+              <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+            )}
+            <div>
+              <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>
+                claude_cli auth
+              </p>
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                {claudeCliAuth?.loggedIn
+                  ? `Connecte via ${claudeCliAuth.authMethod ?? 'unknown'}`
+                  : 'Non connecte'}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 

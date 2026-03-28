@@ -19,7 +19,15 @@ class ClaudeCliAdapter implements AgentPort
         $start = microtime(true);
 
         $process = new Process(
-            command: ['claude', '--print', '--model', $config->model],
+            command: [
+                'sh',
+                '-lc',
+                sprintf(
+                    'HOME=/claude-home claude --print --no-session-persistence --output-format json --model %s',
+                    escapeshellarg($config->model),
+                ),
+            ],
+            cwd: '/var/www/backend',
             timeout: $config->timeout,
         );
 
@@ -33,12 +41,46 @@ class ClaudeCliAdapter implements AgentPort
             throw new ProcessFailedException($process);
         }
 
-        return AgentResponse::fromCli($process->getOutput(), $durationMs);
+        $output = trim($process->getOutput());
+        $decoded = json_decode($output, true);
+
+        if (!is_array($decoded) && $output !== '') {
+            // Best-effort fallback for CLI outputs that wrap the JSON payload with extra text.
+            // This remains heuristic: if multiple JSON-like fragments are present, parsing may fail.
+            $startJson = strpos($output, '{');
+            $endJson   = strrpos($output, '}');
+
+            if ($startJson !== false && $endJson !== false && $endJson > $startJson) {
+                $decoded = json_decode(substr($output, $startJson, $endJson - $startJson + 1), true);
+            }
+        }
+
+        if (is_array($decoded)) {
+            $content = trim((string) ($decoded['result'] ?? ''));
+            $usage   = is_array($decoded['usage'] ?? null) ? $decoded['usage'] : [];
+
+            return AgentResponse::fromCliJson(
+                content: $content,
+                durationMs: $durationMs,
+                usage: $usage,
+                metadata: [
+                    'source' => 'cli',
+                    'stop_reason' => $decoded['stop_reason'] ?? null,
+                    'session_id' => $decoded['session_id'] ?? null,
+                ],
+            );
+        }
+
+        return AgentResponse::fromCli($output, $durationMs);
     }
 
     public function healthCheck(): bool
     {
-        $process = new Process(['claude', '--version'], timeout: 5);
+        $process = new Process(
+            ['sh', '-lc', 'HOME=/claude-home claude --version'],
+            cwd: '/var/www/backend',
+            timeout: 5,
+        );
         $process->run();
         return $process->isSuccessful();
     }

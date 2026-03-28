@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { ChatMessage } from '@/types'
+import type { ChatExchange, ChatMessage } from '@/types'
 
 export const chatApi = {
   history: async (projectId: string, agentId: string): Promise<ChatMessage[]> => {
@@ -7,7 +7,7 @@ export const chatApi = {
     return data
   },
 
-  send: async (projectId: string, agentId: string, content: string): Promise<ChatMessage> => {
+  send: async (projectId: string, agentId: string, content: string): Promise<ChatExchange> => {
     const { data } = await apiClient.post(`/projects/${projectId}/chat/${agentId}`, { content })
     return data
   },

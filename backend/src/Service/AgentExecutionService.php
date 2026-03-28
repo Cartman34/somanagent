@@ -87,8 +87,10 @@ final class AgentExecutionService
 
         if ($skillSlug === 'tech-planning') {
             $this->handlePlanningResponse($task, $agent, $response->content);
+        } elseif ($skillSlug === 'product-owner') {
+            $this->handleProductOwnerResponse($task, $response->content);
         } else {
-            $task->setStatus(TaskStatus::Done);
+            $task->setStatus(TaskStatus::Done)->setProgress(100);
         }
 
         $this->em->flush();
@@ -206,6 +208,7 @@ final class AgentExecutionService
             $plan->branch,
             $plan->needsDesign ? 'yes' : 'no',
         );
+        $story->setStatus(TaskStatus::Done)->setProgress(100);
         $this->em->persist(new TaskLog($story, 'planning_completed', $summary));
 
         $this->logger->info('AgentExecution: planning completed', [
@@ -213,5 +216,38 @@ final class AgentExecutionService
             'branch'        => $plan->branch,
             'needs_design'  => $plan->needsDesign,
         ]);
+    }
+
+    /**
+     * Stores the Product Owner output back into the story and moves it to "ready".
+     */
+    private function handleProductOwnerResponse(Task $story, string $rawContent): void
+    {
+        $content = trim($rawContent);
+        if ($content !== '') {
+            $story->setDescription($content);
+        }
+
+        if (preg_match('/^##\s+(.+)$/m', $content, $matches) === 1) {
+            $story->setTitle(trim($matches[1]));
+        }
+
+        if ($story->getStoryStatus() === StoryStatus::New) {
+            try {
+                $story->transitionStoryTo(StoryStatus::Ready);
+            } catch (\LogicException $e) {
+                $this->logger->warning('AgentExecution: could not transition PO story status', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $story->setStatus(TaskStatus::Done)->setProgress(100);
+
+        $this->em->persist(new TaskLog(
+            $story,
+            'product_owner_completed',
+            'La demande a été reformulée en user story prête pour validation.',
+        ));
     }
 }

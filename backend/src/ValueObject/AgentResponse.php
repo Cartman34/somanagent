@@ -37,6 +37,17 @@ final class AgentResponse
         );
     }
 
+    public static function fromCliJson(string $content, float $durationMs = 0, array $usage = [], array $metadata = []): self
+    {
+        return new self(
+            content: trim($content),
+            inputTokens: (int) ($usage['input_tokens'] ?? 0),
+            outputTokens: (int) ($usage['output_tokens'] ?? 0),
+            durationMs: $durationMs,
+            metadata: $metadata,
+        );
+    }
+
     public function toArray(): array
     {
         return [

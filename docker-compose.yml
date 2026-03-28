@@ -13,6 +13,8 @@ services:
     volumes:
       - ./backend:/var/www/backend
       - ./skills:/var/www/skills
+      - ./.docker/claude/shared/.claude:/claude-home/.claude
+      - ./.docker/claude/shared/.claude.json:/claude-home/.claude.json
     environment:
       - APP_ENV=${APP_ENV:-dev}
       # Claude CLI reads ANTHROPIC_API_KEY; we map it from our CLAUDE_API_KEY
@@ -24,6 +26,37 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - somanagent
+
+  # ============================================================
+  # Messenger worker (agent task consumer)
+  # ============================================================
+  worker:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    container_name: somanagent_worker
+    restart: unless-stopped
+    working_dir: /var/www/backend
+    volumes:
+      - ./backend:/var/www/backend
+      - ./skills:/var/www/skills
+      - ./.docker/claude/shared/.claude:/claude-home/.claude
+      - ./.docker/claude/shared/.claude.json:/claude-home/.claude.json
+    environment:
+      - APP_ENV=${APP_ENV:-dev}
+      - ANTHROPIC_API_KEY=${CLAUDE_API_KEY:-}
+    env_file:
+      - .env
+    command: php bin/console messenger:consume async --time-limit=3600 --memory-limit=256M
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      php:
+        condition: service_started
     networks:
       - somanagent
 
@@ -72,8 +105,11 @@ services:
     image: redis:7-alpine
     container_name: somanagent_redis
     restart: unless-stopped
+    command: redis-server --appendonly yes
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -110,3 +146,6 @@ services:
 networks:
   somanagent:
     driver: bridge
+
+volumes:
+  redis_data:

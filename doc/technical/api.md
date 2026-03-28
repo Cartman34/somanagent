@@ -20,6 +20,11 @@
 { "status": "ok", "connectors": { "claude_api": true, "claude_cli": false } }
 ```
 
+### `GET /api/health/claude-cli-auth`
+```json
+{ "status": "degraded", "loggedIn": false, "authMethod": "none", "apiProvider": "firstParty", "error": null }
+```
+
 ---
 
 ## Projets
@@ -187,7 +192,7 @@ Retourne l'historique de conversation (200 derniers messages).
 
 ### `POST /api/projects/{projectId}/chat/{agentId}`
 **Body :** `{ "content": "Peux-tu créer l'US pour le module auth ?" }`
-**201 :** message créé.
+**201 :** `{ "humanMessage": {...}, "agentMessage": {...} }`
 
 ---
 

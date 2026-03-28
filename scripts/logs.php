@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
 // Description: Stream logs from a Docker container in real time
-// Usage: php scripts/logs.php [php|node|db|nginx]
+// Usage: php scripts/logs.php [php|worker|node|db|nginx]
 // Usage: php scripts/logs.php php
 // Usage: php scripts/logs.php db --tail 50
 
@@ -19,7 +19,7 @@ $c    = $app->console;
 $root = dirname(__DIR__);
 chdir($root);
 
-$allowed   = ['php', 'node', 'db', 'nginx'];
+$allowed   = ['php', 'worker', 'node', 'db', 'nginx'];
 $service   = 'php';
 $extraArgs = '';
 

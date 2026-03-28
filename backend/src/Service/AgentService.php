@@ -76,6 +76,35 @@ class AgentService
         $this->audit->log(AuditAction::AgentDeleted, 'Agent', $id);
     }
 
+    public function setConnector(Agent $agent, ConnectorType $connector): Agent
+    {
+        $agent->setConnector($connector);
+
+        $this->em->flush();
+        $this->audit->log(AuditAction::AgentUpdated, 'Agent', (string) $agent->getId(), [
+            'connector' => $connector->value,
+        ]);
+
+        return $agent;
+    }
+
+    public function setConnectorForAll(ConnectorType $connector): int
+    {
+        $count = 0;
+
+        foreach ($this->agentRepository->findAll() as $agent) {
+            $agent->setConnector($connector);
+            $this->audit->log(AuditAction::AgentUpdated, 'Agent', (string) $agent->getId(), [
+                'connector' => $connector->value,
+            ]);
+            ++$count;
+        }
+
+        $this->em->flush();
+
+        return $count;
+    }
+
     /** @return Agent[] */
     public function findAll(): array
     {

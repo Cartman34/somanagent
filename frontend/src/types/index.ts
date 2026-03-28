@@ -44,6 +44,9 @@ export interface SkillSummary {
   id: string
   name: string
   slug?: string
+  description?: string | null
+  content?: string
+  filePath?: string
 }
 
 export interface AgentSummary {
@@ -134,9 +137,17 @@ export interface TaskLog {
 
 export interface ChatMessage {
   id: string
+  exchangeId: string
   author: 'human' | 'agent'
   content: string
+  isError: boolean
+  metadata: Record<string, unknown> | null
   createdAt: string
+}
+
+export interface ChatExchange {
+  humanMessage: ChatMessage
+  agentMessage: ChatMessage
 }
 
 export interface TokenUsageEntry {
