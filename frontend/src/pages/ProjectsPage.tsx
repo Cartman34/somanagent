@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, FolderKanban, Pencil, Trash2 } from 'lucide-react'
 import { projectsApi } from '@/api/projects'
 import type { ProjectPayload } from '@/api/projects'
-import type { Module } from '@/types'
 import { PageSpinner } from '@/components/ui/Spinner'
 import ErrorMessage from '@/components/ui/ErrorMessage'
 import EmptyState from '@/components/ui/EmptyState'
@@ -106,33 +105,46 @@ function ProjectsList() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {projects?.map((project) => (
-            <div key={project.id} className="card p-5 flex flex-col gap-3 hover:shadow-md transition-shadow">
+            <button
+              key={project.id}
+              type="button"
+              onClick={() => navigate(`/projects/${project.id}`)}
+              className="card p-5 flex flex-col gap-3 text-left hover:shadow-md transition-shadow"
+            >
               <div className="flex items-start justify-between gap-2">
-                <button
-                  onClick={() => navigate(`/projects/${project.id}`)}
-                  className="text-left font-semibold text-gray-900 hover:text-brand-600 transition-colors"
-                >
+                <span className="font-semibold text-gray-900 transition-colors">
                   {project.name}
-                </button>
+                </span>
                 <div className="flex gap-1 flex-shrink-0">
-                  <button onClick={() => setEditTarget(project)} className="p-1.5 text-gray-400 hover:text-gray-600" title="Modifier">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setEditTarget(project)
+                    }}
+                    className="p-1.5 text-gray-400 hover:text-gray-600"
+                    title="Modifier"
+                  >
                     <Pencil className="w-4 h-4" />
                   </button>
-                  <button onClick={() => setDeleteTarget(project)} className="p-1.5 text-gray-400 hover:text-red-500" title="Supprimer">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setDeleteTarget(project)
+                    }}
+                    className="p-1.5 text-gray-400 hover:text-red-500"
+                    title="Supprimer"
+                  >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
               {project.description && <p className="text-sm text-gray-500 line-clamp-2">{project.description}</p>}
-              <div className="mt-auto flex items-center justify-between text-xs text-gray-400">
-                <span>
-                  {typeof project.modules === 'number'
-                    ? `${project.modules} module${project.modules !== 1 ? 's' : ''}`
-                    : `${(project.modules as Module[]).length} modules`}
-                </span>
+              <div className="mt-auto flex items-center justify-end text-xs text-gray-400">
                 <span>{fmt(project.createdAt)}</span>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       )}
