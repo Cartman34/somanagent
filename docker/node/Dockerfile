@@ -1,7 +1,7 @@
 FROM node:20-alpine
 
 # Useful tools
-RUN apk add --no-cache git curl
+RUN apk add --no-cache bash git curl
 
 WORKDIR /app
 

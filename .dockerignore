@@ -16,3 +16,4 @@ backend/var/log/
 
 # Local environment (contains secrets)
 .env
+.docker/claude/
