@@ -6,15 +6,19 @@
 
 ```
 Project ─────── Module (1..n)
-│                 status: active|archived
+│ team → Team     status: active|archived
 └─────────────── Feature (1..n)
                    status: open|in_progress|closed
                  └── Task (1..n, auto-référence parent/children)
                        type: user_story|bug|task
                        status: backlog|todo|in_progress|review|done|cancelled
+                       storyStatus: new|ready|approved|planning|graphic_design|development|code_review|done (nullable)
                        priority: low|medium|high|critical
                        progress: 0-100
+                       branchName (nullable)
                        assignedAgent → Agent (nullable)
+                       assignedRole → Role (nullable)
+                       addedBy → Agent (nullable)
                        └── TaskLog (1..n)
 
 Role ──────────── Skill (ManyToMany via role_skill)
@@ -49,7 +53,7 @@ AuditLog           — trace de toutes les actions (indépendant)
 | `repository_url` | VARCHAR(512) | NULL | URL du dépôt principal (monorepo) |
 | `created_at` / `updated_at` | TIMESTAMP | NOT NULL | — |
 
-Relations : `modules` → `Module[]` (OneToMany, cascade), `features` référencées via FK inverse.
+Relations : `team` → `Team` (ManyToOne, nullable), `modules` → `Module[]` (OneToMany, cascade), `features` référencées via FK inverse.
 
 ---
 
@@ -133,12 +137,16 @@ Relations : `agents` → `Agent[]` (ManyToMany via `agent_team`).
 | `feature_id` | UUID | FK → feature (SET NULL, nullable) |
 | `parent_id` | UUID | FK → task (CASCADE, nullable — sous-tâche) |
 | `assigned_agent_id` | UUID | FK → agent (SET NULL, nullable) |
+| `assigned_role_id` | UUID | FK → role (SET NULL, nullable) |
+| `added_by_id` | UUID | FK → agent (SET NULL, nullable — agent créateur) |
 | `type` | VARCHAR | `user_story` \| `bug` \| `task` |
 | `title` | VARCHAR(255) | Titre |
 | `description` | TEXT | Description |
 | `status` | VARCHAR | `backlog\|todo\|in_progress\|review\|done\|cancelled` |
+| `story_status` | VARCHAR | Lifecycle story : `new\|ready\|approved\|planning\|graphic_design\|development\|code_review\|done` (nullable — uniquement pour user_story) |
 | `priority` | VARCHAR | `low\|medium\|high\|critical` |
 | `progress` | SMALLINT | Progression 0–100 |
+| `branch_name` | VARCHAR(255) | Nom de la branche VCS associée (nullable) |
 | `created_at` / `updated_at` | TIMESTAMP | — |
 
 ---
@@ -199,6 +207,9 @@ Contrainte UNIQUE sur `(entity_type, entity_id, system)`.
 | `agent_id` | UUID | FK → agent (CASCADE) |
 | `author` | VARCHAR | `human` \| `agent` |
 | `content` | TEXT | Contenu du message |
+| `exchange_id` | VARCHAR(36) | UUID regroupant les messages d'un même échange (question + réponse) |
+| `is_error` | BOOLEAN | Indique si le message est une erreur agent |
+| `metadata` | JSON | Données contextuelles (model, tokens, etc.) — nullable |
 | `created_at` | TIMESTAMP | — |
 
 ---
@@ -228,6 +239,20 @@ Contrainte UNIQUE sur `(entity_type, entity_id, system)`.
 | `entity_id` | VARCHAR(36) | UUID de l'entité concernée |
 | `data` | JSON | Données contextuelles |
 | `created_at` | TIMESTAMP | — |
+
+---
+
+---
+
+### TaskDependency
+
+| Colonne | Type | Description |
+|---|---|---|
+| `id` | UUID | PK |
+| `task_id` | UUID | FK → task (CASCADE) |
+| `depends_on_id` | UUID | FK → task (CASCADE) |
+
+Contrainte : une tâche ne peut pas dépendre d'elle-même.
 
 ---
 

@@ -124,6 +124,13 @@ Consommation de tokens pour ce projet. Retourne `{ summary: { total, byAgent }, 
 
 ### `GET /api/agents/{id}` · `PUT /api/agents/{id}` · `DELETE /api/agents/{id}`
 
+### `GET /api/agents/{id}/status`
+Statut opérationnel dérivé (non stocké).
+```json
+{ "status": "idle" }
+```
+Valeurs : `idle` | `working` (≥1 tâche `in_progress`) | `error` (TaskLog récent `agent_error`).
+
 ---
 
 ## Features
@@ -180,6 +187,19 @@ Passe le statut à `done` (100%). Validation manuelle par l'humain.
 
 ### `POST /api/tasks/{id}/request-validation`
 **Body :** `{ "comment": "Prêt pour revue." }` — passe à `review`.
+
+### `POST /api/tasks/{id}/story-transition`
+**Body :** `{ "status": "development" }` — transition manuelle du `storyStatus`.
+
+### `GET /api/tasks/{id}/execute`
+Retourne les agents/rôles disponibles pour exécuter cette tâche.
+
+### `POST /api/tasks/{id}/execute`
+**Body :** `{ "agentId": "uuid" }` — dispatch l'agent sur la tâche via Redis.
+
+### `POST /api/projects/{projectId}/requests`
+Crée une tâche de type `user_story` depuis une demande utilisateur en langage naturel.
+**Body :** `{ "content": "Ajouter l'authentification OAuth2" }`
 
 ### `DELETE /api/tasks/{id}`
 
