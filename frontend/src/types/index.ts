@@ -130,6 +130,7 @@ export interface Task {
 }
 
 export interface TaskLog {
+  id: string
   action: string
   content: string | null
   createdAt: string
