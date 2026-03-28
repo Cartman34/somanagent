@@ -87,16 +87,7 @@ final class PlanningOutputParser
             $description = $this->requireString($raw, 'description', "task[{$i}]");
             $role        = $this->requireString($raw, 'role', "task[{$i}]");
             $priority    = TaskPriority::tryFrom($raw['priority'] ?? '') ?? TaskPriority::Medium;
-            $dependsOn   = array_map('intval', (array) ($raw['dependsOn'] ?? []));
-
-            // Validate dependency indices
-            foreach ($dependsOn as $dep) {
-                if ($dep < 0 || $dep >= $i) {
-                    throw new \InvalidArgumentException(
-                        "Task[{$i}].dependsOn[{$dep}] is invalid: must reference a previous task index."
-                    );
-                }
-            }
+            $dependsOn   = $this->parseDependsOn($raw['dependsOn'] ?? [], $i);
 
             $tasks[] = new PlanningTask($title, $description, $role, $priority, $dependsOn);
         }
@@ -125,11 +116,78 @@ final class PlanningOutputParser
 
     private function requireString(array $data, string $key, string $context = 'root'): string
     {
-        if (!isset($data[$key]) || !is_string($data[$key]) || $data[$key] === '') {
+        if (!isset($data[$key]) || !is_string($data[$key]) || trim($data[$key]) === '') {
             throw new \InvalidArgumentException(
                 "Missing or empty required field \"{$key}\" in {$context}."
             );
         }
-        return $data[$key];
+
+        return trim($data[$key]);
+    }
+
+    /**
+     * @param mixed $rawDependsOn
+     * @return int[]
+     */
+    private function parseDependsOn(mixed $rawDependsOn, int $taskIndex): array
+    {
+        if ($rawDependsOn === null || $rawDependsOn === '') {
+            return [];
+        }
+
+        if (!is_array($rawDependsOn)) {
+            throw new \InvalidArgumentException(sprintf(
+                'Task[%d].dependsOn must be an array of previous task indices.',
+                $taskIndex,
+            ));
+        }
+
+        $dependsOn = [];
+        foreach ($rawDependsOn as $offset => $rawDependency) {
+            $dependencyIndex = $this->parseDependencyIndex($rawDependency, $taskIndex, $offset);
+
+            if ($dependencyIndex >= $taskIndex) {
+                throw new \InvalidArgumentException(sprintf(
+                    'Task[%d].dependsOn[%d]=%d is invalid: dependencies must reference only previous tasks after final ordering.',
+                    $taskIndex,
+                    $offset,
+                    $dependencyIndex,
+                ));
+            }
+
+            $dependsOn[] = $dependencyIndex;
+        }
+
+        $dependsOn = array_values(array_unique($dependsOn));
+        sort($dependsOn);
+
+        return $dependsOn;
+    }
+
+    private function parseDependencyIndex(mixed $rawDependency, int $taskIndex, int|string $offset): int
+    {
+        if (is_int($rawDependency)) {
+            $dependencyIndex = $rawDependency;
+        } elseif (is_string($rawDependency) && preg_match('/^-?\d+$/', trim($rawDependency)) === 1) {
+            $dependencyIndex = (int) trim($rawDependency);
+        } else {
+            throw new \InvalidArgumentException(sprintf(
+                'Task[%d].dependsOn[%s] must be an integer index, got %s.',
+                $taskIndex,
+                (string) $offset,
+                get_debug_type($rawDependency),
+            ));
+        }
+
+        if ($dependencyIndex < 0) {
+            throw new \InvalidArgumentException(sprintf(
+                'Task[%d].dependsOn[%s]=%d is invalid: dependency indices must be >= 0.',
+                $taskIndex,
+                (string) $offset,
+                $dependencyIndex,
+            ));
+        }
+
+        return $dependencyIndex;
     }
 }

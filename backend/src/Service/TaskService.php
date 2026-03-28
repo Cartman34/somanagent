@@ -193,7 +193,7 @@ class TaskService
     public function failExecution(Task $task, string $message): Task
     {
         $oldStatus = $task->getStatus();
-        $task->setStatus(TaskStatus::Backlog);
+        $task->setStatus(TaskStatus::Backlog)->setProgress(0);
         $this->log($task, 'execution_error', $message);
         $this->em->flush();
 
