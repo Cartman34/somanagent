@@ -117,6 +117,7 @@ export interface Task {
   priority: TaskPriority
   progress: number
   branchName: string | null
+  branchUrl: string | null
   feature: { id: string; name: string } | null
   parent: { id: string; title: string } | null
   assignedAgent: { id: string; name: string } | null

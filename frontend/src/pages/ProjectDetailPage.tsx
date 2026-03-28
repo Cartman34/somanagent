@@ -196,7 +196,13 @@ function StoryCard({ task, onTransition, onDelete, onExecute, onOpen, transition
       {task.branchName && (
         <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--muted)' }}>
           <GitBranch className="w-3 h-3" />
-          <code className="font-mono truncate">{task.branchName}</code>
+          {task.branchUrl ? (
+            <a href={task.branchUrl} target="_blank" rel="noreferrer" className="truncate hover:underline" style={{ color: 'var(--brand)' }}>
+              <code className="font-mono">{task.branchName}</code>
+            </a>
+          ) : (
+            <code className="font-mono truncate">{task.branchName}</code>
+          )}
         </div>
       )}
       {task.assignedRole && (
@@ -612,7 +618,13 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
             {task.branchName && (
               <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--muted)' }}>
                 <GitBranch className="w-3.5 h-3.5 flex-shrink-0" />
-                <code className="font-mono">{task.branchName}</code>
+                {task.branchUrl ? (
+                  <a href={task.branchUrl} target="_blank" rel="noreferrer" className="hover:underline" style={{ color: 'var(--brand)' }}>
+                    <code className="font-mono">{task.branchName}</code>
+                  </a>
+                ) : (
+                  <code className="font-mono">{task.branchName}</code>
+                )}
               </div>
             )}
 
