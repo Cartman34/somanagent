@@ -109,7 +109,7 @@ class DevTeamFixture extends Fixture
 
         $agents = [];
         foreach ($definitions as $key => $def) {
-            $agent = new Agent($def['name'], ConnectorType::ClaudeApi, $config);
+            $agent = new Agent($def['name'], ConnectorType::ClaudeCli, $config);
             $agent->setRole($roles[$def['role']]);
             $manager->persist($agent);
             $agents[$key] = $agent;

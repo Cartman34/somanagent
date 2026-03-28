@@ -8,6 +8,7 @@ use App\Entity\Agent;
 use App\Entity\Feature;
 use App\Entity\Project;
 use App\Entity\Task;
+use App\Enum\TaskType;
 use App\Enum\TaskStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -57,5 +58,33 @@ class TaskRepository extends ServiceEntityRepository
     public function findByProjectAndStatus(Project $project, TaskStatus $status): array
     {
         return $this->findBy(['project' => $project, 'status' => $status]);
+    }
+
+    /** @return Task[] */
+    public function findRecentStories(int $limit = 10): array
+    {
+        return $this->createQueryBuilder('t')
+            ->where('t.type IN (:types)')
+            ->andWhere('t.parent IS NULL')
+            ->setParameter('types', [TaskType::UserStory, TaskType::Bug])
+            ->orderBy('t.createdAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @return Task[] */
+    public function findStoriesByTitleLike(string $query, int $limit = 10): array
+    {
+        return $this->createQueryBuilder('t')
+            ->where('t.type IN (:types)')
+            ->andWhere('t.parent IS NULL')
+            ->andWhere('LOWER(t.title) LIKE :query')
+            ->setParameter('types', [TaskType::UserStory, TaskType::Bug])
+            ->setParameter('query', '%' . mb_strtolower($query) . '%')
+            ->orderBy('t.createdAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
     }
 }

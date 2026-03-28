@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\ChatMessage;
 use App\Service\AgentService;
 use App\Service\ChatService;
 use App\Service\ProjectService;
@@ -34,12 +35,7 @@ class ChatController extends AbstractController
 
         $messages = $this->chatService->getConversation($project, $agent);
 
-        return $this->json(array_map(fn($m) => [
-            'id'        => (string) $m->getId(),
-            'author'    => $m->getAuthor()->value,
-            'content'   => $m->getContent(),
-            'createdAt' => $m->getCreatedAt()->format(\DateTimeInterface::ATOM),
-        ], $messages));
+        return $this->json(array_map(fn($m) => $this->serializeMessage($m), $messages));
     }
 
     #[Route('/{agentId}', name: 'chat_send', methods: ['POST'])]
@@ -57,13 +53,25 @@ class ChatController extends AbstractController
             return $this->json(['error' => 'Le champ "content" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $message = $this->chatService->sendHuman($project, $agent, $data['content']);
+        $exchange = $this->chatService->sendAndReceive($project, $agent, trim((string) $data['content']));
 
         return $this->json([
-            'id'        => (string) $message->getId(),
-            'author'    => $message->getAuthor()->value,
-            'content'   => $message->getContent(),
-            'createdAt' => $message->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            'humanMessage' => $this->serializeMessage($exchange['human']),
+            'agentMessage' => $this->serializeMessage($exchange['agent']),
         ], Response::HTTP_CREATED);
+    }
+
+    /** @return array<string, mixed> */
+    private function serializeMessage(ChatMessage $message): array
+    {
+        return [
+            'id'         => (string) $message->getId(),
+            'exchangeId' => $message->getExchangeId(),
+            'author'     => $message->getAuthor()->value,
+            'content'    => $message->getContent(),
+            'isError'    => $message->isError(),
+            'metadata'   => $message->getMetadata(),
+            'createdAt'  => $message->getCreatedAt()->format(\DateTimeInterface::ATOM),
+        ];
     }
 }

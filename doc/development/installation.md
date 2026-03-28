@@ -64,6 +64,7 @@ The `docker-compose.yml` defines 4 services:
 | Service | Image | Exposed Port | Role |
 |---|---|---|---|
 | `php` | PHP 8.4-FPM + Composer | — | Runs Symfony |
+| `worker` | PHP CLI Messenger worker | — | Consumes async agent jobs |
 | `nginx` | Nginx alpine | 8080 | Proxy to PHP-FPM |
 | `db` | PostgreSQL 16 | 5432 | Database |
 | `node` | Node 20 alpine | 5173 | Vite dev server |
@@ -97,6 +98,7 @@ php scripts/console.php somanagent:seed:web-team
 docker compose ps
 # View logs
 php scripts/logs.php php
+php scripts/logs.php worker
 php scripts/logs.php db
 ```
 

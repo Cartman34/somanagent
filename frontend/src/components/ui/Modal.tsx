@@ -7,14 +7,15 @@ interface ModalProps {
   onClose: () => void
   title: string
   children: React.ReactNode
-  size?: 'sm' | 'md' | 'lg' | 'xl'
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 }
 
 const sizes = {
   sm: 'max-w-sm',
   md: 'max-w-lg',
   lg: 'max-w-2xl',
-  xl: 'max-w-4xl',
+  xl: 'max-w-5xl',
+  '2xl': 'max-w-7xl',
 }
 
 export default function Modal({ open, onClose, title, children, size = 'md' }: ModalProps) {
@@ -33,22 +34,34 @@ export default function Modal({ open, onClose, title, children, size = 'md' }: M
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto p-3 sm:p-4"
+      style={{ background: 'rgba(0, 0, 0, 0.58)' }}
       onClick={(e) => { if (e.target === overlayRef.current) onClose() }}
     >
-      <div className={clsx('bg-white rounded-xl shadow-xl w-full', sizes[size])}>
+      <div
+        className={clsx('my-3 sm:my-4 flex w-full flex-col overflow-hidden', sizes[size])}
+        style={{
+          background: 'var(--surface)',
+          color: 'var(--text)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-card, var(--radius))',
+          boxShadow: 'var(--shadow)',
+          maxHeight: 'min(94vh, 980px)',
+        }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--text)' }}>{title}</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="transition-colors"
+            style={{ color: 'var(--muted)' }}
           >
             <X className="w-5 h-5" />
           </button>
         </div>
         {/* Body */}
-        <div className="px-6 py-4">{children}</div>
+        <div className="min-h-0 flex-1 overflow-hidden px-4 py-4 sm:px-6">{children}</div>
       </div>
     </div>
   )

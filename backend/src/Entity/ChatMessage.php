@@ -31,6 +31,15 @@ class ChatMessage
     #[ORM\Column(type: 'text')]
     private string $content;
 
+    #[ORM\Column(length: 36)]
+    private string $exchangeId;
+
+    #[ORM\Column(type: 'boolean')]
+    private bool $isError = false;
+
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $metadata = null;
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
@@ -39,12 +48,18 @@ class ChatMessage
         Agent      $agent,
         ChatAuthor $author,
         string     $content,
+        ?string    $exchangeId = null,
+        bool       $isError = false,
+        ?array     $metadata = null,
     ) {
         $this->id        = Uuid::v7();
         $this->project   = $project;
         $this->agent     = $agent;
         $this->author    = $author;
         $this->content   = $content;
+        $this->exchangeId = $exchangeId ?? (string) Uuid::v7();
+        $this->isError   = $isError;
+        $this->metadata  = $metadata;
         $this->createdAt = new \DateTimeImmutable();
     }
 
@@ -53,5 +68,8 @@ class ChatMessage
     public function getAgent(): Agent                  { return $this->agent; }
     public function getAuthor(): ChatAuthor            { return $this->author; }
     public function getContent(): string               { return $this->content; }
+    public function getExchangeId(): string            { return $this->exchangeId; }
+    public function isError(): bool                    { return $this->isError; }
+    public function getMetadata(): ?array              { return $this->metadata; }
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
 }

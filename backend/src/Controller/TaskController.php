@@ -76,6 +76,42 @@ class TaskController extends AbstractController
         return $this->json($this->serialize($task), Response::HTTP_CREATED);
     }
 
+    #[Route('/projects/{projectId}/requests', name: 'project_request_create', methods: ['POST'])]
+    public function createRequest(string $projectId, Request $request): JsonResponse
+    {
+        $project = $this->projectService->findById($projectId);
+        if ($project === null) {
+            return $this->json(['error' => 'Projet introuvable.'], Response::HTTP_NOT_FOUND);
+        }
+
+        $data = $request->toArray();
+        if (empty($data['title'])) {
+            return $this->json(['error' => 'Le champ "title" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $priority = TaskPriority::from($data['priority'] ?? TaskPriority::Medium->value);
+        $task = $this->taskService->createProductOwnerRequest(
+            $project,
+            $data['title'],
+            $data['description'] ?? null,
+            $priority,
+        );
+
+        $dispatchError = null;
+        try {
+            if ($this->storyExecutionService->canExecute($task)) {
+                $this->storyExecutionService->execute($task);
+            }
+        } catch (\RuntimeException|\LogicException $e) {
+            $dispatchError = $e->getMessage();
+        }
+
+        return $this->json(array_merge(
+            $this->serialize($task),
+            $dispatchError !== null ? ['dispatchError' => $dispatchError] : [],
+        ), Response::HTTP_CREATED);
+    }
+
     #[Route('/tasks/{id}', name: 'task_get', methods: ['GET'])]
     public function get(string $id): JsonResponse
     {

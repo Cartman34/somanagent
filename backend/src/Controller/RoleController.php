@@ -57,9 +57,12 @@ class RoleController extends AbstractController
             'name'        => $role->getName(),
             'description' => $role->getDescription(),
             'skills'      => array_map(fn($s) => [
-                'id'   => (string) $s->getId(),
-                'name' => $s->getName(),
-                'slug' => $s->getSlug(),
+                'id'          => (string) $s->getId(),
+                'name'        => $s->getName(),
+                'slug'        => $s->getSlug(),
+                'description' => $s->getDescription(),
+                'content'     => $s->getContent(),
+                'filePath'    => $s->getFilePath(),
             ], $role->getSkills()->toArray()),
         ]);
     }

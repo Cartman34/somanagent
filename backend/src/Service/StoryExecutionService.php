@@ -8,6 +8,7 @@ use App\Entity\Agent;
 use App\Entity\Task;
 use App\Entity\TaskLog;
 use App\Enum\StoryStatus;
+use App\Enum\TaskStatus;
 use App\Message\AgentTaskMessage;
 use App\Repository\AgentRepository;
 use App\Repository\WorkflowStepRepository;
@@ -42,6 +43,7 @@ final class StoryExecutionService
      * @var array<string, array{role: string, skill: string, transition: StoryStatus|null}>
      */
     private const EXECUTION_MAP = [
+        'new'            => ['role' => 'product-owner',  'skill' => 'product-owner',   'transition' => null],
         'approved'       => ['role' => 'lead-tech',      'skill' => 'tech-planning',   'transition' => StoryStatus::Planning],
         'graphic_design' => ['role' => 'ui-ux-designer', 'skill' => 'ui-design',       'transition' => null],
         'development'    => ['role' => 'php-dev',         'skill' => 'php-backend-dev', 'transition' => null],
@@ -97,7 +99,7 @@ final class StoryExecutionService
             return [];
         }
 
-        ['role' => $roleSlug] = $this->resolveConfig($story);
+        ['role' => $roleSlug] = $this->resolveExecutionConfig($story);
         $team = $story->getProject()->getTeam();
 
         if ($team !== null) {
@@ -129,7 +131,7 @@ final class StoryExecutionService
             );
         }
 
-        ['role' => $roleSlug, 'skill' => $skillSlug, 'transition' => $transition] = $this->resolveConfig($story);
+        ['role' => $roleSlug, 'skill' => $skillSlug, 'transition' => $transition] = $this->resolveExecutionConfig($story);
         $team = $story->getProject()->getTeam();
 
         if ($agent === null) {
@@ -148,6 +150,9 @@ final class StoryExecutionService
             }
             $agent = $agents[0];
         }
+
+        $story->setAssignedAgent($agent);
+        $story->setStatus(TaskStatus::InProgress);
 
         // Transition story status if needed (e.g. approved → planning)
         if ($transition !== null) {
@@ -178,7 +183,7 @@ final class StoryExecutionService
      * @return array{role: string, skill: string, transition: StoryStatus|null}
      * @throws \RuntimeException if no config is found (should be gated by canExecute())
      */
-    private function resolveConfig(Task $story): array
+    public function resolveExecutionConfig(Task $story): array
     {
         $storyStatus = $story->getStoryStatus();
         $team        = $story->getProject()->getTeam();

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Bot, Pencil, Trash2, CheckCircle, XCircle } from 'lucide-react'
 import { agentsApi } from '@/api/agents'
 import { rolesApi } from '@/api/roles'
+import { healthApi } from '@/api/health'
 import type { AgentPayload } from '@/api/agents'
 import type { Agent, AgentConfig } from '@/types'
 import { PageSpinner } from '@/components/ui/Spinner'
@@ -46,15 +47,15 @@ function AgentForm({ initial, onSubmit, loading, onCancel }: {
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Nom *</label>
           <input className="input" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Agent Dev PHP" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Description</label>
           <textarea className="input resize-none" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Rôle</label>
+          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Rôle</label>
           <select className="input" value={roleId} onChange={(e) => setRoleId(e.target.value)}>
             <option value="">— Aucun rôle —</option>
             {roles?.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
@@ -63,36 +64,45 @@ function AgentForm({ initial, onSubmit, loading, onCancel }: {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Connecteur</label>
+        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>Connecteur</label>
         <div className="grid grid-cols-2 gap-3">
           {(['claude_api', 'claude_cli'] as const).map((c) => (
-            <button key={c} type="button" onClick={() => setConnector(c)}
-              className={`p-3 rounded-lg border-2 text-sm font-medium text-left transition-colors ${connector === c ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-              <p className="font-semibold">{c === 'claude_api' ? 'Claude API' : 'Claude CLI'}</p>
-              <p className="text-xs opacity-70 mt-0.5">{c === 'claude_api' ? 'Via HTTPS — clé API requise' : 'Via binaire local'}</p>
+            <button
+              key={c}
+              type="button"
+              onClick={() => setConnector(c)}
+              className="rounded-lg border-2 p-3 text-left text-sm font-medium transition-colors"
+              style={{
+                borderColor: connector === c ? 'var(--brand)' : 'var(--border)',
+                background: connector === c ? 'var(--brand-dim)' : 'var(--surface)',
+                color: connector === c ? 'var(--text)' : 'var(--muted)',
+              }}
+            >
+              <p className="font-semibold" style={{ color: 'var(--text)' }}>{c === 'claude_api' ? 'Claude API' : 'Claude CLI'}</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>{c === 'claude_api' ? 'Via HTTPS — clé API requise' : 'Via binaire local'}</p>
             </button>
           ))}
         </div>
       </div>
 
       <div>
-        <p className="text-sm font-medium text-gray-700 mb-3">Configuration</p>
+        <p className="text-sm font-medium mb-3" style={{ color: 'var(--text)' }}>Configuration</p>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Modèle</label>
+            <label className="block text-xs mb-1" style={{ color: 'var(--muted)' }}>Modèle</label>
             <input className="input" value={model} onChange={(e) => setModel(e.target.value)} placeholder="claude-sonnet-4-6" />
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Max tokens</label>
+              <label className="block text-xs mb-1" style={{ color: 'var(--muted)' }}>Max tokens</label>
               <input className="input" type="number" min={1} max={200000} value={maxTokens} onChange={(e) => setMaxTokens(Number(e.target.value))} />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Température</label>
+              <label className="block text-xs mb-1" style={{ color: 'var(--muted)' }}>Température</label>
               <input className="input" type="number" min={0} max={1} step={0.1} value={temperature} onChange={(e) => setTemperature(Number(e.target.value))} />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Timeout (s)</label>
+              <label className="block text-xs mb-1" style={{ color: 'var(--muted)' }}>Timeout (s)</label>
               <input className="input" type="number" min={5} max={600} value={timeoutSecs} onChange={(e) => setTimeoutSecs(Number(e.target.value))} />
             </div>
           </div>
@@ -100,8 +110,8 @@ function AgentForm({ initial, onSubmit, loading, onCancel }: {
       </div>
 
       <label className="flex items-center gap-2 cursor-pointer">
-        <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
-        <span className="text-sm text-gray-700">Agent actif</span>
+        <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="rounded" style={{ accentColor: 'var(--brand)' }} />
+        <span className="text-sm" style={{ color: 'var(--text)' }}>Agent actif</span>
       </label>
 
       <div className="flex justify-end gap-3 pt-2">
@@ -119,6 +129,7 @@ export default function AgentsPage() {
   const [deleteAgent, setDeleteAgent] = useState<Agent | null>(null)
 
   const { data: agents, isLoading, error, refetch } = useQuery({ queryKey: ['agents'], queryFn: agentsApi.list })
+  const { data: claudeCliAuth } = useQuery({ queryKey: ['health', 'claude-cli-auth'], queryFn: healthApi.claudeCliAuth, retry: false })
 
   const createMutation = useMutation({ mutationFn: agentsApi.create, onSuccess: () => { qc.invalidateQueries({ queryKey: ['agents'] }); setCreateOpen(false) } })
   const updateMutation = useMutation({ mutationFn: ({ id, data }: { id: string; data: AgentPayload }) => agentsApi.update(id, data), onSuccess: () => { qc.invalidateQueries({ queryKey: ['agents'] }); setEditAgent(null) } })
@@ -132,43 +143,67 @@ export default function AgentsPage() {
       <PageHeader title="Agents" description="Configurez les agents IA et assignez-leur un rôle."
         action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> Nouvel agent</button>} />
 
+      <div className="card p-4 mb-4">
+        <div className="flex items-start gap-3">
+          {claudeCliAuth?.loggedIn ? (
+            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+          ) : (
+            <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+          )}
+          <div className="min-w-0">
+            <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>Claude CLI</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
+              {claudeCliAuth?.loggedIn
+                ? `Connecte (${claudeCliAuth.authMethod ?? 'unknown'})`
+                : 'Non connecte dans le conteneur PHP.'}
+            </p>
+            {!claudeCliAuth?.loggedIn && (
+              <div className="mt-2 text-xs space-y-1" style={{ color: 'var(--muted)' }}>
+                <p>Login manuel : <code>docker exec -it somanagent_php claude auth login</code></p>
+                <p>Verification : <code>docker exec somanagent_php claude auth status</code></p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {agents?.length === 0 ? (
         <EmptyState icon={Bot} title="Aucun agent" description="Créez votre premier agent et configurez son connecteur IA."
           action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> Nouvel agent</button>} />
       ) : (
         <div className="card overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="border-b" style={{ background: 'var(--surface2)', borderColor: 'var(--border)' }}>
               <tr>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Nom</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600 hidden sm:table-cell">Rôle</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Connecteur</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Modèle</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Statut</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--muted)' }}>Nom</th>
+                <th className="hidden px-4 py-3 text-left font-medium sm:table-cell" style={{ color: 'var(--muted)' }}>Rôle</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--muted)' }}>Connecteur</th>
+                <th className="hidden px-4 py-3 text-left font-medium md:table-cell" style={{ color: 'var(--muted)' }}>Modèle</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--muted)' }}>Statut</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y" style={{ borderColor: 'var(--border)' }}>
               {agents?.map((agent) => (
-                <tr key={agent.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={agent.id} className="transition-colors" style={{ background: 'transparent' }}>
                   <td className="px-4 py-3">
-                    <p className="font-medium text-gray-900">{agent.name}</p>
-                    {agent.description && <p className="text-xs text-gray-400 truncate max-w-xs">{agent.description}</p>}
+                    <p className="font-medium" style={{ color: 'var(--text)' }}>{agent.name}</p>
+                    {agent.description && <p className="text-xs truncate max-w-xs" style={{ color: 'var(--muted)' }}>{agent.description}</p>}
                   </td>
-                  <td className="px-4 py-3 hidden sm:table-cell text-gray-600">
-                    {agent.role?.name ?? <span className="text-gray-400">—</span>}
+                  <td className="hidden px-4 py-3 sm:table-cell" style={{ color: 'var(--muted)' }}>
+                    {agent.role?.name ?? <span style={{ color: 'var(--muted)' }}>—</span>}
                   </td>
                   <td className="px-4 py-3">
                     <span className={agent.connector === 'claude_api' ? 'badge-blue' : 'badge-orange'}>{agent.connectorLabel}</span>
                   </td>
-                  <td className="px-4 py-3 hidden md:table-cell text-gray-500 font-mono text-xs">{agent.config.model}</td>
+                  <td className="hidden px-4 py-3 font-mono text-xs md:table-cell" style={{ color: 'var(--muted)' }}>{agent.config.model}</td>
                   <td className="px-4 py-3">
                     {agent.isActive ? <CheckCircle className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-gray-300" />}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1 justify-end">
-                      <button onClick={() => setEditAgent(agent)} className="p-1.5 text-gray-400 hover:text-gray-600" title="Modifier"><Pencil className="w-4 h-4" /></button>
-                      <button onClick={() => setDeleteAgent(agent)} className="p-1.5 text-gray-400 hover:text-red-500" title="Supprimer"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => setEditAgent(agent)} className="p-1.5 transition-colors" style={{ color: 'var(--muted)' }} title="Modifier"><Pencil className="w-4 h-4" /></button>
+                      <button onClick={() => setDeleteAgent(agent)} className="p-1.5 transition-colors" style={{ color: 'var(--muted)' }} title="Supprimer"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </td>
                 </tr>

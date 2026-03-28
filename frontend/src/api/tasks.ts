@@ -11,6 +11,16 @@ export interface TaskPayload {
   assignedAgentId?: string
 }
 
+export interface ProjectRequestPayload {
+  title: string
+  description?: string
+  priority?: TaskPriority
+}
+
+export interface ProjectRequestResult extends Task {
+  dispatchError?: string
+}
+
 export const tasksApi = {
   listByProject: async (projectId: string): Promise<Task[]> => {
     const { data } = await apiClient.get(`/projects/${projectId}/tasks`)
@@ -24,6 +34,11 @@ export const tasksApi = {
 
   create: async (projectId: string, payload: TaskPayload): Promise<Task> => {
     const { data } = await apiClient.post(`/projects/${projectId}/tasks`, payload)
+    return data
+  },
+
+  createRequest: async (projectId: string, payload: ProjectRequestPayload): Promise<ProjectRequestResult> => {
+    const { data } = await apiClient.post(`/projects/${projectId}/requests`, payload)
     return data
   },
 

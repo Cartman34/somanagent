@@ -40,7 +40,21 @@
       "Bash(sudo tee:*)",
       "Bash(sudo apt:*)",
       "Bash(git pull:*)",
-      "Bash(python3 -c \":*)"
+      "Bash(python3 -c \":*)",
+      "Bash(git -C /home/sowapps/projects/somanagent diff HEAD --stat)",
+      "Bash(git -C /home/sowapps/projects/somanagent diff HEAD -- backend/src/Entity/ChatMessage.php)",
+      "Bash(git -C /home/sowapps/projects/somanagent diff HEAD -- backend/src/Service/ChatService.php)",
+      "Bash(git -C /home/sowapps/projects/somanagent diff HEAD -- backend/src/Controller/ChatController.php)",
+      "Bash(git -C /home/sowapps/projects/somanagent diff HEAD -- backend/src/Controller/HealthController.php backend/src/Controller/RoleController.php backend/src/Controller/TaskController.php)",
+      "Bash(git -C /home/sowapps/projects/somanagent diff HEAD -- backend/src/Adapter/AI/ClaudeCliAdapter.php)",
+      "Bash(git -C /home/sowapps/projects/somanagent diff HEAD -- backend/src/Service/AgentService.php backend/src/ValueObject/AgentResponse.php)",
+      "Bash(git -C /home/sowapps/projects/somanagent diff HEAD -- backend/src/Service/AgentExecutionService.php backend/src/Service/StoryExecutionService.php backend/src/Service/TaskService.php)",
+      "Bash(git -C /home/sowapps/projects/somanagent diff HEAD -- backend/src/Repository/AgentRepository.php backend/src/Repository/TaskRepository.php)",
+      "Bash(git -C /home/sowapps/projects/somanagent diff HEAD -- frontend/src/pages/ProjectDetailPage.tsx)",
+      "Bash(git -C /home/sowapps/projects/somanagent diff HEAD)",
+      "Bash(git -C /home/sowapps/projects/somanagent status --short)",
+      "Bash(git -C /home/sowapps/projects/somanagent status changes-list.md changes-review.md)",
+      "Bash(git -C /home/sowapps/projects/somanagent ls-files --others --ignored --exclude-standard changes-list.md changes-review.md)"
     ]
   }
 }

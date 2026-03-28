@@ -34,6 +34,31 @@ CLAUDE_API_KEY=sk-ant-...
 
 Required for the `claude_api` connector. Obtain it at [console.anthropic.com](https://console.anthropic.com).
 
+### Claude CLI Login
+
+The `claude_cli` connector requires a Claude Code login inside the Docker containers.
+
+Login commands:
+
+```bash
+docker exec -it somanagent_php claude auth login
+docker exec -it somanagent_worker claude auth login
+```
+
+Status check:
+
+```bash
+docker exec somanagent_php claude auth status
+docker exec somanagent_worker claude auth status
+```
+
+The Docker setup persists Claude CLI auth files via:
+
+```text
+./.docker/claude/shared/.claude      -> /claude-home/.claude
+./.docker/claude/shared/.claude.json -> /claude-home/.claude.json
+```
+
 ### GitHub Integration
 
 ```ini

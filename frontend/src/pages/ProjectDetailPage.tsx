@@ -1,5 +1,5 @@
-import { useState, type ComponentType } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useEffect, useState, type ComponentType } from 'react'
+import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft, Plus, Code2, Globe, XCircle, CheckCircle, Clock,
@@ -12,7 +12,7 @@ import { projectsApi } from '@/api/projects'
 import { tasksApi } from '@/api/tasks'
 import { teamsApi } from '@/api/teams'
 import { agentsApi } from '@/api/agents'
-import type { TaskPayload } from '@/api/tasks'
+import type { ProjectRequestPayload, ProjectRequestResult, TaskPayload } from '@/api/tasks'
 import type { Task, TaskStatus, TaskPriority, TaskType, StoryStatus, Module, AgentSummary, TokenUsageEntry } from '@/types'
 import { PageSpinner } from '@/components/ui/Spinner'
 import ErrorMessage from '@/components/ui/ErrorMessage'
@@ -20,6 +20,8 @@ import EmptyState from '@/components/ui/EmptyState'
 import Modal from '@/components/ui/Modal'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import PageHeader from '@/components/ui/PageHeader'
+import EntityId from '@/components/ui/EntityId'
+import AgentSheet from '@/components/project/AgentSheet'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -49,7 +51,7 @@ const STORY_TRANSITION_LABELS: Partial<Record<StoryStatus, string>> = {
   code_review: 'Revue de code', done: 'Terminer',
 }
 
-const EXECUTABLE_STATUSES: StoryStatus[] = ['approved', 'graphic_design', 'development', 'code_review']
+const EXECUTABLE_STATUSES: StoryStatus[] = ['new', 'approved', 'graphic_design', 'development', 'code_review']
 
 const AUDIT_ACTION_LABELS: Record<string, string> = {
   'project.created': 'Projet créé', 'project.updated': 'Projet modifié', 'project.deleted': 'Projet supprimé',
@@ -251,7 +253,7 @@ function StoryBoard({ stories, onTransition, onDelete, onExecute, onOpen, pendin
   pendingTaskId: string | null
 }) {
   if (stories.length === 0) {
-    return <EmptyState icon={Layers} title="Aucune story ni bug" description="Créez une user story ou un bug via le bouton ci-dessus." />
+    return <EmptyState icon={Layers} title="Aucune story ni bug" description="Créez une demande via le bouton ci-dessus pour l'envoyer au Product Owner." />
   }
   return (
     <div className="flex gap-3 overflow-x-auto pb-4">
@@ -391,6 +393,47 @@ function TaskForm({ initial, onSubmit, loading, onCancel }: {
   )
 }
 
+function RequestForm({ onSubmit, loading, onCancel }: {
+  onSubmit: (d: ProjectRequestPayload) => void
+  loading: boolean
+  onCancel: () => void
+}) {
+  const [title, setTitle]             = useState('')
+  const [description, setDescription] = useState('')
+
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); onSubmit({ title, description: description || undefined }) }} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Demande *</label>
+        <input
+          className="input"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+          placeholder="Ex: permettre l'export PDF des rapports"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Contexte</label>
+        <textarea
+          className="input resize-none"
+          rows={4}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Décrivez le besoin métier, le problème, les contraintes ou le résultat attendu."
+        />
+      </div>
+      <p className="text-xs" style={{ color: 'var(--muted)' }}>
+        Cette demande crée une user story et la transmet automatiquement à un agent Product Owner si le workflow ou l'équipe le permet.
+      </p>
+      <div className="flex justify-end gap-3 pt-2">
+        <button type="button" onClick={onCancel} className="btn-secondary">Annuler</button>
+        <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Transmission…' : 'Envoyer au PO'}</button>
+      </div>
+    </form>
+  )
+}
+
 // ─── Task detail drawer ───────────────────────────────────────────────────────
 
 /**
@@ -415,9 +458,11 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b flex-shrink-0" style={{ borderColor: 'var(--border)' }}>
-          <h2 className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>
-            {isLoading ? 'Chargement…' : (task?.title ?? '—')}
-          </h2>
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>
+              {isLoading ? 'Chargement…' : (task?.title ?? '—')}
+            </h2>
+          </div>
           <button onClick={onClose} className="p-1 ml-2 flex-shrink-0" style={{ color: 'var(--muted)' }}>
             <X className="w-4 h-4" />
           </button>
@@ -425,8 +470,20 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
 
         {isLoading && <div className="p-6"><Loader2 className="w-5 h-5 animate-spin mx-auto" style={{ color: 'var(--muted)' }} /></div>}
 
-        {task && (
+        {task && (() => {
+          const latestExecutionError = [...(task.logs ?? [])].reverse().find((log) => log.action === 'execution_error')
+
+          return (
           <div className="flex-1 p-5 space-y-5">
+            {latestExecutionError && (
+              <div className="px-3 py-2 rounded border text-sm" style={{ background: 'rgba(239,68,68,0.1)', color: '#dc2626', borderColor: 'rgba(239,68,68,0.3)' }}>
+                <div className="flex items-center gap-2 font-medium">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>Dernière erreur d'exécution agent</span>
+                </div>
+                <p className="mt-1 whitespace-pre-wrap break-words">{latestExecutionError.content ?? 'Erreur inconnue.'}</p>
+              </div>
+            )}
             {/* Badges */}
             <div className="flex flex-wrap gap-2">
               <span className={`${TYPE_BADGE[task.type]} text-xs`}>{TYPE_LABELS[task.type]}</span>
@@ -435,6 +492,10 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
                 <span className="badge-blue text-xs">{STORY_COLUMNS.find(c => c.key === task.storyStatus)?.label ?? task.storyStatus}</span>
               )}
               <span className="text-xs" style={{ color: 'var(--muted)' }}>{STATUS_LABELS[task.status]}</span>
+            </div>
+
+            <div>
+              <EntityId id={task.id} />
             </div>
 
             {/* Description */}
@@ -534,7 +595,8 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
               </div>
             )}
           </div>
-        )}
+          )
+        })()}
       </div>
     </div>
   )
@@ -554,6 +616,12 @@ const TABS: { key: Tab; label: string; icon: ComponentType<{ className?: string 
   { key: 'tokens',  label: 'Tokens',       icon: Coins     },
 ]
 
+const DEFAULT_TAB: Tab = 'board'
+
+function isProjectTab(value: string | null): value is Tab {
+  return TABS.some((tab) => tab.key === value)
+}
+
 /**
  * Project detail hub page with 5 tabs: Général, Board, Tâches, Équipe, Modules.
  * Stories/bugs kanban and technical tasks are accessible directly from this page,
@@ -561,19 +629,49 @@ const TABS: { key: Tab; label: string; icon: ComponentType<{ className?: string 
  */
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
   const qc = useQueryClient()
 
-  const [tab, setTab]                         = useState<Tab>('board')
+  const [tab, setTab]                         = useState<Tab>(() => {
+    const requestedTab = searchParams.get('tab')
+    return isProjectTab(requestedTab) ? requestedTab : DEFAULT_TAB
+  })
   const [createOpen, setCreateOpen]           = useState(false)
   const [deleteTask, setDeleteTask]           = useState<Task | null>(null)
   const [transitionError, setTransitionError] = useState<string | null>(null)
   const [pendingTaskId, setPendingTaskId]     = useState<string | null>(null)
   const [executeTask, setExecuteTask]         = useState<Task | null>(null)
+  const [requestDispatchError, setRequestDispatchError] = useState<string | null>(null)
   // null = user hasn't changed the selection yet → falls back to project.team?.id
   const [selectedTeamId, setSelectedTeamId]   = useState<string | null>(null)
   const [teamSaveError, setTeamSaveError]     = useState<string | null>(null)
   const [auditPage, setAuditPage]             = useState(1)
   const [drawerTaskId, setDrawerTaskId]       = useState<string | null>(null)
+  const [agentSheetId, setAgentSheetId]       = useState<string | null>(null)
+
+  useEffect(() => {
+    const requestedTab = searchParams.get('tab')
+    const nextTab = isProjectTab(requestedTab) ? requestedTab : DEFAULT_TAB
+
+    if (tab !== nextTab) {
+      setTab(nextTab)
+      return
+    }
+
+    if (!isProjectTab(requestedTab)) {
+      const nextParams = new URLSearchParams(searchParams)
+      nextParams.set('tab', nextTab)
+      setSearchParams(nextParams, { replace: true })
+    }
+  }, [searchParams, setSearchParams, tab])
+
+  const handleTabChange = (nextTab: Tab) => {
+    setTab(nextTab)
+
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.set('tab', nextTab)
+    setSearchParams(nextParams, { replace: true })
+  }
 
   // ── Data queries ─────────────────────────────────────────────────────────────
 
@@ -616,6 +714,15 @@ export default function ProjectDetailPage() {
   // ── Mutations ─────────────────────────────────────────────────────────────────
 
   const invalidateTasks = () => qc.invalidateQueries({ queryKey: ['tasks', id] })
+
+  const createRequestMutation = useMutation({
+    mutationFn: (d: ProjectRequestPayload) => tasksApi.createRequest(id!, d),
+    onSuccess:  (result: ProjectRequestResult) => {
+      invalidateTasks()
+      setCreateOpen(false)
+      setRequestDispatchError(result.dispatchError ?? null)
+    },
+  })
 
   const createMutation = useMutation({
     mutationFn: (d: TaskPayload) => tasksApi.create(id!, d),
@@ -678,9 +785,12 @@ export default function ProjectDetailPage() {
         description={project.description ?? undefined}
         action={
           (tab === 'board' || tab === 'tasks') ? (
-            <button className="btn-primary" onClick={() => setCreateOpen(true)}>
+            <button className="btn-primary" onClick={() => {
+              setCreateOpen(true)
+              if (tab === 'board') setRequestDispatchError(null)
+            }}>
               <Plus className="w-4 h-4" />
-              {tab === 'board' ? 'Nouvelle story' : 'Nouvelle tâche'}
+              {tab === 'board' ? 'Nouvelle demande' : 'Nouvelle tâche'}
             </button>
           ) : undefined
         }
@@ -706,7 +816,7 @@ export default function ProjectDetailPage() {
         {TABS.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
-            onClick={() => setTab(key)}
+            onClick={() => handleTabChange(key)}
             className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors -mb-px border-b-2"
             style={{
               borderColor: tab === key ? 'var(--brand)' : 'transparent',
@@ -776,6 +886,12 @@ export default function ProjectDetailPage() {
       {/* ── Tab: Board ── */}
       {tab === 'board' && (
         <>
+          {requestDispatchError && (
+            <div className="mb-3 px-3 py-2 rounded flex items-center justify-between text-sm" style={{ background: 'rgba(239,68,68,0.1)', color: '#dc2626', border: '1px solid rgba(239,68,68,0.3)' }}>
+              <span>L'agent Product Owner n'a pas pu prendre la demande. {requestDispatchError}</span>
+              <button onClick={() => setRequestDispatchError(null)}><XCircle className="w-4 h-4" /></button>
+            </div>
+          )}
           {transitionError && (
             <div className="mb-3 px-3 py-2 rounded flex items-center justify-between text-sm" style={{ background: 'rgba(239,68,68,0.1)', color: '#dc2626', border: '1px solid rgba(239,68,68,0.3)' }}>
               <span>{transitionError}</span>
@@ -819,7 +935,7 @@ export default function ProjectDetailPage() {
             icon={Users}
             title="Aucune équipe assignée"
             description="Assignez une équipe dans l'onglet Général pour voir les agents disponibles."
-            action={<button className="btn-secondary" onClick={() => setTab('general')}><Settings className="w-4 h-4" /> Configurer</button>}
+            action={<button className="btn-secondary" onClick={() => handleTabChange('general')}><Settings className="w-4 h-4" /> Configurer</button>}
           />
         ) : !teamDetail ? (
           <PageSpinner />
@@ -840,7 +956,12 @@ export default function ProjectDetailPage() {
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {(teamDetail.agents as AgentSummary[]).map((agent) => (
-                  <div key={agent.id} className="card p-4 flex items-center gap-3">
+                  <button
+                    key={agent.id}
+                    type="button"
+                    className="card p-4 flex items-center gap-3 text-left hover:border-[var(--brand)] transition-colors"
+                    onClick={() => setAgentSheetId(agent.id)}
+                  >
                     <div
                       className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-semibold"
                       style={{ background: 'var(--brand-dim)', color: 'var(--brand)' }}
@@ -860,7 +981,7 @@ export default function ProjectDetailPage() {
                       )}
                     </div>
                     <Zap className="w-4 h-4 flex-shrink-0" style={{ color: agent.isActive ? 'var(--brand)' : 'var(--muted)', opacity: agent.isActive ? 1 : 0.3 }} />
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
@@ -1035,14 +1156,22 @@ export default function ProjectDetailPage() {
       <Modal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        title={tab === 'board' ? 'Nouvelle story / bug' : 'Nouvelle tâche technique'}
+        title={tab === 'board' ? 'Nouvelle demande' : 'Nouvelle tâche technique'}
       >
-        <TaskForm
-          initial={{ type: tab === 'board' ? 'user_story' : 'task' }}
-          onSubmit={(d) => createMutation.mutate(d)}
-          loading={createMutation.isPending}
-          onCancel={() => setCreateOpen(false)}
-        />
+        {tab === 'board' ? (
+          <RequestForm
+            onSubmit={(d) => createRequestMutation.mutate(d)}
+            loading={createRequestMutation.isPending}
+            onCancel={() => setCreateOpen(false)}
+          />
+        ) : (
+          <TaskForm
+            initial={{ type: 'task' }}
+            onSubmit={(d) => createMutation.mutate(d)}
+            loading={createMutation.isPending}
+            onCancel={() => setCreateOpen(false)}
+          />
+        )}
       </Modal>
 
       {executeTask && (
@@ -1066,6 +1195,15 @@ export default function ProjectDetailPage() {
       {/* ── Task drawer ── */}
       {drawerTaskId && (
         <TaskDrawer taskId={drawerTaskId} onClose={() => setDrawerTaskId(null)} />
+      )}
+
+      {id && (
+        <AgentSheet
+          projectId={id}
+          agentId={agentSheetId}
+          open={agentSheetId !== null}
+          onClose={() => setAgentSheetId(null)}
+        />
       )}
     </>
   )
