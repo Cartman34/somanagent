@@ -15,9 +15,8 @@ import PageHeader from '@/components/ui/PageHeader'
 const STATUS_LABELS: Record<string, string> = { open: 'Ouverte', in_progress: 'En cours', closed: 'Fermée' }
 const STATUS_BADGE: Record<string, string>  = { open: 'badge-blue', in_progress: 'badge-orange', closed: 'badge-green' }
 
-function FeatureForm({ initial, projectId, onSubmit, loading, onCancel }: {
+function FeatureForm({ initial, onSubmit, loading, onCancel }: {
   initial?: Partial<FeaturePayload & { id: string }>
-  projectId: string
   onSubmit: (d: FeaturePayload) => void
   loading: boolean
   onCancel: () => void
@@ -109,12 +108,12 @@ export default function FeaturesPage() {
       )}
 
       <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Nouvelle feature">
-        <FeatureForm projectId={projectId} onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} onCancel={() => setCreateOpen(false)} />
+        <FeatureForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} onCancel={() => setCreateOpen(false)} />
       </Modal>
 
       <Modal open={!!editFeature} onClose={() => setEditFeature(null)} title="Modifier la feature">
         {editFeature && (
-          <FeatureForm projectId={projectId} initial={{ name: editFeature.name, description: editFeature.description ?? '', status: editFeature.status }}
+          <FeatureForm initial={{ name: editFeature.name, description: editFeature.description ?? '', status: editFeature.status }}
             onSubmit={(d) => updateMutation.mutate({ id: editFeature.id, data: d })}
             loading={updateMutation.isPending} onCancel={() => setEditFeature(null)} />
         )}

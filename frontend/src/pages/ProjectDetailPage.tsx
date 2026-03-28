@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft, Plus, Code2, Globe, XCircle, CheckCircle, Clock,
   AlertTriangle, ChevronRight, GitBranch, User, ArrowRight,
-  Layers, Play, ListTodo, Users, Settings, Kanban, Zap,
+  Layers, Play, ListTodo, Users, Settings, Kanban, Zap, Send, RotateCcw,
   Loader2, AlertCircle, History, Coins, X, FileText,
   ChevronDown, ChevronUp,
 } from 'lucide-react'
@@ -22,6 +22,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import PageHeader from '@/components/ui/PageHeader'
 import EntityId from '@/components/ui/EntityId'
 import AgentSheet from '@/components/project/AgentSheet'
+import Markdown from '@/components/ui/Markdown'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -448,22 +449,54 @@ function RequestForm({ onSubmit, loading, onCancel }: {
  * Fetches GET /api/tasks/{id} which returns children + logs + tokenUsage.
  */
 function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }) {
+  const qc = useQueryClient()
   const [logsExpanded, setLogsExpanded] = useState(true)
   const [dismissedErrorLogId, setDismissedErrorLogId] = useState<string | null>(null)
+  const [commentText, setCommentText] = useState('')
+  const [replyToLogId, setReplyToLogId] = useState<string | null>(null)
 
   const { data: task, isLoading } = useQuery({
     queryKey: ['task-detail', taskId],
     queryFn: () => tasksApi.get(taskId),
   })
 
+  const commentMutation = useMutation({
+    mutationFn: () => tasksApi.comment(taskId, {
+      content: commentText.trim(),
+      replyToLogId: replyToLogId ?? undefined,
+      context: replyToLogId ? 'ticket_reply' : 'ticket_comment',
+    }),
+    onSuccess: async () => {
+      setCommentText('')
+      setReplyToLogId(null)
+      await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
+      await qc.invalidateQueries({ queryKey: ['tasks'] })
+    },
+  })
+
+  const resumeMutation = useMutation({
+    mutationFn: () => tasksApi.resume(taskId),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
+      await qc.invalidateQueries({ queryKey: ['tasks'] })
+    },
+  })
+
   useEffect(() => {
     setDismissedErrorLogId(null)
+    setCommentText('')
+    setReplyToLogId(null)
   }, [taskId])
+
+  const submitComment = () => {
+    if (commentText.trim() === '') return
+    commentMutation.mutate()
+  }
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end" onClick={onClose}>
       <div
-        className="w-full max-w-lg h-full flex flex-col shadow-2xl overflow-y-auto"
+        className="w-full max-w-5xl h-full flex flex-col shadow-2xl overflow-hidden"
         style={{ background: 'var(--surface)' }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -483,6 +516,11 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
 
         {task && (() => {
           const logs = task.logs ?? []
+          const commentLogs = logs.filter((log) => log.kind === 'comment')
+          const commentIndex = new Map(commentLogs.map((log) => [log.id, log]))
+          const totalTokens = (task.tokenUsage ?? []).reduce((sum, entry) => sum + entry.totalTokens, 0)
+          const totalCalls = task.tokenUsage?.length ?? 0
+          const pendingQuestions = commentLogs.filter((log) => log.requiresAnswer).length
           const latestExecutionErrorIndex = [...logs].map((log, index) => ({ log, index })).reverse().find(({ log }) => log.action === 'execution_error')?.index ?? -1
           const latestExecutionError = latestExecutionErrorIndex >= 0 ? logs[latestExecutionErrorIndex] : null
           const hasSuccessAfterLatestError = latestExecutionErrorIndex >= 0
@@ -498,9 +536,10 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
             ? latestExecutionError
             : null
           const showExecutionErrorBanner = activeExecutionError !== null && activeExecutionError.id !== dismissedErrorLogId
+          const replyTarget = replyToLogId ? commentIndex.get(replyToLogId) ?? null : null
 
           return (
-          <div className="flex-1 p-5 space-y-5">
+          <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-5">
             {showExecutionErrorBanner && activeExecutionError && (
               <div className="px-3 py-2 rounded border text-sm" style={{ background: 'rgba(239,68,68,0.1)', color: '#dc2626', borderColor: 'rgba(239,68,68,0.3)' }}>
                 <div className="flex items-center gap-2 font-medium">
@@ -532,11 +571,40 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
               <EntityId id={task.id} />
             </div>
 
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="rounded border px-4 py-3" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
+                <p className="text-xs" style={{ color: 'var(--muted)' }}>Tokens consommés</p>
+                <p className="mt-1 text-lg font-semibold" style={{ color: 'var(--text)' }}>{totalTokens.toLocaleString()} tok</p>
+                <p className="text-xs" style={{ color: 'var(--muted)' }}>{totalCalls} appel{totalCalls > 1 ? 's' : ''}</p>
+              </div>
+              <div className="rounded border px-4 py-3" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
+                <p className="text-xs" style={{ color: 'var(--muted)' }}>Questions en attente</p>
+                <p className="mt-1 text-lg font-semibold" style={{ color: 'var(--text)' }}>{pendingQuestions}</p>
+                <p className="text-xs" style={{ color: 'var(--muted)' }}>Commentaires agent à traiter</p>
+              </div>
+              <div className="rounded border px-4 py-3" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
+                <p className="text-xs" style={{ color: 'var(--muted)' }}>Relance agent</p>
+                <button
+                  type="button"
+                  className="mt-2 inline-flex items-center gap-2 rounded px-3 py-2 text-sm"
+                  style={{ background: 'var(--brand-dim)', color: 'var(--brand)' }}
+                  onClick={() => resumeMutation.mutate()}
+                  disabled={resumeMutation.isPending || !task.storyStatus}
+                  title={!task.storyStatus ? 'Disponible sur les stories et bugs.' : undefined}
+                >
+                  {resumeMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                  Relancer l'agent
+                </button>
+              </div>
+            </div>
+
             {/* Description */}
             {task.description && (
               <div>
                 <p className="text-xs font-medium mb-1" style={{ color: 'var(--muted)' }}>Description</p>
-                <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--text)' }}>{task.description}</p>
+                <div className="rounded border p-4" style={{ borderColor: 'var(--border)', background: 'color-mix(in srgb, var(--surface2) 82%, transparent)' }}>
+                  <Markdown content={task.description} className="text-sm" />
+                </div>
               </div>
             )}
 
@@ -564,6 +632,106 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
               </div>
             )}
 
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+              <div className="space-y-4">
+                <div className="rounded border p-4" style={{ borderColor: 'var(--border)', background: 'color-mix(in srgb, var(--surface2) 82%, transparent)' }}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>Discussion ticket</p>
+                      <p className="text-xs" style={{ color: 'var(--muted)' }}>Les questions agent et vos réponses restent visibles dans le ticket.</p>
+                    </div>
+                  </div>
+
+                  {replyTarget && (
+                    <div className="mt-3 rounded border px-3 py-2 text-xs" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium" style={{ color: 'var(--text)' }}>Réponse ciblée</span>
+                        <button type="button" className="ml-auto" style={{ color: 'var(--muted)' }} onClick={() => setReplyToLogId(null)}>
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <p className="mt-1 line-clamp-3" style={{ color: 'var(--muted)' }}>{replyTarget.content}</p>
+                    </div>
+                  )}
+
+                  <div className="mt-3 space-y-3">
+                    <textarea
+                      className="input min-h-[110px] resize-y"
+                      placeholder={replyTarget ? 'Répondez à ce commentaire…' : 'Ajoutez un commentaire ou une précision pour l’agent…'}
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                          e.preventDefault()
+                          submitComment()
+                        }
+                      }}
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-2 rounded px-3 py-2 text-sm"
+                        style={{ background: 'var(--brand)', color: 'white' }}
+                        onClick={submitComment}
+                        disabled={commentMutation.isPending || commentText.trim() === ''}
+                      >
+                        {commentMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                        {replyTarget ? 'Répondre' : 'Commenter'}
+                      </button>
+                      <span className="text-xs" style={{ color: 'var(--muted)' }}>Ctrl/Cmd + Entrée pour envoyer</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {commentLogs.length === 0 && (
+                    <div className="rounded border border-dashed px-4 py-6 text-sm" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
+                      Aucun échange ticket pour l’instant.
+                    </div>
+                  )}
+
+                  {commentLogs.map((log) => {
+                    const replyTo = log.replyToLogId ? commentIndex.get(log.replyToLogId) ?? null : null
+                    const isAgent = log.authorType === 'agent'
+                    const context = typeof log.metadata?.context === 'string' ? log.metadata.context : null
+                    return (
+                      <div key={log.id} className="rounded border p-4" style={{ borderColor: 'var(--border)', background: isAgent ? 'color-mix(in srgb, var(--brand-dim) 34%, var(--surface) 66%)' : 'var(--surface2)' }}>
+                        <div className="flex flex-wrap items-center gap-2 text-xs">
+                          <span className="font-medium" style={{ color: 'var(--text)' }}>{log.authorName ?? (isAgent ? 'Agent' : 'Vous')}</span>
+                          <span style={{ color: 'var(--muted)' }}>{new Date(log.createdAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                          {context && <span className="rounded px-2 py-0.5" style={{ background: 'var(--surface)', color: 'var(--muted)' }}>{context}</span>}
+                          {log.requiresAnswer && <span className="rounded px-2 py-0.5" style={{ background: 'rgba(245,158,11,0.14)', color: '#b45309' }}>Réponse attendue</span>}
+                        </div>
+
+                        {replyTo && (
+                          <div className="mt-2 rounded border-l-2 pl-3 text-xs" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
+                            En réponse à {replyTo.authorName ?? replyTo.authorType ?? 'un commentaire'}: {replyTo.content}
+                          </div>
+                        )}
+
+                        {log.content && (
+                          <div className="mt-3 text-sm">
+                            <Markdown content={log.content} />
+                          </div>
+                        )}
+
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            className="rounded px-2.5 py-1.5 text-xs"
+                            style={{ background: 'var(--surface)', color: 'var(--text)' }}
+                            onClick={() => setReplyToLogId(log.id)}
+                          >
+                            Répondre à ce commentaire
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-5">
             {/* Logs */}
             {task.logs && task.logs.length > 0 && (
               <div>
@@ -628,6 +796,8 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
                 </div>
               </div>
             )}
+              </div>
+            </div>
           </div>
           )
         })()}

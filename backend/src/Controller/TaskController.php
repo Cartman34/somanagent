@@ -126,12 +126,7 @@ class TaskController extends AbstractController
 
         return $this->json(array_merge($this->serialize($task), [
             'children'   => array_map(fn($c) => $this->serialize($c), $children),
-            'logs'       => array_map(fn($l) => [
-                'id'        => (string) $l->getId(),
-                'action'    => $l->getAction(),
-                'content'   => $l->getContent(),
-                'createdAt' => $l->getCreatedAt()->format(\DateTimeInterface::ATOM),
-            ], $logs),
+            'logs'       => array_map(fn($l) => $this->serializeLog($l), $logs),
             'tokenUsage' => $tokenUsage,
         ]));
     }
@@ -243,6 +238,40 @@ class TaskController extends AbstractController
         return $this->json($this->serialize($task));
     }
 
+    #[Route('/tasks/{id}/comments', name: 'task_comment_create', methods: ['POST'])]
+    public function createComment(string $id, Request $request): JsonResponse
+    {
+        $task = $this->taskService->findById($id);
+        if ($task === null) {
+            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+        }
+
+        $data = $request->toArray();
+        $content = trim((string) ($data['content'] ?? ''));
+        if ($content === '') {
+            return $this->json(['error' => 'Le champ "content" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        try {
+            $log = $this->taskService->addComment(
+                task: $task,
+                content: $content,
+                authorType: 'user',
+                authorName: 'Vous',
+                replyToId: $data['replyToLogId'] ?? null,
+                requiresAnswer: false,
+                metadata: [
+                    'context' => $data['context'] ?? 'ticket_comment',
+                ],
+                action: isset($data['replyToLogId']) ? 'user_reply' : 'user_comment',
+            );
+        } catch (\InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        return $this->json($this->serializeLog($log), Response::HTTP_CREATED);
+    }
+
     #[Route('/tasks/{id}/story-transition', name: 'task_story_transition', methods: ['POST'])]
     public function storyTransition(string $id, Request $request): JsonResponse
     {
@@ -272,6 +301,33 @@ class TaskController extends AbstractController
         }
 
         return $this->json($this->serialize($task));
+    }
+
+    #[Route('/tasks/{id}/resume', name: 'task_resume', methods: ['POST'])]
+    public function resume(string $id): JsonResponse
+    {
+        $task = $this->taskService->findById($id);
+        if ($task === null) {
+            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+        }
+
+        if (!$task->isStory()) {
+            return $this->json(['error' => 'La reprise agent depuis le ticket n\'est disponible que pour les stories et bugs.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        try {
+            $result = $this->storyExecutionService->execute($task, $task->getAssignedAgent());
+        } catch (\RuntimeException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (\LogicException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        return $this->json([
+            'task'  => $this->serialize($task),
+            'agent' => ['id' => (string) $result['agent']->getId(), 'name' => $result['agent']->getName()],
+            'skill' => $result['skill'],
+        ]);
     }
 
     /**
@@ -379,6 +435,22 @@ class TaskController extends AbstractController
             'addedBy'       => $task->getAddedBy() ? ['id' => (string) $task->getAddedBy()->getId(), 'name' => $task->getAddedBy()->getName()] : null,
             'createdAt'     => $task->getCreatedAt()->format(\DateTimeInterface::ATOM),
             'updatedAt'     => $task->getUpdatedAt()->format(\DateTimeInterface::ATOM),
+        ];
+    }
+
+    private function serializeLog(\App\Entity\TaskLog $log): array
+    {
+        return [
+            'id'             => (string) $log->getId(),
+            'action'         => $log->getAction(),
+            'kind'           => $log->getKind(),
+            'authorType'     => $log->getAuthorType(),
+            'authorName'     => $log->getAuthorName(),
+            'requiresAnswer' => $log->requiresAnswer(),
+            'replyToLogId'   => $log->getReplyToLogId()?->toRfc4122(),
+            'metadata'       => $log->getMetadata(),
+            'content'        => $log->getContent(),
+            'createdAt'      => $log->getCreatedAt()->format(\DateTimeInterface::ATOM),
         ];
     }
 }

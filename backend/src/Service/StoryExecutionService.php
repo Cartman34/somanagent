@@ -163,7 +163,12 @@ final class StoryExecutionService
             $story,
             'execution_dispatched',
             sprintf('Agent %s dispatché avec le skill %s', $agent->getName(), $skillSlug),
-        ));
+        )->setMetadata([
+            'agentId'   => (string) $agent->getId(),
+            'agentName' => $agent->getName(),
+            'skillSlug' => $skillSlug,
+            'roleSlug'  => $roleSlug,
+        ]));
         $this->em->flush();
 
         $this->bus->dispatch(new AgentTaskMessage(
