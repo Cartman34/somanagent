@@ -34,15 +34,15 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
   review: 'Revue', done: 'Terminé', cancelled: 'Annulé',
 }
 
-const STORY_COLUMNS: { key: StoryStatus; label: string; color: string; bg: string }[] = [
-  { key: 'new',            label: 'Nouvelle',      color: 'text-gray-500',   bg: 'bg-gray-50'   },
-  { key: 'ready',          label: 'Prête',          color: 'text-blue-500',   bg: 'bg-blue-50'   },
-  { key: 'approved',       label: 'Approuvée',      color: 'text-indigo-500', bg: 'bg-indigo-50' },
-  { key: 'planning',       label: 'Planification',  color: 'text-purple-500', bg: 'bg-purple-50' },
-  { key: 'graphic_design', label: 'Conception',     color: 'text-pink-500',   bg: 'bg-pink-50'   },
-  { key: 'development',    label: 'Développement',  color: 'text-orange-500', bg: 'bg-orange-50' },
-  { key: 'code_review',    label: 'Revue de code',  color: 'text-yellow-600', bg: 'bg-yellow-50' },
-  { key: 'done',           label: 'Terminée',       color: 'text-green-600',  bg: 'bg-green-50'  },
+const STORY_COLUMNS: { key: StoryStatus; label: string; accent: string }[] = [
+  { key: 'new',            label: 'Nouvelle',      accent: '#94a3b8' },
+  { key: 'ready',          label: 'Prête',         accent: '#3b82f6' },
+  { key: 'approved',       label: 'Approuvée',     accent: '#6366f1' },
+  { key: 'planning',       label: 'Planification', accent: '#8b5cf6' },
+  { key: 'graphic_design', label: 'Conception',    accent: '#ec4899' },
+  { key: 'development',    label: 'Développement', accent: '#f97316' },
+  { key: 'code_review',    label: 'Revue de code', accent: '#eab308' },
+  { key: 'done',           label: 'Terminée',      accent: '#22c55e' },
 ]
 
 const STORY_TRANSITION_LABELS: Partial<Record<StoryStatus, string>> = {
@@ -261,9 +261,15 @@ function StoryBoard({ stories, onTransition, onDelete, onExecute, onOpen, pendin
         const cards = stories.filter((s) => s.storyStatus === col.key)
         return (
           <div key={col.key} className="flex-shrink-0 w-60">
-            <div className={`flex items-center justify-between px-3 py-1.5 rounded-t-lg ${col.bg}`}>
-              <span className={`text-xs font-semibold ${col.color}`}>{col.label}</span>
-              {cards.length > 0 && <span className={`text-xs font-medium ${col.color} opacity-60`}>{cards.length}</span>}
+            <div
+              className="flex items-center justify-between rounded-t-lg border border-b-0 px-3 py-1.5"
+              style={{
+                background: `color-mix(in srgb, ${col.accent} 14%, var(--surface2))`,
+                borderColor: `color-mix(in srgb, ${col.accent} 32%, var(--border))`,
+              }}
+            >
+              <span className="text-xs font-semibold" style={{ color: col.accent }}>{col.label}</span>
+              {cards.length > 0 && <span className="text-xs font-medium" style={{ color: col.accent, opacity: 0.72 }}>{cards.length}</span>}
             </div>
             <div className="space-y-2 min-h-16 rounded-b-lg p-2 border border-t-0" style={{ background: 'var(--surface2)', borderColor: 'var(--border)' }}>
               {cards.map((task) => (
@@ -443,11 +449,16 @@ function RequestForm({ onSubmit, loading, onCancel }: {
  */
 function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }) {
   const [logsExpanded, setLogsExpanded] = useState(true)
+  const [dismissedErrorLogId, setDismissedErrorLogId] = useState<string | null>(null)
 
   const { data: task, isLoading } = useQuery({
     queryKey: ['task-detail', taskId],
     queryFn: () => tasksApi.get(taskId),
   })
+
+  useEffect(() => {
+    setDismissedErrorLogId(null)
+  }, [taskId])
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end" onClick={onClose}>
@@ -471,17 +482,40 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
         {isLoading && <div className="p-6"><Loader2 className="w-5 h-5 animate-spin mx-auto" style={{ color: 'var(--muted)' }} /></div>}
 
         {task && (() => {
-          const latestExecutionError = [...(task.logs ?? [])].reverse().find((log) => log.action === 'execution_error')
+          const logs = task.logs ?? []
+          const latestExecutionErrorIndex = [...logs].map((log, index) => ({ log, index })).reverse().find(({ log }) => log.action === 'execution_error')?.index ?? -1
+          const latestExecutionError = latestExecutionErrorIndex >= 0 ? logs[latestExecutionErrorIndex] : null
+          const hasSuccessAfterLatestError = latestExecutionErrorIndex >= 0
+            ? logs.slice(latestExecutionErrorIndex + 1).some((log) => {
+                if (log.action === 'agent_response') return true
+                if (log.action.endsWith('_completed')) return true
+                if (log.action === 'validated') return true
+                if (log.action === 'status_changed' && (log.content ?? '').includes('→ done')) return true
+                return false
+              })
+            : false
+          const activeExecutionError = latestExecutionError !== null && !hasSuccessAfterLatestError
+            ? latestExecutionError
+            : null
+          const showExecutionErrorBanner = activeExecutionError !== null && activeExecutionError.id !== dismissedErrorLogId
 
           return (
           <div className="flex-1 p-5 space-y-5">
-            {latestExecutionError && (
+            {showExecutionErrorBanner && activeExecutionError && (
               <div className="px-3 py-2 rounded border text-sm" style={{ background: 'rgba(239,68,68,0.1)', color: '#dc2626', borderColor: 'rgba(239,68,68,0.3)' }}>
                 <div className="flex items-center gap-2 font-medium">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
                   <span>Dernière erreur d'exécution agent</span>
+                  <button
+                    type="button"
+                    className="ml-auto"
+                    onClick={() => setDismissedErrorLogId(activeExecutionError.id)}
+                    aria-label="Fermer l'erreur"
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </button>
                 </div>
-                <p className="mt-1 whitespace-pre-wrap break-words">{latestExecutionError.content ?? 'Erreur inconnue.'}</p>
+                <p className="mt-1 whitespace-pre-wrap break-words">{activeExecutionError.content ?? 'Erreur inconnue.'}</p>
               </div>
             )}
             {/* Badges */}
