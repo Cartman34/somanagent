@@ -50,10 +50,38 @@ final class Prompt
 
     private function formatContext(): string
     {
-        $lines = [];
-        foreach ($this->context as $key => $value) {
-            $lines[] = "**{$key}** : " . (is_array($value) ? json_encode($value) : $value);
+        return rtrim($this->formatContextValue($this->context));
+    }
+
+    private function formatContextValue(mixed $value, int $depth = 0, ?string $label = null): string
+    {
+        $indent = str_repeat('  ', $depth);
+
+        if (!is_array($value)) {
+            $prefix = $label !== null ? "**{$label}** : " : '';
+            return $indent . $prefix . (string) $value . "\n";
         }
-        return implode("\n", $lines);
+
+        $lines = [];
+        foreach ($value as $key => $item) {
+            $itemLabel = is_string($key) ? $key : null;
+            if (is_array($item)) {
+                if ($itemLabel !== null) {
+                    $lines[] = $indent . "- **{$itemLabel}**";
+                } else {
+                    $lines[] = $indent . '-';
+                }
+                $lines[] = rtrim($this->formatContextValue($item, $depth + 1));
+                continue;
+            }
+
+            if ($itemLabel !== null) {
+                $lines[] = $indent . "- **{$itemLabel}** : " . (string) $item;
+            } else {
+                $lines[] = $indent . '- ' . (string) $item;
+            }
+        }
+
+        return implode("\n", array_filter($lines)) . "\n";
     }
 }

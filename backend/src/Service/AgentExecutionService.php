@@ -15,6 +15,7 @@ use App\Enum\TaskStatus;
 use App\Enum\TaskType;
 use App\Repository\RoleRepository;
 use App\Repository\SkillRepository;
+use App\Repository\TaskLogRepository;
 use App\ValueObject\Prompt;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -36,6 +37,8 @@ final class AgentExecutionService
         private readonly AgentPortRegistry     $portRegistry,
         private readonly SkillRepository       $skillRepository,
         private readonly RoleRepository        $roleRepository,
+        private readonly TaskLogRepository     $taskLogRepository,
+        private readonly TaskService           $taskService,
         private readonly PlanningOutputParser  $planningParser,
         private readonly EntityManagerInterface $em,
         private readonly LoggerInterface       $logger,
@@ -54,7 +57,7 @@ final class AgentExecutionService
         }
 
         $config  = $agent->getAgentConfig();
-        $prompt  = $this->buildPrompt($task, $skill->getContent());
+        $prompt  = $this->buildPrompt($task, $agent, $skill->getContent(), $skillSlug);
         $adapter = $this->portRegistry->getFor($agent->getConnector());
 
         $this->logger->info('AgentExecution: calling agent', [
@@ -76,14 +79,51 @@ final class AgentExecutionService
         );
         $this->em->persist($usage);
 
-        // Log raw agent output
-        $this->em->persist(new TaskLog($task, 'agent_response', $response->content));
+        // Log raw agent output for the execution journal.
+        $this->em->persist(
+            (new TaskLog($task, 'agent_response', $response->content))
+                ->setAuthorType('agent')
+                ->setAuthorName($agent->getName())
+                ->setMetadata([
+                    'skillSlug' => $skillSlug,
+                    'agentId'   => (string) $agent->getId(),
+                ])
+        );
 
         $this->logger->info('AgentExecution: response received', [
             'tokens_in'  => $response->inputTokens,
             'tokens_out' => $response->outputTokens,
             'duration_ms' => (int) $response->durationMs,
         ]);
+
+        $questions = $this->extractClarificationQuestions($response->content);
+        $normalizedContent = mb_strtolower($response->content);
+        $isClarificationRequest = count($questions) >= 2
+            || str_contains($normalizedContent, 'questions')
+            || str_contains($normalizedContent, 'précis')
+            || str_contains($normalizedContent, 'clarification');
+
+        if ($questions !== [] && $isClarificationRequest) {
+            foreach ($questions as $question) {
+                $this->taskService->addComment(
+                    task: $task,
+                    content: $question,
+                    authorType: 'agent',
+                    authorName: $agent->getName(),
+                    requiresAnswer: true,
+                    metadata: [
+                        'context'   => 'clarification_request',
+                        'skillSlug' => $skillSlug,
+                        'agentId'   => (string) $agent->getId(),
+                    ],
+                    action: 'agent_question',
+                );
+            }
+
+            $task->setStatus(TaskStatus::InProgress);
+            $this->em->flush();
+            return;
+        }
 
         if ($skillSlug === 'tech-planning') {
             $this->handlePlanningResponse($task, $agent, $response->content);
@@ -99,7 +139,7 @@ final class AgentExecutionService
     /**
      * Construit le Prompt final pour la tâche.
      */
-    private function buildPrompt(Task $task, string $skillContent): Prompt
+    private function buildPrompt(Task $task, Agent $agent, string $skillContent, string $skillSlug): Prompt
     {
         $instruction = $task->getTitle();
         if ($task->getDescription() !== null) {
@@ -107,19 +147,91 @@ final class AgentExecutionService
         }
 
         $context = [
-            'task_type' => $task->getType()->value,
-            'priority'  => $task->getPriority()->value,
+            'task' => [
+                'type'      => $task->getType()->value,
+                'priority'  => $task->getPriority()->value,
+                'status'    => $task->getStatus()->value,
+                'story'     => $task->getStoryStatus()?->value,
+                'branch'    => $task->getBranchName(),
+                'parent'    => $task->getParent()?->getTitle(),
+            ],
+            'agent_identity' => [
+                'name'        => $agent->getName(),
+                'description' => $agent->getDescription(),
+                'role'        => $agent->getRole()?->getName(),
+                'role_slug'   => $agent->getRole()?->getSlug(),
+                'role_mission' => $agent->getRole()?->getDescription(),
+            ],
+            'execution' => [
+                'skill' => $skillSlug,
+            ],
         ];
 
-        if ($task->isStory() && $task->getStoryStatus() !== null) {
-            $context['story_status'] = $task->getStoryStatus()->value;
+        if ($task->getProject() !== null) {
+            $context['project'] = [
+                'name'        => $task->getProject()->getName(),
+                'description' => $task->getProject()->getDescription(),
+                'team'        => $task->getProject()->getTeam()?->getName(),
+                'modules'     => array_map(
+                    static fn($module) => $module->getName(),
+                    $task->getProject()->getModules()->toArray(),
+                ),
+            ];
         }
 
-        if ($task->getProject() !== null) {
-            $context['project'] = $task->getProject()->getName();
+        $conversation = $this->buildConversationContext($task);
+        if ($conversation !== []) {
+            $context['ticket_conversation'] = $conversation;
         }
 
         return Prompt::create($skillContent, $instruction, $context);
+    }
+
+    private function buildConversationContext(Task $task): array
+    {
+        $logs = $this->taskLogRepository->findByTask($task);
+        $comments = array_values(array_filter($logs, static fn(TaskLog $log) => $log->getKind() === 'comment'));
+        if ($comments === []) {
+            return [];
+        }
+
+        $slice = array_slice($comments, -12);
+
+        return array_map(static fn(TaskLog $log) => [
+            'author'          => $log->getAuthorName() ?? $log->getAuthorType() ?? 'system',
+            'author_type'     => $log->getAuthorType(),
+            'action'          => $log->getAction(),
+            'requires_answer' => $log->requiresAnswer(),
+            'reply_to'        => $log->getReplyToLogId()?->toRfc4122(),
+            'context'         => $log->getMetadata()['context'] ?? null,
+            'content'         => $log->getContent(),
+            'created_at'      => $log->getCreatedAt()->format(\DateTimeInterface::ATOM),
+        ], $slice);
+    }
+
+    /**
+     * Detects agent clarification questions from the raw response so they can
+     * become actionable ticket comments instead of opaque free text.
+     *
+     * @return string[]
+     */
+    private function extractClarificationQuestions(string $content): array
+    {
+        $questions = [];
+        foreach (preg_split('/\R+/', $content) ?: [] as $line) {
+            $candidate = trim(preg_replace('/^[-*0-9.)\s]+/', '', trim($line)) ?? '');
+            if ($candidate === '' || !str_ends_with($candidate, '?')) {
+                continue;
+            }
+
+            if (mb_strlen($candidate) < 8) {
+                continue;
+            }
+
+            $questions[] = $candidate;
+        }
+
+        return array_values(array_unique(array_slice($questions, 0, 5)));
     }
 
     /**

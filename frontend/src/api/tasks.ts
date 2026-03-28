@@ -21,6 +21,12 @@ export interface ProjectRequestResult extends Task {
   dispatchError?: string
 }
 
+export interface TaskCommentPayload {
+  content: string
+  replyToLogId?: string
+  context?: string
+}
+
 export const tasksApi = {
   listByProject: async (projectId: string): Promise<Task[]> => {
     const { data } = await apiClient.get(`/projects/${projectId}/tasks`)
@@ -77,8 +83,17 @@ export const tasksApi = {
     return data
   },
 
+  comment: async (id: string, payload: TaskCommentPayload): Promise<void> => {
+    await apiClient.post(`/tasks/${id}/comments`, payload)
+  },
+
   transitionStory: async (id: string, status: StoryStatus): Promise<Task> => {
     const { data } = await apiClient.post(`/tasks/${id}/story-transition`, { status })
+    return data
+  },
+
+  resume: async (id: string): Promise<{ task: Task; agent: { id: string; name: string }; skill: string }> => {
+    const { data } = await apiClient.post(`/tasks/${id}/resume`)
     return data
   },
 

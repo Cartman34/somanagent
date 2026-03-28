@@ -132,6 +132,12 @@ export interface Task {
 export interface TaskLog {
   id: string
   action: string
+  kind: 'event' | 'comment' | string
+  authorType: 'agent' | 'user' | 'system' | string | null
+  authorName: string | null
+  requiresAnswer: boolean
+  replyToLogId: string | null
+  metadata: Record<string, unknown> | null
   content: string | null
   createdAt: string
 }

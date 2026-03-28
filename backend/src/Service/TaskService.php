@@ -17,6 +17,7 @@ use App\Enum\TaskType;
 use App\Repository\AgentRepository;
 use App\Repository\FeatureRepository;
 use App\Repository\RoleRepository;
+use App\Repository\TaskLogRepository;
 use App\Repository\TaskRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -29,6 +30,7 @@ class TaskService
         private readonly FeatureRepository      $featureRepository,
         private readonly AgentRepository        $agentRepository,
         private readonly RoleRepository         $roleRepository,
+        private readonly TaskLogRepository      $taskLogRepository,
         private readonly AuditService           $audit,
     ) {}
 
@@ -275,6 +277,49 @@ class TaskService
     public function findById(string $id): ?Task
     {
         return $this->taskRepository->find(Uuid::fromString($id));
+    }
+
+    public function addComment(
+        Task    $task,
+        string  $content,
+        string  $authorType = 'user',
+        ?string $authorName = null,
+        ?string $replyToId = null,
+        bool    $requiresAnswer = false,
+        ?array  $metadata = null,
+        string  $action = 'comment',
+    ): TaskLog {
+        $replyTo = null;
+        if ($replyToId !== null) {
+            $replyTo = $this->taskLogRepository->findOneByTaskAndId($task, $replyToId);
+            if ($replyTo === null) {
+                throw new \InvalidArgumentException('Commentaire cible introuvable pour cette tâche.');
+            }
+        }
+
+        $log = (new TaskLog($task, $action, trim($content)))
+            ->setKind('comment')
+            ->setAuthorType($authorType)
+            ->setAuthorName($authorName)
+            ->setRequiresAnswer($requiresAnswer)
+            ->setReplyToLogId($replyTo?->getId())
+            ->setMetadata($metadata);
+
+        $this->em->persist($log);
+
+        if ($replyTo !== null && $replyTo->requiresAnswer()) {
+            $replyTo->setRequiresAnswer(false);
+        }
+
+        $this->em->flush();
+
+        $this->audit->log(AuditAction::TaskUpdated, 'Task', (string) $task->getId(), [
+            'comment_action' => $action,
+            'author_type'    => $authorType,
+            'reply_to'       => $replyToId,
+        ]);
+
+        return $log;
     }
 
     private function log(Task $task, string $action, ?string $content): void

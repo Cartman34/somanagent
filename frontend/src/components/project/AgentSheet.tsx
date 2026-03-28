@@ -85,12 +85,12 @@ function MessageRow({ message }: { message: ChatMessage }) {
 
       {Object.keys(metadata).length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2 text-xs">
-          {metadata.connector && (
+          {(typeof metadata.connector === 'string' || typeof metadata.connector === 'number') && (
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full" style={{ background: 'var(--surface)', color: 'var(--muted)', border: '1px solid var(--border)' }}>
               <Wrench className="w-3 h-3" /> {String(metadata.connector)}
             </span>
           )}
-          {metadata.model && (
+          {(typeof metadata.model === 'string' || typeof metadata.model === 'number') && (
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full" style={{ background: 'var(--surface)', color: 'var(--muted)', border: '1px solid var(--border)' }}>
               <Cpu className="w-3 h-3" /> {String(metadata.model)}
             </span>
@@ -105,7 +105,7 @@ function MessageRow({ message }: { message: ChatMessage }) {
               <Cpu className="w-3 h-3" /> {Number(metadata.input_tokens) + Number(metadata.output_tokens)} tok
             </span>
           )}
-          {metadata.exception && (
+          {(typeof metadata.exception === 'string' || typeof metadata.exception === 'number') && (
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full" style={{ background: 'rgba(220, 38, 38, 0.12)', color: '#f87171', border: '1px solid rgba(220, 38, 38, 0.25)' }}>
               <AlertCircle className="w-3 h-3" /> {String(metadata.exception)}
             </span>
@@ -361,11 +361,16 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
 
   const renderAgentSummary = () => (
     <div className="rounded-2xl p-4 border" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
+      {(() => {
+        const currentAgent = agent!
+
+        return (
+          <>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-lg font-semibold" style={{ color: 'var(--text)' }}>{agent.name}</p>
+          <p className="text-lg font-semibold" style={{ color: 'var(--text)' }}>{currentAgent.name}</p>
           <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-            {agent.role?.name ?? 'Sans rôle'}
+            {currentAgent.role?.name ?? 'Sans rôle'}
           </p>
         </div>
         <span className={`${runtimeBadgeClass} text-xs`}>{runtimeLabel}</span>
@@ -374,19 +379,19 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
       <div className="mt-4 space-y-2 text-sm">
         <div className="flex items-center justify-between gap-4">
           <span style={{ color: 'var(--muted)' }}>Connecteur</span>
-          <span style={{ color: 'var(--text)' }}>{agent.connectorLabel}</span>
+          <span style={{ color: 'var(--text)' }}>{currentAgent.connectorLabel}</span>
         </div>
         <div className="flex items-center justify-between gap-4">
           <span style={{ color: 'var(--muted)' }}>Modèle</span>
-          <code style={{ color: 'var(--text)' }}>{agent.config.model}</code>
+          <code style={{ color: 'var(--text)' }}>{currentAgent.config.model}</code>
         </div>
         <div className="flex items-center justify-between gap-4">
           <span style={{ color: 'var(--muted)' }}>Timeout</span>
-          <span style={{ color: 'var(--text)' }}>{agent.config.timeout}s</span>
+          <span style={{ color: 'var(--text)' }}>{currentAgent.config.timeout}s</span>
         </div>
         <div className="flex items-center justify-between gap-4">
           <span style={{ color: 'var(--muted)' }}>Statut actif</span>
-          <span style={{ color: 'var(--text)' }}>{agent.isActive ? 'Oui' : 'Non'}</span>
+          <span style={{ color: 'var(--text)' }}>{currentAgent.isActive ? 'Oui' : 'Non'}</span>
         </div>
         <div className="flex items-center justify-between gap-4">
           <span style={{ color: 'var(--muted)' }}>Tâches actives</span>
@@ -395,14 +400,17 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
       </div>
 
       <div className="mt-4">
-        <EntityId id={agent.id} />
+        <EntityId id={currentAgent.id} />
       </div>
 
-      {agent.description && (
+      {currentAgent.description && (
         <p className="mt-4 text-sm whitespace-pre-wrap" style={{ color: 'var(--text)' }}>
-          {agent.description}
+          {currentAgent.description}
         </p>
       )}
+          </>
+        )
+      })()}
     </div>
   )
 
