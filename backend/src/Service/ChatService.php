@@ -21,6 +21,7 @@ class ChatService
         private readonly EntityManagerInterface $em,
         private readonly ChatMessageRepository  $chatMessageRepository,
         private readonly AgentPortRegistry      $agentPortRegistry,
+        private readonly AgentContextBuilder    $contextBuilder,
         private readonly AuditService           $audit,
     ) {}
 
@@ -63,10 +64,9 @@ class ChatService
         );
 
         try {
+            $recentConversation = array_slice($this->getConversation($project, $agent, 12), -12);
             $prompt = Prompt::create('', $content, [
-                'project'     => $project->getName(),
-                'agent'       => $agent->getName(),
-                'interaction' => 'project_chat',
+                ...$this->contextBuilder->buildForProjectChat($project, $agent, $recentConversation),
             ]);
 
             $response = $this->agentPortRegistry
