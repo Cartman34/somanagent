@@ -9,6 +9,7 @@ import {
   GitBranch,
   ScrollText,
   Coins,
+  AlertOctagon,
 } from 'lucide-react'
 import ThemeSwitcher from '@/components/ui/ThemeSwitcher'
 
@@ -22,6 +23,7 @@ const navigation = [
   { to: '/workflows',  label: 'Workflows',        icon: GitBranch },
   { to: '/tokens',     label: 'Tokens',           icon: Coins },
   { to: '/audit',      label: 'Journal d\'audit', icon: ScrollText },
+  { to: '/logs',       label: 'Logs',             icon: AlertOctagon },
 ]
 
 export default function Sidebar() {
