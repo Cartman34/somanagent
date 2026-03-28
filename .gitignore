@@ -3,6 +3,7 @@
 .env.local
 .env.*.local
 !.env.example
+local/*
 
 # === BACKEND SYMFONY ===
 backend/vendor/
@@ -25,6 +26,7 @@ skills/imported/
 
 # === DOCKER ===
 docker/data/
+.docker/
 
 # === IDE ===
 .idea/
