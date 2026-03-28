@@ -17,4 +17,22 @@ class LogEventRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, LogEvent::class);
     }
+
+    /**
+     * @return LogEvent[]
+     */
+    public function findByOccurrenceSignature(string $category, string $level, string $fingerprint, int $limit = 100): array
+    {
+        return $this->createQueryBuilder('le')
+            ->andWhere('le.category = :category')
+            ->andWhere('le.level = :level')
+            ->andWhere('le.fingerprint = :fingerprint')
+            ->setParameter('category', $category)
+            ->setParameter('level', $level)
+            ->setParameter('fingerprint', $fingerprint)
+            ->orderBy('le.occurredAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
 }

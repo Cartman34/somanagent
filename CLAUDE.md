@@ -4,7 +4,7 @@
 
 **SoManAgent** is an agent orchestration platform that manages autonomous AI agents, their skills, workflows, and team assignments.
 
-**Current Phase:** UX Sprints 1–3 complete — Project Hub, Monitoring, Workflow Visual UI. Phase 4 (VCS) next.
+**Current Phase:** UX Sprints 1–3 complete, chat/agent project interactions in place, and a first centralized logging foundation is implemented. Immediate next work is around lead-tech planning robustness, log retry clarity, and task rework UX.
 
 ---
 
@@ -43,11 +43,12 @@ somanagent/                      # Project Root
 │       │   ├── layout/          # Sidebar, TopBar (themed with CSS variables)
 │       │   └── ui/              # Modal, ConfirmDialog, EmptyState, PageHeader, etc.
 │       ├── pages/               # DashboardPage, ProjectsPage, ProjectDetailPage (7-tab hub), TeamsPage, AgentsPage, RolesPage, SkillsPage, WorkflowsPage, TasksPage, FeaturesPage, ChatPage, TokensPage, AuditPage
+│       ├── pages/LogsPage.tsx   # Centralized log occurrences + events diagnostic UI
 │       ├── hooks/               # useTheme (localStorage-persisted theme switching)
 │       └── index.css            # Tailwind + theme tokens (Terminal default) + gray remapping
 ├── backend/                     # Symfony REST API
 │   ├── src/
-│   │   ├── Controller/          # REST endpoints (Projects, Teams, Agents, Roles, Skills, Workflows, Tasks, Features, Chat, Tokens, Audit, Health)
+│   │   ├── Controller/          # REST endpoints (Projects, Teams, Agents, Roles, Skills, Workflows, Tasks, Features, Chat, Tokens, Audit, Health, Logs)
 │   │   ├── Entity/              # Doctrine ORM entities
 │   │   ├── Service/             # Business logic (ProjectService, WorkflowService, etc.)
 │   │   ├── Adapter/             # External integrations (Claude CLI, GitHub, etc.)
@@ -80,6 +81,128 @@ somanagent/                      # Project Root
 ├── .dockerignore                # Excludes docker/data/, node_modules/, vendor/, var/cache/
 └── CLAUDE.md                    # This file
 ```
+
+---
+
+## Session Continuity
+
+Use this section to resume work quickly after reopening Claude.
+
+### Active local workflow
+
+- Pending tasks are tracked in [`local/planned-tasks.md`](/home/sowapps/projects/somanagent/local/planned-tasks.md).
+- Completed work is tracked in [`local/changes-list.md`](/home/sowapps/projects/somanagent/local/changes-list.md).
+- The order of tasks in `local/planned-tasks.md` is the authoritative priority order.
+- The user may reorder `local/planned-tasks.md` manually at any time to redefine priorities.
+- `next` means: execute the first task from `local/planned-tasks.md`, remove it from that file, then append the result to `local/changes-list.md`.
+- `new ...` means: append a new task to the **end** of `local/planned-tasks.md`; if the user wants a different priority, they can reorder the file afterward.
+- `rework` means: read `local/changes-review.md`, resume from the pending review feedback, and apply the needed follow-up changes.
+- During `rework`, review feedback is not assumed to be automatically correct: challenge weak or risky requests when needed, and ask for clarification if a point is ambiguous or under-specified.
+- If a completed feature needs a follow-up bugfix, add it to `local/changes-list.md` with prefix `[FIX]`.
+- Review notes from the user are expected in `local/changes-review.md` when present.
+
+### Local-only files
+
+- Files under `local/` are intentionally local and should not be committed.
+- The helper directory exists for session continuity and ad hoc working notes.
+
+### Base URLs and environment
+
+- Frontend dev URL: `http://localhost:5173`
+- API through Vite proxy: `/api/...`
+- Docker containers:
+  - `somanagent_php`
+  - `somanagent_worker`
+  - `somanagent_node`
+  - `somanagent_nginx`
+  - `somanagent_db`
+  - `somanagent_redis`
+
+### Claude CLI auth
+
+- Claude CLI auth is shared into containers through:
+  - `./.docker/claude/shared/.claude`
+  - `./.docker/claude/shared/.claude.json`
+- Runtime home used for CLI auth inside containers: `/claude-home`
+- Health endpoint for auth: `GET /api/health/claude-cli-auth`
+
+### Recent functional additions
+
+- Project agent sheet supports:
+  - viewing role and skills
+  - reading skill content
+  - chatting with the agent
+  - project-level message history with response/error persistence
+- Agent hello is available:
+  - from backend CLI
+  - from the UI quick action
+- Project tabs persist across refresh through `?tab=...`
+- Project detail also supports deep links:
+  - `?task=<uuid>` opens the task drawer
+  - `?agent=<uuid>` opens the agent sheet
+- Ticket/task detail now supports:
+  - markdown rendering
+  - agent questions/comments
+  - explicit replies to a comment
+  - resume/relaunch flows
+- Logs UI exists at `/logs` with:
+  - occurrence list
+  - filters
+  - occurrence detail with event history
+  - quick navigation to related project/task/agent context
+
+### Recent technical additions
+
+- Centralized logging foundation:
+  - `log_event`
+  - `log_occurrence`
+  - `RequestCorrelationService`
+  - `LogService`
+  - `LogController`
+- Current log coverage:
+  - backend HTTP exceptions
+  - backend runtime dispatch logs
+  - worker execution start/error logs
+- Current limitation:
+  - frontend and infra collection are not implemented yet
+  - worker retries are not yet clearly distinguished in the logs UI
+
+### Most recent verified fixes
+
+- `PlanningTask` is now a real PSR-4 class in [`backend/src/ValueObject/PlanningTask.php`](/home/sowapps/projects/somanagent/backend/src/ValueObject/PlanningTask.php).
+- Lead-tech planning flow was verified end-to-end in sync mode:
+  - planning JSON parses correctly
+  - branch name is applied
+  - subtasks are created
+  - dependencies are created
+  - story moves to `development` when `needsDesign=false`
+- Replanning now replaces previous generated subtasks instead of stacking duplicates.
+- `TaskService::failExecution()` now resets progress to `0` when moving a failed execution back to backlog.
+
+### Current open priorities
+
+1. Harden lead-tech planning against invalid JSON outputs, especially invalid `dependsOn`.
+2. Clarify retries vs first execution in centralized logs using `trace_ref` and retry metadata.
+3. Implement “send task back to a replayable agent step” UX and persistence.
+
+### Useful verification commands
+
+```bash
+docker exec somanagent_php php /var/www/backend/bin/console cache:clear
+docker exec somanagent_php php /var/www/backend/bin/console somanagent:task:redispatch --latest
+docker exec somanagent_php php /var/www/backend/bin/console somanagent:task:redispatch <task-id> --sync
+docker exec somanagent_php php /var/www/backend/bin/console somanagent:agent:hello <projectId> <agentId> --message=Salut
+docker exec somanagent_php claude auth status
+docker exec somanagent_worker claude auth status
+docker exec somanagent_node npm run type-check
+docker logs somanagent_worker --tail 120
+docker exec somanagent_db psql -U somanagent -d somanagent -c "SELECT source, category, level, title, occurred_at FROM log_event ORDER BY occurred_at DESC LIMIT 20;"
+```
+
+### Diagnostics note
+
+- For log investigations, prefer querying the database directly from `somanagent_db` rather than relying only on container stdout.
+- A dedicated helper command/script for DB log extraction is planned and not implemented yet.
 
 ---
 
@@ -174,6 +297,7 @@ All endpoints return JSON, versioned if needed.
 
 **Implemented:**
 - `GET /api/health`, `GET /api/health/connectors`, `GET /api/health/claude-cli-auth`
+- `GET /api/logs/occurrences`, `GET /api/logs/occurrences/{id}`
 - `GET /api/projects`, `POST /api/projects`, `GET /api/projects/{id}`, `PUT /api/projects/{id}`, `DELETE /api/projects/{id}`
 - `GET /api/projects/{id}/audit`, `GET /api/projects/{id}/tokens`
 - `POST /api/projects/{id}/modules`, `PUT /api/projects/modules/{id}`, `DELETE /api/projects/modules/{id}`
@@ -442,52 +566,3 @@ An agent's **operational state** is derived (not stored):
 Computed in the API response for the project team view.
 
 ---
-
-## Roadmap
-
-### Foundations (F1–F4) — DONE
-
-| ID | Task | Status |
-|---|---|---|
-| F1 | Add `Project.team` (ManyToOne → Team) + Doctrine migration | ✅ Done |
-| F2 | `StoryExecutionService`: scope agent search to project's team | ✅ Done |
-| F3 | `StoryExecutionService`: read roleSlug/skillSlug from workflow steps | ✅ Done |
-| F4 | Agent runtime status endpoint (derived from task/tasklog state) | ✅ Done |
-
-### UX Sprint 1 — Project Hub — DONE
-
-| ID | Task | Status |
-|---|---|---|
-| U1 | Remove Features and Tasks from sidebar — navigation only from project page | ✅ Done |
-| U2 | Project page: **General** tab — assign team + workflow | ✅ Done |
-| U3 | Project page: **Board** tab — story kanban (storyStatus columns) + backlog toggle | ✅ Done |
-| U4 | Project page: **Tâches** tab — technical subtasks generated by agents | ✅ Done |
-| U5 | Project page: **Équipe** tab — agents, roles, skills readable, `idle/working/error` status | ✅ Done |
-| U6 | Project page: **Modules** tab — add / archive modules | ✅ Done |
-
-### UX Sprint 2 — Monitoring — DONE
-
-| ID | Task | Status |
-|---|---|---|
-| U7 | Project page: **Audit** tab — filtered on project tasks | ✅ Done |
-| U8 | Project page: **Tokens** tab — token usage by task / by agent | ✅ Done |
-| U9 | Task detail drawer — description, storyStatus, logs, errors, subtasks, token consumption | ✅ Done |
-
-### UX Sprint 3 — Workflow Visual UI — DONE
-
-| ID | Task | Status |
-|---|---|---|
-| U10 | Workflow page: visual lifecycle pipeline (`new → … → done`), agent steps highlighted | ✅ Done |
-| U11 | Workflow page: `draft/validated/locked` status badge + Validate button | ✅ Done |
-
-### Phase 4 — VCS
-
-| ID | Task |
-|---|---|
-| V1 | `MockVcsAdapter` — simulated Git branch creation on planning |
-| V2 | Branch name displayed on story card with link |
-
-### Future Phases
-
-- **Phase 5:** Skill marketplace (publish, discover, version control for skills)
-- **Phase 6:** Monitoring & observability (structured logs, metrics, alerts)

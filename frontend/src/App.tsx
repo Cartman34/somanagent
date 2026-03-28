@@ -12,6 +12,7 @@ import TasksPage from '@/pages/TasksPage'
 import ChatPage from '@/pages/ChatPage'
 import TokensPage from '@/pages/TokensPage'
 import AuditPage from '@/pages/AuditPage'
+import LogsPage from '@/pages/LogsPage'
 
 export default function App() {
   return (
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="chat/*"       element={<ChatPage />} />
         <Route path="tokens/*"     element={<TokensPage />} />
         <Route path="audit"        element={<AuditPage />} />
+        <Route path="logs"         element={<LogsPage />} />
         {/* Legacy French URL redirects */}
         <Route path="tableau-de-bord" element={<Navigate to="/dashboard" replace />} />
         <Route path="projets/*"       element={<Navigate to="/projects" replace />} />

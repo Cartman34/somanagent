@@ -869,11 +869,63 @@ export default function ProjectDetailPage() {
     }
   }, [searchParams, setSearchParams, tab])
 
+  useEffect(() => {
+    const requestedTaskId = searchParams.get('task')
+    if (requestedTaskId && requestedTaskId !== drawerTaskId) {
+      setDrawerTaskId(requestedTaskId)
+      return
+    }
+
+    if (!requestedTaskId && drawerTaskId !== null) {
+      setDrawerTaskId(null)
+    }
+  }, [drawerTaskId, searchParams])
+
+  useEffect(() => {
+    const requestedAgentId = searchParams.get('agent')
+    if (requestedAgentId && requestedAgentId !== agentSheetId) {
+      setAgentSheetId(requestedAgentId)
+      return
+    }
+
+    if (!requestedAgentId && agentSheetId !== null) {
+      setAgentSheetId(null)
+    }
+  }, [agentSheetId, searchParams])
+
   const handleTabChange = (nextTab: Tab) => {
     setTab(nextTab)
 
     const nextParams = new URLSearchParams(searchParams)
     nextParams.set('tab', nextTab)
+    setSearchParams(nextParams, { replace: true })
+  }
+
+  const openTaskDrawer = (taskId: string) => {
+    setDrawerTaskId(taskId)
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.set('task', taskId)
+    setSearchParams(nextParams, { replace: true })
+  }
+
+  const closeTaskDrawer = () => {
+    setDrawerTaskId(null)
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.delete('task')
+    setSearchParams(nextParams, { replace: true })
+  }
+
+  const openAgentSheet = (agentId: string) => {
+    setAgentSheetId(agentId)
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.set('agent', agentId)
+    setSearchParams(nextParams, { replace: true })
+  }
+
+  const closeAgentSheet = () => {
+    setAgentSheetId(null)
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.delete('agent')
     setSearchParams(nextParams, { replace: true })
   }
 
@@ -1110,7 +1162,7 @@ export default function ProjectDetailPage() {
               onTransition={(task, status) => transitionMutation.mutate({ taskId: task.id, status })}
               onDelete={setDeleteTask}
               onExecute={setExecuteTask}
-              onOpen={(task) => setDrawerTaskId(task.id)}
+              onOpen={(task) => openTaskDrawer(task.id)}
               pendingTaskId={pendingTaskId}
             />
           )}
@@ -1127,7 +1179,7 @@ export default function ProjectDetailPage() {
           />
         ) : (
           <div className="card divide-y" style={{ borderColor: 'var(--border)' }}>
-            {techTasks.map((t) => <TechTaskRow key={t.id} task={t} onDelete={setDeleteTask} onOpen={(t) => setDrawerTaskId(t.id)} />)}
+            {techTasks.map((t) => <TechTaskRow key={t.id} task={t} onDelete={setDeleteTask} onOpen={(t) => openTaskDrawer(t.id)} />)}
           </div>
         )
       )}
@@ -1164,7 +1216,7 @@ export default function ProjectDetailPage() {
                     key={agent.id}
                     type="button"
                     className="card p-4 flex items-center gap-3 text-left hover:border-[var(--brand)] transition-colors"
-                    onClick={() => setAgentSheetId(agent.id)}
+                    onClick={() => openAgentSheet(agent.id)}
                   >
                     <div
                       className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-semibold"
@@ -1398,7 +1450,7 @@ export default function ProjectDetailPage() {
 
       {/* ── Task drawer ── */}
       {drawerTaskId && (
-        <TaskDrawer taskId={drawerTaskId} onClose={() => setDrawerTaskId(null)} />
+        <TaskDrawer taskId={drawerTaskId} onClose={closeTaskDrawer} />
       )}
 
       {id && (
@@ -1406,7 +1458,7 @@ export default function ProjectDetailPage() {
           projectId={id}
           agentId={agentSheetId}
           open={agentSheetId !== null}
-          onClose={() => setAgentSheetId(null)}
+          onClose={closeAgentSheet}
         />
       )}
     </>

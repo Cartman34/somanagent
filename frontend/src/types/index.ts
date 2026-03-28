@@ -219,6 +219,46 @@ export interface AuditLog {
   createdAt: string
 }
 
+export interface LogOccurrence {
+  id: string
+  category: string
+  level: string
+  fingerprint: string
+  title: string
+  message: string
+  source: string
+  projectId: string | null
+  taskId: string | null
+  agentId: string | null
+  firstSeenAt: string
+  lastSeenAt: string
+  occurrenceCount: number
+  status: string
+  lastLogEventId: string | null
+  contextSnapshot: Record<string, unknown> | null
+}
+
+export interface LogEvent {
+  id: string
+  source: string
+  category: string
+  level: string
+  title: string
+  message: string
+  fingerprint: string | null
+  projectId: string | null
+  taskId: string | null
+  agentId: string | null
+  exchangeRef: string | null
+  requestRef: string | null
+  traceRef: string | null
+  context: Record<string, unknown> | null
+  stack: string | null
+  origin: string | null
+  rawPayload: Record<string, unknown> | null
+  occurredAt: string
+}
+
 export interface ConnectorHealth {
   status: 'ok' | 'degraded'
   connectors: Record<string, boolean>

@@ -66,6 +66,11 @@ Tu DOIS retourner un bloc JSON unique entre les balises \`\`\`json et \`\`\`. Au
 ## Règles
 
 - `dependsOn` contient les indices (0-based) des tâches dont celle-ci dépend
+- `dependsOn` doit toujours être un tableau JSON d'entiers, jamais une chaîne ni des objets
+- une tâche ne peut référencer que des indices strictement inférieurs au sien dans l'ordre final du tableau `tasks`
+- ne jamais mettre d'auto-référence ni de référence vers une tâche située plus bas dans le tableau
+- si tu réordonnes les tâches avant la réponse finale, recalcule tous les `dependsOn` avant d'écrire le JSON
+- si une tâche n'a pas de dépendance valide, renvoie `[]`
 - `priority` : `critical`, `high`, `medium`, `low`
 - `needsDesign: true` crée automatiquement une étape de conception graphique
 - Les descriptions de tâches doivent être suffisamment complètes pour être exécutées sans contexte supplémentaire

@@ -16,6 +16,7 @@ use App\Enum\TaskType;
 use App\Repository\RoleRepository;
 use App\Repository\SkillRepository;
 use App\Repository\TaskLogRepository;
+use App\Repository\TaskRepository;
 use App\ValueObject\Prompt;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -38,6 +39,7 @@ final class AgentExecutionService
         private readonly SkillRepository       $skillRepository,
         private readonly RoleRepository        $roleRepository,
         private readonly TaskLogRepository     $taskLogRepository,
+        private readonly TaskRepository        $taskRepository,
         private readonly TaskService           $taskService,
         private readonly AgentContextBuilder   $contextBuilder,
         private readonly PlanningOutputParser  $planningParser,
@@ -206,16 +208,33 @@ final class AgentExecutionService
         try {
             $plan = $this->planningParser->parse($rawContent);
         } catch (\InvalidArgumentException $e) {
+            $message = sprintf(
+                'Plan lead-tech invalide: %s Rejouer la planification avec un JSON strict et des dependsOn limités à des indices précédents.',
+                $e->getMessage(),
+            );
+
             $this->logger->error('AgentExecution: failed to parse planning output', [
-                'error' => $e->getMessage(),
+                'error' => $message,
                 'task'  => $story->getTitle(),
             ]);
-            $this->em->persist(new TaskLog($story, 'planning_parse_error', $e->getMessage()));
-            return;
+            // Stored in DB for the in-app log UI, so keep the message readable for end users.
+            $this->em->persist(new TaskLog($story, 'planning_parse_error', $message));
+            $this->em->flush();
+            throw new \RuntimeException($message, previous: $e);
         }
 
         // Set branch name on the story
         $story->setBranchName($plan->branch);
+
+        $removedSubtasks = $this->removeExistingPlanningSubtasks($story);
+        if ($removedSubtasks > 0) {
+            // Stored in DB for the in-app log UI, so keep the message readable for end users.
+            $this->em->persist(new TaskLog(
+                $story,
+                'planning_replaced',
+                sprintf('Ancien plan supprimé avant régénération (%d sous-tâche%s).', $removedSubtasks, $removedSubtasks > 1 ? 's' : ''),
+            ));
+        }
 
         // Create subtasks
         /** @var Task[] $createdTasks */
@@ -289,6 +308,22 @@ final class AgentExecutionService
             'branch'        => $plan->branch,
             'needs_design'  => $plan->needsDesign,
         ]);
+    }
+
+    private function removeExistingPlanningSubtasks(Task $story): int
+    {
+        $children = $this->taskRepository->findChildren($story);
+        if ($children === []) {
+            return 0;
+        }
+
+        foreach ($children as $child) {
+            $this->em->remove($child);
+        }
+
+        $this->em->flush();
+
+        return count($children);
     }
 
     /**
