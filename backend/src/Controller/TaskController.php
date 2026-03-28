@@ -127,6 +127,7 @@ class TaskController extends AbstractController
         return $this->json(array_merge($this->serialize($task), [
             'children'   => array_map(fn($c) => $this->serialize($c), $children),
             'logs'       => array_map(fn($l) => [
+                'id'        => (string) $l->getId(),
                 'action'    => $l->getAction(),
                 'content'   => $l->getContent(),
                 'createdAt' => $l->getCreatedAt()->format(\DateTimeInterface::ATOM),
