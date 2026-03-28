@@ -14,6 +14,22 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class AgentRepository extends ServiceEntityRepository
 {
+    private const RUNTIME_ERROR_ACTIONS = [
+        'execution_error',
+        'planning_parse_error',
+    ];
+
+    private const RUNTIME_RECOVERY_ACTIONS = [
+        'agent_response',
+        'planning_completed',
+        'planning_replaced',
+        'product_owner_completed',
+        'validated',
+        'status_changed',
+        'rejected',
+        'assigned',
+    ];
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Agent::class);
@@ -118,25 +134,39 @@ class AgentRepository extends ServiceEntityRepository
     }
 
     /**
-     * Returns true if the agent has a recent TaskLog entry with an error action
-     * (action contains "error") and no subsequent in_progress task.
-     * Used to derive the agent's runtime status.
+     * Returns the latest execution-related runtime signal for the given agent.
      *
-     * @param Agent $agent The agent to check
-     * @return bool        True if the agent is in an error state
+     * Error signals keep the agent in `error` only until a later recovery signal
+     * is recorded on one of its assigned tasks.
+     *
+     * @return array{action: string, createdAt: \DateTimeImmutable}|null
      */
-    public function hasRecentErrorLog(Agent $agent): bool
+    public function findLatestRuntimeSignal(Agent $agent): ?array
     {
-        $count = (int) $this->getEntityManager()
+        $actions = array_merge(self::RUNTIME_ERROR_ACTIONS, self::RUNTIME_RECOVERY_ACTIONS);
+
+        /** @var array{action: string, createdAt: \DateTimeImmutable}|null $signal */
+        $signal = $this->getEntityManager()
             ->createQuery(
-                'SELECT COUNT(l.id) FROM App\Entity\TaskLog l
+                'SELECT l.action AS action, l.createdAt AS createdAt
+                 FROM App\Entity\TaskLog l
                  JOIN l.task t
-                 WHERE t.assignedAgent = :agent AND l.action LIKE :pattern'
+                 WHERE t.assignedAgent = :agent AND l.action IN (:actions)
+                 ORDER BY l.createdAt DESC'
             )
             ->setParameter('agent', $agent)
-            ->setParameter('pattern', '%error%')
-            ->getSingleScalarResult();
+            ->setParameter('actions', $actions)
+            ->setMaxResults(1)
+            ->getOneOrNullResult();
 
-        return $count > 0;
+        return $signal;
+    }
+
+    /**
+     * Returns whether the given runtime signal action should surface the agent as `error`.
+     */
+    public function isRuntimeErrorAction(string $action): bool
+    {
+        return in_array($action, self::RUNTIME_ERROR_ACTIONS, true);
     }
 }

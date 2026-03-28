@@ -98,7 +98,7 @@ An agent's runtime status is derived from its task and log history:
 | Status | Meaning |
 |---|---|
 | `working` | Has at least one `in_progress` task |
-| `error` | Has a recent `execution_error` log entry with no subsequent active task |
+| `error` | Its latest execution-related signal on an assigned task is an error (`execution_error`, `planning_parse_error`) |
 | `idle` | Neither of the above |
 
 → Endpoint: `GET /api/agents/{id}/status` (planned — Foundation F4)

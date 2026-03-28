@@ -109,11 +109,11 @@ class AgentController extends AbstractController
      *
      * Status values:
      *  - working: the agent has at least one task currently in_progress
-     *  - error:   the agent has a recent error log entry and no active task
+     *  - error:   the latest execution-related signal on an assigned task is an error
      *  - idle:    neither of the above
      *
      * @param string $id Agent UUID
-     * @return JsonResponse { status: 'working'|'idle'|'error', activeTaskCount: int }
+     * @return JsonResponse { status: 'working'|'idle'|'error', activeTaskCount: int, lastRuntimeSignal?: array|null }
      */
     #[Route('/{id}/status', name: 'agent_status', methods: ['GET'])]
     public function status(string $id): JsonResponse
@@ -124,10 +124,11 @@ class AgentController extends AbstractController
         }
 
         $activeTaskCount = $this->agentRepository->countInProgressTasks($agent);
+        $lastRuntimeSignal = $this->agentRepository->findLatestRuntimeSignal($agent);
 
         if ($activeTaskCount > 0) {
             $runtimeStatus = 'working';
-        } elseif ($this->agentRepository->hasRecentErrorLog($agent)) {
+        } elseif ($lastRuntimeSignal !== null && $this->agentRepository->isRuntimeErrorAction($lastRuntimeSignal['action'])) {
             $runtimeStatus = 'error';
         } else {
             $runtimeStatus = 'idle';
@@ -136,6 +137,10 @@ class AgentController extends AbstractController
         return $this->json([
             'status'          => $runtimeStatus,
             'activeTaskCount' => $activeTaskCount,
+            'lastRuntimeSignal' => $lastRuntimeSignal === null ? null : [
+                'action'    => $lastRuntimeSignal['action'],
+                'createdAt' => $lastRuntimeSignal['createdAt']->format(\DateTimeInterface::ATOM),
+            ],
         ]);
     }
 }

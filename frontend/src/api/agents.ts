@@ -37,7 +37,7 @@ export const agentsApi = {
 
   /**
    * Returns the derived runtime status of an agent.
-   * Status is computed server-side from active tasks and recent error logs.
+   * Status is computed server-side from active tasks and the latest runtime signal.
    */
   getStatus: async (id: string): Promise<AgentStatus> => {
     const { data } = await apiClient.get(`/agents/${id}/status`)
