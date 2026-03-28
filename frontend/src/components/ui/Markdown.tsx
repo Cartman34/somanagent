@@ -97,13 +97,32 @@ function renderInline(text: string): ReactNode[] {
   const parts = text.split(/(`[^`]+`|\[[^\]]+\]\([^)]+\)|\*\*[^*]+\*\*|\*[^*]+\*)/g).filter(Boolean)
   return parts.map((part, index) => {
     if (part.startsWith('`') && part.endsWith('`')) {
-      return <code key={index} className="rounded px-1 py-0.5 text-[0.92em]" style={{ background: 'var(--surface2)' }}>{part.slice(1, -1)}</code>
+      return (
+        <code
+          key={index}
+          className="rounded-md border px-1.5 py-0.5 text-[0.92em] font-medium"
+          style={{ background: 'color-mix(in srgb, var(--surface2) 80%, transparent)', borderColor: 'var(--border)', color: 'var(--text)' }}
+        >
+          {part.slice(1, -1)}
+        </code>
+      )
     }
 
     if (part.startsWith('[')) {
       const match = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
       if (match) {
-        return <a key={index} href={match[2]} target="_blank" rel="noreferrer" style={{ color: 'var(--brand)' }} className="underline underline-offset-2">{match[1]}</a>
+        return (
+          <a
+            key={index}
+            href={match[2]}
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: 'var(--brand)' }}
+            className="font-medium underline decoration-[0.08em] underline-offset-4"
+          >
+            {match[1]}
+          </a>
+        )
       }
     }
 
@@ -119,47 +138,82 @@ function renderInline(text: string): ReactNode[] {
   })
 }
 
+function headingClass(level: number): string {
+  if (level <= 1) return 'text-xl font-semibold tracking-tight'
+  if (level === 2) return 'text-lg font-semibold tracking-tight'
+  if (level === 3) return 'text-base font-semibold'
+  return 'text-sm font-semibold uppercase tracking-[0.08em]'
+}
+
 export default function Markdown({ content, className = '' }: { content: string; className?: string }) {
   const blocks = parseMarkdown(content)
 
   return (
-    <div className={`space-y-3 ${className}`}>
+    <div className={`space-y-4 ${className}`}>
       {blocks.map((block, index) => {
         if (block.type === 'heading') {
           const HeadingTag = `h${Math.min(block.level + 1, 6)}` as keyof JSX.IntrinsicElements
-          return <HeadingTag key={index} className="font-semibold" style={{ color: 'var(--text)' }}>{renderInline(block.content)}</HeadingTag>
+          return (
+            <HeadingTag key={index} className={headingClass(block.level)} style={{ color: 'var(--text)' }}>
+              {renderInline(block.content)}
+            </HeadingTag>
+          )
         }
 
         if (block.type === 'paragraph') {
-          return <p key={index} className="leading-6 break-words" style={{ color: 'var(--text)' }}>{renderInline(block.content)}</p>
+          return (
+            <p key={index} className="break-words text-[0.95rem] leading-7" style={{ color: 'var(--text)' }}>
+              {renderInline(block.content)}
+            </p>
+          )
         }
 
         if (block.type === 'list') {
           const ListTag = block.ordered ? 'ol' : 'ul'
           return (
-            <ListTag key={index} className={block.ordered ? 'list-decimal pl-5 space-y-1' : 'list-disc pl-5 space-y-1'} style={{ color: 'var(--text)' }}>
-              {block.items.map((item, itemIndex) => <li key={itemIndex}>{renderInline(item)}</li>)}
+            <ListTag
+              key={index}
+              className={block.ordered ? 'list-decimal pl-6 space-y-2 text-[0.95rem] leading-7' : 'list-disc pl-6 space-y-2 text-[0.95rem] leading-7'}
+              style={{ color: 'var(--text)' }}
+            >
+              {block.items.map((item, itemIndex) => (
+                <li key={itemIndex} className="pl-1 marker:text-[var(--brand)]">
+                  {renderInline(item)}
+                </li>
+              ))}
             </ListTag>
           )
         }
 
         if (block.type === 'blockquote') {
           return (
-            <blockquote key={index} className="border-l-2 pl-3 italic" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
-              {block.lines.map((line, lineIndex) => <p key={lineIndex}>{renderInline(line)}</p>)}
+            <blockquote
+              key={index}
+              className="rounded-r-xl border-l-4 px-4 py-3 italic"
+              style={{ borderColor: 'var(--brand)', background: 'color-mix(in srgb, var(--brand-dim) 18%, var(--surface) 82%)', color: 'var(--muted)' }}
+            >
+              {block.lines.map((line, lineIndex) => (
+                <p key={lineIndex} className={lineIndex > 0 ? 'mt-2' : ''}>
+                  {renderInline(line)}
+                </p>
+              ))}
             </blockquote>
           )
         }
 
         if (block.type === 'code') {
           return (
-            <pre key={index} className="overflow-x-auto rounded p-3 text-sm" style={{ background: 'var(--surface2)', color: 'var(--text)' }}>
+            <pre
+              key={index}
+              className="overflow-x-auto rounded-2xl border p-4 text-sm leading-6"
+              style={{ background: 'color-mix(in srgb, var(--surface2) 88%, transparent)', borderColor: 'var(--border)', color: 'var(--text)' }}
+            >
               <code>{block.content}</code>
             </pre>
           )
         }
 
-        return <hr key={index} style={{ borderColor: 'var(--border)' }} />
+        return <hr key={index} className="my-6" style={{ borderColor: 'var(--border)' }} />
       })}
     </div>
   )
