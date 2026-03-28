@@ -30,8 +30,8 @@ class TaskService
         private readonly FeatureRepository      $featureRepository,
         private readonly AgentRepository        $agentRepository,
         private readonly RoleRepository         $roleRepository,
-        private readonly TaskLogRepository      $taskLogRepository,
         private readonly AuditService           $audit,
+        private readonly TaskLogRepository      $taskLogRepository,
     ) {}
 
     public function create(
