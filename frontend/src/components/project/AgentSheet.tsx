@@ -16,6 +16,7 @@ import Modal from '@/components/ui/Modal'
 import { PageSpinner } from '@/components/ui/Spinner'
 import EntityId from '@/components/ui/EntityId'
 import ErrorMessage from '@/components/ui/ErrorMessage'
+import Markdown from '@/components/ui/Markdown'
 import { agentsApi } from '@/api/agents'
 import { chatApi } from '@/api/chat'
 import { rolesApi } from '@/api/roles'
@@ -74,9 +75,13 @@ function MessageRow({ message }: { message: ChatMessage }) {
       </div>
 
       {hasContent ? (
-        <p className="text-sm whitespace-pre-wrap break-words" style={{ color: 'var(--text)' }}>
-          {message.content}
-        </p>
+        message.isError ? (
+          <p className="text-sm whitespace-pre-wrap break-words" style={{ color: 'var(--text)' }}>
+            {message.content}
+          </p>
+        ) : (
+          <Markdown content={message.content} className="text-sm" />
+        )
       ) : (
         <div className="text-sm rounded-lg px-3 py-2 border border-dashed" style={{ color: 'var(--muted)', borderColor: 'var(--border)' }}>
           {message.isError ? 'Erreur sans détail.' : 'Aucune sortie texte renvoyée par l’agent.'}
