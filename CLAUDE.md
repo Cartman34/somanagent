@@ -15,7 +15,7 @@
 | **Frontend** | React 18 + TypeScript + Vite | React Query (TanStack) for data fetching, Tailwind CSS |
 | **Backend** | PHP 8.4-FPM + Symfony 7 | Doctrine ORM, REST API, Psalm static analysis |
 | **Database** | PostgreSQL 16 | Health-checked, auto-migrations via Doctrine |
-| **DevOps** | Docker Compose + WSL 2 | 4 services: php, nginx, db, node |
+| **DevOps** | Docker Compose + WSL 2 | 6 services: php, nginx, db, node, redis, worker |
 | **CLI Scripts** | PHP (OOP pattern) | Terminal output helpers, Bootstrap pattern, exception-based errors |
 
 ---
@@ -38,16 +38,16 @@
 somanagent/                      # Project Root
 ├── frontend/                    # React SPA
 │   └── src/
-│       ├── api/                 # Axios clients (projects, teams, agents, skills, workflows, health)
+│       ├── api/                 # Axios clients (projects, teams, agents, roles, skills, workflows, tasks, features, chat, tokens, health)
 │       ├── components/
 │       │   ├── layout/          # Sidebar, TopBar (themed with CSS variables)
 │       │   └── ui/              # Modal, ConfirmDialog, EmptyState, PageHeader, etc.
-│       ├── pages/               # DashboardPage, ProjectsPage, ProjectDetailPage (7-tab hub), TeamsPage, AgentsPage, SkillsPage, WorkflowsPage, AuditPage
+│       ├── pages/               # DashboardPage, ProjectsPage, ProjectDetailPage (7-tab hub), TeamsPage, AgentsPage, RolesPage, SkillsPage, WorkflowsPage, TasksPage, FeaturesPage, ChatPage, TokensPage, AuditPage
 │       ├── hooks/               # useTheme (localStorage-persisted theme switching)
 │       └── index.css            # Tailwind + theme tokens (Terminal default) + gray remapping
 ├── backend/                     # Symfony REST API
 │   ├── src/
-│   │   ├── Controller/          # REST endpoints (Projects, Teams, Agents, Skills, Workflows, Audit, Health)
+│   │   ├── Controller/          # REST endpoints (Projects, Teams, Agents, Roles, Skills, Workflows, Tasks, Features, Chat, Tokens, Audit, Health)
 │   │   ├── Entity/              # Doctrine ORM entities
 │   │   ├── Service/             # Business logic (ProjectService, WorkflowService, etc.)
 │   │   ├── Adapter/             # External integrations (Claude CLI, GitHub, etc.)
@@ -76,7 +76,7 @@ somanagent/                      # Project Root
 │       └── Exception/           # WslRequiredException, PhpNotAvailableException
 ├── skills/                      # Skill definitions (YAML + SKILL.md files)
 ├── .env.example                 # Environment template
-├── docker-compose.yml           # 4 services + health checks
+├── docker-compose.yml           # 6 services + health checks
 ├── .dockerignore                # Excludes docker/data/, node_modules/, vendor/, var/cache/
 └── CLAUDE.md                    # This file
 ```
@@ -173,16 +173,27 @@ $c->ok('Done');
 All endpoints return JSON, versioned if needed.
 
 **Implemented:**
-- `GET /api/health` - App version + status
-- `GET /api/health/connectors` - Connector availability
-- `GET /api/projects`, `POST /api/projects`, `PUT /api/projects/{id}`, `DELETE /api/projects/{id}`
-- `GET /api/teams`, `POST /api/teams`, `PUT /api/teams/{id}`, `DELETE /api/teams/{id}`
-- `GET /api/agents`, `POST /api/agents`, `PUT /api/agents/{id}`, `DELETE /api/agents/{id}`
-- `GET /api/skills`, `POST /api/skills`, `PUT /api/skills/{id}`, `DELETE /api/skills/{id}`, `POST /api/skills/{id}/content`
+- `GET /api/health`, `GET /api/health/connectors`, `GET /api/health/claude-cli-auth`
+- `GET /api/projects`, `POST /api/projects`, `GET /api/projects/{id}`, `PUT /api/projects/{id}`, `DELETE /api/projects/{id}`
+- `GET /api/projects/{id}/audit`, `GET /api/projects/{id}/tokens`
+- `POST /api/projects/{id}/modules`, `PUT /api/projects/modules/{id}`, `DELETE /api/projects/modules/{id}`
+- `GET /api/projects/{projectId}/tasks`, `POST /api/projects/{projectId}/tasks`, `POST /api/projects/{projectId}/requests`
+- `GET /api/tasks/{id}`, `PUT /api/tasks/{id}`, `DELETE /api/tasks/{id}`
+- `PATCH /api/tasks/{id}/status`, `PATCH /api/tasks/{id}/progress`, `PATCH /api/tasks/{id}/priority`
+- `POST /api/tasks/{id}/validate`, `POST /api/tasks/{id}/reject`, `POST /api/tasks/{id}/request-validation`
+- `POST /api/tasks/{id}/story-transition`, `GET /api/tasks/{id}/execute`, `POST /api/tasks/{id}/execute`
+- `GET /api/teams`, `POST /api/teams`, `GET /api/teams/{id}`, `PUT /api/teams/{id}`, `DELETE /api/teams/{id}`
+- `POST /api/teams/{id}/agents`, `DELETE /api/teams/{id}/agents/{agentId}`
+- `GET /api/agents`, `POST /api/agents`, `GET /api/agents/{id}`, `PUT /api/agents/{id}`, `DELETE /api/agents/{id}`
+- `GET /api/agents/{id}/status` - Derived runtime status (idle/working/error)
+- `GET /api/roles`, `POST /api/roles`, `GET /api/roles/{id}`, `PUT /api/roles/{id}`, `DELETE /api/roles/{id}`
+- `POST /api/roles/{id}/skills`, `DELETE /api/roles/{id}/skills/{skillId}`
+- `GET /api/skills`, `POST /api/skills`, `POST /api/skills/import`, `PUT /api/skills/{id}/content`, `DELETE /api/skills/{id}`
 - `GET /api/workflows`, `POST /api/workflows`, `PUT /api/workflows/{id}`, `DELETE /api/workflows/{id}`, `POST /api/workflows/{id}/validate`
-- `GET /api/projects/{id}/audit` - Project audit log (paginated, filtered on project + its tasks)
-- `GET /api/projects/{id}/tokens` - Token usage summary + entries for a project
-- `GET /api/tasks/{id}` - Task detail with `children`, `logs`, and `tokenUsage`
+- `GET /api/projects/{projectId}/features`, `POST /api/projects/{projectId}/features`
+- `GET /api/features/{id}`, `PUT /api/features/{id}`, `DELETE /api/features/{id}`
+- `GET /api/projects/{projectId}/chat/{agentId}`, `POST /api/projects/{projectId}/chat/{agentId}`
+- `GET /api/tokens/summary`, `GET /api/tokens/agents/{agentId}`
 - `GET /api/audit` - Global paginated audit log
 
 ### Services
@@ -406,7 +417,7 @@ new → ready → approved → planning → [graphic_design →] development →
 - **`StoryStatus`** = the actual lifecycle state of a user story. It lives on the `Task` entity. Managed by `TaskService::transitionStory()`.
 - **`Workflow`** = a reusable *template* that describes which agent roles execute at each automated stage. It is a configuration object, not an execution record.
 
-The `Workflow` is assigned to a `Team`. When a project uses a team, its workflow template defines the `(roleSlug, skillSlug)` mapping for each story stage. Currently `StoryExecutionService` has this mapping **hardcoded** — migrating it to read from the project's workflow is a planned fix (F3, Phase 4).
+The `Workflow` is assigned to a `Team`. When a project uses a team, its workflow template defines the `(roleSlug, skillSlug)` mapping for each story stage. `StoryExecutionService` reads this mapping from the workflow steps (F3 — done).
 
 A workflow has a `status` field (`draft` → `validated` → `locked`). Only `validated` and `locked` workflows are usable for story execution. The Validate button is available in the workflow detail page when status is `draft`.
 
@@ -414,9 +425,7 @@ A workflow has a `status` field (`draft` → `validated` → `locked`). Only `va
 
 ## Project → Team Relationship (known gap)
 
-**Current state:** `Project` has a `team_id` column (added in Foundations F1). `StoryExecutionService` scopes agent search to the project's team (F2).
-
-**Remaining:** `StoryExecutionService` still uses a hardcoded roleSlug/skillSlug map (F3 — reads from workflow steps — planned for Phase 4).
+**Current state:** `Project` has a `team_id` column (F1). `StoryExecutionService` scopes agent search to the project's team (F2) and reads roleSlug/skillSlug from workflow steps (F3). All foundations complete.
 
 ---
 
