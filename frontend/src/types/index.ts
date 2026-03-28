@@ -208,6 +208,10 @@ export type AgentRuntimeStatus = 'working' | 'idle' | 'error'
 export interface AgentStatus {
   status: AgentRuntimeStatus
   activeTaskCount: number
+  lastRuntimeSignal?: {
+    action: string
+    createdAt: string
+  } | null
 }
 
 export interface AuditLog {
