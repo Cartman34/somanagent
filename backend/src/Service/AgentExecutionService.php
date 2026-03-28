@@ -13,6 +13,7 @@ use App\Entity\TokenUsage;
 use App\Enum\StoryStatus;
 use App\Enum\TaskStatus;
 use App\Enum\TaskType;
+use App\Adapter\VCS\MockVcsAdapter;
 use App\Repository\RoleRepository;
 use App\Repository\SkillRepository;
 use App\Repository\TaskLogRepository;
@@ -43,6 +44,8 @@ final class AgentExecutionService
         private readonly TaskService           $taskService,
         private readonly AgentContextBuilder   $contextBuilder,
         private readonly PlanningOutputParser  $planningParser,
+        private readonly VcsRepositoryUrlService $vcsRepositoryUrl,
+        private readonly MockVcsAdapter        $mockVcsAdapter,
         private readonly EntityManagerInterface $em,
         private readonly LoggerInterface       $logger,
     ) {}
@@ -225,6 +228,7 @@ final class AgentExecutionService
 
         // Set branch name on the story
         $story->setBranchName($plan->branch);
+        $this->simulatePlanningBranchCreation($story, $plan->branch);
 
         $removedSubtasks = $this->removeExistingPlanningSubtasks($story);
         if ($removedSubtasks > 0) {
@@ -308,6 +312,41 @@ final class AgentExecutionService
             'branch'        => $plan->branch,
             'needs_design'  => $plan->needsDesign,
         ]);
+    }
+
+    /**
+     * Simulates branch creation for planning outputs when the project repository URL
+     * can be resolved to a supported provider, then records the prepared branch in the task log.
+     */
+    private function simulatePlanningBranchCreation(Task $story, string $branchName): void
+    {
+        $repository = $this->vcsRepositoryUrl->resolve($story->getProject()->getRepositoryUrl());
+        if ($repository === null) {
+            return;
+        }
+
+        $this->mockVcsAdapter->createBranch(
+            owner: $repository['owner'],
+            repo: $repository['repo'],
+            branch: $branchName,
+        );
+
+        $branchUrl = $this->vcsRepositoryUrl->buildBranchUrl($story->getProject()->getRepositoryUrl(), $branchName);
+
+        // Stored in DB for the in-app log UI, so keep the message readable for end users.
+        $this->em->persist(
+            (new TaskLog(
+                $story,
+                'branch_prepared',
+                sprintf('Branche simulée pour le planning: %s', $branchName),
+            ))->setMetadata([
+                'provider' => $repository['provider'],
+                'repository' => $repository['owner'] . '/' . $repository['repo'],
+                'branch' => $branchName,
+                'branchUrl' => $branchUrl,
+                'mode' => 'mock',
+            ])
+        );
     }
 
     private function removeExistingPlanningSubtasks(Task $story): int

@@ -415,13 +415,14 @@ docker compose exec php vendor/bin/phpunit
 - **Exceptions:** Throw `\RuntimeException` or domain-specific exceptions; never `exit()` inside methods (let the script decide)
 - **OOP:** Classes are final by default unless inheritance is intentional; favor composition
 - **Type Hints:** Full return types (`public function foo(): string`)
-- **PHPDoc:** Every public method must have a PHPDoc block. The reader must understand what the method does, its parameters and return value **without reading the implementation**. Minimum: one-line description + `@param` / `@return` / `@throws` when non-obvious.
+- **PHPDoc:** Public methods should have a PHPDoc block unless the method is truly trivial and fully obvious from its name/signature/context. Private methods should also get PHPDoc when their role, assumptions, side effects, or return contract are not immediately obvious. PHPDoc must add useful intent and contract information, not restate the code mechanically line by line. Use `@param` / `@return` / `@throws` when they clarify something non-obvious.
 
 ### React/TypeScript
 - **Components:** Default exports, PascalCase naming
 - **Hooks:** Start with `use`, e.g., `useQuery`, `useTheme`
 - **Props:** Interface `Props` per component
 - **State:** React hooks (`useState`, `useEffect`, `useContext`)
+- **JSDoc/TSDoc:** Apply the same rule as PHPDoc: document public or non-trivial functions/components/hooks when the intent or contract is not fully obvious, but avoid redundant comments that merely paraphrase the implementation.
 - **Styling:** Tailwind utility classes + custom `.card`, `.btn-primary`, `.badge-*` classes
 - **Files:** One component per file unless tightly coupled
 - **JSDoc:** Every exported component and every non-trivial internal function must have a JSDoc comment. The reader must understand the component's role, its key props and any important behaviour **without reading the JSX**.

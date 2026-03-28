@@ -229,7 +229,13 @@ function StoryCard({ task, onTransition, onDelete, transitioning, onExecute }: {
       {task.branchName && (
         <div className="flex items-center gap-1 text-xs text-gray-400">
           <GitBranch className="w-3 h-3" />
-          <code className="font-mono truncate">{task.branchName}</code>
+          {task.branchUrl ? (
+            <a href={task.branchUrl} target="_blank" rel="noreferrer" className="truncate hover:underline" style={{ color: 'var(--brand)' }}>
+              <code className="font-mono">{task.branchName}</code>
+            </a>
+          ) : (
+            <code className="font-mono truncate">{task.branchName}</code>
+          )}
         </div>
       )}
 

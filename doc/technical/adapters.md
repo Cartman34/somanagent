@@ -92,6 +92,12 @@ interface VCSPort
 
 VCS adapters are not injected via a registry: the adapter to use is determined by the module configuration (coming soon). For now, it can be injected directly into services.
 
+### MockVcsAdapter
+
+- Used as the first planning-oriented VCS slice before real provider selection is wired
+- Simulates branch creation during lead-tech planning without performing any network call
+- Keeps the planning flow coherent while the UI can still expose a provider-specific branch URL when the project repository URL is recognized
+
 ---
 
 ## SkillPort — Skill Import

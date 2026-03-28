@@ -14,6 +14,7 @@ use App\Service\ProjectService;
 use App\Service\StoryExecutionService;
 use App\Service\TaskService;
 use App\Service\TokenUsageService;
+use App\Service\VcsRepositoryUrlService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -30,6 +31,7 @@ class TaskController extends AbstractController
         private readonly AgentRepository       $agentRepository,
         private readonly TaskLogRepository     $taskLogRepository,
         private readonly TokenUsageService     $tokenUsageService,
+        private readonly VcsRepositoryUrlService $vcsRepositoryUrl,
     ) {}
 
     #[Route('/projects/{projectId}/tasks', name: 'task_list', methods: ['GET'])]
@@ -415,6 +417,11 @@ class TaskController extends AbstractController
 
     private function serialize(\App\Entity\Task $task): array
     {
+        $branchUrl = $this->vcsRepositoryUrl->buildBranchUrl(
+            $task->getProject()->getRepositoryUrl(),
+            $task->getBranchName(),
+        );
+
         return [
             'id'            => (string) $task->getId(),
             'title'         => $task->getTitle(),
@@ -428,6 +435,7 @@ class TaskController extends AbstractController
             'priority'      => $task->getPriority()->value,
             'progress'      => $task->getProgress(),
             'branchName'    => $task->getBranchName(),
+            'branchUrl'     => $branchUrl,
             'feature'       => $task->getFeature() ? ['id' => (string) $task->getFeature()->getId(), 'name' => $task->getFeature()->getName()] : null,
             'parent'        => $task->getParent() ? ['id' => (string) $task->getParent()->getId(), 'title' => $task->getParent()->getTitle()] : null,
             'assignedAgent' => $task->getAssignedAgent() ? ['id' => (string) $task->getAssignedAgent()->getId(), 'name' => $task->getAssignedAgent()->getName()] : null,
