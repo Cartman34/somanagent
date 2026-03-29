@@ -2,6 +2,7 @@
 # =============================================================================
 # wsl-migrate.sh  —  Migrate SoManAgent to the WSL native filesystem
 # =============================================================================
+# Description: Copy the project from /mnt/... to the WSL native filesystem for fast Docker I/O
 #
 # Problem: the project is in C:\... which Docker mounts via the 9P filesystem
 # protocol over Hyper-V (/mnt/c/...). This causes 5-20x slower I/O.

@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# Description: install claude CLI on WSL (required for remote control in WSL)
-# Usage: ./scripts/wsl-claude-install.sh
-# TODO Update to install it directly from WSL and no more from windows git bash
+# Description: Install Claude CLI inside the configured WSL distro for local project usage
+# Usage: bash scripts/wsl-claude-install.sh
 
 set -euo pipefail
 
@@ -44,5 +43,5 @@ Then inside Claude Code, enable remote control with:
 /remote-control
 
 Remote Control connects the Claude app or claude.ai/code to a Claude Code session
-running on your machine, and execution/file access stay local. :contentReference[oaicite:1]{index=1}
+running on your machine, and execution/file access stay local.
 EOF
