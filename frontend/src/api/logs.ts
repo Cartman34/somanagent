@@ -3,6 +3,7 @@ import type { LogEvent, LogOccurrence } from '@/types'
 
 export interface LogFilters {
   source?: string
+  category?: string
   level?: string
   projectId?: string
   taskId?: string
@@ -17,6 +18,11 @@ export interface LogFilters {
 export const logsApi = {
   listOccurrences: async (filters: LogFilters): Promise<{ data: LogOccurrence[]; total: number; page: number; limit: number }> => {
     const { data } = await apiClient.get('/logs/occurrences', { params: filters })
+    return data
+  },
+
+  listEvents: async (filters: LogFilters): Promise<{ data: LogEvent[]; total: number; page: number; limit: number }> => {
+    const { data } = await apiClient.get('/logs/events', { params: filters })
     return data
   },
 

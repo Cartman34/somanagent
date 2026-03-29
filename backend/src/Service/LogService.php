@@ -12,6 +12,8 @@ use Symfony\Component\Uid\Uuid;
 
 final class LogService
 {
+    private const OCCURRENCE_LEVELS = ['warning', 'error', 'critical'];
+
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly LogOccurrenceRepository $occurrenceRepository,
@@ -56,7 +58,7 @@ final class LogService
 
         $this->em->persist($event);
 
-        if ($category === 'error' && $event->getFingerprint() !== null) {
+        if ($this->shouldAggregateOccurrence($event) && $event->getFingerprint() !== null) {
             $occurrence = $this->occurrenceRepository->findOneByFingerprint($category, $level, $event->getFingerprint());
             if ($occurrence === null) {
                 $occurrence = (new LogOccurrence($category, $level, $event->getFingerprint(), $title, $message, $source))
@@ -76,6 +78,23 @@ final class LogService
         return $event;
     }
 
+    /**
+     * Records an exception as an error event while preserving the caller-provided correlation identifiers and context.
+     *
+     * @param array{
+     *   fingerprint?: string|null,
+     *   project_id?: string|null,
+     *   task_id?: string|null,
+     *   agent_id?: string|null,
+     *   exchange_ref?: string|null,
+     *   request_ref?: string|null,
+     *   trace_ref?: string|null,
+     *   context?: array|null,
+     *   stack?: string|null,
+     *   origin?: string|null,
+     *   raw_payload?: array|null
+     * } $options
+     */
     public function recordError(string $source, string $title, \Throwable $exception, array $options = []): LogEvent
     {
         $context = $options['context'] ?? [];
@@ -94,6 +113,14 @@ final class LogService
                 'origin' => $exception->getFile() . ':' . $exception->getLine(),
             ],
         );
+    }
+
+    /**
+     * Aggregates warnings and errors into occurrences so non-fatal frontend/infra degradations stay visible in the Logs UI.
+     */
+    private function shouldAggregateOccurrence(LogEvent $event): bool
+    {
+        return in_array($event->getLevel(), self::OCCURRENCE_LEVELS, true);
     }
 
     private function buildFingerprint(string $source, string $category, string $level, string $title, string $message, array $options): string

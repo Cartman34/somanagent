@@ -25,6 +25,49 @@
 { "status": "degraded", "loggedIn": false, "authMethod": "none", "apiProvider": "firstParty", "error": null }
 ```
 
+Quand l’état est `degraded`, l’API enregistre aussi une occurrence de logs `infra` (`health` ou `auth`) pour rendre la dégradation visible dans `/logs`.
+
+---
+
+## Logs
+
+### `GET /api/logs/occurrences`
+Liste les occurrences agrégées. Filtres disponibles :
+- `source`
+- `category`
+- `level`
+- `projectId`
+- `taskId`
+- `agentId`
+- `status`
+- `from`
+- `to`
+- `page`
+- `limit`
+
+### `GET /api/logs/occurrences/{id}`
+Retourne une occurrence agrégée et les événements associés.
+
+### `GET /api/logs/events`
+Retourne les événements bruts paginés avec filtres `source`, `category`, `level`, `projectId`, `taskId`, `agentId`, `from`, `to`, `page`, `limit`.
+
+### `POST /api/logs/events`
+Point d’ingestion pour les événements observabilité côté client.
+
+Body minimal :
+```json
+{
+  "source": "frontend",
+  "category": "runtime",
+  "level": "error",
+  "title": "Erreur frontend non interceptée",
+  "message": "Cannot read properties of undefined"
+}
+```
+
+Sources acceptées : `frontend`, `infra`.
+Niveaux acceptés : `info`, `warning`, `error`, `critical`.
+
 ---
 
 ## Projets

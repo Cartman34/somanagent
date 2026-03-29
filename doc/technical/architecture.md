@@ -10,6 +10,12 @@ SoManAgent is a **full-stack** application composed of:
 - A **PostgreSQL 16** database
 - A `skills/` directory containing SKILL.md files
 
+The centralized observability chain is shared across layers:
+- backend and worker services record log events through `LogService`
+- the frontend can ingest runtime/API failures through `POST /api/logs/events`
+- infra degradations are surfaced as `infra` log events from health endpoints
+- warning/error/critical events are aggregated into `LogOccurrence` for the `/logs` UI
+
 ## Hexagonal Architecture (Partial)
 
 The hexagonal architecture is applied **only to external integration points** (AI, VCS, Skills), not to the entire application. Symfony and Doctrine are fixed choices.
@@ -75,7 +81,17 @@ src/
 ### Controllers
 Controllers are **thin**: they decode the request, call a service, and return JSON.
 
+When a Symfony method uses both a PHPDoc block and PHP attributes such as `#[Route(...)]`, keep the order:
+- PHPDoc first
+- attribute second
+- method declaration last
+
+This keeps the style consistent across controllers and makes reviews predictable.
+
 ```php
+/**
+ * Creates a project from the request payload.
+ */
 #[Route('/api/projects', methods: ['POST'])]
 public function create(Request $request): JsonResponse
 {
