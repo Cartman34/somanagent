@@ -128,11 +128,13 @@ final class LogController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->createForField('message', 'logs.ingest.invalid_json'), 400);
         }
 
+        $titleI18n = $this->readI18nPayload($payload, 'titleI18n');
+        $messageI18n = $this->readI18nPayload($payload, 'messageI18n');
         $source = $this->sanitizeSource($payload['source'] ?? null);
         $category = $this->sanitizeCategory($payload['category'] ?? null);
         $level = $this->sanitizeLevel($payload['level'] ?? null);
-        $title = $this->sanitizeTitle($payload['title'] ?? null);
-        $message = $this->sanitizeMessage($payload['message'] ?? null);
+        $title = $this->sanitizeTitle($payload['title'] ?? null) ?? ($titleI18n !== null ? '' : null);
+        $message = $this->sanitizeMessage($payload['message'] ?? null) ?? ($messageI18n !== null ? '' : null);
 
         if ($source === null || $category === null || $level === null || $title === null || $message === null) {
             return $this->json($this->apiErrorPayloadFactory->createForField('message', 'logs.ingest.invalid_fields'), 400);
@@ -162,6 +164,8 @@ final class LogController extends AbstractController
                 'stack' => $this->readNullableString($payload, 'stack'),
                 'origin' => $this->readNullableString($payload, 'origin'),
                 'raw_payload' => $rawPayload,
+                'title_i18n' => $titleI18n,
+                'message_i18n' => $messageI18n,
             ],
         );
 
@@ -286,5 +290,30 @@ final class LogController extends AbstractController
         $value = $payload[$key] ?? null;
 
         return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    /**
+     * @return array{domain: string, key: string, parameters?: array<string, scalar|null>}|null
+     */
+    private function readI18nPayload(array $payload, string $key): ?array
+    {
+        $value = $payload[$key] ?? null;
+        if (!is_array($value)) {
+            return null;
+        }
+
+        $domain = $value['domain'] ?? null;
+        $translationKey = $value['key'] ?? null;
+        if (!is_string($domain) || $domain === '' || !is_string($translationKey) || $translationKey === '') {
+            return null;
+        }
+
+        $parameters = is_array($value['parameters'] ?? null) ? $value['parameters'] : [];
+
+        return [
+            'domain' => $domain,
+            'key' => $translationKey,
+            'parameters' => $parameters,
+        ];
     }
 }

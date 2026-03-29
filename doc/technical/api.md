@@ -71,10 +71,21 @@ Body minimal :
   "source": "frontend",
   "category": "runtime",
   "level": "error",
-  "title": "Erreur frontend non interceptée",
-  "message": "Cannot read properties of undefined"
+  "titleI18n": {
+    "domain": "logs",
+    "key": "logs.runtime.unexpected_frontend_error.title"
+  },
+  "messageI18n": {
+    "domain": "logs",
+    "key": "logs.runtime.unexpected_frontend_error.message",
+    "parameters": {
+      "%details%": "Cannot read properties of undefined"
+    }
+  }
 }
 ```
+
+`title` et `message` peuvent encore être fournis pendant la transition, mais les nouveaux événements frontend doivent privilégier `titleI18n` et `messageI18n` comme source canonique persistée.
 
 Sources acceptées : `frontend`, `infra`.
 Niveaux acceptés : `info`, `warning`, `error`, `critical`.

@@ -101,15 +101,17 @@ docker exec somanagent_db psql -U somanagent -d somanagent -c "SELECT source, ca
 1. Apply any pending corrections
 2. Clean `local/changes-list.md` (empty the Completed section)
 3. Clean `local/changes-review.md` (reset to "Aucune review en cours.")
-4. `git checkout -b feat/…` (or `fix/…` for `[FIX]` items) if not already on a feature branch
+4. `git checkout -b feat/…` (or `fix/…` for `[FIX]` items) if not already on a feature branch — **before the commit**
 5. `git add . && git commit`
-6. *(`review async` only)* `git checkout main`
-7. `git push -u origin <branch>`
-8. Write PR body with the **Write tool** to `/tmp/pr_body.md` (read first if it already exists), then:
+6. `git push -u origin <branch>`
+7. Write PR body with the **Write tool** to `/tmp/pr_body.md` (read first if it already exists), then:
    ```
    php scripts/github.php pr create --title "..." --head <branch> --body-file /tmp/pr_body.md
    ```
    The script reads and deletes the file automatically.
+8. **Stay on the feature branch** — do NOT `git checkout main` unless `review async` was requested.
+
+**`review async` only:** insert `git checkout main` between steps 6 and 7.
 
 **Branch and title prefix:**
 - All `[FIX]` items → `fix/…` branch, `🐛 Bug: …` title, PR body with **Type : Anomalie**

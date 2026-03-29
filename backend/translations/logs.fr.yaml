@@ -19,9 +19,10 @@ logs:
   runtime:
     unexpected_frontend_error:
       title: 'Erreur frontend non interceptée'
+      message: 'Erreur frontend non interceptée: %details%'
     unhandled_rejection:
       title: 'Promesse rejetée sans gestionnaire'
-      message: 'Promesse rejetée sans détail exploitable'
+      message: 'Promesse rejetée sans gestionnaire: %details%'
   connectivity:
     offline:
       title: 'Navigateur hors ligne'
@@ -32,6 +33,7 @@ logs:
   http:
     frontend_api_failure:
       title: 'Échec d’appel API frontend'
+      message: 'Échec d’appel API frontend (%method% %url%, statut %status%): %details%'
   health:
     degraded_connectors:
       title: 'Connecteurs dégradés'

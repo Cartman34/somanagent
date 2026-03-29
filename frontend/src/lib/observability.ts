@@ -3,6 +3,13 @@ const MAX_STACK_LENGTH = 12_000
 
 type FrontendLogLevel = 'info' | 'warning' | 'error' | 'critical'
 type FrontendLogCategory = 'runtime' | 'http' | 'connectivity'
+type FrontendLogI18nDomain = 'logs'
+
+interface FrontendLogI18n {
+  domain: FrontendLogI18nDomain
+  key: string
+  parameters?: Record<string, string | number | boolean | null>
+}
 
 interface FrontendLogPayload {
   source: 'frontend'
@@ -10,6 +17,8 @@ interface FrontendLogPayload {
   level: FrontendLogLevel
   title: string
   message: string
+  titleI18n?: FrontendLogI18n
+  messageI18n?: FrontendLogI18n
   fingerprint?: string
   origin?: string
   stack?: string
@@ -36,10 +45,19 @@ export function installFrontendObservability() {
       source: 'frontend',
       category: 'runtime',
       level: 'error',
-      // Stored in DB for the in-app log UI, so the human-facing message stays in French.
-      title: 'Erreur frontend non interceptée',
-      // Stored in DB for the in-app log UI, so the human-facing message stays in French.
-      message: error?.message || event.message || 'Erreur frontend non interceptée',
+      title: '',
+      message: '',
+      titleI18n: {
+        domain: 'logs',
+        key: 'logs.runtime.unexpected_frontend_error.title',
+      },
+      messageI18n: {
+        domain: 'logs',
+        key: 'logs.runtime.unexpected_frontend_error.message',
+        parameters: {
+          '%details%': error?.message || event.message || 'Unknown frontend error',
+        },
+      },
       fingerprint: buildFingerprint(
         'runtime',
         error?.name || 'ErrorEvent',
@@ -71,9 +89,19 @@ export function installFrontendObservability() {
       source: 'frontend',
       category: 'runtime',
       level: 'error',
-      // Stored in DB for the in-app log UI, so the human-facing message stays in French.
-      title: 'Promesse rejetée sans gestionnaire',
-      message,
+      title: '',
+      message: '',
+      titleI18n: {
+        domain: 'logs',
+        key: 'logs.runtime.unhandled_rejection.title',
+      },
+      messageI18n: {
+        domain: 'logs',
+        key: 'logs.runtime.unhandled_rejection.message',
+        parameters: {
+          '%details%': message,
+        },
+      },
       fingerprint: buildFingerprint(
         'runtime',
         reason instanceof Error ? reason.name : 'UnhandledRejection',
@@ -98,10 +126,16 @@ export function installFrontendObservability() {
       source: 'frontend',
       category: 'connectivity',
       level: 'warning',
-      // Stored in DB for the in-app log UI, so the human-facing message stays in French.
-      title: 'Navigateur hors ligne',
-      // Stored in DB for the in-app log UI, so the human-facing message stays in French.
-      message: 'Le navigateur a perdu sa connectivité réseau.',
+      title: '',
+      message: '',
+      titleI18n: {
+        domain: 'logs',
+        key: 'logs.connectivity.offline.title',
+      },
+      messageI18n: {
+        domain: 'logs',
+        key: 'logs.connectivity.offline.message',
+      },
       fingerprint: buildFingerprint('connectivity', 'offline', window.location.pathname),
       context: {
         pathname: window.location.pathname,
@@ -115,10 +149,16 @@ export function installFrontendObservability() {
       source: 'frontend',
       category: 'connectivity',
       level: 'info',
-      // Stored in DB for the in-app log UI, so the human-facing message stays in French.
-      title: 'Navigateur reconnecté',
-      // Stored in DB for the in-app log UI, so the human-facing message stays in French.
-      message: 'Le navigateur a retrouvé sa connectivité réseau après une coupure.',
+      title: '',
+      message: '',
+      titleI18n: {
+        domain: 'logs',
+        key: 'logs.connectivity.online.title',
+      },
+      messageI18n: {
+        domain: 'logs',
+        key: 'logs.connectivity.online.message',
+      },
       fingerprint: buildFingerprint('connectivity', 'online', window.location.pathname),
       context: {
         pathname: window.location.pathname,
@@ -142,17 +182,29 @@ export function reportApiFailure(details: {
     return
   }
 
-  // Stored in DB for the in-app log UI, so the human-facing message stays in French.
-  const message = details.responseMessage || 'Échec d’appel API frontend'
+  const message = details.responseMessage || 'Frontend API request failed'
   const url = details.url || window.location.pathname
 
   reportFrontendLog({
     source: 'frontend',
     category: 'http',
     level: details.status && details.status >= 500 ? 'error' : 'warning',
-    // Stored in DB for the in-app log UI, so the human-facing message stays in French.
-    title: 'Échec d’appel API frontend',
-    message,
+    title: '',
+    message: '',
+    titleI18n: {
+      domain: 'logs',
+      key: 'logs.http.frontend_api_failure.title',
+    },
+    messageI18n: {
+      domain: 'logs',
+      key: 'logs.http.frontend_api_failure.message',
+      parameters: {
+        '%method%': details.method || 'GET',
+        '%url%': url,
+        '%status%': details.status ?? 'network',
+        '%details%': message,
+      },
+    },
     fingerprint: buildFingerprint(
       'http',
       String(details.status || 'network'),
@@ -208,8 +260,7 @@ function extractRejectionMessage(reason: unknown): string {
     return reason
   }
 
-  // Stored in DB for the in-app log UI, so the human-facing message stays in French.
-  return 'Promesse rejetée sans détail exploitable'
+  return 'Unhandled rejection without usable detail'
 }
 
 /**
