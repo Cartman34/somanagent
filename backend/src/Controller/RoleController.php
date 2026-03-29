@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\ApiErrorPayloadFactory;
 use App\Service\RoleService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -14,7 +15,10 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/roles')]
 class RoleController extends AbstractController
 {
-    public function __construct(private readonly RoleService $roleService) {}
+    public function __construct(
+        private readonly RoleService $roleService,
+        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
+    ) {}
 
     #[Route('', name: 'role_list', methods: ['GET'])]
     public function list(): JsonResponse
@@ -36,7 +40,7 @@ class RoleController extends AbstractController
     {
         $data = $request->toArray();
         if (empty($data['slug']) || empty($data['name'])) {
-            return $this->json(['error' => 'Les champs "slug" et "name" sont obligatoires.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('roles.validation.slug_name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $role = $this->roleService->create($data['slug'], $data['name'], $data['description'] ?? null);
@@ -48,7 +52,7 @@ class RoleController extends AbstractController
     {
         $role = $this->roleService->findById($id);
         if ($role === null) {
-            return $this->json(['error' => 'Rôle introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('roles.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json([
@@ -72,7 +76,7 @@ class RoleController extends AbstractController
     {
         $role = $this->roleService->findById($id);
         if ($role === null) {
-            return $this->json(['error' => 'Rôle introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('roles.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
@@ -90,7 +94,7 @@ class RoleController extends AbstractController
     {
         $role = $this->roleService->findById($id);
         if ($role === null) {
-            return $this->json(['error' => 'Rôle introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('roles.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->roleService->delete($role);
@@ -104,18 +108,18 @@ class RoleController extends AbstractController
     {
         $role = $this->roleService->findById($id);
         if ($role === null) {
-            return $this->json(['error' => 'Rôle introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('roles.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
         if (empty($data['skillId'])) {
-            return $this->json(['error' => 'Le champ "skillId" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('roles.validation.skill_id_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         try {
             $this->roleService->addSkill($role, $data['skillId']);
         } catch (\InvalidArgumentException $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json(null, Response::HTTP_NO_CONTENT);
@@ -126,13 +130,13 @@ class RoleController extends AbstractController
     {
         $role = $this->roleService->findById($id);
         if ($role === null) {
-            return $this->json(['error' => 'Rôle introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('roles.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         try {
             $this->roleService->removeSkill($role, $skillId);
         } catch (\InvalidArgumentException $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json(null, Response::HTTP_NO_CONTENT);

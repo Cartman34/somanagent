@@ -4,6 +4,11 @@
 
 Scripts are located in `scripts/`. All PHP scripts follow this convention: a **commented header** just after the shebang, with `Description:` and `Usage:` tags.
 
+Project rule:
+- always use a script from `scripts/` first when it already covers the operation
+- only fall back to direct `docker exec`, raw `bin/console`, or container-specific commands when no script exists
+- this keeps commands shorter, more consistent, and cheaper to use during day-to-day work
+
 ```bash
 # See all available scripts
 php scripts/help.php
@@ -144,6 +149,8 @@ php scripts/logs.php db       # PostgreSQL logs
 php scripts/logs.php node     # Vite logs
 php scripts/logs.php nginx    # Nginx logs
 ```
+
+Use this script in priority instead of raw `docker logs` when the target container is supported.
 
 ---
 

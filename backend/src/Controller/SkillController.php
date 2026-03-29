@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\ApiErrorPayloadFactory;
 use App\Service\SkillService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -14,7 +15,10 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/skills')]
 class SkillController extends AbstractController
 {
-    public function __construct(private readonly SkillService $skillService) {}
+    public function __construct(
+        private readonly SkillService $skillService,
+        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
+    ) {}
 
     #[Route('', name: 'skill_list', methods: ['GET'])]
     public function list(): JsonResponse
@@ -35,7 +39,7 @@ class SkillController extends AbstractController
     {
         $skill = $this->skillService->findById($id);
         if ($skill === null) {
-            return $this->json(['error' => 'Skill introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('skills.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json([
@@ -57,7 +61,7 @@ class SkillController extends AbstractController
     {
         $data = $request->toArray();
         if (empty($data['source'])) {
-            return $this->json(['error' => 'Le champ "source" (ex: owner/skill-name) est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('skills.validation.source_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $skill = $this->skillService->importFromRegistry($data['source']);
@@ -69,7 +73,7 @@ class SkillController extends AbstractController
     {
         $data = $request->toArray();
         if (empty($data['slug']) || empty($data['name']) || empty($data['content'])) {
-            return $this->json(['error' => 'Les champs "slug", "name" et "content" sont obligatoires.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('skills.validation.create_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $skill = $this->skillService->createCustom($data['slug'], $data['name'], $data['content'], $data['description'] ?? null);
@@ -81,12 +85,12 @@ class SkillController extends AbstractController
     {
         $skill = $this->skillService->findById($id);
         if ($skill === null) {
-            return $this->json(['error' => 'Skill introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('skills.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
         if (empty($data['content'])) {
-            return $this->json(['error' => 'Le champ "content" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('skills.validation.content_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $this->skillService->updateContent($skill, $data['content']);
@@ -98,7 +102,7 @@ class SkillController extends AbstractController
     {
         $skill = $this->skillService->findById($id);
         if ($skill === null) {
-            return $this->json(['error' => 'Skill introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('skills.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->skillService->delete($skill);

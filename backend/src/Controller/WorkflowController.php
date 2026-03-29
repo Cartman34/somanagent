@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Enum\WorkflowTrigger;
+use App\Service\ApiErrorPayloadFactory;
 use App\Service\WorkflowService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -15,7 +16,10 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/workflows')]
 class WorkflowController extends AbstractController
 {
-    public function __construct(private readonly WorkflowService $workflowService) {}
+    public function __construct(
+        private readonly WorkflowService $workflowService,
+        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
+    ) {}
 
     #[Route('', name: 'workflow_list', methods: ['GET'])]
     public function list(): JsonResponse
@@ -39,7 +43,7 @@ class WorkflowController extends AbstractController
     {
         $data = $request->toArray();
         if (empty($data['name'])) {
-            return $this->json(['error' => 'The "name" field is required.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('workflows.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $trigger  = WorkflowTrigger::tryFrom($data['trigger'] ?? 'manual') ?? WorkflowTrigger::Manual;
@@ -58,7 +62,7 @@ class WorkflowController extends AbstractController
     {
         $workflow = $this->workflowService->findById($id);
         if ($workflow === null) {
-            return $this->json(['error' => 'Workflow not found.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('workflows.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json([
@@ -93,11 +97,11 @@ class WorkflowController extends AbstractController
     {
         $workflow = $this->workflowService->findById($id);
         if ($workflow === null) {
-            return $this->json(['error' => 'Workflow not found.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('workflows.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         if (!$workflow->isEditable()) {
-            return $this->json(['error' => 'This workflow is locked and cannot be modified.'], Response::HTTP_CONFLICT);
+            return $this->json($this->apiErrorPayloadFactory->create('workflows.error.locked_update'), Response::HTTP_CONFLICT);
         }
 
         $data    = $request->toArray();
@@ -119,13 +123,13 @@ class WorkflowController extends AbstractController
     {
         $workflow = $this->workflowService->findById($id);
         if ($workflow === null) {
-            return $this->json(['error' => 'Workflow not found.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('workflows.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         try {
             $this->workflowService->validate($workflow);
         } catch (\LogicException $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_CONFLICT);
+            return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_CONFLICT);
         }
 
         return $this->json(['id' => (string) $workflow->getId(), 'status' => $workflow->getStatus()->value]);
@@ -136,11 +140,11 @@ class WorkflowController extends AbstractController
     {
         $workflow = $this->workflowService->findById($id);
         if ($workflow === null) {
-            return $this->json(['error' => 'Workflow not found.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('workflows.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         if (!$workflow->isEditable()) {
-            return $this->json(['error' => 'This workflow is locked and cannot be deleted.'], Response::HTTP_CONFLICT);
+            return $this->json($this->apiErrorPayloadFactory->create('workflows.error.locked_delete'), Response::HTTP_CONFLICT);
         }
 
         $this->workflowService->delete($workflow);

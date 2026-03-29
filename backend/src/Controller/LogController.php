@@ -8,6 +8,7 @@ use App\Entity\LogEvent;
 use App\Entity\LogOccurrence;
 use App\Repository\LogEventRepository;
 use App\Repository\LogOccurrenceRepository;
+use App\Service\ApiErrorPayloadFactory;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,6 +21,7 @@ final class LogController extends AbstractController
         private readonly LogOccurrenceRepository $occurrenceRepository,
         private readonly LogEventRepository $eventRepository,
         private readonly \App\Service\LogService $logService,
+        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
     ) {}
 
     /**
@@ -121,7 +123,7 @@ final class LogController extends AbstractController
     {
         $payload = json_decode($request->getContent(), true);
         if (!is_array($payload)) {
-            return $this->json(['message' => 'Invalid JSON payload.'], 400);
+            return $this->json($this->apiErrorPayloadFactory->createForField('message', 'logs.ingest.invalid_json'), 400);
         }
 
         $source = $this->sanitizeSource($payload['source'] ?? null);
@@ -131,7 +133,7 @@ final class LogController extends AbstractController
         $message = $this->sanitizeMessage($payload['message'] ?? null);
 
         if ($source === null || $category === null || $level === null || $title === null || $message === null) {
-            return $this->json(['message' => 'Missing or invalid log event fields.'], 400);
+            return $this->json($this->apiErrorPayloadFactory->createForField('message', 'logs.ingest.invalid_fields'), 400);
         }
 
         $context = is_array($payload['context'] ?? null) ? $payload['context'] : null;

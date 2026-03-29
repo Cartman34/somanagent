@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Enum\FeatureStatus;
+use App\Service\ApiErrorPayloadFactory;
 use App\Service\FeatureService;
 use App\Service\ProjectService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -19,6 +20,7 @@ class FeatureController extends AbstractController
     public function __construct(
         private readonly FeatureService $featureService,
         private readonly ProjectService $projectService,
+        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
     ) {}
 
     #[Route('/projects/{projectId}/features', name: 'feature_list', methods: ['GET'])]
@@ -26,7 +28,7 @@ class FeatureController extends AbstractController
     {
         $project = $this->projectService->findById($projectId);
         if ($project === null) {
-            return $this->json(['error' => 'Projet introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('features.error.project_not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json(array_map(fn($f) => [
@@ -44,12 +46,12 @@ class FeatureController extends AbstractController
     {
         $project = $this->projectService->findById($projectId);
         if ($project === null) {
-            return $this->json(['error' => 'Projet introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('features.error.project_not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
         if (empty($data['name'])) {
-            return $this->json(['error' => 'Le champ "name" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('features.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $feature = $this->featureService->create($project, $data['name'], $data['description'] ?? null);
@@ -61,7 +63,7 @@ class FeatureController extends AbstractController
     {
         $feature = $this->featureService->findById($id);
         if ($feature === null) {
-            return $this->json(['error' => 'Feature introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('features.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json([
@@ -80,7 +82,7 @@ class FeatureController extends AbstractController
     {
         $feature = $this->featureService->findById($id);
         if ($feature === null) {
-            return $this->json(['error' => 'Feature introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('features.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data   = $request->toArray();
@@ -94,7 +96,7 @@ class FeatureController extends AbstractController
     {
         $feature = $this->featureService->findById($id);
         if ($feature === null) {
-            return $this->json(['error' => 'Feature introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('features.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->featureService->delete($feature);

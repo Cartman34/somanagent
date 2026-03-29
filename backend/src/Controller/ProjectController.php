@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Repository\AuditLogRepository;
+use App\Service\ApiErrorPayloadFactory;
 use App\Service\ProjectService;
 use App\Service\TokenUsageService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -20,6 +21,7 @@ class ProjectController extends AbstractController
         private readonly ProjectService    $projectService,
         private readonly AuditLogRepository $auditLogRepository,
         private readonly TokenUsageService  $tokenUsageService,
+        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
     ) {}
 
     #[Route('', name: 'project_list', methods: ['GET'])]
@@ -42,7 +44,7 @@ class ProjectController extends AbstractController
     {
         $data = $request->toArray();
         if (empty($data['name'])) {
-            return $this->json(['error' => 'Le champ "name" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('projects.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $project = $this->projectService->create(
@@ -67,7 +69,7 @@ class ProjectController extends AbstractController
     {
         $project = $this->projectService->findById($id);
         if ($project === null) {
-            return $this->json(['error' => 'Projet introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('projects.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json([
@@ -94,7 +96,7 @@ class ProjectController extends AbstractController
     {
         $project = $this->projectService->findById($id);
         if ($project === null) {
-            return $this->json(['error' => 'Projet introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('projects.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
@@ -117,7 +119,7 @@ class ProjectController extends AbstractController
     {
         $project = $this->projectService->findById($id);
         if ($project === null) {
-            return $this->json(['error' => 'Projet introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('projects.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->projectService->delete($project);
@@ -132,7 +134,7 @@ class ProjectController extends AbstractController
     {
         $project = $this->projectService->findById($id);
         if ($project === null) {
-            return $this->json(['error' => 'Projet introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('projects.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $page  = max(1, (int) $request->query->get('page', 1));
@@ -164,7 +166,7 @@ class ProjectController extends AbstractController
     {
         $project = $this->projectService->findById($id);
         if ($project === null) {
-            return $this->json(['error' => 'Projet introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('projects.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json($this->tokenUsageService->getProjectTokens($project));
@@ -177,12 +179,12 @@ class ProjectController extends AbstractController
     {
         $project = $this->projectService->findById($id);
         if ($project === null) {
-            return $this->json(['error' => 'Projet introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('projects.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
         if (empty($data['name'])) {
-            return $this->json(['error' => 'Le champ "name" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('projects.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $module = $this->projectService->addModule($project, $data['name'], $data['description'] ?? null, $data['repositoryUrl'] ?? null, $data['stack'] ?? null);
@@ -199,7 +201,7 @@ class ProjectController extends AbstractController
     {
         $module = $this->projectService->findModuleById($id);
         if ($module === null) {
-            return $this->json(['error' => 'Module introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('projects.modules.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data   = $request->toArray();
@@ -212,7 +214,7 @@ class ProjectController extends AbstractController
     {
         $module = $this->projectService->findModuleById($id);
         if ($module === null) {
-            return $this->json(['error' => 'Module introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('projects.modules.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->projectService->deleteModule($module);

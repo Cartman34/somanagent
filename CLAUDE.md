@@ -65,14 +65,13 @@ Use `doc/` as the source of truth for product, technical and development documen
 ### Useful verification commands
 
 ```bash
-docker exec somanagent_php php /var/www/backend/bin/console cache:clear
-docker exec somanagent_php php /var/www/backend/bin/console somanagent:task:redispatch --latest
-docker exec somanagent_php php /var/www/backend/bin/console somanagent:task:redispatch <task-id> --sync
-docker exec somanagent_php php /var/www/backend/bin/console somanagent:agent:hello <projectId> <agentId> --message=Salut
-docker exec somanagent_php claude auth status
-docker exec somanagent_worker claude auth status
+php scripts/console.php cache:clear
+php scripts/console.php somanagent:task:redispatch --latest
+php scripts/console.php somanagent:task:redispatch <task-id> --sync
+php scripts/console.php somanagent:agent:hello <projectId> <agentId> --message=Salut
+php scripts/claude-auth.php status
 docker exec somanagent_node npm run type-check
-docker logs somanagent_worker --tail 120
+php scripts/logs.php worker --tail 120
 docker exec somanagent_db psql -U somanagent -d somanagent -c "SELECT source, category, level, title, occurred_at FROM log_event ORDER BY occurred_at DESC LIMIT 20;"
 ```
 
@@ -131,6 +130,10 @@ Merge the current open PR: `php scripts/github.php pr merge <number>`, then `git
 
 - Keep `doc/` up to date with code changes.
 - `doc/README.md` is the documentation index and must be updated when a new doc file is added.
+- Always use project scripts in `scripts/` first when they cover the need.
+- Prefer `php scripts/console.php ...`, `php scripts/logs.php ...`, `php scripts/dev.php ...`, `php scripts/health.php ...` and similar wrappers over direct `docker exec`, `bin/console`, or raw container commands.
+- Only fall back to direct Docker or container commands when no project script exists for that operation.
+- This rule is also about efficiency: using the project wrappers reduces command verbosity and unnecessary token usage.
 - UI text is French.
 - Technical source content is English:
   - code

@@ -163,6 +163,16 @@ class Project
 ### Ports and Adapters
 Adapters implement the port. Selection is handled via `AgentPortRegistry` (Symfony tagged services) for AI agents, and via direct injection for VCS.
 
+### Development Command Rule
+
+When a project script already exists in `scripts/`, use it in priority over direct container commands.
+
+Examples:
+- prefer `php scripts/console.php cache:clear` over `docker exec ... bin/console cache:clear`
+- prefer `php scripts/logs.php worker` over raw `docker logs ...`
+
+Direct Docker commands remain acceptable only when no script covers the operation.
+
 ## Tech Stack
 
 | Component | Technology | Version |

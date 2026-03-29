@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Enum\ConnectorType;
 use App\Repository\AgentRepository;
 use App\Service\AgentService;
+use App\Service\ApiErrorPayloadFactory;
 use App\ValueObject\AgentConfig;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -20,6 +21,7 @@ class AgentController extends AbstractController
     public function __construct(
         private readonly AgentService    $agentService,
         private readonly AgentRepository $agentRepository,
+        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
     ) {}
 
     #[Route('', name: 'agent_list', methods: ['GET'])]
@@ -44,7 +46,7 @@ class AgentController extends AbstractController
     {
         $data = $request->toArray();
         if (empty($data['name'])) {
-            return $this->json(['error' => 'Le champ "name" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('agents.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $connector = ConnectorType::from($data['connector'] ?? ConnectorType::ClaudeApi->value);
@@ -60,7 +62,7 @@ class AgentController extends AbstractController
     {
         $agent = $this->agentService->findById($id);
         if ($agent === null) {
-            return $this->json(['error' => 'Agent introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('agents.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json([
@@ -81,7 +83,7 @@ class AgentController extends AbstractController
     {
         $agent = $this->agentService->findById($id);
         if ($agent === null) {
-            return $this->json(['error' => 'Agent introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('agents.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data      = $request->toArray();
@@ -97,7 +99,7 @@ class AgentController extends AbstractController
     {
         $agent = $this->agentService->findById($id);
         if ($agent === null) {
-            return $this->json(['error' => 'Agent introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('agents.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->agentService->delete($agent);
@@ -120,7 +122,7 @@ class AgentController extends AbstractController
     {
         $agent = $this->agentService->findById($id);
         if ($agent === null) {
-            return $this->json(['error' => 'Agent introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('agents.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $activeTaskCount = $this->agentRepository->countInProgressTasks($agent);

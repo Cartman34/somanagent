@@ -8,3 +8,95 @@ common:
 errors:
   generic:
     unexpected: 'Une erreur inattendue est survenue.'
+
+agents:
+  error:
+    not_found: 'Agent introuvable.'
+  validation:
+    name_required: 'Le champ "name" est obligatoire.'
+
+chat:
+  error:
+    project_or_agent_not_found: 'Projet ou agent introuvable.'
+  validation:
+    content_required: 'Le champ "content" est obligatoire.'
+
+features:
+  error:
+    not_found: 'Feature introuvable.'
+    project_not_found: 'Projet introuvable.'
+  validation:
+    name_required: 'Le champ "name" est obligatoire.'
+
+logs:
+  ingest:
+    invalid_json: 'La charge JSON est invalide.'
+    invalid_fields: 'Les champs de log sont manquants ou invalides.'
+
+projects:
+  error:
+    not_found: 'Projet introuvable.'
+  modules:
+    error:
+      not_found: 'Module introuvable.'
+  validation:
+    name_required: 'Le champ "name" est obligatoire.'
+
+roles:
+  error:
+    not_found: 'Rôle introuvable.'
+  validation:
+    skill_id_required: 'Le champ "skillId" est obligatoire.'
+    slug_name_required: 'Les champs "slug" et "name" sont obligatoires.'
+
+skills:
+  error:
+    not_found: 'Skill introuvable.'
+  validation:
+    content_required: 'Le champ "content" est obligatoire.'
+    create_required: 'Les champs "slug", "name" et "content" sont obligatoires.'
+    source_required: 'Le champ "source" (ex: owner/skill-name) est obligatoire.'
+
+tasks:
+  error:
+    not_found: 'Tâche introuvable.'
+  execution:
+    error:
+      agent_not_found: 'Agent introuvable.'
+      no_automatic_execution: 'Aucune exécution automatique disponible pour ce statut.'
+      unsupported_story_or_bug: 'Cette tâche n’est pas une story ou un bug.'
+  rework:
+    error:
+      resume_unavailable: 'La reprise agent depuis le ticket n’est disponible que pour les stories et bugs.'
+      step_unavailable: 'La reprise d’étape agent n’est disponible que pour les stories et bugs.'
+    validation:
+      target_objective_required: 'Les champs "targetKey" et "objective" sont obligatoires.'
+  story:
+    error:
+      unsupported_user_story_or_bug: 'Cette tâche n’est pas une user story ou un bug.'
+      unknown_status: 'Statut story inconnu : %status%.'
+  validation:
+    content_required: 'Le champ "content" est obligatoire.'
+    priority_required: 'Le champ "priority" est obligatoire.'
+    status_required: 'Le champ "status" est obligatoire.'
+    title_required: 'Le champ "title" est obligatoire.'
+
+teams:
+  error:
+    not_found: 'Équipe introuvable.'
+  validation:
+    agent_id_required: 'Le champ "agentId" est obligatoire.'
+    name_required: 'Le champ "name" est obligatoire.'
+
+tokens:
+  agents:
+    error:
+      not_found: 'Agent introuvable.'
+
+workflows:
+  error:
+    locked_delete: 'Ce workflow est verrouillé et ne peut pas être supprimé.'
+    locked_update: 'Ce workflow est verrouillé et ne peut pas être modifié.'
+    not_found: 'Workflow introuvable.'
+  validation:
+    name_required: 'Le champ "name" est obligatoire.'

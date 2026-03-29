@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\ApiErrorPayloadFactory;
 use App\Service\AgentService;
 use App\Service\TokenUsageService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -18,6 +19,7 @@ class TokenController extends AbstractController
     public function __construct(
         private readonly TokenUsageService $tokenUsageService,
         private readonly AgentService      $agentService,
+        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
     ) {}
 
     #[Route('/summary', name: 'token_summary', methods: ['GET'])]
@@ -34,7 +36,7 @@ class TokenController extends AbstractController
     {
         $agent = $this->agentService->findById($agentId);
         if ($agent === null) {
-            return $this->json(['error' => 'Agent introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('tokens.agents.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $limit  = (int) ($request->query->get('limit', 100));
