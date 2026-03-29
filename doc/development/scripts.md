@@ -161,11 +161,16 @@ Wraps a few common GitHub CLI/API flows used during delivery work, especially ar
 ```bash
 php scripts/github.php pr list
 php scripts/github.php pr view 42
-php scripts/github.php pr create --title "My PR" --body "Summary"
-php scripts/github.php pr merge 42 --squash
+php scripts/github.php pr create --title "My PR" --head <branch> --body-file /tmp/pr_body.md
+php scripts/github.php pr merge 42
+php scripts/github.php pr close 42
+php scripts/github.php pr edit 42 --title "Updated title" --body-file /tmp/pr_body.md
 ```
 
-Requires `GITHUB_TOKEN` in `.env` and a detectable `origin` remote pointing to GitHub.
+Notes:
+- `--head <branch>` is required for `pr create`
+- `--body-file <file>` is preferred over `--body` to avoid shell quoting issues; the script reads and deletes the file automatically
+- Requires `GITHUB_TOKEN` in `.env` and a detectable `origin` remote pointing to GitHub.
 
 ---
 
