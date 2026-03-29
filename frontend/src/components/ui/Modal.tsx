@@ -18,8 +18,12 @@ const sizes = {
   '2xl': 'max-w-7xl',
 }
 
+/**
+ * Renders a reusable modal dialog with overlay-close and Escape handling while protecting text selections from accidental close.
+ */
 export default function Modal({ open, onClose, title, children, size = 'md' }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null)
+  const overlayPointerDownRef = useRef(false)
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -36,7 +40,17 @@ export default function Modal({ open, onClose, title, children, size = 'md' }: M
       ref={overlayRef}
       className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto p-3 sm:p-4"
       style={{ background: 'rgba(0, 0, 0, 0.58)' }}
-      onClick={(e) => { if (e.target === overlayRef.current) onClose() }}
+      onMouseDown={(e) => {
+        overlayPointerDownRef.current = e.target === overlayRef.current
+      }}
+      onClick={(e) => {
+        const shouldClose = overlayPointerDownRef.current && e.target === overlayRef.current
+        overlayPointerDownRef.current = false
+
+        if (shouldClose) {
+          onClose()
+        }
+      }}
     >
       <div
         className={clsx('my-3 sm:my-4 flex w-full flex-col overflow-hidden', sizes[size])}

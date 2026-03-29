@@ -101,6 +101,19 @@ public function create(Request $request): JsonResponse
 }
 ```
 
+### TypeScript and React
+
+JSDoc/TSDoc is mandatory on application code:
+- every exported component, hook, function and utility
+- every non-trivial internal helper
+
+The intent is that reusable frontend code can be treated as a black box when needed:
+- the documentation must explain the role
+- the important inputs/outputs
+- the side effects or behavioral constraints worth knowing before reuse
+
+Avoid comments that merely paraphrase the code line by line, but do not omit JSDoc on the assumption that the implementation is "obvious enough".
+
 ### Services
 Services contain the business logic and call the repositories.
 
