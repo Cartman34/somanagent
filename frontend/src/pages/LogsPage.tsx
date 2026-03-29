@@ -37,6 +37,13 @@ function levelTone(level: string): 'red' | 'orange' | 'blue' | 'gray' {
   return 'gray'
 }
 
+/**
+ * Hides the category badge when it does not add any information beyond the level badge.
+ */
+function shouldRenderCategoryBadge(level: string, category: string) {
+  return category.trim().toLowerCase() !== level.trim().toLowerCase()
+}
+
 function readMessengerMeta(context: Record<string, unknown> | null | undefined) {
   const attempt = typeof context?.messenger_attempt === 'number'
     ? context.messenger_attempt
@@ -118,9 +125,11 @@ function EventCard({ event }: { event: LogEvent }) {
         <span className="rounded-full px-2 py-1 text-xs font-medium" style={badgeStyle(levelTone(event.level))}>
           {event.level}
         </span>
-        <span className="rounded-full px-2 py-1 text-xs" style={badgeStyle(event.category === 'error' ? 'red' : 'blue')}>
-          {event.category}
-        </span>
+        {shouldRenderCategoryBadge(event.level, event.category) && (
+          <span className="rounded-full px-2 py-1 text-xs" style={badgeStyle(event.category === 'error' ? 'red' : 'blue')}>
+            {event.category}
+          </span>
+        )}
         {messenger.attempt !== null && (
           <span className="rounded-full px-2 py-1 text-xs" style={badgeStyle(messenger.isRetry ? 'orange' : 'gray')}>
             tentative {messenger.attempt}
@@ -193,9 +202,11 @@ function OccurrenceDetail({ occurrenceId }: { occurrenceId: string }) {
           <span className="rounded-full px-2 py-1 text-xs font-medium" style={badgeStyle(levelTone(data.occurrence.level))}>
             {data.occurrence.level}
           </span>
-          <span className="rounded-full px-2 py-1 text-xs" style={badgeStyle(data.occurrence.category === 'error' ? 'red' : 'blue')}>
-            {data.occurrence.category}
-          </span>
+          {shouldRenderCategoryBadge(data.occurrence.level, data.occurrence.category) && (
+            <span className="rounded-full px-2 py-1 text-xs" style={badgeStyle(data.occurrence.category === 'error' ? 'red' : 'blue')}>
+              {data.occurrence.category}
+            </span>
+          )}
           <span className="text-xs" style={{ color: 'var(--muted)' }}>{data.occurrence.source}</span>
           <span className="ml-auto text-xs" style={{ color: 'var(--muted)' }}>
             {data.occurrence.occurrenceCount} occurrence{data.occurrence.occurrenceCount > 1 ? 's' : ''}
@@ -417,9 +428,11 @@ export default function LogsPage() {
                         <span className="rounded-full px-2 py-1 text-xs font-medium" style={badgeStyle(levelTone(occurrence.level))}>
                           {occurrence.level}
                         </span>
-                        <span className="rounded-full px-2 py-1 text-xs" style={badgeStyle(occurrence.category === 'error' ? 'red' : 'blue')}>
-                          {occurrence.category}
-                        </span>
+                        {shouldRenderCategoryBadge(occurrence.level, occurrence.category) && (
+                          <span className="rounded-full px-2 py-1 text-xs" style={badgeStyle(occurrence.category === 'error' ? 'red' : 'blue')}>
+                            {occurrence.category}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3 align-top" style={{ color: 'var(--text)' }}>{occurrence.source}</td>
