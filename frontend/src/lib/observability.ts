@@ -172,6 +172,9 @@ export function reportApiFailure(details: {
   })
 }
 
+/**
+ * Sends a frontend observability event to the backend without depending on the shared Axios client.
+ */
 function reportFrontendLog(payload: FrontendLogPayload) {
   const body = JSON.stringify(payload)
 
@@ -193,6 +196,9 @@ function reportFrontendLog(payload: FrontendLogPayload) {
   }).catch(() => undefined)
 }
 
+/**
+ * Normalizes an unhandled rejection reason into a stable human-readable message for logging.
+ */
 function extractRejectionMessage(reason: unknown): string {
   if (reason instanceof Error) {
     return reason.message
@@ -206,6 +212,9 @@ function extractRejectionMessage(reason: unknown): string {
   return 'Promesse rejetée sans détail exploitable'
 }
 
+/**
+ * Caps stack traces before persistence so oversized browser payloads do not flood stored logs.
+ */
 function trimStack(stack?: string | null): string | undefined {
   if (!stack) {
     return undefined
@@ -214,6 +223,9 @@ function trimStack(stack?: string | null): string | undefined {
   return stack.length > MAX_STACK_LENGTH ? stack.slice(0, MAX_STACK_LENGTH) : stack
 }
 
+/**
+ * Builds an origin string compatible with the log event payload from browser filename and position details.
+ */
 function readOrigin(filename?: string, line?: number, column?: number): string | undefined {
   if (!filename) {
     return undefined
@@ -228,6 +240,9 @@ function readOrigin(filename?: string, line?: number, column?: number): string |
   return `${filename}${suffix}`
 }
 
+/**
+ * Serializes arbitrary rejection payloads into a log-friendly structure without throwing during error reporting.
+ */
 function serializeUnknown(value: unknown): Record<string, unknown> | string | null {
   if (value == null) {
     return null
@@ -248,6 +263,9 @@ function serializeUnknown(value: unknown): Record<string, unknown> | string | nu
   return String(value)
 }
 
+/**
+ * Produces a short deterministic client-side fingerprint seed for repeated frontend observability events.
+ */
 function buildFingerprint(...parts: string[]): string {
   return parts
     .map((part) => part.trim().toLowerCase())

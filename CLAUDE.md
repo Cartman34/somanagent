@@ -426,10 +426,10 @@ docker compose exec php vendor/bin/phpunit
 - **Hooks:** Start with `use`, e.g., `useQuery`, `useTheme`
 - **Props:** Interface `Props` per component
 - **State:** React hooks (`useState`, `useEffect`, `useContext`)
-- **JSDoc/TSDoc:** Apply the same rule as PHPDoc: document public or non-trivial functions/components/hooks when the intent or contract is not fully obvious, but avoid redundant comments that merely paraphrase the implementation.
+- **JSDoc/TSDoc:** Treat it as mandatory for TypeScript/React code. Every exported function, component, hook, utility and every non-trivial internal helper must have a JSDoc/TSDoc comment. The reader must understand the role, inputs, outputs and important behavior without opening the implementation body.
 - **Styling:** Tailwind utility classes + custom `.card`, `.btn-primary`, `.badge-*` classes
 - **Files:** One component per file unless tightly coupled
-- **JSDoc:** Every exported component and every non-trivial internal function must have a JSDoc comment. The reader must understand the component's role, its key props and any important behaviour **without reading the JSX**.
+- **JSDoc:** For components specifically, the comment must make the role, key props and important behaviour understandable **without reading the JSX**.
 
 ### Encoding
 - **All files must be UTF-8** — no BOM, no Latin-1 or Windows-1252. This applies to PHP, TypeScript, Markdown, JSON, YAML, shell scripts, and any other text file in the project. If a file contains corrupted bytes (e.g. `\xb7` for `·`, `\x97` for `—`), fix them before committing.
