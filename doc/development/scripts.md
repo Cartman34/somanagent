@@ -24,14 +24,17 @@ php scripts/help.php migrate.php
 | `db-reset.php` | PHP | Recreate the local database, optionally with fixtures |
 | `claude-auth.php` | PHP | Manage Claude CLI auth with WSL as source of truth, then sync it to Docker |
 | `console.php` | PHP | Run a Symfony command |
+| `github.php` | PHP | GitHub CLI helper for PR creation, listing, view and merge |
 | `logs.php` | PHP | Display Docker logs |
 | `health.php` | PHP | Check application status |
+| `wsl-claude-install.sh` | Bash | Install Claude CLI inside the configured WSL distro |
 | `wsl-codex-install.sh` | Bash | Install or upgrade OpenAI Codex CLI inside WSL |
+| `wsl-migrate.sh` | Bash | Copy the project to the WSL native filesystem for faster Docker I/O |
 
 ## Script Details
 
 ### `check-php.sh`
-Checks that PHP >= 8.4 is available in the PATH. This is the only Bash script in the project — all others are PHP.
+Checks that PHP >= 8.4 is available in the PATH.
 
 ```bash
 bash scripts/check-php.sh
@@ -118,6 +121,20 @@ php scripts/console.php somanagent:seed:web-team
 
 ---
 
+### `github.php`
+Wraps a few common GitHub CLI/API flows used during delivery work, especially around pull requests.
+
+```bash
+php scripts/github.php pr list
+php scripts/github.php pr view 42
+php scripts/github.php pr create --title "My PR" --body "Summary"
+php scripts/github.php pr merge 42 --squash
+```
+
+Requires `GITHUB_TOKEN` in `.env` and a detectable `origin` remote pointing to GitHub.
+
+---
+
 ### `logs.php`
 Displays a Docker container's logs in real time (tail -f).
 
@@ -140,6 +157,17 @@ php scripts/health.php --url http://my-server:8080
 
 ---
 
+### `wsl-claude-install.sh`
+Installs Claude CLI inside the configured WSL distro so it can be used from the project in a native Linux environment.
+
+```bash
+bash scripts/wsl-claude-install.sh
+```
+
+This script currently targets a configured WSL distro name internally.
+
+---
+
 ### `wsl-codex-install.sh`
 Installs or upgrades the OpenAI Codex CLI directly inside WSL, so it can later be started from a native Linux shell in the project.
 
@@ -155,6 +183,18 @@ codex --login
 cd ~/projects/somanagent
 codex
 ```
+
+---
+
+### `wsl-migrate.sh`
+Copies the project from `/mnt/...` to the WSL native filesystem to avoid slow Docker bind mounts on Windows-backed filesystems.
+
+```bash
+bash scripts/wsl-migrate.sh
+bash scripts/wsl-migrate.sh --dest ~/projects/somanagent
+```
+
+Use this when the repository was cloned under `/mnt/c/...` and local Docker I/O is too slow.
 
 ## Script Header Convention
 
