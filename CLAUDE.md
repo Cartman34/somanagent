@@ -98,6 +98,7 @@ Use this section to resume work quickly after reopening Claude.
 - `new ...` means: append a new task to the **end** of `local/planned-tasks.md`; if the user wants a different priority, they can reorder the file afterward.
 - `rework` means: read `local/changes-review.md`, resume from the pending review feedback, and apply the needed follow-up changes.
 - During `rework`, review feedback is not assumed to be automatically correct: challenge weak or risky requests when needed, and ask for clarification if a point is ambiguous or under-specified.
+- During `rework`, any additional change explicitly requested by the user as part of the same follow-up must also be added to `local/changes-list.md`, even if it goes beyond the original review remarks.
 - If a completed feature needs a follow-up bugfix, add it to `local/changes-list.md` with prefix `[FIX]`.
 - Review notes from the user are expected in `local/changes-review.md` when present.
 
@@ -120,6 +121,8 @@ Use this section to resume work quickly after reopening Claude.
 
 ### Claude CLI auth
 
+- WSL Claude auth is the source of truth.
+- Sync it into Docker with `php scripts/claude-auth.php sync` or re-auth + sync with `php scripts/claude-auth.php login`.
 - Claude CLI auth is shared into containers through:
   - `./.docker/claude/shared/.claude`
   - `./.docker/claude/shared/.claude.json`
