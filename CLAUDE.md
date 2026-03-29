@@ -91,11 +91,11 @@ docker exec somanagent_db psql -U somanagent -d somanagent -c "SELECT source, ca
 **Review quality:**
 - Flag any modified/added file outside the declared scope, and any declared item without a matching file
 - Grep callers of any method whose signature changes
-- **Block on:** non-English source string without justifying comment, missing PHPDoc/JSDoc on public method or exported component, obvious functional bug
-- Exception for French strings: messages stored in DB for the in-app log UI may be French → must have `// Stored in DB for the in-app log UI, so the human-facing message stays in French.` on the preceding line
+- **Block on:** French string outside a `backend/translations/*.yaml` file, missing PHPDoc/JSDoc on public method or exported component, obvious functional bug
+- French strings are only allowed inside translation files — any French literal in `.php`, `.ts`, `.tsx` or other source files is a translation migration gap (see [`doc/technical/translations.md`](doc/technical/translations.md))
 - Every `??` file must be included in the commit or covered by `.gitignore`
 
-**`review async` variant:** same as review + approve, but `git checkout main` is done immediately after the commit, before push and PR creation.
+**`review async` variant:** same as review + approve, but `git checkout main` is done immediately after the commit — before push and PR creation. `--head <branch>` is passed explicitly so the script no longer depends on the current branch.
 
 ### `approve` (or auto-approval after review ✅)
 
@@ -104,10 +104,11 @@ docker exec somanagent_db psql -U somanagent -d somanagent -c "SELECT source, ca
 3. Clean `local/changes-review.md` (reset to "Aucune review en cours.")
 4. `git checkout -b feat/…` (or `fix/…` for `[FIX]` items) if not already on a feature branch
 5. `git add . && git commit`
-6. `git push -u origin <branch>` (if `review async`: `git checkout main` first, then push)
-7. Write PR body with the **Write tool** to `/tmp/pr_body.md` (read first if it already exists), then:
+6. *(`review async` only)* `git checkout main`
+7. `git push -u origin <branch>`
+8. Write PR body with the **Write tool** to `/tmp/pr_body.md` (read first if it already exists), then:
    ```
-   php scripts/github.php pr create --title "..." --body-file /tmp/pr_body.md
+   php scripts/github.php pr create --title "..." --head <branch> --body-file /tmp/pr_body.md
    ```
    The script reads and deletes the file automatically.
 
