@@ -1,4 +1,4 @@
-.PHONY: help install start stop restart build logs shell-php shell-node migrate db-reset test lint
+.PHONY: help install start stop restart build logs shell-php shell-node migrate db-reset db-reset-fixtures test lint
 
 # Couleurs
 GREEN  := \033[0;32m
@@ -73,8 +73,10 @@ migration: ## Créer une nouvelle migration
 	docker compose exec php php bin/console doctrine:migrations:diff
 
 db-reset: ## Réinitialiser la base de données
-	docker compose exec php php bin/console doctrine:schema:drop --force
-	docker compose exec php php bin/console doctrine:migrations:migrate --no-interaction
+	php scripts/db-reset.php
+
+db-reset-fixtures: ## Recréer la base locale et recharger les fixtures
+	php scripts/db-reset.php --fixtures
 
 cache-clear: ## Vider le cache Symfony
 	docker compose exec php php bin/console cache:clear

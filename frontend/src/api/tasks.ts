@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { Task, TaskStatus, TaskPriority, TaskType, StoryStatus } from '@/types'
+import type { Task, TaskReworkTarget, TaskStatus, TaskPriority, TaskType, StoryStatus } from '@/types'
 
 export interface TaskPayload {
   title: string
@@ -94,6 +94,16 @@ export const tasksApi = {
 
   resume: async (id: string): Promise<{ task: Task; agent: { id: string; name: string }; skill: string }> => {
     const { data } = await apiClient.post(`/tasks/${id}/resume`)
+    return data
+  },
+
+  listReworkTargets: async (id: string): Promise<TaskReworkTarget[]> => {
+    const { data } = await apiClient.get(`/tasks/${id}/rework-targets`)
+    return data
+  },
+
+  rework: async (id: string, payload: { targetKey: string; objective: string; note?: string }): Promise<{ task: Task; agent: { id: string; name: string }; skill: string; targetKey: string }> => {
+    const { data } = await apiClient.post(`/tasks/${id}/rework`, payload)
     return data
   },
 

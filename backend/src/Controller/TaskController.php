@@ -338,6 +338,62 @@ class TaskController extends AbstractController
     }
 
     /**
+     * Returns the supported replayable agent stages for this story or bug.
+     */
+    #[Route('/tasks/{id}/rework-targets', name: 'task_rework_targets', methods: ['GET'])]
+    public function reworkTargets(string $id): JsonResponse
+    {
+        $task = $this->taskService->findById($id);
+        if ($task === null) {
+            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+        }
+
+        if (!$task->isStory()) {
+            return $this->json(['error' => 'La reprise d’étape agent n’est disponible que pour les stories et bugs.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        return $this->json($this->storyExecutionService->listReworkTargets($task));
+    }
+
+    /**
+     * Sends the story back to a supported replayable agent stage with an explicit objective and note.
+     */
+    #[Route('/tasks/{id}/rework', name: 'task_rework', methods: ['POST'])]
+    public function rework(string $id, Request $request): JsonResponse
+    {
+        $task = $this->taskService->findById($id);
+        if ($task === null) {
+            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+        }
+
+        if (!$task->isStory()) {
+            return $this->json(['error' => 'La reprise d’étape agent n’est disponible que pour les stories et bugs.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $data = $request->toArray();
+        $targetKey = trim((string) ($data['targetKey'] ?? ''));
+        $objective = trim((string) ($data['objective'] ?? ''));
+        $note = isset($data['note']) ? trim((string) $data['note']) : null;
+
+        if ($targetKey === '' || $objective === '') {
+            return $this->json(['error' => 'Les champs "targetKey" et "objective" sont obligatoires.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        try {
+            $result = $this->storyExecutionService->rework($task, $targetKey, $objective, $note);
+        } catch (\RuntimeException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        return $this->json([
+            'task' => $this->serialize($task),
+            'agent' => ['id' => (string) $result['agent']->getId(), 'name' => $result['agent']->getName()],
+            'skill' => $result['skill'],
+            'targetKey' => $result['targetKey'],
+        ]);
+    }
+
+    /**
      * Returns the list of available agents for executing the story in its current status.
      * Used by the frontend to populate the agent selector before dispatching.
      */

@@ -164,6 +164,18 @@ export interface TaskExecution {
   attempts: TaskExecutionAttempt[]
 }
 
+export interface TaskReworkTarget {
+  key: string
+  label: string
+  description: string
+  roleSlug: string
+  skillSlug: string
+  workflowStepKey: string
+  targetStoryStatus: StoryStatus
+  availableAgentCount: number
+  agent: { id: string; name: string } | null
+}
+
 export interface TaskLog {
   id: string
   action: string

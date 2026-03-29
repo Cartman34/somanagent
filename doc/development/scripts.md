@@ -21,6 +21,7 @@ php scripts/help.php migrate.php
 | `setup.php` | PHP | Full installation (first time) |
 | `dev.php` | PHP | Start / stop the environment |
 | `migrate.php` | PHP | Run Doctrine migrations |
+| `db-reset.php` | PHP | Recreate the local database, optionally with fixtures |
 | `console.php` | PHP | Run a Symfony command |
 | `logs.php` | PHP | Display Docker logs |
 | `health.php` | PHP | Check application status |
@@ -75,6 +76,19 @@ Runs Doctrine migrations in the PHP container.
 php scripts/migrate.php             # run migrations
 php scripts/migrate.php --dry-run   # simulate without applying
 ```
+
+---
+
+### `db-reset.php`
+Recreates the local database, runs migrations, and can also reload fixtures.
+
+```bash
+php scripts/db-reset.php
+php scripts/db-reset.php --fixtures
+php scripts/db-reset.php --fixtures --force
+```
+
+By default, the script asks for confirmation because it destroys all current local data. Use `--force` to skip the prompt.
 
 ---
 
