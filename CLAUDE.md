@@ -70,9 +70,9 @@ php scripts/console.php somanagent:task:redispatch --latest
 php scripts/console.php somanagent:task:redispatch <task-id> --sync
 php scripts/console.php somanagent:agent:hello <projectId> <agentId> --message="Hello"
 php scripts/claude-auth.php status
-docker exec somanagent_node npm run type-check
+php scripts/node.php type-check
 php scripts/logs.php worker --tail 120
-docker exec somanagent_db psql -U somanagent -d somanagent -c "SELECT source, category, level, title, occurred_at FROM log_event ORDER BY occurred_at DESC LIMIT 20;"
+php scripts/db.php query "SELECT source, category, level, title, occurred_at FROM log_event ORDER BY occurred_at DESC LIMIT 20;"
 ```
 
 ## Workflow Commands
@@ -133,7 +133,7 @@ Merge the current open PR: `php scripts/github.php pr merge <number>`, then `git
 - Keep `doc/` up to date with code changes.
 - `doc/README.md` is the documentation index and must be updated when a new doc file is added.
 - Always use project scripts in `scripts/` first when they cover the need.
-- Prefer `php scripts/console.php ...`, `php scripts/logs.php ...`, `php scripts/dev.php ...`, `php scripts/health.php ...` and similar wrappers over direct `docker exec`, `bin/console`, or raw container commands.
+- Prefer `php scripts/console.php ...`, `php scripts/logs.php ...`, `php scripts/node.php ...`, `php scripts/db.php ...`, `php scripts/dev.php ...`, `php scripts/health.php ...` and similar wrappers over direct `docker exec`, `bin/console`, or raw container commands.
 - Only fall back to direct Docker or container commands when no project script exists for that operation.
 - This rule is also about efficiency: using the project wrappers reduces command verbosity and unnecessary token usage.
 - UI text is French.

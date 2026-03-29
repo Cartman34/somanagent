@@ -57,20 +57,20 @@ shell-php: ## Shell dans le conteneur PHP
 	docker compose exec php sh
 
 shell-node: ## Shell dans le conteneur Node
-	docker compose exec node sh
+	php scripts/node.php shell
 
 shell-db: ## Shell PostgreSQL
-	docker compose exec db psql -U somanagent -d somanagent
+	php scripts/db.php shell
 
 # ============================================================
 # BACKEND SYMFONY
 # ============================================================
 
 migrate: ## Lancer les migrations Doctrine
-	docker compose exec php php bin/console doctrine:migrations:migrate --no-interaction
+	php scripts/migrate.php
 
 migration: ## Créer une nouvelle migration
-	docker compose exec php php bin/console doctrine:migrations:diff
+	php scripts/console.php doctrine:migrations:diff
 
 db-reset: ## Réinitialiser la base de données
 	php scripts/db-reset.php
@@ -79,7 +79,7 @@ db-reset-fixtures: ## Recréer la base locale et recharger les fixtures
 	php scripts/db-reset.php --fixtures
 
 cache-clear: ## Vider le cache Symfony
-	docker compose exec php php bin/console cache:clear
+	php scripts/console.php cache:clear
 
 test-backend: ## Lancer les tests PHP
 	docker compose exec php php bin/phpunit
@@ -95,13 +95,13 @@ dev-frontend: ## Lancer le serveur de dev frontend
 	docker compose up -d node
 
 build-frontend: ## Builder le frontend pour la production
-	docker compose exec node npm run build
+	php scripts/node.php build
 
 test-frontend: ## Lancer les tests frontend
-	docker compose exec node npm test
+	php scripts/node.php test
 
 lint-frontend: ## Linter le frontend
-	docker compose exec node npm run lint
+	php scripts/node.php lint
 
 # ============================================================
 # SKILLS
