@@ -68,7 +68,7 @@ Use `doc/` as the source of truth for product, technical and development documen
 php scripts/console.php cache:clear
 php scripts/console.php somanagent:task:redispatch --latest
 php scripts/console.php somanagent:task:redispatch <task-id> --sync
-php scripts/console.php somanagent:agent:hello <projectId> <agentId> --message=Salut
+php scripts/console.php somanagent:agent:hello <projectId> <agentId> --message="Hello"
 php scripts/claude-auth.php status
 docker exec somanagent_node npm run type-check
 php scripts/logs.php worker --tail 120
@@ -137,12 +137,15 @@ Merge the current open PR: `php scripts/github.php pr merge <number>`, then `git
 - Only fall back to direct Docker or container commands when no project script exists for that operation.
 - This rule is also about efficiency: using the project wrappers reduces command verbosity and unnecessary token usage.
 - UI text is French.
+- Symfony commands, CLI help, and console output are English.
+- User-provided command payloads may still be French when they represent business content, for example a chat message sent to an agent.
 - Technical source content is English:
   - code
   - PHPDoc/JSDoc/TSDoc
   - comments
   - route names
   - script output
+  - command descriptions, argument help, option help, and console UI output
   - commit messages
 - For project files, use relative paths in commands and do not rely on `cd` into subdirectories.
 

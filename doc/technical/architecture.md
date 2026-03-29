@@ -173,6 +173,14 @@ Examples:
 
 Direct Docker commands remain acceptable only when no script covers the operation.
 
+Symfony command descriptions, argument help, option help, and console UI output must be written in English.
+
+French is reserved to the web interface and other intentional end-user product surfaces.
+
+Exception:
+- command payloads that carry business content may still be French when that is the real user input
+- for example, a CLI option used to send a message to an agent can contain French text
+
 ## Tech Stack
 
 | Component | Technology | Version |

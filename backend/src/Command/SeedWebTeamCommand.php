@@ -19,7 +19,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'somanagent:seed:web-team',
-    description: 'Crée les rôles et l\'équipe de développement web par défaut.',
+    description: 'Creates the default web development roles and team.',
 )]
 class SeedWebTeamCommand extends Command
 {
@@ -54,7 +54,7 @@ class SeedWebTeamCommand extends Command
 
     protected function configure(): void
     {
-        $this->addOption('force', null, InputOption::VALUE_NONE, 'Recréer même si des rôles existent déjà.');
+        $this->addOption('force', null, InputOption::VALUE_NONE, 'Recreate the dataset even if roles already exist.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -64,25 +64,25 @@ class SeedWebTeamCommand extends Command
 
         $existing = $this->em->getRepository(Role::class)->findAll();
         if (count($existing) > 0 && !$force) {
-            $io->warning('Des rôles existent déjà. Utilisez --force pour recréer.');
+            $io->warning('Roles already exist. Use --force to recreate them.');
             return Command::SUCCESS;
         }
 
-        $io->title('SoManAgent — Seed équipe de développement web');
+        $io->title('SoManAgent — Web Development Team Seed');
 
-        // Rôles
+        // Roles
         $roles = [];
         foreach (self::ROLES as $def) {
             $role = new Role($def['slug'], $def['name'], $def['description']);
             $this->em->persist($role);
             $roles[$def['slug']] = $role;
-            $io->text("  Rôle : <info>{$def['name']}</info>");
+            $io->text("  Role: <info>{$def['name']}</info>");
         }
 
-        // Équipe
+        // Team
         $team = new Team('Équipe Web', 'Équipe de développement web full-stack.');
         $this->em->persist($team);
-        $io->text('  Équipe : <info>Équipe Web</info>');
+        $io->text('  Team: <info>Équipe Web</info>');
 
         // Agents
         $config = AgentConfig::fromArray(['model' => 'claude-sonnet-4-6']);
@@ -91,12 +91,12 @@ class SeedWebTeamCommand extends Command
             $agent->setRole($roles[$def['slug']]);
             $this->em->persist($agent);
             $team->addAgent($agent);
-            $io->text("  Agent : <comment>{$def['name']}</comment> [{$def['slug']}]");
+            $io->text("  Agent: <comment>{$def['name']}</comment> [{$def['slug']}]");
         }
 
         $this->em->flush();
 
-        $io->success(sprintf('%d rôles, %d agents et l\'équipe "%s" créés.', count(self::ROLES), count(self::AGENTS), $team->getName()));
+        $io->success(sprintf('%d roles, %d agents, and team "%s" created.', count(self::ROLES), count(self::AGENTS), $team->getName()));
         return Command::SUCCESS;
     }
 }

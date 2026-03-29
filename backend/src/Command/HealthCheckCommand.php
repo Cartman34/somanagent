@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-#[AsCommand(name: 'somanagent:health', description: 'Vérifie l\'état des connecteurs IA et VCS')]
+#[AsCommand(name: 'somanagent:health', description: 'Checks the health of AI and VCS connectors')]
 class HealthCheckCommand extends Command
 {
     public function __construct(private readonly AgentPortRegistry $registry)
@@ -22,7 +22,7 @@ class HealthCheckCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io      = new SymfonyStyle($input, $output);
-        $io->title('SoManAgent — Vérification des connecteurs');
+        $io->title('SoManAgent — Connector Check');
 
         $results = $this->registry->healthCheckAll();
         $allOk   = true;
@@ -37,11 +37,11 @@ class HealthCheckCommand extends Command
         }
 
         if ($allOk) {
-            $io->success('Tous les connecteurs sont opérationnels.');
+            $io->success('All connectors are operational.');
             return Command::SUCCESS;
         }
 
-        $io->warning('Certains connecteurs sont inaccessibles.');
+        $io->warning('Some connectors are unreachable.');
         return Command::FAILURE;
     }
 }

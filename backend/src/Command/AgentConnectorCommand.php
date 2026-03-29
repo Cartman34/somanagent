@@ -16,7 +16,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'somanagent:agent:connector',
-    description: 'Change le connecteur d un agent precis ou de tous les agents',
+    description: 'Changes the connector for one agent or for every agent',
 )]
 final class AgentConnectorCommand extends Command
 {
@@ -28,9 +28,9 @@ final class AgentConnectorCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addArgument('connector', InputArgument::REQUIRED, 'claude_api ou claude_cli')
-            ->addArgument('agentId', InputArgument::OPTIONAL, 'UUID de l agent a modifier')
-            ->addOption('all', null, InputOption::VALUE_NONE, 'Applique le changement a tous les agents');
+            ->addArgument('connector', InputArgument::REQUIRED, 'claude_api or claude_cli')
+            ->addArgument('agentId', InputArgument::OPTIONAL, 'UUID of the agent to update')
+            ->addOption('all', null, InputOption::VALUE_NONE, 'Applies the change to every agent');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -44,31 +44,31 @@ final class AgentConnectorCommand extends Command
         try {
             $connector = ConnectorType::from($connectorValue);
         } catch (\ValueError) {
-            $io->error(sprintf('Connecteur invalide: %s. Valeurs acceptees: claude_api, claude_cli.', $connectorValue));
+            $io->error(sprintf('Invalid connector: %s. Accepted values: claude_api, claude_cli.', $connectorValue));
             return Command::INVALID;
         }
 
         if ($applyToAll) {
             $count = $this->agentService->setConnectorForAll($connector);
-            $io->success(sprintf('%d agent(s) bascules vers %s.', $count, $connector->value));
+            $io->success(sprintf('%d agent(s) switched to %s.', $count, $connector->value));
             return Command::SUCCESS;
         }
 
         if (!is_string($agentId) || $agentId === '') {
-            $io->error('Precisez un agentId ou utilisez --all.');
+            $io->error('Provide an agentId or use --all.');
             return Command::INVALID;
         }
 
         $agent = $this->agentService->findById($agentId);
         if ($agent === null) {
-            $io->error(sprintf('Agent introuvable: %s', $agentId));
+            $io->error(sprintf('Agent not found: %s', $agentId));
             return Command::FAILURE;
         }
 
         $this->agentService->setConnector($agent, $connector);
 
         $io->success(sprintf(
-            'Agent %s (%s) bascule vers %s.',
+            'Agent %s (%s) switched to %s.',
             $agent->getName(),
             $agentId,
             $connector->value,

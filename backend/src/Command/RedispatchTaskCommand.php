@@ -27,7 +27,7 @@ use Symfony\Component\Uid\Uuid;
 
 #[AsCommand(
     name: 'somanagent:task:redispatch',
-    description: 'Relance l\'exécution d\'une story existante, utile si un message Messenger a été perdu.',
+    description: 'Redispatches an existing story execution, useful when a Messenger message was lost.',
 )]
 final class RedispatchTaskCommand extends Command
 {
@@ -49,11 +49,11 @@ final class RedispatchTaskCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addArgument('task-id', InputArgument::OPTIONAL, 'ID de la tâche à relancer')
-            ->addOption('title', null, InputOption::VALUE_REQUIRED, 'Recherche une story par titre')
-            ->addOption('latest', null, InputOption::VALUE_NONE, 'Cible la story la plus récente')
-            ->addOption('agent', null, InputOption::VALUE_REQUIRED, 'ID d\'un agent à forcer')
-            ->addOption('sync', null, InputOption::VALUE_NONE, 'Exécute immédiatement au lieu de passer par Messenger');
+            ->addArgument('task-id', InputArgument::OPTIONAL, 'ID of the task to redispatch')
+            ->addOption('title', null, InputOption::VALUE_REQUIRED, 'Searches for a story by title')
+            ->addOption('latest', null, InputOption::VALUE_NONE, 'Targets the most recent story')
+            ->addOption('agent', null, InputOption::VALUE_REQUIRED, 'Forces a specific agent ID')
+            ->addOption('sync', null, InputOption::VALUE_NONE, 'Executes immediately instead of dispatching through Messenger');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -74,13 +74,13 @@ final class RedispatchTaskCommand extends Command
         if ($task === null) return Command::FAILURE;
 
         if (!$task->isStory()) {
-            $io->error('Seules les user stories et anomalies peuvent être redispatchées.');
+            $io->error('Only user stories and bugs can be redispatched.');
             return Command::FAILURE;
         }
 
         $skillSlug = $this->resolveSkillSlug($task);
         if ($skillSlug === null) {
-            $io->error('Impossible de déterminer le skill à relancer pour cette tâche.');
+            $io->error('Unable to determine which skill should be redispatched for this task.');
             return Command::FAILURE;
         }
 
@@ -88,13 +88,13 @@ final class RedispatchTaskCommand extends Command
         if (is_string($agentId) && $agentId !== '') {
             $agent = $this->agentRepository->find(Uuid::fromString($agentId));
             if ($agent === null) {
-                $io->error('Agent introuvable.');
+                $io->error('Agent not found.');
                 return Command::FAILURE;
             }
         } else {
             $agent = $this->resolveAgentForSkill($skillSlug, $task);
             if ($agent === null) {
-                $io->error(sprintf('Aucun agent actif trouvé pour le skill "%s".', $skillSlug));
+                $io->error(sprintf('No active agent found for skill "%s".', $skillSlug));
                 return Command::FAILURE;
             }
         }
@@ -169,7 +169,7 @@ final class RedispatchTaskCommand extends Command
                 $this->taskExecutionService->markFailed($execution, $attempt, $e->getMessage(), false, 'execution');
                 $this->taskService->failExecution($task, $e->getMessage());
                 $io->error(sprintf(
-                    'Échec de la relance synchrone avec %s (%s) : %s',
+                    'Synchronous redispatch failed with %s (%s): %s',
                     $agent->getName(),
                     $skillSlug,
                     $e->getMessage(),
@@ -179,7 +179,7 @@ final class RedispatchTaskCommand extends Command
             }
 
             $io->success(sprintf(
-                'Tâche relancée en synchrone avec %s (%s).',
+                'Task redispatched synchronously with %s (%s).',
                 $agent->getName(),
                 $skillSlug,
             ));
@@ -249,7 +249,7 @@ final class RedispatchTaskCommand extends Command
         );
 
         $io->success(sprintf(
-            'Tâche remise en file avec %s (%s).',
+            'Task requeued with %s (%s).',
             $agent->getName(),
             $skillSlug,
         ));
@@ -261,14 +261,14 @@ final class RedispatchTaskCommand extends Command
     {
         $modeCount = (int) ($taskId !== null) + (int) ($title !== null) + (int) $latest;
         if ($modeCount !== 1) {
-            $io->error('Utilisez exactement un sélecteur : <task-id>, --title ou --latest.');
+            $io->error('Use exactly one selector: <task-id>, --title, or --latest.');
             return null;
         }
 
         if ($taskId !== null) {
             $task = $this->taskService->findById($taskId);
             if ($task === null) {
-                $io->error('Tâche introuvable.');
+                $io->error('Task not found.');
             }
             return $task;
         }
@@ -276,23 +276,23 @@ final class RedispatchTaskCommand extends Command
         if ($latest) {
             $tasks = $this->taskRepository->findRecentStories(1);
             if ($tasks === []) {
-                $io->error('Aucune story récente trouvée.');
+                $io->error('No recent story found.');
                 return null;
             }
 
             $task = $tasks[0];
-            $io->note(sprintf('Story ciblée : "%s" (%s)', $task->getTitle(), (string) $task->getId()));
+            $io->note(sprintf('Selected story: "%s" (%s)', $task->getTitle(), (string) $task->getId()));
             return $task;
         }
 
         $matches = $this->taskRepository->findStoriesByTitleLike($title ?? '', 5);
         if ($matches === []) {
-            $io->error('Aucune story correspondante trouvée.');
+            $io->error('No matching story found.');
             return null;
         }
 
         if (count($matches) > 1) {
-            $io->error('Plusieurs stories correspondent. Raffinez le titre ou utilisez l\'ID.');
+            $io->error('Multiple stories match. Refine the title or use the ID.');
             foreach ($matches as $match) {
                 $io->text(sprintf(
                     '- %s | %s | %s',
@@ -305,7 +305,7 @@ final class RedispatchTaskCommand extends Command
         }
 
         $task = $matches[0];
-        $io->note(sprintf('Story ciblée : "%s" (%s)', $task->getTitle(), (string) $task->getId()));
+        $io->note(sprintf('Selected story: "%s" (%s)', $task->getTitle(), (string) $task->getId()));
         return $task;
     }
 
