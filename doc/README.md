@@ -28,6 +28,7 @@ It lets you assemble generic AI agent teams, assign them roles and skills, then 
 | [REST API](technical/api.md) | Complete reference for all endpoints |
 | [Adapters](technical/adapters.md) | Hexagonal ports and their implementations |
 | [Configuration](technical/configuration.md) | Environment variables, .env file |
+| [Translations Strategy](technical/translations.md) | Conventions and migration strategy for translator-backed application messages |
 
 ### Development documentation — working on SoManAgent
 
