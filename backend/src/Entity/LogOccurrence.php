@@ -34,8 +34,26 @@ class LogOccurrence
     #[ORM\Column(length: 255)]
     private string $title;
 
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $titleDomain = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $titleKey = null;
+
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $titleParameters = null;
+
     #[ORM\Column(type: 'text')]
     private string $message;
+
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $messageDomain = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $messageKey = null;
+
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $messageParameters = null;
 
     #[ORM\Column(length: 20)]
     private string $source;
@@ -85,7 +103,13 @@ class LogOccurrence
     public function getLevel(): string { return $this->level; }
     public function getFingerprint(): string { return $this->fingerprint; }
     public function getTitle(): string { return $this->title; }
+    public function getTitleDomain(): ?string { return $this->titleDomain; }
+    public function getTitleKey(): ?string { return $this->titleKey; }
+    public function getTitleParameters(): ?array { return $this->titleParameters; }
     public function getMessage(): string { return $this->message; }
+    public function getMessageDomain(): ?string { return $this->messageDomain; }
+    public function getMessageKey(): ?string { return $this->messageKey; }
+    public function getMessageParameters(): ?array { return $this->messageParameters; }
     public function getSource(): string { return $this->source; }
     public function getProjectId(): ?Uuid { return $this->projectId; }
     public function getTaskId(): ?Uuid { return $this->taskId; }
@@ -104,13 +128,43 @@ class LogOccurrence
     public function setLastLogEventId(?Uuid $lastLogEventId): static { $this->lastLogEventId = $lastLogEventId; return $this; }
     public function setContextSnapshot(?array $contextSnapshot): static { $this->contextSnapshot = $contextSnapshot; return $this; }
 
+    /**
+     * @param array<string, scalar|null>|null $parameters
+     */
+    public function setTitleTranslation(?string $domain, ?string $key, ?array $parameters = null): static
+    {
+        $this->titleDomain = $domain;
+        $this->titleKey = $key;
+        $this->titleParameters = $parameters;
+
+        return $this;
+    }
+
+    /**
+     * @param array<string, scalar|null>|null $parameters
+     */
+    public function setMessageTranslation(?string $domain, ?string $key, ?array $parameters = null): static
+    {
+        $this->messageDomain = $domain;
+        $this->messageKey = $key;
+        $this->messageParameters = $parameters;
+
+        return $this;
+    }
+
     public function registerOccurrence(LogEvent $event): static
     {
         $this->lastSeenAt = $event->getOccurredAt();
         $this->occurrenceCount++;
         $this->lastLogEventId = $event->getId();
         $this->title = $event->getTitle();
+        $this->titleDomain = $event->getTitleDomain();
+        $this->titleKey = $event->getTitleKey();
+        $this->titleParameters = $event->getTitleParameters();
         $this->message = $event->getMessage();
+        $this->messageDomain = $event->getMessageDomain();
+        $this->messageKey = $event->getMessageKey();
+        $this->messageParameters = $event->getMessageParameters();
         $this->source = $event->getSource();
         $this->contextSnapshot = $event->getContext();
 

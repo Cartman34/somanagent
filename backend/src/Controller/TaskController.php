@@ -12,6 +12,7 @@ use App\Enum\TaskType;
 use App\Repository\AgentRepository;
 use App\Repository\TaskExecutionRepository;
 use App\Repository\TaskLogRepository;
+use App\Service\ApiErrorPayloadFactory;
 use App\Service\ProjectService;
 use App\Service\StoryExecutionService;
 use App\Service\TaskService;
@@ -35,6 +36,7 @@ class TaskController extends AbstractController
         private readonly TaskLogRepository     $taskLogRepository,
         private readonly TokenUsageService     $tokenUsageService,
         private readonly VcsRepositoryUrlService $vcsRepositoryUrl,
+        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
     ) {}
 
     #[Route('/projects/{projectId}/tasks', name: 'task_list', methods: ['GET'])]
@@ -42,7 +44,7 @@ class TaskController extends AbstractController
     {
         $project = $this->projectService->findById($projectId);
         if ($project === null) {
-            return $this->json(['error' => 'Projet introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('projects.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json(array_map(
@@ -56,12 +58,12 @@ class TaskController extends AbstractController
     {
         $project = $this->projectService->findById($projectId);
         if ($project === null) {
-            return $this->json(['error' => 'Projet introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('projects.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
         if (empty($data['title'])) {
-            return $this->json(['error' => 'Le champ "title" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.validation.title_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $type     = TaskType::from($data['type'] ?? TaskType::Task->value);
@@ -86,12 +88,12 @@ class TaskController extends AbstractController
     {
         $project = $this->projectService->findById($projectId);
         if ($project === null) {
-            return $this->json(['error' => 'Projet introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('projects.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
         if (empty($data['title'])) {
-            return $this->json(['error' => 'Le champ "title" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.validation.title_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $priority = TaskPriority::from($data['priority'] ?? TaskPriority::Medium->value);
@@ -122,7 +124,7 @@ class TaskController extends AbstractController
     {
         $task = $this->taskService->findById($id);
         if ($task === null) {
-            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $children    = $this->taskService->findChildren($task);
@@ -143,7 +145,7 @@ class TaskController extends AbstractController
     {
         $task = $this->taskService->findById($id);
         if ($task === null) {
-            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data     = $request->toArray();
@@ -165,12 +167,12 @@ class TaskController extends AbstractController
     {
         $task = $this->taskService->findById($id);
         if ($task === null) {
-            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
         if (empty($data['status'])) {
-            return $this->json(['error' => 'Le champ "status" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.validation.status_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $this->taskService->changeStatus($task, TaskStatus::from($data['status']));
@@ -182,7 +184,7 @@ class TaskController extends AbstractController
     {
         $task = $this->taskService->findById($id);
         if ($task === null) {
-            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
@@ -195,12 +197,12 @@ class TaskController extends AbstractController
     {
         $task = $this->taskService->findById($id);
         if ($task === null) {
-            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
         if (empty($data['priority'])) {
-            return $this->json(['error' => 'Le champ "priority" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.validation.priority_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $this->taskService->reprioritize($task, TaskPriority::from($data['priority']));
@@ -212,7 +214,7 @@ class TaskController extends AbstractController
     {
         $task = $this->taskService->findById($id);
         if ($task === null) {
-            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->taskService->validate($task);
@@ -224,7 +226,7 @@ class TaskController extends AbstractController
     {
         $task = $this->taskService->findById($id);
         if ($task === null) {
-            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
@@ -237,7 +239,7 @@ class TaskController extends AbstractController
     {
         $task = $this->taskService->findById($id);
         if ($task === null) {
-            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
@@ -250,13 +252,13 @@ class TaskController extends AbstractController
     {
         $task = $this->taskService->findById($id);
         if ($task === null) {
-            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
         $content = trim((string) ($data['content'] ?? ''));
         if ($content === '') {
-            return $this->json(['error' => 'Le champ "content" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.validation.content_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         try {
@@ -273,7 +275,7 @@ class TaskController extends AbstractController
                 action: isset($data['replyToLogId']) ? 'user_reply' : 'user_comment',
             );
         } catch (\InvalidArgumentException $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         return $this->json($this->serializeLog($log), Response::HTTP_CREATED);
@@ -284,27 +286,27 @@ class TaskController extends AbstractController
     {
         $task = $this->taskService->findById($id);
         if ($task === null) {
-            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         if (!$task->isStory()) {
-            return $this->json(['error' => 'Cette tâche n\'est pas une user story ou un bug.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.story.error.unsupported_user_story_or_bug'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $data = $request->toArray();
         if (empty($data['status'])) {
-            return $this->json(['error' => 'Le champ "status" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.validation.status_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $next = StoryStatus::tryFrom($data['status']);
         if ($next === null) {
-            return $this->json(['error' => "Statut story inconnu : {$data['status']}."], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.story.error.unknown_status', ['%status%' => (string) $data['status']]), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         try {
             $this->taskService->transitionStory($task, $next);
         } catch (\LogicException $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         return $this->json($this->serialize($task));
@@ -315,19 +317,19 @@ class TaskController extends AbstractController
     {
         $task = $this->taskService->findById($id);
         if ($task === null) {
-            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         if (!$task->isStory()) {
-            return $this->json(['error' => 'La reprise agent depuis le ticket n\'est disponible que pour les stories et bugs.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.rework.error.resume_unavailable'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         try {
             $result = $this->storyExecutionService->execute($task, $task->getAssignedAgent());
         } catch (\RuntimeException $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
         } catch (\LogicException $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         return $this->json([
@@ -345,11 +347,11 @@ class TaskController extends AbstractController
     {
         $task = $this->taskService->findById($id);
         if ($task === null) {
-            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         if (!$task->isStory()) {
-            return $this->json(['error' => 'La reprise d’étape agent n’est disponible que pour les stories et bugs.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.rework.error.step_unavailable'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         return $this->json($this->storyExecutionService->listReworkTargets($task));
@@ -363,11 +365,11 @@ class TaskController extends AbstractController
     {
         $task = $this->taskService->findById($id);
         if ($task === null) {
-            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         if (!$task->isStory()) {
-            return $this->json(['error' => 'La reprise d’étape agent n’est disponible que pour les stories et bugs.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.rework.error.step_unavailable'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $data = $request->toArray();
@@ -376,13 +378,13 @@ class TaskController extends AbstractController
         $note = isset($data['note']) ? trim((string) $data['note']) : null;
 
         if ($targetKey === '' || $objective === '') {
-            return $this->json(['error' => 'Les champs "targetKey" et "objective" sont obligatoires.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.rework.validation.target_objective_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         try {
             $result = $this->storyExecutionService->rework($task, $targetKey, $objective, $note);
         } catch (\RuntimeException $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         return $this->json([
@@ -402,15 +404,15 @@ class TaskController extends AbstractController
     {
         $task = $this->taskService->findById($id);
         if ($task === null) {
-            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         if (!$task->isStory()) {
-            return $this->json(['error' => 'Cette tâche n\'est pas une story ou un bug.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.execution.error.unsupported_story_or_bug'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         if (!$this->storyExecutionService->canExecute($task)) {
-            return $this->json(['error' => 'Aucune exécution automatique disponible pour ce statut.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.execution.error.no_automatic_execution'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $agents = $this->storyExecutionService->availableAgents($task);
@@ -432,11 +434,11 @@ class TaskController extends AbstractController
     {
         $task = $this->taskService->findById($id);
         if ($task === null) {
-            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         if (!$task->isStory()) {
-            return $this->json(['error' => 'Cette tâche n\'est pas une story ou un bug.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.execution.error.unsupported_story_or_bug'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $data  = $request->toArray();
@@ -445,16 +447,16 @@ class TaskController extends AbstractController
         if (!empty($data['agentId'])) {
             $agent = $this->agentRepository->find($data['agentId']);
             if ($agent === null) {
-                return $this->json(['error' => 'Agent introuvable.'], Response::HTTP_NOT_FOUND);
+                return $this->json($this->apiErrorPayloadFactory->create('tasks.execution.error.agent_not_found'), Response::HTTP_NOT_FOUND);
             }
         }
 
         try {
             $result = $this->storyExecutionService->execute($task, $agent, TaskExecutionTrigger::Manual);
         } catch (\RuntimeException $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
         } catch (\LogicException $e) {
-            return $this->json(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         return $this->json([
@@ -469,7 +471,7 @@ class TaskController extends AbstractController
     {
         $task = $this->taskService->findById($id);
         if ($task === null) {
-            return $this->json(['error' => 'Tâche introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('tasks.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->taskService->delete($task);

@@ -270,6 +270,27 @@ export interface AuditLog {
   createdAt: string
 }
 
+/**
+ * Describes a single translation identity with its optional interpolation parameters.
+ */
+export interface TranslationDescriptor {
+  domain: string | null
+  key: string | null
+  parameters: Record<string, string | number | boolean | null> | null
+}
+
+/**
+ * Carries the canonical translation metadata returned by persisted backend log APIs.
+ */
+export interface PersistedI18nMetadata {
+  titleDomain: string | null
+  titleKey: string | null
+  titleParameters: Record<string, string | number | boolean | null> | null
+  messageDomain: string | null
+  messageKey: string | null
+  messageParameters: Record<string, string | number | boolean | null> | null
+}
+
 export interface LogOccurrence {
   id: string
   category: string
@@ -287,6 +308,7 @@ export interface LogOccurrence {
   status: string
   lastLogEventId: string | null
   contextSnapshot: Record<string, unknown> | null
+  i18n: PersistedI18nMetadata | null
 }
 
 export interface LogEvent {
@@ -307,6 +329,7 @@ export interface LogEvent {
   stack: string | null
   origin: string | null
   rawPayload: Record<string, unknown> | null
+  i18n: PersistedI18nMetadata | null
   occurredAt: string
 }
 

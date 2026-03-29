@@ -17,8 +17,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Consomme les AgentTaskMessage depuis Redis et délègue l'exécution à AgentExecutionService.
- * Lancé par : php bin/console messenger:consume async
+ * Consumes AgentTaskMessage envelopes from Messenger and delegates execution to AgentExecutionService.
  */
 #[AsMessageHandler]
 final class AgentTaskHandler
@@ -53,10 +52,20 @@ final class AgentTaskHandler
                 source: 'worker',
                 category: 'error',
                 level: 'error',
-                title: 'Agent task execution not found',
-                // Stored in DB for the in-app log UI, so the human-facing message stays in French.
-                message: sprintf('Exécution introuvable pour le worker: %s', $message->taskExecutionId ?? 'n/a'),
+                title: '',
+                message: '',
                 options: [
+                    'title_i18n' => [
+                        'domain' => 'logs',
+                        'key' => 'logs.worker.error.task_execution_not_found.title',
+                    ],
+                    'message_i18n' => [
+                        'domain' => 'logs',
+                        'key' => 'logs.worker.error.task_execution_not_found.message',
+                        'parameters' => [
+                            '%taskExecutionId%' => $message->taskExecutionId ?? 'n/a',
+                        ],
+                    ],
                     'task_id' => $message->taskId,
                     'agent_id' => $message->agentId,
                     'request_ref' => $message->requestRef,
@@ -76,17 +85,27 @@ final class AgentTaskHandler
         if ($task === null) {
             $attemptEntity = $this->taskExecutionService->startAttempt($execution, $attempt, null, $message->requestRef, $receiverName);
             $willRetry = $attempt < $execution->getMaxAttempts();
-            // Stored in DB for the in-app log UI, so the human-facing message stays in French.
+            // Pending migration: TaskExecutionService::markFailed() still persists a legacy human-readable error string.
             $this->taskExecutionService->markFailed($execution, $attemptEntity, sprintf('Tâche introuvable pour le worker: %s', $message->taskId), $willRetry, 'dispatch');
             $this->logger->error('AgentTaskHandler: task not found', ['task_id' => $message->taskId]);
             $this->logService->record(
                 source: 'worker',
                 category: 'error',
                 level: 'error',
-                title: 'Agent task not found',
-                // Stored in DB for the in-app log UI, so the human-facing message stays in French.
-                message: sprintf('Tâche introuvable pour le worker: %s', $message->taskId),
+                title: '',
+                message: '',
                 options: [
+                    'title_i18n' => [
+                        'domain' => 'logs',
+                        'key' => 'logs.worker.error.task_not_found.title',
+                    ],
+                    'message_i18n' => [
+                        'domain' => 'logs',
+                        'key' => 'logs.worker.error.task_not_found.message',
+                        'parameters' => [
+                            '%taskId%' => $message->taskId,
+                        ],
+                    ],
                     'task_id' => $message->taskId,
                     'request_ref' => $message->requestRef,
                     'trace_ref' => $message->traceRef,
@@ -107,10 +126,10 @@ final class AgentTaskHandler
         if ($agent === null) {
             $attemptEntity = $this->taskExecutionService->startAttempt($execution, $attempt, null, $message->requestRef, $receiverName);
             $willRetry = $attempt < $execution->getMaxAttempts();
-            // Stored in DB for the in-app log UI, so the human-facing message stays in French.
+            // Pending migration: TaskExecutionService::markFailed() still persists a legacy human-readable error string.
             $this->taskExecutionService->markFailed($execution, $attemptEntity, sprintf('Agent introuvable pour le worker: %s', $message->agentId), $willRetry, 'dispatch');
             if (!$willRetry) {
-                // Stored in DB for the in-app log UI, so the human-facing message stays in French.
+                // Pending migration: TaskService::failExecution() still stores a rendered message rather than translation metadata.
                 $this->taskService->failExecution($task, sprintf('Agent introuvable pour le worker: %s', $message->agentId));
             }
             $this->logger->error('AgentTaskHandler: agent not found', ['agent_id' => $message->agentId]);
@@ -118,10 +137,20 @@ final class AgentTaskHandler
                 source: 'worker',
                 category: 'error',
                 level: 'error',
-                title: 'Agent runtime not found',
-                // Stored in DB for the in-app log UI, so the human-facing message stays in French.
-                message: sprintf('Agent introuvable pour le worker: %s', $message->agentId),
+                title: '',
+                message: '',
                 options: [
+                    'title_i18n' => [
+                        'domain' => 'logs',
+                        'key' => 'logs.worker.error.agent_runtime_not_found.title',
+                    ],
+                    'message_i18n' => [
+                        'domain' => 'logs',
+                        'key' => 'logs.worker.error.agent_runtime_not_found.message',
+                        'parameters' => [
+                            '%agentId%' => $message->agentId,
+                        ],
+                    ],
                     'task_id' => $message->taskId,
                     'agent_id' => $message->agentId,
                     'request_ref' => $message->requestRef,
@@ -153,10 +182,21 @@ final class AgentTaskHandler
                 source: 'worker',
                 category: 'runtime',
                 level: 'info',
-                title: 'Agent execution started',
-                // Stored in DB for the in-app log UI, so the human-facing message stays in French.
-                message: sprintf('Exécution de %s par %s', $task->getTitle(), $agent->getName()),
+                title: '',
+                message: '',
                 options: [
+                    'title_i18n' => [
+                        'domain' => 'logs',
+                        'key' => 'logs.worker.runtime.execution_started.title',
+                    ],
+                    'message_i18n' => [
+                        'domain' => 'logs',
+                        'key' => 'logs.worker.runtime.execution_started.message',
+                        'parameters' => [
+                            '%taskTitle%' => $task->getTitle(),
+                            '%agentName%' => $agent->getName(),
+                        ],
+                    ],
                     'project_id' => (string) $task->getProject()->getId(),
                     'task_id' => (string) $task->getId(),
                     'agent_id' => (string) $agent->getId(),
@@ -182,7 +222,11 @@ final class AgentTaskHandler
             if (!$willRetry) {
                 $this->taskService->failExecution($task, $e->getMessage());
             }
-            $this->logService->recordError('worker', 'Agent execution failed', $e, [
+            $this->logService->recordError('worker', '', $e, [
+                'title_i18n' => [
+                    'domain' => 'logs',
+                    'key' => 'logs.worker.error.execution_failed.title',
+                ],
                 'project_id' => (string) $task->getProject()->getId(),
                 'task_id' => (string) $task->getId(),
                 'agent_id' => (string) $agent->getId(),

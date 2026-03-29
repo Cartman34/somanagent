@@ -8,6 +8,11 @@ Symfony commands are executed via `bin/console`. In the Docker context, use:
 php scripts/console.php <command> [args...]
 ```
 
+Command rule:
+- Symfony command descriptions, argument help, option help, and console UI output must be written in English
+- French is reserved to the web interface, not the CLI layer
+- Exception: command payloads may still contain French when they carry business content, for example a message sent to an agent
+
 ## SoManAgent Commands
 
 These commands are specific to SoManAgent (prefix `somanagent:`).
@@ -21,7 +26,7 @@ php scripts/console.php somanagent:health
 
 Output:
 ```
-SoManAgent — Connector check
+SoManAgent — Connector Check
  ✓ claude_api
  ✗ claude_cli
  [WARNING] Some connectors are unreachable.

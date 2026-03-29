@@ -1,9 +1,11 @@
 #!/usr/bin/env php
 <?php
-// Description: GitHub CLI helper — create PRs, merge, list, view
+// Description: GitHub CLI helper — create PRs, merge, close, edit, list, view
 // Usage: php scripts/github.php pr create --title "..." --head <branch> --body-file /tmp/pr_body.md [--base main]
 // Usage: php scripts/github.php pr create --title "..." --head <branch> --body "..." [--base main]
 // Usage: php scripts/github.php pr merge <number> [--squash]
+// Usage: php scripts/github.php pr close <number>
+// Usage: php scripts/github.php pr edit <number> [--title "..."] [--body-file /tmp/pr_body.md] [--body "..."]
 // Usage: php scripts/github.php pr list
 // Usage: php scripts/github.php pr view <number>
 
@@ -159,6 +161,51 @@ try {
             $api('PUT', "/pulls/{$number}/merge", ['merge_method' => $method]);
             $c->ok("PR #{$number} merged.");
 
+        } elseif ($sub === 'close') {
+            $number = (int) array_shift($args);
+            if (!$number) {
+                $c->fail('PR number is required.');
+                exit(1);
+            }
+            $c->step("Closing PR #{$number}");
+            $api('PATCH', "/pulls/{$number}", ['state' => 'closed']);
+            $c->ok("PR #{$number} closed.");
+
+        } elseif ($sub === 'edit') {
+            $number = (int) array_shift($args);
+            $flags  = $parseFlags($args);
+
+            if (!$number) {
+                $c->fail('PR number is required.');
+                exit(1);
+            }
+
+            $patch = [];
+
+            if (isset($flags['title'])) {
+                $patch['title'] = $flags['title'];
+            }
+
+            if (isset($flags['body-file'])) {
+                if (!file_exists($flags['body-file'])) {
+                    $c->fail("--body-file: file not found: {$flags['body-file']}");
+                    exit(1);
+                }
+                $patch['body'] = file_get_contents($flags['body-file']);
+                unlink($flags['body-file']);
+            } elseif (isset($flags['body'])) {
+                $patch['body'] = $flags['body'];
+            }
+
+            if (empty($patch)) {
+                $c->fail('At least one of --title, --body, --body-file is required.');
+                exit(1);
+            }
+
+            $c->step("Editing PR #{$number}");
+            $pr = $api('PATCH', "/pulls/{$number}", $patch);
+            $c->ok("PR #{$number} updated: {$pr['html_url']}");
+
         } elseif ($sub === 'list') {
             $prs = $api('GET', '/pulls?state=open&per_page=20');
             if (empty($prs)) {
@@ -183,7 +230,7 @@ try {
             $c->line("Body   :\n{$pr['body']}");
 
         } else {
-            $c->fail("Unknown subcommand: pr {$sub}. Available: create, merge, list, view");
+            $c->fail("Unknown subcommand: pr {$sub}. Available: create, merge, close, edit, list, view");
             exit(1);
         }
 

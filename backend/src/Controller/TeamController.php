@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\ApiErrorPayloadFactory;
 use App\Service\TeamService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -14,7 +15,10 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/teams')]
 class TeamController extends AbstractController
 {
-    public function __construct(private readonly TeamService $teamService) {}
+    public function __construct(
+        private readonly TeamService $teamService,
+        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
+    ) {}
 
     #[Route('', name: 'team_list', methods: ['GET'])]
     public function list(): JsonResponse
@@ -33,7 +37,7 @@ class TeamController extends AbstractController
     {
         $data = $request->toArray();
         if (empty($data['name'])) {
-            return $this->json(['error' => 'Le champ "name" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('teams.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $team = $this->teamService->create($data['name'], $data['description'] ?? null);
@@ -45,7 +49,7 @@ class TeamController extends AbstractController
     {
         $team = $this->teamService->findById($id);
         if ($team === null) {
-            return $this->json(['error' => 'Équipe introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('teams.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json([
@@ -68,7 +72,7 @@ class TeamController extends AbstractController
     {
         $team = $this->teamService->findById($id);
         if ($team === null) {
-            return $this->json(['error' => 'Équipe introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('teams.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
@@ -81,7 +85,7 @@ class TeamController extends AbstractController
     {
         $team = $this->teamService->findById($id);
         if ($team === null) {
-            return $this->json(['error' => 'Équipe introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('teams.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->teamService->delete($team);
@@ -95,17 +99,17 @@ class TeamController extends AbstractController
     {
         $team = $this->teamService->findById($id);
         if ($team === null) {
-            return $this->json(['error' => 'Équipe introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('teams.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
         if (empty($data['agentId'])) {
-            return $this->json(['error' => 'Le champ "agentId" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('teams.validation.agent_id_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $agent = $this->teamService->findAgentById($data['agentId']);
         if ($agent === null) {
-            return $this->json(['error' => 'Agent introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('agents.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->teamService->addAgent($team, $agent);
@@ -117,12 +121,12 @@ class TeamController extends AbstractController
     {
         $team = $this->teamService->findById($id);
         if ($team === null) {
-            return $this->json(['error' => 'Équipe introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('teams.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $agent = $this->teamService->findAgentById($agentId);
         if ($agent === null) {
-            return $this->json(['error' => 'Agent introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('agents.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->teamService->removeAgent($team, $agent);

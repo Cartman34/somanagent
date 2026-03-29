@@ -17,7 +17,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'somanagent:agent:hello',
-    description: 'Envoie un message de test a un agent dans le contexte d\'un projet',
+    description: 'Sends a test message to an agent in a project context',
 )]
 final class AgentHelloCommand extends Command
 {
@@ -32,9 +32,9 @@ final class AgentHelloCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addArgument('projectId', InputArgument::REQUIRED, 'UUID du projet')
-            ->addArgument('agentId', InputArgument::REQUIRED, 'UUID de l\'agent')
-            ->addOption('message', null, InputOption::VALUE_REQUIRED, 'Message a envoyer', 'hello');
+            ->addArgument('projectId', InputArgument::REQUIRED, 'Project UUID')
+            ->addArgument('agentId', InputArgument::REQUIRED, 'Agent UUID')
+            ->addOption('message', null, InputOption::VALUE_REQUIRED, 'Message to send', 'hello');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -49,42 +49,42 @@ final class AgentHelloCommand extends Command
         $agent   = $this->agentService->findById($agentId);
 
         if ($project === null) {
-            $io->error(sprintf('Projet introuvable: %s', $projectId));
+            $io->error(sprintf('Project not found: %s', $projectId));
             return Command::FAILURE;
         }
 
         if ($agent === null) {
-            $io->error(sprintf('Agent introuvable: %s', $agentId));
+            $io->error(sprintf('Agent not found: %s', $agentId));
             return Command::FAILURE;
         }
 
         if ($message === '') {
-            $io->error('Le message ne peut pas etre vide.');
+            $io->error('Message cannot be empty.');
             return Command::INVALID;
         }
 
         $exchange = $this->chatService->sendAndReceive($project, $agent, $message);
         $reply    = $exchange['agent'];
 
-        $io->title('SoManAgent - Test agent');
+        $io->title('SoManAgent - Agent Test');
         $io->definitionList(
-            ['Projet' => sprintf('%s (%s)', $project->getName(), $projectId)],
+            ['Project' => sprintf('%s (%s)', $project->getName(), $projectId)],
             ['Agent' => sprintf('%s (%s)', $agent->getName(), $agentId)],
-            ['Connecteur' => $agent->getConnector()->value],
+            ['Connector' => $agent->getConnector()->value],
             ['Message' => $message],
             ['Exchange' => $reply->getExchangeId()],
         );
 
         $metadata = $reply->getMetadata() ?? [];
         if ($metadata !== []) {
-            $io->section('Metadonnees');
+            $io->section('Metadata');
             foreach ($metadata as $key => $value) {
                 $io->writeln(sprintf('%s: %s', $key, is_scalar($value) ? (string) $value : json_encode($value)));
             }
         }
 
-        $io->section($reply->isError() ? 'Erreur agent' : 'Reponse agent');
-        $io->writeln($reply->getContent() !== '' ? $reply->getContent() : '[reponse vide]');
+        $io->section($reply->isError() ? 'Agent Error' : 'Agent Response');
+        $io->writeln($reply->getContent() !== '' ? $reply->getContent() : '[empty response]');
 
         return $reply->isError() ? Command::FAILURE : Command::SUCCESS;
     }

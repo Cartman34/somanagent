@@ -8,6 +8,8 @@ use App\Entity\LogEvent;
 use App\Entity\LogOccurrence;
 use App\Repository\LogEventRepository;
 use App\Repository\LogOccurrenceRepository;
+use App\Service\ApiErrorPayloadFactory;
+use App\Service\LogMessageRenderer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,6 +22,8 @@ final class LogController extends AbstractController
         private readonly LogOccurrenceRepository $occurrenceRepository,
         private readonly LogEventRepository $eventRepository,
         private readonly \App\Service\LogService $logService,
+        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
+        private readonly LogMessageRenderer $logMessageRenderer,
     ) {}
 
     /**
@@ -121,17 +125,19 @@ final class LogController extends AbstractController
     {
         $payload = json_decode($request->getContent(), true);
         if (!is_array($payload)) {
-            return $this->json(['message' => 'Invalid JSON payload.'], 400);
+            return $this->json($this->apiErrorPayloadFactory->createForField('message', 'logs.ingest.invalid_json'), 400);
         }
 
+        $titleI18n = $this->readI18nPayload($payload, 'titleI18n');
+        $messageI18n = $this->readI18nPayload($payload, 'messageI18n');
         $source = $this->sanitizeSource($payload['source'] ?? null);
         $category = $this->sanitizeCategory($payload['category'] ?? null);
         $level = $this->sanitizeLevel($payload['level'] ?? null);
-        $title = $this->sanitizeTitle($payload['title'] ?? null);
-        $message = $this->sanitizeMessage($payload['message'] ?? null);
+        $title = $this->sanitizeTitle($payload['title'] ?? null) ?? ($titleI18n !== null ? '' : null);
+        $message = $this->sanitizeMessage($payload['message'] ?? null) ?? ($messageI18n !== null ? '' : null);
 
         if ($source === null || $category === null || $level === null || $title === null || $message === null) {
-            return $this->json(['message' => 'Missing or invalid log event fields.'], 400);
+            return $this->json($this->apiErrorPayloadFactory->createForField('message', 'logs.ingest.invalid_fields'), 400);
         }
 
         $context = is_array($payload['context'] ?? null) ? $payload['context'] : null;
@@ -158,6 +164,8 @@ final class LogController extends AbstractController
                 'stack' => $this->readNullableString($payload, 'stack'),
                 'origin' => $this->readNullableString($payload, 'origin'),
                 'raw_payload' => $rawPayload,
+                'title_i18n' => $titleI18n,
+                'message_i18n' => $messageI18n,
             ],
         );
 
@@ -173,8 +181,8 @@ final class LogController extends AbstractController
             'category' => $occurrence->getCategory(),
             'level' => $occurrence->getLevel(),
             'fingerprint' => $occurrence->getFingerprint(),
-            'title' => $occurrence->getTitle(),
-            'message' => $occurrence->getMessage(),
+            'title' => $this->logMessageRenderer->renderTitle($occurrence),
+            'message' => $this->logMessageRenderer->renderMessage($occurrence),
             'source' => $occurrence->getSource(),
             'projectId' => $occurrence->getProjectId()?->toRfc4122(),
             'taskId' => $occurrence->getTaskId()?->toRfc4122(),
@@ -185,6 +193,7 @@ final class LogController extends AbstractController
             'status' => $occurrence->getStatus(),
             'lastLogEventId' => $occurrence->getLastLogEventId()?->toRfc4122(),
             'contextSnapshot' => $occurrence->getContextSnapshot(),
+            'i18n' => $this->logMessageRenderer->buildI18n($occurrence),
         ];
     }
 
@@ -195,8 +204,8 @@ final class LogController extends AbstractController
             'source' => $event->getSource(),
             'category' => $event->getCategory(),
             'level' => $event->getLevel(),
-            'title' => $event->getTitle(),
-            'message' => $event->getMessage(),
+            'title' => $this->logMessageRenderer->renderTitle($event),
+            'message' => $this->logMessageRenderer->renderMessage($event),
             'fingerprint' => $event->getFingerprint(),
             'projectId' => $event->getProjectId()?->toRfc4122(),
             'taskId' => $event->getTaskId()?->toRfc4122(),
@@ -208,6 +217,7 @@ final class LogController extends AbstractController
             'stack' => $event->getStack(),
             'origin' => $event->getOrigin(),
             'rawPayload' => $event->getRawPayload(),
+            'i18n' => $this->logMessageRenderer->buildI18n($event),
             'occurredAt' => $event->getOccurredAt()->format(\DateTimeInterface::ATOM),
         ];
     }
@@ -280,5 +290,30 @@ final class LogController extends AbstractController
         $value = $payload[$key] ?? null;
 
         return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    /**
+     * @return array{domain: string, key: string, parameters?: array<string, scalar|null>}|null
+     */
+    private function readI18nPayload(array $payload, string $key): ?array
+    {
+        $value = $payload[$key] ?? null;
+        if (!is_array($value)) {
+            return null;
+        }
+
+        $domain = $value['domain'] ?? null;
+        $translationKey = $value['key'] ?? null;
+        if (!is_string($domain) || $domain === '' || !is_string($translationKey) || $translationKey === '') {
+            return null;
+        }
+
+        $parameters = is_array($value['parameters'] ?? null) ? $value['parameters'] : [];
+
+        return [
+            'domain' => $domain,
+            'key' => $translationKey,
+            'parameters' => $parameters,
+        ];
     }
 }

@@ -447,10 +447,26 @@ final class StoryExecutionService
             source: 'backend',
             category: 'runtime',
             level: 'info',
-            title: $triggerType === TaskExecutionTrigger::Rework ? 'Agent task rework dispatched' : 'Agent task dispatched',
-            // Stored in DB for the in-app log UI, so the human-facing message stays in French.
-            message: sprintf('Dispatch de %s vers %s avec le skill %s', $story->getTitle(), $agent->getName(), $skillSlug),
+            title: '',
+            message: '',
             options: [
+                'title_i18n' => [
+                    'domain' => 'logs',
+                    'key' => $triggerType === TaskExecutionTrigger::Rework
+                        ? 'logs.backend.runtime.task_rework_dispatched.title'
+                        : 'logs.backend.runtime.task_dispatched.title',
+                ],
+                'message_i18n' => [
+                    'domain' => 'logs',
+                    'key' => $triggerType === TaskExecutionTrigger::Rework
+                        ? 'logs.backend.runtime.task_rework_dispatched.message'
+                        : 'logs.backend.runtime.task_dispatched.message',
+                    'parameters' => [
+                        '%taskTitle%' => $story->getTitle(),
+                        '%agentName%' => $agent->getName(),
+                        '%skillSlug%' => $skillSlug,
+                    ],
+                ],
                 'project_id' => (string) $story->getProject()->getId(),
                 'task_id' => (string) $story->getId(),
                 'agent_id' => (string) $agent->getId(),

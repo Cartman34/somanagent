@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\ChatMessage;
+use App\Service\ApiErrorPayloadFactory;
 use App\Service\AgentService;
 use App\Service\ChatService;
 use App\Service\ProjectService;
@@ -21,6 +22,7 @@ class ChatController extends AbstractController
         private readonly ChatService    $chatService,
         private readonly ProjectService $projectService,
         private readonly AgentService   $agentService,
+        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
     ) {}
 
     #[Route('/{agentId}', name: 'chat_history', methods: ['GET'])]
@@ -30,7 +32,7 @@ class ChatController extends AbstractController
         $agent   = $this->agentService->findById($agentId);
 
         if ($project === null || $agent === null) {
-            return $this->json(['error' => 'Projet ou agent introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('chat.error.project_or_agent_not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $messages = $this->chatService->getConversation($project, $agent);
@@ -45,12 +47,12 @@ class ChatController extends AbstractController
         $agent   = $this->agentService->findById($agentId);
 
         if ($project === null || $agent === null) {
-            return $this->json(['error' => 'Projet ou agent introuvable.'], Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('chat.error.project_or_agent_not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
         if (empty($data['content'])) {
-            return $this->json(['error' => 'Le champ "content" est obligatoire.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('chat.validation.content_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $exchange = $this->chatService->sendAndReceive($project, $agent, trim((string) $data['content']));

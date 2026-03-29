@@ -8,6 +8,7 @@ use App\Entity\LogEvent;
 use App\Entity\LogOccurrence;
 use App\Repository\LogOccurrenceRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Symfony\Component\Uid\Uuid;
 
 final class LogService
@@ -18,6 +19,7 @@ final class LogService
         private readonly EntityManagerInterface $em,
         private readonly LogOccurrenceRepository $occurrenceRepository,
         private readonly RequestCorrelationService $requestCorrelation,
+        private readonly TranslatorInterface $translator,
     ) {}
 
     /**
@@ -32,7 +34,9 @@ final class LogService
      *   context?: array|null,
      *   stack?: string|null,
      *   origin?: string|null,
-     *   raw_payload?: array|null
+     *   raw_payload?: array|null,
+     *   title_i18n?: array{domain: string, key: string, parameters?: array<string, scalar|null>}|null,
+     *   message_i18n?: array{domain: string, key: string, parameters?: array<string, scalar|null>}|null
      * } $options
      */
     public function record(
@@ -43,8 +47,16 @@ final class LogService
         string $message,
         array $options = [],
     ): LogEvent {
-        $event = new LogEvent($source, $category, $level, $title, $message);
-        $event->setFingerprint($options['fingerprint'] ?? $this->buildFingerprint($source, $category, $level, $title, $message, $options))
+        $titleI18n = $this->normalizeI18n($options['title_i18n'] ?? null);
+        $messageI18n = $this->normalizeI18n($options['message_i18n'] ?? null);
+        $renderedTitle = $this->renderI18n($title, $titleI18n);
+        $renderedMessage = $this->renderI18n($message, $messageI18n);
+
+        $event = new LogEvent($source, $category, $level, $renderedTitle, $renderedMessage);
+        $event
+            ->setTitleTranslation($titleI18n['domain'] ?? null, $titleI18n['key'] ?? null, $titleI18n['parameters'] ?? null)
+            ->setMessageTranslation($messageI18n['domain'] ?? null, $messageI18n['key'] ?? null, $messageI18n['parameters'] ?? null)
+            ->setFingerprint($options['fingerprint'] ?? $this->buildFingerprint($source, $category, $level, $renderedTitle, $renderedMessage, $options))
             ->setProjectId($this->toUuid($options['project_id'] ?? null))
             ->setTaskId($this->toUuid($options['task_id'] ?? null))
             ->setAgentId($this->toUuid($options['agent_id'] ?? null))
@@ -61,7 +73,9 @@ final class LogService
         if ($this->shouldAggregateOccurrence($event) && $event->getFingerprint() !== null) {
             $occurrence = $this->occurrenceRepository->findOneByFingerprint($category, $level, $event->getFingerprint());
             if ($occurrence === null) {
-                $occurrence = (new LogOccurrence($category, $level, $event->getFingerprint(), $title, $message, $source))
+                $occurrence = (new LogOccurrence($category, $level, $event->getFingerprint(), $event->getTitle(), $event->getMessage(), $source))
+                    ->setTitleTranslation($event->getTitleDomain(), $event->getTitleKey(), $event->getTitleParameters())
+                    ->setMessageTranslation($event->getMessageDomain(), $event->getMessageKey(), $event->getMessageParameters())
                     ->setProjectId($event->getProjectId())
                     ->setTaskId($event->getTaskId())
                     ->setAgentId($event->getAgentId())
@@ -92,7 +106,8 @@ final class LogService
      *   context?: array|null,
      *   stack?: string|null,
      *   origin?: string|null,
-     *   raw_payload?: array|null
+     *   raw_payload?: array|null,
+     *   title_i18n?: array{domain: string, key: string, parameters?: array<string, scalar|null>}|null
      * } $options
      */
     public function recordError(string $source, string $title, \Throwable $exception, array $options = []): LogEvent
@@ -157,5 +172,41 @@ final class LogService
         } catch (\InvalidArgumentException) {
             return null;
         }
+    }
+
+    /**
+     * @param array{domain?: string, key?: string, parameters?: array<string, scalar|null>}|null $i18n
+     * @return array{domain: string, key: string, parameters: array<string, scalar|null>}|null
+     */
+    private function normalizeI18n(?array $i18n): ?array
+    {
+        if (!is_array($i18n)) {
+            return null;
+        }
+
+        $domain = $i18n['domain'] ?? null;
+        $key = $i18n['key'] ?? null;
+
+        if (!is_string($domain) || $domain === '' || !is_string($key) || $key === '') {
+            return null;
+        }
+
+        return [
+            'domain' => $domain,
+            'key' => $key,
+            'parameters' => is_array($i18n['parameters'] ?? null) ? $i18n['parameters'] : [],
+        ];
+    }
+
+    /**
+     * @param array{domain: string, key: string, parameters: array<string, scalar|null>}|null $i18n
+     */
+    private function renderI18n(string $fallback, ?array $i18n): string
+    {
+        if ($i18n === null) {
+            return $fallback;
+        }
+
+        return $this->translator->trans($i18n['key'], $i18n['parameters'], $i18n['domain']);
     }
 }

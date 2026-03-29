@@ -163,6 +163,24 @@ class Project
 ### Ports and Adapters
 Adapters implement the port. Selection is handled via `AgentPortRegistry` (Symfony tagged services) for AI agents, and via direct injection for VCS.
 
+### Development Command Rule
+
+When a project script already exists in `scripts/`, use it in priority over direct container commands.
+
+Examples:
+- prefer `php scripts/console.php cache:clear` over `docker exec ... bin/console cache:clear`
+- prefer `php scripts/logs.php worker` over raw `docker logs ...`
+
+Direct Docker commands remain acceptable only when no script covers the operation.
+
+Symfony command descriptions, argument help, option help, and console UI output must be written in English.
+
+French is reserved to the web interface and other intentional end-user product surfaces.
+
+Exception:
+- command payloads that carry business content may still be French when that is the real user input
+- for example, a CLI option used to send a message to an agent can contain French text
+
 ## Tech Stack
 
 | Component | Technology | Version |

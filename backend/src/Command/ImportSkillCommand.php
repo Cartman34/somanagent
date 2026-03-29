@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-#[AsCommand(name: 'somanagent:skill:import', description: 'Importe un skill depuis skills.sh (ex: owner/skill-name)')]
+#[AsCommand(name: 'somanagent:skill:import', description: 'Imports a skill from skills.sh (for example: owner/skill-name)')]
 class ImportSkillCommand extends Command
 {
     public function __construct(private readonly SkillService $skillService)
@@ -22,7 +22,7 @@ class ImportSkillCommand extends Command
 
     protected function configure(): void
     {
-        $this->addArgument('source', InputArgument::REQUIRED, 'Source du skill (ex: anthropics/code-reviewer)');
+        $this->addArgument('source', InputArgument::REQUIRED, 'Skill source (for example: anthropics/code-reviewer)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -30,11 +30,11 @@ class ImportSkillCommand extends Command
         $io     = new SymfonyStyle($input, $output);
         $source = $input->getArgument('source');
 
-        $io->text("Import du skill <info>{$source}</info>...");
+        $io->text("Importing skill <info>{$source}</info>...");
 
         $skill = $this->skillService->importFromRegistry($source);
 
-        $io->success(sprintf('Skill "%s" (slug: %s) importé avec succès.', $skill->getName(), $skill->getSlug()));
+        $io->success(sprintf('Skill "%s" (slug: %s) imported successfully.', $skill->getName(), $skill->getSlug()));
         return Command::SUCCESS;
     }
 }

@@ -65,14 +65,13 @@ Use `doc/` as the source of truth for product, technical and development documen
 ### Useful verification commands
 
 ```bash
-docker exec somanagent_php php /var/www/backend/bin/console cache:clear
-docker exec somanagent_php php /var/www/backend/bin/console somanagent:task:redispatch --latest
-docker exec somanagent_php php /var/www/backend/bin/console somanagent:task:redispatch <task-id> --sync
-docker exec somanagent_php php /var/www/backend/bin/console somanagent:agent:hello <projectId> <agentId> --message=Salut
-docker exec somanagent_php claude auth status
-docker exec somanagent_worker claude auth status
+php scripts/console.php cache:clear
+php scripts/console.php somanagent:task:redispatch --latest
+php scripts/console.php somanagent:task:redispatch <task-id> --sync
+php scripts/console.php somanagent:agent:hello <projectId> <agentId> --message="Hello"
+php scripts/claude-auth.php status
 docker exec somanagent_node npm run type-check
-docker logs somanagent_worker --tail 120
+php scripts/logs.php worker --tail 120
 docker exec somanagent_db psql -U somanagent -d somanagent -c "SELECT source, category, level, title, occurred_at FROM log_event ORDER BY occurred_at DESC LIMIT 20;"
 ```
 
@@ -102,15 +101,17 @@ docker exec somanagent_db psql -U somanagent -d somanagent -c "SELECT source, ca
 1. Apply any pending corrections
 2. Clean `local/changes-list.md` (empty the Completed section)
 3. Clean `local/changes-review.md` (reset to "Aucune review en cours.")
-4. `git checkout -b feat/…` (or `fix/…` for `[FIX]` items) if not already on a feature branch
+4. `git checkout -b feat/…` (or `fix/…` for `[FIX]` items) if not already on a feature branch — **before the commit**
 5. `git add . && git commit`
-6. *(`review async` only)* `git checkout main`
-7. `git push -u origin <branch>`
-8. Write PR body with the **Write tool** to `/tmp/pr_body.md` (read first if it already exists), then:
+6. `git push -u origin <branch>`
+7. Write PR body with the **Write tool** to `/tmp/pr_body.md` (read first if it already exists), then:
    ```
    php scripts/github.php pr create --title "..." --head <branch> --body-file /tmp/pr_body.md
    ```
    The script reads and deletes the file automatically.
+8. **Stay on the feature branch** — do NOT `git checkout main` unless `review async` was requested.
+
+**`review async` only:** insert `git checkout main` between steps 6 and 7.
 
 **Branch and title prefix:**
 - All `[FIX]` items → `fix/…` branch, `🐛 Bug: …` title, PR body with **Type : Anomalie**
@@ -131,13 +132,20 @@ Merge the current open PR: `php scripts/github.php pr merge <number>`, then `git
 
 - Keep `doc/` up to date with code changes.
 - `doc/README.md` is the documentation index and must be updated when a new doc file is added.
+- Always use project scripts in `scripts/` first when they cover the need.
+- Prefer `php scripts/console.php ...`, `php scripts/logs.php ...`, `php scripts/dev.php ...`, `php scripts/health.php ...` and similar wrappers over direct `docker exec`, `bin/console`, or raw container commands.
+- Only fall back to direct Docker or container commands when no project script exists for that operation.
+- This rule is also about efficiency: using the project wrappers reduces command verbosity and unnecessary token usage.
 - UI text is French.
+- Symfony commands, CLI help, and console output are English.
+- User-provided command payloads may still be French when they represent business content, for example a chat message sent to an agent.
 - Technical source content is English:
   - code
   - PHPDoc/JSDoc/TSDoc
   - comments
   - route names
   - script output
+  - command descriptions, argument help, option help, and console UI output
   - commit messages
 - For project files, use relative paths in commands and do not rely on `cd` into subdirectories.
 
