@@ -57,6 +57,20 @@ Les champs rendus (`title`, `message`) sont traduits à la lecture. Pour les anc
 ### `GET /api/logs/occurrences/{id}`
 Retourne une occurrence agrégée et les événements associés.
 
+### `PATCH /api/logs/occurrences/{id}/status`
+Met à jour le statut de tri d’une occurrence.
+
+**Body :**
+```json
+{ "status": "acknowledged" }
+```
+
+Valeurs acceptées :
+- `open`
+- `acknowledged`
+- `resolved`
+- `ignored`
+
 ### `GET /api/logs/events`
 Retourne les événements bruts paginés avec filtres `source`, `category`, `level`, `projectId`, `taskId`, `agentId`, `from`, `to`, `page`, `limit`.
 

@@ -29,6 +29,9 @@ features:
     name_required: 'Le champ "name" est obligatoire.'
 
 logs:
+  occurrence:
+    invalid_json: 'La charge JSON est invalide.'
+    invalid_status: 'Le statut d’occurrence est invalide.'
   ingest:
     invalid_json: 'La charge JSON est invalide.'
     invalid_fields: 'Les champs de log sont manquants ou invalides.'

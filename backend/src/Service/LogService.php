@@ -14,6 +14,7 @@ use Symfony\Component\Uid\Uuid;
 final class LogService
 {
     private const OCCURRENCE_LEVELS = ['warning', 'error', 'critical'];
+    private const OCCURRENCE_STATUSES = ['open', 'acknowledged', 'resolved', 'ignored'];
 
     public function __construct(
         private readonly EntityManagerInterface $em,
@@ -128,6 +129,21 @@ final class LogService
                 'origin' => $exception->getFile() . ':' . $exception->getLine(),
             ],
         );
+    }
+
+    /**
+     * Updates the workflow status of a log occurrence.
+     */
+    public function updateOccurrenceStatus(LogOccurrence $occurrence, string $status): LogOccurrence
+    {
+        if (!in_array($status, self::OCCURRENCE_STATUSES, true)) {
+            throw new \InvalidArgumentException(sprintf('Unsupported log occurrence status: %s', $status));
+        }
+
+        $occurrence->setStatus($status);
+        $this->em->flush();
+
+        return $occurrence;
     }
 
     /**

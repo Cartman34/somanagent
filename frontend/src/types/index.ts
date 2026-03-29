@@ -305,7 +305,7 @@ export interface LogOccurrence {
   firstSeenAt: string
   lastSeenAt: string
   occurrenceCount: number
-  status: string
+  status: 'open' | 'acknowledged' | 'resolved' | 'ignored'
   lastLogEventId: string | null
   contextSnapshot: Record<string, unknown> | null
   i18n: PersistedI18nMetadata | null

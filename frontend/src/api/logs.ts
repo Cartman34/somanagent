@@ -15,6 +15,13 @@ export interface LogFilters {
   limit?: number
 }
 
+/**
+ * Payload used to update the triage status of an aggregated log occurrence.
+ */
+export interface LogOccurrenceStatusPayload {
+  status: LogOccurrence['status']
+}
+
 export const logsApi = {
   listOccurrences: async (filters: LogFilters): Promise<{ data: LogOccurrence[]; total: number; page: number; limit: number }> => {
     const { data } = await apiClient.get('/logs/occurrences', { params: filters })
@@ -28,6 +35,11 @@ export const logsApi = {
 
   getOccurrence: async (id: string): Promise<{ occurrence: LogOccurrence; events: LogEvent[] }> => {
     const { data } = await apiClient.get(`/logs/occurrences/${id}`)
+    return data
+  },
+
+  updateOccurrenceStatus: async (id: string, payload: LogOccurrenceStatusPayload): Promise<{ occurrence: LogOccurrence }> => {
+    const { data } = await apiClient.patch(`/logs/occurrences/${id}/status`, payload)
     return data
   },
 }
