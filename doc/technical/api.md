@@ -45,11 +45,22 @@ Liste les occurrences agrégées. Filtres disponibles :
 - `page`
 - `limit`
 
+Chaque occurrence expose aussi :
+- `title`
+- `message`
+- `i18n`
+  - `titleDomain`, `titleKey`, `titleParameters`
+  - `messageDomain`, `messageKey`, `messageParameters`
+
+Les champs rendus (`title`, `message`) sont traduits à la lecture. Pour les anciennes lignes non migrées, `i18n` vaut `null` et le texte historique brut est renvoyé.
+
 ### `GET /api/logs/occurrences/{id}`
 Retourne une occurrence agrégée et les événements associés.
 
 ### `GET /api/logs/events`
 Retourne les événements bruts paginés avec filtres `source`, `category`, `level`, `projectId`, `taskId`, `agentId`, `from`, `to`, `page`, `limit`.
+
+Chaque événement expose le même bloc `i18n` que les occurrences pour permettre une future localisation frontend sans perdre l’identité canonique du message persisté.
 
 ### `POST /api/logs/events`
 Point d’ingestion pour les événements observabilité côté client.
@@ -320,5 +331,14 @@ Paramètres : `page`, `limit`.
 | 500 | Erreur serveur |
 
 ```json
-{ "error": "Message décrivant l'erreur" }
+{
+  "error": "Message décrivant l'erreur",
+  "i18n": {
+    "domain": "app",
+    "key": "projects.error.not_found",
+    "parameters": []
+  }
+}
 ```
+
+Quand l’erreur provient encore d’un message métier dynamique non migré, `i18n` vaut `null` mais le shape reste identique.

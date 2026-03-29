@@ -39,8 +39,26 @@ class LogEvent
     #[ORM\Column(length: 255)]
     private string $title;
 
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $titleDomain = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $titleKey = null;
+
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $titleParameters = null;
+
     #[ORM\Column(type: 'text')]
     private string $message;
+
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $messageDomain = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $messageKey = null;
+
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $messageParameters = null;
 
     #[ORM\Column(length: 64, nullable: true)]
     private ?string $fingerprint = null;
@@ -94,7 +112,13 @@ class LogEvent
     public function getCategory(): string { return $this->category; }
     public function getLevel(): string { return $this->level; }
     public function getTitle(): string { return $this->title; }
+    public function getTitleDomain(): ?string { return $this->titleDomain; }
+    public function getTitleKey(): ?string { return $this->titleKey; }
+    public function getTitleParameters(): ?array { return $this->titleParameters; }
     public function getMessage(): string { return $this->message; }
+    public function getMessageDomain(): ?string { return $this->messageDomain; }
+    public function getMessageKey(): ?string { return $this->messageKey; }
+    public function getMessageParameters(): ?array { return $this->messageParameters; }
     public function getFingerprint(): ?string { return $this->fingerprint; }
     public function getProjectId(): ?Uuid { return $this->projectId; }
     public function getTaskId(): ?Uuid { return $this->taskId; }
@@ -119,4 +143,28 @@ class LogEvent
     public function setStack(?string $stack): static { $this->stack = $stack; return $this; }
     public function setOrigin(?string $origin): static { $this->origin = $origin; return $this; }
     public function setRawPayload(?array $rawPayload): static { $this->rawPayload = $rawPayload; return $this; }
+
+    /**
+     * @param array<string, scalar|null>|null $parameters
+     */
+    public function setTitleTranslation(?string $domain, ?string $key, ?array $parameters = null): static
+    {
+        $this->titleDomain = $domain;
+        $this->titleKey = $key;
+        $this->titleParameters = $parameters;
+
+        return $this;
+    }
+
+    /**
+     * @param array<string, scalar|null>|null $parameters
+     */
+    public function setMessageTranslation(?string $domain, ?string $key, ?array $parameters = null): static
+    {
+        $this->messageDomain = $domain;
+        $this->messageKey = $key;
+        $this->messageParameters = $parameters;
+
+        return $this;
+    }
 }

@@ -133,10 +133,22 @@ final class RedispatchTaskCommand extends Command
                     source: 'backend',
                     category: 'runtime',
                     level: 'info',
-                    title: 'Agent task redispatched synchronously',
-                    // Stored in DB for the in-app log UI, so the human-facing message stays in French.
-                    message: sprintf('Relance synchrone de %s vers %s avec le skill %s', $task->getTitle(), $agent->getName(), $skillSlug),
+                    title: '',
+                    message: '',
                     options: [
+                        'title_i18n' => [
+                            'domain' => 'logs',
+                            'key' => 'logs.backend.runtime.task_redispatched_sync.title',
+                        ],
+                        'message_i18n' => [
+                            'domain' => 'logs',
+                            'key' => 'logs.backend.runtime.task_redispatched_sync.message',
+                            'parameters' => [
+                                '%taskTitle%' => $task->getTitle(),
+                                '%agentName%' => $agent->getName(),
+                                '%skillSlug%' => $skillSlug,
+                            ],
+                        ],
                         'project_id' => (string) $task->getProject()->getId(),
                         'task_id' => (string) $task->getId(),
                         'agent_id' => (string) $agent->getId(),
@@ -206,10 +218,22 @@ final class RedispatchTaskCommand extends Command
             source: 'backend',
             category: 'runtime',
             level: 'info',
-            title: 'Agent task redispatched',
-            // Stored in DB for the in-app log UI, so the human-facing message stays in French.
-            message: sprintf('Relance CLI de %s vers %s avec le skill %s', $task->getTitle(), $agent->getName(), $skillSlug),
+            title: '',
+            message: '',
             options: [
+                'title_i18n' => [
+                    'domain' => 'logs',
+                    'key' => 'logs.backend.runtime.task_redispatched.title',
+                ],
+                'message_i18n' => [
+                    'domain' => 'logs',
+                    'key' => 'logs.backend.runtime.task_redispatched.message',
+                    'parameters' => [
+                        '%taskTitle%' => $task->getTitle(),
+                        '%agentName%' => $agent->getName(),
+                        '%skillSlug%' => $skillSlug,
+                    ],
+                ],
                 'project_id' => (string) $task->getProject()->getId(),
                 'task_id' => (string) $task->getId(),
                 'agent_id' => (string) $agent->getId(),

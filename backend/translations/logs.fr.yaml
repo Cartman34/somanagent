@@ -1,4 +1,21 @@
 logs:
+  backend:
+    error:
+      unhandled_http_exception:
+        title: 'Exception HTTP non gérée'
+    runtime:
+      task_dispatched:
+        title: 'Tâche agent envoyée'
+        message: 'Dispatch de %taskTitle% vers %agentName% avec le skill %skillSlug%'
+      task_rework_dispatched:
+        title: 'Reprise agent envoyée'
+        message: 'Dispatch de %taskTitle% vers %agentName% avec le skill %skillSlug%'
+      task_redispatched:
+        title: 'Tâche agent relancée'
+        message: 'Relance CLI de %taskTitle% vers %agentName% avec le skill %skillSlug%'
+      task_redispatched_sync:
+        title: 'Tâche agent relancée en synchrone'
+        message: 'Relance synchrone de %taskTitle% vers %agentName% avec le skill %skillSlug%'
   runtime:
     unexpected_frontend_error:
       title: 'Erreur frontend non interceptée'
@@ -23,3 +40,20 @@ logs:
     claude_cli_unavailable:
       title: 'Authentification Claude CLI indisponible'
       message: 'La CLI Claude n’est pas authentifiée dans l’environnement runtime.'
+  worker:
+    error:
+      task_execution_not_found:
+        title: 'Exécution agent introuvable'
+        message: 'Exécution introuvable pour le worker: %taskExecutionId%'
+      task_not_found:
+        title: 'Tâche agent introuvable'
+        message: 'Tâche introuvable pour le worker: %taskId%'
+      agent_runtime_not_found:
+        title: 'Agent runtime introuvable'
+        message: 'Agent introuvable pour le worker: %agentId%'
+      execution_failed:
+        title: 'Échec d’exécution agent'
+    runtime:
+      execution_started:
+        title: 'Exécution agent démarrée'
+        message: 'Exécution de %taskTitle% par %agentName%'

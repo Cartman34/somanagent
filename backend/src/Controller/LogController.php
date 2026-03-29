@@ -9,6 +9,7 @@ use App\Entity\LogOccurrence;
 use App\Repository\LogEventRepository;
 use App\Repository\LogOccurrenceRepository;
 use App\Service\ApiErrorPayloadFactory;
+use App\Service\LogMessageRenderer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,6 +23,7 @@ final class LogController extends AbstractController
         private readonly LogEventRepository $eventRepository,
         private readonly \App\Service\LogService $logService,
         private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
+        private readonly LogMessageRenderer $logMessageRenderer,
     ) {}
 
     /**
@@ -175,8 +177,8 @@ final class LogController extends AbstractController
             'category' => $occurrence->getCategory(),
             'level' => $occurrence->getLevel(),
             'fingerprint' => $occurrence->getFingerprint(),
-            'title' => $occurrence->getTitle(),
-            'message' => $occurrence->getMessage(),
+            'title' => $this->logMessageRenderer->renderTitle($occurrence),
+            'message' => $this->logMessageRenderer->renderMessage($occurrence),
             'source' => $occurrence->getSource(),
             'projectId' => $occurrence->getProjectId()?->toRfc4122(),
             'taskId' => $occurrence->getTaskId()?->toRfc4122(),
@@ -187,6 +189,7 @@ final class LogController extends AbstractController
             'status' => $occurrence->getStatus(),
             'lastLogEventId' => $occurrence->getLastLogEventId()?->toRfc4122(),
             'contextSnapshot' => $occurrence->getContextSnapshot(),
+            'i18n' => $this->logMessageRenderer->buildI18n($occurrence),
         ];
     }
 
@@ -197,8 +200,8 @@ final class LogController extends AbstractController
             'source' => $event->getSource(),
             'category' => $event->getCategory(),
             'level' => $event->getLevel(),
-            'title' => $event->getTitle(),
-            'message' => $event->getMessage(),
+            'title' => $this->logMessageRenderer->renderTitle($event),
+            'message' => $this->logMessageRenderer->renderMessage($event),
             'fingerprint' => $event->getFingerprint(),
             'projectId' => $event->getProjectId()?->toRfc4122(),
             'taskId' => $event->getTaskId()?->toRfc4122(),
@@ -210,6 +213,7 @@ final class LogController extends AbstractController
             'stack' => $event->getStack(),
             'origin' => $event->getOrigin(),
             'rawPayload' => $event->getRawPayload(),
+            'i18n' => $this->logMessageRenderer->buildI18n($event),
             'occurredAt' => $event->getOccurredAt()->format(\DateTimeInterface::ATOM),
         ];
     }

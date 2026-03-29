@@ -34,7 +34,11 @@ final class ExceptionLogSubscriber implements EventSubscriberInterface
         $exception = $event->getThrowable();
 
         try {
-            $this->logService->recordError('backend', 'Unhandled HTTP exception', $exception, [
+            $this->logService->recordError('backend', '', $exception, [
+                'title_i18n' => [
+                    'domain' => 'logs',
+                    'key' => 'logs.backend.error.unhandled_http_exception.title',
+                ],
                 'request_ref' => $this->correlation->ensureRequestRef($request),
                 'project_id' => $this->resolveProjectId($request),
                 'task_id' => $this->resolveTaskId($request),

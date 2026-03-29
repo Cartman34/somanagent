@@ -48,11 +48,20 @@ class HealthController extends AbstractController
                 source: 'infra',
                 category: 'health',
                 level: 'warning',
-                // Stored in DB for the in-app log UI, so the human-facing message stays in French.
-                title: 'Connecteurs dégradés',
-                // Stored in DB for the in-app log UI, so the human-facing message stays in French.
-                message: sprintf('Un ou plusieurs connecteurs sont indisponibles: %s', implode(', ', $failedConnectors)),
+                title: '',
+                message: '',
                 options: [
+                    'title_i18n' => [
+                        'domain' => 'logs',
+                        'key' => 'logs.health.degraded_connectors.title',
+                    ],
+                    'message_i18n' => [
+                        'domain' => 'logs',
+                        'key' => 'logs.health.degraded_connectors.message',
+                        'parameters' => [
+                            '%connectors%' => implode(', ', $failedConnectors),
+                        ],
+                    ],
                     'context' => [
                         'failed_connectors' => $failedConnectors,
                         'connectors' => $results,
@@ -84,11 +93,17 @@ class HealthController extends AbstractController
                 source: 'infra',
                 category: 'auth',
                 level: 'warning',
-                // Stored in DB for the in-app log UI, so the human-facing message stays in French.
-                title: 'Authentification Claude CLI indisponible',
-                // Stored in DB for the in-app log UI, so the human-facing message stays in French.
-                message: 'La CLI Claude n’est pas authentifiée dans l’environnement runtime.',
+                title: '',
+                message: '',
                 options: [
+                    'title_i18n' => [
+                        'domain' => 'logs',
+                        'key' => 'logs.auth.claude_cli_unavailable.title',
+                    ],
+                    'message_i18n' => [
+                        'domain' => 'logs',
+                        'key' => 'logs.auth.claude_cli_unavailable.message',
+                    ],
                     'context' => $status,
                     'raw_payload' => $status,
                 ],
