@@ -118,6 +118,33 @@ final class LogController extends AbstractController
     }
 
     /**
+     * Updates the triage status of an occurrence (`open`, `acknowledged`, `resolved`, `ignored`).
+     */
+    #[Route('/occurrences/{id}/status', name: 'log_occurrence_status_update', methods: ['PATCH'])]
+    public function updateStatus(Request $request, LogOccurrence $occurrence): JsonResponse
+    {
+        $payload = json_decode($request->getContent(), true);
+        if (!is_array($payload)) {
+            return $this->json($this->apiErrorPayloadFactory->createForField('message', 'logs.occurrence.invalid_json'), 400);
+        }
+
+        $status = $payload['status'] ?? null;
+        if (!is_string($status) || $status === '') {
+            return $this->json($this->apiErrorPayloadFactory->createForField('status', 'logs.occurrence.invalid_status'), 400);
+        }
+
+        try {
+            $this->logService->updateOccurrenceStatus($occurrence, $status);
+        } catch (\InvalidArgumentException) {
+            return $this->json($this->apiErrorPayloadFactory->createForField('status', 'logs.occurrence.invalid_status'), 400);
+        }
+
+        return $this->json([
+            'occurrence' => $this->serializeOccurrence($occurrence),
+        ]);
+    }
+
+    /**
      * Accepts client-side observability events so frontend diagnostics can be centralized with backend logs.
      */
     #[Route('/events', name: 'log_event_ingest', methods: ['POST'])]

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { AlertOctagon, ExternalLink, RefreshCw } from 'lucide-react'
 import { logsApi, type LogFilters } from '@/api/logs'
@@ -12,6 +12,7 @@ import Modal from '@/components/ui/Modal'
 
 const PAGE_SIZE = 25
 type LogsViewMode = 'occurrences' | 'events'
+type LogOccurrenceStatus = LogOccurrence['status']
 
 function fmtDate(date: string) {
   return new Date(date).toLocaleString('fr-FR', {
@@ -35,6 +36,28 @@ function levelTone(level: string): 'red' | 'orange' | 'blue' | 'gray' {
   if (level === 'warning') return 'orange'
   if (level === 'info') return 'blue'
   return 'gray'
+}
+
+/**
+ * Maps an occurrence triage status to a neutral badge tone for the Logs UI.
+ */
+function occurrenceStatusTone(status: LogOccurrenceStatus): 'red' | 'orange' | 'blue' | 'gray' {
+  if (status === 'resolved') return 'blue'
+  if (status === 'acknowledged') return 'orange'
+  return 'gray'
+}
+
+/**
+ * Returns the French UI label associated with an occurrence triage status.
+ */
+function occurrenceStatusLabel(status: LogOccurrenceStatus) {
+  return status === 'acknowledged'
+    ? 'vu'
+    : status === 'resolved'
+      ? 'résolu'
+      : status === 'ignored'
+        ? 'ignoré'
+        : 'ouvert'
 }
 
 /**
@@ -76,6 +99,17 @@ function JsonBlock({ value }: { value: unknown }) {
     >
       {JSON.stringify(value, null, 2)}
     </pre>
+  )
+}
+
+/**
+ * Renders the triage state of an occurrence in a compact reusable badge.
+ */
+function OccurrenceStatusBadge({ status }: { status: LogOccurrenceStatus }) {
+  return (
+    <span className="rounded-full px-2 py-1 text-xs" style={badgeStyle(occurrenceStatusTone(status))}>
+      {occurrenceStatusLabel(status)}
+    </span>
   )
 }
 
@@ -184,9 +218,18 @@ function EventCard({ event }: { event: LogEvent }) {
 }
 
 function OccurrenceDetail({ occurrenceId }: { occurrenceId: string }) {
+  const qc = useQueryClient()
   const { data, isLoading, error } = useQuery({
     queryKey: ['log-occurrence', occurrenceId],
     queryFn: () => logsApi.getOccurrence(occurrenceId),
+  })
+
+  const statusMutation = useMutation({
+    mutationFn: (status: LogOccurrenceStatus) => logsApi.updateOccurrenceStatus(occurrenceId, { status }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['logs'] })
+      await qc.invalidateQueries({ queryKey: ['log-occurrence', occurrenceId] })
+    },
   })
 
   if (isLoading) return <PageSpinner />
@@ -207,6 +250,7 @@ function OccurrenceDetail({ occurrenceId }: { occurrenceId: string }) {
               {data.occurrence.category}
             </span>
           )}
+          <OccurrenceStatusBadge status={data.occurrence.status} />
           <span className="text-xs" style={{ color: 'var(--muted)' }}>{data.occurrence.source}</span>
           <span className="ml-auto text-xs" style={{ color: 'var(--muted)' }}>
             {data.occurrence.occurrenceCount} occurrence{data.occurrence.occurrenceCount > 1 ? 's' : ''}
@@ -237,6 +281,32 @@ function OccurrenceDetail({ occurrenceId }: { occurrenceId: string }) {
               <EntityLinks occurrence={data.occurrence} />
             </div>
           </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            onClick={() => statusMutation.mutate('acknowledged')}
+            disabled={statusMutation.isPending || data.occurrence.status === 'acknowledged'}
+            className="btn-secondary disabled:opacity-40"
+          >
+            Marquer comme vu
+          </button>
+          <button
+            onClick={() => statusMutation.mutate('resolved')}
+            disabled={statusMutation.isPending || data.occurrence.status === 'resolved'}
+            className="btn-primary disabled:opacity-40"
+          >
+            Marquer comme résolu
+          </button>
+          {data.occurrence.status !== 'open' && (
+            <button
+              onClick={() => statusMutation.mutate('open')}
+              disabled={statusMutation.isPending}
+              className="btn-secondary disabled:opacity-40"
+            >
+              Réouvrir
+            </button>
+          )}
         </div>
 
         <div className="mt-4 space-y-2">
@@ -419,7 +489,10 @@ export default function LogsPage() {
                   >
                     <td className="px-4 py-3 align-top">
                       <div className="space-y-1">
-                        <p className="font-medium" style={{ color: 'var(--text)' }}>{occurrence.title}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-medium" style={{ color: 'var(--text)' }}>{occurrence.title}</p>
+                          <OccurrenceStatusBadge status={occurrence.status} />
+                        </div>
                         <p className="line-clamp-2 text-xs" style={{ color: 'var(--muted)' }}>{occurrence.message}</p>
                       </div>
                     </td>
