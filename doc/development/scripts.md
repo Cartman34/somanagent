@@ -29,6 +29,8 @@ php scripts/help.php migrate.php
 | `db-reset.php` | PHP | Recreate the local database, optionally with fixtures |
 | `claude-auth.php` | PHP | Manage Claude CLI auth with WSL as source of truth, then sync it to Docker |
 | `console.php` | PHP | Run a Symfony command |
+| `node.php` | PHP | Run reusable commands inside the Node container |
+| `db.php` | PHP | Run reusable commands inside the PostgreSQL container |
 | `github.php` | PHP | GitHub CLI helper for PR creation, listing, view and merge |
 | `logs.php` | PHP | Display Docker logs |
 | `health.php` | PHP | Check application status |
@@ -123,6 +125,33 @@ php scripts/console.php cache:clear
 php scripts/console.php doctrine:migrations:status
 php scripts/console.php somanagent:seed:web-team
 ```
+
+---
+
+### `node.php`
+Runs reusable developer commands in the Node container without repeating raw `docker compose exec`.
+
+```bash
+php scripts/node.php type-check
+php scripts/node.php run build
+php scripts/node.php exec npm install
+php scripts/node.php shell
+```
+
+Use this script in priority for repeated frontend container actions such as type-checking, builds, linting, tests, or an interactive shell.
+
+---
+
+### `db.php`
+Runs reusable `psql` commands in the PostgreSQL container.
+
+```bash
+php scripts/db.php query "SELECT 1"
+php scripts/db.php exec -c "\\dt"
+php scripts/db.php shell
+```
+
+Use this script in priority for repeated local database inspection instead of raw `docker exec ... psql ...`.
 
 ---
 

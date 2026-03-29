@@ -159,8 +159,8 @@ export default function AgentsPage() {
             </p>
             {!claudeCliAuth?.loggedIn && (
               <div className="mt-2 text-xs space-y-1" style={{ color: 'var(--muted)' }}>
-                <p>Login manuel : <code>docker exec -it somanagent_php claude auth login</code></p>
-                <p>Verification : <code>docker exec somanagent_php claude auth status</code></p>
+                <p>Login manuel : <code>php scripts/claude-auth.php login</code></p>
+                <p>Verification : <code>php scripts/claude-auth.php status</code></p>
               </div>
             )}
           </div>

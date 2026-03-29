@@ -32,6 +32,7 @@ These files are part of the project codebase and must follow explicit convention
 - Reuse `Application` for environment bootstrapping and subprocess execution.
 - Reuse `Console` for user-facing terminal output.
 - Keep command execution centralized instead of scattering raw `exec()` / `passthru()` calls everywhere.
+- If a direct Docker/container command becomes a repeated workflow, extract a dedicated runnable script instead of duplicating the command across docs, reviews, or UI hints.
 
 ## Documentation Rules
 
