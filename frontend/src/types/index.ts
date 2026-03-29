@@ -124,10 +124,44 @@ export interface Task {
   assignedRole: { id: string; name: string; slug: string } | null
   addedBy: { id: string; name: string } | null
   children?: Task[]
+  executions?: TaskExecution[]
   logs?: TaskLog[]
   tokenUsage?: TokenUsageEntry[]
   createdAt: string
   updatedAt: string
+}
+
+export interface TaskExecutionAttempt {
+  id: string
+  attemptNumber: number
+  status: 'running' | 'succeeded' | 'failed'
+  willRetry: boolean
+  messengerReceiver: string | null
+  requestRef: string | null
+  errorMessage: string | null
+  errorScope: string | null
+  startedAt: string | null
+  finishedAt: string | null
+  agent: { id: string; name: string } | null
+}
+
+export interface TaskExecution {
+  id: string
+  traceRef: string
+  triggerType: 'auto' | 'manual' | 'rework' | 'redispatch'
+  workflowStepKey: string | null
+  skillSlug: string | null
+  status: 'pending' | 'running' | 'retrying' | 'succeeded' | 'failed' | 'dead_letter' | 'cancelled'
+  currentAttempt: number
+  maxAttempts: number
+  requestRef: string | null
+  lastErrorMessage: string | null
+  lastErrorScope: string | null
+  startedAt: string | null
+  finishedAt: string | null
+  requestedAgent: { id: string; name: string } | null
+  effectiveAgent: { id: string; name: string } | null
+  attempts: TaskExecutionAttempt[]
 }
 
 export interface TaskLog {

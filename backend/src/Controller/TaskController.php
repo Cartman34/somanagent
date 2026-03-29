@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Enum\StoryStatus;
+use App\Enum\TaskExecutionTrigger;
 use App\Enum\TaskPriority;
 use App\Enum\TaskStatus;
 use App\Enum\TaskType;
 use App\Repository\AgentRepository;
+use App\Repository\TaskExecutionRepository;
 use App\Repository\TaskLogRepository;
 use App\Service\ProjectService;
 use App\Service\StoryExecutionService;
@@ -29,6 +31,7 @@ class TaskController extends AbstractController
         private readonly ProjectService        $projectService,
         private readonly StoryExecutionService $storyExecutionService,
         private readonly AgentRepository       $agentRepository,
+        private readonly TaskExecutionRepository $taskExecutionRepository,
         private readonly TaskLogRepository     $taskLogRepository,
         private readonly TokenUsageService     $tokenUsageService,
         private readonly VcsRepositoryUrlService $vcsRepositoryUrl,
@@ -102,7 +105,7 @@ class TaskController extends AbstractController
         $dispatchError = null;
         try {
             if ($this->storyExecutionService->canExecute($task)) {
-                $this->storyExecutionService->execute($task);
+                $this->storyExecutionService->execute($task, null, TaskExecutionTrigger::Auto);
             }
         } catch (\RuntimeException|\LogicException $e) {
             $dispatchError = $e->getMessage();
@@ -123,11 +126,13 @@ class TaskController extends AbstractController
         }
 
         $children    = $this->taskService->findChildren($task);
+        $executions  = $this->taskExecutionRepository->findByTask($task);
         $logs        = $this->taskLogRepository->findByTask($task);
         $tokenUsage  = $this->tokenUsageService->findByTask($task);
 
         return $this->json(array_merge($this->serialize($task), [
             'children'   => array_map(fn($c) => $this->serialize($c), $children),
+            'executions' => array_map(fn($execution) => $this->serializeExecution($execution), $executions),
             'logs'       => array_map(fn($l) => $this->serializeLog($l), $logs),
             'tokenUsage' => $tokenUsage,
         ]));
@@ -389,7 +394,7 @@ class TaskController extends AbstractController
         }
 
         try {
-            $result = $this->storyExecutionService->execute($task, $agent);
+            $result = $this->storyExecutionService->execute($task, $agent, TaskExecutionTrigger::Manual);
         } catch (\RuntimeException $e) {
             return $this->json(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         } catch (\LogicException $e) {
@@ -459,6 +464,49 @@ class TaskController extends AbstractController
             'metadata'       => $log->getMetadata(),
             'content'        => $log->getContent(),
             'createdAt'      => $log->getCreatedAt()->format(\DateTimeInterface::ATOM),
+        ];
+    }
+
+    private function serializeExecution(\App\Entity\TaskExecution $execution): array
+    {
+        return [
+            'id' => (string) $execution->getId(),
+            'traceRef' => $execution->getTraceRef(),
+            'triggerType' => $execution->getTriggerType()->value,
+            'workflowStepKey' => $execution->getWorkflowStepKey(),
+            'skillSlug' => $execution->getSkillSlug(),
+            'status' => $execution->getStatus()->value,
+            'currentAttempt' => $execution->getCurrentAttempt(),
+            'maxAttempts' => $execution->getMaxAttempts(),
+            'requestRef' => $execution->getRequestRef(),
+            'lastErrorMessage' => $execution->getLastErrorMessage(),
+            'lastErrorScope' => $execution->getLastErrorScope(),
+            'startedAt' => $execution->getStartedAt()?->format(\DateTimeInterface::ATOM),
+            'finishedAt' => $execution->getFinishedAt()?->format(\DateTimeInterface::ATOM),
+            'requestedAgent' => $execution->getRequestedAgent() ? [
+                'id' => (string) $execution->getRequestedAgent()->getId(),
+                'name' => $execution->getRequestedAgent()->getName(),
+            ] : null,
+            'effectiveAgent' => $execution->getEffectiveAgent() ? [
+                'id' => (string) $execution->getEffectiveAgent()->getId(),
+                'name' => $execution->getEffectiveAgent()->getName(),
+            ] : null,
+            'attempts' => array_map(fn(\App\Entity\TaskExecutionAttempt $attempt) => [
+                'id' => (string) $attempt->getId(),
+                'attemptNumber' => $attempt->getAttemptNumber(),
+                'status' => $attempt->getStatus()->value,
+                'willRetry' => $attempt->willRetry(),
+                'messengerReceiver' => $attempt->getMessengerReceiver(),
+                'requestRef' => $attempt->getRequestRef(),
+                'errorMessage' => $attempt->getErrorMessage(),
+                'errorScope' => $attempt->getErrorScope(),
+                'startedAt' => $attempt->getStartedAt()?->format(\DateTimeInterface::ATOM),
+                'finishedAt' => $attempt->getFinishedAt()?->format(\DateTimeInterface::ATOM),
+                'agent' => $attempt->getAgent() ? [
+                    'id' => (string) $attempt->getAgent()->getId(),
+                    'name' => $attempt->getAgent()->getName(),
+                ] : null,
+            ], $execution->getAttempts()->toArray()),
         ];
     }
 }

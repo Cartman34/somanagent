@@ -6,7 +6,7 @@ namespace App\Service;
 
 use App\Entity\Agent;
 use App\Entity\Task;
-use App\Entity\TaskLog;
+use App\Enum\TaskExecutionTrigger;
 use App\Enum\StoryStatus;
 use App\Enum\TaskStatus;
 use App\Message\AgentTaskMessage;
@@ -57,6 +57,7 @@ final class StoryExecutionService
         private readonly MessageBusInterface    $bus,
         private readonly RequestCorrelationService $requestCorrelation,
         private readonly LogService             $logService,
+        private readonly TaskExecutionService   $taskExecutionService,
         private readonly EntityManagerInterface $em,
     ) {}
 
@@ -124,9 +125,9 @@ final class StoryExecutionService
      * @throws \RuntimeException if no execution config or no available agent
      * @throws \LogicException   if the story status transition is not allowed
      *
-     * @return array{agent: Agent, skill: string}
+     * @return array{agent: Agent, skill: string, executionId: string}
      */
-    public function execute(Task $story, ?Agent $agent = null): array
+    public function execute(Task $story, ?Agent $agent = null, TaskExecutionTrigger $triggerType = TaskExecutionTrigger::Manual): array
     {
         if (!$this->canExecute($story)) {
             throw new \RuntimeException(
@@ -162,25 +163,35 @@ final class StoryExecutionService
             $story->transitionStoryTo($transition);
         }
 
-        $this->em->persist(new TaskLog(
-            $story,
-            'execution_dispatched',
-            sprintf('Agent %s dispatché avec le skill %s', $agent->getName(), $skillSlug),
-        )->setMetadata([
-            'agentId'   => (string) $agent->getId(),
-            'agentName' => $agent->getName(),
-            'skillSlug' => $skillSlug,
-            'roleSlug'  => $roleSlug,
-        ]));
-        $this->em->flush();
-
         $requestRef = $this->requestCorrelation->getCurrentRequestRef();
         $traceRef = Uuid::v7()->toRfc4122();
+        $execution = $this->taskExecutionService->createExecution(
+            task: $story,
+            requestedAgent: $agent,
+            skillSlug: $skillSlug,
+            triggerType: $triggerType,
+            requestRef: $requestRef,
+            traceRef: $traceRef,
+            workflowStepKey: $story->getStoryStatus()?->value,
+        );
+
+        $this->taskExecutionService->logDispatch(
+            execution: $execution,
+            action: 'execution_dispatched',
+            content: sprintf('Agent %s dispatché avec le skill %s', $agent->getName(), $skillSlug),
+            metadata: [
+                'agentId'   => (string) $agent->getId(),
+                'agentName' => $agent->getName(),
+                'skillSlug' => $skillSlug,
+                'roleSlug'  => $roleSlug,
+            ],
+        );
 
         $this->bus->dispatch(new AgentTaskMessage(
             taskId:    (string) $story->getId(),
             agentId:   (string) $agent->getId(),
             skillSlug: $skillSlug,
+            taskExecutionId: (string) $execution->getId(),
             requestRef: $requestRef,
             traceRef: $traceRef,
         ));
@@ -199,6 +210,7 @@ final class StoryExecutionService
                 'request_ref' => $requestRef,
                 'trace_ref' => $traceRef,
                 'context' => [
+                    'task_execution_id' => (string) $execution->getId(),
                     'story_status' => $story->getStoryStatus()?->value,
                     'skill_slug' => $skillSlug,
                     'role_slug' => $roleSlug,
@@ -206,7 +218,7 @@ final class StoryExecutionService
             ],
         );
 
-        return ['agent' => $agent, 'skill' => $skillSlug];
+        return ['agent' => $agent, 'skill' => $skillSlug, 'executionId' => (string) $execution->getId()];
     }
 
     /**
