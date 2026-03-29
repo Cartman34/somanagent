@@ -1,0 +1,10 @@
+common:
+  action:
+    cancel: 'Annuler'
+    close: 'Fermer'
+    confirm: 'Confirmer'
+    retry: 'Réessayer'
+
+errors:
+  generic:
+    unexpected: 'Une erreur inattendue est survenue.'

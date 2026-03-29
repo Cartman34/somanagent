@@ -1,0 +1,25 @@
+logs:
+  runtime:
+    unexpected_frontend_error:
+      title: 'Erreur frontend non interceptée'
+    unhandled_rejection:
+      title: 'Promesse rejetée sans gestionnaire'
+      message: 'Promesse rejetée sans détail exploitable'
+  connectivity:
+    offline:
+      title: 'Navigateur hors ligne'
+      message: 'Le navigateur a perdu sa connectivité réseau.'
+    online:
+      title: 'Navigateur reconnecté'
+      message: 'Le navigateur a retrouvé sa connectivité réseau après une coupure.'
+  http:
+    frontend_api_failure:
+      title: 'Échec d’appel API frontend'
+  health:
+    degraded_connectors:
+      title: 'Connecteurs dégradés'
+      message: 'Un ou plusieurs connecteurs sont indisponibles: %connectors%'
+  auth:
+    claude_cli_unavailable:
+      title: 'Authentification Claude CLI indisponible'
+      message: 'La CLI Claude n’est pas authentifiée dans l’environnement runtime.'

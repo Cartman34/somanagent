@@ -16,6 +16,8 @@ The centralized observability chain is shared across layers:
 - infra degradations are surfaced as `infra` log events from health endpoints
 - warning/error/critical events are aggregated into `LogOccurrence` for the `/logs` UI
 
+Application translations are managed through Symfony translation files under `backend/translations/`.
+
 ## Hexagonal Architecture (Partial)
 
 The hexagonal architecture is applied **only to external integration points** (AI, VCS, Skills), not to the entire application. Symfony and Doctrine are fixed choices.
@@ -113,6 +115,14 @@ The intent is that reusable frontend code can be treated as a black box when nee
 - the side effects or behavioral constraints worth knowing before reuse
 
 Avoid comments that merely paraphrase the code line by line, but do not omit JSDoc on the assumption that the implementation is "obvious enough".
+
+### Translations
+
+User-facing text must not be hardcoded in French in application source code.
+
+Use Symfony translation keys and domains instead.
+
+For the detailed domain/key conventions and the persisted-message strategy, use [`translations.md`](translations.md).
 
 ### Services
 Services contain the business logic and call the repositories.

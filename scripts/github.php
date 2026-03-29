@@ -1,8 +1,8 @@
 #!/usr/bin/env php
 <?php
 // Description: GitHub CLI helper — create PRs, merge, list, view
-// Usage: php scripts/github.php pr create --title "..." --body-file /tmp/pr_body.md [--base main]
-// Usage: php scripts/github.php pr create --title "..." --body "..." [--base main]
+// Usage: php scripts/github.php pr create --title "..." --head <branch> --body-file /tmp/pr_body.md [--base main]
+// Usage: php scripts/github.php pr create --title "..." --head <branch> --body "..." [--base main]
 // Usage: php scripts/github.php pr merge <number> [--squash]
 // Usage: php scripts/github.php pr list
 // Usage: php scripts/github.php pr view <number>
@@ -111,9 +111,9 @@ try {
         if ($sub === 'create') {
             $flags    = $parseFlags($args);
             $title    = $flags['title']     ?? null;
+            $head     = $flags['head']      ?? null;
             $base     = $flags['base']      ?? 'main';
             $bodyFile = $flags['body-file'] ?? null;
-            $head     = trim(shell_exec('git rev-parse --abbrev-ref HEAD'));
 
             if ($bodyFile !== null) {
                 if (!file_exists($bodyFile)) {
@@ -128,6 +128,11 @@ try {
 
             if (!$title) {
                 $c->fail('--title is required.');
+                exit(1);
+            }
+
+            if (!$head) {
+                $c->fail('--head is required.');
                 exit(1);
             }
 
