@@ -120,6 +120,7 @@ export interface Task {
   branchUrl: string | null
   feature: { id: string; name: string } | null
   parent: { id: string; title: string } | null
+  workflowStep: { id: string; name: string; storyStatusTrigger: StoryStatus | null } | null
   assignedAgent: { id: string; name: string } | null
   assignedRole: { id: string; name: string; slug: string } | null
   addedBy: { id: string; name: string } | null

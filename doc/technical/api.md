@@ -231,6 +231,13 @@ Valeurs : `idle` | `working` (≥1 tâche `in_progress`) | `error` (TaskLog réc
 ### `GET /api/projects/{projectId}/tasks`
 Retourne les tâches racines (sans parent).
 
+Pour les stories et bugs, chaque entrée peut aussi embarquer :
+- `children`
+- `children[].workflowStep`
+  - `id`
+  - `name`
+  - `storyStatusTrigger`
+
 ### `POST /api/projects/{projectId}/tasks`
 ```json
 {

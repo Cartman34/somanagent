@@ -42,6 +42,38 @@ class TaskRepository extends ServiceEntityRepository
         return $this->findBy(['parent' => $task], ['createdAt' => 'ASC']);
     }
 
+    /**
+     * Returns direct children for multiple parent tasks grouped by parent UUID string.
+     *
+     * @param Task[] $parents
+     * @return array<string, Task[]>
+     */
+    public function findChildrenGroupedByParent(array $parents): array
+    {
+        if ($parents === []) {
+            return [];
+        }
+
+        $children = $this->createQueryBuilder('t')
+            ->where('t.parent IN (:parents)')
+            ->setParameter('parents', $parents)
+            ->orderBy('t.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $grouped = [];
+        foreach ($children as $child) {
+            $parent = $child->getParent();
+            if ($parent === null) {
+                continue;
+            }
+
+            $grouped[$parent->getId()->toRfc4122()][] = $child;
+        }
+
+        return $grouped;
+    }
+
     /** @return Task[] Tâches d'une feature */
     public function findByFeature(Feature $feature): array
     {

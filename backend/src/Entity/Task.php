@@ -39,6 +39,13 @@ class Task
     #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
     private ?Task $parent = null;
 
+    /**
+     * Workflow step this task belongs to when it represents work for a specific story stage.
+     */
+    #[ORM\ManyToOne(targetEntity: WorkflowStep::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?WorkflowStep $workflowStep = null;
+
     #[ORM\Column(enumType: TaskType::class)]
     private TaskType $type;
 
@@ -136,6 +143,7 @@ class Task
     public function getProject(): Project              { return $this->project; }
     public function getFeature(): ?Feature             { return $this->feature; }
     public function getParent(): ?Task                 { return $this->parent; }
+    public function getWorkflowStep(): ?WorkflowStep   { return $this->workflowStep; }
     public function getType(): TaskType                { return $this->type; }
     public function getTitle(): string                 { return $this->title; }
     public function getDescription(): ?string          { return $this->description; }
@@ -160,6 +168,7 @@ class Task
 
     public function setFeature(?Feature $f): static        { $this->feature = $f; return $this; }
     public function setParent(?Task $t): static            { $this->parent = $t; return $this; }
+    public function setWorkflowStep(?WorkflowStep $workflowStep): static { $this->workflowStep = $workflowStep; return $this; }
     public function setTitle(string $title): static        { $this->title = $title; return $this; }
     public function setDescription(?string $d): static     { $this->description = $d; return $this; }
     public function setStatus(TaskStatus $s): static       { $this->status = $s; return $this; }

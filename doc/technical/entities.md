@@ -136,6 +136,7 @@ Relations : `agents` → `Agent[]` (ManyToMany via `agent_team`).
 | `project_id` | UUID | FK → project (CASCADE) |
 | `feature_id` | UUID | FK → feature (SET NULL, nullable) |
 | `parent_id` | UUID | FK → task (CASCADE, nullable — sous-tâche) |
+| `workflow_step_id` | UUID | FK → workflow_step (SET NULL, nullable — étape de workflow cible de la sous-tâche) |
 | `assigned_agent_id` | UUID | FK → agent (SET NULL, nullable) |
 | `assigned_role_id` | UUID | FK → role (SET NULL, nullable) |
 | `added_by_id` | UUID | FK → agent (SET NULL, nullable — agent créateur) |

@@ -94,6 +94,17 @@ function StatusIcon({ status }: { status: TaskStatus }) {
   return <ChevronRight className="w-4 h-4 text-gray-400" />
 }
 
+/**
+ * Returns the subtasks that belong to the story's currently active workflow column.
+ */
+function readActiveColumnSubtasks(task: Task) {
+  if (task.storyStatus === null || task.children == null) {
+    return []
+  }
+
+  return task.children.filter((child) => child.workflowStep?.storyStatusTrigger === task.storyStatus)
+}
+
 // ─── Execute modal ────────────────────────────────────────────────────────────
 
 /**
@@ -343,7 +354,7 @@ function ReworkModal({ task, onClose, onReworked }: {
 
 /**
  * Kanban card for a user story or bug.
- * Shows type badge, priority, branch name, assigned role, progress bar,
+ * Shows type badge, priority, branch name, assigned role, active-column subtasks,
  * allowed story transitions as buttons, and a "Lancer l'agent" button for executable statuses.
  */
 function StoryCard({ task, onTransition, onDelete, onExecute, onOpen, transitioning }: {
@@ -355,6 +366,7 @@ function StoryCard({ task, onTransition, onDelete, onExecute, onOpen, transition
   transitioning: boolean
 }) {
   const canExecute = task.storyStatus !== null && EXECUTABLE_STATUSES.includes(task.storyStatus)
+  const activeSubtasks = readActiveColumnSubtasks(task)
 
   return (
     <div className="card p-3 space-y-2 text-sm">
@@ -391,10 +403,19 @@ function StoryCard({ task, onTransition, onDelete, onExecute, onOpen, transition
           <User className="w-3 h-3" /><span>{task.assignedRole.name}</span>
         </div>
       )}
-      {task.progress > 0 && (
-        <div className="space-y-0.5">
-          <ProgressBar value={task.progress} />
-          <span className="text-xs" style={{ color: 'var(--muted)' }}>{task.progress}%</span>
+      {activeSubtasks.length > 0 && (
+        <div className="space-y-1 rounded border px-2 py-2" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
+          <p className="text-[11px] font-medium uppercase tracking-wide" style={{ color: 'var(--muted)' }}>
+            Sous-tâches actives
+          </p>
+          <div className="space-y-1">
+            {activeSubtasks.map((subtask) => (
+              <div key={subtask.id} className="flex items-center gap-2 text-xs">
+                <StatusIcon status={subtask.status} />
+                <span className="truncate" style={{ color: 'var(--text)' }}>{subtask.title}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
       {(task.storyStatusAllowedTransitions.length > 0 || canExecute) && (

@@ -47,9 +47,14 @@ class TaskController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('projects.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
+        $tasks = $this->taskService->findByProject($project);
+        $childrenByParent = $this->taskService->findChildrenGroupedByParent($tasks);
+
         return $this->json(array_map(
-            fn($t) => $this->serialize($t),
-            $this->taskService->findByProject($project),
+            fn($t) => array_merge($this->serialize($t), [
+                'children' => array_map(fn($child) => $this->serialize($child), $childrenByParent[(string) $t->getId()] ?? []),
+            ]),
+            $tasks,
         ));
     }
 
@@ -501,6 +506,11 @@ class TaskController extends AbstractController
             'branchUrl'     => $branchUrl,
             'feature'       => $task->getFeature() ? ['id' => (string) $task->getFeature()->getId(), 'name' => $task->getFeature()->getName()] : null,
             'parent'        => $task->getParent() ? ['id' => (string) $task->getParent()->getId(), 'title' => $task->getParent()->getTitle()] : null,
+            'workflowStep'  => $task->getWorkflowStep() ? [
+                'id' => (string) $task->getWorkflowStep()->getId(),
+                'name' => $task->getWorkflowStep()->getName(),
+                'storyStatusTrigger' => $task->getWorkflowStep()->getStoryStatusTrigger()?->value,
+            ] : null,
             'assignedAgent' => $task->getAssignedAgent() ? ['id' => (string) $task->getAssignedAgent()->getId(), 'name' => $task->getAssignedAgent()->getName()] : null,
             'assignedRole'  => $task->getAssignedRole() ? ['id' => (string) $task->getAssignedRole()->getId(), 'name' => $task->getAssignedRole()->getName(), 'slug' => $task->getAssignedRole()->getSlug()] : null,
             'addedBy'       => $task->getAddedBy() ? ['id' => (string) $task->getAddedBy()->getId(), 'name' => $task->getAddedBy()->getName()] : null,

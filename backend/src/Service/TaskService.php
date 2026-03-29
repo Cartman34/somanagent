@@ -262,6 +262,17 @@ class TaskService
         return $this->taskRepository->findChildren($task);
     }
 
+    /**
+     * Returns direct children for multiple parent tasks grouped by parent UUID string.
+     *
+     * @param Task[] $tasks
+     * @return array<string, Task[]>
+     */
+    public function findChildrenGroupedByParent(array $tasks): array
+    {
+        return $this->taskRepository->findChildrenGroupedByParent($tasks);
+    }
+
     /** @return Task[] */
     public function findByFeature(Feature $feature): array
     {

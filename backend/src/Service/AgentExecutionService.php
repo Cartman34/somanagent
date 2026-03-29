@@ -10,6 +10,7 @@ use App\Entity\Task;
 use App\Entity\TaskDependency;
 use App\Entity\TaskLog;
 use App\Entity\TokenUsage;
+use App\Entity\WorkflowStep;
 use App\Enum\StoryStatus;
 use App\Enum\TaskStatus;
 use App\Enum\TaskType;
@@ -18,6 +19,7 @@ use App\Repository\RoleRepository;
 use App\Repository\SkillRepository;
 use App\Repository\TaskLogRepository;
 use App\Repository\TaskRepository;
+use App\Repository\WorkflowStepRepository;
 use App\ValueObject\Prompt;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -41,6 +43,7 @@ final class AgentExecutionService
         private readonly RoleRepository        $roleRepository,
         private readonly TaskLogRepository     $taskLogRepository,
         private readonly TaskRepository        $taskRepository,
+        private readonly WorkflowStepRepository $workflowStepRepository,
         private readonly TaskService           $taskService,
         private readonly AgentContextBuilder   $contextBuilder,
         private readonly PlanningOutputParser  $planningParser,
@@ -261,6 +264,7 @@ final class AgentExecutionService
             if ($role !== null) {
                 $subtask->setAssignedRole($role);
             }
+            $subtask->setWorkflowStep($this->resolveWorkflowStepForPlannedRole($story, $planTask->role));
 
             $this->em->persist($subtask);
             $createdTasks[] = $subtask;
@@ -363,6 +367,19 @@ final class AgentExecutionService
         $this->em->flush();
 
         return count($children);
+    }
+
+    /**
+     * Resolves the lifecycle workflow step that best matches a planning-generated subtask role.
+     */
+    private function resolveWorkflowStepForPlannedRole(Task $story, string $roleSlug): ?WorkflowStep
+    {
+        $team = $story->getProject()->getTeam();
+        if ($team === null) {
+            return null;
+        }
+
+        return $this->workflowStepRepository->findLifecycleStepByTeamAndRoleSlug($team, $roleSlug);
     }
 
     /**
