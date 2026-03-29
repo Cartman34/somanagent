@@ -1,6 +1,6 @@
 # Available Scripts
 
-> See also: [Installation](installation.md) · [Symfony Commands](commands.md)
+> See also: [Installation](installation.md) · [Symfony Commands](commands.md) · [Script Conventions](scripts-conventions.md)
 
 Scripts are located in `scripts/`. All PHP scripts follow this convention: a **commented header** just after the shebang, with `Description:` and `Usage:` tags.
 
@@ -22,6 +22,7 @@ php scripts/help.php migrate.php
 | `dev.php` | PHP | Start / stop the environment |
 | `migrate.php` | PHP | Run Doctrine migrations |
 | `db-reset.php` | PHP | Recreate the local database, optionally with fixtures |
+| `claude-auth.php` | PHP | Manage Claude CLI auth with WSL as source of truth, then sync it to Docker |
 | `console.php` | PHP | Run a Symfony command |
 | `logs.php` | PHP | Display Docker logs |
 | `health.php` | PHP | Check application status |
@@ -89,6 +90,20 @@ php scripts/db-reset.php --fixtures --force
 ```
 
 By default, the script asks for confirmation because it destroys all current local data. Use `--force` to skip the prompt.
+
+---
+
+### `claude-auth.php`
+Manages Claude CLI auth with WSL as the source of truth, then synchronizes the Docker shared copy used by the containers.
+
+```bash
+php scripts/claude-auth.php status
+php scripts/claude-auth.php sync
+php scripts/claude-auth.php login
+php scripts/claude-auth.php sync --force
+```
+
+Use `login` to authenticate in WSL, then sync the resulting auth files to `./.docker/claude/shared/`.
 
 ---
 

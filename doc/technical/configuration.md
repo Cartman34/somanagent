@@ -36,23 +36,22 @@ Required for the `claude_api` connector. Obtain it at [console.anthropic.com](ht
 
 ### Claude CLI Login
 
-The `claude_cli` connector requires a Claude Code login inside the Docker containers.
+The `claude_cli` connector now uses WSL Claude auth as the source of truth, then synchronizes it into the Docker shared mount used by the containers.
 
-Login commands:
-
-```bash
-docker exec -it somanagent_php claude auth login
-docker exec -it somanagent_worker claude auth login
-```
-
-Status check:
+Recommended commands:
 
 ```bash
-docker exec somanagent_php claude auth status
-docker exec somanagent_worker claude auth status
+php scripts/claude-auth.php login
+php scripts/claude-auth.php status
 ```
 
-The Docker setup persists Claude CLI auth files via:
+If you already authenticated in WSL and only need to refresh the Docker copy:
+
+```bash
+php scripts/claude-auth.php sync
+```
+
+The synchronized Docker auth files are mounted as:
 
 ```text
 ./.docker/claude/shared/.claude      -> /claude-home/.claude
