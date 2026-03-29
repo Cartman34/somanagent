@@ -11,6 +11,7 @@ import PageHeader from '@/components/ui/PageHeader'
 import Modal from '@/components/ui/Modal'
 
 const PAGE_SIZE = 25
+type LogsViewMode = 'occurrences' | 'events'
 
 function fmtDate(date: string) {
   return new Date(date).toLocaleString('fr-FR', {
@@ -243,8 +244,10 @@ function OccurrenceDetail({ occurrenceId }: { occurrenceId: string }) {
 }
 
 export default function LogsPage() {
+  const [viewMode, setViewMode] = useState<LogsViewMode>('occurrences')
   const [page, setPage] = useState(1)
   const [source, setSource] = useState('')
+  const [category, setCategory] = useState('')
   const [level, setLevel] = useState('')
   const [status, setStatus] = useState('open')
   const [projectId, setProjectId] = useState('')
@@ -258,6 +261,7 @@ export default function LogsPage() {
     page,
     limit: PAGE_SIZE,
     source: source || undefined,
+    category: category || undefined,
     level: level || undefined,
     status: status || undefined,
     projectId: projectId || undefined,
@@ -265,30 +269,62 @@ export default function LogsPage() {
     agentId: agentId || undefined,
     from: from || undefined,
     to: to || undefined,
-  }), [agentId, from, level, page, projectId, source, status, taskId, to])
+  }), [agentId, category, from, level, page, projectId, source, status, taskId, to])
 
-  const { data, isLoading, error, refetch, isFetching } = useQuery({
-    queryKey: ['logs', filters],
+  const occurrencesQuery = useQuery({
+    queryKey: ['logs', 'occurrences', filters],
     queryFn: () => logsApi.listOccurrences(filters),
+    enabled: viewMode === 'occurrences',
+  })
+  const eventsQuery = useQuery({
+    queryKey: ['logs', 'events', filters],
+    queryFn: () => logsApi.listEvents(filters),
+    enabled: viewMode === 'events',
   })
 
-  const occurrences = data?.data ?? []
-  const total = data?.total ?? 0
+  const activeQuery = viewMode === 'occurrences' ? occurrencesQuery : eventsQuery
+  const occurrences = occurrencesQuery.data?.data ?? []
+  const events = eventsQuery.data?.data ?? []
+  const total = activeQuery.data?.total ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
-  if (isLoading) return <PageSpinner />
-  if (error) return <ErrorMessage message={(error as Error).message} onRetry={() => refetch()} />
+  if (activeQuery.isLoading) return <PageSpinner />
+  if (activeQuery.error) return <ErrorMessage message={(activeQuery.error as Error).message} onRetry={() => activeQuery.refetch()} />
 
   return (
     <>
       <PageHeader
         title="Logs"
-        description="Diagnostic des erreurs agrégées et des événements associés."
+        description={viewMode === 'occurrences'
+          ? 'Diagnostic agrégé des warnings et erreurs récurrents.'
+          : 'Explorateur d’événements bruts pour suivre la chronologie exacte des signaux.'}
         action={(
-          <button onClick={() => refetch()} className="btn-secondary inline-flex items-center gap-2">
-            <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-            Rafraîchir
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded-xl border p-1" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
+              <button
+                onClick={() => { setPage(1); setViewMode('occurrences') }}
+                className="rounded-lg px-3 py-1.5 text-sm"
+                style={viewMode === 'occurrences'
+                  ? { background: 'var(--brand)', color: '#fff' }
+                  : { color: 'var(--text)' }}
+              >
+                Occurrences
+              </button>
+              <button
+                onClick={() => { setPage(1); setViewMode('events') }}
+                className="rounded-lg px-3 py-1.5 text-sm"
+                style={viewMode === 'events'
+                  ? { background: 'var(--brand)', color: '#fff' }
+                  : { color: 'var(--text)' }}
+              >
+                Événements
+              </button>
+            </div>
+            <button onClick={() => activeQuery.refetch()} className="btn-secondary inline-flex items-center gap-2">
+              <RefreshCw className={`h-4 w-4 ${activeQuery.isFetching ? 'animate-spin' : ''}`} />
+              Rafraîchir
+            </button>
+          </div>
         )}
       />
 
@@ -300,6 +336,15 @@ export default function LogsPage() {
           <option value="frontend">frontend</option>
           <option value="infra">infra</option>
         </select>
+        <select className="input" value={category} onChange={(e) => { setPage(1); setCategory(e.target.value) }}>
+          <option value="">Toutes les catégories</option>
+          <option value="error">error</option>
+          <option value="runtime">runtime</option>
+          <option value="http">http</option>
+          <option value="connectivity">connectivity</option>
+          <option value="health">health</option>
+          <option value="auth">auth</option>
+        </select>
         <select className="input" value={level} onChange={(e) => { setPage(1); setLevel(e.target.value) }}>
           <option value="">Tous les niveaux</option>
           <option value="error">error</option>
@@ -307,13 +352,19 @@ export default function LogsPage() {
           <option value="warning">warning</option>
           <option value="info">info</option>
         </select>
-        <select className="input" value={status} onChange={(e) => { setPage(1); setStatus(e.target.value) }}>
-          <option value="">Tous les statuts</option>
-          <option value="open">open</option>
-          <option value="acknowledged">acknowledged</option>
-          <option value="resolved">resolved</option>
-          <option value="ignored">ignored</option>
-        </select>
+        {viewMode === 'occurrences' ? (
+          <select className="input" value={status} onChange={(e) => { setPage(1); setStatus(e.target.value) }}>
+            <option value="">Tous les statuts</option>
+            <option value="open">open</option>
+            <option value="acknowledged">acknowledged</option>
+            <option value="resolved">resolved</option>
+            <option value="ignored">ignored</option>
+          </select>
+        ) : (
+          <div className="input flex items-center text-sm" style={{ color: 'var(--muted)' }}>
+            Les événements bruts n’ont pas de statut d’occurrence.
+          </div>
+        )}
         <input className="input" placeholder="Project ID" value={projectId} onChange={(e) => { setPage(1); setProjectId(e.target.value) }} />
         <input className="input" placeholder="Task ID" value={taskId} onChange={(e) => { setPage(1); setTaskId(e.target.value) }} />
         <input className="input" placeholder="Agent ID" value={agentId} onChange={(e) => { setPage(1); setAgentId(e.target.value) }} />
@@ -321,13 +372,19 @@ export default function LogsPage() {
         <input className="input" type="datetime-local" value={to} onChange={(e) => { setPage(1); setTo(e.target.value) }} />
       </div>
 
-      {occurrences.length === 0 ? (
+      {viewMode === 'occurrences' && occurrences.length === 0 ? (
         <EmptyState
           icon={AlertOctagon}
           title="Aucune occurrence"
           description="Aucun log agrégé ne correspond aux filtres courants."
         />
-      ) : (
+      ) : viewMode === 'events' && events.length === 0 ? (
+        <EmptyState
+          icon={AlertOctagon}
+          title="Aucun événement"
+          description="Aucun événement brut ne correspond aux filtres courants."
+        />
+      ) : viewMode === 'occurrences' ? (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -356,9 +413,14 @@ export default function LogsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 align-top">
-                      <span className="rounded-full px-2 py-1 text-xs font-medium" style={badgeStyle(levelTone(occurrence.level))}>
-                        {occurrence.level}
-                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="rounded-full px-2 py-1 text-xs font-medium" style={badgeStyle(levelTone(occurrence.level))}>
+                          {occurrence.level}
+                        </span>
+                        <span className="rounded-full px-2 py-1 text-xs" style={badgeStyle(occurrence.category === 'error' ? 'red' : 'blue')}>
+                          {occurrence.category}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-4 py-3 align-top" style={{ color: 'var(--text)' }}>{occurrence.source}</td>
                     <td className="px-4 py-3 align-top" style={{ color: 'var(--text)' }}>{occurrence.occurrenceCount}</td>
@@ -376,6 +438,24 @@ export default function LogsPage() {
             <div className="flex items-center justify-between px-4 py-3" style={{ borderTop: '1px solid var(--border)' }}>
               <p className="text-xs" style={{ color: 'var(--muted)' }}>
                 {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} sur {total} occurrences
+              </p>
+              <div className="flex gap-2">
+                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="btn-secondary disabled:opacity-40">Précédent</button>
+                <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="btn-secondary disabled:opacity-40">Suivant</button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {events.map((event) => (
+            <EventCard key={event.id} event={event} />
+          ))}
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between rounded-2xl border px-4 py-3" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} sur {total} événements
               </p>
               <div className="flex gap-2">
                 <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="btn-secondary disabled:opacity-40">Précédent</button>

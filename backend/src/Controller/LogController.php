@@ -19,12 +19,13 @@ final class LogController extends AbstractController
     public function __construct(
         private readonly LogOccurrenceRepository $occurrenceRepository,
         private readonly LogEventRepository $eventRepository,
+        private readonly \App\Service\LogService $logService,
     ) {}
 
     /**
      * Lists log occurrences with optional filters and pagination.
      *
-     * @param Request $request Query params: source, level, projectId, taskId, agentId, status, from, to, page, limit
+     * @param Request $request Query params: source, category, level, projectId, taskId, agentId, status, from, to, page, limit
      * @return JsonResponse {data: LogOccurrence[], total: int, page: int, limit: int}
      */
     #[Route('/occurrences', name: 'log_occurrence_list', methods: ['GET'])]
@@ -35,6 +36,7 @@ final class LogController extends AbstractController
 
         $filters = [
             'source' => $this->readString($request, 'source'),
+            'category' => $this->readString($request, 'category'),
             'level' => $this->readString($request, 'level'),
             'projectId' => $this->readString($request, 'projectId'),
             'taskId' => $this->readString($request, 'taskId'),
@@ -49,6 +51,40 @@ final class LogController extends AbstractController
 
         return $this->json([
             'data' => array_map(fn (LogOccurrence $occurrence) => $this->serializeOccurrence($occurrence), $occurrences),
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit,
+        ]);
+    }
+
+    /**
+     * Lists raw log events with optional filters and pagination.
+     *
+     * @param Request $request Query params: source, category, level, projectId, taskId, agentId, from, to, page, limit
+     * @return JsonResponse {data: LogEvent[], total: int, page: int, limit: int}
+     */
+    #[Route('/events', name: 'log_event_list', methods: ['GET'])]
+    public function listEvents(Request $request): JsonResponse
+    {
+        $page = max(1, (int) $request->query->get('page', 1));
+        $limit = min(100, max(1, (int) $request->query->get('limit', 25)));
+
+        $filters = [
+            'source' => $this->readString($request, 'source'),
+            'category' => $this->readString($request, 'category'),
+            'level' => $this->readString($request, 'level'),
+            'projectId' => $this->readString($request, 'projectId'),
+            'taskId' => $this->readString($request, 'taskId'),
+            'agentId' => $this->readString($request, 'agentId'),
+            'from' => $this->readDate($request, 'from'),
+            'to' => $this->readDate($request, 'to'),
+        ];
+
+        $total = $this->eventRepository->countFiltered($filters);
+        $events = $this->eventRepository->findFiltered($filters, $limit, ($page - 1) * $limit);
+
+        return $this->json([
+            'data' => array_map(fn (LogEvent $event) => $this->serializeEvent($event), $events),
             'total' => $total,
             'page' => $page,
             'limit' => $limit,
@@ -75,6 +111,59 @@ final class LogController extends AbstractController
             'occurrence' => $this->serializeOccurrence($occurrence),
             'events' => array_map(fn (LogEvent $event) => $this->serializeEvent($event), $events),
         ]);
+    }
+
+    /**
+     * Accepts client-side observability events so frontend diagnostics can be centralized with backend logs.
+     */
+    #[Route('/events', name: 'log_event_ingest', methods: ['POST'])]
+    public function ingest(Request $request): JsonResponse
+    {
+        $payload = json_decode($request->getContent(), true);
+        if (!is_array($payload)) {
+            return $this->json(['message' => 'Invalid JSON payload.'], 400);
+        }
+
+        $source = $this->sanitizeSource($payload['source'] ?? null);
+        $category = $this->sanitizeCategory($payload['category'] ?? null);
+        $level = $this->sanitizeLevel($payload['level'] ?? null);
+        $title = $this->sanitizeTitle($payload['title'] ?? null);
+        $message = $this->sanitizeMessage($payload['message'] ?? null);
+
+        if ($source === null || $category === null || $level === null || $title === null || $message === null) {
+            return $this->json(['message' => 'Missing or invalid log event fields.'], 400);
+        }
+
+        $context = is_array($payload['context'] ?? null) ? $payload['context'] : null;
+        $rawPayload = is_array($payload['rawPayload'] ?? null) ? $payload['rawPayload'] : null;
+        $fingerprint = is_string($payload['fingerprint'] ?? null) && $payload['fingerprint'] !== ''
+            ? mb_substr($payload['fingerprint'], 0, 64)
+            : null;
+
+        $event = $this->logService->record(
+            source: $source,
+            category: $category,
+            level: $level,
+            title: $title,
+            message: $message,
+            options: [
+                'fingerprint' => $fingerprint,
+                'project_id' => $this->readNullableString($payload, 'projectId'),
+                'task_id' => $this->readNullableString($payload, 'taskId'),
+                'agent_id' => $this->readNullableString($payload, 'agentId'),
+                'exchange_ref' => $this->readNullableString($payload, 'exchangeRef'),
+                'request_ref' => $this->readNullableString($payload, 'requestRef'),
+                'trace_ref' => $this->readNullableString($payload, 'traceRef'),
+                'context' => $context,
+                'stack' => $this->readNullableString($payload, 'stack'),
+                'origin' => $this->readNullableString($payload, 'origin'),
+                'raw_payload' => $rawPayload,
+            ],
+        );
+
+        return $this->json([
+            'id' => (string) $event->getId(),
+        ], 201);
     }
 
     private function serializeOccurrence(LogOccurrence $occurrence): array
@@ -142,5 +231,54 @@ final class LogController extends AbstractController
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    private function sanitizeSource(mixed $value): ?string
+    {
+        return in_array($value, ['frontend', 'infra'], true) ? $value : null;
+    }
+
+    private function sanitizeCategory(mixed $value): ?string
+    {
+        if (!is_string($value) || $value === '') {
+            return null;
+        }
+
+        return mb_strlen($value) <= 20 ? $value : null;
+    }
+
+    private function sanitizeLevel(mixed $value): ?string
+    {
+        return in_array($value, ['info', 'warning', 'error', 'critical'], true) ? $value : null;
+    }
+
+    private function sanitizeTitle(mixed $value): ?string
+    {
+        if (!is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        return mb_substr(trim($value), 0, 255);
+    }
+
+    private function sanitizeMessage(mixed $value): ?string
+    {
+        if (!is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        return trim($value);
+    }
+
+    /**
+     * Reads an optional string field from a decoded JSON payload without silently coercing other scalar types.
+     *
+     * @param array<string, mixed> $payload
+     */
+    private function readNullableString(array $payload, string $key): ?string
+    {
+        $value = $payload[$key] ?? null;
+
+        return is_string($value) && $value !== '' ? $value : null;
     }
 }

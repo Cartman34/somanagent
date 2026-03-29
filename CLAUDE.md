@@ -166,8 +166,9 @@ Use this section to resume work quickly after reopening Claude.
   - backend HTTP exceptions
   - backend runtime dispatch logs
   - worker execution start/error logs
+  - frontend runtime/API failures via `/api/logs/events`
+  - infra degradation signals from connector and Claude CLI auth health endpoints
 - Current limitation:
-  - frontend and infra collection are not implemented yet
   - worker retries are not yet clearly distinguished in the logs UI
 
 ### Most recent verified fixes

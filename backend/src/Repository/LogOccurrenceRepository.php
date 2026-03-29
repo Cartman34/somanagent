@@ -31,6 +31,7 @@ class LogOccurrenceRepository extends ServiceEntityRepository
     /**
      * @param array{
      *   source?: string|null,
+     *   category?: string|null,
      *   level?: string|null,
      *   projectId?: string|null,
      *   taskId?: string|null,
@@ -53,6 +54,7 @@ class LogOccurrenceRepository extends ServiceEntityRepository
     /**
      * @param array{
      *   source?: string|null,
+     *   category?: string|null,
      *   level?: string|null,
      *   projectId?: string|null,
      *   taskId?: string|null,
@@ -73,6 +75,7 @@ class LogOccurrenceRepository extends ServiceEntityRepository
     /**
      * @param array{
      *   source?: string|null,
+     *   category?: string|null,
      *   level?: string|null,
      *   projectId?: string|null,
      *   taskId?: string|null,
@@ -88,6 +91,9 @@ class LogOccurrenceRepository extends ServiceEntityRepository
 
         if (($filters['source'] ?? null) !== null) {
             $qb->andWhere('lo.source = :source')->setParameter('source', $filters['source']);
+        }
+        if (($filters['category'] ?? null) !== null) {
+            $qb->andWhere('lo.category = :category')->setParameter('category', $filters['category']);
         }
         if (($filters['level'] ?? null) !== null) {
             $qb->andWhere('lo.level = :level')->setParameter('level', $filters['level']);
