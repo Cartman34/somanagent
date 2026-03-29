@@ -72,6 +72,10 @@ const EXECUTION_STATUS_LABELS: Record<TaskExecution['status'], string> = {
   cancelled: 'Annulée',
 }
 
+const STORY_STATUS_LABELS: Record<StoryStatus, string> = Object.fromEntries(
+  STORY_COLUMNS.map((column) => [column.key, column.label]),
+) as Record<StoryStatus, string>
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function ProgressBar({ value }: { value: number }) {
@@ -165,6 +169,173 @@ function ExecuteModal({ task, onClose, onExecuted }: {
         </button>
       </div>
     </div>
+  )
+}
+
+/**
+ * Modal that lets the user send a story back to a supported replayable agent stage.
+ */
+function ReworkModal({ task, onClose, onReworked }: {
+  task: Task
+  onClose: () => void
+  onReworked: () => void
+}) {
+  const [selectedTargetKey, setSelectedTargetKey] = useState('')
+  const [objective, setObjective] = useState('')
+  const [note, setNote] = useState('')
+
+  const { data: targets, isLoading, error } = useQuery({
+    queryKey: ['task-rework-targets', task.id],
+    queryFn: () => tasksApi.listReworkTargets(task.id),
+  })
+
+  useEffect(() => {
+    if (targets && targets.length > 0 && selectedTargetKey === '') {
+      setSelectedTargetKey(targets[0].key)
+    }
+  }, [targets, selectedTargetKey])
+
+  const selectedTarget = targets?.find((target) => target.key === selectedTargetKey) ?? null
+
+  const reworkMutation = useMutation({
+    mutationFn: () => tasksApi.rework(task.id, {
+      targetKey: selectedTargetKey,
+      objective: objective.trim(),
+      note: note.trim() || undefined,
+    }),
+    onSuccess: () => {
+      onReworked()
+      onClose()
+    },
+  })
+
+  return (
+    <Modal open onClose={onClose} title="Reprendre une étape agent" size="lg">
+      <div className="flex max-h-[72vh] flex-col gap-4 overflow-y-auto pr-1">
+        {isLoading && (
+          <div className="py-8">
+            <Loader2 className="mx-auto h-5 w-5 animate-spin" style={{ color: 'var(--muted)' }} />
+          </div>
+        )}
+
+        {error && (
+          <div className="rounded border px-3 py-2 text-sm" style={{ borderColor: 'rgba(239,68,68,0.35)', color: '#dc2626', background: 'rgba(239,68,68,0.08)' }}>
+            Impossible de charger les étapes rejouables.
+          </div>
+        )}
+
+        {!isLoading && !error && (targets?.length ?? 0) === 0 && (
+          <div className="rounded border px-3 py-2 text-sm" style={{ borderColor: 'var(--border)', color: 'var(--muted)', background: 'var(--surface2)' }}>
+            Aucune étape rejouable n’est disponible pour ce ticket.
+          </div>
+        )}
+
+        {targets && targets.length > 0 && (
+          <>
+            <div className="space-y-2">
+              <p className="text-xs font-medium" style={{ color: 'var(--muted)' }}>Étape ciblée</p>
+              <div className="space-y-2">
+                {targets.map((target) => {
+                  const checked = target.key === selectedTargetKey
+                  return (
+                    <label
+                      key={target.key}
+                      className="flex cursor-pointer items-start gap-3 rounded border px-3 py-3"
+                      style={{
+                        borderColor: checked ? 'var(--brand)' : 'var(--border)',
+                        background: checked ? 'color-mix(in srgb, var(--brand-dim) 55%, transparent)' : 'var(--surface2)',
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="rework-target"
+                        className="mt-1"
+                        checked={checked}
+                        onChange={() => setSelectedTargetKey(target.key)}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{target.label}</p>
+                          <span className="rounded px-2 py-0.5 text-[11px]" style={{ background: 'var(--surface)', color: 'var(--muted)' }}>
+                            {STORY_STATUS_LABELS[target.targetStoryStatus]}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>{target.description}</p>
+                        <div className="mt-2 flex flex-wrap gap-2 text-[11px]" style={{ color: 'var(--muted)' }}>
+                          <span>Rôle : {target.roleSlug}</span>
+                          <span>Skill : {target.skillSlug}</span>
+                          <span>Agent : {target.agent?.name ?? 'aucun actif'}</span>
+                        </div>
+                      </div>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+
+            {selectedTarget && (
+              <div className="rounded border px-3 py-3 text-xs" style={{ borderColor: 'var(--border)', background: 'var(--surface2)', color: 'var(--muted)' }}>
+                <p>Le ticket sera renvoyé vers l’étape <span style={{ color: 'var(--text)' }}>{selectedTarget.label}</span>.</p>
+                <p className="mt-1">Agent visé : <span style={{ color: 'var(--text)' }}>{selectedTarget.agent?.name ?? 'auto indisponible'}</span>.</p>
+                <p className="mt-1">Statut story appliqué : <span style={{ color: 'var(--text)' }}>{STORY_STATUS_LABELS[selectedTarget.targetStoryStatus]}</span>.</p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="text-xs font-medium" style={{ color: 'var(--muted)' }}>Objectif de reprise</label>
+              <textarea
+                value={objective}
+                onChange={(e) => setObjective(e.target.value)}
+                rows={3}
+                className="w-full rounded border px-3 py-2 text-sm outline-none"
+                style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
+                placeholder="Explique ce qui doit être repris ou corrigé."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-medium" style={{ color: 'var(--muted)' }}>Note de retour</label>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={4}
+                className="w-full rounded border px-3 py-2 text-sm outline-none"
+                style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
+                placeholder="Contexte complémentaire, contraintes, éléments à revoir."
+              />
+            </div>
+
+            {reworkMutation.isError && (
+              <div className="rounded border px-3 py-2 text-sm" style={{ borderColor: 'rgba(239,68,68,0.35)', color: '#dc2626', background: 'rgba(239,68,68,0.08)' }}>
+                {(reworkMutation.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'La reprise a échoué.'}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                className="rounded px-3 py-2 text-sm"
+                style={{ background: 'var(--surface2)', color: 'var(--text)' }}
+                onClick={onClose}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded px-3 py-2 text-sm"
+                style={{ background: 'var(--brand-dim)', color: 'var(--brand)' }}
+                onClick={() => reworkMutation.mutate()}
+                disabled={reworkMutation.isPending || selectedTarget === null || selectedTarget.availableAgentCount === 0 || objective.trim() === ''}
+                title={selectedTarget !== null && selectedTarget.availableAgentCount === 0 ? 'Aucun agent actif disponible pour cette étape.' : undefined}
+              >
+                {reworkMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                Lancer la reprise
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </Modal>
   )
 }
 
@@ -470,6 +641,7 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
   const [dismissedErrorLogId, setDismissedErrorLogId] = useState<string | null>(null)
   const [commentText, setCommentText] = useState('')
   const [replyToLogId, setReplyToLogId] = useState<string | null>(null)
+  const [reworkModalOpen, setReworkModalOpen] = useState(false)
 
   const { data: task, isLoading } = useQuery({
     queryKey: ['task-detail', taskId],
@@ -490,18 +662,11 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
     },
   })
 
-  const resumeMutation = useMutation({
-    mutationFn: () => tasksApi.resume(taskId),
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
-      await qc.invalidateQueries({ queryKey: ['tasks'] })
-    },
-  })
-
   useEffect(() => {
     setDismissedErrorLogId(null)
     setCommentText('')
     setReplyToLogId(null)
+    setReworkModalOpen(false)
   }, [taskId])
 
   const submitComment = () => {
@@ -605,12 +770,12 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
                   type="button"
                   className="mt-2 inline-flex items-center gap-2 rounded px-3 py-2 text-sm"
                   style={{ background: 'var(--brand-dim)', color: 'var(--brand)' }}
-                  onClick={() => resumeMutation.mutate()}
-                  disabled={resumeMutation.isPending || !task.storyStatus}
+                  onClick={() => setReworkModalOpen(true)}
+                  disabled={!task.storyStatus}
                   title={!task.storyStatus ? 'Disponible sur les stories et bugs.' : undefined}
                 >
-                  {resumeMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
-                  Relancer l'agent
+                  <RotateCcw className="h-4 w-4" />
+                  Reprendre une étape
                 </button>
               </div>
             </div>
@@ -916,6 +1081,17 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
           )
         })()}
       </div>
+
+      {task && reworkModalOpen && (
+        <ReworkModal
+          task={task}
+          onClose={() => setReworkModalOpen(false)}
+          onReworked={async () => {
+            await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
+            await qc.invalidateQueries({ queryKey: ['tasks'] })
+          }}
+        />
+      )}
     </div>
   )
 }

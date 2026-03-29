@@ -150,6 +150,9 @@ class Task
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
     public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
 
+    /**
+     * Returns whether this task participates in the story lifecycle automation.
+     */
     public function isStory(): bool
     {
         return $this->type === TaskType::UserStory || $this->type === TaskType::Bug;
@@ -160,6 +163,7 @@ class Task
     public function setTitle(string $title): static        { $this->title = $title; return $this; }
     public function setDescription(?string $d): static     { $this->description = $d; return $this; }
     public function setStatus(TaskStatus $s): static       { $this->status = $s; return $this; }
+    public function setStoryStatus(?StoryStatus $s): static { $this->storyStatus = $s; return $this; }
     public function setPriority(TaskPriority $p): static   { $this->priority = $p; return $this; }
     public function setAssignedAgent(?Agent $a): static    { $this->assignedAgent = $a; return $this; }
     public function setAssignedRole(?Role $r): static      { $this->assignedRole = $r; return $this; }
