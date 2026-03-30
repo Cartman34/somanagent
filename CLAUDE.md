@@ -35,6 +35,9 @@ Use `doc/` as the source of truth for product, technical and development documen
 - During `rework`, any additional change explicitly requested by the user as part of the same follow-up must also be added to `local/changes-list.md`, even if it goes beyond the original review remarks.
 - If a completed feature needs a follow-up bugfix, add it to `local/changes-list.md` with prefix `[FIX]`.
 - `review` means: analyse the current work, write the review findings into `local/changes-review.md`, and use that same file as the source for any later `rework`.
+- Any new user process instruction that changes how work should be tracked or executed must be persisted in `CLAUDE.md`.
+- After a delivered `next`, alternate `review` and `rework` on the current changes until the review is clean.
+- Keep chat updates concise and do not restate information that is already available in the local backlog tracking files unless it is necessary for a decision or blocker.
 
 ### Local-only files
 

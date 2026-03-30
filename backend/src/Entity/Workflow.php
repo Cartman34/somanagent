@@ -38,9 +38,9 @@ class Workflow
     private ?Team $team = null;
 
     /**
-     * draft    → éditable, non utilisable
-     * validated → non éditable, applicable aux US
-     * locked   → non éditable, déjà utilisé (au moins une US l'utilise)
+     * draft     -> legacy draft kept for backward compatibility, not usable
+     * validated -> immutable and usable workflow definition
+     * locked    -> immutable workflow currently locked by runtime usage
      */
     #[ORM\Column(enumType: WorkflowStatus::class)]
     private WorkflowStatus $status = WorkflowStatus::Draft;

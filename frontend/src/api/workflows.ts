@@ -37,7 +37,7 @@ export const workflowsApi = {
     await apiClient.delete(`/workflows/${id}`)
   },
 
-  /** Transitions a draft workflow to 'validated' status. */
+  /** Legacy endpoint kept for backward compatibility; immutable workflows reject it. */
   validate: async (id: string): Promise<{ id: string; status: string }> => {
     const { data } = await apiClient.post(`/workflows/${id}/validate`)
     return data

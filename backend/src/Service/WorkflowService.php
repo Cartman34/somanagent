@@ -31,6 +31,7 @@ class WorkflowService
         ?string         $teamId      = null,
     ): Workflow {
         $workflow = new Workflow($name, $trigger, $description);
+        $workflow->validate();
 
         if ($teamId !== null) {
             $team = $this->teamRepository->find(Uuid::fromString($teamId));

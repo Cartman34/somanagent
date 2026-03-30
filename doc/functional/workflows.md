@@ -62,7 +62,12 @@ Content-Type: application/json
 }
 ```
 
-Then add the steps (to be defined).
+The workflow becomes immutable as soon as it is created:
+- no update
+- no delete
+- no manual validation step
+
+If the process needs to evolve, create a new workflow definition. A future product slice may add explicit duplication or versioning support, but the current rule is to replace a workflow with a new immutable one instead of editing it in place.
 
 ## Step Configuration
 
@@ -90,11 +95,11 @@ A workflow has a lifecycle of its own, independent of the story lifecycle:
 
 | Status | Description | Editable | Usable |
 |---|---|---|---|
-| `draft` | Being configured | ✅ Yes | ❌ No |
+| `draft` | Legacy draft kept for backward compatibility | ❌ No | ❌ No |
 | `validated` | Ready for story execution | ❌ No | ✅ Yes |
 | `locked` | Locked (currently executing) | ❌ No | ✅ Yes |
 
-**Validating a workflow:** On the workflow detail page, a "Valider" button appears when the status is `draft`. Clicking it calls `POST /api/workflows/{id}/validate` and transitions the workflow to `validated`.
+New workflows are created directly in a usable immutable state. The old draft validation flow is no longer part of the product UI.
 
 ## Visual Lifecycle Pipeline
 
