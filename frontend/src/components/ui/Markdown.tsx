@@ -1,3 +1,7 @@
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
 import { Fragment, type ReactNode } from 'react'
 
 type Block =

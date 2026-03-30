@@ -1,3 +1,7 @@
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
 import Modal from './Modal'
 
 interface ConfirmDialogProps {

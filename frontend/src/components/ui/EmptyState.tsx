@@ -1,3 +1,7 @@
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
 import type { LucideIcon } from 'lucide-react'
 
 interface EmptyStateProps {

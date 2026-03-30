@@ -1,3 +1,7 @@
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
 import { AlertCircle } from 'lucide-react'
 
 interface ErrorMessageProps {

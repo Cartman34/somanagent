@@ -1,3 +1,7 @@
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
 import apiClient from './client'
 import type { Ticket, TicketTask, TaskPriority, TaskStatus, TaskType, StoryStatus, TaskReworkTarget } from '@/types'
 

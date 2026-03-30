@@ -1,3 +1,7 @@
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ScrollText, ChevronLeft, ChevronRight } from 'lucide-react'

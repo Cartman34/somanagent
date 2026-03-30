@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Author: Florent HAZARD <f.hazard@sowapps.com>
 # Description: Verify PHP 8.4+ is installed in the current environment (WSL/Linux)
 # Usage: bash scripts/check-php.sh
 # Usage: wsl bash scripts/check-php.sh

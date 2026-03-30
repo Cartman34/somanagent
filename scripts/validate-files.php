@@ -1,5 +1,8 @@
 #!/usr/bin/env php
 <?php
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
 // Description: Run targeted backend/frontend validations for an explicit file list
 // Usage: php scripts/validate-files.php backend/src/Controller/TaskController.php frontend/src/api/tickets.ts
 // Usage: php scripts/validate-files.php --with-types backend/src/Service/StoryExecutionService.php frontend/src/pages/ProjectDetailPage.tsx

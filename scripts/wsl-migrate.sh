@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Author: Florent HAZARD <f.hazard@sowapps.com>
 # =============================================================================
 # wsl-migrate.sh  —  Migrate SoManAgent to the WSL native filesystem
 # =============================================================================

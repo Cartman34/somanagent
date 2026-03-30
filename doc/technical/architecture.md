@@ -124,6 +124,40 @@ Use Symfony translation keys and domains instead.
 
 For the detailed domain/key conventions and the persisted-message strategy, use [`translations.md`](translations.md).
 
+### Author Header
+
+Project code files must carry an explicit author header for Florent HAZARD `<f.hazard@sowapps.com>`.
+
+Expected syntax by file type:
+
+- PHP code:
+```php
+<?php
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+```
+- TypeScript / TSX / CSS:
+```ts
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+```
+- Shell scripts:
+```bash
+# Author: Florent HAZARD <f.hazard@sowapps.com>
+```
+
+Scope:
+
+- `backend/src/`
+- `frontend/src/`
+- `scripts/`
+
+This rule applies to existing code and to every new code file added later in these trees.
+
+For PHP files, place the author block immediately after `<?php`, before `declare(strict_types=1);` when that directive exists.
+
 ### Services
 Services contain the business logic and call the repositories.
 

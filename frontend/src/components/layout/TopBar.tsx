@@ -1,3 +1,7 @@
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
 import { useLocation } from 'react-router-dom'
 
 const pageTitles: Record<string, string> = {

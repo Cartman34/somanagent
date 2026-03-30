@@ -1,3 +1,7 @@
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
 interface EntityIdProps {
   id: string
   prefix?: string

@@ -1,5 +1,8 @@
 #!/usr/bin/env php
 <?php
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
 // Description: Full setup of SoManAgent (first run)
 // Usage: php scripts/setup.php
 // Usage: php scripts/setup.php --skip-frontend

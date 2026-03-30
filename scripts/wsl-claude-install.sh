@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Author: Florent HAZARD <f.hazard@sowapps.com>
 # Description: Install Claude CLI inside the configured WSL distro for local project usage
 # Usage: bash scripts/wsl-claude-install.sh
 

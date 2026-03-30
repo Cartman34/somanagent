@@ -1,3 +1,7 @@
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard,
