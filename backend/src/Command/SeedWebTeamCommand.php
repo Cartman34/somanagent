@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Entity\Agent;
+use App\Entity\AgentAction;
 use App\Entity\Role;
+use App\Entity\Skill;
 use App\Entity\Team;
 use App\Enum\ConnectorType;
 use App\ValueObject\AgentConfig;
@@ -47,6 +49,18 @@ class SeedWebTeamCommand extends Command
         ['name' => 'DevOps — Iris',    'slug' => 'devops',         'description' => 'Agent DevOps. Gère l\'infrastructure et les déploiements.'],
     ];
 
+    private const ACTIONS = [
+        ['key' => 'product.specify', 'label' => 'Product specification', 'role' => 'product-owner', 'skill' => null],
+        ['key' => 'tech.plan', 'label' => 'Technical planning', 'role' => 'lead-tech', 'skill' => null],
+        ['key' => 'design.ui_mockup', 'label' => 'UI mockup', 'role' => 'ui-ux-designer', 'skill' => null],
+        ['key' => 'dev.backend.implement', 'label' => 'Backend implementation', 'role' => 'dev-php', 'skill' => null],
+        ['key' => 'dev.frontend.implement', 'label' => 'Frontend implementation', 'role' => 'dev-frontend', 'skill' => null],
+        ['key' => 'review.code', 'label' => 'Code review', 'role' => 'lead-tech', 'skill' => null],
+        ['key' => 'qa.validate', 'label' => 'QA validation', 'role' => 'qa-tester', 'skill' => null],
+        ['key' => 'docs.write', 'label' => 'Documentation writing', 'role' => 'tech-writer', 'skill' => null],
+        ['key' => 'ops.configure', 'label' => 'Infrastructure configuration', 'role' => 'devops', 'skill' => null],
+    ];
+
     public function __construct(private readonly EntityManagerInterface $em)
     {
         parent::__construct();
@@ -79,6 +93,11 @@ class SeedWebTeamCommand extends Command
             $io->text("  Role: <info>{$def['name']}</info>");
         }
 
+        $skills = [];
+        foreach ($this->em->getRepository(Skill::class)->findAll() as $skill) {
+            $skills[$skill->getSlug()] = $skill;
+        }
+
         // Team
         $team = new Team('Équipe Web', 'Équipe de développement web full-stack.');
         $this->em->persist($team);
@@ -92,6 +111,14 @@ class SeedWebTeamCommand extends Command
             $this->em->persist($agent);
             $team->addAgent($agent);
             $io->text("  Agent: <comment>{$def['name']}</comment> [{$def['slug']}]");
+        }
+
+        foreach (self::ACTIONS as $def) {
+            $action = new AgentAction($def['key'], $def['label']);
+            $action->setRole($roles[$def['role']] ?? null);
+            $action->setSkill($def['skill'] !== null ? ($skills[$def['skill']] ?? null) : null);
+            $this->em->persist($action);
+            $io->text("  Action: <fg=cyan>{$def['key']}</>");
         }
 
         $this->em->flush();

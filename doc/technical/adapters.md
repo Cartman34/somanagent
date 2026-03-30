@@ -140,7 +140,7 @@ The `ValueObject\Prompt` assembles the final text sent to the agent:
 
 ---
 
-# Task
+# Instruction
 
 [specific instruction from the workflow step]
 ```

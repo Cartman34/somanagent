@@ -21,7 +21,7 @@ class AuditLogRepository extends ServiceEntityRepository
     }
 
     /**
-     * Returns audit log entries scoped to a project: project-level events and task events.
+     * Returns audit log entries scoped to a project: project-level events and ticket/task events.
      *
      * @return AuditLog[]
      */
@@ -47,17 +47,23 @@ class AuditLogRepository extends ServiceEntityRepository
     }
 
     /**
-     * Builds a QueryBuilder scoped to project-level and task-level audit entries.
+     * Builds a QueryBuilder scoped to project-level and ticket/task-level audit entries.
      * Uses a two-step approach to avoid PostgreSQL uuid vs varchar type mismatch in subqueries.
      */
     private function buildProjectQuery(Project $project): QueryBuilder
     {
-        $taskIds = $this->getEntityManager()
-            ->createQuery('SELECT t.id FROM App\Entity\Task t WHERE t.project = :project')
+        $ticketIds = $this->getEntityManager()
+            ->createQuery('SELECT t.id FROM App\Entity\Ticket t WHERE t.project = :project')
             ->setParameter('project', $project)
             ->getSingleColumnResult();
 
-        $taskIdStrings = array_map(fn($id) => (string) $id, $taskIds);
+        $ticketTaskIds = $this->getEntityManager()
+            ->createQuery('SELECT tt.id FROM App\Entity\TicketTask tt JOIN tt.ticket t WHERE t.project = :project')
+            ->setParameter('project', $project)
+            ->getSingleColumnResult();
+
+        $ticketIdStrings = array_map(fn($id) => (string) $id, $ticketIds);
+        $ticketTaskIdStrings = array_map(fn($id) => (string) $id, $ticketTaskIds);
 
         $projectId = (string) $project->getId();
 
@@ -66,10 +72,16 @@ class AuditLogRepository extends ServiceEntityRepository
             ->setParameter('typeProject', 'Project')
             ->setParameter('projectId', $projectId);
 
-        if (!empty($taskIdStrings)) {
-            $qb->orWhere('al.entityType = :typeTask AND al.entityId IN (:taskIds)')
-                ->setParameter('typeTask', 'Task')
-                ->setParameter('taskIds', $taskIdStrings);
+        if ($ticketIdStrings !== []) {
+            $qb->orWhere('al.entityType = :typeTicket AND al.entityId IN (:ticketIds)')
+                ->setParameter('typeTicket', 'Ticket')
+                ->setParameter('ticketIds', $ticketIdStrings);
+        }
+
+        if ($ticketTaskIdStrings !== []) {
+            $qb->orWhere('al.entityType = :typeTicketTask AND al.entityId IN (:ticketTaskIds)')
+                ->setParameter('typeTicketTask', 'TicketTask')
+                ->setParameter('ticketTaskIds', $ticketTaskIdStrings);
         }
 
         return $qb;

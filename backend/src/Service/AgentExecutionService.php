@@ -5,20 +5,21 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\Agent;
+use App\Entity\AgentAction;
 use App\Entity\Role;
-use App\Entity\Task;
-use App\Entity\TaskDependency;
-use App\Entity\TaskLog;
+use App\Entity\Ticket;
+use App\Entity\TicketLog;
+use App\Entity\TicketTask;
+use App\Entity\TicketTaskDependency;
 use App\Entity\TokenUsage;
 use App\Entity\WorkflowStep;
 use App\Enum\StoryStatus;
 use App\Enum\TaskStatus;
-use App\Enum\TaskType;
 use App\Adapter\VCS\MockVcsAdapter;
 use App\Repository\RoleRepository;
+use App\Repository\AgentActionRepository;
 use App\Repository\SkillRepository;
-use App\Repository\TaskLogRepository;
-use App\Repository\TaskRepository;
+use App\Repository\TicketLogRepository;
 use App\Repository\WorkflowStepRepository;
 use App\ValueObject\Prompt;
 use Doctrine\ORM\EntityManagerInterface;
@@ -31,7 +32,7 @@ use Psr\Log\LoggerInterface;
  *  1. Charger le skill depuis la BDD
  *  2. Construire le prompt (skill + contexte de la tâche)
  *  3. Récupérer l'adapter adapté au ConnectorType de l'agent
- *  4. Appeler l'agent, persister TokenUsage + TaskLog
+ *  4. Appeler l'agent, persister TokenUsage + TicketLog
  *  5. Si skill = tech-planning → parser le JSON, créer les sous-tâches + dépendances, faire avancer la story
  *  6. Sinon → passer la tâche à Done
  */
@@ -41,10 +42,10 @@ final class AgentExecutionService
         private readonly AgentPortRegistry     $portRegistry,
         private readonly SkillRepository       $skillRepository,
         private readonly RoleRepository        $roleRepository,
-        private readonly TaskLogRepository     $taskLogRepository,
-        private readonly TaskRepository        $taskRepository,
+        private readonly AgentActionRepository $agentActionRepository,
+        private readonly TicketLogRepository   $ticketLogRepository,
         private readonly WorkflowStepRepository $workflowStepRepository,
-        private readonly TaskService           $taskService,
+        private readonly TicketLogService      $ticketLogService,
         private readonly AgentContextBuilder   $contextBuilder,
         private readonly PlanningOutputParser  $planningParser,
         private readonly VcsRepositoryUrlService $vcsRepositoryUrl,
@@ -54,56 +55,57 @@ final class AgentExecutionService
     ) {}
 
     /**
-     * Exécute une tâche par l'agent donné avec le skill indiqué.
+     * Executes an operational ticket task through the current ticket-centric agent stack.
      *
-     * @throws \RuntimeException si le skill est introuvable ou si l'appel agent échoue
+     * The target model keeps ticket history in TicketLog, so this path avoids TaskLog entirely.
+     *
+     * @throws \RuntimeException if the skill is not found or if the agent call fails
      */
-    public function execute(Task $task, Agent $agent, string $skillSlug): void
+    public function executeTicketTask(TicketTask $task, Agent $agent, string $skillSlug): void
     {
         $skill = $this->skillRepository->findOneBy(['slug' => $skillSlug]);
         if ($skill === null) {
             throw new \RuntimeException("Skill '{$skillSlug}' not found in database.");
         }
 
-        $config  = $agent->getAgentConfig();
-        $prompt  = $this->buildPrompt($task, $agent, $skill->getContent(), $skillSlug);
+        $config = $agent->getAgentConfig();
+        $prompt = $this->buildPromptForTicketTask($task, $agent, $skill->getContent(), $skillSlug);
         $adapter = $this->portRegistry->getFor($agent->getConnector());
 
-        $this->logger->info('AgentExecution: calling agent', [
-            'task'  => $task->getTitle(),
+        $this->logger->info('AgentExecution: calling agent for ticket task', [
+            'ticket_task' => $task->getTitle(),
             'agent' => $agent->getName(),
             'skill' => $skillSlug,
+            'action' => $task->getAgentAction()->getKey(),
         ]);
 
         $response = $adapter->sendPrompt($prompt, $config);
 
-        // Persist token usage
         $usage = new TokenUsage(
-            agent:        $agent,
-            model:        $config->model,
-            inputTokens:  $response->inputTokens,
+            agent: $agent,
+            model: $config->model,
+            inputTokens: $response->inputTokens,
             outputTokens: $response->outputTokens,
-            durationMs:   (int) $response->durationMs,
-            task:         $task,
+            durationMs: (int) $response->durationMs,
+            ticket: $task->getTicket(),
+            ticketTask: $task,
+            workflowStep: $task->getWorkflowStep(),
         );
         $this->em->persist($usage);
 
-        // Log raw agent output for the execution journal.
-        $this->em->persist(
-            (new TaskLog($task, 'agent_response', $response->content))
-                ->setAuthorType('agent')
-                ->setAuthorName($agent->getName())
-                ->setMetadata([
-                    'skillSlug' => $skillSlug,
-                    'agentId'   => (string) $agent->getId(),
-                ])
+        $this->ticketLogService->log(
+            ticket: $task->getTicket(),
+            action: 'agent_response',
+            content: $response->content,
+            ticketTask: $task,
+            authorType: 'agent',
+            authorName: $agent->getName(),
+            metadata: [
+                'skillSlug' => $skillSlug,
+                'agentId' => (string) $agent->getId(),
+                'actionKey' => $task->getAgentAction()->getKey(),
+            ],
         );
-
-        $this->logger->info('AgentExecution: response received', [
-            'tokens_in'  => $response->inputTokens,
-            'tokens_out' => $response->outputTokens,
-            'duration_ms' => (int) $response->durationMs,
-        ]);
 
         $questions = $this->extractClarificationQuestions($response->content);
         $normalizedContent = mb_strtolower($response->content);
@@ -114,18 +116,21 @@ final class AgentExecutionService
 
         if ($questions !== [] && $isClarificationRequest) {
             foreach ($questions as $question) {
-                $this->taskService->addComment(
-                    task: $task,
+                $this->ticketLogService->log(
+                    ticket: $task->getTicket(),
+                    action: 'agent_question',
                     content: $question,
+                    ticketTask: $task,
+                    kind: 'comment',
                     authorType: 'agent',
                     authorName: $agent->getName(),
                     requiresAnswer: true,
                     metadata: [
-                        'context'   => 'clarification_request',
+                        'context' => 'clarification_request',
                         'skillSlug' => $skillSlug,
-                        'agentId'   => (string) $agent->getId(),
+                        'agentId' => (string) $agent->getId(),
+                        'actionKey' => $task->getAgentAction()->getKey(),
                     ],
-                    action: 'agent_question',
                 );
             }
 
@@ -135,47 +140,44 @@ final class AgentExecutionService
         }
 
         if ($skillSlug === 'tech-planning') {
-            $this->handlePlanningResponse($task, $agent, $response->content);
+            $this->handlePlanningTicketTaskResponse($task, $agent, $response->content);
         } elseif ($skillSlug === 'product-owner') {
-            $this->handleProductOwnerResponse($task, $response->content);
+            $this->handleProductOwnerTicketTaskResponse($task, $response->content);
         } else {
             $task->setStatus(TaskStatus::Done)->setProgress(100);
         }
-
         $this->em->flush();
     }
 
     /**
-     * Construit le Prompt final pour la tâche.
+     * @return TicketLog[]
      */
-    private function buildPrompt(Task $task, Agent $agent, string $skillContent, string $skillSlug): Prompt
+    private function buildTicketConversationContext(TicketTask $task): array
+    {
+        $logs = $this->ticketLogRepository->findByTicket($task->getTicket());
+        $comments = array_values(array_filter($logs, static fn(TicketLog $log) => $log->getKind() === 'comment'));
+        if ($comments === []) {
+            return [];
+        }
+
+        return array_slice($comments, -12);
+    }
+
+    private function buildPromptForTicketTask(TicketTask $task, Agent $agent, string $skillContent, string $skillSlug): Prompt
     {
         $instruction = $task->getTitle();
         if ($task->getDescription() !== null) {
             $instruction .= "\n\n" . $task->getDescription();
         }
 
-        $context = $this->contextBuilder->buildForTask(
+        $context = $this->contextBuilder->buildForTicketTask(
             task: $task,
             agent: $agent,
             skillSlug: $skillSlug,
-            ticketComments: $this->buildConversationContext($task),
+            ticketComments: $this->buildTicketConversationContext($task),
         );
 
         return Prompt::create($skillContent, $instruction, $context);
-    }
-
-    private function buildConversationContext(Task $task): array
-    {
-        $logs = $this->taskLogRepository->findByTask($task);
-        $comments = array_values(array_filter($logs, static fn(TaskLog $log) => $log->getKind() === 'comment'));
-        if ($comments === []) {
-            return [];
-        }
-
-        $slice = array_slice($comments, -12);
-
-        return $slice;
     }
 
     /**
@@ -203,14 +205,15 @@ final class AgentExecutionService
         return array_values(array_unique(array_slice($questions, 0, 5)));
     }
 
-    /**
-     * Traite la sortie JSON du skill tech-planning :
-     *  - Crée les sous-tâches (type=Task) avec leurs dépendances
-     *  - Met à jour la branche Git de la story
-     *  - Fait avancer le storyStatus (planning → graphic_design | development)
-     */
-    private function handlePlanningResponse(Task $story, Agent $leadTech, string $rawContent): void
+    private function resolveDefaultActionForRole(string $roleSlug): ?AgentAction
     {
+        return $this->agentActionRepository->findOneActiveByRoleSlug($roleSlug);
+    }
+
+    private function handlePlanningTicketTaskResponse(TicketTask $planningTask, Agent $leadTech, string $rawContent): void
+    {
+        $ticket = $planningTask->getTicket();
+
         try {
             $plan = $this->planningParser->parse($rawContent);
         } catch (\InvalidArgumentException $e) {
@@ -219,44 +222,40 @@ final class AgentExecutionService
                 $e->getMessage(),
             );
 
-            $this->logger->error('AgentExecution: failed to parse planning output', [
+            $this->logger->error('AgentExecution: failed to parse ticket planning output', [
                 'error' => $message,
-                'task'  => $story->getTitle(),
+                'ticket' => $ticket->getTitle(),
             ]);
-            // Stored in DB for the in-app log UI, so keep the message readable for end users.
-            $this->em->persist(new TaskLog($story, 'planning_parse_error', $message));
+            $this->ticketLogService->log($ticket, 'planning_parse_error', $message, $planningTask);
             $this->em->flush();
             throw new \RuntimeException($message, previous: $e);
         }
 
-        // Set branch name on the story
-        $story->setBranchName($plan->branch);
-        $this->simulatePlanningBranchCreation($story, $plan->branch);
+        $ticket->setBranchName($plan->branch);
+        $this->simulatePlanningBranchCreationForTicket($ticket, $planningTask, $plan->branch);
 
-        $removedSubtasks = $this->removeExistingPlanningSubtasks($story);
+        $removedSubtasks = $this->removeExistingPlanningTicketTasks($ticket, $planningTask);
         if ($removedSubtasks > 0) {
-            // Stored in DB for the in-app log UI, so keep the message readable for end users.
-            $this->em->persist(new TaskLog(
-                $story,
+            $this->ticketLogService->log(
+                $ticket,
                 'planning_replaced',
                 sprintf('Ancien plan supprimé avant régénération (%d sous-tâche%s).', $removedSubtasks, $removedSubtasks > 1 ? 's' : ''),
-            ));
+                $planningTask,
+            );
         }
 
-        // Create subtasks
-        /** @var Task[] $createdTasks */
+        /** @var TicketTask[] $createdTasks */
         $createdTasks = [];
         foreach ($plan->tasks as $planTask) {
             $role = $this->roleRepository->findOneBy(['slug' => $planTask->role]);
 
-            $subtask = new Task(
-                project:     $story->getProject(),
-                type:        TaskType::Task,
-                title:       $planTask->title,
+            $subtask = new TicketTask(
+                ticket: $ticket,
+                agentAction: $this->resolveDefaultActionForRole($planTask->role) ?? $planningTask->getAgentAction(),
+                title: $planTask->title,
                 description: $planTask->description,
-                priority:    $planTask->priority,
+                priority: $planTask->priority,
             );
-            $subtask->setParent($story);
             $subtask->setAddedBy($leadTech);
             $subtask->setBranchName($plan->branch);
             $subtask->setStatus(TaskStatus::Backlog);
@@ -264,39 +263,33 @@ final class AgentExecutionService
             if ($role !== null) {
                 $subtask->setAssignedRole($role);
             }
-            $subtask->setWorkflowStep($this->resolveWorkflowStepForPlannedRole($story, $planTask->role));
 
+            $subtask->setWorkflowStep($this->resolveWorkflowStepForPlannedRoleOnTicket($ticket, $planTask->role));
             $this->em->persist($subtask);
             $createdTasks[] = $subtask;
         }
 
-        // Create dependencies (flush first so subtask IDs exist)
         $this->em->flush();
 
         foreach ($plan->tasks as $i => $planTask) {
             foreach ($planTask->dependsOn as $depIndex) {
-                $dependency = new TaskDependency($createdTasks[$i], $createdTasks[$depIndex]);
-                $this->em->persist($dependency);
+                $this->em->persist(new TicketTaskDependency($createdTasks[$i], $createdTasks[$depIndex]));
             }
         }
 
-        // Unlock tasks that have no dependencies (set them to Todo)
         foreach ($plan->tasks as $i => $planTask) {
-            if (empty($planTask->dependsOn)) {
+            if ($planTask->dependsOn === []) {
                 $createdTasks[$i]->setStatus(TaskStatus::Todo);
             }
         }
 
-        // Advance story status
-        if ($story->getStoryStatus() === StoryStatus::Planning) {
-            $nextStatus = $plan->needsDesign
-                ? StoryStatus::GraphicDesign
-                : StoryStatus::Development;
+        if ($ticket->getStoryStatus() === StoryStatus::Planning) {
+            $nextStatus = $plan->needsDesign ? StoryStatus::GraphicDesign : StoryStatus::Development;
 
             try {
-                $story->transitionStoryTo($nextStatus);
+                $ticket->transitionStoryTo($nextStatus);
             } catch (\LogicException $e) {
-                $this->logger->warning('AgentExecution: could not transition story status', [
+                $this->logger->warning('AgentExecution: could not transition ticket story status', [
                     'error' => $e->getMessage(),
                 ]);
             }
@@ -308,23 +301,15 @@ final class AgentExecutionService
             $plan->branch,
             $plan->needsDesign ? 'yes' : 'no',
         );
-        $story->setStatus(TaskStatus::Done)->setProgress(100);
-        $this->em->persist(new TaskLog($story, 'planning_completed', $summary));
 
-        $this->logger->info('AgentExecution: planning completed', [
-            'tasks_created' => count($createdTasks),
-            'branch'        => $plan->branch,
-            'needs_design'  => $plan->needsDesign,
-        ]);
+        $planningTask->setStatus(TaskStatus::Done)->setProgress(100);
+        $ticket->setProgress(100);
+        $this->ticketLogService->log($ticket, 'planning_completed', $summary, $planningTask);
     }
 
-    /**
-     * Simulates branch creation for planning outputs when the project repository URL
-     * can be resolved to a supported provider, then records the prepared branch in the task log.
-     */
-    private function simulatePlanningBranchCreation(Task $story, string $branchName): void
+    private function simulatePlanningBranchCreationForTicket(Ticket $ticket, TicketTask $planningTask, string $branchName): void
     {
-        $repository = $this->vcsRepositoryUrl->resolve($story->getProject()->getRepositoryUrl());
+        $repository = $this->vcsRepositoryUrl->resolve($ticket->getProject()->getRepositoryUrl());
         if ($repository === null) {
             return;
         }
@@ -335,46 +320,53 @@ final class AgentExecutionService
             branch: $branchName,
         );
 
-        $branchUrl = $this->vcsRepositoryUrl->buildBranchUrl($story->getProject()->getRepositoryUrl(), $branchName);
+        $branchUrl = $this->vcsRepositoryUrl->buildBranchUrl($ticket->getProject()->getRepositoryUrl(), $branchName);
 
-        // Stored in DB for the in-app log UI, so keep the message readable for end users.
-        $this->em->persist(
-            (new TaskLog(
-                $story,
-                'branch_prepared',
-                sprintf('Branche simulée pour le planning: %s', $branchName),
-            ))->setMetadata([
+        $this->ticketLogService->log(
+            $ticket,
+            'branch_prepared',
+            sprintf('Branche simulée pour le planning: %s', $branchName),
+            $planningTask,
+            metadata: [
                 'provider' => $repository['provider'],
                 'repository' => $repository['owner'] . '/' . $repository['repo'],
                 'branch' => $branchName,
                 'branchUrl' => $branchUrl,
                 'mode' => 'mock',
-            ])
+            ],
         );
     }
 
-    private function removeExistingPlanningSubtasks(Task $story): int
+    private function removeExistingPlanningTicketTasks(Ticket $ticket, TicketTask $planningTask): int
     {
-        $children = $this->taskRepository->findChildren($story);
-        if ($children === []) {
-            return 0;
-        }
+        $tasks = $ticket->getTasks()->toArray();
+        $removed = 0;
 
-        foreach ($children as $child) {
-            $this->em->remove($child);
+        foreach ($tasks as $task) {
+            if (!$task instanceof TicketTask) {
+                continue;
+            }
+
+            if ($task === $planningTask) {
+                continue;
+            }
+
+            if ($task->getAddedBy() === null) {
+                continue;
+            }
+
+            $this->em->remove($task);
+            ++$removed;
         }
 
         $this->em->flush();
 
-        return count($children);
+        return $removed;
     }
 
-    /**
-     * Resolves the lifecycle workflow step that best matches a planning-generated subtask role.
-     */
-    private function resolveWorkflowStepForPlannedRole(Task $story, string $roleSlug): ?WorkflowStep
+    private function resolveWorkflowStepForPlannedRoleOnTicket(Ticket $ticket, string $roleSlug): ?WorkflowStep
     {
-        $team = $story->getProject()->getTeam();
+        $team = $ticket->getProject()->getTeam();
         if ($team === null) {
             return null;
         }
@@ -382,36 +374,36 @@ final class AgentExecutionService
         return $this->workflowStepRepository->findLifecycleStepByTeamAndRoleSlug($team, $roleSlug);
     }
 
-    /**
-     * Stores the Product Owner output back into the story and moves it to "ready".
-     */
-    private function handleProductOwnerResponse(Task $story, string $rawContent): void
+    private function handleProductOwnerTicketTaskResponse(TicketTask $task, string $rawContent): void
     {
+        $ticket = $task->getTicket();
         $content = trim($rawContent);
         if ($content !== '') {
-            $story->setDescription($content);
+            $ticket->setDescription($content);
         }
 
         if (preg_match('/^##\s+(.+)$/m', $content, $matches) === 1) {
-            $story->setTitle(trim($matches[1]));
+            $ticket->setTitle(trim($matches[1]));
         }
 
-        if ($story->getStoryStatus() === StoryStatus::New) {
+        if ($ticket->getStoryStatus() === StoryStatus::New) {
             try {
-                $story->transitionStoryTo(StoryStatus::Ready);
+                $ticket->transitionStoryTo(StoryStatus::Ready);
             } catch (\LogicException $e) {
-                $this->logger->warning('AgentExecution: could not transition PO story status', [
+                $this->logger->warning('AgentExecution: could not transition PO ticket story status', [
                     'error' => $e->getMessage(),
                 ]);
             }
         }
 
-        $story->setStatus(TaskStatus::Done)->setProgress(100);
+        $ticket->setStatus(TaskStatus::Done)->setProgress(100);
+        $task->setStatus(TaskStatus::Done)->setProgress(100);
 
-        $this->em->persist(new TaskLog(
-            $story,
+        $this->ticketLogService->log(
+            $ticket,
             'product_owner_completed',
             'La demande a été reformulée en user story prête pour validation.',
-        ));
+            $task,
+        );
     }
 }

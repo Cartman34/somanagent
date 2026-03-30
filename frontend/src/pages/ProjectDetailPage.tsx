@@ -9,11 +9,22 @@ import {
   ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { projectsApi } from '@/api/projects'
-import { tasksApi } from '@/api/tasks'
+import { translationsApi } from '@/api/translations'
+import { ticketsApi, ticketTasksApi, type ProjectRequestPayload, type ProjectRequestResult, type TicketTaskPayload } from '@/api/tickets'
 import { teamsApi } from '@/api/teams'
 import { agentsApi } from '@/api/agents'
-import type { ProjectRequestPayload, ProjectRequestResult, TaskPayload } from '@/api/tasks'
-import type { Task, TaskExecution, TaskStatus, TaskPriority, TaskType, StoryStatus, Module, AgentSummary, TokenUsageEntry } from '@/types'
+import type {
+  Ticket,
+  TicketTask,
+  AgentTaskExecution,
+  TaskStatus,
+  TaskPriority,
+  TaskType,
+  StoryStatus,
+  Module,
+  AgentSummary,
+  TokenUsageEntry,
+} from '@/types'
 import { PageSpinner } from '@/components/ui/Spinner'
 import ErrorMessage from '@/components/ui/ErrorMessage'
 import EmptyState from '@/components/ui/EmptyState'
@@ -62,7 +73,7 @@ const AUDIT_ACTION_LABELS: Record<string, string> = {
   'task.reprioritized': 'Priorité modifiée',
 }
 
-const EXECUTION_STATUS_LABELS: Record<TaskExecution['status'], string> = {
+const EXECUTION_STATUS_LABELS: Record<AgentTaskExecution['status'], string> = {
   pending: 'En attente',
   running: 'En cours',
   retrying: 'En retry',
@@ -71,6 +82,29 @@ const EXECUTION_STATUS_LABELS: Record<TaskExecution['status'], string> = {
   dead_letter: 'Dead letter',
   cancelled: 'Annulée',
 }
+
+const EXECUTION_HISTORY_TRANSLATION_KEYS = [
+  'ui.project_detail.execution_history.title',
+  'ui.project_detail.execution_history.requested_agent',
+  'ui.project_detail.execution_history.effective_agent',
+  'ui.project_detail.execution_history.started_at',
+  'ui.project_detail.execution_history.finished_at',
+  'ui.project_detail.execution_history.attempts_count_one',
+  'ui.project_detail.execution_history.attempts_count_other',
+  'ui.project_detail.execution_history.attempt_label',
+  'ui.project_detail.execution_history.attempt_failed',
+  'ui.project_detail.execution_history.attempt_succeeded',
+  'ui.project_detail.execution_history.attempt_running',
+  'ui.project_detail.execution_history.retry_planned',
+  'ui.project_detail.execution_history.agent',
+  'ui.project_detail.execution_history.receiver',
+  'ui.project_detail.execution_history.request_ref',
+  'ui.project_detail.execution_history.error_scope',
+  'ui.project_detail.execution_history.not_available',
+  'ui.project_detail.execution_history.exhausted_retries',
+  'ui.project_detail.execution_history.auto',
+  'ui.project_detail.execution_history.not_finished',
+] as const
 
 const STORY_STATUS_LABELS: Record<StoryStatus, string> = Object.fromEntries(
   STORY_COLUMNS.map((column) => [column.key, column.label]),
@@ -94,15 +128,19 @@ function StatusIcon({ status }: { status: TaskStatus }) {
   return <ChevronRight className="w-4 h-4 text-gray-400" />
 }
 
+function formatDateTime(value: string, locale?: string) {
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value))
+}
+
+function formatTime(value: string, locale?: string) {
+  return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(new Date(value))
+}
+
 /**
  * Returns the subtasks that belong to the story's currently active workflow column.
  */
-function readActiveColumnSubtasks(task: Task) {
-  if (task.storyStatus === null || task.children == null) {
-    return []
-  }
-
-  return task.children.filter((child) => child.workflowStep?.storyStatusTrigger === task.storyStatus)
+function isTicket(entity: Ticket | TicketTask): entity is Ticket {
+  return 'projectId' in entity
 }
 
 // ─── Execute modal ────────────────────────────────────────────────────────────
@@ -112,8 +150,8 @@ function readActiveColumnSubtasks(task: Task) {
  * Fetches available agents for the story's current status, lets the user pick one,
  * then dispatches via POST /tasks/{id}/execute.
  */
-function ExecuteModal({ task, onClose, onExecuted }: {
-  task: Task
+function ExecuteModal({ ticket, onClose, onExecuted }: {
+  ticket: Ticket
   onClose: () => void
   onExecuted: () => void
 }) {
@@ -121,12 +159,12 @@ function ExecuteModal({ task, onClose, onExecuted }: {
   const [result, setResult] = useState<{ agentName: string; skill: string } | null>(null)
 
   const { data: agents, isLoading: loadingAgents } = useQuery({
-    queryKey: ['task-execute-agents', task.id],
-    queryFn:  () => tasksApi.listExecuteAgents(task.id),
+    queryKey: ['ticket-execute-agents', ticket.id],
+    queryFn:  () => ticketsApi.listExecuteAgents(ticket.id),
   })
 
   const executeMutation = useMutation({
-    mutationFn: () => tasksApi.execute(task.id, selectedAgentId || undefined),
+    mutationFn: () => ticketsApi.execute(ticket.id, selectedAgentId || undefined),
     onSuccess: (data) => { setResult({ agentName: data.agent.name, skill: data.skill }); onExecuted() },
   })
 
@@ -146,7 +184,7 @@ function ExecuteModal({ task, onClose, onExecuted }: {
   return (
     <div className="space-y-4">
       <p className="text-sm text-gray-600">
-        Sélectionnez un agent pour exécuter <strong>"{task.title}"</strong>.
+        Sélectionnez un agent pour exécuter <strong>"{ticket.title}"</strong>.
         L'agent sera choisi automatiquement si vous ne sélectionnez pas.
       </p>
       {loadingAgents ? (
@@ -186,8 +224,8 @@ function ExecuteModal({ task, onClose, onExecuted }: {
 /**
  * Modal that lets the user send a story back to a supported replayable agent stage.
  */
-function ReworkModal({ task, onClose, onReworked }: {
-  task: Task
+function ReworkModal({ ticket, onClose, onReworked }: {
+  ticket: Ticket
   onClose: () => void
   onReworked: () => void
 }) {
@@ -196,8 +234,8 @@ function ReworkModal({ task, onClose, onReworked }: {
   const [note, setNote] = useState('')
 
   const { data: targets, isLoading, error } = useQuery({
-    queryKey: ['task-rework-targets', task.id],
-    queryFn: () => tasksApi.listReworkTargets(task.id),
+    queryKey: ['ticket-rework-targets', ticket.id],
+    queryFn: () => ticketsApi.listReworkTargets(ticket.id),
   })
 
   useEffect(() => {
@@ -209,7 +247,7 @@ function ReworkModal({ task, onClose, onReworked }: {
   const selectedTarget = targets?.find((target) => target.key === selectedTargetKey) ?? null
 
   const reworkMutation = useMutation({
-    mutationFn: () => tasksApi.rework(task.id, {
+    mutationFn: () => ticketsApi.rework(ticket.id, {
       targetKey: selectedTargetKey,
       objective: objective.trim(),
       note: note.trim() || undefined,
@@ -357,25 +395,25 @@ function ReworkModal({ task, onClose, onReworked }: {
  * Shows type badge, priority, branch name, assigned role, active-column subtasks,
  * allowed story transitions as buttons, and a "Lancer l'agent" button for executable statuses.
  */
-function StoryCard({ task, onTransition, onDelete, onExecute, onOpen, transitioning }: {
-  task: Task
-  onTransition: (task: Task, status: StoryStatus) => void
-  onDelete: (task: Task) => void
-  onExecute: (task: Task) => void
-  onOpen: (task: Task) => void
+function StoryCard({ ticket, onTransition, onDelete, onExecute, onOpen, transitioning }: {
+  ticket: Ticket
+  onTransition: (ticket: Ticket, status: StoryStatus) => void
+  onDelete: (ticket: Ticket) => void
+  onExecute: (ticket: Ticket) => void
+  onOpen: (ticket: Ticket) => void
   transitioning: boolean
 }) {
-  const canExecute = task.storyStatus !== null && EXECUTABLE_STATUSES.includes(task.storyStatus)
-  const activeSubtasks = readActiveColumnSubtasks(task)
+  const canExecute = ticket.storyStatus !== null && EXECUTABLE_STATUSES.includes(ticket.storyStatus)
+  const activeSubtasks = ticket.activeStepTasks ?? []
 
   return (
     <div className="card p-3 space-y-2 text-sm">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className={`${TYPE_BADGE[task.type]} text-xs`}>{TYPE_LABELS[task.type]}</span>
-          <span className={`text-xs font-medium ${PRIORITY_COLOR[task.priority]}`}>{PRIORITY_LABELS[task.priority]}</span>
+          <span className={`${TYPE_BADGE[ticket.type]} text-xs`}>{TYPE_LABELS[ticket.type]}</span>
+          <span className={`text-xs font-medium ${PRIORITY_COLOR[ticket.priority]}`}>{PRIORITY_LABELS[ticket.priority]}</span>
         </div>
-        <button onClick={() => onDelete(task)} className="p-0.5 text-gray-300 hover:text-red-400 flex-shrink-0" title="Supprimer">
+        <button onClick={() => onDelete(ticket)} className="p-0.5 text-gray-300 hover:text-red-400 flex-shrink-0" title="Supprimer">
           <XCircle className="w-3.5 h-3.5" />
         </button>
       </div>
@@ -383,24 +421,24 @@ function StoryCard({ task, onTransition, onDelete, onExecute, onOpen, transition
       <button
         className="text-left font-medium leading-snug hover:underline w-full"
         style={{ color: 'var(--text)' }}
-        onClick={() => onOpen(task)}
-      >{task.title}</button>
+        onClick={() => onOpen(ticket)}
+      >{ticket.title}</button>
 
-      {task.branchName && (
+      {ticket.branchName && (
         <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--muted)' }}>
           <GitBranch className="w-3 h-3" />
-          {task.branchUrl ? (
-            <a href={task.branchUrl} target="_blank" rel="noreferrer" className="truncate hover:underline" style={{ color: 'var(--brand)' }}>
-              <code className="font-mono">{task.branchName}</code>
+          {ticket.branchUrl ? (
+            <a href={ticket.branchUrl} target="_blank" rel="noreferrer" className="truncate hover:underline" style={{ color: 'var(--brand)' }}>
+              <code className="font-mono">{ticket.branchName}</code>
             </a>
           ) : (
-            <code className="font-mono truncate">{task.branchName}</code>
+            <code className="font-mono truncate">{ticket.branchName}</code>
           )}
         </div>
       )}
-      {task.assignedRole && (
+      {ticket.assignedRole && (
         <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--muted)' }}>
-          <User className="w-3 h-3" /><span>{task.assignedRole.name}</span>
+          <User className="w-3 h-3" /><span>{ticket.assignedRole.name}</span>
         </div>
       )}
       {activeSubtasks.length > 0 && (
@@ -418,12 +456,12 @@ function StoryCard({ task, onTransition, onDelete, onExecute, onOpen, transition
           </div>
         </div>
       )}
-      {(task.storyStatusAllowedTransitions.length > 0 || canExecute) && (
+      {(ticket.storyStatusAllowedTransitions.length > 0 || canExecute) && (
         <div className="flex flex-wrap gap-1 pt-1 border-t" style={{ borderColor: 'var(--border)' }}>
-          {task.storyStatusAllowedTransitions.map((next) => (
+          {ticket.storyStatusAllowedTransitions.map((next) => (
             <button
               key={next}
-              onClick={() => onTransition(task, next)}
+              onClick={() => onTransition(ticket, next)}
               disabled={transitioning}
               className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded border hover:border-[var(--brand)] hover:text-[var(--brand)] transition-colors disabled:opacity-40 disabled:cursor-wait"
               style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
@@ -434,7 +472,7 @@ function StoryCard({ task, onTransition, onDelete, onExecute, onOpen, transition
           ))}
           {canExecute && (
             <button
-              onClick={() => onExecute(task)}
+              onClick={() => onExecute(ticket)}
               className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded"
               style={{ background: 'var(--brand)', color: 'white' }}
             >
@@ -453,21 +491,21 @@ function StoryCard({ task, onTransition, onDelete, onExecute, onOpen, transition
  * Kanban board with one column per StoryStatus.
  * The `pendingTaskId` disables transition buttons on the card being updated to prevent double-clicks.
  */
-function StoryBoard({ stories, onTransition, onDelete, onExecute, onOpen, pendingTaskId }: {
-  stories: Task[]
-  onTransition: (task: Task, status: StoryStatus) => void
-  onDelete: (task: Task) => void
-  onExecute: (task: Task) => void
-  onOpen: (task: Task) => void
+function StoryBoard({ tickets, onTransition, onDelete, onExecute, onOpen, pendingTaskId }: {
+  tickets: Ticket[]
+  onTransition: (ticket: Ticket, status: StoryStatus) => void
+  onDelete: (ticket: Ticket) => void
+  onExecute: (ticket: Ticket) => void
+  onOpen: (ticket: Ticket) => void
   pendingTaskId: string | null
 }) {
-  if (stories.length === 0) {
+  if (tickets.length === 0) {
     return <EmptyState icon={Layers} title="Aucune story ni bug" description="Créez une demande via le bouton ci-dessus pour l'envoyer au Product Owner." />
   }
   return (
     <div className="flex gap-3 overflow-x-auto pb-4">
       {STORY_COLUMNS.map((col) => {
-        const cards = stories.filter((s) => s.storyStatus === col.key)
+        const cards = tickets.filter((s) => s.storyStatus === col.key)
         return (
           <div key={col.key} className="flex-shrink-0 w-60">
             <div
@@ -481,15 +519,15 @@ function StoryBoard({ stories, onTransition, onDelete, onExecute, onOpen, pendin
               {cards.length > 0 && <span className="text-xs font-medium" style={{ color: col.accent, opacity: 0.72 }}>{cards.length}</span>}
             </div>
             <div className="space-y-2 min-h-16 rounded-b-lg p-2 border border-t-0" style={{ background: 'var(--surface2)', borderColor: 'var(--border)' }}>
-              {cards.map((task) => (
+              {cards.map((ticket) => (
                 <StoryCard
-                  key={task.id}
-                  task={task}
+                  key={ticket.id}
+                  ticket={ticket}
                   onTransition={onTransition}
                   onDelete={onDelete}
                   onExecute={onExecute}
                   onOpen={onOpen}
-                  transitioning={pendingTaskId === task.id}
+                  transitioning={pendingTaskId === ticket.id}
                 />
               ))}
               {cards.length === 0 && <p className="text-xs text-center py-3" style={{ color: 'var(--muted)' }}>—</p>}
@@ -507,13 +545,23 @@ function StoryBoard({ stories, onTransition, onDelete, onExecute, onOpen, pendin
  * Single row for a technical task in the Tâches tab.
  * Shows status icon, type badge, title, priority, assigned agent/role, parent story title, and progress bar.
  */
-function TechTaskRow({ task, onDelete, onOpen }: { task: Task; onDelete: (t: Task) => void; onOpen: (t: Task) => void }) {
+function TechTaskRow({
+  task,
+  parent,
+  onDelete,
+  onOpen,
+}: {
+  task: TicketTask
+  parent: TicketTask | Ticket | null
+  onDelete: (t: TicketTask) => void
+  onOpen: (t: TicketTask) => void
+}) {
   return (
     <div className="px-4 py-3 flex items-center gap-3">
       <StatusIcon status={task.status} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={`${TYPE_BADGE[task.type]} text-xs`}>{TYPE_LABELS[task.type]}</span>
+          <span className={`${TYPE_BADGE.task} text-xs`}>{TYPE_LABELS.task}</span>
           <button className="text-sm font-medium truncate hover:underline text-left" style={{ color: 'var(--text)' }} onClick={() => onOpen(task)}>{task.title}</button>
         </div>
         <div className="flex items-center gap-3 mt-0.5 flex-wrap">
@@ -521,7 +569,7 @@ function TechTaskRow({ task, onDelete, onOpen }: { task: Task; onDelete: (t: Tas
           <span className={`text-xs font-medium ${PRIORITY_COLOR[task.priority]}`}>{PRIORITY_LABELS[task.priority]}</span>
           {task.assignedAgent && <span className="text-xs" style={{ color: 'var(--muted)' }}>→ {task.assignedAgent.name}</span>}
           {task.assignedRole  && <span className="text-xs italic" style={{ color: 'var(--muted)' }}>({task.assignedRole.name})</span>}
-          {task.parent        && <span className="text-xs opacity-50" style={{ color: 'var(--muted)' }}>↑ {task.parent.title}</span>}
+          {parent && <span className="text-xs opacity-50" style={{ color: 'var(--muted)' }}>↑ {parent.title}</span>}
         </div>
         {task.progress > 0 && (
           <div className="mt-1.5 flex items-center gap-2">
@@ -560,19 +608,30 @@ function AgentStatusBadge({ agentId }: { agentId: string }) {
 
 // ─── Task creation form ───────────────────────────────────────────────────────
 
-function TaskForm({ initial, onSubmit, loading, onCancel }: {
-  initial?: Partial<TaskPayload>
-  onSubmit: (d: TaskPayload) => void
+function TaskForm({ initial, onSubmit, loading, onCancel, tickets }: {
+  initial?: Partial<TicketTaskPayload & { ticketId?: string; type?: TaskType }>
+  onSubmit: (d: TicketTaskPayload & { ticketId?: string; type?: TaskType }) => void
   loading: boolean
   onCancel: () => void
+  tickets?: Array<{ id: string; title: string }>
 }) {
   const [title, setTitle]             = useState(initial?.title ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [type, setType]               = useState<TaskType>(initial?.type ?? 'user_story')
   const [priority, setPriority]       = useState<TaskPriority>(initial?.priority ?? 'medium')
+  const [ticketId, setTicketId]       = useState(initial?.ticketId ?? '')
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit({ title, description: description || undefined, type, priority }) }} className="space-y-4">
+    <form onSubmit={(e) => {
+      e.preventDefault()
+      onSubmit({
+        title,
+        description: description || undefined,
+        type,
+        priority,
+        ticketId: type === 'task' ? ticketId || undefined : undefined,
+      })
+    }} className="space-y-4">
       <div>
         <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Titre *</label>
         <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="En tant qu'utilisateur, je veux..." />
@@ -596,13 +655,27 @@ function TaskForm({ initial, onSubmit, loading, onCancel }: {
           </select>
         </div>
       </div>
+      {type === 'task' && (
+        <div>
+          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Ticket parent</label>
+          <select className="input" value={ticketId} onChange={(e) => setTicketId(e.target.value)} required>
+            <option value="">— Sélectionner un ticket —</option>
+            {tickets?.map((ticket) => (
+              <option key={ticket.id} value={ticket.id}>{ticket.title}</option>
+            ))}
+          </select>
+          {(tickets?.length ?? 0) === 0 && (
+            <p className="mt-1 text-xs" style={{ color: '#dc2626' }}>Crée d'abord un ticket avant d'ajouter une tâche technique.</p>
+          )}
+        </div>
+      )}
       <div>
         <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Description</label>
         <textarea className="input resize-none" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
       </div>
       <div className="flex justify-end gap-3 pt-2">
         <button type="button" onClick={onCancel} className="btn-secondary">Annuler</button>
-        <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Enregistrement…' : 'Enregistrer'}</button>
+        <button type="submit" className="btn-primary" disabled={loading || (type === 'task' && !ticketId)}>{loading ? 'Enregistrement…' : 'Enregistrer'}</button>
       </div>
     </form>
   )
@@ -654,46 +727,92 @@ function RequestForm({ onSubmit, loading, onCancel }: {
 /**
  * Right-side drawer showing the full detail of a task: description, storyStatus,
  * execution logs, subtasks (children), and token consumption.
- * Fetches GET /api/tasks/{id} which returns children + logs + tokenUsage.
+ * Fetches the explicit ticket or ticket-task endpoint, then shows logs, executions and token usage.
  */
 function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }) {
   const qc = useQueryClient()
   const [logsExpanded, setLogsExpanded] = useState(true)
+  const [expandedExecutionIds, setExpandedExecutionIds] = useState<string[]>([])
+  const [expandedAttemptIds, setExpandedAttemptIds] = useState<string[]>([])
   const [dismissedErrorLogId, setDismissedErrorLogId] = useState<string | null>(null)
   const [commentText, setCommentText] = useState('')
   const [replyToLogId, setReplyToLogId] = useState<string | null>(null)
   const [reworkModalOpen, setReworkModalOpen] = useState(false)
 
-  const { data: task, isLoading } = useQuery({
+  const { data: entity, isLoading } = useQuery<Ticket | TicketTask>({
     queryKey: ['task-detail', taskId],
-    queryFn: () => tasksApi.get(taskId),
+    queryFn: async () => {
+      try {
+        return await ticketsApi.get(taskId)
+      } catch {
+        return await ticketTasksApi.get(taskId)
+      }
+    },
   })
 
   const commentMutation = useMutation({
-    mutationFn: () => tasksApi.comment(taskId, {
-      content: commentText.trim(),
-      replyToLogId: replyToLogId ?? undefined,
-      context: replyToLogId ? 'ticket_reply' : 'ticket_comment',
-    }),
+    mutationFn: () => (
+      entity && isTicket(entity)
+        ? ticketsApi.comment(taskId, {
+          content: commentText.trim(),
+          replyToLogId: replyToLogId ?? undefined,
+          context: replyToLogId ? 'ticket_reply' : 'ticket_comment',
+        })
+        : ticketTasksApi.comment(taskId, {
+          content: commentText.trim(),
+          replyToLogId: replyToLogId ?? undefined,
+          context: replyToLogId ? 'ticket_reply' : 'ticket_comment',
+        })
+    ),
     onSuccess: async () => {
       setCommentText('')
       setReplyToLogId(null)
       await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
-      await qc.invalidateQueries({ queryKey: ['tasks'] })
+      await qc.invalidateQueries({ queryKey: ['tickets'] })
     },
   })
 
   useEffect(() => {
+    setExpandedExecutionIds([])
+    setExpandedAttemptIds([])
     setDismissedErrorLogId(null)
     setCommentText('')
     setReplyToLogId(null)
     setReworkModalOpen(false)
   }, [taskId])
 
+  const toggleExecution = (executionId: string) => {
+    setExpandedExecutionIds((current) => (
+      current.includes(executionId)
+        ? current.filter((id) => id !== executionId)
+        : [...current, executionId]
+    ))
+  }
+
+  const toggleAttempt = (attemptId: string) => {
+    setExpandedAttemptIds((current) => (
+      current.includes(attemptId)
+        ? current.filter((id) => id !== attemptId)
+        : [...current, attemptId]
+    ))
+  }
+
   const submitComment = () => {
     if (commentText.trim() === '') return
     commentMutation.mutate()
   }
+
+  const { data: executionHistoryI18n } = useQuery({
+    queryKey: ['ui-translations', 'project-detail-execution-history'],
+    queryFn: () => translationsApi.list([...EXECUTION_HISTORY_TRANSLATION_KEYS]),
+    staleTime: Infinity,
+  })
+
+  const executionHistoryLocale = executionHistoryI18n?.locale
+
+  const et = (key: typeof EXECUTION_HISTORY_TRANSLATION_KEYS[number]) => (
+    executionHistoryI18n?.translations[key] ?? key
+  )
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end" onClick={onClose}>
@@ -706,7 +825,7 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
         <div className="flex items-center justify-between px-5 py-4 border-b flex-shrink-0" style={{ borderColor: 'var(--border)' }}>
           <div className="min-w-0">
             <h2 className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>
-              {isLoading ? 'Chargement…' : (task?.title ?? '—')}
+              {isLoading ? 'Chargement…' : (entity?.title ?? '—')}
             </h2>
           </div>
           <button onClick={onClose} className="p-1 ml-2 flex-shrink-0" style={{ color: 'var(--muted)' }}>
@@ -716,13 +835,14 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
 
         {isLoading && <div className="p-6"><Loader2 className="w-5 h-5 animate-spin mx-auto" style={{ color: 'var(--muted)' }} /></div>}
 
-        {task && (() => {
-          const logs = task.logs ?? []
-          const executions = task.executions ?? []
+        {entity && (() => {
+          const logs = entity.logs ?? []
+          const executions = entity.executions ?? []
+          const childItems = isTicket(entity) ? (entity.tasks ?? []) : (entity.children ?? [])
           const commentLogs = logs.filter((log) => log.kind === 'comment')
           const commentIndex = new Map(commentLogs.map((log) => [log.id, log]))
-          const totalTokens = (task.tokenUsage ?? []).reduce((sum, entry) => sum + entry.totalTokens, 0)
-          const totalCalls = task.tokenUsage?.length ?? 0
+          const totalTokens = (entity.tokenUsage ?? []).reduce((sum, entry) => sum + entry.totalTokens, 0)
+          const totalCalls = entity.tokenUsage?.length ?? 0
           const pendingQuestions = commentLogs.filter((log) => log.requiresAnswer).length
           const latestExecutionErrorIndex = [...logs].map((log, index) => ({ log, index })).reverse().find(({ log }) => log.action === 'execution_error')?.index ?? -1
           const latestExecutionError = latestExecutionErrorIndex >= 0 ? logs[latestExecutionErrorIndex] : null
@@ -762,16 +882,16 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
             )}
             {/* Badges */}
             <div className="flex flex-wrap gap-2">
-              <span className={`${TYPE_BADGE[task.type]} text-xs`}>{TYPE_LABELS[task.type]}</span>
-              <span className={`text-xs font-medium ${PRIORITY_COLOR[task.priority]}`}>{PRIORITY_LABELS[task.priority]}</span>
-              {task.storyStatus && (
-                <span className="badge-blue text-xs">{STORY_COLUMNS.find(c => c.key === task.storyStatus)?.label ?? task.storyStatus}</span>
+              <span className={`${TYPE_BADGE[isTicket(entity) ? entity.type : 'task']} text-xs`}>{TYPE_LABELS[isTicket(entity) ? entity.type : 'task']}</span>
+              <span className={`text-xs font-medium ${PRIORITY_COLOR[entity.priority]}`}>{PRIORITY_LABELS[entity.priority]}</span>
+              {isTicket(entity) && entity.storyStatus && (
+                <span className="badge-blue text-xs">{STORY_COLUMNS.find(c => c.key === entity.storyStatus)?.label ?? entity.storyStatus}</span>
               )}
-              <span className="text-xs" style={{ color: 'var(--muted)' }}>{STATUS_LABELS[task.status]}</span>
+              <span className="text-xs" style={{ color: 'var(--muted)' }}>{STATUS_LABELS[entity.status]}</span>
             </div>
 
             <div>
-              <EntityId id={task.id} />
+              <EntityId id={entity.id} />
             </div>
 
             <div className="grid gap-3 md:grid-cols-3">
@@ -792,8 +912,8 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
                   className="mt-2 inline-flex items-center gap-2 rounded px-3 py-2 text-sm"
                   style={{ background: 'var(--brand-dim)', color: 'var(--brand)' }}
                   onClick={() => setReworkModalOpen(true)}
-                  disabled={!task.storyStatus}
-                  title={!task.storyStatus ? 'Disponible sur les stories et bugs.' : undefined}
+                  disabled={!isTicket(entity) || !entity.storyStatus}
+                  title={!isTicket(entity) || !entity.storyStatus ? 'Disponible sur les tickets story/bug.' : undefined}
                 >
                   <RotateCcw className="h-4 w-4" />
                   Reprendre une étape
@@ -802,35 +922,35 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
             </div>
 
             {/* Description */}
-            {task.description && (
+            {entity.description && (
               <div>
                 <p className="text-xs font-medium mb-1" style={{ color: 'var(--muted)' }}>Description</p>
                 <div className="rounded border p-4" style={{ borderColor: 'var(--border)', background: 'color-mix(in srgb, var(--surface2) 82%, transparent)' }}>
-                  <Markdown content={task.description} className="text-sm" />
+                  <Markdown content={entity.description} className="text-sm" />
                 </div>
               </div>
             )}
 
             {/* Branch */}
-            {task.branchName && (
+            {entity.branchName && (
               <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--muted)' }}>
                 <GitBranch className="w-3.5 h-3.5 flex-shrink-0" />
-                {task.branchUrl ? (
-                  <a href={task.branchUrl} target="_blank" rel="noreferrer" className="hover:underline" style={{ color: 'var(--brand)' }}>
-                    <code className="font-mono">{task.branchName}</code>
+                {entity.branchUrl ? (
+                  <a href={entity.branchUrl} target="_blank" rel="noreferrer" className="hover:underline" style={{ color: 'var(--brand)' }}>
+                    <code className="font-mono">{entity.branchName}</code>
                   </a>
                 ) : (
-                  <code className="font-mono">{task.branchName}</code>
+                  <code className="font-mono">{entity.branchName}</code>
                 )}
               </div>
             )}
 
             {/* Subtasks */}
-            {task.children && task.children.length > 0 && (
+            {childItems.length > 0 && (
               <div>
-                <p className="text-xs font-medium mb-2" style={{ color: 'var(--muted)' }}>Sous-tâches ({task.children.length})</p>
+                <p className="text-xs font-medium mb-2" style={{ color: 'var(--muted)' }}>Sous-tâches ({childItems.length})</p>
                 <div className="space-y-1">
-                  {task.children.map((c) => (
+                  {childItems.map((c) => (
                     <div key={c.id} className="flex items-center gap-2 text-xs px-3 py-2 rounded" style={{ background: 'var(--surface2)' }}>
                       <StatusIcon status={c.status} />
                       <span className="truncate" style={{ color: 'var(--text)' }}>{c.title}</span>
@@ -844,17 +964,23 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
             {executions.length > 0 && (
               <div>
                 <p className="text-xs font-medium mb-2" style={{ color: 'var(--muted)' }}>
-                  Exécutions agent ({executions.length})
+                  {et('ui.project_detail.execution_history.title')} ({executions.length})
                 </p>
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
                   {executions.map((execution) => (
                     <div key={execution.id} className="rounded border p-4" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
-                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <button
+                        type="button"
+                        className="flex w-full flex-wrap items-center gap-2 text-left text-xs"
+                        onClick={() => toggleExecution(execution.id)}
+                      >
                         <span className="rounded px-2 py-1" style={{ background: 'var(--surface)', color: 'var(--text)' }}>
                           {EXECUTION_STATUS_LABELS[execution.status]}
                         </span>
                         <span style={{ color: 'var(--muted)' }}>
-                          {execution.currentAttempt}/{execution.maxAttempts} tentative{execution.maxAttempts > 1 ? 's' : ''}
+                          {execution.currentAttempt}/{execution.maxAttempts} {execution.maxAttempts > 1
+                            ? et('ui.project_detail.execution_history.attempts_count_other')
+                            : et('ui.project_detail.execution_history.attempts_count_one')}
                         </span>
                         <span style={{ color: 'var(--muted)' }}>
                           {execution.triggerType}
@@ -867,64 +993,101 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
                         <span className="ml-auto font-mono" style={{ color: 'var(--muted)' }}>
                           {execution.traceRef}
                         </span>
-                      </div>
+                        {expandedExecutionIds.includes(execution.id)
+                          ? <ChevronUp className="h-3.5 w-3.5" style={{ color: 'var(--muted)' }} />
+                          : <ChevronDown className="h-3.5 w-3.5" style={{ color: 'var(--muted)' }} />
+                        }
+                      </button>
 
-                      <div className="mt-3 grid gap-3 md:grid-cols-2 text-xs" style={{ color: 'var(--muted)' }}>
-                        <div>
-                          Agent demandé : {execution.requestedAgent?.name ?? 'auto'}
-                        </div>
-                        <div>
-                          Agent effectif : {execution.effectiveAgent?.name ?? 'n/a'}
-                        </div>
-                        <div>
-                          Début : {execution.startedAt ? new Date(execution.startedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : 'n/a'}
-                        </div>
-                        <div>
-                          Fin : {execution.finishedAt ? new Date(execution.finishedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
-                        </div>
-                      </div>
-
-                      <div className="mt-3 space-y-2 border-l-2 pl-3" style={{ borderColor: 'var(--border)' }}>
-                        {execution.attempts.map((attempt) => {
-                          const tone = attempt.status === 'failed' ? '#dc2626' : attempt.status === 'succeeded' ? '#16a34a' : 'var(--text)'
-                          return (
-                            <div key={attempt.id} className="text-xs">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className="font-medium" style={{ color: tone }}>
-                                  Tentative {attempt.attemptNumber} {attempt.status === 'failed' ? 'KO' : attempt.status === 'succeeded' ? 'OK' : 'en cours'}
-                                </span>
-                                {attempt.willRetry && (
-                                  <span className="rounded px-2 py-0.5" style={{ background: 'rgba(245,158,11,0.14)', color: '#b45309' }}>
-                                    Retry prévu
-                                  </span>
-                                )}
-                                {attempt.messengerReceiver && (
-                                  <span style={{ color: 'var(--muted)' }}>
-                                    {attempt.messengerReceiver}
-                                  </span>
-                                )}
-                                <span className="ml-auto" style={{ color: 'var(--muted)' }}>
-                                  {attempt.finishedAt
-                                    ? new Date(attempt.finishedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-                                    : attempt.startedAt
-                                      ? new Date(attempt.startedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-                                      : '—'}
-                                </span>
-                              </div>
-                              {attempt.errorMessage && (
-                                <p className="mt-1 whitespace-pre-wrap break-words" style={{ color: 'var(--muted)' }}>
-                                  {attempt.errorMessage}
-                                </p>
-                              )}
+                      {expandedExecutionIds.includes(execution.id) && (
+                        <>
+                          <div className="mt-3 grid gap-3 md:grid-cols-2 text-xs" style={{ color: 'var(--muted)' }}>
+                            <div>
+                              {et('ui.project_detail.execution_history.requested_agent')} : {execution.requestedAgent?.name ?? et('ui.project_detail.execution_history.auto')}
                             </div>
-                          )
-                        })}
-                      </div>
+                            <div>
+                              {et('ui.project_detail.execution_history.effective_agent')} : {execution.effectiveAgent?.name ?? et('ui.project_detail.execution_history.not_available')}
+                            </div>
+                            <div>
+                              {et('ui.project_detail.execution_history.started_at')} : {execution.startedAt ? formatDateTime(execution.startedAt, executionHistoryLocale) : et('ui.project_detail.execution_history.not_available')}
+                            </div>
+                            <div>
+                              {et('ui.project_detail.execution_history.finished_at')} : {execution.finishedAt ? formatDateTime(execution.finishedAt, executionHistoryLocale) : et('ui.project_detail.execution_history.not_finished')}
+                            </div>
+                          </div>
 
-                      {execution.status === 'dead_letter' && (
-                        <p className="mt-3 text-xs" style={{ color: '#dc2626' }}>
-                          Retries épuisés pour cette exécution.
-                        </p>
+                          <div className="mt-3 space-y-2 border-l-2 pl-3" style={{ borderColor: 'var(--border)' }}>
+                            {execution.attempts.map((attempt) => {
+                              const tone = attempt.status === 'failed' ? '#dc2626' : attempt.status === 'succeeded' ? '#16a34a' : 'var(--text)'
+                              const isAttemptExpanded = expandedAttemptIds.includes(attempt.id)
+                              return (
+                                <div key={attempt.id} className="text-xs">
+                                  <button
+                                    type="button"
+                                    className="flex w-full flex-wrap items-center gap-2 text-left"
+                                    onClick={() => toggleAttempt(attempt.id)}
+                                  >
+                                    <span className="font-medium" style={{ color: tone }}>
+                                      {et('ui.project_detail.execution_history.attempt_label')} {attempt.attemptNumber} {attempt.status === 'failed'
+                                        ? et('ui.project_detail.execution_history.attempt_failed')
+                                        : attempt.status === 'succeeded'
+                                          ? et('ui.project_detail.execution_history.attempt_succeeded')
+                                          : et('ui.project_detail.execution_history.attempt_running')}
+                                    </span>
+                                    {attempt.willRetry && (
+                                      <span className="rounded px-2 py-0.5" style={{ background: 'rgba(245,158,11,0.14)', color: '#b45309' }}>
+                                        {et('ui.project_detail.execution_history.retry_planned')}
+                                      </span>
+                                    )}
+                                    {attempt.messengerReceiver && (
+                                      <span style={{ color: 'var(--muted)' }}>
+                                        {attempt.messengerReceiver}
+                                      </span>
+                                    )}
+                                    <span className="ml-auto" style={{ color: 'var(--muted)' }}>
+                                      {attempt.finishedAt
+                                        ? formatTime(attempt.finishedAt, executionHistoryLocale)
+                                        : attempt.startedAt
+                                          ? formatTime(attempt.startedAt, executionHistoryLocale)
+                                          : et('ui.project_detail.execution_history.not_finished')}
+                                    </span>
+                                    {isAttemptExpanded
+                                      ? <ChevronUp className="h-3.5 w-3.5" style={{ color: 'var(--muted)' }} />
+                                      : <ChevronDown className="h-3.5 w-3.5" style={{ color: 'var(--muted)' }} />
+                                    }
+                                  </button>
+                                  {isAttemptExpanded && (
+                                    <div className="mt-2 space-y-2 rounded border p-3" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
+                                      <div className="grid gap-2 md:grid-cols-2" style={{ color: 'var(--muted)' }}>
+                                        <div>{et('ui.project_detail.execution_history.agent')} : {attempt.agent?.name ?? et('ui.project_detail.execution_history.not_available')}</div>
+                                        <div>{et('ui.project_detail.execution_history.receiver')} : {attempt.messengerReceiver ?? et('ui.project_detail.execution_history.not_available')}</div>
+                                        <div>{et('ui.project_detail.execution_history.request_ref')} : {attempt.requestRef ?? et('ui.project_detail.execution_history.not_available')}</div>
+                                        <div>{et('ui.project_detail.execution_history.error_scope')} : {attempt.errorScope ?? et('ui.project_detail.execution_history.not_available')}</div>
+                                        <div>
+                                          {et('ui.project_detail.execution_history.started_at')} : {attempt.startedAt ? formatDateTime(attempt.startedAt, executionHistoryLocale) : et('ui.project_detail.execution_history.not_available')}
+                                        </div>
+                                        <div>
+                                          {et('ui.project_detail.execution_history.finished_at')} : {attempt.finishedAt ? formatDateTime(attempt.finishedAt, executionHistoryLocale) : et('ui.project_detail.execution_history.not_available')}
+                                        </div>
+                                      </div>
+                                      {attempt.errorMessage && (
+                                        <pre className="overflow-x-auto rounded p-2 whitespace-pre-wrap break-words" style={{ background: 'var(--surface2)', color: 'var(--muted)' }}>
+                                          {attempt.errorMessage}
+                                        </pre>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
+
+                          {execution.status === 'dead_letter' && (
+                            <p className="mt-3 text-xs" style={{ color: '#dc2626' }}>
+                              {et('ui.project_detail.execution_history.exhausted_retries')}
+                            </p>
+                          )}
+                        </>
                       )}
                     </div>
                   ))}
@@ -1033,7 +1196,7 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
 
               <div className="space-y-5">
             {/* Logs */}
-            {task.logs && task.logs.length > 0 && (
+            {entity.logs && entity.logs.length > 0 && (
               <div>
                 <button
                   className="flex items-center gap-1.5 text-xs font-medium mb-2 w-full text-left"
@@ -1041,12 +1204,12 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
                   onClick={() => setLogsExpanded(!logsExpanded)}
                 >
                   <FileText className="w-3.5 h-3.5" />
-                  Journal d'exécution ({task.logs.length})
+                  Journal d'exécution ({entity.logs.length})
                   {logsExpanded ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
                 </button>
                 {logsExpanded && (
                   <div className="space-y-2 border-l-2 pl-3" style={{ borderColor: 'var(--border)' }}>
-                    {task.logs.map((log, i) => {
+                    {entity.logs.map((log, i) => {
                       const isError = log.action.includes('error') || log.action.includes('failed')
                       return (
                         <div key={i} className="text-xs">
@@ -1076,11 +1239,11 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
             )}
 
             {/* Token usage */}
-            {task.tokenUsage && task.tokenUsage.length > 0 && (
+            {entity.tokenUsage && entity.tokenUsage.length > 0 && (
               <div>
                 <p className="text-xs font-medium mb-2" style={{ color: 'var(--muted)' }}>Tokens consommés</p>
                 <div className="space-y-1.5">
-                  {(task.tokenUsage as TokenUsageEntry[]).map((u) => (
+                  {(entity.tokenUsage as TokenUsageEntry[]).map((u) => (
                     <div key={u.id} className="flex items-center gap-3 text-xs px-3 py-2 rounded" style={{ background: 'var(--surface2)' }}>
                       <span className="truncate" style={{ color: 'var(--muted)' }}>{u.model}</span>
                       <span className="ml-auto flex-shrink-0 font-medium" style={{ color: 'var(--brand)' }}>
@@ -1103,13 +1266,13 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
         })()}
       </div>
 
-      {task && reworkModalOpen && (
+      {entity && isTicket(entity) && reworkModalOpen && (
         <ReworkModal
-          task={task}
+          ticket={entity}
           onClose={() => setReworkModalOpen(false)}
           onReworked={async () => {
             await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
-            await qc.invalidateQueries({ queryKey: ['tasks'] })
+            await qc.invalidateQueries({ queryKey: ['tickets'] })
           }}
         />
       )}
@@ -1152,10 +1315,10 @@ export default function ProjectDetailPage() {
     return isProjectTab(requestedTab) ? requestedTab : DEFAULT_TAB
   })
   const [createOpen, setCreateOpen]           = useState(false)
-  const [deleteTask, setDeleteTask]           = useState<Task | null>(null)
+  const [deleteTask, setDeleteTask]           = useState<Ticket | TicketTask | null>(null)
   const [transitionError, setTransitionError] = useState<string | null>(null)
   const [pendingTaskId, setPendingTaskId]     = useState<string | null>(null)
-  const [executeTask, setExecuteTask]         = useState<Task | null>(null)
+  const [executeTask, setExecuteTask]         = useState<Ticket | null>(null)
   const [requestDispatchError, setRequestDispatchError] = useState<string | null>(null)
   // null = user hasn't changed the selection yet → falls back to project.team?.id
   const [selectedTeamId, setSelectedTeamId]   = useState<string | null>(null)
@@ -1248,9 +1411,9 @@ export default function ProjectDetailPage() {
     enabled:  !!id,
   })
 
-  const { data: tasks = [], isLoading: loadingTasks, error: errorTasks } = useQuery({
-    queryKey: ['tasks', id],
-    queryFn:  () => tasksApi.listByProject(id!),
+  const { data: tickets = [], isLoading: loadingTickets, error: errorTickets } = useQuery({
+    queryKey: ['tickets', id],
+    queryFn:  () => ticketsApi.listByProject(id!),
     enabled:  !!id,
   })
 
@@ -1280,29 +1443,42 @@ export default function ProjectDetailPage() {
 
   // ── Mutations ─────────────────────────────────────────────────────────────────
 
-  const invalidateTasks = () => qc.invalidateQueries({ queryKey: ['tasks', id] })
+  const invalidateTickets = () => qc.invalidateQueries({ queryKey: ['tickets', id] })
 
   const createRequestMutation = useMutation({
-    mutationFn: (d: ProjectRequestPayload) => tasksApi.createRequest(id!, d),
+    mutationFn: (d: ProjectRequestPayload) => ticketsApi.createRequest(id!, d),
     onSuccess:  (result: ProjectRequestResult) => {
-      invalidateTasks()
+      invalidateTickets()
       setCreateOpen(false)
       setRequestDispatchError(result.dispatchError ?? null)
     },
   })
 
   const createMutation = useMutation({
-    mutationFn: (d: TaskPayload) => tasksApi.create(id!, d),
-    onSuccess:  () => { invalidateTasks(); setCreateOpen(false) },
+    mutationFn: (d: TicketTaskPayload & { ticketId?: string }) => {
+      if (!d.ticketId) {
+        throw new Error('ticketId manquant pour la création d’une tâche technique.')
+      }
+
+      return ticketTasksApi.create(d.ticketId, {
+        title: d.title,
+        description: d.description,
+        priority: d.priority,
+        actionKey: d.actionKey,
+        assignedAgentId: d.assignedAgentId,
+        parentTaskId: d.parentTaskId,
+      })
+    },
+    onSuccess:  () => { invalidateTickets(); setCreateOpen(false) },
   })
 
   const transitionMutation = useMutation({
     mutationFn: ({ taskId, status }: { taskId: string; status: StoryStatus }) => {
       setPendingTaskId(taskId)
       setTransitionError(null)
-      return tasksApi.transitionStory(taskId, status)
+      return ticketsApi.transitionStory(taskId, status)
     },
-    onSuccess: () => { invalidateTasks(); setPendingTaskId(null) },
+    onSuccess: () => { invalidateTickets(); setPendingTaskId(null) },
     onError: (err: unknown) => {
       setPendingTaskId(null)
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
@@ -1311,8 +1487,10 @@ export default function ProjectDetailPage() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (taskId: string) => tasksApi.delete(taskId),
-    onSuccess:  () => { invalidateTasks(); setDeleteTask(null) },
+    mutationFn: (entity: Ticket | TicketTask) => (
+      isTicket(entity) ? ticketsApi.delete(entity.id) : ticketTasksApi.delete(entity.id)
+    ),
+    onSuccess:  () => { invalidateTickets(); setDeleteTask(null) },
   })
 
   const updateTeamMutation = useMutation({
@@ -1335,8 +1513,13 @@ export default function ProjectDetailPage() {
     return <ErrorMessage message={(errorProject as Error)?.message ?? 'Projet introuvable'} onRetry={() => refetchProject()} />
   }
 
-  const stories   = tasks.filter((t) => t.type === 'user_story' || t.type === 'bug')
-  const techTasks = tasks.filter((t) => t.type === 'task')
+  const stories = tickets
+  const taskMap = new Map<string, TicketTask>()
+  const techTasks = tickets.flatMap((ticket) => {
+    const items = ticket.tasks ?? []
+    items.forEach((task) => taskMap.set(task.id, task))
+    return items
+  })
   const modules   = Array.isArray(project.modules) ? (project.modules as Module[]) : []
 
   // ── Render ─────────────────────────────────────────────────────────────────────
@@ -1465,15 +1648,15 @@ export default function ProjectDetailPage() {
               <button onClick={() => setTransitionError(null)}><XCircle className="w-4 h-4" /></button>
             </div>
           )}
-          {loadingTasks ? <PageSpinner /> : errorTasks ? (
-            <ErrorMessage message={(errorTasks as Error).message} />
+          {loadingTickets ? <PageSpinner /> : errorTickets ? (
+            <ErrorMessage message={(errorTickets as Error).message} />
           ) : (
             <StoryBoard
-              stories={stories}
-              onTransition={(task, status) => transitionMutation.mutate({ taskId: task.id, status })}
+              tickets={stories}
+              onTransition={(ticket, status) => transitionMutation.mutate({ taskId: ticket.id, status })}
               onDelete={setDeleteTask}
               onExecute={setExecuteTask}
-              onOpen={(task) => openTaskDrawer(task.id)}
+              onOpen={(ticket) => openTaskDrawer(ticket.id)}
               pendingTaskId={pendingTaskId}
             />
           )}
@@ -1482,7 +1665,7 @@ export default function ProjectDetailPage() {
 
       {/* ── Tab: Tâches ── */}
       {tab === 'tasks' && (
-        loadingTasks ? <PageSpinner /> : techTasks.length === 0 ? (
+        loadingTickets ? <PageSpinner /> : techTasks.length === 0 ? (
           <EmptyState
             icon={ListTodo}
             title="Aucune tâche technique"
@@ -1490,7 +1673,15 @@ export default function ProjectDetailPage() {
           />
         ) : (
           <div className="card divide-y" style={{ borderColor: 'var(--border)' }}>
-            {techTasks.map((t) => <TechTaskRow key={t.id} task={t} onDelete={setDeleteTask} onOpen={(t) => openTaskDrawer(t.id)} />)}
+            {techTasks.map((t) => (
+              <TechTaskRow
+                key={t.id}
+                task={t}
+                parent={t.parentTaskId ? (taskMap.get(t.parentTaskId) ?? tickets.find((ticket) => ticket.id === t.ticketId) ?? null) : tickets.find((ticket) => ticket.id === t.ticketId) ?? null}
+                onDelete={setDeleteTask}
+                onOpen={(task) => openTaskDrawer(task.id)}
+              />
+            ))}
           </div>
         )
       )}
@@ -1737,6 +1928,7 @@ export default function ProjectDetailPage() {
             onSubmit={(d) => createMutation.mutate(d)}
             loading={createMutation.isPending}
             onCancel={() => setCreateOpen(false)}
+            tickets={stories.map((story) => ({ id: story.id, title: story.title }))}
           />
         )}
       </Modal>
@@ -1744,9 +1936,9 @@ export default function ProjectDetailPage() {
       {executeTask && (
         <Modal open onClose={() => setExecuteTask(null)} title="Lancer l'agent">
           <ExecuteModal
-            task={executeTask}
+            ticket={executeTask}
             onClose={() => setExecuteTask(null)}
-            onExecuted={() => invalidateTasks()}
+            onExecuted={() => invalidateTickets()}
           />
         </Modal>
       )}
@@ -1754,7 +1946,7 @@ export default function ProjectDetailPage() {
       <ConfirmDialog
         open={!!deleteTask}
         onClose={() => setDeleteTask(null)}
-        onConfirm={() => deleteTask && deleteMutation.mutate(deleteTask.id)}
+        onConfirm={() => deleteTask && deleteMutation.mutate(deleteTask)}
         message={`Supprimer "${deleteTask?.title}" ? Cette action est irréversible.`}
         loading={deleteMutation.isPending}
       />

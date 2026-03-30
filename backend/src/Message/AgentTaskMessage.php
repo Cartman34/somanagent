@@ -11,10 +11,10 @@ namespace App\Message;
 final class AgentTaskMessage
 {
     public function __construct(
-        public readonly string $taskId,
+        public readonly string $ticketTaskId,
         public readonly string $agentId,
         public readonly string $skillSlug,
-        public readonly ?string $taskExecutionId = null,
+        public readonly string $agentTaskExecutionId,
         public readonly ?string $requestRef = null,
         public readonly ?string $traceRef = null,
     ) {}

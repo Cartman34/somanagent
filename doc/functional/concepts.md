@@ -175,7 +175,7 @@ These are two distinct concepts that are **not the same**:
 | Concept | What it is | Stored where |
 |---|---|---|
 | **Workflow** | A reusable automation template (e.g. "Code Review") | `Workflow` + `WorkflowStep` entities |
-| **Story Lifecycle** | The progression states of a specific story | `Task.storyStatus` (enum) |
+| **Story Lifecycle** | The progression states of a specific story | `Ticket.storyStatus` (enum) |
 
 A Workflow describes *how* a type of automation runs (steps, roles, conditions). A Story's lifecycle describes *where it is* in its development journey. In a future milestone, the story lifecycle will be **driven by workflow steps** instead of the current hardcoded mapping in `StoryExecutionService`.
 
@@ -197,10 +197,12 @@ Agent
   └── ConnectorType → AI Adapter
   └── RuntimeStatus (derived: working / error / idle)
 
-Task (Story/Bug)
+Ticket
   └── StoryStatus (lifecycle)
-  └── TaskDependency (DAG of subtasks)
-  └── TaskLog (execution history)
+  └── TicketTask (operational work)
+        ├── TicketTaskDependency (DAG)
+        ├── TicketLog (narrative history)
+        └── AgentTaskExecution (technical execution history)
 
 Workflow (template)
   └── Team

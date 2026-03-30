@@ -2,264 +2,242 @@
 
 > Voir aussi : [Architecture](architecture.md) · [API REST](api.md)
 
-## Diagramme des relations
+## Vue d’ensemble
 
-```
-Project ─────── Module (1..n)
-│ team → Team     status: active|archived
-└─────────────── Feature (1..n)
-                   status: open|in_progress|closed
-                 └── Task (1..n, auto-référence parent/children)
-                       type: user_story|bug|task
-                       status: backlog|todo|in_progress|review|done|cancelled
-                       storyStatus: new|ready|approved|planning|graphic_design|development|code_review|done (nullable)
-                       priority: low|medium|high|critical
-                       progress: 0-100
-                       branchName (nullable)
-                       assignedAgent → Agent (nullable)
-                       assignedRole → Role (nullable)
-                       addedBy → Agent (nullable)
-                       └── TaskLog (1..n)
+```text
+Project
+  ├── Module
+  ├── Feature
+  └── Ticket
+        ├── workflowStep
+        ├── logs -> TicketLog[]
+        └── tasks -> TicketTask[]
+              ├── parentTask
+              ├── workflowStep
+              ├── agentAction
+              ├── dependencies -> TicketTaskDependency[]
+              └── executions -> AgentTaskExecution[] (ManyToMany)
 
-Role ──────────── Skill (ManyToMany via role_skill)
-  slug (unique)
+AgentAction
+  ├── key
+  ├── label
+  ├── role
+  ├── skill
+  └── isActive
 
-Agent ──────────── Role (0..1, spécialisation fixe)
-   connector: claude_api|claude_cli
-   config: JSON (AgentConfig)
-   └── Teams (ManyToMany via agent_team)
-
-Team ──────────── Agent (ManyToMany via agent_team)
-
-Workflow ────────── Team (0..1)
-   └─── WorkflowStep (1..n)
-          roleSlug → Role.slug, skillSlug → Skill.slug
-
-ExternalReference  — lien hexagonal vers GitHub/GitLab/Jira
-TokenUsage         — consommation tokens par appel IA
-ChatMessage        — conversation humain ↔ agent dans un projet
-AuditLog           — trace de toutes les actions (indépendant)
+AgentTaskExecution
+  ├── agentAction
+  ├── requestedAgent
+  ├── effectiveAgent
+  ├── attempts -> AgentTaskExecutionAttempt[]
+  └── ticketTasks -> TicketTask[] (ManyToMany)
 ```
 
-## Entités détaillées
+## Principes de responsabilité
+
+- `Ticket` porte le suivi board / produit.
+- `TicketTask` porte le travail opérationnel.
+- `WorkflowStep` classe le ticket et les tâches dans le board, sans piloter directement l’exécution agent.
+- `AgentAction` est un référentiel quasi immuable qui décrit l’intention exécutable.
+- `AgentTaskExecution` est un historique technique indépendant.
+- `TicketLog` est un historique narratif, jamais une source de vérité métier.
+
+## Entités coeur
 
 ### Project
 
-| Colonne | Type | Contrainte | Description |
-|---|---|---|---|
-| `id` | UUID | PK | UUID v7 |
-| `name` | VARCHAR(255) | NOT NULL | Nom du projet |
-| `description` | TEXT | NULL | Description |
-| `repository_url` | VARCHAR(512) | NULL | URL du dépôt principal (monorepo) |
-| `created_at` / `updated_at` | TIMESTAMP | NOT NULL | — |
+Projet racine.
 
-Relations : `team` → `Team` (ManyToOne, nullable), `modules` → `Module[]` (OneToMany, cascade), `features` référencées via FK inverse.
-
----
-
-### Module
-
-| Colonne | Type | Description |
-|---|---|---|
-| `id` | UUID | PK |
-| `project_id` | UUID | FK → project (CASCADE) |
-| `name` | VARCHAR(255) | Nom du module |
-| `repository_url` | VARCHAR(512) | URL du dépôt du module |
-| `stack` | VARCHAR(255) | Stack technique |
-| `status` | VARCHAR | `active` \| `archived` |
-
----
-
-### Role
-
-| Colonne | Type | Description |
-|---|---|---|
-| `id` | UUID | PK |
-| `slug` | VARCHAR(100) | UNIQUE — identifiant utilisé dans les workflows |
-| `name` | VARCHAR(255) | Nom affiché |
-| `description` | TEXT | Description |
-
-Relations : `skills` → `Skill[]` (ManyToMany via `role_skill`).
-
-> Le rôle est la **spécialisation permanente** d'un agent. Un agent ne change pas de rôle.
-
----
-
-### Agent
-
-| Colonne | Type | Description |
-|---|---|---|
-| `id` | UUID | PK |
-| `role_id` | UUID | FK → role (SET NULL, nullable) |
-| `name` | VARCHAR(255) | Nom |
-| `description` | TEXT | Description |
-| `connector` | VARCHAR | `claude_api` \| `claude_cli` |
-| `config` | JSON | Sérialisé depuis `AgentConfig` |
-| `is_active` | BOOLEAN | Actif/inactif |
-| `created_at` / `updated_at` | TIMESTAMP | — |
-
-Relations : `teams` → `Team[]` (ManyToMany via `agent_team`).
-
----
-
-### Team
-
-| Colonne | Type | Description |
-|---|---|---|
-| `id` | UUID | PK |
-| `name` | VARCHAR(255) | Nom |
-| `description` | TEXT | Description |
-| `created_at` / `updated_at` | TIMESTAMP | — |
-
-Relations : `agents` → `Agent[]` (ManyToMany via `agent_team`).
-
----
+Relations :
+- `team` → `Team` (nullable)
+- `modules` → `Module[]`
+- `features` → `Feature[]`
+- `tickets` → `Ticket[]`
 
 ### Feature
 
-| Colonne | Type | Description |
-|---|---|---|
-| `id` | UUID | PK |
-| `project_id` | UUID | FK → project (CASCADE) |
-| `name` | VARCHAR(255) | Nom de la feature |
-| `description` | TEXT | Description |
-| `status` | VARCHAR | `open` \| `in_progress` \| `closed` |
-| `created_at` / `updated_at` | TIMESTAMP | — |
+Regroupement fonctionnel optionnel à l’intérieur d’un projet.
 
----
+Relations :
+- `project` → `Project`
+- `tickets` → `Ticket[]` via `feature_id` nullable côté ticket
 
-### Task
+### Ticket
 
-| Colonne | Type | Description |
-|---|---|---|
-| `id` | UUID | PK |
-| `project_id` | UUID | FK → project (CASCADE) |
-| `feature_id` | UUID | FK → feature (SET NULL, nullable) |
-| `parent_id` | UUID | FK → task (CASCADE, nullable — sous-tâche) |
-| `workflow_step_id` | UUID | FK → workflow_step (SET NULL, nullable — étape de workflow cible de la sous-tâche) |
-| `assigned_agent_id` | UUID | FK → agent (SET NULL, nullable) |
-| `assigned_role_id` | UUID | FK → role (SET NULL, nullable) |
-| `added_by_id` | UUID | FK → agent (SET NULL, nullable — agent créateur) |
-| `type` | VARCHAR | `user_story` \| `bug` \| `task` |
-| `title` | VARCHAR(255) | Titre |
-| `description` | TEXT | Description |
-| `status` | VARCHAR | `backlog\|todo\|in_progress\|review\|done\|cancelled` |
-| `story_status` | VARCHAR | Lifecycle story : `new\|ready\|approved\|planning\|graphic_design\|development\|code_review\|done` (nullable — uniquement pour user_story) |
-| `priority` | VARCHAR | `low\|medium\|high\|critical` |
-| `progress` | SMALLINT | Progression 0–100 |
-| `branch_name` | VARCHAR(255) | Nom de la branche VCS associée (nullable) |
-| `created_at` / `updated_at` | TIMESTAMP | — |
+Objet métier visible dans le board.
 
----
+Champs principaux :
+- `type` : `user_story` | `bug`
+- `status`
+- `storyStatus`
+- `priority`
+- `progress`
+- `branchName`
 
-### TaskLog
+Relations :
+- `project` → `Project`
+- `feature` → `Feature` (nullable)
+- `workflowStep` → `WorkflowStep` (nullable)
+- `assignedAgent` → `Agent` (nullable)
+- `assignedRole` → `Role` (nullable)
+- `addedBy` → `Agent` (nullable)
+- `tasks` → `TicketTask[]`
+- `logs` → `TicketLog[]`
 
-| Colonne | Type | Description |
-|---|---|---|
-| `id` | UUID | PK |
-| `task_id` | UUID | FK → task (CASCADE) |
-| `action` | VARCHAR(100) | Ex. `created`, `status_changed`, `validated` |
-| `content` | TEXT | Détail du log |
-| `created_at` | TIMESTAMP | — |
+### TicketTask
 
----
+Unité de travail opérationnelle.
 
-### ExternalReference
+Champs principaux :
+- `title`
+- `description`
+- `status`
+- `priority`
+- `progress`
+- `branchName`
 
-Table pivot hexagonale — les entités métier ne stockent pas d'ID externes directement.
+Relations :
+- `ticket` → `Ticket`
+- `parent` → `TicketTask` (nullable)
+- `workflowStep` → `WorkflowStep` (nullable)
+- `agentAction` → `AgentAction`
+- `assignedAgent` → `Agent` (nullable)
+- `assignedRole` → `Role` (nullable)
+- `addedBy` → `Agent` (nullable)
+- `executions` → `AgentTaskExecution[]` (ManyToMany)
 
-| Colonne | Type | Description |
-|---|---|---|
-| `id` | UUID | PK |
-| `entity_type` | VARCHAR(50) | `task` \| `feature` |
-| `entity_id` | UUID | ID de l'entité interne |
-| `system` | VARCHAR | `github` \| `gitlab` \| `jira` |
-| `external_id` | VARCHAR(255) | ID côté système externe (numéro d'issue…) |
-| `external_url` | VARCHAR(512) | URL directe vers l'issue |
-| `metadata` | JSON | Labels, milestone, état GitHub, etc. |
-| `synced_at` | TIMESTAMP | Dernière synchronisation |
+Règles :
+- une tâche peut exister sans exécution
+- plusieurs exécutions historiques sont possibles
+- une seule exécution active à la fois
+- le DAG écoute le `status` de la tâche, pas les logs
 
-Contrainte UNIQUE sur `(entity_type, entity_id, system)`.
+### TicketTaskDependency
 
----
+Table de dépendance de type DAG entre tâches opérationnelles.
+
+Relations :
+- `ticketTask`
+- `dependsOn`
+
+Règles :
+- pas de dépendance vers soi-même
+- pas de cycle
+- une dépendance satisfaite signifie que la tâche source est `done`
+
+### TicketLog
+
+Historique narratif du ticket, avec contexte optionnel sur une tâche.
+
+Champs principaux :
+- `action`
+- `kind`
+- `content`
+- `authorType`
+- `authorName`
+- `requiresAnswer`
+- `metadata`
+
+Relations :
+- `ticket` → `Ticket`
+- `ticketTask` → `TicketTask` (nullable)
+
+### AgentAction
+
+Référentiel d’actions agent.
+
+Champs principaux :
+- `key` unique
+- `label`
+- `description`
+- `isActive`
+
+Relations :
+- `role` → `Role` (nullable)
+- `skill` → `Skill` (nullable)
+
+Règles :
+- pas de suppression physique
+- désactivation autorisée
+- `key` et sémantique métier considérées comme stables
+
+### AgentTaskExecution
+
+Historique technique d’un lancement agent.
+
+Champs principaux :
+- `traceRef`
+- `triggerType`
+- `actionKey`
+- `actionLabel`
+- `roleSlug`
+- `skillSlug`
+- `status`
+- `currentAttempt`
+- `maxAttempts`
+- `requestRef`
+- `lastErrorMessage`
+- `lastErrorScope`
+- `startedAt`
+- `finishedAt`
+
+Relations :
+- `agentAction` → `AgentAction` (nullable)
+- `requestedAgent` → `Agent`
+- `effectiveAgent` → `Agent`
+- `attempts` → `AgentTaskExecutionAttempt[]`
+- `ticketTasks` → `TicketTask[]`
+
+Règles :
+- l’exécution peut exister sans `TicketTask`
+- une nouvelle exécution est créée à chaque lancement réel ou relance manuelle
+
+### AgentTaskExecutionAttempt
+
+Tentative individuelle d’une exécution agent.
+
+Champs principaux :
+- `attemptNumber`
+- `status`
+- `willRetry`
+- `messengerReceiver`
+- `requestRef`
+- `errorMessage`
+- `errorScope`
+- `startedAt`
+- `finishedAt`
+
+Relations :
+- `execution` → `AgentTaskExecution`
+- `agent` → `Agent` (nullable)
+
+## Entités de support
+
+### Workflow / WorkflowStep
+
+Définition réutilisable des étapes board.
+
+Usage dans le modèle :
+- `Ticket.workflowStep` = étape courante du ticket
+- `TicketTask.workflowStep` = étape de board à laquelle la tâche est rattachée
 
 ### TokenUsage
 
-| Colonne | Type | Description |
-|---|---|---|
-| `id` | UUID | PK |
-| `agent_id` | UUID | FK → agent (SET NULL) |
-| `task_id` | UUID | FK → task (SET NULL, nullable) |
-| `workflow_step_id` | UUID | FK → workflow_step (SET NULL, nullable) |
-| `model` | VARCHAR(100) | Modèle utilisé |
-| `input_tokens` | INT | Tokens en entrée |
-| `output_tokens` | INT | Tokens en sortie |
-| `duration_ms` | INT | Durée de l'appel |
-| `created_at` | TIMESTAMP | — |
-
----
-
-### ChatMessage
-
-| Colonne | Type | Description |
-|---|---|---|
-| `id` | UUID | PK |
-| `project_id` | UUID | FK → project (CASCADE) |
-| `agent_id` | UUID | FK → agent (CASCADE) |
-| `author` | VARCHAR | `human` \| `agent` |
-| `content` | TEXT | Contenu du message |
-| `exchange_id` | VARCHAR(36) | UUID regroupant les messages d'un même échange (question + réponse) |
-| `is_error` | BOOLEAN | Indique si le message est une erreur agent |
-| `metadata` | JSON | Données contextuelles (model, tokens, etc.) — nullable |
-| `created_at` | TIMESTAMP | — |
-
----
-
-### Skill
-
-| Colonne | Type | Description |
-|---|---|---|
-| `id` | UUID | PK |
-| `slug` | VARCHAR(255) | UNIQUE |
-| `name` | VARCHAR(255) | Nom affiché |
-| `description` | TEXT | Description courte |
-| `source` | VARCHAR | `imported` \| `custom` |
-| `content` | TEXT | Contenu complet SKILL.md |
-| `file_path` | VARCHAR(512) | Chemin relatif depuis `skills/` |
-| `created_at` / `updated_at` | TIMESTAMP | — |
-
----
+Consommation de tokens liée à :
+- un `Ticket`
+- ou une `TicketTask`
+- éventuellement une `WorkflowStep`
 
 ### AuditLog
 
-| Colonne | Type | Description |
-|---|---|---|
-| `id` | UUID | PK |
-| `action` | VARCHAR | Ex. `task.validated`, `team.agent.added` |
-| `entity_type` | VARCHAR(100) | Ex. `Task`, `Team` |
-| `entity_id` | VARCHAR(36) | UUID de l'entité concernée |
-| `data` | JSON | Données contextuelles |
-| `created_at` | TIMESTAMP | — |
+Trace transverse des actions applicatives.
 
----
+### ChatMessage
 
----
-
-### TaskDependency
-
-| Colonne | Type | Description |
-|---|---|---|
-| `id` | UUID | PK |
-| `task_id` | UUID | FK → task (CASCADE) |
-| `depends_on_id` | UUID | FK → task (CASCADE) |
-
-Contrainte : une tâche ne peut pas dépendre d'elle-même.
-
----
+Conversation projet ↔ agent, indépendante du cycle ticket/task.
 
 ## Tables de jointure
 
-| Table | Relations |
-|---|---|
-| `agent_team` | Agent ↔ Team (ManyToMany) |
-| `role_skill` | Role ↔ Skill (ManyToMany) |
+- `agent_team`
+- `role_skill`
+- `ticket_task_agent_task_execution`

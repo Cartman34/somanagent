@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\DataFixtures;
 
 use App\Entity\Agent;
+use App\Entity\AgentAction;
 use App\Entity\Role;
 use App\Entity\Skill;
 use App\Entity\Team;
 use App\Entity\Workflow;
 use App\Entity\WorkflowStep;
 use App\Enum\ConnectorType;
+use App\Enum\StoryStatus;
 use App\Enum\SkillSource;
 use App\Enum\WorkflowTrigger;
 use App\ValueObject\AgentConfig;
@@ -30,6 +32,7 @@ class DevTeamFixture extends Fixture
     {
         $skills = $this->loadSkills($manager);
         $roles  = $this->createRoles($manager, $skills);
+        $this->createAgentActions($manager, $roles, $skills);
         $agents = $this->createAgents($manager, $roles);
         $team   = $this->createTeam($manager, $agents);
         $this->createWorkflowTemplate($manager, $team);
@@ -90,6 +93,32 @@ class DevTeamFixture extends Fixture
         return $roles;
     }
 
+    /**
+     * @param array<string, Role> $roles
+     * @param array<string, Skill> $skills
+     */
+    private function createAgentActions(ObjectManager $manager, array $roles, array $skills): void
+    {
+        $definitions = [
+            ['key' => 'product.specify', 'label' => 'Product specification', 'role' => 'product-owner', 'skill' => 'product-owner'],
+            ['key' => 'tech.plan', 'label' => 'Technical planning', 'role' => 'lead-tech', 'skill' => 'tech-planning'],
+            ['key' => 'design.ui_mockup', 'label' => 'UI mockup', 'role' => 'ui-ux-designer', 'skill' => 'ui-design'],
+            ['key' => 'dev.backend.implement', 'label' => 'Backend implementation', 'role' => 'php-dev', 'skill' => 'php-backend-dev'],
+            ['key' => 'dev.frontend.implement', 'label' => 'Frontend implementation', 'role' => 'frontend-dev', 'skill' => 'js-frontend-dev'],
+            ['key' => 'review.code', 'label' => 'Code review', 'role' => 'lead-tech', 'skill' => 'code-reviewer'],
+            ['key' => 'qa.validate', 'label' => 'QA validation', 'role' => 'tester', 'skill' => 'test-writing'],
+            ['key' => 'docs.write', 'label' => 'Documentation writing', 'role' => 'tech-writer', 'skill' => 'documentation-writing'],
+            ['key' => 'ops.configure', 'label' => 'Infrastructure configuration', 'role' => 'devops', 'skill' => 'ci-cd-setup'],
+        ];
+
+        foreach ($definitions as $definition) {
+            $action = new AgentAction($definition['key'], $definition['label']);
+            $action->setRole($roles[$definition['role']] ?? null);
+            $action->setSkill($skills[$definition['skill']] ?? null);
+            $manager->persist($action);
+        }
+    }
+
     /** @return array<string, Agent> */
     private function createAgents(ObjectManager $manager, array $roles): array
     {
@@ -138,14 +167,16 @@ class DevTeamFixture extends Fixture
         $workflow->setTeam($team);
 
         foreach ([
-            [1, 'Planification',        'lead-tech',      'tech-planning', 'planning'],
-            [2, 'Conception graphique', 'ui-ux-designer', 'ui-design',     'design'],
-            [3, 'Développement',        null,              null,            'development'],
-            [4, 'Revue de code',        'lead-tech',      'code-reviewer', 'review'],
-        ] as [$order, $name, $role, $skill, $key]) {
+            [1, 'Cadrage produit',      'product-owner',  'product-owner',   'new',            StoryStatus::New],
+            [2, 'Planification',        'lead-tech',      'tech-planning',   'planning',       StoryStatus::Approved],
+            [3, 'Conception graphique', 'ui-ux-designer', 'ui-design',       'graphic_design', StoryStatus::GraphicDesign],
+            [4, 'Développement',        'php-dev',        'php-backend-dev', 'development',    StoryStatus::Development],
+            [5, 'Revue de code',        'lead-tech',      'code-reviewer',   'code_review',    StoryStatus::CodeReview],
+        ] as [$order, $name, $role, $skill, $key, $storyStatusTrigger]) {
             $step = new WorkflowStep($workflow, $order, $name, $key);
             $step->setRoleSlug($role);
             $step->setSkillSlug($skill);
+            $step->setStoryStatusTrigger($storyStatusTrigger);
             $manager->persist($step);
         }
 

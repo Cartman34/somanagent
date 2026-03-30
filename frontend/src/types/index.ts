@@ -106,33 +106,44 @@ export type TaskStatus   = 'backlog' | 'todo' | 'in_progress' | 'review' | 'done
 export type TaskPriority = 'low' | 'medium' | 'high' | 'critical'
 export type StoryStatus  = 'new' | 'ready' | 'approved' | 'planning' | 'graphic_design' | 'development' | 'code_review' | 'done'
 
-export interface Task {
+export interface WorkflowStepRef {
   id: string
-  title: string
-  description: string | null
-  type: TaskType
-  status: TaskStatus
-  storyStatus: StoryStatus | null
-  storyStatusAllowedTransitions: StoryStatus[]
-  priority: TaskPriority
-  progress: number
-  branchName: string | null
-  branchUrl: string | null
-  feature: { id: string; name: string } | null
-  parent: { id: string; title: string } | null
-  workflowStep: { id: string; name: string; storyStatusTrigger: StoryStatus | null } | null
-  assignedAgent: { id: string; name: string } | null
-  assignedRole: { id: string; name: string; slug: string } | null
-  addedBy: { id: string; name: string } | null
-  children?: Task[]
-  executions?: TaskExecution[]
-  logs?: TaskLog[]
-  tokenUsage?: TokenUsageEntry[]
-  createdAt: string
-  updatedAt: string
+  key?: string
+  name: string
+  storyStatusTrigger: StoryStatus | null
 }
 
-export interface TaskExecutionAttempt {
+export interface AgentRef {
+  id: string
+  name: string
+}
+
+export interface RoleRef {
+  id: string
+  slug: string
+  name: string
+}
+
+export interface FeatureRef {
+  id: string
+  name: string
+}
+
+export interface SkillRef {
+  id: string
+  slug: string
+  name: string
+}
+
+export interface AgentActionRef {
+  id: string
+  key: string
+  label: string
+  role: RoleRef | null
+  skill: SkillRef | null
+}
+
+export interface AgentTaskExecutionAttempt {
   id: string
   attemptNumber: number
   status: 'running' | 'succeeded' | 'failed'
@@ -146,11 +157,14 @@ export interface TaskExecutionAttempt {
   agent: { id: string; name: string } | null
 }
 
-export interface TaskExecution {
+export interface AgentTaskExecution {
   id: string
   traceRef: string
   triggerType: 'auto' | 'manual' | 'rework' | 'redispatch'
   workflowStepKey: string | null
+  actionKey?: string
+  actionLabel?: string | null
+  roleSlug?: string | null
   skillSlug: string | null
   status: 'pending' | 'running' | 'retrying' | 'succeeded' | 'failed' | 'dead_letter' | 'cancelled'
   currentAttempt: number
@@ -162,7 +176,8 @@ export interface TaskExecution {
   finishedAt: string | null
   requestedAgent: { id: string; name: string } | null
   effectiveAgent: { id: string; name: string } | null
-  attempts: TaskExecutionAttempt[]
+  ticketTaskIds?: string[]
+  attempts: AgentTaskExecutionAttempt[]
 }
 
 export interface TaskReworkTarget {
@@ -177,8 +192,10 @@ export interface TaskReworkTarget {
   agent: { id: string; name: string } | null
 }
 
-export interface TaskLog {
+export interface TicketLog {
   id: string
+  ticketId?: string
+  ticketTaskId?: string | null
   action: string
   kind: 'event' | 'comment' | string
   authorType: 'agent' | 'user' | 'system' | string | null
@@ -188,6 +205,58 @@ export interface TaskLog {
   metadata: Record<string, unknown> | null
   content: string | null
   createdAt: string
+}
+
+export interface TicketTask {
+  id: string
+  ticketId: string
+  parentTaskId: string | null
+  title: string
+  description: string | null
+  status: TaskStatus
+  priority: TaskPriority
+  progress: number
+  branchName: string | null
+  branchUrl: string | null
+  workflowStep: WorkflowStepRef | null
+  agentAction: AgentActionRef
+  assignedAgent: AgentRef | null
+  assignedRole: RoleRef | null
+  dependsOn: Array<{ id: string; title: string; status: TaskStatus }>
+  childTaskIds: string[]
+  children?: TicketTask[]
+  executions?: AgentTaskExecution[]
+  logs?: TicketLog[]
+  tokenUsage?: TokenUsageEntry[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Ticket {
+  id: string
+  projectId: string
+  feature: FeatureRef | null
+  type: Exclude<TaskType, 'task'>
+  title: string
+  description: string | null
+  status: TaskStatus
+  storyStatus: StoryStatus | null
+  storyStatusAllowedTransitions: StoryStatus[]
+  priority: TaskPriority
+  progress: number
+  branchName: string | null
+  branchUrl: string | null
+  workflowStep: WorkflowStepRef | null
+  assignedAgent: AgentRef | null
+  assignedRole: RoleRef | null
+  taskCounts: { total: number; root: number; activeStep: number }
+  activeStepTasks?: TicketTask[]
+  tasks?: TicketTask[]
+  executions?: AgentTaskExecution[]
+  logs?: TicketLog[]
+  tokenUsage?: TokenUsageEntry[]
+  createdAt: string
+  updatedAt: string
 }
 
 export interface ChatMessage {

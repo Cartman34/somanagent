@@ -125,7 +125,7 @@ class AgentRepository extends ServiceEntityRepository
     {
         return (int) $this->getEntityManager()
             ->createQuery(
-                'SELECT COUNT(t.id) FROM App\Entity\Task t
+                'SELECT COUNT(t.id) FROM App\Entity\TicketTask t
                  WHERE t.assignedAgent = :agent AND t.status = :status'
             )
             ->setParameter('agent', $agent)
@@ -149,9 +149,11 @@ class AgentRepository extends ServiceEntityRepository
         $signal = $this->getEntityManager()
             ->createQuery(
                 'SELECT l.action AS action, l.createdAt AS createdAt
-                 FROM App\Entity\TaskLog l
-                 JOIN l.task t
-                 WHERE t.assignedAgent = :agent AND l.action IN (:actions)
+                 FROM App\Entity\TicketLog l
+                 LEFT JOIN l.ticketTask t
+                 LEFT JOIN l.ticket ticket
+                 WHERE (t.assignedAgent = :agent AND l.action IN (:actions))
+                    OR (ticket.assignedAgent = :agent AND l.action IN (:actions))
                  ORDER BY l.createdAt DESC'
             )
             ->setParameter('agent', $agent)
