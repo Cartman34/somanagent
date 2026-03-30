@@ -106,6 +106,13 @@ const EXECUTION_HISTORY_TRANSLATION_KEYS = [
   'ui.project_detail.execution_history.not_finished',
 ] as const
 
+const PROJECT_TEAM_GUARD_TRANSLATION_KEYS = [
+  'projects.progress.ui.blocked_reason',
+  'projects.progress.ui.banner',
+  'projects.progress.ui.rework_title',
+  'projects.progress.error.request_creation_failed',
+] as const
+
 const STORY_STATUS_LABELS: Record<StoryStatus, string> = Object.fromEntries(
   STORY_COLUMNS.map((column) => [column.key, column.label]),
 ) as Record<StoryStatus, string>
@@ -395,15 +402,17 @@ function ReworkModal({ ticket, onClose, onReworked }: {
  * Shows type badge, priority, branch name, assigned role, active-column subtasks,
  * allowed story transitions as buttons, and a "Lancer l'agent" button for executable statuses.
  */
-function StoryCard({ ticket, onTransition, onDelete, onExecute, onOpen, transitioning }: {
+function StoryCard({ ticket, onTransition, onDelete, onExecute, onOpen, transitioning, progressBlockedReason }: {
   ticket: Ticket
   onTransition: (ticket: Ticket, status: StoryStatus) => void
   onDelete: (ticket: Ticket) => void
   onExecute: (ticket: Ticket) => void
   onOpen: (ticket: Ticket) => void
   transitioning: boolean
+  progressBlockedReason: string | null
 }) {
   const canExecute = ticket.storyStatus !== null && EXECUTABLE_STATUSES.includes(ticket.storyStatus)
+  const progressionBlocked = progressBlockedReason !== null
   const activeSubtasks = ticket.activeStepTasks ?? []
 
   return (
@@ -462,9 +471,10 @@ function StoryCard({ ticket, onTransition, onDelete, onExecute, onOpen, transiti
             <button
               key={next}
               onClick={() => onTransition(ticket, next)}
-              disabled={transitioning}
+              disabled={transitioning || progressionBlocked}
               className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded border hover:border-[var(--brand)] hover:text-[var(--brand)] transition-colors disabled:opacity-40 disabled:cursor-wait"
               style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
+              title={progressBlockedReason ?? undefined}
             >
               <ArrowRight className="w-2.5 h-2.5" />
               {transitioning ? '…' : (STORY_TRANSITION_LABELS[next] ?? next)}
@@ -473,8 +483,10 @@ function StoryCard({ ticket, onTransition, onDelete, onExecute, onOpen, transiti
           {canExecute && (
             <button
               onClick={() => onExecute(ticket)}
+              disabled={progressionBlocked}
               className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded"
               style={{ background: 'var(--brand)', color: 'white' }}
+              title={progressBlockedReason ?? undefined}
             >
               <Play className="w-2.5 h-2.5" /> Lancer l'agent
             </button>
@@ -491,13 +503,14 @@ function StoryCard({ ticket, onTransition, onDelete, onExecute, onOpen, transiti
  * Kanban board with one column per StoryStatus.
  * The `pendingTaskId` disables transition buttons on the card being updated to prevent double-clicks.
  */
-function StoryBoard({ tickets, onTransition, onDelete, onExecute, onOpen, pendingTaskId }: {
+function StoryBoard({ tickets, onTransition, onDelete, onExecute, onOpen, pendingTaskId, progressBlockedReason }: {
   tickets: Ticket[]
   onTransition: (ticket: Ticket, status: StoryStatus) => void
   onDelete: (ticket: Ticket) => void
   onExecute: (ticket: Ticket) => void
   onOpen: (ticket: Ticket) => void
   pendingTaskId: string | null
+  progressBlockedReason: string | null
 }) {
   if (tickets.length === 0) {
     return <EmptyState icon={Layers} title="Aucune story ni bug" description="Créez une demande via le bouton ci-dessus pour l'envoyer au Product Owner." />
@@ -528,6 +541,7 @@ function StoryBoard({ tickets, onTransition, onDelete, onExecute, onOpen, pendin
                   onExecute={onExecute}
                   onOpen={onOpen}
                   transitioning={pendingTaskId === ticket.id}
+                  progressBlockedReason={progressBlockedReason}
                 />
               ))}
               {cards.length === 0 && <p className="text-xs text-center py-3" style={{ color: 'var(--muted)' }}>—</p>}
@@ -729,7 +743,7 @@ function RequestForm({ onSubmit, loading, onCancel }: {
  * execution logs, subtasks (children), and token consumption.
  * Fetches the explicit ticket or ticket-task endpoint, then shows logs, executions and token usage.
  */
-function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }) {
+function TaskDrawer({ taskId, onClose, projectHasTeam }: { taskId: string; onClose: () => void; projectHasTeam: boolean }) {
   const qc = useQueryClient()
   const [logsExpanded, setLogsExpanded] = useState(true)
   const [expandedExecutionIds, setExpandedExecutionIds] = useState<string[]>([])
@@ -807,11 +821,19 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
     queryFn: () => translationsApi.list([...EXECUTION_HISTORY_TRANSLATION_KEYS]),
     staleTime: Infinity,
   })
+  const { data: projectTeamGuardI18n } = useQuery({
+    queryKey: ['ui-translations', 'project-team-guard'],
+    queryFn: () => translationsApi.list([...PROJECT_TEAM_GUARD_TRANSLATION_KEYS]),
+    staleTime: Infinity,
+  })
 
   const executionHistoryLocale = executionHistoryI18n?.locale
 
   const et = (key: typeof EXECUTION_HISTORY_TRANSLATION_KEYS[number]) => (
     executionHistoryI18n?.translations[key] ?? key
+  )
+  const tt = (key: typeof PROJECT_TEAM_GUARD_TRANSLATION_KEYS[number]) => (
+    projectTeamGuardI18n?.translations[key] ?? key
   )
 
   return (
@@ -912,8 +934,12 @@ function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }
                   className="mt-2 inline-flex items-center gap-2 rounded px-3 py-2 text-sm"
                   style={{ background: 'var(--brand-dim)', color: 'var(--brand)' }}
                   onClick={() => setReworkModalOpen(true)}
-                  disabled={!isTicket(entity) || !entity.storyStatus}
-                  title={!isTicket(entity) || !entity.storyStatus ? 'Disponible sur les tickets story/bug.' : undefined}
+                  disabled={!isTicket(entity) || !entity.storyStatus || !projectHasTeam}
+                  title={!projectHasTeam
+                    ? tt('projects.progress.ui.rework_title')
+                    : !isTicket(entity) || !entity.storyStatus
+                      ? 'Disponible sur les tickets story/bug.'
+                      : undefined}
                 >
                   <RotateCcw className="h-4 w-4" />
                   Reprendre une étape
@@ -1428,6 +1454,11 @@ export default function ProjectDetailPage() {
     queryFn:  teamsApi.list,
     enabled:  tab === 'general',
   })
+  const { data: projectTeamGuardI18n } = useQuery({
+    queryKey: ['ui-translations', 'project-team-guard'],
+    queryFn: () => translationsApi.list([...PROJECT_TEAM_GUARD_TRANSLATION_KEYS]),
+    staleTime: Infinity,
+  })
 
   const { data: auditData, isLoading: loadingAudit } = useQuery({
     queryKey: ['project-audit', id, auditPage],
@@ -1451,6 +1482,10 @@ export default function ProjectDetailPage() {
       invalidateTickets()
       setCreateOpen(false)
       setRequestDispatchError(result.dispatchError ?? null)
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { message?: string })?.message
+      setRequestDispatchError(msg ?? (projectTeamGuardI18n?.translations['projects.progress.error.request_creation_failed'] ?? 'projects.progress.error.request_creation_failed'))
     },
   })
 
@@ -1506,6 +1541,11 @@ export default function ProjectDetailPage() {
     onError: () => setTeamSaveError('Impossible de sauvegarder l\'équipe.'),
   })
 
+  const projectNeedsTeamAssignment = project?.team === null
+  const projectProgressBlockedReason = projectNeedsTeamAssignment
+    ? (projectTeamGuardI18n?.translations['projects.progress.ui.blocked_reason'] ?? 'projects.progress.ui.blocked_reason')
+    : null
+
   // ── Derived data ───────────────────────────────────────────────────────────────
 
   if (loadingProject) return <PageSpinner />
@@ -1535,7 +1575,12 @@ export default function ProjectDetailPage() {
         description={project.description ?? undefined}
         action={
           (tab === 'board' || tab === 'tasks') ? (
-            <button className="btn-primary" onClick={() => {
+            <button
+              className="btn-primary"
+              disabled={tab === 'board' && projectNeedsTeamAssignment}
+              title={tab === 'board' ? (projectProgressBlockedReason ?? undefined) : undefined}
+              onClick={() => {
+              if (tab === 'board' && projectNeedsTeamAssignment) return
               setCreateOpen(true)
               if (tab === 'board') setRequestDispatchError(null)
             }}>
@@ -1560,6 +1605,12 @@ export default function ProjectDetailPage() {
           </div>
         ))}
       </div>
+
+      {projectNeedsTeamAssignment && (
+        <div className="mb-5 rounded border px-4 py-3 text-sm" style={{ borderColor: 'rgba(245,158,11,0.35)', background: 'rgba(245,158,11,0.08)', color: '#92400e' }}>
+          {projectTeamGuardI18n?.translations['projects.progress.ui.banner'] ?? 'projects.progress.ui.banner'}
+        </div>
+      )}
 
       {/* Tab bar */}
       <div className="flex gap-0 mb-5 border-b" style={{ borderColor: 'var(--border)' }}>
@@ -1658,6 +1709,7 @@ export default function ProjectDetailPage() {
               onExecute={setExecuteTask}
               onOpen={(ticket) => openTaskDrawer(ticket.id)}
               pendingTaskId={pendingTaskId}
+              progressBlockedReason={projectProgressBlockedReason}
             />
           )}
         </>
@@ -1953,7 +2005,7 @@ export default function ProjectDetailPage() {
 
       {/* ── Task drawer ── */}
       {drawerTaskId && (
-        <TaskDrawer taskId={drawerTaskId} onClose={closeTaskDrawer} />
+        <TaskDrawer taskId={drawerTaskId} onClose={closeTaskDrawer} projectHasTeam={!projectNeedsTeamAssignment} />
       )}
 
       {id && (

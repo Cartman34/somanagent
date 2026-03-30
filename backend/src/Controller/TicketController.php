@@ -137,6 +137,10 @@ class TicketController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('projects.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
+        if (($response = $this->requireProjectTeamForProgress($project)) !== null) {
+            return $response;
+        }
+
         $data = $request->toArray();
         if (empty($data['title'])) {
             return $this->json($this->apiErrorPayloadFactory->create('tickets.validation.title_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -399,6 +403,10 @@ class TicketController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
+        if (($response = $this->requireProjectTeamForProgress($ticket->getProject())) !== null) {
+            return $response;
+        }
+
         if (!$ticket->isStory()) {
             return $this->json($this->apiErrorPayloadFactory->create('tickets.story.error.unsupported_user_story_or_bug'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
@@ -428,6 +436,10 @@ class TicketController extends AbstractController
     {
         $ticket = $this->ticketService->findById($id);
         if ($ticket !== null) {
+            if (($response = $this->requireProjectTeamForProgress($ticket->getProject())) !== null) {
+                return $response;
+            }
+
             if (!$ticket->isStory()) {
                 return $this->json($this->apiErrorPayloadFactory->create('tickets.rework.error.resume_unavailable'), Response::HTTP_UNPROCESSABLE_ENTITY);
             }
@@ -448,6 +460,10 @@ class TicketController extends AbstractController
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
             return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+        }
+
+        if (($response = $this->requireProjectTeamForProgress($task->getTicket()->getProject())) !== null) {
+            return $response;
         }
 
         try {
@@ -472,6 +488,10 @@ class TicketController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
+        if (($response = $this->requireProjectTeamForProgress($ticket->getProject())) !== null) {
+            return $response;
+        }
+
         if (!$ticket->isStory()) {
             return $this->json($this->apiErrorPayloadFactory->create('tickets.rework.error.step_unavailable'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
@@ -485,6 +505,10 @@ class TicketController extends AbstractController
         $ticket = $this->ticketService->findById($id);
         if ($ticket === null) {
             return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+        }
+
+        if (($response = $this->requireProjectTeamForProgress($ticket->getProject())) !== null) {
+            return $response;
         }
 
         if (!$ticket->isStory()) {
@@ -520,6 +544,10 @@ class TicketController extends AbstractController
     {
         $ticket = $this->ticketService->findById($id);
         if ($ticket !== null) {
+            if (($response = $this->requireProjectTeamForProgress($ticket->getProject())) !== null) {
+                return $response;
+            }
+
             if (!$ticket->isStory()) {
                 return $this->json($this->apiErrorPayloadFactory->create('tickets.execution.error.unsupported_story_or_bug'), Response::HTTP_UNPROCESSABLE_ENTITY);
             }
@@ -540,6 +568,10 @@ class TicketController extends AbstractController
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
             return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+        }
+
+        if (($response = $this->requireProjectTeamForProgress($task->getTicket()->getProject())) !== null) {
+            return $response;
         }
 
         $agents = $this->ticketTaskService->availableAgents($task);
@@ -566,6 +598,10 @@ class TicketController extends AbstractController
         }
 
         if ($ticket !== null) {
+            if (($response = $this->requireProjectTeamForProgress($ticket->getProject())) !== null) {
+                return $response;
+            }
+
             if (!$ticket->isStory()) {
                 return $this->json($this->apiErrorPayloadFactory->create('tickets.execution.error.unsupported_story_or_bug'), Response::HTTP_UNPROCESSABLE_ENTITY);
             }
@@ -586,6 +622,10 @@ class TicketController extends AbstractController
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
             return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+        }
+
+        if (($response = $this->requireProjectTeamForProgress($task->getTicket()->getProject())) !== null) {
+            return $response;
         }
 
         try {
@@ -878,5 +918,17 @@ class TicketController extends AbstractController
             'content' => $log->getContent(),
             'createdAt' => $log->getCreatedAt()->format(\DateTimeInterface::ATOM),
         ];
+    }
+
+    private function requireProjectTeamForProgress(\App\Entity\Project $project): ?JsonResponse
+    {
+        if ($project->getTeam() !== null) {
+            return null;
+        }
+
+        return $this->json(
+            $this->apiErrorPayloadFactory->create('projects.progress.error.team_required'),
+            Response::HTTP_UNPROCESSABLE_ENTITY,
+        );
     }
 }

@@ -25,8 +25,12 @@ Liste les projets.
 ### `POST /api/projects`
 Crée un projet.
 
+Le body peut inclure `teamId` pour affecter une équipe dès la création.
+
 ### `GET /api/projects/{id}` · `PUT /api/projects/{id}` · `DELETE /api/projects/{id}`
 CRUD projet.
+
+`PUT /api/projects/{id}` permet aussi d’affecter ou retirer l’équipe via `teamId`.
 
 ### `GET /api/projects/{id}/audit`
 Journal d’audit du projet.
@@ -36,6 +40,9 @@ Consommation de tokens du projet.
 
 ### `POST /api/projects/{id}/requests`
 Crée une demande métier et la transforme en `Ticket`.
+
+Précondition :
+- le projet doit avoir une équipe affectée, sinon l’API renvoie une erreur fonctionnelle
 
 Body :
 ```json
@@ -88,6 +95,9 @@ Change la priorité du ticket.
 ### `POST /api/tickets/{id}/story-transition`
 Fait avancer le `storyStatus` d’un ticket story/bug.
 
+Précondition :
+- le ticket doit appartenir à un projet avec équipe affectée
+
 ### `GET /api/tickets/{id}/execute`
 Liste les agents disponibles pour l’étape courante du ticket.
 
@@ -102,6 +112,9 @@ Liste les cibles de reprise disponibles.
 
 ### `POST /api/tickets/{id}/rework`
 Rejoue une étape agent d’un ticket.
+
+Précondition commune aux routes d’exécution / reprise / rework :
+- le projet du ticket doit avoir une équipe affectée
 
 ### `POST /api/tickets/{id}/comments`
 Ajoute un `TicketLog` de type commentaire.

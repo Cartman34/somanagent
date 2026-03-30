@@ -54,6 +54,10 @@ Relations :
 - `features` → `Feature[]`
 - `tickets` → `Ticket[]`
 
+Règle produit :
+- un projet peut exister sans équipe
+- mais toute action de progression ou d’exécution agent est bloquée tant qu’aucune équipe n’est affectée
+
 ### Feature
 
 Regroupement fonctionnel optionnel à l’intérieur d’un projet.
