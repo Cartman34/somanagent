@@ -97,6 +97,7 @@ class WorkflowStep
     public function getWorkflow(): Workflow            { return $this->workflow; }
     public function getStepOrder(): int                { return $this->stepOrder; }
     public function getName(): string                  { return $this->name; }
+    public function getKey(): string                   { return $this->outputKey; }
     public function getRoleSlug(): ?string             { return $this->roleSlug; }
     public function getSkillSlug(): ?string            { return $this->skillSlug; }
     public function getInputConfig(): array            { return $this->inputConfig; }

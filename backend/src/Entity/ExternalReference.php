@@ -10,7 +10,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Lien entre une entité métier (Task, Feature) et un système externe (GitHub, GitLab, Jira).
+ * Lien entre une entité métier (Ticket, TicketTask, Feature) et un système externe (GitHub, GitLab, Jira).
  * Respecte l'architecture hexagonale : les entités métier ne connaissent pas les systèmes externes.
  */
 #[ORM\Entity(repositoryClass: ExternalReferenceRepository::class)]

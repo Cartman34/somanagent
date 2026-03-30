@@ -83,10 +83,10 @@ When a story is dispatched for execution:
 
 1. SoManAgent identifies the agent assigned to the story's current status role
 2. Retrieves the content of the associated SKILL.md
-3. Builds a `Prompt` (skill + context + task instruction)
+3. Builds a `Prompt` (skill + context + ticket or ticket-task instruction)
 4. Sends it via the configured connector (`ClaudeApiAdapter` or `ClaudeCliAdapter`)
 5. Receives an `AgentResponse` with the content + metadata (tokens, duration)
-6. Records it in the audit log (via `TaskLog`)
+6. Records the narrative history in `TicketLog` and the technical trace in `AgentTaskExecution`
 7. For `tech-planning` skill: parses JSON output, creates subtasks + dependency DAG, sets branch name
 
 → See [Adapters](../technical/adapters.md) for implementation details.

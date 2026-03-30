@@ -44,4 +44,22 @@ class WorkflowStepRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    /**
+     * Returns the first lifecycle workflow step for the team that uses the given role slug.
+     */
+    public function findLifecycleStepByTeamAndRoleSlug(Team $team, string $roleSlug): ?WorkflowStep
+    {
+        return $this->createQueryBuilder('ws')
+            ->join('ws.workflow', 'w')
+            ->where('w.team = :team')
+            ->andWhere('ws.roleSlug = :roleSlug')
+            ->andWhere('ws.storyStatusTrigger IS NOT NULL')
+            ->setParameter('team', $team)
+            ->setParameter('roleSlug', $roleSlug)
+            ->orderBy('ws.stepOrder', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

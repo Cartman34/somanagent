@@ -7,45 +7,61 @@ namespace App\Service;
 use App\Entity\Agent;
 use App\Entity\ChatMessage;
 use App\Entity\Project;
-use App\Entity\Task;
-use App\Entity\TaskLog;
+use App\Entity\TicketLog;
+use App\Entity\TicketTask;
 
 final class AgentContextBuilder
 {
     /**
-     * @param TaskLog[] $ticketComments
+     * @param TicketLog[] $ticketComments
      */
-    public function buildForTask(Task $task, Agent $agent, string $skillSlug, array $ticketComments = []): array
+    public function buildForTicketTask(TicketTask $task, Agent $agent, string $skillSlug, array $ticketComments = []): array
     {
-        $context = $this->buildProjectAgentContext($task->getProject(), $agent);
+        $ticket = $task->getTicket();
+        $context = $this->buildProjectAgentContext($ticket->getProject(), $agent);
         $context['interaction'] = [
-            'type' => 'task_execution',
+            'type' => 'ticket_task_execution',
             'skill' => $skillSlug,
+            'action_key' => $task->getAgentAction()->getKey(),
         ];
-        $context['task'] = [
-            'id'       => (string) $task->getId(),
-            'title'    => $task->getTitle(),
-            'type'     => $task->getType()->value,
+        $context['ticket'] = [
+            'id' => (string) $ticket->getId(),
+            'title' => $ticket->getTitle(),
+            'type' => $ticket->getType()->value,
+            'priority' => $ticket->getPriority()->value,
+            'status' => $ticket->getStatus()->value,
+            'story' => $ticket->getStoryStatus()?->value,
+            'feature' => $ticket->getFeature()?->getName(),
+            'workflow_step' => $ticket->getWorkflowStep()?->getKey(),
+        ];
+        $context['ticket_task'] = [
+            'id' => (string) $task->getId(),
+            'title' => $task->getTitle(),
+            'description' => $task->getDescription(),
             'priority' => $task->getPriority()->value,
-            'status'   => $task->getStatus()->value,
-            'story'    => $task->getStoryStatus()?->value,
-            'branch'   => $task->getBranchName(),
-            'parent'   => $task->getParent()?->getTitle(),
-            'feature'  => $task->getFeature()?->getName(),
+            'status' => $task->getStatus()->value,
+            'branch' => $task->getBranchName(),
+            'parent' => $task->getParent()?->getTitle(),
+            'workflow_step' => $task->getWorkflowStep()?->getKey(),
+            'action' => [
+                'key' => $task->getAgentAction()->getKey(),
+                'label' => $task->getAgentAction()->getLabel(),
+            ],
             'assigned_role' => $task->getAssignedRole()?->getName(),
             'assigned_agent' => $task->getAssignedAgent()?->getName(),
         ];
 
         if ($ticketComments !== []) {
-            $context['ticket_conversation'] = array_map(static fn(TaskLog $log) => [
-                'author'          => $log->getAuthorName() ?? $log->getAuthorType() ?? 'system',
-                'author_type'     => $log->getAuthorType(),
-                'action'          => $log->getAction(),
+            $context['ticket_conversation'] = array_map(static fn(TicketLog $log) => [
+                'author' => $log->getAuthorName() ?? $log->getAuthorType() ?? 'system',
+                'author_type' => $log->getAuthorType(),
+                'action' => $log->getAction(),
                 'requires_answer' => $log->requiresAnswer(),
-                'reply_to'        => $log->getReplyToLogId()?->toRfc4122(),
-                'context'         => $log->getMetadata()['context'] ?? null,
-                'content'         => $log->getContent(),
-                'created_at'      => $log->getCreatedAt()->format(\DateTimeInterface::ATOM),
+                'reply_to' => $log->getReplyToLogId()?->toRfc4122(),
+                'context' => $log->getMetadata()['context'] ?? null,
+                'ticket_task_id' => $log->getTicketTask()?->getId()->toRfc4122(),
+                'content' => $log->getContent(),
+                'created_at' => $log->getCreatedAt()->format(\DateTimeInterface::ATOM),
             ], $ticketComments);
         }
 

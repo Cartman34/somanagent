@@ -60,7 +60,7 @@ skills:
     create_required: 'Les champs "slug", "name" et "content" sont obligatoires.'
     source_required: 'Le champ "source" (ex: owner/skill-name) est obligatoire.'
 
-tasks:
+tickets:
   error:
     not_found: 'Tâche introuvable.'
   execution:
@@ -103,3 +103,27 @@ workflows:
     not_found: 'Workflow introuvable.'
   validation:
     name_required: 'Le champ "name" est obligatoire.'
+
+ui:
+  project_detail:
+    execution_history:
+      title: 'Historique des agents'
+      requested_agent: 'Agent demandé'
+      effective_agent: 'Agent effectif'
+      started_at: 'Début'
+      finished_at: 'Fin'
+      attempts_count_one: 'tentative'
+      attempts_count_other: 'tentatives'
+      attempt_label: 'Tentative'
+      attempt_failed: 'KO'
+      attempt_succeeded: 'OK'
+      attempt_running: 'en cours'
+      retry_planned: 'Retry prévu'
+      agent: 'Agent'
+      receiver: 'Receiver'
+      request_ref: 'Request ref'
+      error_scope: 'Error scope'
+      not_available: 'n/a'
+      exhausted_retries: 'Retries épuisés pour cette exécution.'
+      auto: 'auto'
+      not_finished: '—'

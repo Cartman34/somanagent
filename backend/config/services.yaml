@@ -34,6 +34,6 @@ services:
         arguments:
             $skillsDir: '%skills_dir%'
 
-    App\Service\TaskExecutionService:
+    App\Service\AgentTaskExecutionService:
         arguments:
             $messengerAgentTaskMaxRetries: '%messenger_agent_task_max_retries%'

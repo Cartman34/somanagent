@@ -24,15 +24,17 @@ Use `doc/` as the source of truth for product, technical and development documen
 - Pending tasks are tracked in [`local/planned-tasks.md`](/home/sowapps/projects/somanagent/local/planned-tasks.md).
 - Completed work is tracked in [`local/changes-list.md`](/home/sowapps/projects/somanagent/local/changes-list.md).
 - Review notes are tracked in [`local/changes-review.md`](/home/sowapps/projects/somanagent/local/changes-review.md).
+- These three local files are the continuity source of truth for backlog, completed work and review follow-up.
 - The order of tasks in `local/planned-tasks.md` is the authoritative priority order.
 - The user may reorder `local/planned-tasks.md` manually at any time to redefine priorities.
-- `next` means: execute the first task from `local/planned-tasks.md`, remove it from that file, then append the result to `local/changes-list.md`.
+- `next` means: execute the first task from `local/planned-tasks.md`, remove it from that file, then append the result to the end of `local/changes-list.md`.
 - `new ...` means: append a new task to the end of `local/planned-tasks.md`.
 - If a `next` is already in progress, `new ...` does not interrupt it unless the user explicitly redirects the work.
 - `rework` means: read `local/changes-review.md`, resume from the pending review feedback, and apply the needed follow-up changes.
 - During `rework`, review feedback is not assumed to be automatically correct: challenge weak or risky requests when needed, and ask for clarification if a point is ambiguous or under-specified.
 - During `rework`, any additional change explicitly requested by the user as part of the same follow-up must also be added to `local/changes-list.md`, even if it goes beyond the original review remarks.
 - If a completed feature needs a follow-up bugfix, add it to `local/changes-list.md` with prefix `[FIX]`.
+- `review` means: analyse the current work, write the review findings into `local/changes-review.md`, and use that same file as the source for any later `rework`.
 
 ### Local-only files
 
@@ -84,8 +86,9 @@ php scripts/db.php query "SELECT source, category, level, title, occurred_at FRO
 3. Analyse all modified/added files: coherence, conventions, signatures
 4. Write conclusions to `local/changes-review.md`
 5. **Never modify code during review** — report only
-6. **Never write a detailed report in chat** — only "Review ✅" or a short blocker list
-7. If ✅ with no blocker → auto-proceed to approve
+6. The file `local/changes-review.md` is the review deliverable used later by `rework`
+7. **Never write a detailed report in chat** — only "Review ✅" or a short blocker list
+8. If ✅ with no blocker → auto-proceed to approve
 
 **Review quality:**
 - Flag any modified/added file outside the declared scope, and any declared item without a matching file
@@ -99,7 +102,7 @@ php scripts/db.php query "SELECT source, category, level, title, occurred_at FRO
 ### `approve` (or auto-approval after review ✅)
 
 1. Apply any pending corrections
-2. Clean `local/changes-list.md` (empty the Completed section)
+2. Keep `local/changes-list.md` untouched until the PR is created and its description contains these changes
 3. Clean `local/changes-review.md` (reset to "Aucune review en cours.")
 4. `git checkout -b feat/…` (or `fix/…` for `[FIX]` items) if not already on a feature branch — **before the commit**
 5. `git add . && git commit`
@@ -109,7 +112,8 @@ php scripts/db.php query "SELECT source, category, level, title, occurred_at FRO
    php scripts/github.php pr create --title "..." --head <branch> --body-file /tmp/pr_body.md
    ```
    The script reads and deletes the file automatically.
-8. **Stay on the feature branch** — do NOT `git checkout main` unless `review async` was requested.
+8. Once the PR is created with a description that contains the approved changes, clean `local/changes-list.md` (empty the Completed section)
+9. **Stay on the feature branch** — do NOT `git checkout main` unless `review async` was requested.
 
 **`review async` only:** insert `git checkout main` between steps 6 and 7.
 

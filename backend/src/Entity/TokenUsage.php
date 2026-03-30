@@ -20,9 +20,13 @@ class TokenUsage
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?Agent $agent;
 
-    #[ORM\ManyToOne(targetEntity: Task::class)]
+    #[ORM\ManyToOne(targetEntity: Ticket::class)]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
-    private ?Task $task = null;
+    private ?Ticket $ticket = null;
+
+    #[ORM\ManyToOne(targetEntity: TicketTask::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?TicketTask $ticketTask = null;
 
     #[ORM\ManyToOne(targetEntity: WorkflowStep::class)]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
@@ -49,7 +53,8 @@ class TokenUsage
         int           $inputTokens,
         int           $outputTokens,
         ?int          $durationMs   = null,
-        ?Task         $task         = null,
+        ?Ticket       $ticket       = null,
+        ?TicketTask   $ticketTask   = null,
         ?WorkflowStep $workflowStep = null,
     ) {
         $this->id           = Uuid::v7();
@@ -58,14 +63,16 @@ class TokenUsage
         $this->inputTokens  = $inputTokens;
         $this->outputTokens = $outputTokens;
         $this->durationMs   = $durationMs;
-        $this->task         = $task;
+        $this->ticket       = $ticket;
+        $this->ticketTask   = $ticketTask;
         $this->workflowStep = $workflowStep;
         $this->createdAt    = new \DateTimeImmutable();
     }
 
     public function getId(): Uuid                      { return $this->id; }
     public function getAgent(): ?Agent                 { return $this->agent; }
-    public function getTask(): ?Task                   { return $this->task; }
+    public function getTicket(): ?Ticket               { return $this->ticket; }
+    public function getTicketTask(): ?TicketTask       { return $this->ticketTask; }
     public function getWorkflowStep(): ?WorkflowStep   { return $this->workflowStep; }
     public function getModel(): string                 { return $this->model; }
     public function getInputTokens(): int              { return $this->inputTokens; }

@@ -5,23 +5,23 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\TaskExecutionAttemptStatus;
-use App\Repository\TaskExecutionAttemptRepository;
+use App\Repository\AgentTaskExecutionAttemptRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 
-#[ORM\Entity(repositoryClass: TaskExecutionAttemptRepository::class)]
-#[ORM\Table(name: 'task_execution_attempt')]
-#[ORM\UniqueConstraint(name: 'uniq_task_execution_attempt_execution_number', columns: ['execution_id', 'attempt_number'])]
-#[ORM\Index(columns: ['execution_id'], name: 'idx_task_execution_attempt_execution')]
-class TaskExecutionAttempt
+#[ORM\Entity(repositoryClass: AgentTaskExecutionAttemptRepository::class)]
+#[ORM\Table(name: 'agent_task_execution_attempt')]
+#[ORM\UniqueConstraint(name: 'uniq_agent_task_execution_attempt_execution_number', columns: ['execution_id', 'attempt_number'])]
+#[ORM\Index(columns: ['execution_id'], name: 'idx_agent_task_execution_attempt_execution')]
+class AgentTaskExecutionAttempt
 {
     #[ORM\Id]
     #[ORM\Column(type: 'uuid')]
     private Uuid $id;
 
-    #[ORM\ManyToOne(targetEntity: TaskExecution::class, inversedBy: 'attempts')]
+    #[ORM\ManyToOne(targetEntity: AgentTaskExecution::class, inversedBy: 'attempts')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    private TaskExecution $execution;
+    private AgentTaskExecution $execution;
 
     #[ORM\Column(type: 'smallint')]
     private int $attemptNumber;
@@ -57,7 +57,7 @@ class TaskExecutionAttempt
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
-    public function __construct(TaskExecution $execution, int $attemptNumber)
+    public function __construct(AgentTaskExecution $execution, int $attemptNumber)
     {
         $this->id = Uuid::v7();
         $this->execution = $execution;
@@ -67,7 +67,7 @@ class TaskExecutionAttempt
     }
 
     public function getId(): Uuid { return $this->id; }
-    public function getExecution(): TaskExecution { return $this->execution; }
+    public function getExecution(): AgentTaskExecution { return $this->execution; }
     public function getAttemptNumber(): int { return $this->attemptNumber; }
     public function getAgent(): ?Agent { return $this->agent; }
     public function getMessengerReceiver(): ?string { return $this->messengerReceiver; }

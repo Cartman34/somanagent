@@ -6,7 +6,8 @@ namespace App\Service;
 
 use App\Entity\Agent;
 use App\Entity\Project;
-use App\Entity\Task;
+use App\Entity\Ticket;
+use App\Entity\TicketTask;
 use App\Entity\TokenUsage;
 use App\Entity\WorkflowStep;
 use App\Repository\AgentRepository;
@@ -27,10 +28,11 @@ class TokenUsageService
         int           $inputTokens,
         int           $outputTokens,
         ?int          $durationMs   = null,
-        ?Task         $task         = null,
+        ?Ticket       $ticket       = null,
+        ?TicketTask   $ticketTask   = null,
         ?WorkflowStep $workflowStep = null,
     ): TokenUsage {
-        $usage = new TokenUsage($agent, $model, $inputTokens, $outputTokens, $durationMs, $task, $workflowStep);
+        $usage = new TokenUsage($agent, $model, $inputTokens, $outputTokens, $durationMs, $ticket, $ticketTask, $workflowStep);
         $this->em->persist($usage);
         $this->em->flush();
         return $usage;
@@ -104,15 +106,24 @@ class TokenUsageService
     }
 
     /**
-     * Returns token usage entries for a single task.
-     *
      * @return list<array<string, mixed>>
      */
-    public function findByTask(Task $task): array
+    public function findByTicket(Ticket $ticket): array
     {
         return array_map(
             fn(TokenUsage $u) => $this->serializeEntry($u),
-            $this->tokenUsageRepository->findByTask($task),
+            $this->tokenUsageRepository->findByTicket($ticket),
+        );
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function findByTicketTask(TicketTask $ticketTask): array
+    {
+        return array_map(
+            fn(TokenUsage $u) => $this->serializeEntry($u),
+            $this->tokenUsageRepository->findByTicketTask($ticketTask),
         );
     }
 
@@ -126,7 +137,11 @@ class TokenUsageService
             'outputTokens' => $u->getOutputTokens(),
             'totalTokens'  => $u->getTotalTokens(),
             'durationMs'   => $u->getDurationMs(),
-            'task'         => $u->getTask() ? ['id' => (string) $u->getTask()->getId(), 'title' => $u->getTask()->getTitle()] : null,
+            'task'         => $u->getTicketTask()
+                ? ['id' => (string) $u->getTicketTask()->getId(), 'title' => $u->getTicketTask()->getTitle()]
+                : ($u->getTicket()
+                    ? ['id' => (string) $u->getTicket()->getId(), 'title' => $u->getTicket()->getTitle()]
+                    : null),
             'createdAt'    => $u->getCreatedAt()->format(\DateTimeInterface::ATOM),
         ];
     }

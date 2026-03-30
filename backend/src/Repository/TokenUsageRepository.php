@@ -6,7 +6,8 @@ namespace App\Repository;
 
 use App\Entity\Agent;
 use App\Entity\Project;
-use App\Entity\Task;
+use App\Entity\Ticket;
+use App\Entity\TicketTask;
 use App\Entity\TokenUsage;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -55,8 +56,10 @@ class TokenUsageRepository extends ServiceEntityRepository
     public function findByProject(Project $project, int $limit = 100): array
     {
         return $this->createQueryBuilder('tu')
-            ->join('tu.task', 't')
-            ->where('t.project = :project')
+            ->leftJoin('tu.ticket', 'ticket')
+            ->leftJoin('tu.ticketTask', 'ticketTask')
+            ->leftJoin('ticketTask.ticket', 'ticketTaskTicket')
+            ->where('ticket.project = :project OR ticketTaskTicket.project = :project')
             ->setParameter('project', $project)
             ->orderBy('tu.createdAt', 'DESC')
             ->setMaxResults($limit)
@@ -72,21 +75,32 @@ class TokenUsageRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('tu')
             ->select('IDENTITY(tu.agent) as agentId, SUM(tu.inputTokens) as totalInput, SUM(tu.outputTokens) as totalOutput, COUNT(tu.id) as calls')
-            ->join('tu.task', 't')
-            ->where('t.project = :project')
+            ->leftJoin('tu.ticket', 'ticket')
+            ->leftJoin('tu.ticketTask', 'ticketTask')
+            ->leftJoin('ticketTask.ticket', 'ticketTaskTicket')
+            ->where('ticket.project = :project OR ticketTaskTicket.project = :project')
             ->setParameter('project', $project)
             ->groupBy('tu.agent')
             ->getQuery()
             ->getArrayResult();
     }
 
-    /**
-     * Returns token usage entries for a single task.
-     *
-     * @return TokenUsage[]
-     */
-    public function findByTask(Task $task, int $limit = 50): array
+    /** @return TokenUsage[] */
+    public function findByTicket(Ticket $ticket, int $limit = 50): array
     {
-        return $this->findBy(['task' => $task], ['createdAt' => 'DESC'], $limit);
+        return $this->createQueryBuilder('tu')
+            ->leftJoin('tu.ticketTask', 'ticketTask')
+            ->where('tu.ticket = :ticket OR ticketTask.ticket = :ticket')
+            ->setParameter('ticket', $ticket)
+            ->orderBy('tu.createdAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @return TokenUsage[] */
+    public function findByTicketTask(TicketTask $ticketTask, int $limit = 50): array
+    {
+        return $this->findBy(['ticketTask' => $ticketTask], ['createdAt' => 'DESC'], $limit);
     }
 }
