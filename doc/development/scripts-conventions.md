@@ -37,11 +37,18 @@ These files are part of the project codebase and must follow explicit convention
 ## Documentation Rules
 
 - Every runnable script must have a shebang and a header with:
+  - `Author:`
   - `Description:`
   - one or more `Usage:`
 - `php scripts/help.php` must remain accurate.
 - `doc/development/scripts.md` must list runnable scripts that are intended for developer use.
 - Deeper rules or cross-cutting standards for scripts belong in this file, not in a local `README` inside `scripts/`.
+
+Expected author syntax:
+
+```bash
+# Author: Florent HAZARD <f.hazard@sowapps.com>
+```
 
 ## Design Guidelines
 

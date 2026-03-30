@@ -1,3 +1,7 @@
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
 import { useState, useEffect } from 'react'
 
 export const THEMES = ['terminal', 'slate', 'obsidian', 'aurora', 'neo', 'chalk'] as const

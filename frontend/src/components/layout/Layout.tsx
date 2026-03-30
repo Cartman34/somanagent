@@ -1,3 +1,7 @@
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'

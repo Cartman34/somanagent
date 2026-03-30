@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Author: Florent HAZARD <f.hazard@sowapps.com>
 # Description: Install or upgrade OpenAI Codex CLI inside WSL
 # Usage: bash scripts/wsl-codex-install.sh
 # Usage: bash scripts/wsl-codex-install.sh --skip-login

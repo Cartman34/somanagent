@@ -1,5 +1,8 @@
 #!/usr/bin/env php
 <?php
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
 // Description: Run reusable commands inside the Node Docker container
 // Usage: php scripts/node.php type-check
 // Usage: php scripts/node.php run build

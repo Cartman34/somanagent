@@ -1,5 +1,8 @@
 #!/usr/bin/env php
 <?php
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
 // Description: Recreate the local database, run migrations, and optionally reload fixtures
 // Usage: php scripts/db-reset.php
 // Usage: php scripts/db-reset.php --fixtures

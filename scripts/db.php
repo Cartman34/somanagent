@@ -1,5 +1,8 @@
 #!/usr/bin/env php
 <?php
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
 // Description: Run reusable commands inside the PostgreSQL Docker container
 // Usage: php scripts/db.php query "SELECT 1"
 // Usage: php scripts/db.php exec -c "\\dt"

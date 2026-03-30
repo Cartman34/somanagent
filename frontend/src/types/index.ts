@@ -1,3 +1,7 @@
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Types partagés SoManAgent — alignés sur les réponses de l'API PHP
 // ─────────────────────────────────────────────────────────────────────────────

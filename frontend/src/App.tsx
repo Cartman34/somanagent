@@ -1,3 +1,7 @@
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from '@/components/layout/Layout'
 import DashboardPage from '@/pages/DashboardPage'

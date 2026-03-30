@@ -1,3 +1,7 @@
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
 import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Send, Bot, User } from 'lucide-react'

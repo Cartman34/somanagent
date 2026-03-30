@@ -1,3 +1,7 @@
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
 import apiClient from './client'
 import type { Agent, AgentConfig, AgentStatus } from '@/types'
 

@@ -1,3 +1,7 @@
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
 const LOG_ENDPOINT = '/api/logs/events'
 const MAX_STACK_LENGTH = 12_000
 

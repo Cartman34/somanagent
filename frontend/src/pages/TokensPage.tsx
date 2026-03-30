@@ -1,3 +1,7 @@
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
 import { useQuery } from '@tanstack/react-query'
 import { Coins } from 'lucide-react'
 import { tokensApi } from '@/api/tokens'

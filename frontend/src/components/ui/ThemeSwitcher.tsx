@@ -1,3 +1,7 @@
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
 import { useState, useRef, useEffect } from 'react'
 import { Palette } from 'lucide-react'
 import { useTheme, THEME_META } from '@/hooks/useTheme'

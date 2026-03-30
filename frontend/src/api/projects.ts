@@ -1,3 +1,7 @@
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
 import apiClient from './client'
 import type { Project, Module, AuditLog, TokenUsageEntry } from '@/types'
 

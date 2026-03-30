@@ -1,5 +1,8 @@
 #!/usr/bin/env php
 <?php
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
 // Description: GitHub CLI helper — create PRs, merge, close, edit, list, view
 // Usage: php scripts/github.php pr create --title "..." --head <branch> --body-file /tmp/pr_body.md [--base main]
 // Usage: php scripts/github.php pr create --title "..." --head <branch> --body "..." [--base main]
