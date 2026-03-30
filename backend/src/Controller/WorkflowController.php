@@ -96,29 +96,14 @@ class WorkflowController extends AbstractController
     }
 
     #[Route('/{id}', name: 'workflow_update', methods: ['PUT'])]
-    public function update(string $id, Request $request): JsonResponse
+    public function update(string $id): JsonResponse
     {
         $workflow = $this->workflowService->findById($id);
         if ($workflow === null) {
             return $this->json($this->apiErrorPayloadFactory->create('workflows.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        if (!$workflow->isEditable()) {
-            return $this->json($this->apiErrorPayloadFactory->create('workflows.error.locked_update'), Response::HTTP_CONFLICT);
-        }
-
-        $data    = $request->toArray();
-        $trigger = WorkflowTrigger::tryFrom($data['trigger'] ?? $workflow->getTrigger()->value) ?? $workflow->getTrigger();
-
-        $this->workflowService->update(
-            $workflow,
-            $data['name'] ?? $workflow->getName(),
-            $trigger,
-            $data['description'] ?? null,
-            $data['teamId'] ?? null,
-        );
-
-        return $this->json(['id' => (string) $workflow->getId(), 'name' => $workflow->getName()]);
+        return $this->json($this->apiErrorPayloadFactory->create('workflows.error.immutable'), Response::HTTP_CONFLICT);
     }
 
     #[Route('/{id}/validate', name: 'workflow_validate', methods: ['POST'])]
@@ -129,13 +114,7 @@ class WorkflowController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('workflows.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        try {
-            $this->workflowService->validate($workflow);
-        } catch (\LogicException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_CONFLICT);
-        }
-
-        return $this->json(['id' => (string) $workflow->getId(), 'status' => $workflow->getStatus()->value]);
+        return $this->json($this->apiErrorPayloadFactory->create('workflows.error.immutable'), Response::HTTP_CONFLICT);
     }
 
     #[Route('/{id}', name: 'workflow_delete', methods: ['DELETE'])]
@@ -146,11 +125,6 @@ class WorkflowController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('workflows.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        if (!$workflow->isEditable()) {
-            return $this->json($this->apiErrorPayloadFactory->create('workflows.error.locked_delete'), Response::HTTP_CONFLICT);
-        }
-
-        $this->workflowService->delete($workflow);
-        return $this->json(null, Response::HTTP_NO_CONTENT);
+        return $this->json($this->apiErrorPayloadFactory->create('workflows.error.immutable'), Response::HTTP_CONFLICT);
     }
 }

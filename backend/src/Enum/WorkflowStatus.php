@@ -16,15 +16,15 @@ enum WorkflowStatus: string
     public function label(): string
     {
         return match($this) {
-            self::Draft     => 'Brouillon',
-            self::Validated => 'Validé',
-            self::Locked    => 'Verrouillé',
+            self::Draft     => 'Draft',
+            self::Validated => 'Validated',
+            self::Locked    => 'Locked',
         };
     }
 
     public function isEditable(): bool
     {
-        return $this === self::Draft;
+        return false;
     }
 
     public function isUsable(): bool
