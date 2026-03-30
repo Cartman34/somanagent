@@ -3,6 +3,8 @@ import { Routes, Route, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, FolderKanban, Pencil, Trash2 } from 'lucide-react'
 import { projectsApi } from '@/api/projects'
+import { teamsApi } from '@/api/teams'
+import { translationsApi } from '@/api/translations'
 import type { ProjectPayload } from '@/api/projects'
 import { PageSpinner } from '@/components/ui/Spinner'
 import ErrorMessage from '@/components/ui/ErrorMessage'
@@ -20,20 +22,25 @@ function fmt(date: string) {
 
 function ProjectForm({
   initial,
+  teams,
+  i18n,
   onSubmit,
   loading,
   onCancel,
 }: {
   initial?: Partial<ProjectPayload>
+  teams: { id: string; name: string }[]
+  i18n: Record<string, string>
   onSubmit: (d: ProjectPayload) => void
   loading: boolean
   onCancel: () => void
 }) {
   const [name, setName] = useState(initial?.name ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
+  const [teamId, setTeamId] = useState(initial?.teamId ?? '')
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit({ name, description: description || undefined }) }} className="space-y-4">
+    <form onSubmit={(e) => { e.preventDefault(); onSubmit({ name, description: description || undefined, teamId: teamId || null }) }} className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
         <input className="input" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Mon projet" />
@@ -41,6 +48,18 @@ function ProjectForm({
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
         <textarea className="input resize-none" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{i18n['projects.ui.form.team_label'] ?? 'projects.ui.form.team_label'}</label>
+        <select className="input" value={teamId} onChange={(e) => setTeamId(e.target.value)}>
+          <option value="">{i18n['projects.ui.form.no_team_option'] ?? 'projects.ui.form.no_team_option'}</option>
+          {teams.map((team) => (
+            <option key={team.id} value={team.id}>{team.name}</option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-gray-500">
+          {i18n['projects.ui.form.team_hint'] ?? 'projects.ui.form.team_hint'}
+        </p>
       </div>
       <div className="flex justify-end gap-3 pt-2">
         <button type="button" onClick={onCancel} className="btn-secondary">Annuler</button>
@@ -57,7 +76,7 @@ function ProjectsList() {
   const qc = useQueryClient()
 
   const [createOpen, setCreateOpen] = useState(false)
-  const [editTarget, setEditTarget] = useState<{ id: string; name: string; description: string | null } | null>(null)
+  const [editTarget, setEditTarget] = useState<{ id: string; name: string; description: string | null; teamId?: string | null } | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
 
   const { data: projects, isLoading, error, refetch } = useQuery({
@@ -65,9 +84,30 @@ function ProjectsList() {
     queryFn: projectsApi.list,
   })
 
+  const { data: teams = [] } = useQuery({
+    queryKey: ['teams'],
+    queryFn: teamsApi.list,
+  })
+
+  const { data: formI18n } = useQuery({
+    queryKey: ['ui-translations', 'projects-form-team'],
+    queryFn: () => translationsApi.list([
+      'projects.ui.form.team_label',
+      'projects.ui.form.no_team_option',
+      'projects.ui.form.team_hint',
+    ]),
+  })
+
   const createMutation = useMutation({
     mutationFn: projectsApi.create,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['projects'] }); setCreateOpen(false) },
+    onSuccess: (project) => {
+      qc.invalidateQueries({ queryKey: ['projects'] })
+      setCreateOpen(false)
+
+      if (!project.team) {
+        navigate(`/projects/${project.id}?tab=general`)
+      }
+    },
   })
 
   const updateMutation = useMutation({
@@ -120,7 +160,12 @@ function ProjectsList() {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation()
-                      setEditTarget(project)
+                      setEditTarget({
+                        id: project.id,
+                        name: project.name,
+                        description: project.description,
+                        teamId: project.team?.id ?? null,
+                      })
                     }}
                     className="p-1.5 text-gray-400 hover:text-gray-600"
                     title="Modifier"
@@ -150,13 +195,21 @@ function ProjectsList() {
       )}
 
       <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Nouveau projet">
-        <ProjectForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} onCancel={() => setCreateOpen(false)} />
+        <ProjectForm
+          teams={teams}
+          i18n={formI18n?.translations ?? {}}
+          onSubmit={(d) => createMutation.mutate(d)}
+          loading={createMutation.isPending}
+          onCancel={() => setCreateOpen(false)}
+        />
       </Modal>
 
       <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title="Modifier le projet">
         {editTarget && (
           <ProjectForm
-            initial={{ name: editTarget.name, description: editTarget.description ?? '' }}
+            initial={{ name: editTarget.name, description: editTarget.description ?? '', teamId: editTarget.teamId ?? null }}
+            teams={teams}
+            i18n={formI18n?.translations ?? {}}
             onSubmit={(d) => updateMutation.mutate({ id: editTarget.id, data: d })}
             loading={updateMutation.isPending}
             onCancel={() => setEditTarget(null)}

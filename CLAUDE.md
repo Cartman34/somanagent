@@ -125,6 +125,10 @@ php scripts/db.php query "SELECT source, category, level, title, occurred_at FRO
 
 Merge the current open PR: `php scripts/github.php pr merge <number>`, then `git checkout main && git pull`.
 
+Blocking rule:
+- If a PR title contains `[BLOCKED]`, it must never be merged.
+- A blocked PR can only be merged after an explicit user instruction to unblock or merge it anyway.
+
 ## Git Rules
 
 - Always use `git add .` unless specific file staging is needed

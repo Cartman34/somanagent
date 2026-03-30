@@ -12,9 +12,9 @@ A **Project** represents an overall software product (e.g. "MySaaS", "MobileApp"
 
 - A project has a name and an optional description
 - A project contains one or more **Modules**
-- A project is associated with exactly one **Team** (planned: currently not yet stored in DB — see [Roadmap F1](#roadmap))
+- A project can exist without a **Team**, but it must have one before any progression or agent execution can happen
 
-> **Note (gap):** The data model does not yet link Project → Team. The `StoryExecutionService` currently uses a hardcoded role mapping instead of reading the workflow steps from the project's team. This will be fixed in foundation milestone F1–F3.
+> **Current rule:** team assignment is optional at project creation time, but mandatory before advancing the project through story progression or agent execution.
 
 ---
 

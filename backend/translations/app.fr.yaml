@@ -37,8 +37,21 @@ logs:
     invalid_fields: 'Les champs de log sont manquants ou invalides.'
 
 projects:
+  ui:
+    form:
+      team_label: 'Équipe'
+      no_team_option: '— Aucune équipe —'
+      team_hint: 'Une équipe est recommandée dès la création. Sans équipe, vous serez redirigé vers l’onglet Général pour l’assigner avant progression.'
   error:
     not_found: 'Projet introuvable.'
+  progress:
+    error:
+      team_required: 'Une équipe doit être affectée au projet avant toute action de progression ou d’exécution.'
+      request_creation_failed: 'Création de la demande impossible.'
+    ui:
+      blocked_reason: 'Affectez une équipe dans l’onglet Général avant toute action de progression ou d’exécution.'
+      banner: 'Une équipe doit être affectée à ce projet avant toute action de progression ou d’exécution. Rendez-vous dans l’onglet Général pour l’assigner.'
+      rework_title: 'Affectez une équipe au projet avant de relancer une étape agent.'
   modules:
     error:
       not_found: 'Module introuvable.'
