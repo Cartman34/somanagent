@@ -73,7 +73,7 @@ Objet métier visible dans le board.
 Champs principaux :
 - `type` : `user_story` | `bug`
 - `status`
-- `storyStatus`
+- `workflowStep`
 - `priority`
 - `progress`
 - `branchName`

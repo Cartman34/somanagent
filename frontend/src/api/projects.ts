@@ -9,6 +9,7 @@ export interface ProjectPayload {
   name: string
   description?: string
   teamId?: string | null
+  workflowId?: string | null
 }
 
 export interface ModulePayload {

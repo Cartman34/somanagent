@@ -12,12 +12,10 @@ use App\Entity\AgentAction;
 use App\Entity\Ticket;
 use App\Entity\TicketTask;
 use App\Entity\WorkflowStep;
-use App\Enum\StoryStatus;
 use App\Enum\TaskExecutionTrigger;
 use App\Enum\TaskPriority;
 use App\Enum\TaskStatus;
 use App\Message\AgentTaskMessage;
-use App\Repository\AgentActionRepository;
 use App\Repository\AgentRepository;
 use App\Repository\TicketTaskRepository;
 use App\Repository\WorkflowStepRepository;
@@ -31,20 +29,19 @@ final class StoryExecutionService
         'product_owner_reformulation' => [
             'label' => 'Reformulation Product Owner',
             'description' => 'Rejoue la reformulation métier et la clarification initiale.',
-            'configStatus' => StoryStatus::New,
-            'targetStoryStatus' => StoryStatus::New,
+            'workflowStepKey' => 'new',
+            'actionKey' => 'product.specify',
         ],
         'lead_tech_planning' => [
             'label' => 'Analyse technique / découpage Lead Tech',
             'description' => 'Regénère le plan technique, les sous-tâches et les dépendances.',
-            'configStatus' => StoryStatus::Approved,
-            'targetStoryStatus' => StoryStatus::Planning,
+            'workflowStepKey' => 'planning',
+            'actionKey' => 'tech.plan',
         ],
     ];
 
     public function __construct(
         private readonly AgentRepository $agentRepository,
-        private readonly AgentActionRepository $agentActionRepository,
         private readonly TicketTaskRepository $ticketTaskRepository,
         private readonly WorkflowStepRepository $workflowStepRepository,
         private readonly TicketTaskService $ticketTaskService,
@@ -58,11 +55,11 @@ final class StoryExecutionService
 
     public function canExecute(Ticket $ticket): bool
     {
-        if (!$ticket->isStory() || $ticket->getStoryStatus() === null) {
+        if (!$ticket->isStory() || $ticket->getWorkflowStep() === null) {
             return false;
         }
 
-        return $this->resolveExecutionConfigForStatus($ticket, $ticket->getStoryStatus()) !== null;
+        return $this->findExecutableTasksForCurrentStep($ticket) !== [];
     }
 
     /** @return Agent[] */
@@ -72,9 +69,19 @@ final class StoryExecutionService
             return [];
         }
 
-        ['role' => $roleSlug] = $this->resolveExecutionConfig($ticket);
+        $stepTasks = $this->findExecutableTasksForCurrentStep($ticket);
+        if ($stepTasks !== []) {
+            $agentsById = [];
+            foreach ($stepTasks as $task) {
+                foreach ($this->ticketTaskService->availableAgents($task) as $availableAgent) {
+                    $agentsById[$availableAgent->getId()->toRfc4122()] = $availableAgent;
+                }
+            }
 
-        return $this->findActiveAgentsForRole($ticket, $roleSlug);
+            return array_values($agentsById);
+        }
+
+        return [];
     }
 
     /**
@@ -84,25 +91,23 @@ final class StoryExecutionService
     {
         if (!$this->canExecute($ticket)) {
             throw new \RuntimeException(
-                sprintf('No execution config for storyStatus "%s".', $ticket->getStoryStatus()?->value ?? 'null')
+                sprintf('No executable task for workflow step "%s".', $ticket->getWorkflowStep()?->getKey() ?? 'null')
             );
         }
 
-        $config = $this->resolveExecutionConfig($ticket);
-        $resolvedAgent = $agent ?? $this->resolveAgentForRole($ticket, $config['role']);
+        $stepTasks = $this->findExecutableTasksForCurrentStep($ticket);
+        $task = $this->resolveTaskForDispatch($stepTasks, $agent);
+        $result = $this->ticketTaskService->execute($task, $agent, $triggerType);
 
-        return $this->dispatchExecution(
-            ticket: $ticket,
-            agent: $resolvedAgent,
-            roleSlug: $config['role'],
-            skillSlug: $config['skill'],
-            actionKey: $config['actionKey'],
-            workflowStep: $config['workflowStep'],
-            triggerType: $triggerType,
-            storyStatusForExecution: $config['transition'],
-            taskLogAction: 'execution_dispatched',
-            taskLogContent: sprintf('Agent %s dispatché avec le skill %s', $resolvedAgent->getName(), $config['skill']),
-        );
+        $ticket
+            ->setWorkflowStep($task->getWorkflowStep())
+            ->setAssignedAgent($result['agent'])
+            ->setAssignedRole($task->getAgentAction()->getRole())
+            ->setStatus(TaskStatus::InProgress);
+
+        $this->em->flush();
+
+        return $result;
     }
 
     /**
@@ -113,7 +118,6 @@ final class StoryExecutionService
      *   roleSlug: string,
      *   skillSlug: string,
      *   workflowStepKey: string,
-     *   targetStoryStatus: string,
      *   availableAgentCount: int,
      *   agent: array{id: string, name: string}|null
      * }>
@@ -126,20 +130,25 @@ final class StoryExecutionService
 
         $targets = [];
         foreach (self::REWORK_TARGETS as $key => $target) {
-            $config = $this->resolveExecutionConfigForStatus($ticket, $target['configStatus']);
+            $config = $this->resolveExecutionConfigForTarget($ticket, $target['workflowStepKey'], $target['actionKey']);
             if ($config === null) {
                 continue;
             }
 
-            $agents = $this->findActiveAgentsForRole($ticket, $config['role']);
+            $roleSlug = $config['action']->getRole()?->getSlug();
+            $skillSlug = $config['action']->getSkill()?->getSlug();
+            if ($roleSlug === null || $skillSlug === null) {
+                continue;
+            }
+
+            $agents = $this->findActiveAgentsForRole($ticket, $roleSlug);
             $targets[] = [
                 'key' => $key,
                 'label' => $target['label'],
                 'description' => $target['description'],
-                'roleSlug' => $config['role'],
-                'skillSlug' => $config['skill'],
+                'roleSlug' => $roleSlug,
+                'skillSlug' => $skillSlug,
                 'workflowStepKey' => $config['workflowStep']->getKey(),
-                'targetStoryStatus' => $target['targetStoryStatus']->value,
                 'availableAgentCount' => count($agents),
                 'agent' => isset($agents[0]) ? [
                     'id' => (string) $agents[0]->getId(),
@@ -171,17 +180,25 @@ final class StoryExecutionService
             throw new \RuntimeException('A rework objective is required.');
         }
 
-        $config = $this->resolveExecutionConfigForStatus($ticket, $target['configStatus']);
+        $config = $this->resolveExecutionConfigForTarget($ticket, $target['workflowStepKey'], $target['actionKey']);
         if ($config === null) {
             throw new \RuntimeException(sprintf('No execution config found for replay target "%s".', $targetKey));
         }
 
-        $agent = $this->resolveAgentForRole($ticket, $config['role']);
-        $previousStatus = $ticket->getStoryStatus()?->value;
-        $targetStoryStatus = $target['targetStoryStatus'];
+        $roleSlug = $config['action']->getRole()?->getSlug();
+        $skillSlug = $config['action']->getSkill()?->getSlug();
+        if ($roleSlug === null || $skillSlug === null) {
+            throw new \RuntimeException(sprintf(
+                'Action "%s" is missing role or skill routing.',
+                $config['action']->getKey(),
+            ));
+        }
+
+        $agent = $this->resolveAgentForRole($ticket, $roleSlug);
+        $previousWorkflowStepKey = $ticket->getWorkflowStep()?->getKey();
 
         $ticket
-            ->setStoryStatus($targetStoryStatus)
+            ->setWorkflowStep($config['workflowStep'])
             ->setStatus(TaskStatus::InProgress)
             ->setProgress(0)
             ->setAssignedAgent($agent);
@@ -194,13 +211,12 @@ final class StoryExecutionService
                 'targetKey' => $targetKey,
                 'targetLabel' => $target['label'],
                 'targetDescription' => $target['description'],
-                'workflowStepKey' => $target['configStatus']->value,
-                'targetStoryStatus' => $targetStoryStatus->value,
-                'previousStoryStatus' => $previousStatus,
+                'workflowStepKey' => $config['workflowStep']->getKey(),
+                'previousWorkflowStepKey' => $previousWorkflowStepKey,
                 'objective' => $objective,
                 'note' => $note,
-                'roleSlug' => $config['role'],
-                'skillSlug' => $config['skill'],
+                'roleSlug' => $roleSlug,
+                'skillSlug' => $skillSlug,
                 'agentId' => (string) $agent->getId(),
                 'agentName' => $agent->getName(),
             ],
@@ -210,14 +226,13 @@ final class StoryExecutionService
             $this->dispatchExecution(
                 ticket: $ticket,
                 agent: $agent,
-                roleSlug: $config['role'],
-                skillSlug: $config['skill'],
-                actionKey: $config['actionKey'],
+                roleSlug: $roleSlug,
+                skillSlug: $skillSlug,
+                actionKey: $config['action']->getKey(),
                 workflowStep: $config['workflowStep'],
                 triggerType: TaskExecutionTrigger::Rework,
-                storyStatusForExecution: $targetStoryStatus,
                 taskLogAction: 'execution_rework_dispatched',
-                taskLogContent: sprintf('Reprise %s dispatchée vers %s avec le skill %s', $target['label'], $agent->getName(), $config['skill']),
+                taskLogContent: sprintf('Reprise %s dispatchée vers %s avec le skill %s', $target['label'], $agent->getName(), $skillSlug),
                 taskLogMetadata: [
                     'reworkTargetKey' => $targetKey,
                     'reworkObjective' => $objective,
@@ -229,45 +244,52 @@ final class StoryExecutionService
     }
 
     /**
-     * @return array{workflowStep: WorkflowStep, role: string, skill: string, actionKey: string, transition: StoryStatus}
+     * @return TicketTask[]
      */
-    public function resolveExecutionConfig(Ticket $ticket): array
+    private function findExecutableTasksForCurrentStep(Ticket $ticket): array
     {
-        $storyStatus = $ticket->getStoryStatus();
-        $config = $storyStatus !== null ? $this->resolveExecutionConfigForStatus($ticket, $storyStatus) : null;
-
-        if ($config === null || $storyStatus === null) {
-            throw new \RuntimeException(
-                sprintf('No execution config for storyStatus "%s".', $storyStatus?->value ?? 'null')
-            );
+        $currentStep = $ticket->getWorkflowStep();
+        if ($currentStep === null) {
+            return [];
         }
 
-        return $config;
+        $tasks = $this->ticketTaskRepository->findByTicket($ticket);
+
+        return array_values(array_filter($tasks, function (TicketTask $task) use ($currentStep): bool {
+            if ($task->getWorkflowStep()?->getId()->toRfc4122() !== $currentStep->getId()->toRfc4122()) {
+                return false;
+            }
+
+            if ($task->getStatus() === TaskStatus::Done) {
+                return false;
+            }
+
+            if ($this->ticketTaskService->hasActiveExecution($task)) {
+                return false;
+            }
+
+            return $this->ticketTaskService->areDependenciesSatisfied($task);
+        }));
     }
 
     /**
-     * @return array{workflowStep: WorkflowStep, role: string, skill: string, actionKey: string, transition: StoryStatus}|null
+     * @param TicketTask[] $tasks
      */
-    public function resolveExecutionConfigForStatus(Ticket $ticket, StoryStatus $storyStatus): ?array
+    private function resolveTaskForDispatch(array $tasks, ?Agent $agent): TicketTask
     {
-        $step = $this->resolveWorkflowStepForStatus($ticket, $storyStatus);
-        if ($step === null || $step->getRoleSlug() === null || $step->getSkillSlug() === null) {
-            return null;
+        if ($agent === null) {
+            return $tasks[0];
         }
 
-        $action = $this->agentActionRepository->findOneActiveByRoleAndSkill($step->getRoleSlug(), $step->getSkillSlug())
-            ?? $this->agentActionRepository->findOneActiveByRoleSlug($step->getRoleSlug());
-        if ($action === null) {
-            return null;
+        foreach ($tasks as $task) {
+            foreach ($this->ticketTaskService->availableAgents($task) as $availableAgent) {
+                if ($availableAgent->getId()->toRfc4122() === $agent->getId()->toRfc4122()) {
+                    return $task;
+                }
+            }
         }
 
-        return [
-            'workflowStep' => $step,
-            'role' => $step->getRoleSlug(),
-            'skill' => $step->getSkillSlug(),
-            'actionKey' => $action->getKey(),
-            'transition' => $this->resolveDispatchedStoryStatus($storyStatus, $step),
-        ];
+        throw new \RuntimeException(sprintf('Selected agent "%s" cannot execute any ready task for the current step.', $agent->getName()));
     }
 
     /** @return Agent[] */
@@ -299,32 +321,28 @@ final class StoryExecutionService
         return $agents[0];
     }
 
-    private function resolveWorkflowStepForStatus(Ticket $ticket, ?StoryStatus $storyStatus): ?WorkflowStep
+    private function resolveExecutionConfigForTarget(Ticket $ticket, string $workflowStepKey, string $actionKey): ?array
     {
-        if ($storyStatus === null) {
+        $workflow = $ticket->getProject()->getWorkflow();
+        if ($workflow === null) {
             return null;
         }
 
-        $team = $ticket->getProject()->getTeam();
-        if ($team === null) {
+        $workflowStep = $this->workflowStepRepository->findByWorkflowAndKey($workflow, $workflowStepKey);
+        if ($workflowStep === null) {
             return null;
         }
 
-        return $this->workflowStepRepository->findByTeamAndStoryStatus($team, $storyStatus);
-    }
-
-    private function resolveDispatchedStoryStatus(StoryStatus $currentStatus, WorkflowStep $workflowStep): StoryStatus
-    {
-        $targetStatus = StoryStatus::tryFrom($workflowStep->getKey());
-        if ($targetStatus === null) {
-            return $currentStatus;
+        foreach ($workflowStep->getActions() as $stepAction) {
+            if ($stepAction->getAgentAction()->getKey() === $actionKey) {
+                return [
+                    'workflowStep' => $workflowStep,
+                    'action' => $stepAction->getAgentAction(),
+                ];
+            }
         }
 
-        if ($currentStatus === $targetStatus || $currentStatus->canTransitionTo($targetStatus)) {
-            return $targetStatus;
-        }
-
-        return $currentStatus;
+        return null;
     }
 
     /**
@@ -338,13 +356,14 @@ final class StoryExecutionService
         string $actionKey,
         ?WorkflowStep $workflowStep,
         TaskExecutionTrigger $triggerType,
-        ?StoryStatus $storyStatusForExecution,
         string $taskLogAction,
         string $taskLogContent,
         array $taskLogMetadata = [],
     ): array {
-        $action = $this->agentActionRepository->findOneByKey($actionKey);
-        if ($action === null) {
+        $action = $workflowStep?->getActions()
+            ->filter(static fn($stepAction) => $stepAction->getAgentAction()->getKey() === $actionKey)
+            ->first()?->getAgentAction();
+        if (!$action instanceof AgentAction) {
             throw new \RuntimeException(sprintf('Unknown agent action "%s".', $actionKey));
         }
 
@@ -352,10 +371,6 @@ final class StoryExecutionService
             ->setAssignedAgent($agent)
             ->setAssignedRole($action->getRole())
             ->setStatus(TaskStatus::InProgress);
-
-        if ($storyStatusForExecution !== null) {
-            $ticket->setStoryStatus($storyStatusForExecution);
-        }
         $ticket->setWorkflowStep($workflowStep);
 
         $ticketTask = $this->ticketTaskRepository->findOneLatestByTicketAndWorkflowStepAndAction($ticket, $workflowStep, $action);
@@ -442,7 +457,7 @@ final class StoryExecutionService
                 'trace_ref' => $traceRef,
                 'context' => [
                     'task_execution_id' => (string) $execution->getId(),
-                    'story_status' => $ticket->getStoryStatus()?->value,
+                    'workflow_step' => $ticket->getWorkflowStep()?->getKey(),
                     'skill_slug' => $skillSlug,
                     'role_slug' => $roleSlug,
                     'trigger_type' => $triggerType->value,

@@ -9,7 +9,17 @@ export interface WorkflowPayload {
   name: string
   description?: string
   trigger: 'manual' | 'vcs_event' | 'scheduled'
-  teamId?: string
+}
+
+export interface WorkflowActivationResponse {
+  id: string
+  isActive: boolean
+}
+
+export interface WorkflowDuplicateResponse {
+  id: string
+  name: string
+  isActive: boolean
 }
 
 export const workflowsApi = {
@@ -28,6 +38,21 @@ export const workflowsApi = {
     return data
   },
 
+  duplicate: async (id: string): Promise<WorkflowDuplicateResponse> => {
+    const { data } = await apiClient.post(`/workflows/${id}/duplicate`)
+    return data
+  },
+
+  activate: async (id: string): Promise<WorkflowActivationResponse> => {
+    const { data } = await apiClient.post(`/workflows/${id}/activate`)
+    return data
+  },
+
+  deactivate: async (id: string): Promise<WorkflowActivationResponse> => {
+    const { data } = await apiClient.post(`/workflows/${id}/deactivate`)
+    return data
+  },
+
   update: async (id: string, payload: WorkflowPayload): Promise<Workflow> => {
     const { data } = await apiClient.put(`/workflows/${id}`, payload)
     return data
@@ -35,11 +60,5 @@ export const workflowsApi = {
 
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/workflows/${id}`)
-  },
-
-  /** Legacy endpoint kept for backward compatibility; immutable workflows reject it. */
-  validate: async (id: string): Promise<{ id: string; status: string }> => {
-    const { data } = await apiClient.post(`/workflows/${id}/validate`)
-    return data
   },
 }

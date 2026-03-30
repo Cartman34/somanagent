@@ -14,6 +14,7 @@ agents:
     not_found: 'Agent introuvable.'
   validation:
     name_required: 'Le champ "name" est obligatoire.'
+    workflow_required: 'Le champ "workflowId" est obligatoire.'
 
 chat:
   error:
@@ -44,6 +45,7 @@ projects:
       team_hint: 'Une équipe est recommandée dès la création. Sans équipe, vous serez redirigé vers l’onglet Général pour l’assigner avant progression.'
   error:
     not_found: 'Projet introuvable.'
+    workflow_inactive: 'Ce workflow est inactif et ne peut plus être affecté à ce projet.'
   progress:
     error:
       team_required: 'Une équipe doit être affectée au projet avant toute action de progression ou d’exécution.'
@@ -80,6 +82,7 @@ tickets:
     error:
       agent_not_found: 'Agent introuvable.'
       no_automatic_execution: 'Aucune exécution automatique disponible pour ce statut.'
+      ticket_level_execution_unsupported: 'L’exécution manuelle au niveau ticket n’est pas disponible. Exécutez une tâche du ticket.'
       unsupported_story_or_bug: 'Cette tâche n’est pas une story ou un bug.'
   rework:
     error:
@@ -110,6 +113,8 @@ tokens:
       not_found: 'Agent introuvable.'
 
 workflows:
+  duplication:
+    copy_name: '%name% (copie)'
   ui:
     form:
       name_label: 'Nom'
@@ -119,7 +124,9 @@ workflows:
       immutable_hint: 'La définition est figée après création. Pour la faire évoluer, créez un nouveau workflow.'
       submit_loading: 'Enregistrement…'
       submit_create: 'Créer le workflow'
+      submit_save: 'Enregistrer'
       modal_create_title: 'Nouveau workflow'
+      modal_edit_title: 'Modifier le brouillon'
     trigger:
       manual: 'Manuel'
       vcs_event: 'Événement VCS'
@@ -132,6 +139,11 @@ workflows:
       immutable_notice: 'Définition figée'
       active: 'Actif'
       inactive: 'Inactif'
+      activate: 'Activer'
+      deactivate: 'Désactiver'
+      duplicate: 'Dupliquer'
+      edit: 'Modifier'
+      action_loading: 'Traitement…'
     lifecycle:
       new: 'Nouveau'
       ready: 'Prêt'
@@ -142,8 +154,11 @@ workflows:
       code_review: 'Revue'
       done: 'Terminé'
       conditional: 'Conditionnelle'
-      configured_title: 'Cycle de vie — étapes agents configurées'
+      configured_title: 'Cycle de vie — étapes du workflow configurées'
       configured_empty: 'Aucune étape configurée. Les étapes avec un déclencheur de cycle de vie apparaîtront ici.'
+      transition:
+        manual: 'Transition manuelle'
+        automatic: 'Transition automatique'
     page:
       empty_title: 'Aucun workflow'
       create_button: 'Nouveau workflow'
@@ -155,6 +170,8 @@ workflows:
       team_label: 'Équipe'
       output_label: 'sortie'
       condition_label: 'Condition'
+      actions_label: 'Actions'
+      create_with_ticket: 'Avec ticket'
       steps_title: 'Étapes'
       empty_steps_title: 'Aucune étape'
       empty_steps_description: 'Les étapes sont définies lors de l’exécution du workflow.'
@@ -162,6 +179,7 @@ workflows:
       step_one: 'étape'
       step_other: 'étapes'
   error:
+    deactivation_used: 'Ce workflow est déjà utilisé et ne peut plus être désactivé.'
     immutable: 'Ce workflow est immuable après sa création et ne peut plus être modifié, validé ou supprimé.'
     locked_delete: 'Ce workflow est verrouillé et ne peut pas être supprimé.'
     locked_update: 'Ce workflow est verrouillé et ne peut pas être modifié.'

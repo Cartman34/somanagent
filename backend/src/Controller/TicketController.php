@@ -12,7 +12,6 @@ use App\Entity\AgentTaskExecutionAttempt;
 use App\Entity\Ticket;
 use App\Entity\TicketLog;
 use App\Entity\TicketTask;
-use App\Enum\StoryStatus;
 use App\Enum\TaskExecutionTrigger;
 use App\Enum\TaskPriority;
 use App\Enum\TaskStatus;
@@ -64,7 +63,11 @@ class TicketController extends AbstractController
         $tickets = $this->ticketService->findByProject($project);
 
         return $this->json(array_map(
-            fn(Ticket $ticket) => $this->serializeApiTicket($ticket, includeActiveStepTasks: true),
+            fn(Ticket $ticket) => $this->serializeApiTicket(
+                $ticket,
+                includeActiveStepTasks: true,
+                includeAllTasks: true,
+            ),
             $tickets,
         ));
     }
@@ -96,6 +99,7 @@ class TicketController extends AbstractController
             $priority,
             $data['featureId'] ?? null,
         );
+        $this->ticketTaskService->dispatchEligibleTasksForCurrentStep($ticket);
 
         return $this->json($this->serializeApiTicket($ticket), Response::HTTP_CREATED);
     }
@@ -112,6 +116,9 @@ class TicketController extends AbstractController
         if (empty($data['title'])) {
             return $this->json($this->apiErrorPayloadFactory->create('tickets.validation.title_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
+        if (empty($data['actionKey'])) {
+            return $this->json($this->apiErrorPayloadFactory->fromMessage('An actionKey is required to create a task.'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
 
         $priority = TaskPriority::from($data['priority'] ?? TaskPriority::Medium->value);
         $parent = isset($data['parentTaskId']) ? $this->ticketTaskService->findById((string) $data['parentTaskId']) : null;
@@ -119,15 +126,19 @@ class TicketController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->fromMessage('La tâche parente doit appartenir au même ticket.'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $task = $this->ticketTaskService->create(
-            ticket: $ticket,
-            actionKey: (string) ($data['actionKey'] ?? 'dev.backend.implement'),
-            title: (string) $data['title'],
-            description: $data['description'] ?? null,
-            priority: $priority,
-            parentId: $parent ? (string) $parent->getId() : null,
-            assignedAgentId: $data['assignedAgentId'] ?? null,
-        );
+        try {
+            $task = $this->ticketTaskService->create(
+                ticket: $ticket,
+                actionKey: (string) $data['actionKey'],
+                title: (string) $data['title'],
+                description: $data['description'] ?? null,
+                priority: $priority,
+                parentId: $parent ? (string) $parent->getId() : null,
+                assignedAgentId: $data['assignedAgentId'] ?? null,
+            );
+        } catch (\InvalidArgumentException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
 
         return $this->json($this->serializeApiTicketTask($task), Response::HTTP_CREATED);
     }
@@ -160,7 +171,7 @@ class TicketController extends AbstractController
 
         $dispatchError = null;
         try {
-            $this->storyExecutionService->execute($ticket, null, TaskExecutionTrigger::Auto);
+            $this->ticketTaskService->dispatchEligibleTasksForCurrentStep($ticket);
         } catch (\RuntimeException|\LogicException $e) {
             $dispatchError = $e->getMessage();
         }
@@ -237,14 +248,18 @@ class TicketController extends AbstractController
 
         $data = $request->toArray();
         $priority = isset($data['priority']) ? TaskPriority::from($data['priority']) : $task->getPriority();
-        $this->ticketTaskService->update(
-            $task,
-            $data['title'] ?? $task->getTitle(),
-            $data['description'] ?? null,
-            $priority,
-            $data['actionKey'] ?? null,
-            $data['assignedAgentId'] ?? null,
-        );
+        try {
+            $this->ticketTaskService->update(
+                $task,
+                $data['title'] ?? $task->getTitle(),
+                $data['description'] ?? null,
+                $priority,
+                $data['actionKey'] ?? null,
+                $data['assignedAgentId'] ?? null,
+            );
+        } catch (\InvalidArgumentException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
 
         return $this->json($this->serializeApiTicketTask($task));
     }
@@ -398,8 +413,8 @@ class TicketController extends AbstractController
         return $this->json($this->serializeApiLog($log), Response::HTTP_CREATED);
     }
 
-    #[Route('/tickets/{id}/story-transition', name: 'ticket_story_transition_api', methods: ['POST'])]
-    public function storyTransition(string $id, Request $request): JsonResponse
+    #[Route('/tickets/{id}/advance', name: 'ticket_advance_api', methods: ['POST'])]
+    public function advance(string $id): JsonResponse
     {
         $ticket = $this->ticketService->findById($id);
         if ($ticket === null) {
@@ -414,18 +429,9 @@ class TicketController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('tickets.story.error.unsupported_user_story_or_bug'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $data = $request->toArray();
-        if (empty($data['status'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.validation.status_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        $next = StoryStatus::tryFrom($data['status']);
-        if ($next === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.story.error.unknown_status', ['%status%' => (string) $data['status']]), Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
         try {
-            $this->ticketService->transitionStory($ticket, $next);
+            $this->ticketService->advanceWorkflowStep($ticket);
+            $this->ticketTaskService->dispatchEligibleTasksForCurrentStep($ticket);
         } catch (\LogicException $e) {
             return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
@@ -547,25 +553,7 @@ class TicketController extends AbstractController
     {
         $ticket = $this->ticketService->findById($id);
         if ($ticket !== null) {
-            if (($response = $this->requireProjectTeamForProgress($ticket->getProject())) !== null) {
-                return $response;
-            }
-
-            if (!$ticket->isStory()) {
-                return $this->json($this->apiErrorPayloadFactory->create('tickets.execution.error.unsupported_story_or_bug'), Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            if (!$this->storyExecutionService->canExecute($ticket)) {
-                return $this->json($this->apiErrorPayloadFactory->create('tickets.execution.error.no_automatic_execution'), Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            $agents = $this->storyExecutionService->availableAgents($ticket);
-
-            return $this->json(array_map(fn($a) => [
-                'id' => (string) $a->getId(),
-                'name' => $a->getName(),
-                'role' => $a->getRole() ? ['slug' => $a->getRole()->getSlug(), 'name' => $a->getRole()->getName()] : null,
-            ], $agents));
+            return $this->json($this->apiErrorPayloadFactory->create('tickets.execution.error.ticket_level_execution_unsupported'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $task = $this->ticketTaskService->findById($id);
@@ -601,25 +589,7 @@ class TicketController extends AbstractController
         }
 
         if ($ticket !== null) {
-            if (($response = $this->requireProjectTeamForProgress($ticket->getProject())) !== null) {
-                return $response;
-            }
-
-            if (!$ticket->isStory()) {
-                return $this->json($this->apiErrorPayloadFactory->create('tickets.execution.error.unsupported_story_or_bug'), Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            try {
-                $result = $this->storyExecutionService->execute($ticket, $agent, TaskExecutionTrigger::Manual);
-            } catch (\RuntimeException|\LogicException $e) {
-                return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            return $this->json([
-                'ticket' => $this->serializeApiTicket($ticket),
-                'agent' => ['id' => (string) $result['agent']->getId(), 'name' => $result['agent']->getName()],
-                'skill' => $result['skill'],
-            ]);
+            return $this->json($this->apiErrorPayloadFactory->create('tickets.execution.error.ticket_level_execution_unsupported'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $task = $this->ticketTaskService->findById($id);
@@ -757,10 +727,6 @@ class TicketController extends AbstractController
             'title' => $ticket->getTitle(),
             'description' => $ticket->getDescription(),
             'status' => $ticket->getStatus()->value,
-            'storyStatus' => $ticket->getStoryStatus()?->value,
-            'storyStatusAllowedTransitions' => $ticket->getStoryStatus()
-                ? array_map(fn($status) => $status->value, $ticket->getStoryStatus()->allowedTransitions())
-                : [],
             'priority' => $ticket->getPriority()->value,
             'progress' => $ticket->getProgress(),
             'branchName' => $ticket->getBranchName(),
@@ -769,8 +735,15 @@ class TicketController extends AbstractController
                 'id' => (string) $ticket->getWorkflowStep()->getId(),
                 'key' => $ticket->getWorkflowStep()->getKey(),
                 'name' => $ticket->getWorkflowStep()->getName(),
-                'storyStatusTrigger' => $ticket->getWorkflowStep()->getStoryStatusTrigger()?->value,
             ] : null,
+            'workflowStepAllowedTransitions' => array_map(
+                fn($step) => [
+                    'id' => (string) $step->getId(),
+                    'key' => $step->getKey(),
+                    'name' => $step->getName(),
+                ],
+                $this->ticketService->findAllowedManualTransitions($ticket),
+            ),
             'assignedAgent' => $ticket->getAssignedAgent() ? ['id' => (string) $ticket->getAssignedAgent()->getId(), 'name' => $ticket->getAssignedAgent()->getName()] : null,
             'assignedRole' => $ticket->getAssignedRole() ? ['id' => (string) $ticket->getAssignedRole()->getId(), 'slug' => $ticket->getAssignedRole()->getSlug(), 'name' => $ticket->getAssignedRole()->getName()] : null,
             'createdAt' => $ticket->getCreatedAt()->format(\DateTimeInterface::ATOM),
@@ -842,7 +815,6 @@ class TicketController extends AbstractController
                 'id' => (string) $task->getWorkflowStep()->getId(),
                 'key' => $task->getWorkflowStep()->getKey(),
                 'name' => $task->getWorkflowStep()->getName(),
-                'storyStatusTrigger' => $task->getWorkflowStep()->getStoryStatusTrigger()?->value,
             ] : null,
             'agentAction' => [
                 'id' => (string) $task->getAgentAction()->getId(),

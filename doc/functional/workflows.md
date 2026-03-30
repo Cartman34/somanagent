@@ -4,11 +4,9 @@
 
 ## What is a workflow?
 
-A workflow is a **reusable automation template** — a sequence of steps executed by agents in a defined order. Each step assigns a task to an agent (identified by its role), providing the right skill and the right context.
+A workflow is a reusable definition of ticket progression. It describes ordered steps, the transition mode of each step, and which agent actions are allowed in each step.
 
-> **Important distinction:** A Workflow is a *template* that defines *how* an automation runs. It is not the same as a Story's lifecycle. A Story has a `storyStatus` field that tracks *where it is* in development. Each workflow step has a `storyStatusTrigger` field that links it to the appropriate stage of the story lifecycle.
-
-→ See [Key Concepts — Workflow Template vs Story Lifecycle](concepts.md#workflow-template-vs-story-lifecycle)
+The current ticket progression is stored directly on `Ticket.workflowStep`.
 
 ## Triggers
 
@@ -23,24 +21,27 @@ A workflow is a **reusable automation template** — a sequence of steps execute
 ```
 Workflow "Code Review"
 ├── trigger: manual
-├── team: Web Development Team
 └── Steps:
     ├── [1] Analyse the diff
-    │       role: reviewer
-    │       skill: code-reviewer
+    │       transition: manual
+    │       actions:
+    │         - review.code
     │       input: VCS diff of the PR
     │       output_key: review_report
     │
     ├── [2] Fix the issues
-    │       role: backend-dev
-    │       skill: backend-dev
+    │       transition: automatic
+    │       actions:
+    │         - dev.backend.implement
+    │         - dev.frontend.implement
     │       input: review_report (previous step)
     │       condition: "review_report contains critical errors"
     │       output_key: fixed_code
     │
     └── [3] Validate the fixes
-            role: reviewer
-            skill: code-reviewer
+            transition: manual
+            actions:
+              - qa.validate
             input: fixed_code
             output_key: validation_report
 ```
@@ -57,8 +58,7 @@ Content-Type: application/json
 {
   "name": "Code Review",
   "description": "Analyses a PR and suggests fixes",
-  "trigger": "manual",
-  "teamId": "uuid-of-the-team"
+  "trigger": "manual"
 }
 ```
 
@@ -67,7 +67,7 @@ The workflow becomes immutable as soon as it is created:
 - no delete
 - no manual validation step
 
-If the process needs to evolve, create a new workflow definition. A future product slice may add explicit duplication or versioning support, but the current rule is to replace a workflow with a new immutable one instead of editing it in place.
+If the process needs to evolve, duplicate the workflow and work from the new copy instead of editing the existing definition in place.
 
 ## Step Configuration
 
@@ -75,11 +75,17 @@ If the process needs to evolve, create a new workflow definition. A future produ
 |---|---|---|
 | `stepOrder` | int | Position in the sequence (1, 2, 3…) |
 | `name` | string | Step label |
-| `roleSlug` | string | Slug of the role executing the step |
-| `skillSlug` | string | Skill to inject into the prompt |
+| `transitionMode` | enum | `manual` or `automatic` |
 | `inputConfig` | object | Input source and format |
 | `outputKey` | string | Output variable name |
 | `condition` | string | Execution condition (null = always) |
+
+Each step now owns a list of allowed actions:
+
+| Field | Type | Description |
+|---|---|---|
+| `agentAction` | object | Shared action from the `AgentAction` catalog |
+| `createWithTicket` | bool | Task for this action is pre-created when the ticket is created |
 
 ### Input Sources (`inputConfig`)
 
@@ -95,22 +101,51 @@ A workflow has a lifecycle of its own, independent of the story lifecycle:
 
 | Status | Description | Editable | Usable |
 |---|---|---|---|
-| `draft` | Legacy draft kept for backward compatibility | ❌ No | ❌ No |
-| `validated` | Ready for story execution | ❌ No | ✅ Yes |
+| `validated` | Ready for story execution | Only while inactive | ✅ Yes when active |
 | `locked` | Locked (currently executing) | ❌ No | ✅ Yes |
 
-New workflows are created directly in a usable immutable state. The old draft validation flow is no longer part of the product UI.
+New workflows are created directly active. Duplicated workflows start inactive so they can be edited before activation.
 
-## Visual Lifecycle Pipeline
+## Activation
 
-The workflow detail page displays a **visual pipeline** showing the full story lifecycle (`new → ready → approved → planning → graphic_design → development → code_review → done`). Each stage where a workflow step has a matching `storyStatusTrigger` is highlighted (brand colour), showing the assigned role and skill. Stages without a matching step appear as muted numbered nodes.
+Workflow activation is managed separately from the workflow status:
 
-This gives a clear overview of which stages are automated and which require manual intervention.
+| Activation | Description |
+|---|---|
+| Active | Eligible for runtime resolution and story lifecycle automation |
+| Inactive | Kept as a stored definition, but ignored by runtime resolution |
+
+Current rules:
+- duplicating a workflow creates an **inactive** copy
+- the UI can activate an inactive workflow
+- the UI can deactivate an active workflow only while it has never been used yet
+- once a workflow has already been used by tickets or tasks, deactivation is blocked
+
+## Project Assignment
+
+Workflows are not owned by teams.
+
+Current model:
+- a **project** may reference one workflow
+- a **project** may reference one team
+- multiple projects may reuse the same workflow
+- multiple projects may belong to the same team
+
+The team controls available agents. The workflow controls step structure and the action catalog available in each step.
+
+## Visual Pipeline
+
+The workflow detail page displays the ordered workflow steps and the actions attached to each one.
+
+This gives a clear overview of:
+- which steps are manual
+- which steps are automatic
+- which actions are available in each step
 
 ## Step Fields
 
 Each step includes:
-- `storyStatusTrigger` — the story status that triggers this step (e.g. `approved`, `development`)
+- `transitionMode` — `manual` or `automatic`
 - `status` — step execution state (`pending`, `running`, `done`, `error`, `skipped`)
 - `lastOutput` — last output produced by this step
 

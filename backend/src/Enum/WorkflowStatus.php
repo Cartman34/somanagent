@@ -9,22 +9,15 @@ namespace App\Enum;
 
 enum WorkflowStatus: string
 {
-    case Draft     = 'draft';
     case Validated = 'validated';
     case Locked    = 'locked';
 
     public function label(): string
     {
         return match($this) {
-            self::Draft     => 'Draft',
             self::Validated => 'Validated',
             self::Locked    => 'Locked',
         };
-    }
-
-    public function isEditable(): bool
-    {
-        return false;
     }
 
     public function isUsable(): bool

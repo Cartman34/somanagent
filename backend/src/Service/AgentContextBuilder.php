@@ -33,7 +33,6 @@ final class AgentContextBuilder
             'type' => $ticket->getType()->value,
             'priority' => $ticket->getPriority()->value,
             'status' => $ticket->getStatus()->value,
-            'story' => $ticket->getStoryStatus()?->value,
             'feature' => $ticket->getFeature()?->getName(),
             'workflow_step' => $ticket->getWorkflowStep()?->getKey(),
         ];

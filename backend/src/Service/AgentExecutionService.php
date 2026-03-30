@@ -9,21 +9,16 @@ namespace App\Service;
 
 use App\Entity\Agent;
 use App\Entity\AgentAction;
-use App\Entity\Role;
 use App\Entity\Ticket;
 use App\Entity\TicketLog;
 use App\Entity\TicketTask;
 use App\Entity\TicketTaskDependency;
 use App\Entity\TokenUsage;
-use App\Entity\WorkflowStep;
-use App\Enum\StoryStatus;
 use App\Enum\TaskStatus;
 use App\Adapter\VCS\MockVcsAdapter;
-use App\Repository\RoleRepository;
 use App\Repository\AgentActionRepository;
 use App\Repository\SkillRepository;
 use App\Repository\TicketLogRepository;
-use App\Repository\WorkflowStepRepository;
 use App\ValueObject\Prompt;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -36,7 +31,7 @@ use Psr\Log\LoggerInterface;
  *  2. Construire le prompt (skill + contexte de la tâche)
  *  3. Récupérer l'adapter adapté au ConnectorType de l'agent
  *  4. Appeler l'agent, persister TokenUsage + TicketLog
- *  5. Si skill = tech-planning → parser le JSON, créer les sous-tâches + dépendances, faire avancer la story
+ *  5. Si skill = tech-planning → parser le JSON, créer les sous-tâches + dépendances, faire avancer le ticket
  *  6. Sinon → passer la tâche à Done
  */
 final class AgentExecutionService
@@ -44,10 +39,9 @@ final class AgentExecutionService
     public function __construct(
         private readonly AgentPortRegistry     $portRegistry,
         private readonly SkillRepository       $skillRepository,
-        private readonly RoleRepository        $roleRepository,
         private readonly AgentActionRepository $agentActionRepository,
         private readonly TicketLogRepository   $ticketLogRepository,
-        private readonly WorkflowStepRepository $workflowStepRepository,
+        private readonly TicketTaskService     $ticketTaskService,
         private readonly TicketLogService      $ticketLogService,
         private readonly AgentContextBuilder   $contextBuilder,
         private readonly PlanningOutputParser  $planningParser,
@@ -208,11 +202,6 @@ final class AgentExecutionService
         return array_values(array_unique(array_slice($questions, 0, 5)));
     }
 
-    private function resolveDefaultActionForRole(string $roleSlug): ?AgentAction
-    {
-        return $this->agentActionRepository->findOneActiveByRoleSlug($roleSlug);
-    }
-
     private function handlePlanningTicketTaskResponse(TicketTask $planningTask, Agent $leadTech, string $rawContent): void
     {
         $ticket = $planningTask->getTicket();
@@ -250,24 +239,24 @@ final class AgentExecutionService
         /** @var TicketTask[] $createdTasks */
         $createdTasks = [];
         foreach ($plan->tasks as $planTask) {
-            $role = $this->roleRepository->findOneBy(['slug' => $planTask->role]);
+            $action = $this->agentActionRepository->findOneByKey($planTask->actionKey);
+            if ($action === null) {
+                throw new \RuntimeException(sprintf('Unknown planned agent action "%s".', $planTask->actionKey));
+            }
 
             $subtask = new TicketTask(
                 ticket: $ticket,
-                agentAction: $this->resolveDefaultActionForRole($planTask->role) ?? $planningTask->getAgentAction(),
+                agentAction: $action,
                 title: $planTask->title,
                 description: $planTask->description,
                 priority: $planTask->priority,
             );
             $subtask->setAddedBy($leadTech);
             $subtask->setBranchName($plan->branch);
-            $subtask->setStatus(TaskStatus::Backlog);
-
-            if ($role !== null) {
-                $subtask->setAssignedRole($role);
-            }
-
-            $subtask->setWorkflowStep($this->resolveWorkflowStepForPlannedRoleOnTicket($ticket, $planTask->role));
+            $subtask
+                ->setStatus(TaskStatus::Backlog)
+                ->setAssignedRole($action->getRole())
+                ->setWorkflowStep($this->ticketTaskService->resolveWorkflowStepForAction($ticket, $action));
             $this->em->persist($subtask);
             $createdTasks[] = $subtask;
         }
@@ -283,18 +272,6 @@ final class AgentExecutionService
         foreach ($plan->tasks as $i => $planTask) {
             if ($planTask->dependsOn === []) {
                 $createdTasks[$i]->setStatus(TaskStatus::Todo);
-            }
-        }
-
-        if ($ticket->getStoryStatus() === StoryStatus::Planning) {
-            $nextStatus = $plan->needsDesign ? StoryStatus::GraphicDesign : StoryStatus::Development;
-
-            try {
-                $ticket->transitionStoryTo($nextStatus);
-            } catch (\LogicException $e) {
-                $this->logger->warning('AgentExecution: could not transition ticket story status', [
-                    'error' => $e->getMessage(),
-                ]);
             }
         }
 
@@ -366,17 +343,6 @@ final class AgentExecutionService
 
         return $removed;
     }
-
-    private function resolveWorkflowStepForPlannedRoleOnTicket(Ticket $ticket, string $roleSlug): ?WorkflowStep
-    {
-        $team = $ticket->getProject()->getTeam();
-        if ($team === null) {
-            return null;
-        }
-
-        return $this->workflowStepRepository->findLifecycleStepByTeamAndRoleSlug($team, $roleSlug);
-    }
-
     private function handleProductOwnerTicketTaskResponse(TicketTask $task, string $rawContent): void
     {
         $ticket = $task->getTicket();
@@ -387,16 +353,6 @@ final class AgentExecutionService
 
         if (preg_match('/^##\s+(.+)$/m', $content, $matches) === 1) {
             $ticket->setTitle(trim($matches[1]));
-        }
-
-        if ($ticket->getStoryStatus() === StoryStatus::New) {
-            try {
-                $ticket->transitionStoryTo(StoryStatus::Ready);
-            } catch (\LogicException $e) {
-                $this->logger->warning('AgentExecution: could not transition PO ticket story status', [
-                    'error' => $e->getMessage(),
-                ]);
-            }
         }
 
         $ticket->setStatus(TaskStatus::Done)->setProgress(100);
