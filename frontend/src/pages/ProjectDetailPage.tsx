@@ -8,11 +8,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft, Plus, Code2, Globe, XCircle, CheckCircle, Clock,
   AlertTriangle, ChevronRight, GitBranch, User, ArrowRight,
-  Layers, Play, ListTodo, Users, Settings, Kanban, Zap, Send, RotateCcw,
+  Layers, ListTodo, Users, Settings, Kanban, Zap, Send, RotateCcw,
   Loader2, AlertCircle, History, Coins, X, FileText,
   ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { projectsApi } from '@/api/projects'
+import { workflowsApi } from '@/api/workflows'
 import { translationsApi } from '@/api/translations'
 import { ticketsApi, ticketTasksApi, type ProjectRequestPayload, type ProjectRequestResult, type TicketTaskPayload } from '@/api/tickets'
 import { teamsApi } from '@/api/teams'
@@ -24,7 +25,7 @@ import type {
   TaskStatus,
   TaskPriority,
   TaskType,
-  StoryStatus,
+  Workflow,
   Module,
   AgentSummary,
   TokenUsageEntry,
@@ -49,25 +50,6 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
   backlog: 'Backlog', todo: 'À faire', in_progress: 'En cours',
   review: 'Revue', done: 'Terminé', cancelled: 'Annulé',
 }
-
-const STORY_COLUMNS: { key: StoryStatus; label: string; accent: string }[] = [
-  { key: 'new',            label: 'Nouvelle',      accent: '#94a3b8' },
-  { key: 'ready',          label: 'Prête',         accent: '#3b82f6' },
-  { key: 'approved',       label: 'Approuvée',     accent: '#6366f1' },
-  { key: 'planning',       label: 'Planification', accent: '#8b5cf6' },
-  { key: 'graphic_design', label: 'Conception',    accent: '#ec4899' },
-  { key: 'development',    label: 'Développement', accent: '#f97316' },
-  { key: 'code_review',    label: 'Revue de code', accent: '#eab308' },
-  { key: 'done',           label: 'Terminée',      accent: '#22c55e' },
-]
-
-const STORY_TRANSITION_LABELS: Partial<Record<StoryStatus, string>> = {
-  ready: 'Marquer prête', approved: 'Approuver', planning: 'Lancer planification',
-  graphic_design: 'Conception graphique', development: 'Développement',
-  code_review: 'Revue de code', done: 'Terminer',
-}
-
-const EXECUTABLE_STATUSES: StoryStatus[] = ['new', 'approved', 'graphic_design', 'development', 'code_review']
 
 const AUDIT_ACTION_LABELS: Record<string, string> = {
   'project.created': 'Projet créé', 'project.updated': 'Projet modifié', 'project.deleted': 'Projet supprimé',
@@ -117,10 +99,6 @@ const PROJECT_TEAM_GUARD_TRANSLATION_KEYS = [
   'projects.progress.error.request_creation_failed',
 ] as const
 
-const STORY_STATUS_LABELS: Record<StoryStatus, string> = Object.fromEntries(
-  STORY_COLUMNS.map((column) => [column.key, column.label]),
-) as Record<StoryStatus, string>
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function ProgressBar({ value }: { value: number }) {
@@ -152,84 +130,6 @@ function formatTime(value: string, locale?: string) {
  */
 function isTicket(entity: Ticket | TicketTask): entity is Ticket {
   return 'projectId' in entity
-}
-
-// ─── Execute modal ────────────────────────────────────────────────────────────
-
-/**
- * Modal shown before dispatching a story to an agent.
- * Fetches available agents for the story's current status, lets the user pick one,
- * then dispatches via POST /tasks/{id}/execute.
- */
-function ExecuteModal({ ticket, onClose, onExecuted }: {
-  ticket: Ticket
-  onClose: () => void
-  onExecuted: () => void
-}) {
-  const [selectedAgentId, setSelectedAgentId] = useState('')
-  const [result, setResult] = useState<{ agentName: string; skill: string } | null>(null)
-
-  const { data: agents, isLoading: loadingAgents } = useQuery({
-    queryKey: ['ticket-execute-agents', ticket.id],
-    queryFn:  () => ticketsApi.listExecuteAgents(ticket.id),
-  })
-
-  const executeMutation = useMutation({
-    mutationFn: () => ticketsApi.execute(ticket.id, selectedAgentId || undefined),
-    onSuccess: (data) => { setResult({ agentName: data.agent.name, skill: data.skill }); onExecuted() },
-  })
-
-  if (result) {
-    return (
-      <div className="space-y-4 text-sm text-center py-4">
-        <CheckCircle className="w-10 h-10 text-green-500 mx-auto" />
-        <p className="font-medium text-gray-900">Agent dispatché</p>
-        <p className="text-gray-500">
-          <strong>{result.agentName}</strong> exécute <code className="bg-gray-100 px-1 rounded">{result.skill}</code>
-        </p>
-        <button onClick={onClose} className="btn-primary mx-auto">Fermer</button>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-4">
-      <p className="text-sm text-gray-600">
-        Sélectionnez un agent pour exécuter <strong>"{ticket.title}"</strong>.
-        L'agent sera choisi automatiquement si vous ne sélectionnez pas.
-      </p>
-      {loadingAgents ? (
-        <p className="text-sm text-gray-400">Chargement des agents…</p>
-      ) : agents && agents.length > 0 ? (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Agent</label>
-          <select className="input" value={selectedAgentId} onChange={(e) => setSelectedAgentId(e.target.value)}>
-            <option value="">— Auto-sélection —</option>
-            {agents.map((a) => (
-              <option key={a.id} value={a.id}>{a.name}{a.role ? ` (${a.role.name})` : ''}</option>
-            ))}
-          </select>
-        </div>
-      ) : (
-        <p className="text-sm text-red-600">Aucun agent disponible avec le rôle requis.</p>
-      )}
-      {executeMutation.isError && (
-        <p className="text-sm text-red-600">
-          {(executeMutation.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Erreur lors de l\'exécution.'}
-        </p>
-      )}
-      <div className="flex justify-end gap-3 pt-2">
-        <button onClick={onClose} className="btn-secondary">Annuler</button>
-        <button
-          onClick={() => executeMutation.mutate()}
-          disabled={executeMutation.isPending || agents?.length === 0}
-          className="btn-primary"
-        >
-          {executeMutation.isPending ? 'Dispatch…' : "Lancer l'agent"}
-        </button>
-      </div>
-    </div>
-  )
 }
 
 /**
@@ -317,7 +217,7 @@ function ReworkModal({ ticket, onClose, onReworked }: {
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{target.label}</p>
                           <span className="rounded px-2 py-0.5 text-[11px]" style={{ background: 'var(--surface)', color: 'var(--muted)' }}>
-                            {STORY_STATUS_LABELS[target.targetStoryStatus]}
+                            {target.workflowStepKey}
                           </span>
                         </div>
                         <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>{target.description}</p>
@@ -337,7 +237,7 @@ function ReworkModal({ ticket, onClose, onReworked }: {
               <div className="rounded border px-3 py-3 text-xs" style={{ borderColor: 'var(--border)', background: 'var(--surface2)', color: 'var(--muted)' }}>
                 <p>Le ticket sera renvoyé vers l’étape <span style={{ color: 'var(--text)' }}>{selectedTarget.label}</span>.</p>
                 <p className="mt-1">Agent visé : <span style={{ color: 'var(--text)' }}>{selectedTarget.agent?.name ?? 'auto indisponible'}</span>.</p>
-                <p className="mt-1">Statut story appliqué : <span style={{ color: 'var(--text)' }}>{STORY_STATUS_LABELS[selectedTarget.targetStoryStatus]}</span>.</p>
+                <p className="mt-1">Étape ciblée : <span style={{ color: 'var(--text)' }}>{selectedTarget.workflowStepKey}</span>.</p>
               </div>
             )}
 
@@ -404,18 +304,16 @@ function ReworkModal({ ticket, onClose, onReworked }: {
 /**
  * Kanban card for a user story or bug.
  * Shows type badge, priority, branch name, assigned role, active-column subtasks,
- * allowed story transitions as buttons, and a "Lancer l'agent" button for executable statuses.
+ * and allowed story transitions as buttons.
  */
-function StoryCard({ ticket, onTransition, onDelete, onExecute, onOpen, transitioning, progressBlockedReason }: {
+function StoryCard({ ticket, onTransition, onDelete, onOpen, transitioning, progressBlockedReason }: {
   ticket: Ticket
-  onTransition: (ticket: Ticket, status: StoryStatus) => void
+  onTransition: (ticket: Ticket) => void
   onDelete: (ticket: Ticket) => void
-  onExecute: (ticket: Ticket) => void
   onOpen: (ticket: Ticket) => void
   transitioning: boolean
   progressBlockedReason: string | null
 }) {
-  const canExecute = ticket.storyStatus !== null && EXECUTABLE_STATUSES.includes(ticket.storyStatus)
   const progressionBlocked = progressBlockedReason !== null
   const activeSubtasks = ticket.activeStepTasks ?? []
 
@@ -469,32 +367,21 @@ function StoryCard({ ticket, onTransition, onDelete, onExecute, onOpen, transiti
           </div>
         </div>
       )}
-      {(ticket.storyStatusAllowedTransitions.length > 0 || canExecute) && (
+      {ticket.workflowStepAllowedTransitions.length > 0 && (
         <div className="flex flex-wrap gap-1 pt-1 border-t" style={{ borderColor: 'var(--border)' }}>
-          {ticket.storyStatusAllowedTransitions.map((next) => (
+          {ticket.workflowStepAllowedTransitions.map((next) => (
             <button
-              key={next}
-              onClick={() => onTransition(ticket, next)}
+              key={next.id}
+              onClick={() => onTransition(ticket)}
               disabled={transitioning || progressionBlocked}
               className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded border hover:border-[var(--brand)] hover:text-[var(--brand)] transition-colors disabled:opacity-40 disabled:cursor-wait"
               style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
               title={progressBlockedReason ?? undefined}
             >
               <ArrowRight className="w-2.5 h-2.5" />
-              {transitioning ? '…' : (STORY_TRANSITION_LABELS[next] ?? next)}
+              {transitioning ? '…' : next.name}
             </button>
           ))}
-          {canExecute && (
-            <button
-              onClick={() => onExecute(ticket)}
-              disabled={progressionBlocked}
-              className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded"
-              style={{ background: 'var(--brand)', color: 'white' }}
-              title={progressBlockedReason ?? undefined}
-            >
-              <Play className="w-2.5 h-2.5" /> Lancer l'agent
-            </button>
-          )}
         </div>
       )}
     </div>
@@ -504,14 +391,14 @@ function StoryCard({ ticket, onTransition, onDelete, onExecute, onOpen, transiti
 // ─── Story board (Kanban) ─────────────────────────────────────────────────────
 
 /**
- * Kanban board with one column per StoryStatus.
+ * Kanban board with one column per workflow step.
  * The `pendingTaskId` disables transition buttons on the card being updated to prevent double-clicks.
  */
-function StoryBoard({ tickets, onTransition, onDelete, onExecute, onOpen, pendingTaskId, progressBlockedReason }: {
+function StoryBoard({ tickets, steps, onTransition, onDelete, onOpen, pendingTaskId, progressBlockedReason }: {
   tickets: Ticket[]
-  onTransition: (ticket: Ticket, status: StoryStatus) => void
+  steps: Array<{ id: string; key: string; name: string }>
+  onTransition: (ticket: Ticket) => void
   onDelete: (ticket: Ticket) => void
-  onExecute: (ticket: Ticket) => void
   onOpen: (ticket: Ticket) => void
   pendingTaskId: string | null
   progressBlockedReason: string | null
@@ -521,19 +408,20 @@ function StoryBoard({ tickets, onTransition, onDelete, onExecute, onOpen, pendin
   }
   return (
     <div className="flex gap-3 overflow-x-auto pb-4">
-      {STORY_COLUMNS.map((col) => {
-        const cards = tickets.filter((s) => s.storyStatus === col.key)
+      {steps.map((col, index) => {
+        const accent = ['#94a3b8', '#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#eab308', '#22c55e'][index % 7]
+        const cards = tickets.filter((s) => s.workflowStep?.key === col.key)
         return (
           <div key={col.key} className="flex-shrink-0 w-60">
             <div
               className="flex items-center justify-between rounded-t-lg border border-b-0 px-3 py-1.5"
               style={{
-                background: `color-mix(in srgb, ${col.accent} 14%, var(--surface2))`,
-                borderColor: `color-mix(in srgb, ${col.accent} 32%, var(--border))`,
+                background: `color-mix(in srgb, ${accent} 14%, var(--surface2))`,
+                borderColor: `color-mix(in srgb, ${accent} 32%, var(--border))`,
               }}
             >
-              <span className="text-xs font-semibold" style={{ color: col.accent }}>{col.label}</span>
-              {cards.length > 0 && <span className="text-xs font-medium" style={{ color: col.accent, opacity: 0.72 }}>{cards.length}</span>}
+              <span className="text-xs font-semibold" style={{ color: accent }}>{col.name}</span>
+              {cards.length > 0 && <span className="text-xs font-medium" style={{ color: accent, opacity: 0.72 }}>{cards.length}</span>}
             </div>
             <div className="space-y-2 min-h-16 rounded-b-lg p-2 border border-t-0" style={{ background: 'var(--surface2)', borderColor: 'var(--border)' }}>
               {cards.map((ticket) => (
@@ -542,7 +430,6 @@ function StoryBoard({ tickets, onTransition, onDelete, onExecute, onOpen, pendin
                   ticket={ticket}
                   onTransition={onTransition}
                   onDelete={onDelete}
-                  onExecute={onExecute}
                   onOpen={onOpen}
                   transitioning={pendingTaskId === ticket.id}
                   progressBlockedReason={progressBlockedReason}
@@ -626,18 +513,20 @@ function AgentStatusBadge({ agentId }: { agentId: string }) {
 
 // ─── Task creation form ───────────────────────────────────────────────────────
 
-function TaskForm({ initial, onSubmit, loading, onCancel, tickets }: {
+function TaskForm({ initial, onSubmit, loading, onCancel, tickets, actions }: {
   initial?: Partial<TicketTaskPayload & { ticketId?: string; type?: TaskType }>
   onSubmit: (d: TicketTaskPayload & { ticketId?: string; type?: TaskType }) => void
   loading: boolean
   onCancel: () => void
   tickets?: Array<{ id: string; title: string }>
+  actions?: Array<{ key: string; label: string }>
 }) {
   const [title, setTitle]             = useState(initial?.title ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [type, setType]               = useState<TaskType>(initial?.type ?? 'user_story')
   const [priority, setPriority]       = useState<TaskPriority>(initial?.priority ?? 'medium')
   const [ticketId, setTicketId]       = useState(initial?.ticketId ?? '')
+  const [actionKey, setActionKey]     = useState(initial?.actionKey ?? '')
 
   return (
     <form onSubmit={(e) => {
@@ -648,6 +537,7 @@ function TaskForm({ initial, onSubmit, loading, onCancel, tickets }: {
         type,
         priority,
         ticketId: type === 'task' ? ticketId || undefined : undefined,
+        actionKey: type === 'task' ? actionKey || undefined : undefined,
       })
     }} className="space-y-4">
       <div>
@@ -674,18 +564,32 @@ function TaskForm({ initial, onSubmit, loading, onCancel, tickets }: {
         </div>
       </div>
       {type === 'task' && (
-        <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Ticket parent</label>
-          <select className="input" value={ticketId} onChange={(e) => setTicketId(e.target.value)} required>
-            <option value="">— Sélectionner un ticket —</option>
-            {tickets?.map((ticket) => (
-              <option key={ticket.id} value={ticket.id}>{ticket.title}</option>
-            ))}
-          </select>
-          {(tickets?.length ?? 0) === 0 && (
-            <p className="mt-1 text-xs" style={{ color: '#dc2626' }}>Crée d'abord un ticket avant d'ajouter une tâche technique.</p>
-          )}
-        </div>
+        <>
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Ticket parent</label>
+            <select className="input" value={ticketId} onChange={(e) => setTicketId(e.target.value)} required>
+              <option value="">— Sélectionner un ticket —</option>
+              {tickets?.map((ticket) => (
+                <option key={ticket.id} value={ticket.id}>{ticket.title}</option>
+              ))}
+            </select>
+            {(tickets?.length ?? 0) === 0 && (
+              <p className="mt-1 text-xs" style={{ color: '#dc2626' }}>Crée d'abord un ticket avant d'ajouter une tâche technique.</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Action *</label>
+            <select className="input" value={actionKey} onChange={(e) => setActionKey(e.target.value)} required>
+              <option value="">— Sélectionner une action —</option>
+              {actions?.map((action) => (
+                <option key={action.key} value={action.key}>{action.label}</option>
+              ))}
+            </select>
+            {(actions?.length ?? 0) === 0 && (
+              <p className="mt-1 text-xs" style={{ color: '#dc2626' }}>Aucune action n’est disponible pour ce workflow.</p>
+            )}
+          </div>
+        </>
       )}
       <div>
         <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Description</label>
@@ -693,7 +597,7 @@ function TaskForm({ initial, onSubmit, loading, onCancel, tickets }: {
       </div>
       <div className="flex justify-end gap-3 pt-2">
         <button type="button" onClick={onCancel} className="btn-secondary">Annuler</button>
-        <button type="submit" className="btn-primary" disabled={loading || (type === 'task' && !ticketId)}>{loading ? 'Enregistrement…' : 'Enregistrer'}</button>
+        <button type="submit" className="btn-primary" disabled={loading || (type === 'task' && (!ticketId || !actionKey))}>{loading ? 'Enregistrement…' : 'Enregistrer'}</button>
       </div>
     </form>
   )
@@ -743,7 +647,7 @@ function RequestForm({ onSubmit, loading, onCancel }: {
 // ─── Task detail drawer ───────────────────────────────────────────────────────
 
 /**
- * Right-side drawer showing the full detail of a task: description, storyStatus,
+ * Right-side drawer showing the full detail of a task: description, workflow step,
  * execution logs, subtasks (children), and token consumption.
  * Fetches the explicit ticket or ticket-task endpoint, then shows logs, executions and token usage.
  */
@@ -756,6 +660,8 @@ function TaskDrawer({ taskId, onClose, projectHasTeam }: { taskId: string; onClo
   const [commentText, setCommentText] = useState('')
   const [replyToLogId, setReplyToLogId] = useState<string | null>(null)
   const [reworkModalOpen, setReworkModalOpen] = useState(false)
+  const [linkedTaskId, setLinkedTaskId] = useState<string | null>(null)
+  const [taskDispatchError, setTaskDispatchError] = useState<string | null>(null)
 
   const { data: entity, isLoading } = useQuery<Ticket | TicketTask>({
     queryKey: ['task-detail', taskId],
@@ -790,6 +696,28 @@ function TaskDrawer({ taskId, onClose, projectHasTeam }: { taskId: string; onClo
     },
   })
 
+  const advanceMutation = useMutation({
+    mutationFn: (ticketId: string) => ticketsApi.advance(ticketId),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
+      await qc.invalidateQueries({ queryKey: ['tickets'] })
+    },
+  })
+
+  const taskResumeMutation = useMutation({
+    mutationFn: (linkedId: string) => ticketTasksApi.resume(linkedId),
+    onSuccess: async (_, linkedId) => {
+      setTaskDispatchError(null)
+      await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
+      await qc.invalidateQueries({ queryKey: ['task-detail', linkedId] })
+      await qc.invalidateQueries({ queryKey: ['tickets'] })
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+      setTaskDispatchError(msg ?? 'Impossible de relancer la tâche.')
+    },
+  })
+
   useEffect(() => {
     setExpandedExecutionIds([])
     setExpandedAttemptIds([])
@@ -797,6 +725,8 @@ function TaskDrawer({ taskId, onClose, projectHasTeam }: { taskId: string; onClo
     setCommentText('')
     setReplyToLogId(null)
     setReworkModalOpen(false)
+    setLinkedTaskId(null)
+    setTaskDispatchError(null)
   }, [taskId])
 
   const toggleExecution = (executionId: string) => {
@@ -840,6 +770,10 @@ function TaskDrawer({ taskId, onClose, projectHasTeam }: { taskId: string; onClo
     projectTeamGuardI18n?.translations[key] ?? key
   )
 
+  const taskHasActiveExecution = entity && !isTicket(entity)
+    ? (entity.executions ?? []).some((execution) => ['pending', 'running', 'retrying'].includes(execution.status))
+    : false
+
   return (
     <div className="fixed inset-0 z-40 flex justify-end" onClick={onClose}>
       <div
@@ -865,6 +799,14 @@ function TaskDrawer({ taskId, onClose, projectHasTeam }: { taskId: string; onClo
           const logs = entity.logs ?? []
           const executions = entity.executions ?? []
           const childItems = isTicket(entity) ? (entity.tasks ?? []) : (entity.children ?? [])
+          const ticketTasks = isTicket(entity)
+            ? [...(entity.tasks ?? [])].sort((left, right) => {
+                const leftStep = left.workflowStep?.name ?? ''
+                const rightStep = right.workflowStep?.name ?? ''
+                if (leftStep !== rightStep) return leftStep.localeCompare(rightStep, 'fr')
+                return left.title.localeCompare(right.title, 'fr')
+              })
+            : []
           const commentLogs = logs.filter((log) => log.kind === 'comment')
           const commentIndex = new Map(commentLogs.map((log) => [log.id, log]))
           const totalTokens = (entity.tokenUsage ?? []).reduce((sum, entry) => sum + entry.totalTokens, 0)
@@ -910,8 +852,8 @@ function TaskDrawer({ taskId, onClose, projectHasTeam }: { taskId: string; onClo
             <div className="flex flex-wrap gap-2">
               <span className={`${TYPE_BADGE[isTicket(entity) ? entity.type : 'task']} text-xs`}>{TYPE_LABELS[isTicket(entity) ? entity.type : 'task']}</span>
               <span className={`text-xs font-medium ${PRIORITY_COLOR[entity.priority]}`}>{PRIORITY_LABELS[entity.priority]}</span>
-              {isTicket(entity) && entity.storyStatus && (
-                <span className="badge-blue text-xs">{STORY_COLUMNS.find(c => c.key === entity.storyStatus)?.label ?? entity.storyStatus}</span>
+              {isTicket(entity) && entity.workflowStep && (
+                <span className="badge-blue text-xs">{entity.workflowStep.name}</span>
               )}
               <span className="text-xs" style={{ color: 'var(--muted)' }}>{STATUS_LABELS[entity.status]}</span>
             </div>
@@ -933,23 +875,67 @@ function TaskDrawer({ taskId, onClose, projectHasTeam }: { taskId: string; onClo
               </div>
               <div className="rounded border px-4 py-3" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
                 <p className="text-xs" style={{ color: 'var(--muted)' }}>Relance agent</p>
-                <button
-                  type="button"
-                  className="mt-2 inline-flex items-center gap-2 rounded px-3 py-2 text-sm"
-                  style={{ background: 'var(--brand-dim)', color: 'var(--brand)' }}
-                  onClick={() => setReworkModalOpen(true)}
-                  disabled={!isTicket(entity) || !entity.storyStatus || !projectHasTeam}
-                  title={!projectHasTeam
-                    ? tt('projects.progress.ui.rework_title')
-                    : !isTicket(entity) || !entity.storyStatus
-                      ? 'Disponible sur les tickets story/bug.'
-                      : undefined}
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  Reprendre une étape
-                </button>
+                {isTicket(entity) ? (
+                  <button
+                    type="button"
+                    className="mt-2 inline-flex items-center gap-2 rounded px-3 py-2 text-sm"
+                    style={{ background: 'var(--brand-dim)', color: 'var(--brand)' }}
+                    onClick={() => setReworkModalOpen(true)}
+                    disabled={!entity.workflowStep || !projectHasTeam}
+                    title={!projectHasTeam ? tt('projects.progress.ui.rework_title') : undefined}
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Reprendre une étape
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="mt-2 inline-flex items-center gap-2 rounded px-3 py-2 text-sm"
+                      style={{ background: 'var(--brand-dim)', color: 'var(--brand)' }}
+                      onClick={() => taskResumeMutation.mutate(entity.id)}
+                      disabled={!projectHasTeam || taskHasActiveExecution || taskResumeMutation.isPending}
+                      title={!projectHasTeam ? tt('projects.progress.ui.blocked_reason') : undefined}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      {taskResumeMutation.isPending ? 'Relance…' : 'Relancer la tâche'}
+                    </button>
+                    {taskDispatchError && (
+                      <p className="mt-2 text-xs" style={{ color: '#dc2626' }}>{taskDispatchError}</p>
+                    )}
+                  </>
+                )}
               </div>
             </div>
+
+            {isTicket(entity) && (
+              <div className="rounded border p-4" style={{ borderColor: 'var(--border)', background: 'color-mix(in srgb, var(--surface2) 82%, transparent)' }}>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>Progression du ticket</p>
+                    <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                      Étape courante : {entity.workflowStep?.name ?? 'Aucune'}
+                    </p>
+                  </div>
+                  {entity.workflowStepAllowedTransitions.length > 0 && (
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={() => advanceMutation.mutate(entity.id)}
+                      disabled={!projectHasTeam || advanceMutation.isPending}
+                      title={!projectHasTeam ? tt('projects.progress.ui.blocked_reason') : undefined}
+                    >
+                      {advanceMutation.isPending ? 'Transition…' : `Passer à ${entity.workflowStepAllowedTransitions[0]?.name ?? 'la suite'}`}
+                    </button>
+                  )}
+                </div>
+                {entity.workflowStepAllowedTransitions.length === 0 && (
+                  <p className="mt-3 text-xs" style={{ color: 'var(--muted)' }}>
+                    Aucun passage manuel disponible depuis cette étape.
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Description */}
             {entity.description && (
@@ -975,8 +961,58 @@ function TaskDrawer({ taskId, onClose, projectHasTeam }: { taskId: string; onClo
               </div>
             )}
 
+            {isTicket(entity) && (
+              <div>
+                <p className="text-xs font-medium mb-2" style={{ color: 'var(--muted)' }}>Tâches du ticket ({ticketTasks.length})</p>
+                {ticketTasks.length === 0 ? (
+                  <div className="rounded border border-dashed px-4 py-4 text-sm" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
+                    Aucune tâche liée à ce ticket pour l’instant.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {ticketTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className="w-full rounded border px-3 py-3 text-left"
+                        style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <button
+                            type="button"
+                            className="min-w-0 flex-1 text-left"
+                            onClick={() => setLinkedTaskId(task.id)}
+                          >
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <StatusIcon status={task.status} />
+                              <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{task.title}</span>
+                              {task.workflowStep && (
+                                <span className="badge-blue text-xs">{task.workflowStep.name}</span>
+                              )}
+                            </div>
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-secondary text-xs"
+                            onClick={() => setLinkedTaskId(task.id)}
+                          >
+                            Ouvrir
+                          </button>
+                        </div>
+                        <div className="mt-1 flex items-center gap-3 flex-wrap text-xs" style={{ color: 'var(--muted)' }}>
+                          <span>{STATUS_LABELS[task.status]}</span>
+                          <span>{task.agentAction.label}</span>
+                          {task.assignedAgent && <span>→ {task.assignedAgent.name}</span>}
+                          {task.dependsOn.length > 0 && <span>{task.dependsOn.length} dépendance{task.dependsOn.length > 1 ? 's' : ''}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Subtasks */}
-            {childItems.length > 0 && (
+            {!isTicket(entity) && childItems.length > 0 && (
               <div>
                 <p className="text-xs font-medium mb-2" style={{ color: 'var(--muted)' }}>Sous-tâches ({childItems.length})</p>
                 <div className="space-y-1">
@@ -1306,6 +1342,14 @@ function TaskDrawer({ taskId, onClose, projectHasTeam }: { taskId: string; onClo
           }}
         />
       )}
+
+      {linkedTaskId && (
+        <TaskDrawer
+          taskId={linkedTaskId}
+          onClose={() => setLinkedTaskId(null)}
+          projectHasTeam={projectHasTeam}
+        />
+      )}
     </div>
   )
 }
@@ -1348,7 +1392,6 @@ export default function ProjectDetailPage() {
   const [deleteTask, setDeleteTask]           = useState<Ticket | TicketTask | null>(null)
   const [transitionError, setTransitionError] = useState<string | null>(null)
   const [pendingTaskId, setPendingTaskId]     = useState<string | null>(null)
-  const [executeTask, setExecuteTask]         = useState<Ticket | null>(null)
   const [requestDispatchError, setRequestDispatchError] = useState<string | null>(null)
   // null = user hasn't changed the selection yet → falls back to project.team?.id
   const [selectedTeamId, setSelectedTeamId]   = useState<string | null>(null)
@@ -1441,6 +1484,18 @@ export default function ProjectDetailPage() {
     enabled:  !!id,
   })
 
+  const { data: workflow } = useQuery<Workflow | null>({
+    queryKey: ['workflow', project?.workflow?.id],
+    queryFn: () => workflowsApi.get(project!.workflow!.id),
+    enabled: !!project?.workflow?.id,
+  })
+  const workflowActions = Array.isArray(workflow?.steps)
+    ? Array.from(new Map(
+        workflow.steps
+          .flatMap((step) => step.actions.map(({ agentAction }) => [agentAction.key, { key: agentAction.key, label: agentAction.label }] as const)),
+      ).values())
+    : []
+
   const { data: tickets = [], isLoading: loadingTickets, error: errorTickets } = useQuery({
     queryKey: ['tickets', id],
     queryFn:  () => ticketsApi.listByProject(id!),
@@ -1512,10 +1567,10 @@ export default function ProjectDetailPage() {
   })
 
   const transitionMutation = useMutation({
-    mutationFn: ({ taskId, status }: { taskId: string; status: StoryStatus }) => {
+    mutationFn: ({ taskId }: { taskId: string }) => {
       setPendingTaskId(taskId)
       setTransitionError(null)
-      return ticketsApi.transitionStory(taskId, status)
+      return ticketsApi.advance(taskId)
     },
     onSuccess: () => { invalidateTickets(); setPendingTaskId(null) },
     onError: (err: unknown) => {
@@ -1708,9 +1763,9 @@ export default function ProjectDetailPage() {
           ) : (
             <StoryBoard
               tickets={stories}
-              onTransition={(ticket, status) => transitionMutation.mutate({ taskId: ticket.id, status })}
+              steps={Array.isArray(workflow?.steps) ? workflow.steps.map((step) => ({ id: step.id, key: step.outputKey, name: step.name })) : []}
+              onTransition={(ticket) => transitionMutation.mutate({ taskId: ticket.id })}
               onDelete={setDeleteTask}
-              onExecute={setExecuteTask}
               onOpen={(ticket) => openTaskDrawer(ticket.id)}
               pendingTaskId={pendingTaskId}
               progressBlockedReason={projectProgressBlockedReason}
@@ -1985,19 +2040,10 @@ export default function ProjectDetailPage() {
             loading={createMutation.isPending}
             onCancel={() => setCreateOpen(false)}
             tickets={stories.map((story) => ({ id: story.id, title: story.title }))}
+            actions={workflowActions}
           />
         )}
       </Modal>
-
-      {executeTask && (
-        <Modal open onClose={() => setExecuteTask(null)} title="Lancer l'agent">
-          <ExecuteModal
-            ticket={executeTask}
-            onClose={() => setExecuteTask(null)}
-            onExecuted={() => invalidateTickets()}
-          />
-        </Modal>
-      )}
 
       <ConfirmDialog
         open={!!deleteTask}

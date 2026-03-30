@@ -13,8 +13,10 @@ use App\Enum\AuditAction;
 use App\Repository\ModuleRepository;
 use App\Repository\ProjectRepository;
 use App\Repository\TeamRepository;
+use App\Repository\WorkflowRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 class ProjectService
 {
@@ -23,7 +25,9 @@ class ProjectService
         private readonly ProjectRepository      $projectRepository,
         private readonly ModuleRepository       $moduleRepository,
         private readonly TeamRepository         $teamRepository,
+        private readonly WorkflowRepository     $workflowRepository,
         private readonly AuditService           $audit,
+        private readonly TranslatorInterface    $translator,
     ) {}
 
     /**
@@ -33,9 +37,14 @@ class ProjectService
      * @param string|null $description   Optional description
      * @param string|null $repositoryUrl Optional repository URL
      * @param string|null $teamId        Optional team UUID to assign
+     * @param string|null $workflowId    Optional workflow UUID to assign
      */
-    public function create(string $name, ?string $description = null, ?string $repositoryUrl = null, ?string $teamId = null): Project
+    public function create(string $name, ?string $description = null, ?string $repositoryUrl = null, ?string $teamId = null, ?string $workflowId = null): Project
     {
+        if ($workflowId === null || $workflowId === '') {
+            throw new \LogicException($this->translator->trans('projects.validation.workflow_required', [], 'app'));
+        }
+
         $project = new Project($name, $description);
         $project->setRepositoryUrl($repositoryUrl);
 
@@ -45,6 +54,8 @@ class ProjectService
                 $project->setTeam($team);
             }
         }
+
+        $project->setWorkflow($this->resolveAssignableWorkflow(null, $workflowId));
 
         $this->em->persist($project);
         $this->em->flush();
@@ -60,13 +71,20 @@ class ProjectService
      * @param string|null $description   New description (null clears it)
      * @param string|null $repositoryUrl New repository URL (null clears it)
      * @param string|null $teamId        Team UUID to assign, or null to detach current team
+     * @param string|null $workflowId    Workflow UUID to assign, or null to detach current workflow
      */
-    public function update(Project $project, string $name, ?string $description, ?string $repositoryUrl = null, ?string $teamId = null): Project
+    public function update(Project $project, string $name, ?string $description, ?string $repositoryUrl = null, ?string $teamId = null, ?string $workflowId = null): Project
     {
+        if ($workflowId === null || $workflowId === '') {
+            throw new \LogicException($this->translator->trans('projects.validation.workflow_required', [], 'app'));
+        }
+
         $project->setName($name)->setDescription($description)->setRepositoryUrl($repositoryUrl);
 
         $team = $teamId !== null ? $this->teamRepository->find(Uuid::fromString($teamId)) : null;
         $project->setTeam($team);
+
+        $project->setWorkflow($this->resolveAssignableWorkflow($project, $workflowId));
 
         $this->em->flush();
         $this->audit->log(AuditAction::ProjectUpdated, 'Project', (string) $project->getId(), ['name' => $name]);
@@ -122,5 +140,20 @@ class ProjectService
     public function findModuleById(string $id): ?Module
     {
         return $this->moduleRepository->find(Uuid::fromString($id));
+    }
+
+    private function resolveAssignableWorkflow(?Project $project, string $workflowId): ?\App\Entity\Workflow
+    {
+        $workflow = $this->workflowRepository->find(Uuid::fromString($workflowId));
+        if ($workflow === null) {
+            return null;
+        }
+
+        $currentWorkflowId = $project?->getWorkflow()?->getId()->toRfc4122();
+        if (!$workflow->isActive() && $currentWorkflowId !== $workflowId) {
+            throw new \LogicException($this->translator->trans('projects.error.workflow_inactive', [], 'app'));
+        }
+
+        return $workflow;
     }
 }

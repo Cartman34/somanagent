@@ -36,6 +36,7 @@ class ProjectController extends AbstractController
             'description'   => $p->getDescription(),
             'repositoryUrl' => $p->getRepositoryUrl(),
             'team'          => $p->getTeam() ? ['id' => (string) $p->getTeam()->getId(), 'name' => $p->getTeam()->getName()] : null,
+            'workflow'      => $p->getWorkflow() ? ['id' => (string) $p->getWorkflow()->getId(), 'name' => $p->getWorkflow()->getName()] : null,
             'modules'       => $p->getModules()->count(),
             'createdAt'     => $p->getCreatedAt()->format(\DateTimeInterface::ATOM),
             'updatedAt'     => $p->getUpdatedAt()->format(\DateTimeInterface::ATOM),
@@ -50,12 +51,17 @@ class ProjectController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('projects.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $project = $this->projectService->create(
-            $data['name'],
-            $data['description'] ?? null,
-            $data['repositoryUrl'] ?? null,
-            $data['teamId'] ?? null,
-        );
+        try {
+            $project = $this->projectService->create(
+                $data['name'],
+                $data['description'] ?? null,
+                $data['repositoryUrl'] ?? null,
+                $data['teamId'] ?? null,
+                $data['workflowId'] ?? null,
+            );
+        } catch (\LogicException $exception) {
+            return $this->json($this->apiErrorPayloadFactory->fromMessage($exception->getMessage()), Response::HTTP_CONFLICT);
+        }
 
         return $this->json([
             'id'            => (string) $project->getId(),
@@ -63,6 +69,7 @@ class ProjectController extends AbstractController
             'description'   => $project->getDescription(),
             'repositoryUrl' => $project->getRepositoryUrl(),
             'team'          => $project->getTeam() ? ['id' => (string) $project->getTeam()->getId(), 'name' => $project->getTeam()->getName()] : null,
+            'workflow'      => $project->getWorkflow() ? ['id' => (string) $project->getWorkflow()->getId(), 'name' => $project->getWorkflow()->getName()] : null,
             'createdAt'     => $project->getCreatedAt()->format(\DateTimeInterface::ATOM),
         ], Response::HTTP_CREATED);
     }
@@ -81,6 +88,7 @@ class ProjectController extends AbstractController
             'description'   => $project->getDescription(),
             'repositoryUrl' => $project->getRepositoryUrl(),
             'team'          => $project->getTeam() ? ['id' => (string) $project->getTeam()->getId(), 'name' => $project->getTeam()->getName()] : null,
+            'workflow'      => $project->getWorkflow() ? ['id' => (string) $project->getWorkflow()->getId(), 'name' => $project->getWorkflow()->getName()] : null,
             'modules'       => array_map(fn($m) => [
                 'id'            => (string) $m->getId(),
                 'name'          => $m->getName(),
@@ -103,17 +111,23 @@ class ProjectController extends AbstractController
         }
 
         $data = $request->toArray();
-        $this->projectService->update(
-            $project,
-            $data['name'] ?? $project->getName(),
-            $data['description'] ?? null,
-            $data['repositoryUrl'] ?? null,
-            array_key_exists('teamId', $data) ? ($data['teamId'] ?: null) : ($project->getTeam() ? (string) $project->getTeam()->getId() : null),
-        );
+        try {
+            $this->projectService->update(
+                $project,
+                $data['name'] ?? $project->getName(),
+                $data['description'] ?? null,
+                $data['repositoryUrl'] ?? null,
+                array_key_exists('teamId', $data) ? ($data['teamId'] ?: null) : ($project->getTeam() ? (string) $project->getTeam()->getId() : null),
+                array_key_exists('workflowId', $data) ? ($data['workflowId'] ?: null) : ($project->getWorkflow() ? (string) $project->getWorkflow()->getId() : null),
+            );
+        } catch (\LogicException $exception) {
+            return $this->json($this->apiErrorPayloadFactory->fromMessage($exception->getMessage()), Response::HTTP_CONFLICT);
+        }
         return $this->json([
-            'id'   => (string) $project->getId(),
-            'name' => $project->getName(),
-            'team' => $project->getTeam() ? ['id' => (string) $project->getTeam()->getId(), 'name' => $project->getTeam()->getName()] : null,
+            'id'       => (string) $project->getId(),
+            'name'     => $project->getName(),
+            'team'     => $project->getTeam() ? ['id' => (string) $project->getTeam()->getId(), 'name' => $project->getTeam()->getName()] : null,
+            'workflow' => $project->getWorkflow() ? ['id' => (string) $project->getWorkflow()->getId(), 'name' => $project->getWorkflow()->getName()] : null,
         ]);
     }
 

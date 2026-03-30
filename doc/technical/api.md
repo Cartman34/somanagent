@@ -72,6 +72,7 @@ Chaque ticket expose notamment :
 - `workflowStep`
 - `taskCounts`
 - `activeStepTasks`
+- `tasks`
 
 ### `POST /api/projects/{projectId}/tickets`
 Crée un ticket (`user_story` ou `bug`).
@@ -92,8 +93,8 @@ Change le statut opérationnel du ticket.
 ### `PATCH /api/tickets/{id}/priority`
 Change la priorité du ticket.
 
-### `POST /api/tickets/{id}/story-transition`
-Fait avancer le `storyStatus` d’un ticket story/bug.
+### `POST /api/tickets/{id}/advance`
+Fait avancer un ticket story/bug vers l’étape suivante de son workflow quand l’étape courante est manuelle.
 
 Précondition :
 - le ticket doit appartenir à un projet avec équipe affectée

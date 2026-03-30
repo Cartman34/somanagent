@@ -84,22 +84,13 @@ An agent's runtime status is **derived** from its task and log history — no de
 
 ## Story / Bug
 
-A **Story** (user story) or **Bug** is a task of type `story` or `bug`. Unlike regular tasks, stories follow a structured lifecycle managed by a **story status** (`StoryStatus`).
+A **Story** (user story) or **Bug** is a ticket that progresses through the steps of its assigned workflow.
 
-### Story Lifecycle
+### Ticket progression
 
-| StoryStatus | Description | Agent execution available |
-|---|---|---|
-| `new` | Just created, not yet ready for work | No |
-| `ready` | Ready to be estimated/approved | No |
-| `approved` | Approved by PO — triggers tech planning | Yes (lead-tech / tech-planning) |
-| `planning` | Tech planning in progress | No (agent is working) |
-| `graphic_design` | UI/UX design phase | Yes (ui-ux-designer / ui-design) |
-| `development` | Active development | Yes (php-dev / php-backend-dev) |
-| `code_review` | Code review phase | Yes (lead-tech / code-reviewer) |
-| `done` | Fully completed | No |
-
-Status transitions are validated server-side via `StoryStatus::allowedTransitions()`.
+- the current progression state is stored on `Ticket.workflowStep`
+- a ticket may expose manual next steps depending on the current workflow step
+- agent execution depends on the current step and the tasks attached to that step
 
 ---
 
@@ -168,16 +159,16 @@ The log can be consulted via the web interface or the API (`GET /api/audit`).
 
 ---
 
-## Workflow Template vs Story Lifecycle
+## Workflow Template vs Ticket Runtime
 
-These are two distinct concepts that are **not the same**:
+These are two distinct concepts:
 
 | Concept | What it is | Stored where |
 |---|---|---|
-| **Workflow** | A reusable automation template (e.g. "Code Review") | `Workflow` + `WorkflowStep` entities |
-| **Story Lifecycle** | The progression states of a specific story | `Ticket.storyStatus` (enum) |
+| **Workflow** | A reusable automation template | `Workflow` + `WorkflowStep` entities |
+| **Ticket progression** | The current step of a specific ticket | `Ticket.workflowStep` |
 
-A Workflow describes *how* a type of automation runs (steps, roles, conditions). A Story's lifecycle describes *where it is* in its development journey. In a future milestone, the story lifecycle will be **driven by workflow steps** instead of the current hardcoded mapping in `StoryExecutionService`.
+A workflow describes *how* work is structured. A ticket progression describes *where this ticket currently is* in that structure.
 
 ---
 
@@ -198,16 +189,15 @@ Agent
   └── RuntimeStatus (derived: working / error / idle)
 
 Ticket
-  └── StoryStatus (lifecycle)
+  └── WorkflowStep (current step)
   └── TicketTask (operational work)
         ├── TicketTaskDependency (DAG)
         ├── TicketLog (narrative history)
         └── AgentTaskExecution (technical execution history)
 
 Workflow (template)
-  └── Team
   └── WorkflowStep (1..n)
-        ├── roleSlug  → Role → Agent
+        └── WorkflowStepAction → AgentAction → Role → Agent
         └── skillSlug → Skill
 ```
 

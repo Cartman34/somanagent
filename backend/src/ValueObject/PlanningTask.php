@@ -20,7 +20,7 @@ final class PlanningTask
     public function __construct(
         public readonly string $title,
         public readonly string $description,
-        public readonly string $role,
+        public readonly string $actionKey,
         public readonly TaskPriority $priority,
         public readonly array $dependsOn,
     ) {}

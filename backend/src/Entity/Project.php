@@ -46,6 +46,10 @@ class Project
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?Team $team = null;
 
+    #[ORM\ManyToOne(targetEntity: Workflow::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?Workflow $workflow = null;
+
     #[ORM\OneToMany(targetEntity: Module::class, mappedBy: 'project', cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[ORM\OrderBy(['name' => 'ASC'])]
     private Collection $modules;
@@ -71,6 +75,7 @@ class Project
     public function getDescription(): ?string          { return $this->description; }
     public function getRepositoryUrl(): ?string        { return $this->repositoryUrl; }
     public function getTeam(): ?Team                   { return $this->team; }
+    public function getWorkflow(): ?Workflow           { return $this->workflow; }
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
     public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
 
@@ -81,6 +86,7 @@ class Project
     public function setDescription(?string $d): static          { $this->description = $d; return $this; }
     public function setRepositoryUrl(?string $url): static      { $this->repositoryUrl = $url; return $this; }
     public function setTeam(?Team $team): static                { $this->team = $team; return $this; }
+    public function setWorkflow(?Workflow $workflow): static    { $this->workflow = $workflow; return $this; }
 
     public function addModule(Module $module): static
     {

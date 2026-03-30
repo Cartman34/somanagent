@@ -3,17 +3,17 @@
  */
 
 import { useState, type ReactNode } from 'react'
-import { Routes, Route, useParams, Link } from 'react-router-dom'
+import { Routes, Route, useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Plus, GitBranch, ArrowLeft, CheckCircle, XCircle,
-  Clock, Play, SkipForward, AlertCircle, Lock, ShieldCheck, FileEdit,
-  ChevronRight, User, BookOpen, AlertTriangle,
+  Clock, Play, SkipForward, AlertCircle, Lock,
+  ChevronRight, User, AlertTriangle, Copy, Power, Pencil,
 } from 'lucide-react'
 import { workflowsApi } from '@/api/workflows'
 import { translationsApi } from '@/api/translations'
 import type { WorkflowPayload } from '@/api/workflows'
-import type { WorkflowStep, WorkflowStatus } from '@/types'
+import type { WorkflowStep } from '@/types'
 import { PageSpinner } from '@/components/ui/Spinner'
 import ErrorMessage from '@/components/ui/ErrorMessage'
 import EmptyState from '@/components/ui/EmptyState'
@@ -31,20 +31,23 @@ const WORKFLOWS_UI_TRANSLATION_KEYS = [
   'workflows.ui.form.description_label',
   'workflows.ui.form.submit_loading',
   'workflows.ui.form.submit_create',
+  'workflows.ui.form.submit_save',
   'workflows.ui.form.modal_create_title',
+  'workflows.ui.form.modal_edit_title',
   'workflows.ui.trigger.manual',
   'workflows.ui.trigger.vcs_event',
   'workflows.ui.trigger.scheduled',
-  'workflows.ui.status.draft',
-  'workflows.ui.status.validated',
-  'workflows.ui.status.locked',
   'workflows.ui.status.immutable_badge',
   'workflows.ui.status.immutable_notice',
   'workflows.ui.status.active',
   'workflows.ui.status.inactive',
+  'workflows.ui.status.activate',
+  'workflows.ui.status.deactivate',
+  'workflows.ui.status.duplicate',
+  'workflows.ui.status.edit',
+  'workflows.ui.status.action_loading',
   'workflows.ui.lifecycle.new',
   'workflows.ui.lifecycle.ready',
-  'workflows.ui.lifecycle.approved',
   'workflows.ui.lifecycle.planning',
   'workflows.ui.lifecycle.graphic_design',
   'workflows.ui.lifecycle.development',
@@ -53,15 +56,18 @@ const WORKFLOWS_UI_TRANSLATION_KEYS = [
   'workflows.ui.lifecycle.conditional',
   'workflows.ui.lifecycle.configured_title',
   'workflows.ui.lifecycle.configured_empty',
+  'workflows.ui.lifecycle.transition.manual',
+  'workflows.ui.lifecycle.transition.automatic',
   'workflows.ui.page.description',
   'workflows.ui.page.empty_title',
   'workflows.ui.page.create_button',
   'workflows.ui.page.empty_description',
   'workflows.ui.detail.not_found',
   'workflows.ui.detail.back_link',
-  'workflows.ui.detail.team_label',
   'workflows.ui.detail.output_label',
   'workflows.ui.detail.condition_label',
+  'workflows.ui.detail.actions_label',
+  'workflows.ui.detail.create_with_ticket',
   'workflows.ui.detail.steps_title',
   'workflows.ui.detail.empty_steps_title',
   'workflows.ui.detail.empty_steps_description',
@@ -79,24 +85,6 @@ const TRIGGER_COLORS: Record<string, string> = {
   manual: 'badge-blue',
   vcs_event: 'badge-orange',
   scheduled: 'badge-gray',
-}
-
-/** Ordered story lifecycle stages displayed in the visual pipeline. */
-const LIFECYCLE_STAGES: { key: string; labelKey: string }[] = [
-  { key: 'new',           labelKey: 'workflows.ui.lifecycle.new' },
-  { key: 'ready',         labelKey: 'workflows.ui.lifecycle.ready' },
-  { key: 'approved',      labelKey: 'workflows.ui.lifecycle.approved' },
-  { key: 'planning',      labelKey: 'workflows.ui.lifecycle.planning' },
-  { key: 'graphic_design',labelKey: 'workflows.ui.lifecycle.graphic_design' },
-  { key: 'development',   labelKey: 'workflows.ui.lifecycle.development' },
-  { key: 'code_review',   labelKey: 'workflows.ui.lifecycle.code_review' },
-  { key: 'done',          labelKey: 'workflows.ui.lifecycle.done' },
-]
-
-const STATUS_CONFIG: Record<WorkflowStatus, { labelKey: string; badge: string; icon: typeof ShieldCheck }> = {
-  draft:     { labelKey: 'workflows.ui.status.draft',     badge: 'badge-gray',   icon: FileEdit    },
-  validated: { labelKey: 'workflows.ui.status.validated', badge: 'badge-green',  icon: ShieldCheck },
-  locked:    { labelKey: 'workflows.ui.status.locked',    badge: 'badge-orange', icon: Lock        },
 }
 
 function useWorkflowUiTranslations() {
@@ -125,74 +113,64 @@ function StepStatusIcon({ status }: { status: WorkflowStep['status'] }) {
 // ─── Visual lifecycle pipeline (U10) ─────────────────────────────────────────
 
 /**
- * Full story lifecycle pipeline.
- * Stages that match a workflow step's storyStatusTrigger are highlighted as
- * "agent steps" and display the role and skill configured for that step.
+ * Ordered workflow pipeline based on the actual configured steps.
  */
 function LifecyclePipeline({ steps, tt }: { steps: WorkflowStep[]; tt: (key: string) => string }) {
-  const stepByTrigger = new Map<string, WorkflowStep>()
-  for (const s of steps) {
-    if (s.storyStatusTrigger) stepByTrigger.set(s.storyStatusTrigger, s)
-  }
+  const orderedSteps = [...steps].sort((left, right) => left.stepOrder - right.stepOrder)
 
   return (
     <div className="overflow-x-auto pb-2">
       <div className="flex items-start gap-0 min-w-max">
-        {LIFECYCLE_STAGES.map((stage, i) => {
-          const agentStep = stepByTrigger.get(stage.key)
-          const isAgent   = !!agentStep
-          const isLast    = i === LIFECYCLE_STAGES.length - 1
+        {orderedSteps.map((step, index) => {
+          const isLast = index === orderedSteps.length - 1
 
           return (
-            <div key={stage.key} className="flex items-start">
-              {/* Stage node */}
+            <div key={step.id} className="flex items-start">
               <div className="flex flex-col items-center gap-1.5 w-28">
-                {/* Circle */}
                 <div
                   className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 border-2 transition-colors"
                   style={{
-                    background:  isAgent ? 'var(--brand)'     : 'var(--surface2)',
-                    borderColor: isAgent ? 'var(--brand)'     : 'var(--border)',
-                    color:       isAgent ? 'var(--brand-text)': 'var(--muted)',
+                    background: 'var(--brand)',
+                    borderColor: 'var(--brand)',
+                    color: 'var(--brand-text)',
                   }}
                 >
-                  {isAgent ? <User className="w-4 h-4" /> : <span className="text-xs font-bold">{i + 1}</span>}
+                  <span className="text-xs font-bold">{step.stepOrder}</span>
                 </div>
 
-                {/* Stage label */}
                 <span
                   className="text-xs font-medium text-center leading-tight"
-                  style={{ color: isAgent ? 'var(--brand)' : 'var(--muted)' }}
+                  style={{ color: 'var(--brand)' }}
                 >
-                  {tt(stage.labelKey)}
+                  {step.name}
                 </span>
 
-                {/* Agent step details */}
-                {agentStep && (
+                <div className="flex flex-col items-center gap-1 text-center">
+                  {step.actions.slice(0, 2).map(({ id, agentAction }) => (
+                    <span key={id} className="flex items-center gap-0.5 text-xs" style={{ color: 'var(--text)' }}>
+                      <User className="w-3 h-3 flex-shrink-0" style={{ color: 'var(--muted)' }} />
+                      {agentAction.label}
+                    </span>
+                  ))}
+                  <span className="text-[11px]" style={{ color: 'var(--muted)' }}>
+                    {step.outputKey}
+                  </span>
+                  {step.condition && (
+                    <span className="flex items-center gap-0.5 text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
+                      <AlertTriangle className="w-3 h-3 flex-shrink-0 text-yellow-500" />
+                      {tt('workflows.ui.lifecycle.conditional')}
+                    </span>
+                  )}
+                </div>
+                {step.actions.length === 0 && (
                   <div className="flex flex-col items-center gap-1 text-center">
-                    {agentStep.roleSlug && (
-                      <span className="flex items-center gap-0.5 text-xs" style={{ color: 'var(--text)' }}>
-                        <User className="w-3 h-3 flex-shrink-0" style={{ color: 'var(--muted)' }} />
-                        {agentStep.roleSlug}
-                      </span>
-                    )}
-                    {agentStep.skillSlug && (
-                      <span className="flex items-center gap-0.5 text-xs" style={{ color: 'var(--muted)' }}>
-                        <BookOpen className="w-3 h-3 flex-shrink-0" />
-                        {agentStep.skillSlug}
-                      </span>
-                    )}
-                    {agentStep.condition && (
-                      <span className="flex items-center gap-0.5 text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
-                        <AlertTriangle className="w-3 h-3 flex-shrink-0 text-yellow-500" />
-                        {tt('workflows.ui.lifecycle.conditional')}
-                      </span>
-                    )}
+                    <span className="text-xs" style={{ color: 'var(--muted)' }}>
+                      {tt('workflows.ui.detail.empty_steps_description')}
+                    </span>
                   </div>
                 )}
               </div>
 
-              {/* Connector arrow */}
               {!isLast && (
                 <div className="flex items-center mt-4 flex-shrink-0">
                   <div className="w-4 h-0.5" style={{ background: 'var(--border)' }} />
@@ -214,19 +192,21 @@ function LifecyclePipeline({ steps, tt }: { steps: WorkflowStep[]; tt: (key: str
  * Rendered inside a Modal and persisted as an immutable definition.
  */
 function WorkflowForm({
+  initial,
   onSubmit,
   loading,
   onCancel,
   tt,
 }: {
+  initial?: Partial<WorkflowPayload>
   onSubmit: (d: WorkflowPayload) => void
   loading: boolean
   onCancel: () => void
   tt: (key: string) => string
 }) {
-  const [name,        setName]       = useState('')
-  const [description, setDescription]= useState('')
-  const [trigger,     setTrigger]    = useState<WorkflowPayload['trigger']>('manual')
+  const [name,        setName]       = useState(initial?.name ?? '')
+  const [description, setDescription]= useState(initial?.description ?? '')
+  const [trigger,     setTrigger]    = useState<WorkflowPayload['trigger']>(initial?.trigger ?? 'manual')
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit({ name, description: description || undefined, trigger }) }} className="space-y-4">
@@ -251,7 +231,7 @@ function WorkflowForm({
       </p>
       <div className="flex justify-end gap-3 pt-2">
         <button type="button" onClick={onCancel} className="btn-secondary">{tt('common.action.cancel')}</button>
-        <button type="submit" className="btn-primary" disabled={loading}>{loading ? tt('workflows.ui.form.submit_loading') : tt('workflows.ui.form.submit_create')}</button>
+        <button type="submit" className="btn-primary" disabled={loading}>{loading ? tt('workflows.ui.form.submit_loading') : (initial ? tt('workflows.ui.form.submit_save') : tt('workflows.ui.form.submit_create'))}</button>
       </div>
     </form>
   )
@@ -261,6 +241,7 @@ function WorkflowForm({
 
 /** Grid of workflow cards with CRUD actions. */
 function WorkflowsList() {
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const [createOpen,   setCreateOpen]   = useState(false)
   const { data: i18n } = useWorkflowUiTranslations()
@@ -275,6 +256,18 @@ function WorkflowsList() {
   const createMutation = useMutation({
     mutationFn: workflowsApi.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['workflows'] }); setCreateOpen(false) },
+  })
+  const duplicateMutation = useMutation({
+    mutationFn: (id: string) => workflowsApi.duplicate(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workflows'] }) },
+  })
+  const activateMutation = useMutation({
+    mutationFn: (id: string) => workflowsApi.activate(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workflows'] }) },
+  })
+  const deactivateMutation = useMutation({
+    mutationFn: (id: string) => workflowsApi.deactivate(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workflows'] }) },
   })
 
   if (isLoading) return <PageSpinner />
@@ -302,33 +295,29 @@ function WorkflowsList() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {workflows?.map((wf) => {
-            const sc = STATUS_CONFIG[wf.status] ?? STATUS_CONFIG.draft
-            const StatusIcon = sc.icon
             return (
-              <div key={wf.id} className="card p-5 flex flex-col gap-3 hover:shadow-md transition-shadow">
+              <button
+                key={wf.id}
+                type="button"
+                onClick={() => navigate(`/workflows/${wf.id}`)}
+                className="card p-5 flex flex-col gap-3 hover:shadow-md transition-shadow text-left"
+              >
                 <div className="flex items-start justify-between gap-2">
-                  <Link
-                    to={`/workflows/${wf.id}`}
-                    className="font-semibold hover:underline"
-                    style={{ color: 'var(--text)' }}
-                  >
+                  <span className="font-semibold hover:underline" style={{ color: 'var(--text)' }}>
                     {wf.name}
-                  </Link>
-                  <span className="badge-gray flex items-center gap-1 flex-shrink-0">
-                    <Lock className="w-3 h-3" />
-                    {tt('workflows.ui.status.immutable_badge')}
                   </span>
+                  {!wf.isEditable && (
+                    <span className="badge-gray flex items-center gap-1 flex-shrink-0">
+                      <Lock className="w-3 h-3" />
+                      {tt('workflows.ui.status.immutable_badge')}
+                    </span>
+                  )}
                 </div>
 
                 {wf.description && <p className="text-sm line-clamp-2" style={{ color: 'var(--muted)' }}>{wf.description}</p>}
 
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className={TRIGGER_COLORS[wf.trigger]}>{tt(TRIGGER_LABEL_KEYS[wf.trigger] ?? wf.trigger)}</span>
-                  {wf.team && <span className="badge-gray">{wf.team.name}</span>}
-                  <span className={`${sc.badge} flex items-center gap-1`}>
-                    <StatusIcon className="w-3 h-3" />
-                    {tt(sc.labelKey)}
-                  </span>
                 </div>
 
                 <div className="mt-auto flex items-center justify-between text-xs" style={{ color: 'var(--muted)' }}>
@@ -338,12 +327,49 @@ function WorkflowsList() {
                       : `${wf.steps.length} ${tt(wf.steps.length !== 1 ? 'workflows.ui.count.step_other' : 'workflows.ui.count.step_one')}`}
                   </span>
                   <div className="flex items-center gap-1">
-                    {wf.isUsable
+                    {wf.isActive
                       ? <><CheckCircle className="w-3.5 h-3.5 text-green-500" /> {tt('workflows.ui.status.active')}</>
                       : <><XCircle    className="w-3.5 h-3.5" style={{ color: 'var(--muted)' }} /> {tt('workflows.ui.status.inactive')}</>}
                   </div>
                 </div>
-              </div>
+
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    type="button"
+                    className="btn-secondary inline-flex items-center gap-2"
+                    onClick={(e) => { e.stopPropagation(); duplicateMutation.mutate(wf.id) }}
+                    disabled={duplicateMutation.isPending}
+                    title={tt('workflows.ui.status.duplicate')}
+                  >
+                    <Copy className="w-4 h-4" />
+                    {duplicateMutation.isPending ? tt('workflows.ui.status.action_loading') : tt('workflows.ui.status.duplicate')}
+                  </button>
+
+                  {wf.isActive ? (
+                    <button
+                      type="button"
+                      className="btn-secondary inline-flex items-center gap-2"
+                      onClick={(e) => { e.stopPropagation(); deactivateMutation.mutate(wf.id) }}
+                      disabled={deactivateMutation.isPending}
+                      title={tt('workflows.ui.status.deactivate')}
+                    >
+                      <Power className="w-4 h-4" />
+                      {deactivateMutation.isPending ? tt('workflows.ui.status.action_loading') : tt('workflows.ui.status.deactivate')}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn-primary inline-flex items-center gap-2"
+                      onClick={(e) => { e.stopPropagation(); activateMutation.mutate(wf.id) }}
+                      disabled={activateMutation.isPending}
+                      title={tt('workflows.ui.status.activate')}
+                    >
+                      <Power className="w-4 h-4" />
+                      {activateMutation.isPending ? tt('workflows.ui.status.action_loading') : tt('workflows.ui.status.activate')}
+                    </button>
+                  )}
+                </div>
+              </button>
             )
           })}
         </div>
@@ -360,12 +386,14 @@ function WorkflowsList() {
 
 /**
  * Full detail view for a workflow:
- * - Metadata header with status badge and immutable-definition notice
- * - Visual lifecycle pipeline showing which stages have configured agent steps (U10)
- * - Ordered step list with role, skill, condition, execution output
+ * - Metadata header with activation and edit actions
+ * - Visual lifecycle pipeline showing which stages have configured workflow actions (U10)
+ * - Ordered step list with actions, transition mode, condition, execution output
  */
 function WorkflowDetail() {
   const { id }   = useParams<{ id: string }>()
+  const qc = useQueryClient()
+  const [editOpen, setEditOpen] = useState(false)
   const { data: i18n } = useWorkflowUiTranslations()
 
   const { data: workflow, isLoading, error, refetch } = useQuery({
@@ -374,15 +402,33 @@ function WorkflowDetail() {
     enabled:  !!id,
   })
 
+  const duplicateMutation = useMutation({
+    mutationFn: () => workflowsApi.duplicate(id!),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workflows'] }); qc.invalidateQueries({ queryKey: ['workflows', id] }) },
+  })
+  const updateMutation = useMutation({
+    mutationFn: (data: WorkflowPayload) => workflowsApi.update(id!, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['workflows'] })
+      qc.invalidateQueries({ queryKey: ['workflows', id] })
+      setEditOpen(false)
+    },
+  })
+  const activateMutation = useMutation({
+    mutationFn: () => workflowsApi.activate(id!),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workflows'] }); qc.invalidateQueries({ queryKey: ['workflows', id] }) },
+  })
+  const deactivateMutation = useMutation({
+    mutationFn: () => workflowsApi.deactivate(id!),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workflows'] }); qc.invalidateQueries({ queryKey: ['workflows', id] }) },
+  })
+
   const tt = (key: string) => i18n?.translations[key] ?? key
 
   if (isLoading) return <PageSpinner />
   if (error || !workflow) return <ErrorMessage message={(error as Error)?.message ?? tt('workflows.ui.detail.not_found')} onRetry={() => refetch()} />
 
   const steps   = Array.isArray(workflow.steps) ? [...workflow.steps].sort((a, b) => a.stepOrder - b.stepOrder) : []
-  const sc      = STATUS_CONFIG[workflow.status] ?? STATUS_CONFIG.draft
-  const StatusIcon = sc.icon
-
   return (
     <>
       <Link to="/workflows" className="inline-flex items-center gap-1 text-sm mb-4" style={{ color: 'var(--muted)' }}>
@@ -395,21 +441,60 @@ function WorkflowDetail() {
           <h1 className="text-xl font-bold" style={{ color: 'var(--text)' }}>{workflow.name}</h1>
           {workflow.description && <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>{workflow.description}</p>}
         </div>
-        <span className="badge-gray flex items-center gap-1.5 flex-shrink-0">
-          <Lock className="w-3.5 h-3.5" />
-          {tt('workflows.ui.status.immutable_notice')}
-        </span>
+        <div className="flex items-center gap-2 flex-wrap">
+          {workflow.isEditable ? (
+            <button
+              type="button"
+              className="btn-secondary inline-flex items-center gap-2"
+              onClick={() => setEditOpen(true)}
+            >
+              <Pencil className="w-4 h-4" />
+              {tt('workflows.ui.status.edit')}
+            </button>
+          ) : (
+            <span className="badge-gray flex items-center gap-1.5 flex-shrink-0">
+              <Lock className="w-3.5 h-3.5" />
+              {tt('workflows.ui.status.immutable_notice')}
+            </span>
+          )}
+          <button
+            type="button"
+            className="btn-secondary inline-flex items-center gap-2"
+            onClick={() => duplicateMutation.mutate()}
+            disabled={duplicateMutation.isPending}
+          >
+            <Copy className="w-4 h-4" />
+            {duplicateMutation.isPending ? tt('workflows.ui.status.action_loading') : tt('workflows.ui.status.duplicate')}
+          </button>
+          {workflow.isActive ? (
+            <button
+              type="button"
+              className="btn-secondary inline-flex items-center gap-2"
+              onClick={() => deactivateMutation.mutate()}
+              disabled={deactivateMutation.isPending}
+              title={tt('workflows.ui.status.deactivate')}
+            >
+              <Power className="w-4 h-4" />
+              {deactivateMutation.isPending ? tt('workflows.ui.status.action_loading') : tt('workflows.ui.status.deactivate')}
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn-primary inline-flex items-center gap-2"
+              onClick={() => activateMutation.mutate()}
+              disabled={activateMutation.isPending}
+            >
+              <Power className="w-4 h-4" />
+              {activateMutation.isPending ? tt('workflows.ui.status.action_loading') : tt('workflows.ui.status.activate')}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Metadata badges */}
       <div className="flex items-center gap-2 mb-6 flex-wrap">
         <span className={TRIGGER_COLORS[workflow.trigger]}>{tt(TRIGGER_LABEL_KEYS[workflow.trigger] ?? workflow.trigger)}</span>
-        {workflow.team && <span className="badge-gray">{tt('workflows.ui.detail.team_label')} : {workflow.team.name}</span>}
-        <span className={`${sc.badge} flex items-center gap-1`}>
-          <StatusIcon className="w-3 h-3" />
-          {tt(sc.labelKey)}
-        </span>
-        {workflow.isUsable
+        {workflow.isActive
           ? <span className="badge-green flex items-center gap-1"><CheckCircle className="w-3 h-3" /> {tt('workflows.ui.status.active')}</span>
           : <span className="badge-gray flex items-center gap-1"><XCircle className="w-3 h-3" /> {tt('workflows.ui.status.inactive')}</span>}
       </div>
@@ -451,16 +536,28 @@ function WorkflowDetail() {
                 <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                   <p className="font-medium" style={{ color: 'var(--text)' }}>{step.name || step.outputKey}</p>
                   <StepStatusIcon status={step.status} />
-                  {step.storyStatusTrigger && (
-                    <span className="badge-blue text-xs">↳ {step.storyStatusTrigger}</span>
-                  )}
+                  <span className="badge-gray text-xs">
+                    {tt(`workflows.ui.lifecycle.transition.${step.transitionMode}`)}
+                  </span>
                 </div>
 
                 <div className="flex flex-wrap gap-2 text-xs">
-                  {step.roleSlug  && <span className="badge-blue">{step.roleSlug}</span>}
-                  {step.skillSlug && <span className="badge-orange">{step.skillSlug}</span>}
                   <span className="badge-gray">{tt('workflows.ui.detail.output_label')} : {step.outputKey}</span>
                 </div>
+
+                {step.actions.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                    <span style={{ color: 'var(--muted)' }}>{tt('workflows.ui.detail.actions_label')} :</span>
+                    {step.actions.map(({ id, agentAction, createWithTicket }) => (
+                      <span key={id} className="badge-blue flex items-center gap-1">
+                        {agentAction.label}
+                        {createWithTicket && (
+                          <span className="badge-gray text-[10px]">{tt('workflows.ui.detail.create_with_ticket')}</span>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
                 {step.condition && (
                   <div className="mt-2 flex items-start gap-1.5 text-xs" style={{ color: 'var(--muted)' }}>
@@ -479,6 +576,16 @@ function WorkflowDetail() {
           ))}
         </div>
       )}
+
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title={tt('workflows.ui.form.modal_edit_title')}>
+        <WorkflowForm
+          initial={{ name: workflow.name, description: workflow.description ?? undefined, trigger: workflow.trigger }}
+          onSubmit={(data) => updateMutation.mutate(data)}
+          loading={updateMutation.isPending}
+          onCancel={() => setEditOpen(false)}
+          tt={tt}
+        />
+      </Modal>
     </>
   )
 }

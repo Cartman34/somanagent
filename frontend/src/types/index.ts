@@ -3,7 +3,7 @@
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Types partagés SoManAgent — alignés sur les réponses de l'API PHP
+// Shared SoManAgent types aligned with PHP API responses
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface Project {
@@ -12,6 +12,7 @@ export interface Project {
   description: string | null
   repositoryUrl: string | null
   team: { id: string; name: string } | null
+  workflow: { id: string; name: string } | null
   modules: number | Module[]
   createdAt: string
   updatedAt: string
@@ -108,13 +109,11 @@ export interface Feature {
 export type TaskType     = 'user_story' | 'bug' | 'task'
 export type TaskStatus   = 'backlog' | 'todo' | 'in_progress' | 'review' | 'done' | 'cancelled'
 export type TaskPriority = 'low' | 'medium' | 'high' | 'critical'
-export type StoryStatus  = 'new' | 'ready' | 'approved' | 'planning' | 'graphic_design' | 'development' | 'code_review' | 'done'
 
 export interface WorkflowStepRef {
   id: string
   key?: string
   name: string
-  storyStatusTrigger: StoryStatus | null
 }
 
 export interface AgentRef {
@@ -191,7 +190,6 @@ export interface TaskReworkTarget {
   roleSlug: string
   skillSlug: string
   workflowStepKey: string
-  targetStoryStatus: StoryStatus
   availableAgentCount: number
   agent: { id: string; name: string } | null
 }
@@ -244,13 +242,12 @@ export interface Ticket {
   title: string
   description: string | null
   status: TaskStatus
-  storyStatus: StoryStatus | null
-  storyStatusAllowedTransitions: StoryStatus[]
   priority: TaskPriority
   progress: number
   branchName: string | null
   branchUrl: string | null
   workflowStep: WorkflowStepRef | null
+  workflowStepAllowedTransitions: WorkflowStepRef[]
   assignedAgent: AgentRef | null
   assignedRole: RoleRef | null
   taskCounts: { total: number; root: number; activeStep: number }
@@ -298,27 +295,26 @@ export interface WorkflowStep {
   id: string
   stepOrder: number
   name: string
-  roleSlug: string | null
-  skillSlug: string | null
   inputConfig: Record<string, unknown>
   outputKey: string
+  transitionMode: 'manual' | 'automatic'
   condition: string | null
   status: 'pending' | 'running' | 'done' | 'error' | 'skipped'
-  storyStatusTrigger: string | null
   lastOutput: string | null
+  actions: Array<{
+    id: string
+    createWithTicket: boolean
+    agentAction: AgentActionRef
+  }>
 }
-
-export type WorkflowStatus = 'draft' | 'validated' | 'locked'
 
 export interface Workflow {
   id: string
   name: string
   description: string | null
   trigger: 'manual' | 'vcs_event' | 'scheduled'
-  team: { id: string; name: string } | null
-  status: WorkflowStatus
+  isActive: boolean
   isEditable: boolean
-  isUsable: boolean
   steps: WorkflowStep[] | number
   createdAt: string
   updatedAt: string

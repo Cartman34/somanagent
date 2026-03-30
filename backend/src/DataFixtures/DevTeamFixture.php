@@ -14,9 +14,10 @@ use App\Entity\Skill;
 use App\Entity\Team;
 use App\Entity\Workflow;
 use App\Entity\WorkflowStep;
+use App\Entity\WorkflowStepAction;
 use App\Enum\ConnectorType;
-use App\Enum\StoryStatus;
 use App\Enum\SkillSource;
+use App\Enum\WorkflowStepTransitionMode;
 use App\Enum\WorkflowTrigger;
 use App\ValueObject\AgentConfig;
 use Doctrine\Bundle\FixturesBundle\Fixture;
@@ -35,10 +36,10 @@ class DevTeamFixture extends Fixture
     {
         $skills = $this->loadSkills($manager);
         $roles  = $this->createRoles($manager, $skills);
-        $this->createAgentActions($manager, $roles, $skills);
+        $actions = $this->createAgentActions($manager, $roles, $skills);
         $agents = $this->createAgents($manager, $roles);
         $team   = $this->createTeam($manager, $agents);
-        $this->createWorkflowTemplate($manager, $team);
+        $this->createWorkflowTemplate($manager, $actions);
 
         $manager->flush();
     }
@@ -100,7 +101,7 @@ class DevTeamFixture extends Fixture
      * @param array<string, Role> $roles
      * @param array<string, Skill> $skills
      */
-    private function createAgentActions(ObjectManager $manager, array $roles, array $skills): void
+    private function createAgentActions(ObjectManager $manager, array $roles, array $skills): array
     {
         $definitions = [
             ['key' => 'product.specify', 'label' => 'Product specification', 'role' => 'product-owner', 'skill' => 'product-owner'],
@@ -114,12 +115,16 @@ class DevTeamFixture extends Fixture
             ['key' => 'ops.configure', 'label' => 'Infrastructure configuration', 'role' => 'devops', 'skill' => 'ci-cd-setup'],
         ];
 
+        $actions = [];
         foreach ($definitions as $definition) {
             $action = new AgentAction($definition['key'], $definition['label']);
             $action->setRole($roles[$definition['role']] ?? null);
             $action->setSkill($skills[$definition['skill']] ?? null);
             $manager->persist($action);
+            $actions[$definition['key']] = $action;
         }
+
+        return $actions;
     }
 
     /** @return array<string, Agent> */
@@ -160,26 +165,37 @@ class DevTeamFixture extends Fixture
         return $team;
     }
 
-    private function createWorkflowTemplate(ObjectManager $manager, Team $team): Workflow
+    private function createWorkflowTemplate(ObjectManager $manager, array $actions): Workflow
     {
         $workflow = new Workflow(
             'Développement web standard',
             WorkflowTrigger::Manual,
-            'Template de processus pour les US et anomalies. Couvre planification, design optionnel, développement et revue de code.',
+            'Workflow de référence pour une équipe web: cadrage PO, préparation, planification, design, développement, revue, terminaison.',
         );
-        $workflow->setTeam($team);
-
         foreach ([
-            [1, 'Cadrage produit',      'product-owner',  'product-owner',   'new',            StoryStatus::New],
-            [2, 'Planification',        'lead-tech',      'tech-planning',   'planning',       StoryStatus::Approved],
-            [3, 'Conception graphique', 'ui-ux-designer', 'ui-design',       'graphic_design', StoryStatus::GraphicDesign],
-            [4, 'Développement',        'php-dev',        'php-backend-dev', 'development',    StoryStatus::Development],
-            [5, 'Revue de code',        'lead-tech',      'code-reviewer',   'code_review',    StoryStatus::CodeReview],
-        ] as [$order, $name, $role, $skill, $key, $storyStatusTrigger]) {
+            [1, 'Nouvelle',             'new',            WorkflowStepTransitionMode::Automatic, [['product.specify', true]]],
+            [2, 'Prête',                'ready',          WorkflowStepTransitionMode::Manual,    []],
+            [3, 'Planification',        'planning',       WorkflowStepTransitionMode::Automatic, [['tech.plan', false]]],
+            [4, 'Conception graphique', 'graphic_design', WorkflowStepTransitionMode::Automatic, [['design.ui_mockup', false]]],
+            [5, 'Développement',        'development',    WorkflowStepTransitionMode::Automatic, [['dev.backend.implement', false], ['dev.frontend.implement', false]]],
+            [6, 'Revue',                'code_review',    WorkflowStepTransitionMode::Automatic, [['review.code', false]]],
+            [7, 'Terminée',             'done',           WorkflowStepTransitionMode::Manual,    []],
+        ] as [$order, $name, $key, $transitionMode, $stepActions]) {
             $step = new WorkflowStep($workflow, $order, $name, $key);
-            $step->setRoleSlug($role);
-            $step->setSkillSlug($skill);
-            $step->setStoryStatusTrigger($storyStatusTrigger);
+            $step->setTransitionMode($transitionMode);
+
+            foreach ($stepActions as [$actionKey, $createWithTicket]) {
+                $action = $actions[$actionKey] ?? null;
+                if ($action === null) {
+                    continue;
+                }
+
+                $step->addAction(
+                    (new WorkflowStepAction($step, $action))
+                        ->setCreateWithTicket($createWithTicket)
+                );
+            }
+
             $manager->persist($step);
         }
 

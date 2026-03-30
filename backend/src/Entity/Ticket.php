@@ -7,7 +7,6 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\StoryStatus;
 use App\Enum\TaskPriority;
 use App\Enum\TaskStatus;
 use App\Enum\TaskType;
@@ -49,9 +48,6 @@ class Ticket
 
     #[ORM\Column(enumType: TaskStatus::class)]
     private TaskStatus $status = TaskStatus::Backlog;
-
-    #[ORM\Column(enumType: StoryStatus::class, nullable: true)]
-    private ?StoryStatus $storyStatus = null;
 
     #[ORM\Column(enumType: TaskPriority::class)]
     private TaskPriority $priority = TaskPriority::Medium;
@@ -109,7 +105,6 @@ class Ticket
         $this->updatedAt = $this->createdAt;
         $this->tasks = new ArrayCollection();
         $this->logs = new ArrayCollection();
-        $this->storyStatus = StoryStatus::New;
     }
 
     #[ORM\PreUpdate]
@@ -126,7 +121,6 @@ class Ticket
     public function getTitle(): string { return $this->title; }
     public function getDescription(): ?string { return $this->description; }
     public function getStatus(): TaskStatus { return $this->status; }
-    public function getStoryStatus(): ?StoryStatus { return $this->storyStatus; }
     public function getPriority(): TaskPriority { return $this->priority; }
     public function getProgress(): int { return $this->progress; }
     public function getAssignedAgent(): ?Agent { return $this->assignedAgent; }
@@ -158,7 +152,6 @@ class Ticket
     public function setTitle(string $title): static { $this->title = $title; return $this; }
     public function setDescription(?string $description): static { $this->description = $description; return $this; }
     public function setStatus(TaskStatus $status): static { $this->status = $status; return $this; }
-    public function setStoryStatus(?StoryStatus $storyStatus): static { $this->storyStatus = $storyStatus; return $this; }
     public function setPriority(TaskPriority $priority): static { $this->priority = $priority; return $this; }
     public function setAssignedAgent(?Agent $assignedAgent): static { $this->assignedAgent = $assignedAgent; return $this; }
     public function setAssignedRole(?Role $assignedRole): static { $this->assignedRole = $assignedRole; return $this; }
@@ -168,22 +161,6 @@ class Ticket
     public function setProgress(int $progress): static
     {
         $this->progress = max(0, min(100, $progress));
-
-        return $this;
-    }
-
-    public function transitionStoryTo(StoryStatus $next): static
-    {
-        if (!$this->isStory()) {
-            throw new \LogicException('Story status transitions are only valid for ticket stories and bugs.');
-        }
-
-        if ($this->storyStatus === null || !$this->storyStatus->canTransitionTo($next)) {
-            $current = $this->storyStatus?->value ?? 'null';
-            throw new \LogicException("Cannot transition story from '{$current}' to '{$next->value}'.");
-        }
-
-        $this->storyStatus = $next;
 
         return $this;
     }

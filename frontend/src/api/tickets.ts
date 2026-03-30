@@ -3,7 +3,7 @@
  */
 
 import apiClient from './client'
-import type { Ticket, TicketTask, TaskPriority, TaskStatus, TaskType, StoryStatus, TaskReworkTarget } from '@/types'
+import type { Ticket, TicketTask, TaskPriority, TaskStatus, TaskType, TaskReworkTarget } from '@/types'
 
 export interface TicketPayload {
   title: string
@@ -74,18 +74,8 @@ export const ticketsApi = {
     return data
   },
 
-  transitionStory: async (id: string, status: StoryStatus): Promise<Ticket> => {
-    const { data } = await apiClient.post(`/tickets/${id}/story-transition`, { status })
-    return data
-  },
-
-  listExecuteAgents: async (id: string): Promise<{ id: string; name: string; role: { slug: string; name: string } | null }[]> => {
-    const { data } = await apiClient.get(`/tickets/${id}/execute`)
-    return data
-  },
-
-  execute: async (id: string, agentId?: string): Promise<{ ticket: Ticket; agent: { id: string; name: string }; skill: string }> => {
-    const { data } = await apiClient.post(`/tickets/${id}/execute`, agentId ? { agentId } : {})
+  advance: async (id: string): Promise<Ticket> => {
+    const { data } = await apiClient.post(`/tickets/${id}/advance`)
     return data
   },
 
@@ -157,6 +147,16 @@ export const ticketTasksApi = {
 
   requestValidation: async (id: string, comment?: string): Promise<TicketTask> => {
     const { data } = await apiClient.post(`/ticket-tasks/${id}/request-validation`, { comment })
+    return data
+  },
+
+  execute: async (id: string, agentId?: string): Promise<{ ticketTask: TicketTask; agent: { id: string; name: string }; skill: string; executionId: string }> => {
+    const { data } = await apiClient.post(`/ticket-tasks/${id}/execute`, agentId ? { agentId } : {})
+    return data
+  },
+
+  resume: async (id: string): Promise<{ ticketTask: TicketTask; agent: { id: string; name: string }; skill: string; executionId: string }> => {
+    const { data } = await apiClient.post(`/ticket-tasks/${id}/resume`)
     return data
   },
 

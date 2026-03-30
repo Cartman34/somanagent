@@ -33,17 +33,11 @@ class Workflow
     #[ORM\Column(enumType: WorkflowTrigger::class)]
     private WorkflowTrigger $trigger;
 
-    #[ORM\ManyToOne(targetEntity: Team::class)]
-    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
-    private ?Team $team = null;
-
-    /**
-     * draft     -> legacy draft kept for backward compatibility, not usable
-     * validated -> immutable and usable workflow definition
-     * locked    -> immutable workflow currently locked by runtime usage
-     */
     #[ORM\Column(enumType: WorkflowStatus::class)]
-    private WorkflowStatus $status = WorkflowStatus::Draft;
+    private WorkflowStatus $status = WorkflowStatus::Validated;
+
+    #[ORM\Column(options: ['default' => true])]
+    private bool $isActive = true;
 
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
@@ -79,10 +73,10 @@ class Workflow
     public function getName(): string                  { return $this->name; }
     public function getDescription(): ?string          { return $this->description; }
     public function getTrigger(): WorkflowTrigger      { return $this->trigger; }
-    public function getTeam(): ?Team                   { return $this->team; }
     public function getStatus(): WorkflowStatus        { return $this->status; }
-    public function isEditable(): bool                 { return $this->status->isEditable(); }
-    public function isUsable(): bool                   { return $this->status->isUsable(); }
+    public function isActive(): bool                   { return $this->isActive; }
+    public function isEditable(): bool                 { return !$this->isActive && $this->status === WorkflowStatus::Validated; }
+    public function isUsable(): bool                   { return $this->status->isUsable() && $this->isActive; }
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
     public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
 
@@ -110,23 +104,38 @@ class Workflow
         return $this;
     }
 
-    public function setTeam(?Team $team): static       { $this->team = $team; return $this; }
-
     public function validate(): static
     {
-        if ($this->status !== WorkflowStatus::Draft) {
-            throw new \LogicException("Only a draft workflow can be validated.");
-        }
         $this->status = WorkflowStatus::Validated;
         return $this;
     }
 
     public function lock(): static
     {
-        if ($this->status === WorkflowStatus::Draft) {
-            throw new \LogicException("A draft workflow cannot be locked directly. Validate it first.");
+        if ($this->status !== WorkflowStatus::Validated) {
+            throw new \LogicException("Only a validated workflow can be locked.");
         }
         $this->status = WorkflowStatus::Locked;
+        return $this;
+    }
+
+    /**
+     * Marks the workflow as available for runtime selection.
+     */
+    public function activate(): static
+    {
+        $this->isActive = true;
+
+        return $this;
+    }
+
+    /**
+     * Marks the workflow as unavailable for future runtime selection.
+     */
+    public function deactivate(): static
+    {
+        $this->isActive = false;
+
         return $this;
     }
 
@@ -149,8 +158,8 @@ class Workflow
 
     private function assertEditable(): void
     {
-        if (!$this->status->isEditable()) {
-            throw new \LogicException("Workflow '{$this->name}' is {$this->status->value} and cannot be modified.");
+        if (!$this->isEditable()) {
+            throw new \LogicException("Workflow '{$this->name}' is not editable.");
         }
     }
 }

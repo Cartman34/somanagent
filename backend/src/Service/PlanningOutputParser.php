@@ -20,8 +20,8 @@ use App\ValueObject\PlanningTask;
  *   "branch": "feature/us-xxx-slug",
  *   "needsDesign": false,
  *   "tasks": [
- *     { "title": "...", "description": "...", "role": "php-dev", "priority": "high", "dependsOn": [] },
- *     { "title": "...", "description": "...", "role": "frontend-dev", "priority": "medium", "dependsOn": [0] }
+ *     { "title": "...", "description": "...", "actionKey": "dev.backend.implement", "priority": "high", "dependsOn": [] },
+ *     { "title": "...", "description": "...", "actionKey": "dev.frontend.implement", "priority": "medium", "dependsOn": [0] }
  *   ],
  *   "specUpdates": [
  *     { "file": "doc/technical/api.md", "note": "..." }
@@ -88,11 +88,11 @@ final class PlanningOutputParser
 
             $title       = $this->requireString($raw, 'title', "task[{$i}]");
             $description = $this->requireString($raw, 'description', "task[{$i}]");
-            $role        = $this->requireString($raw, 'role', "task[{$i}]");
+            $actionKey   = $this->requireString($raw, 'actionKey', "task[{$i}]");
             $priority    = TaskPriority::tryFrom($raw['priority'] ?? '') ?? TaskPriority::Medium;
             $dependsOn   = $this->parseDependsOn($raw['dependsOn'] ?? [], $i);
 
-            $tasks[] = new PlanningTask($title, $description, $role, $priority, $dependsOn);
+            $tasks[] = new PlanningTask($title, $description, $actionKey, $priority, $dependsOn);
         }
 
         return $tasks;

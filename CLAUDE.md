@@ -27,6 +27,7 @@ Use `doc/` as the source of truth for product, technical and development documen
 - These three local files are the continuity source of truth for backlog, completed work and review follow-up.
 - The order of tasks in `local/planned-tasks.md` is the authoritative priority order.
 - The user may reorder `local/planned-tasks.md` manually at any time to redefine priorities.
+- User may require some instructions, they are listed below with behavior
 - `next` means: execute the first task from `local/planned-tasks.md`, remove it from that file, then append the result to the end of `local/changes-list.md`.
 - `new ...` means: append a new task to the end of `local/planned-tasks.md`.
 - If a `next` is already in progress, `new ...` does not interrupt it unless the user explicitly redirects the work.
@@ -36,8 +37,11 @@ Use `doc/` as the source of truth for product, technical and development documen
 - If a completed feature needs a follow-up bugfix, add it to `local/changes-list.md` with prefix `[FIX]`.
 - `review` means: analyse the current work, write the review findings into `local/changes-review.md`, and use that same file as the source for any later `rework`.
 - Any new user process instruction that changes how work should be tracked or executed must be persisted in `CLAUDE.md`.
-- After a delivered `next`, alternate `review` and `rework` on the current changes until the review is clean.
+- `next`, `review`, and `rework` are explicit user commands, not an automatic gate sequence.
+- Encourage the review/rework loop until the review is clean, but never block a user command just because another command would be preferable.
+- Do not infer workflow state only from the current chat session: deduce the valid next command from the effective contents of `local/planned-tasks.md`, `local/changes-list.md`, and especially `local/changes-review.md`, because these files may have been updated outside the current session.
 - Keep chat updates concise and do not restate information that is already available in the local backlog tracking files unless it is necessary for a decision or blocker.
+- A bugfix discovered while implementing the current task must stay folded into that same task in `local/changes-list.md`; do not add a separate `[FIX]` entry unless it is a follow-up on already completed work or you are explicitly extending the existing task entry.
 
 ### Local-only files
 
@@ -175,3 +179,10 @@ Important reminders:
 ## Diagnostics Note
 
 - For log investigations, prefer querying PostgreSQL directly in `somanagent_db` rather than relying only on container stdout.
+
+## Current Follow-up Note
+
+- After the current ticket/workflow UI rework, the next technical cleanup must cover:
+  - remove the remaining ticket-level resume/redispatch fallback still based on `StoryExecutionService`
+  - stop using `Ticket.status` and `Ticket.progress` as if they represented workflow progression in async agent execution paths
+  - enforce the “project requires a workflow” invariant consistently at model/migration/API typing level, not only in service/UI validation

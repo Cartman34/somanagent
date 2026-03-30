@@ -12,16 +12,21 @@ use App\Entity\AgentAction;
 use App\Entity\Ticket;
 use App\Entity\TicketTask;
 use App\Entity\TicketTaskDependency;
+use App\Entity\WorkflowStep;
+use App\Entity\WorkflowStepAction;
 use App\Enum\AuditAction;
 use App\Enum\TaskExecutionTrigger;
 use App\Enum\TaskPriority;
 use App\Enum\TaskStatus;
+use App\Enum\WorkflowStepTransitionMode;
 use App\Message\AgentTaskMessage;
 use App\Repository\AgentActionRepository;
 use App\Repository\AgentRepository;
 use App\Repository\AgentTaskExecutionRepository;
 use App\Repository\TicketTaskDependencyRepository;
 use App\Repository\TicketTaskRepository;
+use App\Repository\WorkflowStepActionRepository;
+use App\Repository\WorkflowStepRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Uid\Uuid;
@@ -35,6 +40,8 @@ final class TicketTaskService
         private readonly AgentTaskExecutionRepository $agentTaskExecutionRepository,
         private readonly AgentActionRepository $agentActionRepository,
         private readonly AgentRepository $agentRepository,
+        private readonly WorkflowStepActionRepository $workflowStepActionRepository,
+        private readonly WorkflowStepRepository $workflowStepRepository,
         private readonly AgentTaskExecutionService $agentTaskExecutionService,
         private readonly TicketLogService $ticketLogService,
         private readonly RequestCorrelationService $requestCorrelation,
@@ -53,7 +60,9 @@ final class TicketTaskService
     ): TicketTask {
         $action = $this->requireAction($actionKey);
         $task = new TicketTask($ticket, $action, $title, $description, $priority);
-        $task->setAssignedRole($action->getRole());
+        $task
+            ->setAssignedRole($action->getRole())
+            ->setWorkflowStep($this->resolveWorkflowStepForAction($ticket, $action));
 
         if ($parentId !== null) {
             $parent = $this->ticketTaskRepository->find(Uuid::fromString($parentId));
@@ -103,6 +112,7 @@ final class TicketTaskService
             $task
                 ->setAgentAction($action)
                 ->setAssignedRole($action->getRole())
+                ->setWorkflowStep($this->resolveWorkflowStepForAction($task->getTicket(), $action))
                 ->setAssignedAgent(null);
         }
 
@@ -209,41 +219,41 @@ final class TicketTaskService
             return 0;
         }
 
+        return $this->dispatchEligibleTasksForCurrentStep($completedTask->getTicket());
+    }
+
+    public function hasActiveExecution(TicketTask $task): bool
+    {
+        return $this->agentTaskExecutionRepository->findActiveByTicketTask($task) !== null;
+    }
+
+    public function dispatchEligibleTasksForCurrentStep(Ticket $ticket): int
+    {
+        $currentStep = $ticket->getWorkflowStep();
+        if ($currentStep === null) {
+            return 0;
+        }
+
         $dispatched = 0;
-        $dependencies = $this->ticketTaskDependencyRepository->findByDependsOn($completedTask);
-
-        foreach ($dependencies as $dependency) {
-            $dependentTask = $dependency->getTicketTask();
-            if ($dependentTask->getStatus() === TaskStatus::Done) {
-                continue;
-            }
-
-            if (!$this->areDependenciesSatisfied($dependentTask)) {
-                continue;
-            }
-
-            if ($this->agentTaskExecutionRepository->findActiveByTicketTask($dependentTask) !== null) {
+        foreach ($this->findTasksForWorkflowStep($ticket, $currentStep) as $task) {
+            if (!$this->isAutoExecutableInCurrentStep($task, $currentStep)) {
                 continue;
             }
 
             try {
-                $this->execute($dependentTask, triggerType: TaskExecutionTrigger::Auto);
+                $this->execute($task, triggerType: TaskExecutionTrigger::Auto);
                 ++$dispatched;
             } catch (\Throwable $e) {
                 $this->ticketLogService->log(
-                    ticket: $dependentTask->getTicket(),
+                    ticket: $ticket,
                     action: 'execution_dispatch_error',
                     content: $e->getMessage(),
-                    ticketTask: $dependentTask,
-                    metadata: [
-                        'dependsOnTaskId' => (string) $completedTask->getId(),
-                        'dependsOnTaskTitle' => $completedTask->getTitle(),
-                    ],
+                    ticketTask: $task,
                 );
             }
         }
 
-        $this->em->flush();
+        $this->advanceTicketStepIfAutomatic($ticket);
 
         return $dispatched;
     }
@@ -322,6 +332,10 @@ final class TicketTaskService
             'to' => $status->value,
         ]);
 
+        if ($status === TaskStatus::Done) {
+            $this->dispatchReadyDependents($task);
+        }
+
         return $task;
     }
 
@@ -365,6 +379,8 @@ final class TicketTaskService
         $this->em->flush();
 
         $this->audit->log(AuditAction::TaskValidated, 'TicketTask', (string) $task->getId());
+
+        $this->dispatchReadyDependents($task);
 
         return $task;
     }
@@ -434,6 +450,43 @@ final class TicketTaskService
         $this->audit->log(AuditAction::TaskDeleted, 'TicketTask', $id);
     }
 
+    public function ensureCreateWithTicketTask(Ticket $ticket, WorkflowStepAction $workflowStepAction): TicketTask
+    {
+        $existing = $this->ticketTaskRepository->findOneLatestByTicketAndWorkflowStepAndAction(
+            $ticket,
+            $workflowStepAction->getWorkflowStep(),
+            $workflowStepAction->getAgentAction(),
+        );
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $action = $workflowStepAction->getAgentAction();
+        $task = new TicketTask(
+            $ticket,
+            $action,
+            $this->buildCreateWithTicketTitle($workflowStepAction->getWorkflowStep(), $action),
+            $action->getDescription(),
+        );
+        $task
+            ->setWorkflowStep($workflowStepAction->getWorkflowStep())
+            ->setAssignedRole($action->getRole())
+            ->setAssignedAgent($this->resolveAgentForTask($task));
+
+        $this->em->persist($task);
+        $this->em->flush();
+
+        $this->audit->log(AuditAction::TaskCreated, 'TicketTask', (string) $task->getId(), [
+            'title' => $task->getTitle(),
+            'ticket' => (string) $ticket->getId(),
+            'actionKey' => $action->getKey(),
+            'createWithTicket' => true,
+        ]);
+
+        return $task;
+    }
+
     private function requireAction(string $actionKey): AgentAction
     {
         $action = $this->agentActionRepository->findOneByKey($actionKey);
@@ -442,6 +495,33 @@ final class TicketTaskService
         }
 
         return $action;
+    }
+
+    public function resolveWorkflowStepForAction(Ticket $ticket, AgentAction $action): ?\App\Entity\WorkflowStep
+    {
+        $workflow = $ticket->getProject()->getWorkflow();
+        if ($workflow === null) {
+            return null;
+        }
+
+        $matches = $this->workflowStepActionRepository->findByWorkflowAndAction($workflow, $action);
+        if ($matches === []) {
+            throw new \InvalidArgumentException(sprintf(
+                'Action "%s" is not allowed in workflow "%s".',
+                $action->getKey(),
+                $workflow->getName(),
+            ));
+        }
+
+        if (count($matches) > 1) {
+            throw new \InvalidArgumentException(sprintf(
+                'Action "%s" is configured multiple times in workflow "%s".',
+                $action->getKey(),
+                $workflow->getName(),
+            ));
+        }
+
+        return $matches[0]->getWorkflowStep();
     }
 
     private function resolveAgentForTask(TicketTask $task): ?Agent
@@ -455,7 +535,7 @@ final class TicketTaskService
         return $agents[0] ?? null;
     }
 
-    private function areDependenciesSatisfied(TicketTask $task): bool
+    public function areDependenciesSatisfied(TicketTask $task): bool
     {
         foreach ($this->ticketTaskDependencyRepository->findByTicketTask($task) as $dependency) {
             if ($dependency->getDependsOn()->getStatus() !== TaskStatus::Done) {
@@ -464,5 +544,62 @@ final class TicketTaskService
         }
 
         return true;
+    }
+
+    public function advanceTicketStepIfAutomatic(Ticket $ticket): void
+    {
+        $currentStep = $ticket->getWorkflowStep();
+        if ($currentStep === null || $currentStep->getTransitionMode() !== WorkflowStepTransitionMode::Automatic) {
+            return;
+        }
+
+        foreach ($this->findTasksForWorkflowStep($ticket, $currentStep) as $task) {
+            if ($task->getStatus() !== TaskStatus::Done) {
+                return;
+            }
+        }
+
+        $nextStep = $this->workflowStepRepository->findNextByWorkflowStep($currentStep);
+        if ($nextStep === null) {
+            return;
+        }
+
+        $ticket->setWorkflowStep($nextStep);
+
+        $this->em->flush();
+        $this->dispatchEligibleTasksForCurrentStep($ticket);
+    }
+
+    /**
+     * @return TicketTask[]
+     */
+    public function findTasksForWorkflowStep(Ticket $ticket, WorkflowStep $workflowStep): array
+    {
+        return array_values(array_filter(
+            $this->findByTicket($ticket),
+            static fn(TicketTask $task): bool => $task->getWorkflowStep()?->getId()->toRfc4122() === $workflowStep->getId()->toRfc4122(),
+        ));
+    }
+
+    private function buildCreateWithTicketTitle(WorkflowStep $workflowStep, AgentAction $action): string
+    {
+        return sprintf('%s · %s', $workflowStep->getName(), $action->getLabel());
+    }
+
+    private function isAutoExecutableInCurrentStep(TicketTask $task, WorkflowStep $currentStep): bool
+    {
+        if ($task->getWorkflowStep()?->getId()->toRfc4122() !== $currentStep->getId()->toRfc4122()) {
+            return false;
+        }
+
+        if (!in_array($task->getStatus(), [TaskStatus::Backlog, TaskStatus::Todo], true)) {
+            return false;
+        }
+
+        if ($this->hasActiveExecution($task)) {
+            return false;
+        }
+
+        return $this->areDependenciesSatisfied($task);
     }
 }

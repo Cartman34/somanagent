@@ -11,14 +11,17 @@ use App\Entity\Feature;
 use App\Entity\Project;
 use App\Entity\Ticket;
 use App\Entity\Role;
+use App\Entity\WorkflowStep;
+use App\Entity\WorkflowStepAction;
 use App\Enum\AuditAction;
-use App\Enum\StoryStatus;
 use App\Enum\TaskPriority;
 use App\Enum\TaskStatus;
 use App\Enum\TaskType;
 use App\Repository\FeatureRepository;
 use App\Repository\RoleRepository;
 use App\Repository\TicketRepository;
+use App\Repository\WorkflowStepActionRepository;
+use App\Repository\WorkflowStepRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -29,6 +32,9 @@ final class TicketService
         private readonly TicketRepository $ticketRepository,
         private readonly FeatureRepository $featureRepository,
         private readonly RoleRepository $roleRepository,
+        private readonly WorkflowStepRepository $workflowStepRepository,
+        private readonly WorkflowStepActionRepository $workflowStepActionRepository,
+        private readonly TicketTaskService $ticketTaskService,
         private readonly AuditService $audit,
     ) {}
 
@@ -57,8 +63,12 @@ final class TicketService
             }
         }
 
+        $this->initializeCurrentWorkflowStep($ticket);
+
         $this->em->persist($ticket);
         $this->em->flush();
+
+        $this->createWorkflowSeedTasks($ticket);
 
         $this->audit->log(AuditAction::TaskCreated, 'Ticket', (string) $ticket->getId(), [
             'title' => $title,
@@ -105,13 +115,27 @@ final class TicketService
         return $ticket;
     }
 
-    public function transitionStory(Ticket $ticket, StoryStatus $next): Ticket
+    public function advanceWorkflowStep(Ticket $ticket): Ticket
     {
-        $ticket->transitionStoryTo($next);
+        $currentStep = $ticket->getWorkflowStep();
+        if ($currentStep === null) {
+            throw new \LogicException('This ticket is not attached to any workflow step.');
+        }
+
+        if ($currentStep->getTransitionMode()->value !== 'manual') {
+            throw new \LogicException('Only manual workflow steps can be advanced explicitly.');
+        }
+
+        $nextStep = $this->workflowStepRepository->findNextByWorkflowStep($currentStep);
+        if ($nextStep === null) {
+            throw new \LogicException('This workflow step has no next step.');
+        }
+
+        $ticket->setWorkflowStep($nextStep);
         $this->em->flush();
 
         $this->audit->log(AuditAction::TaskUpdated, 'Ticket', (string) $ticket->getId(), [
-            'story_status' => $next->value,
+            'workflow_step' => $nextStep->getKey(),
         ]);
 
         return $ticket;
@@ -141,5 +165,47 @@ final class TicketService
     public function findById(string $id): ?Ticket
     {
         return $this->ticketRepository->find(Uuid::fromString($id));
+    }
+
+    /**
+     * @return WorkflowStep[]
+     */
+    public function findAllowedManualTransitions(Ticket $ticket): array
+    {
+        $currentStep = $ticket->getWorkflowStep();
+        if ($currentStep === null || $currentStep->getTransitionMode()->value !== 'manual') {
+            return [];
+        }
+
+        $nextStep = $this->workflowStepRepository->findNextByWorkflowStep($currentStep);
+
+        return $nextStep !== null ? [$nextStep] : [];
+    }
+
+    private function initializeCurrentWorkflowStep(Ticket $ticket): void
+    {
+        $workflow = $ticket->getProject()->getWorkflow();
+        if ($workflow === null) {
+            $ticket->setWorkflowStep(null);
+            return;
+        }
+
+        $ticket->setWorkflowStep($this->workflowStepRepository->findFirstByWorkflow($workflow));
+    }
+
+    private function createWorkflowSeedTasks(Ticket $ticket): void
+    {
+        $workflow = $ticket->getProject()->getWorkflow();
+        if ($workflow === null) {
+            return;
+        }
+
+        foreach ($this->workflowStepActionRepository->findCreateWithTicketByWorkflow($workflow) as $workflowStepAction) {
+            if (!$workflowStepAction instanceof WorkflowStepAction) {
+                continue;
+            }
+
+            $this->ticketTaskService->ensureCreateWithTicketTask($ticket, $workflowStepAction);
+        }
     }
 }

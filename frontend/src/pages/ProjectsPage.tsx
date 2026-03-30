@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, FolderKanban, Pencil, Trash2 } from 'lucide-react'
 import { projectsApi } from '@/api/projects'
 import { teamsApi } from '@/api/teams'
+import { workflowsApi } from '@/api/workflows'
 import { translationsApi } from '@/api/translations'
 import type { ProjectPayload } from '@/api/projects'
 import { PageSpinner } from '@/components/ui/Spinner'
@@ -27,6 +28,7 @@ function fmt(date: string) {
 function ProjectForm({
   initial,
   teams,
+  workflows,
   i18n,
   onSubmit,
   loading,
@@ -34,6 +36,7 @@ function ProjectForm({
 }: {
   initial?: Partial<ProjectPayload>
   teams: { id: string; name: string }[]
+  workflows: { id: string; name: string; isActive: boolean }[]
   i18n: Record<string, string>
   onSubmit: (d: ProjectPayload) => void
   loading: boolean
@@ -42,9 +45,11 @@ function ProjectForm({
   const [name, setName] = useState(initial?.name ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [teamId, setTeamId] = useState(initial?.teamId ?? '')
+  const [workflowId, setWorkflowId] = useState(initial?.workflowId ?? '')
+  const availableWorkflows = workflows.filter((workflow) => workflow.isActive || workflow.id === workflowId)
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit({ name, description: description || undefined, teamId: teamId || null }) }} className="space-y-4">
+    <form onSubmit={(e) => { e.preventDefault(); onSubmit({ name, description: description || undefined, teamId: teamId || null, workflowId }) }} className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
         <input className="input" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Mon projet" />
@@ -65,6 +70,18 @@ function ProjectForm({
           {i18n['projects.ui.form.team_hint'] ?? 'projects.ui.form.team_hint'}
         </p>
       </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Workflow *</label>
+        <select className="input" value={workflowId} onChange={(e) => setWorkflowId(e.target.value)} required>
+          <option value="" disabled>— Sélectionner un workflow —</option>
+          {availableWorkflows.map((workflow) => (
+            <option key={workflow.id} value={workflow.id}>{workflow.name}</option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-gray-500">
+          Workflow utilisé par le projet pour la progression et la résolution automatique des tâches.
+        </p>
+      </div>
       <div className="flex justify-end gap-3 pt-2">
         <button type="button" onClick={onCancel} className="btn-secondary">Annuler</button>
         <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Enregistrement…' : 'Enregistrer'}</button>
@@ -80,7 +97,7 @@ function ProjectsList() {
   const qc = useQueryClient()
 
   const [createOpen, setCreateOpen] = useState(false)
-  const [editTarget, setEditTarget] = useState<{ id: string; name: string; description: string | null; teamId?: string | null } | null>(null)
+  const [editTarget, setEditTarget] = useState<{ id: string; name: string; description: string | null; teamId?: string | null; workflowId?: string | null } | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
 
   const { data: projects, isLoading, error, refetch } = useQuery({
@@ -91,6 +108,12 @@ function ProjectsList() {
   const { data: teams = [] } = useQuery({
     queryKey: ['teams'],
     queryFn: teamsApi.list,
+  })
+
+  const { data: workflows = [] } = useQuery({
+    queryKey: ['workflows'],
+    queryFn: workflowsApi.list,
+    select: (items) => items.map((workflow) => ({ id: workflow.id, name: workflow.name, isActive: workflow.isActive })),
   })
 
   const { data: formI18n } = useQuery({
@@ -169,6 +192,7 @@ function ProjectsList() {
                         name: project.name,
                         description: project.description,
                         teamId: project.team?.id ?? null,
+                        workflowId: project.workflow?.id ?? null,
                       })
                     }}
                     className="p-1.5 text-gray-400 hover:text-gray-600"
@@ -199,11 +223,12 @@ function ProjectsList() {
       )}
 
       <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Nouveau projet">
-        <ProjectForm
-          teams={teams}
-          i18n={formI18n?.translations ?? {}}
-          onSubmit={(d) => createMutation.mutate(d)}
-          loading={createMutation.isPending}
+          <ProjectForm
+            teams={teams}
+            workflows={workflows}
+            i18n={formI18n?.translations ?? {}}
+            onSubmit={(d) => createMutation.mutate(d)}
+            loading={createMutation.isPending}
           onCancel={() => setCreateOpen(false)}
         />
       </Modal>
@@ -211,8 +236,9 @@ function ProjectsList() {
       <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title="Modifier le projet">
         {editTarget && (
           <ProjectForm
-            initial={{ name: editTarget.name, description: editTarget.description ?? '', teamId: editTarget.teamId ?? null }}
+            initial={{ name: editTarget.name, description: editTarget.description ?? '', teamId: editTarget.teamId ?? null, workflowId: editTarget.workflowId ?? null }}
             teams={teams}
+            workflows={workflows}
             i18n={formI18n?.translations ?? {}}
             onSubmit={(d) => updateMutation.mutate({ id: editTarget.id, data: d })}
             loading={updateMutation.isPending}
