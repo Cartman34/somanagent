@@ -5,13 +5,15 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { AlertOctagon, ExternalLink, RefreshCw } from 'lucide-react'
+import { AlertOctagon, ExternalLink } from 'lucide-react'
 import { logsApi, type LogFilters } from '@/api/logs'
+import { translationsApi } from '@/api/translations'
 import type { LogOccurrence, LogEvent } from '@/types'
 import { PageSpinner } from '@/components/ui/Spinner'
 import ErrorMessage from '@/components/ui/ErrorMessage'
 import EmptyState from '@/components/ui/EmptyState'
 import PageHeader from '@/components/ui/PageHeader'
+import ContentLoadingOverlay from '@/components/ui/ContentLoadingOverlay'
 import Modal from '@/components/ui/Modal'
 
 const PAGE_SIZE = 25
@@ -329,6 +331,7 @@ function OccurrenceDetail({ occurrenceId }: { occurrenceId: string }) {
 }
 
 export default function LogsPage() {
+  const qc = useQueryClient()
   const [viewMode, setViewMode] = useState<LogsViewMode>('occurrences')
   const [page, setPage] = useState(1)
   const [source, setSource] = useState('')
@@ -368,6 +371,13 @@ export default function LogsPage() {
   })
 
   const activeQuery = viewMode === 'occurrences' ? occurrencesQuery : eventsQuery
+  const activeIsFetching = occurrencesQuery.isFetching || eventsQuery.isFetching
+
+  const { data: logsI18n } = useQuery({
+    queryKey: ['ui-translations', 'logs'],
+    queryFn: () => translationsApi.list(['log.list.loading', 'common.action.refresh']),
+  })
+  const tt = (key: string) => logsI18n?.translations[key] ?? key
   const occurrences = occurrencesQuery.data?.data ?? []
   const events = eventsQuery.data?.data ?? []
   const total = activeQuery.data?.total ?? 0
@@ -381,39 +391,38 @@ export default function LogsPage() {
       <PageHeader
         title="Logs"
         description={viewMode === 'occurrences'
-          ? 'Diagnostic agrégé des warnings et erreurs récurrents.'
-          : 'Explorateur d’événements bruts pour suivre la chronologie exacte des signaux.'}
+          ? "Diagnostic agrégé des warnings et erreurs récurrents."
+          : "Explorateur d'événements bruts pour suivre la chronologie exacte des signaux."}
+        onRefresh={() => { qc.invalidateQueries({ queryKey: ['logs'] }) }}
+        refreshTitle={tt('common.action.refresh')}
         action={(
-          <div className="flex items-center gap-2">
-            <div className="inline-flex rounded-xl border p-1" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
-              <button
-                onClick={() => { setPage(1); setViewMode('occurrences') }}
-                className="rounded-lg px-3 py-1.5 text-sm"
-                style={viewMode === 'occurrences'
-                  ? { background: 'var(--brand)', color: '#fff' }
-                  : { color: 'var(--text)' }}
-              >
-                Occurrences
-              </button>
-              <button
-                onClick={() => { setPage(1); setViewMode('events') }}
-                className="rounded-lg px-3 py-1.5 text-sm"
-                style={viewMode === 'events'
-                  ? { background: 'var(--brand)', color: '#fff' }
-                  : { color: 'var(--text)' }}
-              >
-                Événements
-              </button>
-            </div>
-            <button onClick={() => activeQuery.refetch()} className="btn-secondary inline-flex items-center gap-2">
-              <RefreshCw className={`h-4 w-4 ${activeQuery.isFetching ? 'animate-spin' : ''}`} />
-              Rafraîchir
+          <div className="inline-flex rounded-xl border p-1" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
+            <button
+              onClick={() => { setPage(1); setViewMode('occurrences') }}
+              className="rounded-lg px-3 py-1.5 text-sm"
+              style={viewMode === 'occurrences'
+                ? { background: 'var(--brand)', color: '#fff' }
+                : { color: 'var(--text)' }}
+            >
+              Occurrences
+            </button>
+            <button
+              onClick={() => { setPage(1); setViewMode('events') }}
+              className="rounded-lg px-3 py-1.5 text-sm"
+              style={viewMode === 'events'
+                ? { background: 'var(--brand)', color: '#fff' }
+                : { color: 'var(--text)' }}
+            >
+              Événements
             </button>
           </div>
         )}
       />
 
-      <div className="mb-6 grid gap-3 rounded-2xl border p-4 md:grid-cols-3 xl:grid-cols-6" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
+      <div className="relative">
+        <ContentLoadingOverlay isLoading={activeIsFetching && !activeQuery.isLoading} label={tt('log.list.loading')} />
+
+        <div className="mb-6 grid gap-3 rounded-2xl border p-4 md:grid-cols-3 xl:grid-cols-6" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
         <select className="input" value={source} onChange={(e) => { setPage(1); setSource(e.target.value) }}>
           <option value="">Toutes les sources</option>
           <option value="backend">backend</option>
@@ -555,6 +564,7 @@ export default function LogsPage() {
           )}
         </div>
       )}
+      </div>
 
       <Modal
         open={selectedOccurrenceId !== null}

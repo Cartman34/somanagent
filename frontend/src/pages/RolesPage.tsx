@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, UserCog, Pencil, Trash2 } from 'lucide-react'
 import { rolesApi } from '@/api/roles'
+import { translationsApi } from '@/api/translations'
 import type { RolePayload } from '@/api/roles'
 import type { Role } from '@/types'
 import { PageSpinner } from '@/components/ui/Spinner'
@@ -14,6 +15,7 @@ import EmptyState from '@/components/ui/EmptyState'
 import Modal from '@/components/ui/Modal'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import PageHeader from '@/components/ui/PageHeader'
+import ContentLoadingOverlay from '@/components/ui/ContentLoadingOverlay'
 
 function RoleForm({ initial, onSubmit, loading, onCancel }: {
   initial?: Partial<RolePayload>
@@ -56,7 +58,13 @@ export default function RolesPage() {
   const [editRole, setEditRole]       = useState<Role | null>(null)
   const [deleteRole, setDeleteRole]   = useState<Role | null>(null)
 
-  const { data: roles, isLoading, error, refetch } = useQuery({ queryKey: ['roles'], queryFn: rolesApi.list })
+  const { data: roles, isLoading, isFetching, error, refetch } = useQuery({ queryKey: ['roles'], queryFn: rolesApi.list })
+
+  const { data: rolesI18n } = useQuery({
+    queryKey: ['ui-translations', 'roles'],
+    queryFn: () => translationsApi.list(['role.list.loading', 'common.action.refresh']),
+  })
+  const tt = (key: string) => rolesI18n?.translations[key] ?? key
 
   const createMutation = useMutation({ mutationFn: rolesApi.create, onSuccess: () => { qc.invalidateQueries({ queryKey: ['roles'] }); setCreateOpen(false) } })
   const updateMutation = useMutation({ mutationFn: ({ id, data }: { id: string; data: RolePayload }) => rolesApi.update(id, data), onSuccess: () => { qc.invalidateQueries({ queryKey: ['roles'] }); setEditRole(null) } })
@@ -68,32 +76,37 @@ export default function RolesPage() {
   return (
     <>
       <PageHeader title="Rôles" description="Les rôles définissent la spécialisation de chaque agent."
+        onRefresh={() => qc.invalidateQueries({ queryKey: ['roles'] })}
+        refreshTitle={tt('common.action.refresh')}
         action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> Nouveau rôle</button>} />
 
       {roles?.length === 0 ? (
         <EmptyState icon={UserCog} title="Aucun rôle" description="Créez les rôles de votre équipe (PO, Dev, QA…)."
           action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> Nouveau rôle</button>} />
       ) : (
-        <div className="card divide-y divide-gray-100">
-          {roles?.map((role) => (
-            <div key={role.id} className="flex items-center gap-3 px-4 py-3">
-              <UserCog className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900">{role.name}</p>
-                <p className="text-xs text-gray-400 font-mono">{role.slug}</p>
-                {role.description && <p className="text-xs text-gray-500 truncate">{role.description}</p>}
-              </div>
-              {role.skills && role.skills.length > 0 && (
-                <div className="hidden sm:flex gap-1 flex-wrap max-w-xs">
-                  {role.skills.map((s) => <span key={s.id} className="badge-blue text-xs">{s.name}</span>)}
+        <div className="relative">
+          <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={tt('role.list.loading')} />
+          <div className="card divide-y divide-gray-100">
+            {roles?.map((role) => (
+              <div key={role.id} className="flex items-center gap-3 px-4 py-3">
+                <UserCog className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">{role.name}</p>
+                  <p className="text-xs text-gray-400 font-mono">{role.slug}</p>
+                  {role.description && <p className="text-xs text-gray-500 truncate">{role.description}</p>}
                 </div>
-              )}
-              <div className="flex gap-1 flex-shrink-0">
-                <button onClick={() => setEditRole(role)} className="p-1.5 text-gray-400 hover:text-gray-600" title="Modifier"><Pencil className="w-3.5 h-3.5" /></button>
-                <button onClick={() => setDeleteRole(role)} className="p-1.5 text-gray-400 hover:text-red-500" title="Supprimer"><Trash2 className="w-3.5 h-3.5" /></button>
+                {role.skills && role.skills.length > 0 && (
+                  <div className="hidden sm:flex gap-1 flex-wrap max-w-xs">
+                    {role.skills.map((s) => <span key={s.id} className="badge-blue text-xs">{s.name}</span>)}
+                  </div>
+                )}
+                <div className="flex gap-1 flex-shrink-0">
+                  <button onClick={() => setEditRole(role)} className="p-1.5 text-gray-400 hover:text-gray-600" title="Modifier"><Pencil className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => setDeleteRole(role)} className="p-1.5 text-gray-400 hover:text-red-500" title="Supprimer"><Trash2 className="w-3.5 h-3.5" /></button>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 

@@ -22,7 +22,6 @@ use App\Repository\TicketLogRepository;
 use App\Repository\TicketTaskDependencyRepository;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\ProjectService;
-use App\Service\StoryExecutionService;
 use App\Service\TicketLogService;
 use App\Service\TicketService;
 use App\Service\TicketTaskService;
@@ -42,7 +41,6 @@ class TicketController extends AbstractController
         private readonly TicketTaskService $ticketTaskService,
         private readonly TicketLogService $ticketLogService,
         private readonly ProjectService $projectService,
-        private readonly StoryExecutionService $storyExecutionService,
         private readonly AgentRepository $agentRepository,
         private readonly AgentTaskExecutionRepository $agentTaskExecutionRepository,
         private readonly TicketLogRepository $ticketLogRepository,
@@ -439,33 +437,9 @@ class TicketController extends AbstractController
         return $this->json($this->serializeApiTicket($ticket));
     }
 
-    #[Route('/tickets/{id}/resume', name: 'ticket_resume_api', methods: ['POST'])]
     #[Route('/ticket-tasks/{id}/resume', name: 'ticket_task_resume_api', methods: ['POST'])]
     public function resume(string $id, Request $request): JsonResponse
     {
-        $ticket = $this->ticketService->findById($id);
-        if ($ticket !== null) {
-            if (($response = $this->requireProjectTeamForProgress($ticket->getProject())) !== null) {
-                return $response;
-            }
-
-            if (!$ticket->isStory()) {
-                return $this->json($this->apiErrorPayloadFactory->create('tickets.rework.error.resume_unavailable'), Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            try {
-                $result = $this->storyExecutionService->execute($ticket, $ticket->getAssignedAgent());
-            } catch (\RuntimeException|\LogicException $e) {
-                return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            return $this->json([
-                'ticket' => $this->serializeApiTicket($ticket),
-                'agent' => ['id' => (string) $result['agent']->getId(), 'name' => $result['agent']->getName()],
-                'skill' => $result['skill'],
-            ]);
-        }
-
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
             return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
@@ -486,64 +460,6 @@ class TicketController extends AbstractController
             'agent' => ['id' => (string) $result['agent']->getId(), 'name' => $result['agent']->getName()],
             'skill' => $result['skill'],
             'executionId' => $result['executionId'],
-        ]);
-    }
-
-    #[Route('/tickets/{id}/rework-targets', name: 'ticket_rework_targets_api', methods: ['GET'])]
-    public function reworkTargets(string $id): JsonResponse
-    {
-        $ticket = $this->ticketService->findById($id);
-        if ($ticket === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
-        }
-
-        if (($response = $this->requireProjectTeamForProgress($ticket->getProject())) !== null) {
-            return $response;
-        }
-
-        if (!$ticket->isStory()) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.rework.error.step_unavailable'), Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        return $this->json($this->storyExecutionService->listReworkTargets($ticket));
-    }
-
-    #[Route('/tickets/{id}/rework', name: 'ticket_rework_api', methods: ['POST'])]
-    public function rework(string $id, Request $request): JsonResponse
-    {
-        $ticket = $this->ticketService->findById($id);
-        if ($ticket === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
-        }
-
-        if (($response = $this->requireProjectTeamForProgress($ticket->getProject())) !== null) {
-            return $response;
-        }
-
-        if (!$ticket->isStory()) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.rework.error.step_unavailable'), Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        $data = $request->toArray();
-        $targetKey = trim((string) ($data['targetKey'] ?? ''));
-        $objective = trim((string) ($data['objective'] ?? ''));
-        $note = isset($data['note']) ? trim((string) $data['note']) : null;
-
-        if ($targetKey === '' || $objective === '') {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.rework.validation.target_objective_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        try {
-            $result = $this->storyExecutionService->rework($ticket, $targetKey, $objective, $note);
-        } catch (\RuntimeException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        return $this->json([
-            'ticket' => $this->serializeApiTicket($ticket),
-            'agent' => ['id' => (string) $result['agent']->getId(), 'name' => $result['agent']->getName()],
-            'skill' => $result['skill'],
-            'targetKey' => $result['targetKey'],
         ]);
     }
 

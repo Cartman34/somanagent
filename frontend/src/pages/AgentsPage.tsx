@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Bot, Pencil, Trash2, CheckCircle, XCircle } from 'lucide-react'
 import { agentsApi } from '@/api/agents'
+import { translationsApi } from '@/api/translations'
 import { rolesApi } from '@/api/roles'
 import { healthApi } from '@/api/health'
 import type { AgentPayload } from '@/api/agents'
@@ -16,6 +17,7 @@ import EmptyState from '@/components/ui/EmptyState'
 import Modal from '@/components/ui/Modal'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import PageHeader from '@/components/ui/PageHeader'
+import ContentLoadingOverlay from '@/components/ui/ContentLoadingOverlay'
 
 const defaultConfig: AgentConfig = {
   model: 'claude-sonnet-4-6',
@@ -132,8 +134,14 @@ export default function AgentsPage() {
   const [editAgent, setEditAgent]     = useState<Agent | null>(null)
   const [deleteAgent, setDeleteAgent] = useState<Agent | null>(null)
 
-  const { data: agents, isLoading, error, refetch } = useQuery({ queryKey: ['agents'], queryFn: agentsApi.list })
+  const { data: agents, isLoading, isFetching, error, refetch } = useQuery({ queryKey: ['agents'], queryFn: agentsApi.list })
   const { data: claudeCliAuth } = useQuery({ queryKey: ['health', 'claude-cli-auth'], queryFn: healthApi.claudeCliAuth, retry: false })
+
+  const { data: agentsI18n } = useQuery({
+    queryKey: ['ui-translations', 'agents'],
+    queryFn: () => translationsApi.list(['agent.list.loading', 'common.action.refresh']),
+  })
+  const tt = (key: string) => agentsI18n?.translations[key] ?? key
 
   const createMutation = useMutation({ mutationFn: agentsApi.create, onSuccess: () => { qc.invalidateQueries({ queryKey: ['agents'] }); setCreateOpen(false) } })
   const updateMutation = useMutation({ mutationFn: ({ id, data }: { id: string; data: AgentPayload }) => agentsApi.update(id, data), onSuccess: () => { qc.invalidateQueries({ queryKey: ['agents'] }); setEditAgent(null) } })
@@ -145,6 +153,8 @@ export default function AgentsPage() {
   return (
     <>
       <PageHeader title="Agents" description="Configurez les agents IA et assignez-leur un rôle."
+        onRefresh={() => qc.invalidateQueries({ queryKey: ['agents'] })}
+        refreshTitle={tt('common.action.refresh')}
         action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> Nouvel agent</button>} />
 
       <div className="card p-4 mb-4">
@@ -175,8 +185,10 @@ export default function AgentsPage() {
         <EmptyState icon={Bot} title="Aucun agent" description="Créez votre premier agent et configurez son connecteur IA."
           action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> Nouvel agent</button>} />
       ) : (
-        <div className="card overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="relative">
+          <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={tt('agent.list.loading')} />
+          <div className="card overflow-hidden">
+            <table className="w-full text-sm">
             <thead className="border-b" style={{ background: 'var(--surface2)', borderColor: 'var(--border)' }}>
               <tr>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--muted)' }}>Nom</th>
@@ -213,7 +225,8 @@ export default function AgentsPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       )}
 

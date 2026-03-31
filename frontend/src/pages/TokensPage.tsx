@@ -2,21 +2,30 @@
  * @author Florent HAZARD <f.hazard@sowapps.com>
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Coins } from 'lucide-react'
 import { tokensApi } from '@/api/tokens'
+import { translationsApi } from '@/api/translations'
 import { agentsApi } from '@/api/agents'
 import { PageSpinner } from '@/components/ui/Spinner'
 import ErrorMessage from '@/components/ui/ErrorMessage'
 import PageHeader from '@/components/ui/PageHeader'
+import ContentLoadingOverlay from '@/components/ui/ContentLoadingOverlay'
 
 function fmt(n: number | string) {
   return Number(n).toLocaleString('fr-FR')
 }
 
 export default function TokensPage() {
-  const { data: summary, isLoading, error, refetch } = useQuery({ queryKey: ['tokens-summary'], queryFn: () => tokensApi.summary() })
+  const qc = useQueryClient()
+  const { data: summary, isLoading, isFetching, error, refetch } = useQuery({ queryKey: ['tokens-summary'], queryFn: () => tokensApi.summary() })
   const { data: agents } = useQuery({ queryKey: ['agents'], queryFn: agentsApi.list })
+
+  const { data: tokensI18n } = useQuery({
+    queryKey: ['ui-translations', 'tokens'],
+    queryFn: () => translationsApi.list(['token.list.loading', 'common.action.refresh']),
+  })
+  const tt = (key: string) => tokensI18n?.translations[key] ?? key
 
   const agentMap = Object.fromEntries(agents?.map((a) => [a.id, a.name]) ?? [])
 
@@ -27,10 +36,14 @@ export default function TokensPage() {
 
   return (
     <>
-      <PageHeader title="Tokens" description="Suivi de la consommation de tokens par agent et par modèle." />
+      <PageHeader title="Tokens" description="Suivi de la consommation de tokens par agent et par modèle."
+        onRefresh={() => { qc.invalidateQueries({ queryKey: ['tokens-summary'] }); qc.invalidateQueries({ queryKey: ['agents'] }) }}
+        refreshTitle={tt('common.action.refresh')} />
 
       {/* Totaux */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="relative">
+        <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={tt('token.list.loading')} />
+        <div className="grid grid-cols-3 gap-4 mb-8">
         {[
           { label: 'Tokens en entrée',  value: total?.input  ?? 0 },
           { label: 'Tokens en sortie',  value: total?.output ?? 0 },
@@ -41,6 +54,7 @@ export default function TokensPage() {
             <p className="text-2xl font-bold text-gray-900">{fmt(value)}</p>
           </div>
         ))}
+        </div>
       </div>
 
       {/* Par agent */}

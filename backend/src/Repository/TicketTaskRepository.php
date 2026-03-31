@@ -110,4 +110,26 @@ final class TicketTaskRepository extends ServiceEntityRepository
     {
         return $this->findBy(['status' => $status], ['updatedAt' => 'ASC']);
     }
+
+    /** @return TicketTask[] */
+    public function findRecent(int $limit = 10): array
+    {
+        return $this->createQueryBuilder('tt')
+            ->orderBy('tt.createdAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @return TicketTask[] */
+    public function findByTitleLike(string $query, int $limit = 10): array
+    {
+        return $this->createQueryBuilder('tt')
+            ->andWhere('LOWER(tt.title) LIKE :query')
+            ->setParameter('query', '%' . mb_strtolower($query) . '%')
+            ->orderBy('tt.createdAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
 }

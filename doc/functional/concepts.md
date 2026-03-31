@@ -124,17 +124,19 @@ A **Workflow** is a sequence of **steps** to be executed by agents.
 
 A Workflow:
 - Has a **trigger**: `manual`, `vcs_event` (PR/MR), or `scheduled`
-- Is associated with a **Team** (to resolve roles → agents)
 - Contains **ordered steps**
+- Defines **allowed actions per step**
+- Defines whether each step is **manual** or **automatic**
 
 ### Workflow Step
 
 Each step defines:
-- The **role** that executes it (e.g. "Reviewer")
-- The **skill** to use
 - The **input source** (VCS diff, output of the previous step, manual)
 - The **output_key**: name of the reusable output variable
 - An optional **condition** (e.g. only execute if the previous step found errors)
+- The **transition mode** (`manual` or `automatic`)
+- The list of allowed **AgentAction** entries
+- Which actions are created automatically with the ticket via `createWithTicket`
 
 ---
 
@@ -181,7 +183,7 @@ Project
 
 Team
   └── Role (1..n)
-        └── skillSlug → Skill
+        └── Skills (0..n)
 
 Agent
   └── Role (optional)
@@ -197,8 +199,7 @@ Ticket
 
 Workflow (template)
   └── WorkflowStep (1..n)
-        └── WorkflowStepAction → AgentAction → Role → Agent
-        └── skillSlug → Skill
+        └── WorkflowStepAction → AgentAction
 ```
 
 ---

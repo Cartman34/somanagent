@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Layers, Pencil, Trash2 } from 'lucide-react'
 import { featuresApi } from '@/api/features'
+import { translationsApi } from '@/api/translations'
 import { projectsApi } from '@/api/projects'
 import type { FeaturePayload } from '@/api/features'
 import type { Feature } from '@/types'
@@ -15,6 +16,7 @@ import EmptyState from '@/components/ui/EmptyState'
 import Modal from '@/components/ui/Modal'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import PageHeader from '@/components/ui/PageHeader'
+import ContentLoadingOverlay from '@/components/ui/ContentLoadingOverlay'
 
 const STATUS_LABELS: Record<string, string> = { open: 'Ouverte', in_progress: 'En cours', closed: 'Fermée' }
 const STATUS_BADGE: Record<string, string>  = { open: 'badge-blue', in_progress: 'badge-orange', closed: 'badge-green' }
@@ -63,11 +65,17 @@ export default function FeaturesPage() {
   const [deleteFeature, setDeleteFeature] = useState<Feature | null>(null)
 
   const { data: projects } = useQuery({ queryKey: ['projects'], queryFn: projectsApi.list })
-  const { data: features, isLoading, error, refetch } = useQuery({
+  const { data: features, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['features', projectId],
     queryFn: () => featuresApi.listByProject(projectId),
     enabled: !!projectId,
   })
+
+  const { data: featuresI18n } = useQuery({
+    queryKey: ['ui-translations', 'features'],
+    queryFn: () => translationsApi.list(['feature.list.loading', 'common.action.refresh']),
+  })
+  const tt = (key: string) => featuresI18n?.translations[key] ?? key
 
   const createMutation = useMutation({ mutationFn: (d: FeaturePayload) => featuresApi.create(projectId, d), onSuccess: () => { qc.invalidateQueries({ queryKey: ['features', projectId] }); setCreateOpen(false) } })
   const updateMutation = useMutation({ mutationFn: ({ id, data }: { id: string; data: FeaturePayload }) => featuresApi.update(id, data), onSuccess: () => { qc.invalidateQueries({ queryKey: ['features', projectId] }); setEditFeature(null) } })
@@ -76,6 +84,8 @@ export default function FeaturesPage() {
   return (
     <>
       <PageHeader title="Features" description="Regroupez les tâches sous des fonctionnalités métier."
+        onRefresh={() => { qc.invalidateQueries({ queryKey: ['projects'] }); if( projectId ) qc.invalidateQueries({ queryKey: ['features', projectId] }) }}
+        refreshTitle={tt('common.action.refresh')}
         action={projectId ? <button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> Nouvelle feature</button> : undefined} />
 
       <div className="mb-6">
@@ -92,7 +102,9 @@ export default function FeaturesPage() {
         <EmptyState icon={Layers} title="Aucune feature" description="Créez des features pour organiser vos tâches."
           action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> Nouvelle feature</button>} />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="relative">
+          <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={tt('feature.list.loading')} />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {features?.map((feature) => (
             <div key={feature.id} className="card p-4 flex flex-col gap-2">
               <div className="flex items-start justify-between gap-2">
@@ -108,6 +120,7 @@ export default function FeaturesPage() {
               </div>
             </div>
           ))}
+        </div>
         </div>
       )}
 

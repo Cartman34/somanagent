@@ -28,12 +28,25 @@ Content-Type: application/json
 
 {
   "name": "Reviewer",
-  "description": "Code review and quality control",
-  "skillSlug": "code-reviewer"
+  "description": "Code review and quality control"
 }
 ```
 
-The `skillSlug` field is optional but recommended: it defines which skill will be used when this role is involved in a workflow.
+Role-to-skill association is managed separately.
+
+Current model:
+- a role may reference multiple compatible skills
+- workflow routing does not come from the role
+- runtime routing comes from `AgentAction` (`requiredRole` + `requiredSkill`)
+
+Skill assignment endpoints:
+
+```http
+POST /api/roles/{id}/skills
+Content-Type: application/json
+
+{ "skillId": "..." }
+```
 
 ## Web Development Team Example
 
@@ -56,7 +69,7 @@ It creates the team with 6 roles:
 
 ## Assigning an Agent to a Role
 
-An agent can be assigned to a role from its configuration page. When a workflow needs the "Reviewer" role, SoManAgent looks for the active agent assigned to that role within the relevant team.
+An agent can be assigned to a role from its configuration page. When a task executes, SoManAgent resolves eligible agents from the `AgentAction` role inside the relevant project team.
 
 → See [Agents](agents.md) to configure an agent.
 
@@ -72,5 +85,6 @@ description: "..."
 roles:
   - name: "Reviewer"
     description: "Code review"
-    skillSlug: "code-reviewer"
+    skills:
+      - "code-reviewer"
 ```

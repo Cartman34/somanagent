@@ -99,17 +99,20 @@ skills/
         └── SKILL.md       ← created in SoManAgent
 ```
 
-## Associating a Skill with a Role
+## Skills, Roles, and Actions
 
-The `skillSlug` of a role determines which skill will be injected into the prompt when that role is involved in a workflow.
+A skill may be attached to one or more roles as a compatibility hint, but workflow runtime does not route from the role alone.
+
+Current runtime model:
+- `WorkflowStepAction` declares which `AgentAction` entries are allowed in each workflow step
+- `AgentAction` carries the concrete routing requirements (`role` and optional `skill`)
+- task execution resolves the skill from the task's `AgentAction`
 
 ```
-Role "Reviewer" → skillSlug: "code-reviewer"
-                       │
-                       └── skills/imported/code-reviewer/SKILL.md
-                                 │
-                                 └── injected into Prompt.build()
+WorkflowStepAction → AgentAction(review.code)
+                        ├── role: Reviewer
+                        └── skill: code-reviewer
 ```
 
-→ See [Teams and Roles](teams-and-roles.md) to associate a skill with a role.
+→ See [Teams and Roles](teams-and-roles.md) for role skill management.
 → See [Adapters](../technical/adapters.md) for the prompt injection mechanism.

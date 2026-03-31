@@ -7,6 +7,7 @@ import { Routes, Route, useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, BookOpen, ArrowLeft, Pencil, Trash2, Download, Save } from 'lucide-react'
 import { skillsApi } from '@/api/skills'
+import { translationsApi } from '@/api/translations'
 import type { SkillCreatePayload } from '@/api/skills'
 import type { Skill } from '@/types'
 import { PageSpinner } from '@/components/ui/Spinner'
@@ -15,6 +16,7 @@ import EmptyState from '@/components/ui/EmptyState'
 import Modal from '@/components/ui/Modal'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import PageHeader from '@/components/ui/PageHeader'
+import ContentLoadingOverlay from '@/components/ui/ContentLoadingOverlay'
 
 // ─── Import Form ──────────────────────────────────────────────────────────────
 
@@ -145,10 +147,16 @@ function SkillsList() {
   const [deleteTarget, setDeleteTarget] = useState<Skill | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
 
-  const { data: skills, isLoading, error, refetch } = useQuery({
+  const { data: skills, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['skills'],
     queryFn: skillsApi.list,
   })
+
+  const { data: skillsI18n } = useQuery({
+    queryKey: ['ui-translations', 'skills'],
+    queryFn: () => translationsApi.list(['skill.list.loading', 'common.action.refresh']),
+  })
+  const tt = (key: string) => skillsI18n?.translations[key] ?? key
 
   const importMutation = useMutation({
     mutationFn: skillsApi.import,
@@ -181,6 +189,8 @@ function SkillsList() {
       <PageHeader
         title="Compétences"
         description="Importez des compétences depuis le registre ou créez les vôtres."
+        onRefresh={() => qc.invalidateQueries({ queryKey: ['skills'] })}
+        refreshTitle={tt('common.action.refresh')}
         action={
           <div className="flex gap-2">
             <button className="btn-secondary" onClick={() => setImportOpen(true)}>
@@ -206,7 +216,9 @@ function SkillsList() {
           }
         />
       ) : (
-        <div className="space-y-6">
+        <div className="relative">
+          <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={tt('skill.list.loading')} />
+          <div className="space-y-6">
           {/* Imported */}
           {imported.length > 0 && (
             <section>
@@ -234,6 +246,7 @@ function SkillsList() {
               </div>
             </section>
           )}
+        </div>
         </div>
       )}
 
@@ -274,13 +287,19 @@ function SkillsList() {
 
 function SkillCard({ skill, onEdit, onDelete }: { skill: Skill; onEdit: () => void; onDelete: () => void }) {
   return (
-    <div className="card p-4 flex flex-col gap-2">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onEdit}
+      onKeyDown={(e) => e.key === 'Enter' && onEdit()}
+      className="card p-4 flex flex-col gap-2 cursor-pointer hover:shadow-md transition-shadow"
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="font-medium text-gray-900 truncate">{skill.name}</p>
           <p className="text-xs font-mono text-gray-400">{skill.slug}</p>
         </div>
-        <div className="flex gap-1 flex-shrink-0">
+        <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
           <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-brand-600" title="Modifier le contenu">
             <Pencil className="w-3.5 h-3.5" />
           </button>

@@ -2,7 +2,7 @@
  * @author Florent HAZARD <f.hazard@sowapps.com>
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { FolderKanban, Users, Bot, BookOpen, CheckCircle, XCircle, Activity } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { projectsApi } from '@/api/projects'
@@ -10,7 +10,10 @@ import { teamsApi } from '@/api/teams'
 import { agentsApi } from '@/api/agents'
 import { skillsApi } from '@/api/skills'
 import { healthApi } from '@/api/health'
+import { translationsApi } from '@/api/translations'
 import { PageSpinner } from '@/components/ui/Spinner'
+import PageHeader from '@/components/ui/PageHeader'
+import ContentLoadingOverlay from '@/components/ui/ContentLoadingOverlay'
 
 interface StatCardProps {
   label: string
@@ -35,22 +38,24 @@ function StatCard({ label, value, icon: Icon, to, color }: StatCardProps) {
 }
 
 export default function DashboardPage() {
-  const { data: projects, isLoading: loadingProjects } = useQuery({
+  const qc = useQueryClient()
+
+  const { data: projects, isLoading: loadingProjects, isFetching: fetchingProjects } = useQuery({
     queryKey: ['projects'],
     queryFn: projectsApi.list,
   })
 
-  const { data: teams, isLoading: loadingTeams } = useQuery({
+  const { data: teams, isLoading: loadingTeams, isFetching: fetchingTeams } = useQuery({
     queryKey: ['teams'],
     queryFn: teamsApi.list,
   })
 
-  const { data: agents, isLoading: loadingAgents } = useQuery({
+  const { data: agents, isLoading: loadingAgents, isFetching: fetchingAgents } = useQuery({
     queryKey: ['agents'],
     queryFn: agentsApi.list,
   })
 
-  const { data: skills, isLoading: loadingSkills } = useQuery({
+  const { data: skills, isLoading: loadingSkills, isFetching: fetchingSkills } = useQuery({
     queryKey: ['skills'],
     queryFn: skillsApi.list,
   })
@@ -74,13 +79,34 @@ export default function DashboardPage() {
   })
 
   const loading = loadingProjects || loadingTeams || loadingAgents || loadingSkills
+  const isFetching = fetchingProjects || fetchingTeams || fetchingAgents || fetchingSkills
+
+  const { data: dashboardI18n } = useQuery({
+    queryKey: ['ui-translations', 'dashboard'],
+    queryFn: () => translationsApi.list(['dashboard.loading', 'common.action.refresh']),
+  })
+  const tt = (key: string) => dashboardI18n?.translations[key] ?? key
 
   if (loading) return <PageSpinner />
 
   const activeAgents = agents?.filter((a) => a.isActive).length ?? 0
 
   return (
-    <div className="space-y-8">
+    <>
+    <PageHeader title="Tableau de bord" description="Vue d'ensemble de vos projets, équipes et agents."
+      onRefresh={() => {
+        qc.invalidateQueries({ queryKey: ['projects'] })
+        qc.invalidateQueries({ queryKey: ['teams'] })
+        qc.invalidateQueries({ queryKey: ['agents'] })
+        qc.invalidateQueries({ queryKey: ['skills'] })
+        qc.invalidateQueries({ queryKey: ['health'] })
+      }}
+      refreshTitle={tt('common.action.refresh')} />
+
+    <div className="relative">
+      <ContentLoadingOverlay isLoading={isFetching && !loading} label={tt('dashboard.loading')} />
+
+      <div className="space-y-8">
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
@@ -230,5 +256,7 @@ export default function DashboardPage() {
         </ol>
       </div>
     </div>
+    </div>
+    </>
   )
 }
