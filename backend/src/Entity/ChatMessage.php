@@ -37,6 +37,9 @@ class ChatMessage
     #[ORM\Column(length: 36)]
     private string $exchangeId;
 
+    #[ORM\Column(type: 'uuid', nullable: true)]
+    private ?Uuid $replyToMessageId = null;
+
     #[ORM\Column(type: 'boolean')]
     private bool $isError = false;
 
@@ -72,6 +75,8 @@ class ChatMessage
     public function getAuthor(): ChatAuthor            { return $this->author; }
     public function getContent(): string               { return $this->content; }
     public function getExchangeId(): string            { return $this->exchangeId; }
+    public function getReplyToMessageId(): ?Uuid       { return $this->replyToMessageId; }
+    public function setReplyToMessageId(?Uuid $replyToMessageId): static { $this->replyToMessageId = $replyToMessageId; return $this; }
     public function isError(): bool                    { return $this->isError; }
     public function getMetadata(): ?array              { return $this->metadata; }
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }

@@ -2,7 +2,7 @@
  * @author Florent HAZARD <f.hazard@sowapps.com>
  */
 
-import { useEffect, useState, type ComponentType } from 'react'
+import { useEffect, useState, useMemo, type ComponentType } from 'react'
 import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -10,7 +10,7 @@ import {
   AlertTriangle, ChevronRight, GitBranch, User, ArrowRight,
   Layers, ListTodo, Users, Settings, Kanban, Zap, Send, RotateCcw,
   Loader2, AlertCircle, History, Coins, X, FileText,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, Reply,
 } from 'lucide-react'
 import { projectsApi } from '@/api/projects'
 import { workflowsApi } from '@/api/workflows'
@@ -21,6 +21,7 @@ import { agentsApi } from '@/api/agents'
 import type {
   Ticket,
   TicketTask,
+  TicketLog,
   AgentTaskExecution,
   TaskStatus,
   TaskPriority,
@@ -91,6 +92,24 @@ const EXECUTION_HISTORY_TRANSLATION_KEYS = [
   'ui.project_detail.execution_history.exhausted_retries',
   'ui.project_detail.execution_history.auto',
   'ui.project_detail.execution_history.not_finished',
+] as const
+
+const TICKET_DISCUSSION_TRANSLATION_KEYS = [
+  'tickets.discussion.section_title',
+  'tickets.discussion.description',
+  'tickets.discussion.comment_placeholder',
+  'tickets.discussion.submit',
+  'tickets.discussion.submit_hint',
+  'tickets.discussion.send',
+  'tickets.discussion.empty',
+  'tickets.discussion.author_you',
+  'tickets.discussion.requires_answer',
+  'tickets.discussion.reply',
+  'tickets.discussion.reply_label',
+  'tickets.discussion.reply_to',
+  'tickets.discussion.reply_to_fallback',
+  'tickets.discussion.reply_placeholder',
+  'common.action.cancel',
 ] as const
 
 const PROJECT_TEAM_GUARD_TRANSLATION_KEYS = [
@@ -593,6 +612,11 @@ function TaskDrawer({ taskId, onClose, projectHasTeam }: { taskId: string; onClo
     queryFn: () => translationsApi.list([...PROJECT_TEAM_GUARD_TRANSLATION_KEYS]),
     staleTime: Infinity,
   })
+  const { data: ticketDiscussionI18n } = useQuery({
+    queryKey: ['ui-translations', 'ticket-discussion'],
+    queryFn: () => translationsApi.list([...TICKET_DISCUSSION_TRANSLATION_KEYS]),
+    staleTime: Infinity,
+  })
 
   const executionHistoryLocale = executionHistoryI18n?.locale
 
@@ -601,6 +625,9 @@ function TaskDrawer({ taskId, onClose, projectHasTeam }: { taskId: string; onClo
   )
   const tt = (key: typeof PROJECT_TEAM_GUARD_TRANSLATION_KEYS[number]) => (
     projectTeamGuardI18n?.translations[key] ?? key
+  )
+  const dt = (key: typeof TICKET_DISCUSSION_TRANSLATION_KEYS[number]) => (
+    ticketDiscussionI18n?.translations[key] ?? key
   )
 
   const taskHasActiveExecution = entity && !isTicket(entity)
@@ -641,7 +668,34 @@ function TaskDrawer({ taskId, onClose, projectHasTeam }: { taskId: string; onClo
               })
             : []
           const commentLogs = logs.filter((log) => log.kind === 'comment')
-          const commentIndex = new Map(commentLogs.map((log) => [log.id, log]))
+          
+          /**
+           * Represents a comment thread rooted at a parent-less log entry.
+           */
+          interface CommentThread {
+            /** Root message of the thread (no parent). */
+            root: TicketLog
+            /** Direct replies to the root message (flat list — no nested replies). */
+            replies: TicketLog[]
+          }
+
+          /**
+           * Groups comment logs into threads: each thread has one root and its direct replies.
+           */
+          const commentThreads = useMemo((): CommentThread[] => {
+            const threads: CommentThread[] = []
+            const rootLogs = commentLogs.filter((log) => !log.replyToLogId)
+            
+            for (const root of rootLogs) {
+              const replies = commentLogs.filter((log) => log.replyToLogId === root.id)
+              threads.push({ root, replies })
+            }
+            
+            return threads.sort((a, b) => 
+              new Date(a.root.createdAt).getTime() - new Date(b.root.createdAt).getTime()
+            )
+          }, [commentLogs])
+          
           const totalTokens = (entity.tokenUsage ?? []).reduce((sum, entry) => sum + entry.totalTokens, 0)
           const totalCalls = entity.tokenUsage?.length ?? 0
           const pendingQuestions = commentLogs.filter((log) => log.requiresAnswer).length
@@ -660,7 +714,6 @@ function TaskDrawer({ taskId, onClose, projectHasTeam }: { taskId: string; onClo
             ? latestExecutionError
             : null
           const showExecutionErrorBanner = activeExecutionError !== null && activeExecutionError.id !== dismissedErrorLogId
-          const replyTarget = replyToLogId ? commentIndex.get(replyToLogId) ?? null : null
 
           return (
           <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-5">
@@ -991,27 +1044,15 @@ function TaskDrawer({ taskId, onClose, projectHasTeam }: { taskId: string; onClo
                 <div className="rounded border p-4" style={{ borderColor: 'var(--border)', background: 'color-mix(in srgb, var(--surface2) 82%, transparent)' }}>
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>Discussion ticket</p>
-                      <p className="text-xs" style={{ color: 'var(--muted)' }}>Les questions agent et vos réponses restent visibles dans le ticket.</p>
+                      <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{dt('tickets.discussion.section_title')}</p>
+                      <p className="text-xs" style={{ color: 'var(--muted)' }}>{dt('tickets.discussion.description')}</p>
                     </div>
                   </div>
-
-                  {replyTarget && (
-                    <div className="mt-3 rounded border px-3 py-2 text-xs" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium" style={{ color: 'var(--text)' }}>Réponse ciblée</span>
-                        <button type="button" className="ml-auto" style={{ color: 'var(--muted)' }} onClick={() => setReplyToLogId(null)}>
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <p className="mt-1 line-clamp-3" style={{ color: 'var(--muted)' }}>{replyTarget.content}</p>
-                    </div>
-                  )}
 
                   <div className="mt-3 space-y-3">
                     <textarea
                       className="input min-h-[110px] resize-y"
-                      placeholder={replyTarget ? 'Répondez à ce commentaire…' : 'Ajoutez un commentaire ou une précision pour l’agent…'}
+                      placeholder={dt('tickets.discussion.comment_placeholder')}
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
                       onKeyDown={(e) => {
@@ -1030,55 +1071,117 @@ function TaskDrawer({ taskId, onClose, projectHasTeam }: { taskId: string; onClo
                         disabled={commentMutation.isPending || commentText.trim() === ''}
                       >
                         {commentMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                        {replyTarget ? 'Répondre' : 'Commenter'}
+                        {dt('tickets.discussion.submit')}
                       </button>
-                      <span className="text-xs" style={{ color: 'var(--muted)' }}>Ctrl/Cmd + Entrée pour envoyer</span>
+                      <span className="text-xs" style={{ color: 'var(--muted)' }}>{dt('tickets.discussion.submit_hint')}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  {commentLogs.length === 0 && (
+                <div className="space-y-4">
+                  {commentThreads.length === 0 && (
                     <div className="rounded border border-dashed px-4 py-6 text-sm" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
-                      Aucun échange ticket pour l’instant.
+                      {dt('tickets.discussion.empty')}
                     </div>
                   )}
 
-                  {commentLogs.map((log) => {
-                    const replyTo = log.replyToLogId ? commentIndex.get(log.replyToLogId) ?? null : null
-                    const isAgent = log.authorType === 'agent'
-                    const context = typeof log.metadata?.context === 'string' ? log.metadata.context : null
+                  {commentThreads.map((thread) => {
+                    const root = thread.root
+                    const isAgent = root.authorType === 'agent'
+                    const context = typeof root.metadata?.context === 'string' ? root.metadata.context : null
+                    const isReplying = replyToLogId === root.id
+                    const replyingToLog = isReplying ? (replyToLogId === root.id ? root : thread.replies.find((r) => r.id === replyToLogId) ?? null) : null
+                    
                     return (
-                      <div key={log.id} className="rounded border p-4" style={{ borderColor: 'var(--border)', background: isAgent ? 'color-mix(in srgb, var(--brand-dim) 34%, var(--surface) 66%)' : 'var(--surface2)' }}>
-                        <div className="flex flex-wrap items-center gap-2 text-xs">
-                          <span className="font-medium" style={{ color: 'var(--text)' }}>{log.authorName ?? (isAgent ? 'Agent' : 'Vous')}</span>
-                          <span style={{ color: 'var(--muted)' }}>{new Date(log.createdAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}</span>
-                          {context && <span className="rounded px-2 py-0.5" style={{ background: 'var(--surface)', color: 'var(--muted)' }}>{context}</span>}
-                          {log.requiresAnswer && <span className="rounded px-2 py-0.5" style={{ background: 'rgba(245,158,11,0.14)', color: '#b45309' }}>Réponse attendue</span>}
+                      <div key={root.id} className="space-y-2">
+                        <div className="rounded border p-4" style={{ borderColor: 'var(--border)', background: isAgent ? 'color-mix(in srgb, var(--brand-dim) 34%, var(--surface) 66%)' : 'var(--surface2)' }}>
+                          <div className="flex flex-wrap items-center gap-2 text-xs">
+                            <span className="font-medium" style={{ color: 'var(--text)' }}>{root.authorName ?? (isAgent ? 'Agent' : dt('tickets.discussion.author_you'))}</span>
+                            <span style={{ color: 'var(--muted)' }}>{new Date(root.createdAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                            {context && <span className="rounded px-2 py-0.5" style={{ background: 'var(--surface)', color: 'var(--muted)' }}>{context}</span>}
+                            {root.requiresAnswer && <span className="rounded px-2 py-0.5" style={{ background: 'rgba(245,158,11,0.14)', color: '#b45309' }}>{dt('tickets.discussion.requires_answer')}</span>}
+                          </div>
+
+                          {root.content && (
+                            <div className="mt-3 text-sm">
+                              <Markdown content={root.content} />
+                            </div>
+                          )}
+
+                          <div className="mt-3 flex justify-end">
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-1 rounded px-2.5 py-1.5 text-xs"
+                              style={{ background: 'var(--surface)', color: 'var(--muted)' }}
+                              onClick={() => { setReplyToLogId(root.id); setCommentText('') }}
+                            >
+                              <Reply className="w-3 h-3" />
+                              {dt('tickets.discussion.reply')}
+                            </button>
+                          </div>
                         </div>
 
-                        {replyTo && (
-                          <div className="mt-2 rounded border-l-2 pl-3 text-xs" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
-                            En réponse à {replyTo.authorName ?? replyTo.authorType ?? 'un commentaire'}: {replyTo.content}
+                        {thread.replies.map((reply) => {
+                          const isReplyAgent = reply.authorType === 'agent'
+                          return (
+                            <div key={reply.id} className="ml-6 rounded border p-3" style={{ borderColor: 'var(--border)', background: isReplyAgent ? 'color-mix(in srgb, var(--brand-dim) 25%, var(--surface) 75%)' : 'var(--surface)' }}>
+                              <div className="flex flex-wrap items-center gap-2 text-xs">
+                                <span className="font-medium" style={{ color: 'var(--text)' }}>{reply.authorName ?? (isReplyAgent ? 'Agent' : dt('tickets.discussion.author_you'))}</span>
+                                <span style={{ color: 'var(--muted)' }}>{new Date(reply.createdAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                                <span className="rounded px-2 py-0.5" style={{ background: 'var(--surface2)', color: 'var(--muted)' }}>{dt('tickets.discussion.reply_label')}</span>
+                              </div>
+                              {reply.content && (
+                                <div className="mt-2 text-sm">
+                                  <Markdown content={reply.content} />
+                                </div>
+                              )}
+                              <div className="mt-2 flex justify-end">
+                                <button
+                                  type="button"
+                                  className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs"
+                                  style={{ background: 'var(--surface2)', color: 'var(--muted)' }}
+                                  onClick={() => { setReplyToLogId(root.id); setCommentText('') }}
+                                >
+                                  <Reply className="w-3 h-3" />
+                                  {dt('tickets.discussion.reply')}
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        })}
+
+                        {isReplying && (
+                          <div className="ml-6 rounded border p-3" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
+                            <p className="text-xs font-medium mb-2" style={{ color: 'var(--text)' }}>{dt('tickets.discussion.reply_to')} {replyingToLog?.authorName ?? replyingToLog?.authorType ?? dt('tickets.discussion.reply_to_fallback')}</p>
+                            <textarea
+                              className="input w-full min-h-[80px] resize-y text-sm"
+                              placeholder={dt('tickets.discussion.reply_placeholder')}
+                              value={commentText}
+                              onChange={(e) => setCommentText(e.target.value)}
+                              autoFocus
+                            />
+                            <div className="flex items-center gap-2 mt-2">
+                              <button
+                                type="button"
+                                className="inline-flex items-center gap-2 rounded px-3 py-1.5 text-sm"
+                                style={{ background: 'var(--brand)', color: 'white' }}
+                                onClick={submitComment}
+                                disabled={commentMutation.isPending || commentText.trim() === ''}
+                              >
+                                {commentMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                {dt('tickets.discussion.send')}
+                              </button>
+                              <button
+                                type="button"
+                                className="text-xs"
+                                style={{ color: 'var(--muted)' }}
+                                onClick={() => { setReplyToLogId(null); setCommentText('') }}
+                              >
+                                {dt('common.action.cancel')}
+                              </button>
+                            </div>
                           </div>
                         )}
-
-                        {log.content && (
-                          <div className="mt-3 text-sm">
-                            <Markdown content={log.content} />
-                          </div>
-                        )}
-
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            className="rounded px-2.5 py-1.5 text-xs"
-                            style={{ background: 'var(--surface)', color: 'var(--text)' }}
-                            onClick={() => setReplyToLogId(log.id)}
-                          >
-                            Répondre à ce commentaire
-                          </button>
-                        </div>
                       </div>
                     )
                   })}

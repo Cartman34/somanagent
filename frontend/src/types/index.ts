@@ -252,6 +252,7 @@ export interface Ticket {
 export interface ChatMessage {
   id: string
   exchangeId: string
+  replyToMessageId?: string
   author: 'human' | 'agent'
   content: string
   isError: boolean

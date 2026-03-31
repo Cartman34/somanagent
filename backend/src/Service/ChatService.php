@@ -124,6 +124,13 @@ class ChatService
         return ['human' => $human, 'agent' => $agentMessage];
     }
 
+    /**
+     * Persist a new ChatMessage and log the corresponding audit event.
+     *
+     * Does not flush; callers are responsible for calling `$this->em->flush()`.
+     *
+     * @param array<string, mixed>|null $metadata
+     */
     private function save(
         Project $project,
         Agent $agent,
@@ -132,9 +139,13 @@ class ChatService
         ?string $exchangeId = null,
         bool $isError = false,
         ?array $metadata = null,
+        ?\Symfony\Component\Uid\Uuid $replyToMessageId = null,
     ): ChatMessage
     {
         $message = new ChatMessage($project, $agent, $author, $content, $exchangeId, $isError, $metadata);
+        if ($replyToMessageId !== null) {
+            $message->setReplyToMessageId($replyToMessageId);
+        }
         $this->em->persist($message);
         $this->audit->log(AuditAction::ChatMessageSent, 'ChatMessage', (string) $message->getId(), [
             'project' => (string) $project->getId(),
@@ -150,5 +161,37 @@ class ChatService
     public function getConversation(Project $project, Agent $agent, int $limit = 200): array
     {
         return $this->chatMessageRepository->findConversation($project, $agent, $limit);
+    }
+
+    /**
+     * Save a human reply to an existing chat message.
+     *
+     * The reply inherits the exchange ID of the parent message and is persisted immediately.
+     *
+     * @throws \InvalidArgumentException When the parent message is not found.
+     */
+    public function reply(Project $project, Agent $agent, string $content, string $replyToMessageId): ChatMessage
+    {
+        $parentMessage = $this->chatMessageRepository->find($replyToMessageId);
+        if ($parentMessage === null) {
+            throw new \InvalidArgumentException('Parent message not found');
+        }
+
+        $message = $this->save(
+            $project,
+            $agent,
+            ChatAuthor::Human,
+            $content,
+            $parentMessage->getExchangeId(),
+            false,
+            [
+                'interaction' => 'chat_reply',
+                'connector'   => $agent->getConnector()->value,
+            ],
+            $parentMessage->getId(),
+        );
+        $this->em->flush();
+
+        return $message;
     }
 }

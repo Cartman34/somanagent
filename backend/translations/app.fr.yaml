@@ -16,14 +16,56 @@ agents:
   validation:
     name_required: 'Le champ "name" est obligatoire.'
     workflow_required: 'Le champ "workflowId" est obligatoire.'
+  sheet:
+    modal_title: 'Fiche agent'
+    load_error: "Impossible de charger la fiche agent."
+    message:
+      author_you: 'Vous'
+      author_error: 'Erreur agent'
+      error_no_detail: 'Erreur sans détail.'
+      no_output: "Aucune sortie texte renvoyée par l'agent."
+    status:
+      error: 'Erreur'
+      working: 'En travail'
+      available: 'Disponible'
+    summary:
+      no_role: 'Sans rôle'
+      connector: 'Connecteur'
+      model: 'Modèle'
+      timeout: 'Timeout'
+      active_status: 'Statut actif'
+      yes: 'Oui'
+      no: 'Non'
+      active_tasks: 'Tâches actives'
+    knowledge:
+      title: 'Rôle et skills'
+      hint: 'Cliquez sur un skill pour afficher son contenu complet.'
+      no_role: 'Aucun rôle détaillé disponible.'
+      no_skills: 'Aucun skill associé à ce rôle.'
+    skill:
+      none_selected: 'Aucun skill sélectionné'
+      no_content: 'Aucun contenu de skill disponible.'
+      content_tab: 'Contenu du skill'
+    chat:
+      title: "Chat avec l'agent"
+      description: "Échanges projet ↔ agent, avec erreurs et métadonnées d'exécution."
+      empty: 'Aucun échange pour le moment.'
+      hello: 'Salut'
+      message_placeholder: "Écrire un message à l'agent..."
+      sending: 'Envoi...'
+      send: 'Envoyer'
 
 chat:
   error:
     project_or_agent_not_found: 'Projet ou agent introuvable.'
   item:
     loading: 'Chargement en cours…'
+  reply: 'Répondre'
+  reply_label: '· Réponse'
+  reply_placeholder: 'Écrire une réponse...'
   validation:
     content_required: 'Le champ "content" est obligatoire.'
+    reply_to_required: 'Le champ "replyToMessageId" est obligatoire.'
 
 features:
   error:
@@ -97,6 +139,21 @@ tickets:
     error:
       unsupported_user_story_or_bug: 'Cette tâche n’est pas une user story ou un bug.'
       unknown_status: 'Statut story inconnu : %status%.'
+  discussion:
+    section_title: 'Discussion ticket'
+    description: "Les questions agent et vos réponses restent visibles dans le ticket."
+    comment_placeholder: "Ajoutez un commentaire ou une précision pour l'agent…"
+    submit: 'Commenter'
+    submit_hint: 'Ctrl/Cmd + Entrée pour envoyer'
+    send: 'Envoyer'
+    empty: "Aucun échange ticket pour l'instant."
+    author_you: 'Vous'
+    requires_answer: 'Réponse attendue'
+    reply: 'Répondre'
+    reply_label: 'Réponse'
+    reply_to: 'Réponse à'
+    reply_to_fallback: 'ce commentaire'
+    reply_placeholder: 'Écrivez votre réponse…'
   validation:
     content_required: 'Le champ "content" est obligatoire.'
     priority_required: 'Le champ "priority" est obligatoire.'
