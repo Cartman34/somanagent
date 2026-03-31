@@ -57,7 +57,7 @@ class AgentRepository extends ServiceEntityRepository
 
     /**
      * Returns active agents with the given role slug that belong to the specified team.
-     * Used by StoryExecutionService to scope agent selection to the project's team.
+     * Used by runtime services to scope agent selection to the project's team.
      *
      * @param string $roleSlug Role slug to filter by
      * @param Team   $team     Team to scope agent search to

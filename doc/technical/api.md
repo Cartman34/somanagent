@@ -99,24 +99,6 @@ Fait avancer un ticket story/bug vers l’étape suivante de son workflow quand 
 Précondition :
 - le ticket doit appartenir à un projet avec équipe affectée
 
-### `GET /api/tickets/{id}/execute`
-Liste les agents disponibles pour l’étape courante du ticket.
-
-### `POST /api/tickets/{id}/execute`
-Lance une exécution agent au niveau ticket.
-
-### `POST /api/tickets/{id}/resume`
-Relance l’exécution agent du ticket.
-
-### `GET /api/tickets/{id}/rework-targets`
-Liste les cibles de reprise disponibles.
-
-### `POST /api/tickets/{id}/rework`
-Rejoue une étape agent d’un ticket.
-
-Précondition commune aux routes d’exécution / reprise / rework :
-- le projet du ticket doit avoir une équipe affectée
-
 ### `POST /api/tickets/{id}/comments`
 Ajoute un `TicketLog` de type commentaire.
 
@@ -176,7 +158,10 @@ Liste les agents disponibles pour l’`AgentAction` de la tâche.
 Crée une nouvelle `AgentTaskExecution` et la dispatch en asynchrone.
 
 ### `POST /api/ticket-tasks/{id}/resume`
-Relance la tâche avec une nouvelle `AgentTaskExecution`.
+Relance explicitement la tâche avec une nouvelle `AgentTaskExecution`.
+
+Précondition commune aux routes d’exécution / reprise task-level :
+- le projet du ticket doit avoir une équipe affectée
 
 ### `POST /api/ticket-tasks/{id}/comments`
 Ajoute un commentaire contextualisé sur la tâche.

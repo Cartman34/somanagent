@@ -76,7 +76,6 @@ Use `doc/` as the source of truth for product, technical and development documen
 ```bash
 php scripts/console.php cache:clear
 php scripts/console.php somanagent:task:redispatch --latest
-php scripts/console.php somanagent:task:redispatch <task-id> --sync
 php scripts/console.php somanagent:agent:hello <projectId> <agentId> --message="Hello"
 php scripts/claude-auth.php status
 php scripts/node.php type-check
@@ -151,7 +150,8 @@ Blocking rule:
 - Prefer `php scripts/console.php ...`, `php scripts/logs.php ...`, `php scripts/node.php ...`, `php scripts/db.php ...`, `php scripts/dev.php ...`, `php scripts/health.php ...` and similar wrappers over direct `docker exec`, `bin/console`, or raw container commands.
 - Only fall back to direct Docker or container commands when no project script exists for that operation.
 - This rule is also about efficiency: using the project wrappers reduces command verbosity and unnecessary token usage.
-- UI text is French.
+- UI text is French, but must go through translation keys — never hardcode French strings directly in `.php`, `.ts`, or `.tsx` source files.
+- During development, any new user-facing string must use a Symfony translation key (backend) or the equivalent translation mechanism (frontend) instead of a French literal in source code.
 - Symfony commands, CLI help, and console output are English.
 - User-provided command payloads may still be French when they represent business content, for example a chat message sent to an agent.
 - Technical source content is English:

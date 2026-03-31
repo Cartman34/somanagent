@@ -95,24 +95,13 @@ Each step now owns a list of allowed actions:
 { "source": "manual", "prompt": "Your text..." }        // Manually entered text
 ```
 
-## Workflow Status
-
-A workflow has a lifecycle of its own, independent of the story lifecycle:
-
-| Status | Description | Editable | Usable |
-|---|---|---|---|
-| `validated` | Ready for story execution | Only while inactive | ✅ Yes when active |
-| `locked` | Locked (currently executing) | ❌ No | ✅ Yes |
-
-New workflows are created directly active. Duplicated workflows start inactive so they can be edited before activation.
-
 ## Activation
 
 Workflow activation is managed separately from the workflow status:
 
 | Activation | Description |
 |---|---|
-| Active | Eligible for runtime resolution and story lifecycle automation |
+| Active | Eligible for runtime resolution and task-driven ticket progression |
 | Inactive | Kept as a stored definition, but ignored by runtime resolution |
 
 Current rules:
@@ -133,6 +122,14 @@ Current model:
 
 The team controls available agents. The workflow controls step structure and the action catalog available in each step.
 
+## Ticket Detail vs Board
+
+The workflow step model drives visibility rules:
+
+- the **ticket detail** shows every task attached to the ticket, including future-step tasks
+- the **board** shows only tasks whose target step matches the ticket's current step
+- entering a step only unlocks the tasks attached to that step
+
 ## Visual Pipeline
 
 The workflow detail page displays the ordered workflow steps and the actions attached to each one.
@@ -141,6 +138,7 @@ This gives a clear overview of:
 - which steps are manual
 - which steps are automatic
 - which actions are available in each step
+- which actions are created at ticket creation time
 
 ## Step Fields
 

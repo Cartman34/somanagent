@@ -3,6 +3,7 @@ common:
     cancel: 'Annuler'
     close: 'Fermer'
     confirm: 'Confirmer'
+    refresh: 'Rafraîchir'
     retry: 'Réessayer'
 
 errors:
@@ -19,6 +20,8 @@ agents:
 chat:
   error:
     project_or_agent_not_found: 'Projet ou agent introuvable.'
+  item:
+    loading: 'Chargement en cours…'
   validation:
     content_required: 'Le champ "content" est obligatoire.'
 
@@ -186,6 +189,55 @@ workflows:
     not_found: 'Workflow introuvable.'
   validation:
     name_required: 'Le champ "name" est obligatoire.'
+
+dashboard:
+  loading: 'Chargement des données…'
+
+project:
+  list:
+    loading: 'Chargement des projets…'
+  item:
+    loading: 'Chargement des données…'
+
+team:
+  list:
+    loading: 'Chargement des équipes…'
+  item:
+    loading: "Chargement de l'équipe…"
+
+role:
+  list:
+    loading: 'Chargement des rôles…'
+
+agent:
+  list:
+    loading: 'Chargement des agents…'
+
+workflow:
+  list:
+    loading: 'Chargement des workflows…'
+  item:
+    loading: 'Chargement du workflow…'
+
+skill:
+  list:
+    loading: 'Chargement des compétences…'
+
+token:
+  list:
+    loading: 'Chargement des tokens…'
+
+audit:
+  list:
+    loading: 'Chargement du journal…'
+
+feature:
+  list:
+    loading: 'Chargement des features…'
+
+log:
+  list:
+    loading: 'Chargement des logs…'
 
 ui:
   project_detail:

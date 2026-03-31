@@ -19,16 +19,17 @@ import ErrorMessage from '@/components/ui/ErrorMessage'
 import EmptyState from '@/components/ui/EmptyState'
 import Modal from '@/components/ui/Modal'
 import PageHeader from '@/components/ui/PageHeader'
+import ContentLoadingOverlay from '@/components/ui/ContentLoadingOverlay'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const WORKFLOWS_UI_TRANSLATION_KEYS = [
-  'common.action.cancel',
-  'workflows.ui.form.trigger_label',
-  'workflows.ui.form.immutable_hint',
+  'common.action.refresh',
   'workflows.ui.form.name_label',
   'workflows.ui.form.name_placeholder',
   'workflows.ui.form.description_label',
+  'workflows.ui.form.trigger_label',
+  'workflows.ui.form.immutable_hint',
   'workflows.ui.form.submit_loading',
   'workflows.ui.form.submit_create',
   'workflows.ui.form.submit_save',
@@ -37,6 +38,8 @@ const WORKFLOWS_UI_TRANSLATION_KEYS = [
   'workflows.ui.trigger.manual',
   'workflows.ui.trigger.vcs_event',
   'workflows.ui.trigger.scheduled',
+  'workflow.list.loading',
+  'workflow.item.loading',
   'workflows.ui.status.immutable_badge',
   'workflows.ui.status.immutable_notice',
   'workflows.ui.status.active',
@@ -246,7 +249,7 @@ function WorkflowsList() {
   const [createOpen,   setCreateOpen]   = useState(false)
   const { data: i18n } = useWorkflowUiTranslations()
 
-  const { data: workflows, isLoading, error, refetch } = useQuery({
+  const { data: workflows, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['workflows'],
     queryFn: workflowsApi.list,
   })
@@ -278,6 +281,8 @@ function WorkflowsList() {
       <PageHeader
         title="Workflows"
         description={tt('workflows.ui.page.description')}
+        onRefresh={() => qc.invalidateQueries({ queryKey: ['workflows'] })}
+        refreshTitle={tt('common.action.refresh')}
         action={
           <button className="btn-primary" onClick={() => setCreateOpen(true)}>
             <Plus className="w-4 h-4" /> {tt('workflows.ui.page.create_button')}
@@ -293,14 +298,18 @@ function WorkflowsList() {
           action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> {tt('workflows.ui.page.create_button')}</button>}
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="relative">
+          <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={tt('workflow.list.loading')} />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {workflows?.map((wf) => {
             return (
-              <button
+              <div
                 key={wf.id}
-                type="button"
+                role="button"
+                tabIndex={0}
                 onClick={() => navigate(`/workflows/${wf.id}`)}
-                className="card p-5 flex flex-col gap-3 hover:shadow-md transition-shadow text-left"
+                onKeyDown={(e) => e.key === 'Enter' && navigate(`/workflows/${wf.id}`)}
+                className="card p-5 flex flex-col gap-3 hover:shadow-md transition-shadow text-left cursor-pointer"
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="font-semibold hover:underline" style={{ color: 'var(--text)' }}>
@@ -369,9 +378,10 @@ function WorkflowsList() {
                     </button>
                   )}
                 </div>
-              </button>
+              </div>
             )
           })}
+        </div>
         </div>
       )}
 
@@ -396,7 +406,7 @@ function WorkflowDetail() {
   const [editOpen, setEditOpen] = useState(false)
   const { data: i18n } = useWorkflowUiTranslations()
 
-  const { data: workflow, isLoading, error, refetch } = useQuery({
+  const { data: workflow, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['workflows', id],
     queryFn:  () => workflowsApi.get(id!),
     enabled:  !!id,
@@ -435,63 +445,66 @@ function WorkflowDetail() {
         <ArrowLeft className="w-4 h-4" /> {tt('workflows.ui.detail.back_link')}
       </Link>
 
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
-        <div>
-          <h1 className="text-xl font-bold" style={{ color: 'var(--text)' }}>{workflow.name}</h1>
-          {workflow.description && <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>{workflow.description}</p>}
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {workflow.isEditable ? (
+      <PageHeader
+        title={workflow.name}
+        description={workflow.description ?? undefined}
+        onRefresh={() => qc.invalidateQueries({ queryKey: ['workflows', id] })}
+        refreshTitle={tt('common.action.refresh')}
+        action={
+          <div className="flex items-center gap-2 flex-wrap">
+            {workflow.isEditable ? (
+              <button
+                type="button"
+                className="btn-secondary inline-flex items-center gap-2"
+                onClick={() => setEditOpen(true)}
+              >
+                <Pencil className="w-4 h-4" />
+                {tt('workflows.ui.status.edit')}
+              </button>
+            ) : (
+              <span className="badge-gray flex items-center gap-1.5 flex-shrink-0">
+                <Lock className="w-3.5 h-3.5" />
+                {tt('workflows.ui.status.immutable_notice')}
+              </span>
+            )}
             <button
               type="button"
               className="btn-secondary inline-flex items-center gap-2"
-              onClick={() => setEditOpen(true)}
+              onClick={() => duplicateMutation.mutate()}
+              disabled={duplicateMutation.isPending}
             >
-              <Pencil className="w-4 h-4" />
-              {tt('workflows.ui.status.edit')}
+              <Copy className="w-4 h-4" />
+              {duplicateMutation.isPending ? tt('workflows.ui.status.action_loading') : tt('workflows.ui.status.duplicate')}
             </button>
-          ) : (
-            <span className="badge-gray flex items-center gap-1.5 flex-shrink-0">
-              <Lock className="w-3.5 h-3.5" />
-              {tt('workflows.ui.status.immutable_notice')}
-            </span>
-          )}
-          <button
-            type="button"
-            className="btn-secondary inline-flex items-center gap-2"
-            onClick={() => duplicateMutation.mutate()}
-            disabled={duplicateMutation.isPending}
-          >
-            <Copy className="w-4 h-4" />
-            {duplicateMutation.isPending ? tt('workflows.ui.status.action_loading') : tt('workflows.ui.status.duplicate')}
-          </button>
-          {workflow.isActive ? (
-            <button
-              type="button"
-              className="btn-secondary inline-flex items-center gap-2"
-              onClick={() => deactivateMutation.mutate()}
-              disabled={deactivateMutation.isPending}
-              title={tt('workflows.ui.status.deactivate')}
-            >
-              <Power className="w-4 h-4" />
-              {deactivateMutation.isPending ? tt('workflows.ui.status.action_loading') : tt('workflows.ui.status.deactivate')}
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="btn-primary inline-flex items-center gap-2"
-              onClick={() => activateMutation.mutate()}
-              disabled={activateMutation.isPending}
-            >
-              <Power className="w-4 h-4" />
-              {activateMutation.isPending ? tt('workflows.ui.status.action_loading') : tt('workflows.ui.status.activate')}
-            </button>
-          )}
-        </div>
-      </div>
+            {workflow.isActive ? (
+              <button
+                type="button"
+                className="btn-secondary inline-flex items-center gap-2"
+                onClick={() => deactivateMutation.mutate()}
+                disabled={deactivateMutation.isPending}
+                title={tt('workflows.ui.status.deactivate')}
+              >
+                <Power className="w-4 h-4" />
+                {deactivateMutation.isPending ? tt('workflows.ui.status.action_loading') : tt('workflows.ui.status.deactivate')}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn-primary inline-flex items-center gap-2"
+                onClick={() => activateMutation.mutate()}
+                disabled={activateMutation.isPending}
+              >
+                <Power className="w-4 h-4" />
+                {activateMutation.isPending ? tt('workflows.ui.status.action_loading') : tt('workflows.ui.status.activate')}
+              </button>
+            )}
+          </div>
+        }
+      />
 
-      {/* Metadata badges */}
+      <div className="relative">
+        <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={tt('workflow.item.loading')} />
+        {/* Metadata badges */}
       <div className="flex items-center gap-2 mb-6 flex-wrap">
         <span className={TRIGGER_COLORS[workflow.trigger]}>{tt(TRIGGER_LABEL_KEYS[workflow.trigger] ?? workflow.trigger)}</span>
         {workflow.isActive
@@ -586,6 +599,7 @@ function WorkflowDetail() {
           tt={tt}
         />
       </Modal>
+      </div>
     </>
   )
 }

@@ -36,6 +36,7 @@ import EmptyState from '@/components/ui/EmptyState'
 import Modal from '@/components/ui/Modal'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import PageHeader from '@/components/ui/PageHeader'
+import ContentLoadingOverlay from '@/components/ui/ContentLoadingOverlay'
 import EntityId from '@/components/ui/EntityId'
 import AgentSheet from '@/components/project/AgentSheet'
 import Markdown from '@/components/ui/Markdown'
@@ -93,6 +94,7 @@ const EXECUTION_HISTORY_TRANSLATION_KEYS = [
 ] as const
 
 const PROJECT_TEAM_GUARD_TRANSLATION_KEYS = [
+  'common.action.refresh',
   'projects.progress.ui.blocked_reason',
   'projects.progress.ui.banner',
   'projects.progress.ui.rework_title',
@@ -130,173 +132,6 @@ function formatTime(value: string, locale?: string) {
  */
 function isTicket(entity: Ticket | TicketTask): entity is Ticket {
   return 'projectId' in entity
-}
-
-/**
- * Modal that lets the user send a story back to a supported replayable agent stage.
- */
-function ReworkModal({ ticket, onClose, onReworked }: {
-  ticket: Ticket
-  onClose: () => void
-  onReworked: () => void
-}) {
-  const [selectedTargetKey, setSelectedTargetKey] = useState('')
-  const [objective, setObjective] = useState('')
-  const [note, setNote] = useState('')
-
-  const { data: targets, isLoading, error } = useQuery({
-    queryKey: ['ticket-rework-targets', ticket.id],
-    queryFn: () => ticketsApi.listReworkTargets(ticket.id),
-  })
-
-  useEffect(() => {
-    if (targets && targets.length > 0 && selectedTargetKey === '') {
-      setSelectedTargetKey(targets[0].key)
-    }
-  }, [targets, selectedTargetKey])
-
-  const selectedTarget = targets?.find((target) => target.key === selectedTargetKey) ?? null
-
-  const reworkMutation = useMutation({
-    mutationFn: () => ticketsApi.rework(ticket.id, {
-      targetKey: selectedTargetKey,
-      objective: objective.trim(),
-      note: note.trim() || undefined,
-    }),
-    onSuccess: () => {
-      onReworked()
-      onClose()
-    },
-  })
-
-  return (
-    <Modal open onClose={onClose} title="Reprendre une étape agent" size="lg">
-      <div className="flex max-h-[72vh] flex-col gap-4 overflow-y-auto pr-1">
-        {isLoading && (
-          <div className="py-8">
-            <Loader2 className="mx-auto h-5 w-5 animate-spin" style={{ color: 'var(--muted)' }} />
-          </div>
-        )}
-
-        {error && (
-          <div className="rounded border px-3 py-2 text-sm" style={{ borderColor: 'rgba(239,68,68,0.35)', color: '#dc2626', background: 'rgba(239,68,68,0.08)' }}>
-            Impossible de charger les étapes rejouables.
-          </div>
-        )}
-
-        {!isLoading && !error && (targets?.length ?? 0) === 0 && (
-          <div className="rounded border px-3 py-2 text-sm" style={{ borderColor: 'var(--border)', color: 'var(--muted)', background: 'var(--surface2)' }}>
-            Aucune étape rejouable n’est disponible pour ce ticket.
-          </div>
-        )}
-
-        {targets && targets.length > 0 && (
-          <>
-            <div className="space-y-2">
-              <p className="text-xs font-medium" style={{ color: 'var(--muted)' }}>Étape ciblée</p>
-              <div className="space-y-2">
-                {targets.map((target) => {
-                  const checked = target.key === selectedTargetKey
-                  return (
-                    <label
-                      key={target.key}
-                      className="flex cursor-pointer items-start gap-3 rounded border px-3 py-3"
-                      style={{
-                        borderColor: checked ? 'var(--brand)' : 'var(--border)',
-                        background: checked ? 'color-mix(in srgb, var(--brand-dim) 55%, transparent)' : 'var(--surface2)',
-                      }}
-                    >
-                      <input
-                        type="radio"
-                        name="rework-target"
-                        className="mt-1"
-                        checked={checked}
-                        onChange={() => setSelectedTargetKey(target.key)}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{target.label}</p>
-                          <span className="rounded px-2 py-0.5 text-[11px]" style={{ background: 'var(--surface)', color: 'var(--muted)' }}>
-                            {target.workflowStepKey}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>{target.description}</p>
-                        <div className="mt-2 flex flex-wrap gap-2 text-[11px]" style={{ color: 'var(--muted)' }}>
-                          <span>Rôle : {target.roleSlug}</span>
-                          <span>Skill : {target.skillSlug}</span>
-                          <span>Agent : {target.agent?.name ?? 'aucun actif'}</span>
-                        </div>
-                      </div>
-                    </label>
-                  )
-                })}
-              </div>
-            </div>
-
-            {selectedTarget && (
-              <div className="rounded border px-3 py-3 text-xs" style={{ borderColor: 'var(--border)', background: 'var(--surface2)', color: 'var(--muted)' }}>
-                <p>Le ticket sera renvoyé vers l’étape <span style={{ color: 'var(--text)' }}>{selectedTarget.label}</span>.</p>
-                <p className="mt-1">Agent visé : <span style={{ color: 'var(--text)' }}>{selectedTarget.agent?.name ?? 'auto indisponible'}</span>.</p>
-                <p className="mt-1">Étape ciblée : <span style={{ color: 'var(--text)' }}>{selectedTarget.workflowStepKey}</span>.</p>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <label className="text-xs font-medium" style={{ color: 'var(--muted)' }}>Objectif de reprise</label>
-              <textarea
-                value={objective}
-                onChange={(e) => setObjective(e.target.value)}
-                rows={3}
-                className="w-full rounded border px-3 py-2 text-sm outline-none"
-                style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
-                placeholder="Explique ce qui doit être repris ou corrigé."
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-medium" style={{ color: 'var(--muted)' }}>Note de retour</label>
-              <textarea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                rows={4}
-                className="w-full rounded border px-3 py-2 text-sm outline-none"
-                style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
-                placeholder="Contexte complémentaire, contraintes, éléments à revoir."
-              />
-            </div>
-
-            {reworkMutation.isError && (
-              <div className="rounded border px-3 py-2 text-sm" style={{ borderColor: 'rgba(239,68,68,0.35)', color: '#dc2626', background: 'rgba(239,68,68,0.08)' }}>
-                {(reworkMutation.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'La reprise a échoué.'}
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                className="rounded px-3 py-2 text-sm"
-                style={{ background: 'var(--surface2)', color: 'var(--text)' }}
-                onClick={onClose}
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 rounded px-3 py-2 text-sm"
-                style={{ background: 'var(--brand-dim)', color: 'var(--brand)' }}
-                onClick={() => reworkMutation.mutate()}
-                disabled={reworkMutation.isPending || selectedTarget === null || selectedTarget.availableAgentCount === 0 || objective.trim() === ''}
-                title={selectedTarget !== null && selectedTarget.availableAgentCount === 0 ? 'Aucun agent actif disponible pour cette étape.' : undefined}
-              >
-                {reworkMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
-                Lancer la reprise
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </Modal>
-  )
 }
 
 // ─── Story card (Kanban) ──────────────────────────────────────────────────────
@@ -659,7 +494,6 @@ function TaskDrawer({ taskId, onClose, projectHasTeam }: { taskId: string; onClo
   const [dismissedErrorLogId, setDismissedErrorLogId] = useState<string | null>(null)
   const [commentText, setCommentText] = useState('')
   const [replyToLogId, setReplyToLogId] = useState<string | null>(null)
-  const [reworkModalOpen, setReworkModalOpen] = useState(false)
   const [linkedTaskId, setLinkedTaskId] = useState<string | null>(null)
   const [taskDispatchError, setTaskDispatchError] = useState<string | null>(null)
 
@@ -724,7 +558,6 @@ function TaskDrawer({ taskId, onClose, projectHasTeam }: { taskId: string; onClo
     setDismissedErrorLogId(null)
     setCommentText('')
     setReplyToLogId(null)
-    setReworkModalOpen(false)
     setLinkedTaskId(null)
     setTaskDispatchError(null)
   }, [taskId])
@@ -785,7 +618,7 @@ function TaskDrawer({ taskId, onClose, projectHasTeam }: { taskId: string; onClo
         <div className="flex items-center justify-between px-5 py-4 border-b flex-shrink-0" style={{ borderColor: 'var(--border)' }}>
           <div className="min-w-0">
             <h2 className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>
-              {isLoading ? 'Chargement…' : (entity?.title ?? '—')}
+              {isLoading ? 'Loading…' : (entity?.title ?? '—')}
             </h2>
           </div>
           <button onClick={onClose} className="p-1 ml-2 flex-shrink-0" style={{ color: 'var(--muted)' }}>
@@ -876,17 +709,9 @@ function TaskDrawer({ taskId, onClose, projectHasTeam }: { taskId: string; onClo
               <div className="rounded border px-4 py-3" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
                 <p className="text-xs" style={{ color: 'var(--muted)' }}>Relance agent</p>
                 {isTicket(entity) ? (
-                  <button
-                    type="button"
-                    className="mt-2 inline-flex items-center gap-2 rounded px-3 py-2 text-sm"
-                    style={{ background: 'var(--brand-dim)', color: 'var(--brand)' }}
-                    onClick={() => setReworkModalOpen(true)}
-                    disabled={!entity.workflowStep || !projectHasTeam}
-                    title={!projectHasTeam ? tt('projects.progress.ui.rework_title') : undefined}
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                    Reprendre une étape
-                  </button>
+                  <p className="mt-2 text-xs" style={{ color: 'var(--muted)' }}>
+                    La relance manuelle se fait désormais au niveau des tâches.
+                  </p>
                 ) : (
                   <>
                     <button
@@ -1332,17 +1157,6 @@ function TaskDrawer({ taskId, onClose, projectHasTeam }: { taskId: string; onClo
         })()}
       </div>
 
-      {entity && isTicket(entity) && reworkModalOpen && (
-        <ReworkModal
-          ticket={entity}
-          onClose={() => setReworkModalOpen(false)}
-          onReworked={async () => {
-            await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
-            await qc.invalidateQueries({ queryKey: ['tickets'] })
-          }}
-        />
-      )}
-
       {linkedTaskId && (
         <TaskDrawer
           taskId={linkedTaskId}
@@ -1478,7 +1292,7 @@ export default function ProjectDetailPage() {
 
   // ── Data queries ─────────────────────────────────────────────────────────────
 
-  const { data: project, isLoading: loadingProject, error: errorProject, refetch: refetchProject } = useQuery({
+  const { data: project, isLoading: loadingProject, isFetching: fetchingProject, error: errorProject, refetch: refetchProject } = useQuery({
     queryKey: ['projects', id],
     queryFn:  () => projectsApi.get(id!),
     enabled:  !!id,
@@ -1496,7 +1310,7 @@ export default function ProjectDetailPage() {
       ).values())
     : []
 
-  const { data: tickets = [], isLoading: loadingTickets, error: errorTickets } = useQuery({
+  const { data: tickets = [], isLoading: loadingTickets, isFetching: fetchingTickets, error: errorTickets } = useQuery({
     queryKey: ['tickets', id],
     queryFn:  () => ticketsApi.listByProject(id!),
     enabled:  !!id,
@@ -1519,6 +1333,10 @@ export default function ProjectDetailPage() {
     staleTime: Infinity,
   })
 
+  const tt = (key: typeof PROJECT_TEAM_GUARD_TRANSLATION_KEYS[number]) => (
+    projectTeamGuardI18n?.translations[key] ?? key
+  )
+
   const { data: auditData, isLoading: loadingAudit } = useQuery({
     queryKey: ['project-audit', id, auditPage],
     queryFn:  () => projectsApi.getAudit(id!, auditPage),
@@ -1530,6 +1348,12 @@ export default function ProjectDetailPage() {
     queryFn:  () => projectsApi.getTokens(id!),
     enabled:  !!id && tab === 'tokens',
   })
+
+  const { data: projectItemI18n } = useQuery({
+    queryKey: ['ui-translations', 'project-item'],
+    queryFn: () => translationsApi.list(['project.item.loading']),
+  })
+  const ttItem = (key: string) => projectItemI18n?.translations[key] ?? key
 
   // ── Mutations ─────────────────────────────────────────────────────────────────
 
@@ -1605,6 +1429,16 @@ export default function ProjectDetailPage() {
     ? (projectTeamGuardI18n?.translations['projects.progress.ui.blocked_reason'] ?? 'projects.progress.ui.blocked_reason')
     : null
 
+  const refreshAllData = () => {
+    if( !id ) return
+    qc.invalidateQueries({ queryKey: ['projects', id] })
+    qc.invalidateQueries({ queryKey: ['tickets', id] })
+    qc.invalidateQueries({ queryKey: ['workflow'] })
+    qc.invalidateQueries({ queryKey: ['teams'] })
+    qc.invalidateQueries({ queryKey: ['project-audit', id] })
+    qc.invalidateQueries({ queryKey: ['project-tokens', id] })
+  }
+
   // ── Derived data ───────────────────────────────────────────────────────────────
 
   if (loadingProject) return <PageSpinner />
@@ -1632,6 +1466,8 @@ export default function ProjectDetailPage() {
       <PageHeader
         title={project.name}
         description={project.description ?? undefined}
+        onRefresh={refreshAllData}
+        refreshTitle={tt('common.action.refresh')}
         action={
           (tab === 'board' || tab === 'tasks') ? (
             <button
@@ -2052,6 +1888,11 @@ export default function ProjectDetailPage() {
         message={`Supprimer "${deleteTask?.title}" ? Cette action est irréversible.`}
         loading={deleteMutation.isPending}
       />
+
+      <div className="relative">
+        <ContentLoadingOverlay isLoading={(fetchingProject || fetchingTickets) && !loadingProject && !loadingTickets} label={ttItem('project.item.loading')}       />
+
+      </div>
 
       {/* ── Task drawer ── */}
       {drawerTaskId && (

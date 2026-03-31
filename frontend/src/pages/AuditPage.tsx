@@ -3,14 +3,16 @@
  */
 
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ScrollText, ChevronLeft, ChevronRight } from 'lucide-react'
 import apiClient from '@/api/client'
+import { translationsApi } from '@/api/translations'
 import type { AuditLog } from '@/types'
 import { PageSpinner } from '@/components/ui/Spinner'
 import ErrorMessage from '@/components/ui/ErrorMessage'
 import EmptyState from '@/components/ui/EmptyState'
 import PageHeader from '@/components/ui/PageHeader'
+import ContentLoadingOverlay from '@/components/ui/ContentLoadingOverlay'
 
 const PAGE_SIZE = 25
 
@@ -50,12 +52,19 @@ function actionColor(action: string) {
 }
 
 export default function AuditPage() {
+  const qc = useQueryClient()
   const [page, setPage] = useState(1)
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['audit', page],
     queryFn: () => fetchAuditLogs(page),
   })
+
+  const { data: auditI18n } = useQuery({
+    queryKey: ['ui-translations', 'audit'],
+    queryFn: () => translationsApi.list(['audit.list.loading', 'common.action.refresh']),
+  })
+  const tt = (key: string) => auditI18n?.translations[key] ?? key
 
   if (isLoading) return <PageSpinner />
   if (error) return <ErrorMessage message={(error as Error).message} onRetry={() => refetch()} />
@@ -69,6 +78,8 @@ export default function AuditPage() {
       <PageHeader
         title="Journal d'audit"
         description="Toutes les actions effectuées dans l'application."
+        onRefresh={() => qc.invalidateQueries({ queryKey: ['audit'] })}
+        refreshTitle={tt('common.action.refresh')}
       />
 
       {logs.length === 0 ? (
@@ -78,8 +89,10 @@ export default function AuditPage() {
           description="Les événements apparaîtront ici lors de vos interactions avec l'application."
         />
       ) : (
-        <div className="card overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="relative">
+          <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={tt('audit.list.loading')} />
+          <div className="card overflow-hidden">
+            <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Action</th>
@@ -128,6 +141,7 @@ export default function AuditPage() {
               </div>
             </div>
           )}
+        </div>
         </div>
       )}
     </>

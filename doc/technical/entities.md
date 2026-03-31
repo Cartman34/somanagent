@@ -225,6 +225,24 @@ Usage dans le modèle :
 - `Ticket.workflowStep` = étape courante du ticket
 - `TicketTask.workflowStep` = étape de board à laquelle la tâche est rattachée
 
+Règles :
+- `WorkflowStep` ne porte pas le routage agent direct
+- le routage concret vient de `AgentAction`
+- les actions autorisées par étape passent par `WorkflowStepAction`
+
+### WorkflowStepAction
+
+Relation entre une étape de workflow et une action agent autorisée.
+
+Champs principaux :
+- `workflowStep`
+- `agentAction`
+- `createWithTicket`
+
+Règles :
+- dans un même workflow, une `AgentAction` doit pointer vers une seule étape
+- `createWithTicket` pré-crée la tâche à la création du ticket, même pour une étape future
+
 ### TokenUsage
 
 Consommation de tokens liée à :

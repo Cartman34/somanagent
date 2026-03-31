@@ -6,10 +6,12 @@ import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Send, Bot, User } from 'lucide-react'
 import { chatApi } from '@/api/chat'
+import { translationsApi } from '@/api/translations'
 import { projectsApi } from '@/api/projects'
 import { agentsApi } from '@/api/agents'
 import { PageSpinner } from '@/components/ui/Spinner'
 import PageHeader from '@/components/ui/PageHeader'
+import ContentLoadingOverlay from '@/components/ui/ContentLoadingOverlay'
 
 function fmt(date: string) {
   return new Date(date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
@@ -25,12 +27,18 @@ export default function ChatPage() {
   const { data: projects } = useQuery({ queryKey: ['projects'], queryFn: projectsApi.list })
   const { data: agents }   = useQuery({ queryKey: ['agents'], queryFn: agentsApi.list })
 
-  const { data: messages, isLoading } = useQuery({
+  const { data: messages, isLoading, isFetching } = useQuery({
     queryKey: ['chat', projectId, agentId],
     queryFn: () => chatApi.history(projectId, agentId),
     enabled: !!(projectId && agentId),
     refetchInterval: 5000,
   })
+
+  const { data: chatI18n } = useQuery({
+    queryKey: ['ui-translations', 'chat'],
+    queryFn: () => translationsApi.list(['chat.item.loading', 'common.action.refresh']),
+  })
+  const tt = (key: string) => chatI18n?.translations[key] ?? key
 
   const sendMutation = useMutation({
     mutationFn: (content: string) => chatApi.send(projectId, agentId, content),
@@ -53,7 +61,9 @@ export default function ChatPage() {
 
   return (
     <>
-      <PageHeader title="Chat" description="Échangez avec les agents IA au sein d'un projet." />
+      <PageHeader title="Chat" description="Échangez avec les agents IA au sein d'un projet."
+        onRefresh={() => { qc.invalidateQueries({ queryKey: ['projects'] }); qc.invalidateQueries({ queryKey: ['agents'] }); qc.invalidateQueries({ queryKey: ['chat'] }) }}
+        refreshTitle={tt('common.action.refresh')} />
 
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div>
@@ -78,7 +88,8 @@ export default function ChatPage() {
           <p className="text-sm">Sélectionnez un projet et un agent pour démarrer la conversation.</p>
         </div>
       ) : (
-        <div className="card flex flex-col" style={{ height: '60vh' }}>
+        <div className="relative card flex flex-col" style={{ height: '60vh' }}>
+          <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={tt('chat.item.loading')} />
           {/* En-tête */}
           <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
             <Bot className="w-4 h-4 text-brand-600" />

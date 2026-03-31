@@ -3,7 +3,7 @@
  */
 
 import apiClient from './client'
-import type { Ticket, TicketTask, TaskPriority, TaskStatus, TaskType, TaskReworkTarget } from '@/types'
+import type { Ticket, TicketTask, TaskPriority, TaskStatus, TaskType } from '@/types'
 
 export interface TicketPayload {
   title: string
@@ -76,21 +76,6 @@ export const ticketsApi = {
 
   advance: async (id: string): Promise<Ticket> => {
     const { data } = await apiClient.post(`/tickets/${id}/advance`)
-    return data
-  },
-
-  resume: async (id: string): Promise<{ ticket: Ticket; agent: { id: string; name: string }; skill: string }> => {
-    const { data } = await apiClient.post(`/tickets/${id}/resume`)
-    return data
-  },
-
-  listReworkTargets: async (id: string): Promise<TaskReworkTarget[]> => {
-    const { data } = await apiClient.get(`/tickets/${id}/rework-targets`)
-    return data
-  },
-
-  rework: async (id: string, payload: { targetKey: string; objective: string; note?: string }): Promise<{ ticket: Ticket; agent: { id: string; name: string }; skill: string; targetKey: string }> => {
-    const { data } = await apiClient.post(`/tickets/${id}/rework`, payload)
     return data
   },
 
