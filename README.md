@@ -132,7 +132,6 @@ Read the [documentation](doc/) before submitting a PR. Key conventions:
 - **UI text** goes through Symfony translation keys — no hardcoded French strings in `.php`, `.ts`, or `.tsx` source files
 - **PHPDoc** is required on public PHP methods and non-trivial private helpers
 - **JSDoc/TSDoc** is required on all exported TypeScript/React code and non-trivial internal helpers
-- **Author header** (`@author Florent HAZARD <f.hazard@sowapps.com>`) is required on every file under `backend/src/`, `frontend/src/`, and `scripts/`
 - Use `scripts/` wrappers instead of raw `docker exec` or `bin/console` commands
 - Symfony console output must be in English; UI text is French
 
