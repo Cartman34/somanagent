@@ -6,6 +6,15 @@
 
 set -euo pipefail
 
+# Help option
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+    echo "Install or upgrade OpenAI Codex CLI inside WSL"
+    echo ""
+    echo "Usage: bash scripts/wsl-codex-install.sh"
+    echo "Usage: bash scripts/wsl-codex-install.sh --skip-login"
+    exit 0
+fi
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SKIP_LOGIN=0
 

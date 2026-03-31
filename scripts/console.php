@@ -8,6 +8,15 @@
 // Usage: php scripts/console.php doctrine:migrations:migrate --no-interaction
 // Usage: php scripts/console.php cache:clear
 
+if (in_array('-h', $argv, true) || in_array('--help', $argv, true)) {
+    echo "Run a Symfony bin/console command inside the PHP Docker container\n\n";
+    echo "Usage: php scripts/console.php <command> [args...]\n";
+    echo "Usage: php scripts/console.php doctrine:migrations:migrate --no-interaction\n";
+    echo "Usage: php scripts/console.php cache:clear\n";
+    echo "\nFor help on a specific command: php scripts/console.php <command> --help\n";
+    exit(0);
+}
+
 require_once __DIR__ . '/src/Application.php';
 
 try {

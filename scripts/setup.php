@@ -7,6 +7,13 @@
 // Usage: php scripts/setup.php
 // Usage: php scripts/setup.php --skip-frontend
 
+if (in_array('-h', $argv, true) || in_array('--help', $argv, true)) {
+    echo "Full setup of SoManAgent (first run)\n\n";
+    echo "Usage: php scripts/setup.php\n";
+    echo "Usage: php scripts/setup.php --skip-frontend\n";
+    exit(0);
+}
+
 require_once __DIR__ . '/src/Application.php';
 
 try {

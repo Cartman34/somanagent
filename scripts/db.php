@@ -8,6 +8,14 @@
 // Usage: php scripts/db.php exec -c "\\dt"
 // Usage: php scripts/db.php shell
 
+if (in_array('-h', $argv, true) || in_array('--help', $argv, true)) {
+    echo "Run reusable commands inside the PostgreSQL Docker container\n\n";
+    echo "Usage: php scripts/db.php query \"SELECT 1\"\n";
+    echo "Usage: php scripts/db.php exec -c \"\\\\dt\"\n";
+    echo "Usage: php scripts/db.php shell\n";
+    exit(0);
+}
+
 require_once __DIR__ . '/src/Application.php';
 require_once __DIR__ . '/src/PostgresCommandRunner.php';
 

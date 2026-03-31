@@ -12,6 +12,18 @@
 // Usage: php scripts/github.php pr list
 // Usage: php scripts/github.php pr view <number>
 
+if (in_array('-h', $argv, true) || in_array('--help', $argv, true)) {
+    echo "GitHub CLI helper — create PRs, merge, close, edit, list, view\n\n";
+    echo "Usage: php scripts/github.php pr create --title \"...\" --head <branch> --body-file /tmp/pr_body.md [--base main]\n";
+    echo "Usage: php scripts/github.php pr create --title \"...\" --head <branch> --body \"...\" [--base main]\n";
+    echo "Usage: php scripts/github.php pr merge <number> [--squash]\n";
+    echo "Usage: php scripts/github.php pr close <number>\n";
+    echo "Usage: php scripts/github.php pr edit <number> [--title \"...\"] [--body-file /tmp/pr_body.md] [--body \"...\"]\n";
+    echo "Usage: php scripts/github.php pr list\n";
+    echo "Usage: php scripts/github.php pr view <number>\n";
+    exit(0);
+}
+
 require_once __DIR__ . '/src/Application.php';
 
 try {

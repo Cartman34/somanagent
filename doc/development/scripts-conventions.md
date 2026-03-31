@@ -40,6 +40,7 @@ These files are part of the project codebase and must follow explicit convention
   - `Author:`
   - `Description:`
   - one or more `Usage:`
+- Every runnable script must accept `-h` or `--help` and display its header (description + usage).
 - `php scripts/help.php` must remain accurate.
 - `doc/development/scripts.md` must list runnable scripts that are intended for developer use.
 - Deeper rules or cross-cutting standards for scripts belong in this file, not in a local `README` inside `scripts/`.
