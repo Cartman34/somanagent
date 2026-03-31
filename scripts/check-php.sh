@@ -6,6 +6,15 @@
 
 set -e
 
+# Help option
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+    echo "Verify PHP 8.4+ is installed in the current environment (WSL/Linux)"
+    echo ""
+    echo "Usage: bash scripts/check-php.sh"
+    echo "Usage: wsl bash scripts/check-php.sh"
+    exit 0
+fi
+
 REQUIRED_MAJOR=8
 REQUIRED_MINOR=4
 

@@ -5,6 +5,14 @@
 
 set -euo pipefail
 
+# Help option
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+    echo "Install Claude CLI inside the configured WSL distro for local project usage"
+    echo ""
+    echo "Usage: bash scripts/wsl-claude-install.sh"
+    exit 0
+fi
+
 DISTRO="Ubuntu-24.04"
 PROJECT_DIR="/home/sowapps/projects/somanagent"
 

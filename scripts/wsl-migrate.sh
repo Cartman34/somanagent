@@ -18,6 +18,15 @@
 
 set -euo pipefail
 
+# Help option
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+    echo "Copy the project from /mnt/... to the WSL native filesystem for fast Docker I/O"
+    echo ""
+    echo "Usage: bash scripts/wsl-migrate.sh"
+    echo "Usage: bash scripts/wsl-migrate.sh --dest ~/projects/somanagent"
+    exit 0
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC="$(dirname "$SCRIPT_DIR")"   # project root (current location)
 DEST="${HOME}/somanagent"

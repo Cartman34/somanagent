@@ -9,6 +9,15 @@
 // Usage: php scripts/node.php exec npm install
 // Usage: php scripts/node.php shell
 
+if (in_array('-h', $argv, true) || in_array('--help', $argv, true)) {
+    echo "Run reusable commands inside the Node Docker container\n\n";
+    echo "Usage: php scripts/node.php type-check\n";
+    echo "Usage: php scripts/node.php run build\n";
+    echo "Usage: php scripts/node.php exec npm install\n";
+    echo "Usage: php scripts/node.php shell\n";
+    exit(0);
+}
+
 require_once __DIR__ . '/src/Application.php';
 require_once __DIR__ . '/src/NodeCommandRunner.php';
 

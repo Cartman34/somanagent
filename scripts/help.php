@@ -7,6 +7,13 @@
 // Usage: php scripts/help.php
 // Usage: php scripts/help.php <script-name>
 
+if (in_array('-h', $argv, true) || in_array('--help', $argv, true)) {
+    echo "List all available scripts with their description and usage examples\n\n";
+    echo "Usage: php scripts/help.php\n";
+    echo "Usage: php scripts/help.php <script-name>\n";
+    exit(0);
+}
+
 require_once __DIR__ . '/src/Application.php';
 
 try {

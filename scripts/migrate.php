@@ -7,6 +7,13 @@
 // Usage: php scripts/migrate.php
 // Usage: php scripts/migrate.php --dry-run
 
+if (in_array('-h', $argv, true) || in_array('--help', $argv, true)) {
+    echo "Run Doctrine migrations inside the PHP container\n\n";
+    echo "Usage: php scripts/migrate.php\n";
+    echo "Usage: php scripts/migrate.php --dry-run\n";
+    exit(0);
+}
+
 require_once __DIR__ . '/src/Application.php';
 
 try {

@@ -26,11 +26,9 @@ php scripts/help.php migrate.php
 | `setup.php` | PHP | Full installation (first time) |
 | `dev.php` | PHP | Start / stop the environment |
 | `migrate.php` | PHP | Run Doctrine migrations |
-| `db-reset.php` | PHP | Recreate the local database, optionally with fixtures |
-| `claude-auth.php` | PHP | Manage Claude CLI auth with WSL as source of truth, then sync it to Docker |
 | `console.php` | PHP | Run a Symfony command |
 | `node.php` | PHP | Run reusable commands inside the Node container |
-| `db.php` | PHP | Run reusable commands inside the PostgreSQL container |
+| `db.php` | PHP | Run database commands (PostgreSQL + Doctrine reset) |
 | `github.php` | PHP | GitHub CLI helper for PR creation, listing, view and merge |
 | `logs.php` | PHP | Display Docker logs |
 | `health.php` | PHP | Check application status |
@@ -90,19 +88,6 @@ php scripts/migrate.php --dry-run   # simulate without applying
 
 ---
 
-### `db-reset.php`
-Recreates the local database, runs migrations, and can also reload fixtures.
-
-```bash
-php scripts/db-reset.php
-php scripts/db-reset.php --fixtures
-php scripts/db-reset.php --fixtures --force
-```
-
-By default, the script asks for confirmation because it destroys all current local data. Use `--force` to skip the prompt.
-
----
-
 ### `claude-auth.php`
 Manages Claude CLI auth with WSL as the source of truth, then synchronizes the Docker shared copy used by the containers.
 
@@ -143,12 +128,18 @@ Use this script in priority for repeated frontend container actions such as type
 ---
 
 ### `db.php`
-Runs reusable `psql` commands in the PostgreSQL container.
+Runs database-related commands (PostgreSQL psql + Doctrine operations).
 
 ```bash
+# PostgreSQL commands
 php scripts/db.php query "SELECT 1"
 php scripts/db.php exec -c "\\dt"
 php scripts/db.php shell
+
+# Database reset (recreate + migrations)
+php scripts/db.php reset
+php scripts/db.php reset --fixtures
+php scripts/db.php reset --fixtures --force
 ```
 
 Use this script in priority for repeated local database inspection instead of raw `docker exec ... psql ...`.

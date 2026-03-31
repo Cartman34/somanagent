@@ -7,6 +7,13 @@
 // Usage: php scripts/health.php
 // Usage: php scripts/health.php --url http://localhost:8080
 
+if (in_array('-h', $argv, true) || in_array('--help', $argv, true)) {
+    echo "Check application and connector health via the API\n\n";
+    echo "Usage: php scripts/health.php\n";
+    echo "Usage: php scripts/health.php --url http://localhost:8080\n";
+    exit(0);
+}
+
 require_once __DIR__ . '/src/Application.php';
 
 try {

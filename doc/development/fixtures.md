@@ -15,13 +15,13 @@ Project rule:
 Typical reset flow:
 
 ```bash
-php scripts/db-reset.php --fixtures
+php scripts/db.php reset --fixtures
 ```
 
 If the database already exists and you want to force recreation:
 
 ```bash
-php scripts/db-reset.php --fixtures --force
+php scripts/db.php reset --fixtures --force
 ```
 
 ## Reference web team fixture

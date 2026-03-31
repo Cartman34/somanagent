@@ -7,6 +7,13 @@
 // Usage: php scripts/dev.php
 // Usage: php scripts/dev.php --stop
 
+if (in_array('-h', $argv, true) || in_array('--help', $argv, true)) {
+    echo "Start or stop the development environment (Docker Compose)\n\n";
+    echo "Usage: php scripts/dev.php\n";
+    echo "Usage: php scripts/dev.php --stop\n";
+    exit(0);
+}
+
 require_once __DIR__ . '/src/Application.php';
 
 try {

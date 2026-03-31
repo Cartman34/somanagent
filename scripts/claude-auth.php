@@ -10,6 +10,14 @@
 
 declare(strict_types=1);
 
+if (in_array('-h', $argv, true) || in_array('--help', $argv, true)) {
+    echo "Manage Claude CLI auth with WSL as the source of truth and sync it to Docker\n\n";
+    echo "Usage: php scripts/claude-auth.php status\n";
+    echo "Usage: php scripts/claude-auth.php sync [--force]\n";
+    echo "Usage: php scripts/claude-auth.php login [--force]\n";
+    exit(0);
+}
+
 require_once __DIR__ . '/src/Application.php';
 require_once __DIR__ . '/src/ClaudeAuthManager.php';
 

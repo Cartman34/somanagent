@@ -7,7 +7,12 @@
 // Usage: php scripts/validate-files.php backend/src/Controller/TaskController.php frontend/src/api/tickets.ts
 // Usage: php scripts/validate-files.php --with-types backend/src/Service/StoryExecutionService.php frontend/src/pages/ProjectDetailPage.tsx
 
-declare(strict_types=1);
+if (in_array('-h', $argv, true) || in_array('--help', $argv, true)) {
+    echo "Run targeted backend/frontend validations for an explicit file list\n\n";
+    echo "Usage: php scripts/validate-files.php backend/src/Controller/TaskController.php frontend/src/api/tickets.ts\n";
+    echo "Usage: php scripts/validate-files.php --with-types backend/src/Service/StoryExecutionService.php frontend/src/pages/ProjectDetailPage.tsx\n";
+    exit(0);
+}
 
 require_once __DIR__ . '/src/Application.php';
 
