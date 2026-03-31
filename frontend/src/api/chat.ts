@@ -15,4 +15,9 @@ export const chatApi = {
     const { data } = await apiClient.post(`/projects/${projectId}/chat/${agentId}`, { content })
     return data
   },
+
+  reply: async (projectId: string, agentId: string, content: string, replyToMessageId: string): Promise<ChatMessage> => {
+    const { data } = await apiClient.post(`/projects/${projectId}/chat/${agentId}/reply`, { content, replyToMessageId })
+    return data
+  },
 }

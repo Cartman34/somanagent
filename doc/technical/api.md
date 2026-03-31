@@ -102,6 +102,17 @@ Précondition :
 ### `POST /api/tickets/{id}/comments`
 Ajoute un `TicketLog` de type commentaire.
 
+Body :
+```json
+{
+  "content": "Texte du commentaire",
+  "replyToLogId": "uuid (optionnel) - ID du commentaire parent pour créer une réponse",
+  "context": "ticket_comment | ticket_reply"
+}
+```
+
+Un commentaire peut avoir des réponses. On appelle "thread" un fil de discussion qui commence par un message sans parent (`replyToLogId` null). Les réponses sont des enfants directs de ce message racine (structure plate : pas de réponses aux réponses).
+
 ### `DELETE /api/tickets/{id}`
 Supprime le ticket.
 
@@ -165,6 +176,17 @@ Précondition commune aux routes d’exécution / reprise task-level :
 
 ### `POST /api/ticket-tasks/{id}/comments`
 Ajoute un commentaire contextualisé sur la tâche.
+
+Body :
+```json
+{
+  "content": "Texte du commentaire",
+  "replyToLogId": "uuid (optionnel) - ID du commentaire parent pour créer une réponse",
+  "context": "task_comment | task_reply"
+}
+```
+
+Un commentaire peut avoir des réponses. Les réponses sont des enfants directs du message racine (structure plate : pas de réponses aux réponses).
 
 ### `DELETE /api/ticket-tasks/{id}`
 Supprime la tâche.

@@ -2,7 +2,7 @@
  * @author Florent HAZARD <f.hazard@sowapps.com>
  */
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertCircle,
@@ -12,6 +12,7 @@ import {
   FileCode2,
   MessageSquare,
   RefreshCw,
+  Reply,
   Send,
   Sparkles,
   Wrench,
@@ -24,6 +25,7 @@ import Markdown from '@/components/ui/Markdown'
 import { agentsApi } from '@/api/agents'
 import { chatApi } from '@/api/chat'
 import { rolesApi } from '@/api/roles'
+import { translationsApi } from '@/api/translations'
 import type { ChatMessage, SkillSummary } from '@/types'
 
 interface AgentSheetProps {
@@ -35,7 +37,14 @@ interface AgentSheetProps {
 
 type TabKey = 'details' | 'chat'
 
-function MessageRow({ message }: { message: ChatMessage }) {
+interface MessageRowLabels {
+  authorYou: string
+  authorError: string
+  errorNoDetail: string
+  noOutput: string
+}
+
+function MessageRow({ message, labels }: { message: ChatMessage; labels: MessageRowLabels }) {
   const isHuman = message.author === 'human'
   const metadata = message.metadata ?? {}
   const hasContent = message.content.trim().length > 0
@@ -68,7 +77,7 @@ function MessageRow({ message }: { message: ChatMessage }) {
           style={{ background: tone.badgeBackground, color: tone.badgeColor }}
         >
           {isHuman ? <MessageSquare className="w-3 h-3" /> : <Bot className="w-3 h-3" />}
-          {isHuman ? 'Vous' : (message.isError ? 'Erreur agent' : 'Agent')}
+          {isHuman ? labels.authorYou : (message.isError ? labels.authorError : 'Agent')}
         </span>
         <span style={{ color: 'var(--muted)' }}>
           {new Date(message.createdAt).toLocaleString('fr-FR')}
@@ -88,7 +97,7 @@ function MessageRow({ message }: { message: ChatMessage }) {
         )
       ) : (
         <div className="text-sm rounded-lg px-3 py-2 border border-dashed" style={{ color: 'var(--muted)', borderColor: 'var(--border)' }}>
-          {message.isError ? 'Erreur sans détail.' : 'Aucune sortie texte renvoyée par l’agent.'}
+          {message.isError ? labels.errorNoDetail : labels.noOutput}
         </div>
       )}
 
@@ -191,10 +200,35 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
   const shouldStickToBottomRef = useRef(true)
   const previousLastMessageIdRef = useRef<string | null>(null)
   const [draft, setDraft] = useState('')
+  const [replyingTo, setReplyingTo] = useState<string | null>(null)
+  const [replyInput, setReplyInput] = useState('')
   const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<TabKey>('chat')
   const [desktopPanel, setDesktopPanel] = useState<'chat' | 'skill'>('chat')
   const [isDesktop, setIsDesktop] = useState(false)
+
+  const { data: agentSheetI18n } = useQuery({
+    queryKey: ['ui-translations', 'agent-sheet'],
+    queryFn: () => translationsApi.list([
+      'chat.reply', 'chat.reply_placeholder',
+      'common.action.cancel', 'common.action.refresh',
+      'agents.sheet.modal_title', 'agents.sheet.load_error',
+      'agents.sheet.message.author_you', 'agents.sheet.message.author_error',
+      'agents.sheet.message.error_no_detail', 'agents.sheet.message.no_output',
+      'agents.sheet.status.error', 'agents.sheet.status.working', 'agents.sheet.status.available',
+      'agents.sheet.summary.no_role', 'agents.sheet.summary.connector', 'agents.sheet.summary.model',
+      'agents.sheet.summary.timeout', 'agents.sheet.summary.active_status',
+      'agents.sheet.summary.yes', 'agents.sheet.summary.no', 'agents.sheet.summary.active_tasks',
+      'agents.sheet.knowledge.title', 'agents.sheet.knowledge.hint',
+      'agents.sheet.knowledge.no_role', 'agents.sheet.knowledge.no_skills',
+      'agents.sheet.skill.none_selected', 'agents.sheet.skill.no_content', 'agents.sheet.skill.content_tab',
+      'agents.sheet.chat.title', 'agents.sheet.chat.description', 'agents.sheet.chat.empty',
+      'agents.sheet.chat.hello', 'agents.sheet.chat.message_placeholder',
+      'agents.sheet.chat.sending', 'agents.sheet.chat.send',
+    ]),
+    staleTime: Infinity,
+  })
+  const tt = (key: string) => agentSheetI18n?.translations[key] ?? key
 
   const agentQuery = useQuery({
     queryKey: ['agent-detail', agentId],
@@ -232,6 +266,16 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
     },
   })
 
+  const replyMutation = useMutation({
+    mutationFn: ({ content, replyToMessageId }: { content: string; replyToMessageId: string }) =>
+      chatApi.reply(projectId, agentId!, content, replyToMessageId),
+    onSuccess: async () => {
+      setReplyInput('')
+      setReplyingTo(null)
+      await qc.invalidateQueries({ queryKey: ['project-agent-chat', projectId, agentId] })
+    },
+  })
+
   const isLoading = agentQuery.isLoading || statusQuery.isLoading || historyQuery.isLoading
   const error = (agentQuery.error as Error | null)
     ?? (roleQuery.error as Error | null)
@@ -249,10 +293,44 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
       ? 'badge-orange'
       : 'badge-green'
   const runtimeLabel = runtimeStatus === 'error'
-    ? 'Erreur'
+    ? tt('agents.sheet.status.error')
     : runtimeStatus === 'working'
-      ? 'En travail'
-      : 'Disponible'
+      ? tt('agents.sheet.status.working')
+      : tt('agents.sheet.status.available')
+
+  /**
+   * Represents a group of messages sharing the same exchange ID.
+   */
+  interface MessageGroup {
+    /** Exchange identifier. */
+    exchangeId: string
+    /** Messages belonging to this exchange. */
+    messages: ChatMessage[]
+  }
+
+  /**
+   * Messages grouped by exchangeId for threaded display.
+   */
+  const groupedMessages = useMemo((): MessageGroup[] => {
+    const groups: Map<string, MessageGroup> = new Map()
+
+    for (const msg of history) {
+      const exchangeId = msg.exchangeId
+
+      if (!groups.has(exchangeId)) {
+        groups.set(exchangeId, {
+          exchangeId,
+          messages: [],
+        })
+      }
+
+      groups.get(exchangeId)!.messages.push(msg)
+    }
+
+    return Array.from(groups.values()).sort((a, b) =>
+      new Date(a.messages[0].createdAt).getTime() - new Date(b.messages[0].createdAt).getTime()
+    )
+  }, [history])
 
   useEffect(() => {
     const media = window.matchMedia('(min-width: 1024px)')
@@ -379,7 +457,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
         <div>
           <p className="text-lg font-semibold" style={{ color: 'var(--text)' }}>{currentAgent.name}</p>
           <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-            {currentAgent.role?.name ?? 'Sans rôle'}
+            {currentAgent.role?.name ?? tt('agents.sheet.summary.no_role')}
           </p>
         </div>
         <span className={`${runtimeBadgeClass} text-xs`}>{runtimeLabel}</span>
@@ -387,23 +465,23 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
 
       <div className="mt-4 space-y-2 text-sm">
         <div className="flex items-center justify-between gap-4">
-          <span style={{ color: 'var(--muted)' }}>Connecteur</span>
+          <span style={{ color: 'var(--muted)' }}>{tt('agents.sheet.summary.connector')}</span>
           <span style={{ color: 'var(--text)' }}>{currentAgent.connectorLabel}</span>
         </div>
         <div className="flex items-center justify-between gap-4">
-          <span style={{ color: 'var(--muted)' }}>Modèle</span>
+          <span style={{ color: 'var(--muted)' }}>{tt('agents.sheet.summary.model')}</span>
           <code style={{ color: 'var(--text)' }}>{currentAgent.config.model}</code>
         </div>
         <div className="flex items-center justify-between gap-4">
-          <span style={{ color: 'var(--muted)' }}>Timeout</span>
+          <span style={{ color: 'var(--muted)' }}>{tt('agents.sheet.summary.timeout')}</span>
           <span style={{ color: 'var(--text)' }}>{currentAgent.config.timeout}s</span>
         </div>
         <div className="flex items-center justify-between gap-4">
-          <span style={{ color: 'var(--muted)' }}>Statut actif</span>
-          <span style={{ color: 'var(--text)' }}>{currentAgent.isActive ? 'Oui' : 'Non'}</span>
+          <span style={{ color: 'var(--muted)' }}>{tt('agents.sheet.summary.active_status')}</span>
+          <span style={{ color: 'var(--text)' }}>{currentAgent.isActive ? tt('agents.sheet.summary.yes') : tt('agents.sheet.summary.no')}</span>
         </div>
         <div className="flex items-center justify-between gap-4">
-          <span style={{ color: 'var(--muted)' }}>Tâches actives</span>
+          <span style={{ color: 'var(--muted)' }}>{tt('agents.sheet.summary.active_tasks')}</span>
           <span style={{ color: 'var(--text)' }}>{statusQuery.data?.activeTaskCount ?? 0}</span>
         </div>
       </div>
@@ -426,16 +504,16 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
   const renderKnowledgePanel = () => (
     <div className="rounded-2xl border min-h-0 h-full overflow-hidden flex flex-col" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
       <div className="shrink-0 px-4 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
-        <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Rôle et skills</p>
+        <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{tt('agents.sheet.knowledge.title')}</p>
         <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
-          Cliquez sur un skill pour afficher son contenu complet.
+          {tt('agents.sheet.knowledge.hint')}
         </p>
       </div>
 
       <div className="basis-0 flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
         {!role ? (
           <div className="text-sm" style={{ color: 'var(--muted)' }}>
-            Aucun rôle détaillé disponible.
+            {tt('agents.sheet.knowledge.no_role')}
           </div>
         ) : (
           <>
@@ -449,7 +527,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
 
             {skills.length === 0 ? (
               <div className="text-sm" style={{ color: 'var(--muted)' }}>
-                Aucun skill associé à ce rôle.
+                {tt('agents.sheet.knowledge.no_skills')}
               </div>
             ) : (
               <div className="space-y-2">
@@ -478,7 +556,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
         <FileCode2 className="w-4 h-4" style={{ color: 'var(--brand)' }} />
         <div className="min-w-0">
           <p className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>
-            {selectedSkill?.name ?? 'Aucun skill sélectionné'}
+            {selectedSkill?.name ?? tt('agents.sheet.skill.none_selected')}
           </p>
           {selectedSkill?.filePath && (
             <p className="text-xs font-mono truncate" style={{ color: 'var(--muted)' }}>
@@ -493,7 +571,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
           className="min-h-full text-xs whitespace-pre-wrap break-words"
           style={{ color: 'var(--text)' }}
         >
-          {selectedSkill?.content?.trim() || 'Aucun contenu de skill disponible.'}
+          {selectedSkill?.content?.trim() || tt('agents.sheet.skill.no_content')}
         </pre>
       </div>
     </div>
@@ -503,16 +581,16 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
     <div className="rounded-2xl border min-h-0 h-full overflow-hidden flex flex-col" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
       <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
         <div>
-          <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Chat avec l’agent</p>
+          <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{tt('agents.sheet.chat.title')}</p>
           <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
-            Échanges projet ↔ agent, avec erreurs et métadonnées d’exécution.
+            {tt('agents.sheet.chat.description')}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <span className="badge-blue text-xs">{history.length} message{history.length > 1 ? 's' : ''}</span>
           <button className="btn-secondary" onClick={() => historyQuery.refetch()} disabled={historyQuery.isFetching}>
             <RefreshCw className={`w-4 h-4 ${historyQuery.isFetching ? 'animate-spin' : ''}`} />
-            Rafraîchir
+            {tt('common.action.refresh')}
           </button>
         </div>
       </div>
@@ -520,14 +598,75 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
       <div
         ref={historyContainerRef}
         onScroll={handleHistoryScroll}
-        className="basis-0 flex-1 min-h-0 overflow-y-auto p-4 space-y-3"
+        className="basis-0 flex-1 min-h-0 overflow-y-auto p-4 space-y-4"
       >
         {history.length === 0 ? (
           <div className="h-full min-h-[18rem] flex items-center justify-center text-sm" style={{ color: 'var(--muted)' }}>
-            Aucun échange pour le moment.
+            {tt('agents.sheet.chat.empty')}
           </div>
         ) : (
-          history.map((message) => <MessageRow key={message.id} message={message} />)
+          groupedMessages.map((group) => (
+            <div key={group.exchangeId} className="space-y-2">
+              {group.messages.map((msg, idx) => {
+                const isReply = msg.replyToMessageId !== null
+                const canReply = idx === 0 && !isReply
+
+                return (
+                  <div>
+                    <MessageRow message={msg} labels={{
+                      authorYou: tt('agents.sheet.message.author_you'),
+                      authorError: tt('agents.sheet.message.author_error'),
+                      errorNoDetail: tt('agents.sheet.message.error_no_detail'),
+                      noOutput: tt('agents.sheet.message.no_output'),
+                    }} />
+                    {canReply && (
+                      <button
+                        type="button"
+                        onClick={() => { setReplyingTo(msg.id); setReplyInput('') }}
+                        className="flex items-center gap-1 mt-1 text-xs transition-colors hover:opacity-70"
+                        style={{ color: 'var(--muted)' }}
+                      >
+                        <Reply className="w-3 h-3" />
+                        {tt('chat.reply')}
+                      </button>
+                    )}
+                    {replyingTo === msg.id && (
+                      <form
+                        onSubmit={(e) => { e.preventDefault(); replyMutation.mutate({ content: replyInput.trim(), replyToMessageId: replyingTo }) }}
+                        className="mt-2 flex gap-2"
+                      >
+                        <textarea
+                          className="input flex-1 text-sm resize-none"
+                          rows={2}
+                          value={replyInput}
+                          onChange={(e) => setReplyInput(e.target.value)}
+                          placeholder={tt('chat.reply_placeholder')}
+                          disabled={replyMutation.isPending}
+                        />
+                        <div className="flex flex-col gap-1">
+                          <button
+                            type="submit"
+                            className="btn-primary px-3 py-1"
+                            disabled={!replyInput.trim() || replyMutation.isPending}
+                          >
+                            <Send className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setReplyingTo(null); setReplyInput('') }}
+                            className="text-xs"
+                            style={{ color: 'var(--muted)' }}
+                          >
+                            {tt('common.action.cancel')}
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          ))
         )}
         <div ref={historyBottomRef} aria-hidden="true" className="h-px w-full" />
       </div>
@@ -547,7 +686,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
             disabled={sendMutation.isPending}
           >
             <Send className="w-4 h-4" />
-            Salut
+            {tt('agents.sheet.chat.hello')}
           </button>
         </div>
 
@@ -562,7 +701,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
                 handleSend()
               }
             }}
-            placeholder="Écrire un message à l’agent..."
+            placeholder={tt('agents.sheet.chat.message_placeholder')}
             disabled={sendMutation.isPending}
           />
           <button
@@ -571,7 +710,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
             disabled={sendMutation.isPending || draft.trim() === ''}
           >
             <Send className="w-4 h-4" />
-            {sendMutation.isPending ? 'Envoi...' : 'Envoyer'}
+            {sendMutation.isPending ? tt('agents.sheet.chat.sending') : tt('agents.sheet.chat.send')}
           </button>
         </div>
       </div>
@@ -579,18 +718,18 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
   )
 
   return (
-    <Modal open={open} onClose={onClose} title={agent ? `Agent ${agent.name}` : 'Fiche agent'} size="2xl">
+    <Modal open={open} onClose={onClose} title={agent ? `Agent ${agent.name}` : tt('agents.sheet.modal_title')} size="2xl">
       {!agentId ? null : isLoading ? (
         <PageSpinner />
       ) : error || !agent ? (
-        <ErrorMessage message={error?.message ?? 'Impossible de charger la fiche agent.'} />
+        <ErrorMessage message={error?.message ?? tt('agents.sheet.load_error')} />
       ) : (
         <div className="flex min-h-0 h-[min(82vh,860px)] max-h-full flex-col gap-4">
           <div className="flex items-center justify-between gap-3 border-b pb-3" style={{ borderColor: 'var(--border)' }}>
             <div className="min-w-0">
               <p className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>{agent.name}</p>
               <p className="text-xs mt-1 truncate" style={{ color: 'var(--muted)' }}>
-                {agent.role?.name ?? 'Sans rôle'} • {agent.connectorLabel}
+                {agent.role?.name ?? tt('agents.sheet.summary.no_role')} • {agent.connectorLabel}
               </p>
             </div>
             <div className="hidden lg:flex items-center gap-2">
@@ -604,14 +743,14 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
                 disabled={sendMutation.isPending}
               >
                 <Send className="w-4 h-4" />
-                Salut
+                {tt('agents.sheet.chat.hello')}
               </button>
             </div>
           </div>
 
           <div className="lg:hidden flex gap-2 overflow-x-auto" style={{ scrollbarWidth: 'thin' }}>
             <TabButton active={activeTab === 'chat'} onClick={() => setActiveTab('chat')}>Chat</TabButton>
-            <TabButton active={activeTab === 'details'} onClick={() => setActiveTab('details')}>Rôle et skills</TabButton>
+            <TabButton active={activeTab === 'details'} onClick={() => setActiveTab('details')}>{tt('agents.sheet.knowledge.title')}</TabButton>
           </div>
 
           {isDesktop ? (
@@ -626,7 +765,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
               <div className="min-h-0 flex flex-col gap-4">
                 <div className="flex gap-2">
                   <TabButton active={desktopPanel === 'chat'} onClick={() => setDesktopPanel('chat')}>Chat</TabButton>
-                  <TabButton active={desktopPanel === 'skill'} onClick={() => setDesktopPanel('skill')}>Contenu du skill</TabButton>
+                  <TabButton active={desktopPanel === 'skill'} onClick={() => setDesktopPanel('skill')}>{tt('agents.sheet.skill.content_tab')}</TabButton>
                 </div>
                 <div className="min-h-0 flex-1">
                   {desktopPanel === 'chat' ? renderChatPanel() : renderSkillContent()}
