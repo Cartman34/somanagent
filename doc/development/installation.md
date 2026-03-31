@@ -93,7 +93,7 @@ php scripts/console.php somanagent:seed:web-team
 To fully recreate the local database and reload fixtures:
 
 ```bash
-php scripts/db-reset.php --fixtures
+php scripts/db.php reset --fixtures
 ```
 
 ## Troubleshooting

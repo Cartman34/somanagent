@@ -73,10 +73,10 @@ migration: ## Créer une nouvelle migration
 	php scripts/console.php doctrine:migrations:diff
 
 db-reset: ## Réinitialiser la base de données
-	php scripts/db-reset.php
+	php scripts/db.php reset
 
 db-reset-fixtures: ## Recréer la base locale et recharger les fixtures
-	php scripts/db-reset.php --fixtures
+	php scripts/db.php reset --fixtures
 
 cache-clear: ## Vider le cache Symfony
 	php scripts/console.php cache:clear
