@@ -32,6 +32,8 @@ php scripts/help.php migrate.php
 | `github.php` | PHP | GitHub CLI helper for PR creation, listing, view and merge |
 | `logs.php` | PHP | Display Docker logs |
 | `health.php` | PHP | Check application status |
+| `review.php` | PHP | Run mechanical review checks (French strings, PHPDoc, JSDoc) |
+| `validate-files.php` | PHP | Run targeted backend/frontend validations for an explicit file list |
 | `wsl-claude-install.sh` | Bash | Install Claude CLI inside the configured WSL distro |
 | `wsl-codex-install.sh` | Bash | Install or upgrade OpenAI Codex CLI inside WSL |
 | `wsl-migrate.sh` | Bash | Copy the project to the WSL native filesystem for faster Docker I/O |
@@ -185,6 +187,36 @@ Queries the API to check the application and connector status.
 ```bash
 php scripts/health.php
 php scripts/health.php --url http://my-server:8080
+```
+
+---
+
+### `review.php`
+Runs mechanical pre-commit checks on modified and untracked files. Designed to be used by AI agents during the `review` command, before manual inspection.
+
+Blockers (exit code 1):
+- French strings (accented characters) in `backend/src/` `.php` and `frontend/src/` `.ts/.tsx`
+- Missing PHPDoc on `public function` declarations in `backend/src/` (migrations excluded)
+- Missing JSDoc on export declarations in `frontend/src/` `.ts/.tsx`
+
+Informational (no exit code impact):
+- List of modified files
+- List of untracked files
+
+Limitations: only detects accented characters as French strings — complement with a manual diff review for unaccented French words (`Valider`, `Commenter`, etc.). JSDoc check covers export declarations only, not re-exports.
+
+```bash
+php scripts/review.php
+```
+
+---
+
+### `validate-files.php`
+Runs targeted backend/frontend validations (PHP syntax, Symfony container lint, Doctrine schema, ESLint) for an explicit list of files.
+
+```bash
+php scripts/validate-files.php backend/src/Controller/TaskController.php frontend/src/api/tickets.ts
+php scripts/validate-files.php --with-types backend/src/Service/StoryExecutionService.php
 ```
 
 ---

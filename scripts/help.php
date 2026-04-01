@@ -44,9 +44,14 @@ function parseHeader(string $file): array
     $description = '';
     $usages      = [];
 
+    $inPhpDoc = false;
     foreach ($lines as $i => $line) {
         if ($i === 0 && str_starts_with($line, '#!')) continue; // shebang
         if (trim($line) === '<?php') continue;
+
+        // Skip PHPDoc blocks (/** ... */)
+        if (str_starts_with(trim($line), '/**')) { $inPhpDoc = true; continue; }
+        if ($inPhpDoc) { if (str_contains($line, '*/')) { $inPhpDoc = false; } continue; }
 
         $content = null;
         if (str_starts_with($line, '// ')) {

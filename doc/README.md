@@ -23,12 +23,25 @@ It lets you assemble generic AI agent teams, assign them roles and skills, then 
 
 | Document | Description |
 |---|---|
-| [Architecture](technical/architecture.md) | Code structure, conventions, hexagonal architecture |
+| [Architecture](technical/architecture.md) | Code structure, hexagonal architecture, data flow |
+| [Conventions](technical/conventions.md) | PHPDoc, JSDoc, translations, entity CSS classes, author header |
 | [Entities](technical/entities.md) | Data model, Doctrine entities and their relationships |
 | [REST API](technical/api.md) | Complete reference for all endpoints |
 | [Adapters](technical/adapters.md) | Hexagonal ports and their implementations |
 | [Configuration](technical/configuration.md) | Environment variables, .env file |
 | [Translations Strategy](technical/translations.md) | Conventions and migration strategy for translator-backed application messages |
+
+### Quick reference — which doc for which task
+
+| Task | Document |
+|---|---|
+| Adding a new API endpoint | [api.md](technical/api.md) |
+| Adding or modifying a Doctrine entity | [entities.md](technical/entities.md) |
+| Applying a PHPDoc, JSDoc, or CSS class rule | [conventions.md](technical/conventions.md) |
+| Adding a translation key or migrating a French string | [translations.md](technical/translations.md) |
+| Configuring environment variables | [configuration.md](technical/configuration.md) |
+| Adding or modifying a script in `scripts/` | [scripts.md](development/scripts.md) |
+| Understanding the hexagonal architecture | [architecture.md](technical/architecture.md) |
 
 ### Development documentation — working on SoManAgent
 

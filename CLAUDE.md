@@ -2,13 +2,8 @@
 
 This file is for session continuity only.
 
-Use `doc/` as the source of truth for product, technical and development documentation:
-- index: [`doc/README.md`](/home/sowapps/projects/somanagent/doc/README.md)
-- architecture and conventions: [`doc/technical/architecture.md`](/home/sowapps/projects/somanagent/doc/technical/architecture.md)
-- API: [`doc/technical/api.md`](/home/sowapps/projects/somanagent/doc/technical/api.md)
-- entities: [`doc/technical/entities.md`](/home/sowapps/projects/somanagent/doc/technical/entities.md)
-- scripts: [`doc/development/scripts.md`](/home/sowapps/projects/somanagent/doc/development/scripts.md)
-- Symfony commands: [`doc/development/commands.md`](/home/sowapps/projects/somanagent/doc/development/commands.md)
+Use `doc/README.md` as the documentation index — it includes a "which doc for which task" table.
+Consult doc/ files only when a task requires it. Do not read them proactively.
 
 ## Working Directory
 
@@ -27,22 +22,41 @@ Use `doc/` as the source of truth for product, technical and development documen
 - These three local files are the continuity source of truth for backlog, completed work and review follow-up.
 - The order of tasks in `local/planned-tasks.md` is the authoritative priority order.
 - The user may reorder `local/planned-tasks.md` manually at any time to redefine priorities.
-- User may require some instructions, they are listed below with behavior
-- `next` means: execute the first task from `local/planned-tasks.md`, remove it from that file, then append the result to the end of `local/changes-list.md`.
-- `new ...` means: append a new task to the end of `local/planned-tasks.md`.
-- If a `next` is already in progress, `new ...` does not interrupt it unless the user explicitly redirects the work.
-- `rework` means: read `local/changes-review.md`, resume from the pending review feedback, and apply the needed follow-up changes.
-- During `rework`, review feedback is not assumed to be automatically correct: challenge weak or risky requests when needed, and ask for clarification if a point is ambiguous or under-specified.
-- During `rework`, any additional change explicitly requested by the user as part of the same follow-up must also be added to `local/changes-list.md`, even if it goes beyond the original review remarks.
-- If a completed feature needs a follow-up bugfix, add it to `local/changes-list.md` with prefix `[FIX]`.
-- `review` means: analyse the current work, write the review findings into `local/changes-review.md`, and use that same file as the source for any later `rework`.
-- Any new user process instruction that changes how work should be tracked or executed must be persisted in `CLAUDE.md`.
-- `next`, `review`, and `rework` are explicit user commands, not an automatic gate sequence.
-- Encourage the review/rework loop until the review is clean, but never block a user command just because another command would be preferable.
-- An explicit user command `approve` must not be blocked by review findings; if the user requests `approve`, execute the approval workflow even if review blockers remain documented.
-- Do not infer workflow state only from the current chat session: deduce the valid next command from the effective contents of `local/planned-tasks.md`, `local/changes-list.md`, and especially `local/changes-review.md`, because these files may have been updated outside the current session.
-- Keep chat updates concise and do not restate information that is already available in the local backlog tracking files unless it is necessary for a decision or blocker.
-- A bugfix discovered while implementing the current task must stay folded into that same task in `local/changes-list.md`; do not add a separate `[FIX]` entry unless it is a follow-up on already completed work or you are explicitly extending the existing task entry.
+User commands and their exact behaviour:
+
+**`next`**
+1. Read the first task from `local/planned-tasks.md`
+2. Execute it fully
+3. Remove it from `local/planned-tasks.md`
+4. Append the result to `local/changes-list.md`
+- DO NOT start a second task in the same turn
+- DO NOT touch `local/changes-review.md`
+- A bugfix discovered during the task stays folded in that task entry — do not add a separate `[FIX]` unless it is a follow-up on already-completed work
+
+**`new <description>`**
+1. Append the new task to the end of `local/planned-tasks.md`
+- DO NOT interrupt a `next` in progress unless the user explicitly redirects
+
+**`rework`**
+1. Read `local/changes-review.md` for pending feedback
+2. Apply the needed follow-up changes
+3. Append any change made to `local/changes-list.md`
+- DO NOT apply feedback blindly — challenge weak, risky, or ambiguous points; ask for clarification if needed
+- Additional changes explicitly requested by the user during `rework` must also be added to `local/changes-list.md`
+
+**`review`** → see Workflow Commands → `review`
+
+**`approve`** → see Workflow Commands → `approve`
+
+**`merge`** → see Workflow Commands → `merge`
+
+General rules:
+- `next`, `review`, `rework`, `approve`, `merge` are explicit user commands — never auto-chain them, except: `review` auto-proceeds to `approve` when there are no blockers (this is an explicit part of the `review` command, not a chain)
+- Encourage the review/rework loop until the review is clean, but never block a user command
+- An explicit `approve` must execute even if review blockers are documented
+- Any new user process instruction must be persisted in `CLAUDE.md`
+- Do not infer state from the chat session alone — read `local/planned-tasks.md`, `local/changes-list.md`, and `local/changes-review.md` as the source of truth
+- Keep chat updates concise — do not restate what is already in the local files
 
 ### Local-only files
 
@@ -88,23 +102,28 @@ php scripts/db.php query "SELECT source, category, level, title, occurred_at FRO
 
 ### `review` / `review async`
 
-1. Read `local/changes-list.md` for the declared scope
-2. Run `git status --short` to detect untracked (`??`) files
-3. Analyse all modified/added files: coherence, conventions, signatures
-4. Write conclusions to `local/changes-review.md`
-5. **Never modify code during review** — report only
-6. The file `local/changes-review.md` is the review deliverable used later by `rework`
-7. **Never write a detailed report in chat** — only "Review ✅" or a short blocker list
-8. If ✅ with no blocker → auto-proceed to approve
+1. Read `local/changes-list.md` — declared scope
+2. Run `php scripts/review.php` — mechanical checklist (French strings, PHPDoc, JSDoc)
+3. Each `M` file: `git diff <file>` first; full read only if diff is insufficient
+4. Each `??` file: targeted `grep`/`head` only — no Explore agent
+5. Write findings to `local/changes-review.md` — no code changes
+6. Chat output: "Review ✅" or blocker list only — no verbose report
+7. ✅ no blocker → auto-proceed to approve
 
-**Review quality:**
-- Flag any modified/added file outside the declared scope, and any declared item without a matching file
-- Grep callers of any method whose signature changes
-- **Block on:** French string outside a `backend/translations/*.yaml` file, missing PHPDoc/JSDoc on public method or exported component, obvious functional bug
-- French strings are only allowed inside translation files — any French literal in `.php`, `.ts`, `.tsx` or other source files is a translation migration gap (see [`doc/technical/translations.md`](doc/technical/translations.md))
-- Every `??` file must be included in the commit or covered by `.gitignore`
+**`review.php` limitations:** only detects accented characters (U+00C0–U+00FF) as French strings. Does NOT catch unaccented French words (`Valider`, `Commenter`, `Titre`, `Annuler`, etc.). Complement with a manual scan of new visible strings in the diff.
 
-**`review async` variant:** same as review + approve, but `git checkout main` is done immediately after the commit — before push and PR creation. `--head <branch>` is passed explicitly so the script no longer depends on the current branch.
+**Block on:**
+- French literal in `.php`, `.ts`, `.tsx` outside `backend/translations/*.yaml`
+- Missing PHPDoc on public PHP method or JSDoc on exported TS/React symbol
+- Obvious functional bug
+
+**Also check:**
+- Every declared scope item has a matching file change, and vice versa
+- Callers of any method whose signature changed
+
+**`changes-review.md` format:** consumed by another AI running `rework` — write it for machine reading: structured sections, bullet points, blockers as facts. No prose padding, no redundant explanations.
+
+**`review async`:** same as review + approve, with `git checkout main` inserted after push and before PR creation. Pass `--head <branch>` explicitly.
 
 ### `approve` (or auto-approval after review ✅)
 
@@ -134,7 +153,7 @@ Merge the current open PR: `php scripts/github.php pr merge <number>`, then `git
 
 Blocking rule:
 - If a PR title contains `[BLOCKED]`, it must never be merged.
-- A blocked PR can only be merged after an explicit user instruction to unblock or merge it anyway.
+- A blocked PR can only be merged after an explicit user instruction to unblock it first.
 
 ## Git Rules
 
@@ -167,7 +186,7 @@ Blocking rule:
 
 ## Project Conventions Snapshot
 
-For the detailed conventions, use [`doc/technical/architecture.md`](/home/sowapps/projects/somanagent/doc/technical/architecture.md).
+For the detailed conventions, use [`doc/technical/conventions.md`](/home/sowapps/projects/somanagent/doc/technical/conventions.md).
 
 Important reminders:
 - PHPDoc is required on public PHP methods unless they are truly trivial, and on non-trivial private helpers.
