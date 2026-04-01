@@ -5,7 +5,7 @@
       "Read",
       "Edit",
       "Glob",
-      "Greb",
+      "Grep",
       "Search",
       "Bash(docker --version)",
       "Bash(docker compose:*)",
@@ -36,7 +36,8 @@
       "Bash(sudo apt:*)",
       "Bash(git *)",
       "Bash(gh *)",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "Bash(wc:*)"
     ]
   }
 }
