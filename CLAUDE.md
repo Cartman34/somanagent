@@ -39,6 +39,7 @@ Use `doc/` as the source of truth for product, technical and development documen
 - Any new user process instruction that changes how work should be tracked or executed must be persisted in `CLAUDE.md`.
 - `next`, `review`, and `rework` are explicit user commands, not an automatic gate sequence.
 - Encourage the review/rework loop until the review is clean, but never block a user command just because another command would be preferable.
+- An explicit user command `approve` must not be blocked by review findings; if the user requests `approve`, execute the approval workflow even if review blockers remain documented.
 - Do not infer workflow state only from the current chat session: deduce the valid next command from the effective contents of `local/planned-tasks.md`, `local/changes-list.md`, and especially `local/changes-review.md`, because these files may have been updated outside the current session.
 - Keep chat updates concise and do not restate information that is already available in the local backlog tracking files unless it is necessary for a decision or blocker.
 - A bugfix discovered while implementing the current task must stay folded into that same task in `local/changes-list.md`; do not add a separate `[FIX]` entry unless it is a follow-up on already completed work or you are explicitly extending the existing task entry.

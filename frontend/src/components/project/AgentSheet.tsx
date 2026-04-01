@@ -68,7 +68,7 @@ function MessageRow({ message, labels }: { message: ChatMessage; labels: Message
 
   return (
     <div
-      className="rounded-xl border p-3"
+      className="item-chat-message rounded-xl border p-3"
       style={{ borderColor: 'var(--border)', background: tone.background }}
     >
       <div className="flex items-center gap-2 text-xs mb-2">
@@ -147,7 +147,7 @@ function SkillCard({
     <button
       type="button"
       onClick={onSelect}
-      className="w-full text-left rounded-xl border p-3 transition-colors"
+      className="item-skill w-full text-left rounded-xl border p-3 transition-colors"
       style={{
         borderColor: selected ? 'var(--brand)' : 'var(--border)',
         background: selected ? 'var(--brand-dim)' : 'var(--surface)',
@@ -447,7 +447,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
   }
 
   const renderAgentSummary = () => (
-    <div className="rounded-2xl p-4 border" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
+    <div className="item-agent rounded-2xl p-4 border" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
       {(() => {
         const currentAgent = agent!
 
@@ -530,7 +530,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
                 {tt('agents.sheet.knowledge.no_skills')}
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="list-skill space-y-2">
                 {skills.map((skill) => (
                   <SkillCard
                     key={skill.id}
@@ -598,7 +598,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
       <div
         ref={historyContainerRef}
         onScroll={handleHistoryScroll}
-        className="basis-0 flex-1 min-h-0 overflow-y-auto p-4 space-y-4"
+        className="list-chat-message basis-0 flex-1 min-h-0 overflow-y-auto p-4 space-y-4"
       >
         {history.length === 0 ? (
           <div className="h-full min-h-[18rem] flex items-center justify-center text-sm" style={{ color: 'var(--muted)' }}>

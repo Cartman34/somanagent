@@ -116,6 +116,38 @@ The intent is that reusable frontend code can be treated as a black box when nee
 
 Avoid comments that merely paraphrase the code line by line, but do not omit JSDoc on the assumption that the implementation is "obvious enough".
 
+### Entity CSS Classes
+
+Every DOM element that represents a domain entity must carry a semantic CSS class so that external tools (tests, browser extensions, automation scripts) can locate it reliably without relying on layout classes.
+
+Two class patterns are used:
+
+| Pattern | Purpose |
+|---|---|
+| `item-{slug}` | The element **is** an entity — a card, row, or any wrapper that represents a single entity instance, even if the data is partial |
+| `list-{slug}` | The element **contains a collection** of `item-{slug}` elements for that entity |
+
+**Entity slugs in use:**
+
+| Slug | Entity |
+|---|---|
+| `ticket` | Story or bug (Ticket) |
+| `ticket-task` | Technical task (TicketTask) |
+| `agent` | Agent |
+| `module` | Project module |
+| `audit-log` | Audit log entry |
+| `token-usage` | Token usage entry |
+| `agent-execution` | Agent task execution |
+| `ticket-log` | Ticket discussion log (comment, reply) |
+| `skill` | Skill |
+| `chat-message` | Chat message |
+
+**Rules:**
+- Apply `item-{slug}` on the outermost element of the entity representation — do not add it to inner wrappers.
+- Apply `list-{slug}` on the direct container of the items — the element whose children are `item-{slug}` nodes.
+- When an entity can be one of several types (e.g. `Ticket | TicketTask`), resolve the slug dynamically: `isTicket(entity) ? 'item-ticket' : 'item-ticket-task'`.
+- These classes carry no visual style — they are purely semantic.
+
 ### Translations
 
 User-facing text must not be hardcoded in French in application source code.
