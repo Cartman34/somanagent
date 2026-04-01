@@ -172,7 +172,7 @@ export default function ChatPage() {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+          <div className="list-chat-message flex-1 overflow-y-auto px-4 py-4 space-y-4">
             {isLoading ? <PageSpinner /> : groupedMessages.length === 0 ? (
               <p className="text-center text-sm text-gray-400 mt-8">Aucun message — démarrez la conversation.</p>
             ) : (
@@ -183,7 +183,7 @@ export default function ChatPage() {
                     const canReply = idx === 0 && !isReply
 
                     return (
-                      <div key={msg.id} className={`flex gap-2 ${msg.author === 'human' ? 'flex-row-reverse' : ''}`}>
+                      <div key={msg.id} className={`item-chat-message flex gap-2 ${msg.author === 'human' ? 'flex-row-reverse' : ''}`}>
                         <div className={`flex flex-col items-center`}>
                           <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${msg.author === 'human' ? 'bg-brand-600' : 'bg-gray-200'}`}>
                             {msg.author === 'human' ? <User className="w-3.5 h-3.5 text-white" /> : <Bot className="w-3.5 h-3.5 text-gray-600" />}

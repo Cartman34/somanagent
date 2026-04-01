@@ -134,8 +134,16 @@ Two class patterns are used:
 | `ticket` | Story or bug (Ticket) |
 | `ticket-task` | Technical task (TicketTask) |
 | `agent` | Agent |
+| `project` | Project |
+| `team` | Team |
+| `role` | Role |
 | `module` | Project module |
+| `feature` | Feature |
+| `workflow` | Workflow |
+| `workflow-step` | Workflow step |
 | `audit-log` | Audit log entry |
+| `occurrence` | Aggregated log occurrence |
+| `log-event` | Raw log event |
 | `token-usage` | Token usage entry |
 | `agent-execution` | Agent task execution |
 | `ticket-log` | Ticket discussion log (comment, reply) |
@@ -146,6 +154,7 @@ Two class patterns are used:
 - Apply `item-{slug}` on the outermost element of the entity representation — do not add it to inner wrappers.
 - Apply `list-{slug}` on the direct container of the items — the element whose children are `item-{slug}` nodes.
 - When an entity can be one of several types (e.g. `Ticket | TicketTask`), resolve the slug dynamically: `isTicket(entity) ? 'item-ticket' : 'item-ticket-task'`.
+- When introducing a new entity slug in frontend code, update the "Entity slugs in use" table in the same change so the convention stays authoritative.
 - These classes carry no visual style — they are purely semantic.
 
 ### Translations

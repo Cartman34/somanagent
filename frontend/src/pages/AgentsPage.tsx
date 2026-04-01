@@ -187,7 +187,7 @@ export default function AgentsPage() {
       ) : (
         <div className="relative">
           <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={tt('agent.list.loading')} />
-          <div className="card overflow-hidden">
+          <div className="list-agent card overflow-hidden">
             <table className="w-full text-sm">
             <thead className="border-b" style={{ background: 'var(--surface2)', borderColor: 'var(--border)' }}>
               <tr>
@@ -199,9 +199,9 @@ export default function AgentsPage() {
                 <th className="px-4 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y" style={{ borderColor: 'var(--border)' }}>
+              <tbody className="divide-y" style={{ borderColor: 'var(--border)' }}>
               {agents?.map((agent) => (
-                <tr key={agent.id} className="transition-colors" style={{ background: 'transparent' }}>
+                <tr key={agent.id} className="item-agent transition-colors" style={{ background: 'transparent' }}>
                   <td className="px-4 py-3">
                     <p className="font-medium" style={{ color: 'var(--text)' }}>{agent.name}</p>
                     {agent.description && <p className="text-xs truncate max-w-xs" style={{ color: 'var(--muted)' }}>{agent.description}</p>}

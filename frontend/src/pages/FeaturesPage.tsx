@@ -104,9 +104,9 @@ export default function FeaturesPage() {
       ) : (
         <div className="relative">
           <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={tt('feature.list.loading')} />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="list-feature grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {features?.map((feature) => (
-            <div key={feature.id} className="card p-4 flex flex-col gap-2">
+            <div key={feature.id} className="item-feature card p-4 flex flex-col gap-2">
               <div className="flex items-start justify-between gap-2">
                 <p className="font-semibold text-gray-900 text-sm">{feature.name}</p>
                 <div className="flex gap-1 flex-shrink-0">

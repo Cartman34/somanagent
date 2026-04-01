@@ -104,7 +104,7 @@ function TeamsList() {
           <EmptyState icon={Users} title="Aucune équipe" description="Créez une équipe et ajoutez-y des agents."
             action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> Nouvelle équipe</button>} />
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="list-team grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {teams?.map((team) => (
               <div
                 key={team.id}
@@ -112,7 +112,7 @@ function TeamsList() {
                 tabIndex={0}
                 onClick={() => navigate(`/teams/${team.id}`)}
                 onKeyDown={(e) => e.key === 'Enter' && navigate(`/teams/${team.id}`)}
-                className="card p-5 flex flex-col gap-3 hover:shadow-md transition-shadow cursor-pointer"
+                className="item-team card p-5 flex flex-col gap-3 hover:shadow-md transition-shadow cursor-pointer"
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="font-semibold text-gray-900 hover:text-brand-600 transition-colors">
@@ -207,9 +207,9 @@ function TeamDetail() {
           <EmptyState icon={Bot} title="Aucun agent" description="Ajoutez des agents à cette équipe."
             action={<button className="btn-primary" onClick={() => setAddOpen(true)}><Plus className="w-4 h-4" /> Ajouter un agent</button>} />
         ) : (
-          <div className="card divide-y divide-gray-100">
+          <div className="list-agent card divide-y divide-gray-100">
             {agents.map((agent) => (
-              <div key={agent.id} className="flex items-center gap-3 px-4 py-3">
+              <div key={agent.id} className="item-agent flex items-center gap-3 px-4 py-3">
                 <Bot className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900">{agent.name}</p>

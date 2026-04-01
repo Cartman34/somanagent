@@ -300,7 +300,7 @@ function WorkflowsList() {
       ) : (
         <div className="relative">
           <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={tt('workflow.list.loading')} />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="list-workflow grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {workflows?.map((wf) => {
             return (
               <div
@@ -309,7 +309,7 @@ function WorkflowsList() {
                 tabIndex={0}
                 onClick={() => navigate(`/workflows/${wf.id}`)}
                 onKeyDown={(e) => e.key === 'Enter' && navigate(`/workflows/${wf.id}`)}
-                className="card p-5 flex flex-col gap-3 hover:shadow-md transition-shadow text-left cursor-pointer"
+                className="item-workflow card p-5 flex flex-col gap-3 hover:shadow-md transition-shadow text-left cursor-pointer"
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="font-semibold hover:underline" style={{ color: 'var(--text)' }}>
@@ -534,9 +534,9 @@ function WorkflowDetail() {
       {steps.length === 0 ? (
         <EmptyState icon={GitBranch} title={tt('workflows.ui.detail.empty_steps_title')} description={tt('workflows.ui.detail.empty_steps_description')} />
       ) : (
-        <div className="space-y-3">
+        <div className="list-workflow-step space-y-3">
           {steps.map((step) => (
-            <div key={step.id} className="card p-4 flex gap-4 items-start">
+            <div key={step.id} className="item-workflow-step card p-4 flex gap-4 items-start">
               {/* Step number / status */}
               <div
                 className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"

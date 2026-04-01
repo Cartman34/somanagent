@@ -179,7 +179,7 @@ function ProjectsList() {
             action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> Nouveau projet</button>}
           />
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="list-project grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {projects?.map((project) => (
               <div
                 key={project.id}
@@ -187,7 +187,7 @@ function ProjectsList() {
                 tabIndex={0}
                 onClick={() => navigate(`/projects/${project.id}`)}
                 onKeyDown={(e) => e.key === 'Enter' && navigate(`/projects/${project.id}`)}
-                className="card p-5 flex flex-col gap-3 text-left hover:shadow-md transition-shadow cursor-pointer"
+                className="item-project card p-5 flex flex-col gap-3 text-left hover:shadow-md transition-shadow cursor-pointer"
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="font-semibold text-gray-900 transition-colors">

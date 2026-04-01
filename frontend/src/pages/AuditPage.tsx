@@ -91,7 +91,7 @@ export default function AuditPage() {
       ) : (
         <div className="relative">
           <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={tt('audit.list.loading')} />
-          <div className="card overflow-hidden">
+          <div className="list-audit-log card overflow-hidden">
             <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
@@ -103,7 +103,7 @@ export default function AuditPage() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {logs.map((log) => (
-                <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={log.id} className="item-audit-log hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3">
                     <span className={actionColor(log.action)}>{log.action}</span>
                   </td>
