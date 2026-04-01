@@ -86,9 +86,9 @@ export default function RolesPage() {
       ) : (
         <div className="relative">
           <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={tt('role.list.loading')} />
-          <div className="card divide-y divide-gray-100">
+          <div className="list-role card divide-y divide-gray-100">
             {roles?.map((role) => (
-              <div key={role.id} className="flex items-center gap-3 px-4 py-3">
+              <div key={role.id} className="item-role flex items-center gap-3 px-4 py-3">
                 <UserCog className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900">{role.name}</p>

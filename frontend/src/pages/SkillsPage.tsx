@@ -225,7 +225,7 @@ function SkillsList() {
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
                 Importées du registre ({imported.length})
               </h2>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="list-skill grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {imported.map((skill) => (
                   <SkillCard key={skill.id} skill={skill} onEdit={() => navigate(`/skills/${skill.id}/edit`)} onDelete={() => setDeleteTarget(skill)} />
                 ))}
@@ -239,7 +239,7 @@ function SkillsList() {
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
                 Compétences personnalisées ({custom.length})
               </h2>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="list-skill grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {custom.map((skill) => (
                   <SkillCard key={skill.id} skill={skill} onEdit={() => navigate(`/skills/${skill.id}/edit`)} onDelete={() => setDeleteTarget(skill)} />
                 ))}
@@ -292,7 +292,7 @@ function SkillCard({ skill, onEdit, onDelete }: { skill: Skill; onEdit: () => vo
       tabIndex={0}
       onClick={onEdit}
       onKeyDown={(e) => e.key === 'Enter' && onEdit()}
-      className="card p-4 flex flex-col gap-2 cursor-pointer hover:shadow-md transition-shadow"
+      className="item-skill card p-4 flex flex-col gap-2 cursor-pointer hover:shadow-md transition-shadow"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">

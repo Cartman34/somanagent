@@ -66,7 +66,7 @@ export default function TokensPage() {
           <p className="text-sm text-gray-400">Aucune consommation enregistrée.</p>
         </div>
       ) : (
-        <div className="card overflow-hidden">
+        <div className="list-agent card overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
@@ -81,7 +81,7 @@ export default function TokensPage() {
               {summary.byAgent.map((row) => {
                 const total = Number(row.totalInput) + Number(row.totalOutput)
                 return (
-                  <tr key={row.agentId} className="hover:bg-gray-50">
+                  <tr key={row.agentId} className="item-agent hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-gray-900">
                       {agentMap[row.agentId] ?? <span className="text-gray-400 font-mono text-xs">{row.agentId.slice(0, 8)}…</span>}
                     </td>

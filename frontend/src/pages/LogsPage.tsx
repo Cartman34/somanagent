@@ -160,7 +160,7 @@ function EventCard({ event }: { event: LogEvent }) {
   const messenger = readMessengerMeta(event.context)
 
   return (
-    <div className="rounded-xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
+    <div className="item-log-event rounded-xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="rounded-full px-2 py-1 text-xs font-medium" style={badgeStyle(levelTone(event.level))}>
           {event.level}
@@ -496,7 +496,7 @@ export default function LogsPage() {
                 {occurrences.map((occurrence) => (
                   <tr
                     key={occurrence.id}
-                    className="cursor-pointer border-b transition-colors hover:opacity-90"
+                    className="item-occurrence cursor-pointer border-b transition-colors hover:opacity-90"
                     style={{ borderColor: 'var(--border)' }}
                     onClick={() => setSelectedOccurrenceId(occurrence.id)}
                   >
@@ -546,7 +546,7 @@ export default function LogsPage() {
           )}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="list-log-event space-y-3">
           {events.map((event) => (
             <EventCard key={event.id} event={event} />
           ))}
