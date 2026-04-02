@@ -22,39 +22,13 @@ Consult doc/ files only when a task requires it. Do not read them proactively.
 - These three local files are the continuity source of truth for backlog, completed work and review follow-up.
 - The order of tasks in `local/planned-tasks.md` is the authoritative priority order.
 - The user may reorder `local/planned-tasks.md` manually at any time to redefine priorities.
-User commands and their exact behaviour:
-
-**`next`**
-1. Read the first task from `local/planned-tasks.md`
-2. Execute it fully
-3. Remove it from `local/planned-tasks.md`
-4. Append the result to `local/changes-list.md`
-- DO NOT start a second task in the same turn
-- DO NOT touch `local/changes-review.md`
-- A bugfix discovered during the task stays folded in that task entry — do not add a separate `[FIX]` unless it is a follow-up on already-completed work
-
-**`new <description>`**
-1. Append the new task to the end of `local/planned-tasks.md`
-- DO NOT interrupt a `next` in progress unless the user explicitly redirects
-
-**`rework`**
-1. Read `local/changes-review.md` for pending feedback
-2. Apply the needed follow-up changes
-3. Append any change made to `local/changes-list.md`
-- DO NOT apply feedback blindly — challenge weak, risky, or ambiguous points; ask for clarification if needed
-- Additional changes explicitly requested by the user during `rework` must also be added to `local/changes-list.md`
-
-**`review`** → see Workflow Commands → `review`
-
-**`approve`** → see Workflow Commands → `approve`
-
-**`merge`** → see Workflow Commands → `merge`
 
 General rules:
 - `next`, `review`, `rework`, `approve`, `merge` are explicit user commands — never auto-chain them, except: `review` auto-proceeds to `approve` when there are no blockers (this is an explicit part of the `review` command, not a chain)
 - Encourage the review/rework loop until the review is clean, but never block a user command
 - An explicit `approve` must execute even if review blockers are documented
 - Any new user process instruction must be persisted in `CLAUDE.md`
+- Every modification to project files must be recorded in `local/changes-list.md` — regardless of context (next, rework, ad-hoc fix, correction during conversation). Each entry summarizes the intent of the change, not an exhaustive list of every line modified.
 - Do not infer state from the chat session alone — read `local/planned-tasks.md`, `local/changes-list.md`, and `local/changes-review.md` as the source of truth
 - Keep chat updates concise — do not restate what is already in the local files
 
@@ -98,7 +72,37 @@ php scripts/logs.php worker --tail 120
 php scripts/db.php query "SELECT source, category, level, title, occurred_at FROM log_event ORDER BY occurred_at DESC LIMIT 20;"
 ```
 
-## Workflow Commands
+## Commands
+
+### `next`
+
+1. Read the first task from the `## Todo` section of `local/planned-tasks.md`
+2. Execute it fully
+3. Run `php scripts/review.php` — fix any mechanical blocker (PHPDoc, French string) within the task scope
+4. Critically challenge your own implementation: assume it may be incomplete or misaligned — actively look for discrepancies with the original request, gaps in scope, and convention violations. Do not just confirm what you intended to do; look for what you may have gotten wrong.
+5. If a correction is needed but falls outside the task scope: stop and ask the user before applying it
+6. Remove it from `local/planned-tasks.md`
+7. Append the result to `local/changes-list.md`
+- DO NOT start a second task in the same turn
+- DO NOT touch `local/changes-review.md`
+- A bugfix discovered during the task stays folded in that task entry — do not add a separate `[FIX]` unless it is a follow-up on already-completed work
+
+### `new <description>`
+
+1. Append the new task to the end of the `## Todo` section of `local/planned-tasks.md`
+- DO NOT execute the task now — only record it
+- DO NOT interrupt a `next` in progress unless the user explicitly redirects
+
+### `rework`
+
+1. Read `local/changes-review.md` for pending feedback
+2. Apply the needed follow-up changes
+3. Run `php scripts/review.php` — fix any mechanical blocker (PHPDoc, French string) within scope
+4. Critically challenge your own implementation: assume it may be incomplete or misaligned — actively look for discrepancies with the original request, gaps in scope, and convention violations. Do not just confirm what you intended to do; look for what you may have gotten wrong.
+5. If a correction is needed but falls outside scope: stop and ask the user before applying it
+6. Append any change made to `local/changes-list.md`
+- DO NOT apply feedback blindly — challenge weak, risky, or ambiguous points; ask for clarification if needed
+- Additional changes explicitly requested by the user during `rework` must also be added to `local/changes-list.md`
 
 ### `review` / `review async`
 
@@ -106,9 +110,10 @@ php scripts/db.php query "SELECT source, category, level, title, occurred_at FRO
 2. Run `php scripts/review.php` — mechanical checklist (French strings, PHPDoc, JSDoc)
 3. Each `M` file: `git diff <file>` first; full read only if diff is insufficient
 4. Each `??` file: targeted `grep`/`head` only — no Explore agent
-5. Write findings to `local/changes-review.md` — no code changes
-6. Chat output: "Review ✅" or blocker list only — no verbose report
-7. ✅ no blocker → auto-proceed to approve
+5. Verify qualitative coherence: every declared scope item has a matching file change and vice versa; changes are consistent with conventions; changes match the original request
+6. Write findings to `local/changes-review.md` — no code changes
+7. Chat output: "Review ✅" or blocker list only — no verbose report
+8. ✅ no blocker → auto-proceed to approve
 
 **`review.php` limitations:** only detects accented characters (U+00C0–U+00FF) as French strings. Does NOT catch unaccented French words (`Valider`, `Commenter`, `Titre`, `Annuler`, etc.). Complement with a manual scan of new visible strings in the diff.
 
@@ -127,21 +132,20 @@ php scripts/db.php query "SELECT source, category, level, title, occurred_at FRO
 
 ### `approve` (or auto-approval after review ✅)
 
-1. Apply any pending corrections
-2. Keep `local/changes-list.md` untouched until the PR is created and its description contains these changes
-3. Clean `local/changes-review.md` (reset to "Aucune review en cours.")
-4. `git checkout -b feat/…` (or `fix/…` for `[FIX]` items) if not already on a feature branch — **before the commit**
-5. `git add . && git commit`
-6. `git push -u origin <branch>`
-7. Write PR body with the **Write tool** to `/tmp/pr_body.md` (read first if it already exists), then:
+1. Keep `local/changes-list.md` untouched until the PR is created and its description contains these changes
+2. Clean `local/changes-review.md` (reset to "Aucune review en cours.")
+3. `git checkout -b feat/…` (or `fix/…` for `[FIX]` items) if not already on a feature branch — **before the commit**
+4. `git add . && git commit`
+5. `git push -u origin <branch>`
+6. Delete `/tmp/pr_body.md` if it exists, then write the PR body with the **Write tool**, then:
    ```
    php scripts/github.php pr create --title "..." --head <branch> --body-file /tmp/pr_body.md
    ```
    The script reads and deletes the file automatically.
-8. Once the PR is created with a description that contains the approved changes, clean `local/changes-list.md` (empty the Completed section)
-9. **Stay on the feature branch** — do NOT `git checkout main` unless `review async` was requested.
+7. Once the PR is created with a description that contains the approved changes, clean `local/changes-list.md` (empty the Completed section)
+8. **Stay on the feature branch** — do NOT `git checkout main` unless `review async` was requested.
 
-**`review async` only:** insert `git checkout main` between steps 6 and 7.
+**`review async` only:** insert `git checkout main` between steps 5 and 6.
 
 **Branch and title prefix:**
 - All `[FIX]` items → `fix/…` branch, `🐛 Bug: …` title, PR body with **Type : Anomalie**
@@ -205,4 +209,4 @@ Important reminders:
 - After the current ticket/workflow UI rework, the next technical cleanup must cover:
   - remove the remaining ticket-level resume/redispatch fallback still based on `StoryExecutionService`
   - stop using `Ticket.status` and `Ticket.progress` as if they represented workflow progression in async agent execution paths
-  - enforce the “project requires a workflow” invariant consistently at model/migration/API typing level, not only in service/UI validation
+  - enforce the "project requires a workflow" invariant consistently at model/migration/API typing level, not only in service/UI validation
