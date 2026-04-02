@@ -161,15 +161,17 @@ Also check:
 3. Create a feature or fix branch before the commit if needed
 4. Run `git add . && git commit`
 5. Run `git push -u origin <branch>`
-6. Create the PR with `php scripts/github.php pr create --title "..." --head <branch> --body-file /tmp/pr_body.md`
-7. Once the PR exists with the right description, clean the `Réalisé` section in `local/backlog-changes.md`
-8. Stay on the feature branch unless the command was `review async`
+6. If no PR exists yet for the branch, create it with `php scripts/github.php pr create --title "..." --head <branch> --body-file /tmp/pr_body.md`
+7. If a PR already exists for the branch, update that PR so its description includes the approved changes
+8. Once the PR exists with the right description, clean the `Réalisé` section in `local/backlog-changes.md`
+9. Stay on the feature branch unless the command was `review async`
 
 Rules:
 
 - Use `fix/…` branches and a bug title only when all approved items are `[FIX]`
 - `review async` inserts `git checkout main` after push and before PR creation
 - An explicit `approve` must execute even if review blockers are documented
+- If a PR already exists for the branch, do not create a second PR; edit the existing PR instead
 
 #### `merge`
 
