@@ -79,20 +79,34 @@ Exceptions:
 
 For the detailed domain/key conventions and the persisted-message strategy, see [`translations.md`](translations.md).
 
+Translation keys must never be built dynamically by concatenating strings at runtime. Always use a static mapping (a `match`, a `const` array, or an equivalent) that lists every key explicitly. This makes keys statically analysable and prevents silent fallbacks from hiding missing translations.
+
 ---
 
-## Entity CSS Classes
+## Semantic CSS Classes
 
-Every DOM element that represents a domain entity must carry a semantic CSS class so that external tools (tests, browser extensions, automation scripts) can locate it reliably without relying on layout classes.
+DOM elements must carry semantic CSS classes so that external tools (tests, browser extensions, automation scripts) can locate them reliably without depending on layout or visual classes. These classes may or may not carry visual styles — both are valid. Their primary purpose is identification.
+
+Two independent systems coexist, with distinct naming conventions:
+
+### `item-{type}` / `list-{type}` — typed elements
+
+`{type}` identifies the **type** of the represented concept — usually a domain entity, but not exclusively.
 
 | Pattern | Purpose |
 |---|---|
-| `item-{slug}` | The element **is** an entity — a card, row, or any wrapper that represents a single entity instance |
-| `list-{slug}` | The element **contains a collection** of `item-{slug}` elements for that entity |
+| `item-{type}` | The element **represents** a single instance of `{type}` — a card, row, drawer, or any standalone block |
+| `list-{type}` | The element **contains a collection** of `item-{type}` elements — the direct parent of the items |
 
-**Entity slugs in use:**
+**Rules:**
+- Apply `item-{type}` on the outermost element of the representation — not on inner wrappers.
+- Apply `list-{type}` on the direct container of the items.
+- When a type can vary at runtime (e.g. `Ticket | TicketTask`), resolve it dynamically: `isTicket(entity) ? 'item-ticket' : 'item-ticket-task'`.
+- When introducing a new type, add it to the table below in the same change.
 
-| Slug | Entity |
+**Types in use:**
+
+| Type | Concept |
 |---|---|
 | `ticket` | Story or bug (Ticket) |
 | `ticket-task` | Technical task (TicketTask) |
@@ -113,12 +127,24 @@ Every DOM element that represents a domain entity must carry a semantic CSS clas
 | `skill` | Skill |
 | `chat-message` | Chat message |
 
+### `section-{region}` — functional regions
+
+`{region}` identifies a **functional region** within a UI surface — a role in the interface, not a data type.
+
+| Pattern | Purpose |
+|---|---|
+| `section-{region}` | The element **is a functional region** of the interface — a control group, a labelled block, a structural area |
+
 **Rules:**
-- Apply `item-{slug}` on the outermost element of the entity representation — do not add it to inner wrappers.
-- Apply `list-{slug}` on the direct container of the items — the element whose children are `item-{slug}` nodes.
-- When an entity can be one of several types (e.g. `Ticket | TicketTask`), resolve the slug dynamically: `isTicket(entity) ? 'item-ticket' : 'item-ticket-task'`.
-- When introducing a new entity slug, update this table in the same change.
-- These classes carry no visual style — they are purely semantic.
+- Apply the class on the outermost element of the region.
+- Sub-regions with their own distinct role get their own `section-{region}` class.
+
+**Common region examples:**
+
+| Class | Element | Purpose |
+|---|---|---|
+| `section-title` | `<p>` or heading | Primary label of a UI section block |
+| `section-legend` | `<p>` | Secondary label or contextual caption inside a section |
 
 ---
 

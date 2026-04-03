@@ -18,6 +18,7 @@ It lets you assemble generic AI agent teams, assign them roles and skills, then 
 | [Skills](functional/skills.md) | Importing, creating and editing skills |
 | [AI Agents](functional/agents.md) | Configuring agents and their connectors |
 | [Workflows](functional/workflows.md) | Defining and running workflows |
+| [UI Usage Guidelines](functional/ui-usage-guidelines.md) | Shared rules for page structure, reusable components, and action hierarchy |
 
 ### Technical documentation — understanding the code
 
@@ -42,6 +43,7 @@ It lets you assemble generic AI agent teams, assign them roles and skills, then 
 | Configuring environment variables | [configuration.md](technical/configuration.md) |
 | Adding or modifying a script in `scripts/` | [scripts.md](development/scripts.md) |
 | Understanding the hexagonal architecture | [architecture.md](technical/architecture.md) |
+| Designing or reviewing a UI screen | [ui-usage-guidelines.md](functional/ui-usage-guidelines.md) |
 
 ### Development documentation — working on SoManAgent
 

@@ -1,0 +1,57 @@
+agent_action:
+  product:
+    specify: 'Cadrage produit'
+  tech:
+    plan: 'Planification technique'
+  design:
+    ui_mockup: 'Conception UI'
+  dev:
+    backend:
+      implement: 'Implémentation backend'
+    frontend:
+      implement: 'Implémentation frontend'
+  review:
+    code: 'Revue de code'
+  qa:
+    validate: 'Validation QA'
+  docs:
+    write: 'Rédaction documentation'
+  ops:
+    configure: 'Configuration infrastructure'
+  manual:
+    unknown: 'Action manuelle'
+
+event:
+  label:
+    agent_response: 'Réponse agent'
+    agent_question: 'Question agent'
+    execution_dispatched: 'Exécution lancée'
+    execution_redispatched: 'Exécution relancée'
+    execution_dispatch_error: 'Erreur de dispatch'
+    execution_started: 'Exécution démarrée'
+    execution_pending: 'Exécution en attente'
+    execution_running: 'Exécution en cours'
+    execution_retrying: 'Exécution en nouvelle tentative'
+    execution_succeeded: 'Exécution réussie'
+    execution_succeeded_after_retry: 'Exécution réussie après reprise'
+    execution_failed: 'Exécution échouée'
+    execution_failed_after_retry: 'Exécution échouée après plusieurs tentatives'
+    execution_dead_letter: 'Exécution définitivement en échec'
+    execution_error: "Erreur d'exécution"
+    execution_retry: 'Nouvelle tentative'
+    execution_cancelled: 'Exécution annulée'
+    planning_completed: 'Planification terminée'
+    planning_replaced: 'Planification remplacée'
+    planning_parse_error: 'Erreur de parsing de planification'
+    branch_prepared: 'Branche préparée'
+    default: 'Événement'
+
+execution:
+  status:
+    pending: 'En attente'
+    running: 'En cours'
+    retrying: 'Nouvelle tentative'
+    succeeded: 'Réussie'
+    failed: 'Échouée'
+    dead_letter: 'Échec définitif'
+    cancelled: 'Annulée'

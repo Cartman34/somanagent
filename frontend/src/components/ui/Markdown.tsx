@@ -12,7 +12,7 @@ type Block =
   | { type: 'code'; content: string }
   | { type: 'hr' }
 
-function parseMarkdown(source: string): Block[] {
+function parseMarkdown(source: string, preserveLineBreaks = false): Block[] {
   const lines = source.replace(/\r\n/g, '\n').split('\n')
   const blocks: Block[] = []
   let i = 0
@@ -91,7 +91,7 @@ function parseMarkdown(source: string): Block[] {
       paragraphLines.push(current)
       i += 1
     }
-    blocks.push({ type: 'paragraph', content: paragraphLines.join(' ') })
+    blocks.push({ type: 'paragraph', content: paragraphLines.join(preserveLineBreaks ? '\n' : ' ') })
   }
 
   return blocks
@@ -149,16 +149,41 @@ function headingClass(level: number): string {
   return 'text-sm font-semibold uppercase tracking-[0.08em]'
 }
 
-export default function Markdown({ content, className = '' }: { content: string; className?: string }) {
-  const blocks = parseMarkdown(content)
+function headingCompactClass(level: number): string {
+  if (level <= 1) return 'text-lg font-semibold tracking-tight'
+  if (level === 2) return 'text-base font-semibold tracking-tight'
+  if (level === 3) return 'text-sm font-semibold'
+  return 'text-[0.72rem] font-semibold uppercase tracking-[0.08em]'
+}
+
+/**
+ * Renders a lightweight markdown subset with an optional compact density for dense UI surfaces.
+ */
+export default function Markdown({
+  content,
+  className = '',
+  density = 'default',
+  preserveLineBreaks = false,
+}: {
+  content: string
+  className?: string
+  density?: 'default' | 'compact'
+  preserveLineBreaks?: boolean
+}) {
+  const blocks = parseMarkdown(content, preserveLineBreaks)
+  const isCompact = density === 'compact'
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`${isCompact ? 'space-y-3' : 'space-y-4'} ${className}`}>
       {blocks.map((block, index) => {
         if (block.type === 'heading') {
           const HeadingTag = `h${Math.min(block.level + 1, 6)}` as keyof JSX.IntrinsicElements
           return (
-            <HeadingTag key={index} className={headingClass(block.level)} style={{ color: 'var(--text)' }}>
+            <HeadingTag
+              key={index}
+              className={isCompact ? headingCompactClass(block.level) : headingClass(block.level)}
+              style={{ color: 'var(--text)' }}
+            >
               {renderInline(block.content)}
             </HeadingTag>
           )
@@ -166,7 +191,11 @@ export default function Markdown({ content, className = '' }: { content: string;
 
         if (block.type === 'paragraph') {
           return (
-            <p key={index} className="break-words text-[0.95rem] leading-7" style={{ color: 'var(--text)' }}>
+            <p
+              key={index}
+              className={isCompact ? 'break-words whitespace-pre-wrap text-sm leading-6' : 'break-words whitespace-pre-wrap text-[0.95rem] leading-7'}
+              style={{ color: 'var(--text)' }}
+            >
               {renderInline(block.content)}
             </p>
           )
@@ -177,7 +206,13 @@ export default function Markdown({ content, className = '' }: { content: string;
           return (
             <ListTag
               key={index}
-              className={block.ordered ? 'list-decimal pl-6 space-y-2 text-[0.95rem] leading-7' : 'list-disc pl-6 space-y-2 text-[0.95rem] leading-7'}
+              className={block.ordered
+                ? isCompact
+                  ? 'list-decimal pl-5 space-y-1.5 text-sm leading-6'
+                  : 'list-decimal pl-6 space-y-2 text-[0.95rem] leading-7'
+                : isCompact
+                  ? 'list-disc pl-5 space-y-1.5 text-sm leading-6'
+                  : 'list-disc pl-6 space-y-2 text-[0.95rem] leading-7'}
               style={{ color: 'var(--text)' }}
             >
               {block.items.map((item, itemIndex) => (
@@ -193,7 +228,7 @@ export default function Markdown({ content, className = '' }: { content: string;
           return (
             <blockquote
               key={index}
-              className="rounded-r-xl border-l-4 px-4 py-3 italic"
+              className={isCompact ? 'rounded-r-xl border-l-4 px-3 py-2 italic text-sm leading-6' : 'rounded-r-xl border-l-4 px-4 py-3 italic'}
               style={{ borderColor: 'var(--brand)', background: 'color-mix(in srgb, var(--brand-dim) 18%, var(--surface) 82%)', color: 'var(--muted)' }}
             >
               {block.lines.map((line, lineIndex) => (
@@ -209,7 +244,7 @@ export default function Markdown({ content, className = '' }: { content: string;
           return (
             <pre
               key={index}
-              className="overflow-x-auto rounded-2xl border p-4 text-sm leading-6"
+              className={isCompact ? 'overflow-x-auto rounded-xl border p-3 text-xs leading-5' : 'overflow-x-auto rounded-2xl border p-4 text-sm leading-6'}
               style={{ background: 'color-mix(in srgb, var(--surface2) 88%, transparent)', borderColor: 'var(--border)', color: 'var(--text)' }}
             >
               <code>{block.content}</code>
@@ -217,7 +252,7 @@ export default function Markdown({ content, className = '' }: { content: string;
           )
         }
 
-        return <hr key={index} className="my-6" style={{ borderColor: 'var(--border)' }} />
+        return <hr key={index} className={isCompact ? 'my-4' : 'my-6'} style={{ borderColor: 'var(--border)' }} />
       })}
     </div>
   )

@@ -1,0 +1,135 @@
+common:
+  action:
+    cancel: 'Annuler'
+    close: 'Fermer'
+
+projects:
+  progress:
+    ui:
+      blocked_reason: 'Affectez une équipe dans l’onglet Général avant toute action de progression ou d’exécution.'
+
+drawer:
+  ticket:
+    title: 'Ticket du projet'
+    description: 'Description du ticket'
+    status: 'État'
+    step: 'Étape'
+    agent: 'Agent'
+    action: 'Action agent'
+    latest_run: 'Dernière exécution'
+  title: 'Fil d’activités'
+  loading: 'Chargement…'
+  description: "Questions, réponses et suivi d'exécution."
+  empty: 'Aucune activité pour l’instant.'
+  expand: 'Étendre'
+  collapse: 'Réduire'
+  metrics:
+    tokens_consumed: 'Tokens consommés'
+    questions_pending: 'Questions en attente'
+  questions_pending_one: '1 question en attente'
+  questions_pending_other: '%count% questions en attente'
+  error:
+    resume_failed: 'Impossible de relancer la tâche.'
+  resume:
+    title: 'Relance agent'
+    manual_help: 'La relance manuelle se fait désormais au niveau des tâches.'
+    button: 'Relancer la tâche'
+    loading: 'Relance…'
+  workflow:
+    section_title: 'Pilotage'
+    current_step: 'Étape courante'
+    none: 'Aucune'
+    transition_loading: 'Transition…'
+    transition_to: 'Passer à %step%'
+    no_transition: 'Aucun passage manuel disponible depuis cette étape.'
+  ticket_tasks:
+    title: 'Tâches du ticket'
+    empty: "Aucune tâche liée à ce ticket pour l'instant."
+    dependency_one: '1 dépendance'
+    dependency_other: '%count% dépendances'
+  subtasks:
+    title: 'Sous-tâches'
+
+project:
+  detail:
+    back_link: 'Projets'
+    create_request: 'Nouvelle demande'
+    create_task: 'Nouvelle tâche'
+    create_technical_task: 'Nouvelle tâche technique'
+    ticket_id_required: 'ticketId requis pour créer une tâche technique.'
+    delete_message: 'Supprimer "%title%" ? Cette action est irréversible.'
+    not_found: 'Projet introuvable'
+    transition_impossible: 'Transition impossible.'
+    stats:
+      stories_bugs: 'Histoires et bugs'
+      tasks: 'Tâches'
+      modules: 'Modules'
+      team: 'Équipe'
+    tabs:
+      general: 'Général'
+      board: 'Tableau'
+      tasks: 'Tâches'
+      team: 'Équipe'
+      modules: 'Modules'
+      audit: 'Audit'
+      tokens: 'Tokens'
+
+comment:
+  author_you: 'Vous'
+  author_agent: 'Agent'
+  requires_answer: 'Réponse attendue'
+  source_action: 'Action source'
+  reply: 'Répondre'
+  reply_label: 'Réponse'
+  reply_to: 'Réponse à'
+  reply_to_fallback: 'ce commentaire'
+  reply_placeholder: 'Écrivez votre réponse…'
+  comment_placeholder: "Ajoutez un commentaire ou une précision pour l'agent…"
+  submit: 'Commenter'
+  submit_hint: 'Ctrl/Cmd + Entrée pour envoyer'
+  send: 'Envoyer'
+  add_comment: 'Ajouter un commentaire'
+  hide_replies: 'Masquer les réponses'
+  type_above: 'réponse ci-dessus'
+
+event:
+  count_one: '%count% événement'
+  count_other: '%count% événements'
+  category_execution: 'Exécution'
+  category_question_response: 'Question/Réponse'
+  category_planning: 'Planification'
+  reply_count_one: '%count% réponse'
+  reply_count_other: '%count% réponses'
+  detail:
+    title: 'Détail technique'
+    action: 'Action'
+    kind: 'Type'
+    content: 'Contenu'
+    created_at: 'Créé le'
+    ticket_task_id: 'Tâche liée'
+    metadata: 'Métadonnées'
+    open: 'Ouvrir'
+    close: 'Fermer'
+    linked_execution: 'Exécution liée'
+
+execution:
+  title: 'Détail d''exécution'
+  requested_agent: 'Agent demandé'
+  effective_agent: 'Agent effectif'
+  started_at: 'Début'
+  finished_at: 'Fin'
+  attempts_count_one: '%count% tentative'
+  attempts_count_other: '%count% tentatives'
+  attempt_label: 'Tentative'
+  attempt_failed: 'échec'
+  attempt_succeeded: 'réussie'
+  attempt_running: 'en cours'
+  retry_planned: 'Nouvelle tentative prévue'
+  agent: 'Agent'
+  receiver: 'Récepteur'
+  request_ref: 'Référence requête'
+  error_scope: "Périmètre d'erreur"
+  not_available: 'Indisponible'
+  not_finished: 'Pas encore terminé'
+  exhausted_retries: 'Les tentatives ont été épuisées.'
+  auto: 'Automatique'
