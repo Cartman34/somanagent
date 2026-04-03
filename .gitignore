@@ -42,8 +42,9 @@ logs/
 # === OS ===
 desktop.ini
 
-# === Claude ===
+# === Agents ===
 .claude/worktrees/
+.codex
 
 # === Global ===
 !.gitkeep

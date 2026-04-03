@@ -1,0 +1,789 @@
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
+import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import {
+  Calendar,
+  ChevronDown,
+  Link2,
+  Loader2,
+  MessageSquare,
+  Reply,
+  Send,
+  Zap,
+} from 'lucide-react'
+import Markdown from '@/components/ui/Markdown'
+import { translationsApi } from '@/api/translations'
+import type { AgentTaskExecutionAttempt, TicketLog } from '@/types'
+import { formatDateTime, formatTime } from '@/lib/project/constants'
+import {
+  TASK_ACTIVITY_FEED_DOMAIN,
+  TASK_ACTIVITY_FEED_TRANSLATION_KEYS,
+  buildActivityFeedEntries,
+  buildActivityActionLabelKey,
+  readActivityActionKey,
+  getEventIconCategory,
+  type ActivityFeedEntry,
+  type ActivityFeedEventEntry,
+  type ActivityFeedCommentEntry,
+  type TaskActivityFeedTranslationKey,
+  type EventIconCategory,
+} from '@/lib/project/taskActivityFeed'
+import {
+  CATALOG_DOMAIN,
+  CATALOG_TRANSLATION_KEYS,
+  type CatalogTranslationKey,
+} from '@/lib/catalog'
+
+/**
+ * Inline reply form placed at the end of a comment thread.
+ */
+function ThreadReplyForm({
+  authorLabel,
+  commentText,
+  setCommentText,
+  onSubmit,
+  onCancel,
+  mutationPending,
+  tt,
+}: {
+  authorLabel: string
+  commentText: string
+  setCommentText: (value: string) => void
+  onSubmit: () => void
+  onCancel: () => void
+  mutationPending: boolean
+  tt: (key: TaskActivityFeedTranslationKey) => string
+}) {
+  return (
+    <div className="inline-reply visible">
+      <div className="inline-reply-header">
+        <Reply className="h-3 w-3" />
+        {tt('comment.reply_to')} <strong>{authorLabel}</strong>
+      </div>
+      <textarea
+        className="input min-h-[60px] resize-y text-sm"
+        style={{ borderRadius: '6px', background: 'var(--surface2)' }}
+        placeholder={tt('comment.reply_placeholder')}
+        value={commentText}
+        onChange={(e) => setCommentText(e.target.value)}
+        onKeyDown={(e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault()
+            onSubmit()
+          }
+        }}
+        autoFocus
+      />
+      <div className="inline-reply-actions">
+        <button
+          type="button"
+          className="btn-send"
+          style={{ padding: '5px 12px', fontSize: '12px' }}
+          onClick={onSubmit}
+          disabled={mutationPending || commentText.trim() === ''}
+        >
+          {mutationPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+          {tt('comment.send')}
+        </button>
+        <button type="button" className="btn-cancel" onClick={onCancel}>
+          {tt('common.action.cancel')}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+interface TaskActivityFeedProps {
+  logs: TicketLog[]
+  executions: Parameters<typeof buildActivityFeedEntries>[1]
+  commentText: string
+  setCommentText: (value: string) => void
+  replyToLogId: string | null
+  setReplyToLogId: (value: string | null) => void
+  onSubmitComment: () => void
+  commentMutationPending: boolean
+}
+
+/**
+ * Formats a raw metadata key into a human-readable label.
+ */
+function formatMetadataKey(key: string): string {
+  return key
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/[_-]/g, ' ')
+    .replace(/^./, (c) => c.toUpperCase())
+    .trim()
+}
+
+/**
+ * Stringifies metadata values for technical detail rendering.
+ */
+function stringifyMetadataValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return ''
+  }
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  try {
+    return JSON.stringify(value, null, 2)
+  } catch {
+    return String(value)
+  }
+}
+
+/**
+ * Resolves the display author label for a log entry.
+ */
+function renderAuthorLabel(log: TicketLog, tt: (key: 'comment.author_you' | 'comment.author_agent') => string): string {
+  if (log.authorName) {
+    return log.authorName
+  }
+  return log.authorType === 'agent' ? tt('comment.author_agent') : tt('comment.author_you')
+}
+
+/**
+ * Resolves the translated execution status label.
+ */
+function executionStatusLabel(
+  status: string,
+  tc: (key: CatalogTranslationKey) => string,
+): string {
+  switch (status) {
+    case 'pending':
+      return tc('execution.status.pending')
+    case 'running':
+      return tc('execution.status.running')
+    case 'retrying':
+      return tc('execution.status.retrying')
+    case 'succeeded':
+      return tc('execution.status.succeeded')
+    case 'failed':
+      return tc('execution.status.failed')
+    case 'dead_letter':
+      return tc('execution.status.dead_letter')
+    case 'cancelled':
+      return tc('execution.status.cancelled')
+    default:
+      return status
+  }
+}
+
+/**
+ * Resolves the translated attempt status label.
+ */
+function attemptStatusLabel(
+  status: AgentTaskExecutionAttempt['status'],
+  tt: (key: TaskActivityFeedTranslationKey) => string,
+): string {
+  switch (status) {
+    case 'failed':
+      return tt('execution.attempt_failed')
+    case 'succeeded':
+      return tt('execution.attempt_succeeded')
+    case 'running':
+      return tt('execution.attempt_running')
+  }
+}
+
+/**
+ * Resolves the translated action label for a log entry.
+ */
+function resolveActionLabel(
+  log: TicketLog,
+  execution: ActivityFeedEventEntry['group']['execution'],
+  tc: (key: CatalogTranslationKey) => string,
+): string {
+  const actionLabelKey = buildActivityActionLabelKey(readActivityActionKey(log, execution))
+  return actionLabelKey !== null ? tc(actionLabelKey) : tc('event.label.default')
+}
+
+/**
+ * Resolves the dim background color for a given status color variable.
+ */
+function dimBgForColor(colorVar: string): string {
+  return colorVar
+    .replace('--brand', '--brand-dim')
+    .replace('--green', '--green-dim')
+    .replace('--red', '--red-dim')
+    .replace('--orange', '--orange-dim')
+    .replace('--purple', '--purple-dim')
+    .replace('--muted', '--surface')
+}
+
+/**
+ * Returns the Lucide icon component for a given event icon category.
+ */
+function EventIcon({ category, size = 12 }: { category: EventIconCategory; size?: number }) {
+  switch (category) {
+    case 'execution':
+      return <Zap className="h-3 w-3" style={{ width: `${size}px`, height: `${size}px` }} />
+    case 'questionResponse':
+      return <MessageSquare className="h-3 w-3" style={{ width: `${size}px`, height: `${size}px` }} />
+    case 'planning':
+      return <Calendar className="h-3 w-3" style={{ width: `${size}px`, height: `${size}px` }} />
+  }
+}
+
+/**
+ * Renders a single execution attempt block.
+ */
+function ExecutionAttemptRow({
+  attempt,
+  locale,
+  tt,
+}: {
+  attempt: AgentTaskExecutionAttempt
+  locale?: string
+  tt: (key: TaskActivityFeedTranslationKey) => string
+}) {
+  const tone = attempt.status === 'failed'
+    ? '#dc2626'
+    : attempt.status === 'succeeded'
+      ? '#16a34a'
+      : 'var(--text)'
+
+  return (
+    <div className="attempt-row">
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <span className="attempt-status" style={{ color: tone }}>
+          {tt('execution.attempt_label')} {attempt.attemptNumber}{' '}
+          {attemptStatusLabel(attempt.status, tt)}
+        </span>
+        {attempt.willRetry && (
+          <span className="badge-retry">
+            {tt('execution.retry_planned')}
+          </span>
+        )}
+        <span className="attempt-agent">
+          {attempt.agent?.name ?? tt('execution.not_available')}
+        </span>
+        <span className="attempt-time">
+          {attempt.finishedAt
+            ? formatTime(attempt.finishedAt, locale)
+            : attempt.startedAt
+              ? formatTime(attempt.startedAt, locale)
+              : tt('execution.not_finished')}
+        </span>
+      </div>
+
+      <div className="mt-2 grid gap-2 md:grid-cols-2" style={{ color: 'var(--muted)' }}>
+        <div>{tt('execution.agent')}: {attempt.agent?.name ?? tt('execution.not_available')}</div>
+        <div>{tt('execution.receiver')}: {attempt.messengerReceiver ?? tt('execution.not_available')}</div>
+        <div>{tt('execution.request_ref')}: {attempt.requestRef ?? tt('execution.not_available')}</div>
+        <div>{tt('execution.error_scope')}: {attempt.errorScope ?? tt('execution.not_available')}</div>
+      </div>
+
+      {attempt.errorMessage && (
+        <pre className="mt-2 whitespace-pre-wrap break-words rounded p-2 text-xs" style={{ background: 'var(--surface)', color: 'var(--muted)' }}>
+          {attempt.errorMessage}
+        </pre>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Renders a compact event row with expandable technical details.
+ */
+function CompactEventRow({
+  entry,
+  locale,
+  expanded,
+  onToggle,
+  tc,
+  tt,
+}: {
+  entry: ActivityFeedEventEntry
+  locale?: string
+  expanded: boolean
+  onToggle: () => void
+  tc: (key: CatalogTranslationKey) => string
+  tt: (key: TaskActivityFeedTranslationKey) => string
+}) {
+  const group = entry.group
+  const { category } = getEventIconCategory(group.labelKey)
+
+  const categoryLabel = category === 'execution'
+    ? tt('event.category_execution')
+    : category === 'questionResponse'
+      ? tt('event.category_question_response')
+      : tt('event.category_planning')
+
+  const agentName = group.execution?.effectiveAgent?.name
+    ?? group.execution?.requestedAgent?.name
+    ?? group.logs.find((log) => log.authorName)?.authorName
+    ?? ''
+
+  return (
+    <div>
+      <button
+        type="button"
+        className={`event-row ${expanded ? 'open' : ''}`}
+        onClick={onToggle}
+      >
+        {agentName && (
+          <span className="event-agent">
+            {agentName}
+          </span>
+        )}
+        <span className="event-label">
+          {tc(group.labelKey)}
+        </span>
+        <span className="event-category-badge">
+          {categoryLabel}
+        </span>
+        <span className="event-time">
+          {formatDateTime(group.timestamp, locale)}
+        </span>
+        <ChevronDown className="event-chevron h-3.5 w-3.5" />
+      </button>
+
+      {expanded && (
+        <div className="event-detail visible">
+          <div className="event-detail-inner anim-fade-in">
+            <div className="grid grid-cols-1 gap-x-4 gap-y-2 text-xs md:grid-cols-2" style={{ color: 'var(--muted)' }}>
+              <div className="flex items-baseline gap-3">
+                <span className="min-w-[70px] text-right md:min-w-[110px] md:text-left">{tt('event.detail.action')}</span>
+                <span className="truncate font-medium" style={{ color: 'var(--text)' }}>{resolveActionLabel(group.logs[0], group.execution, tc)}</span>
+              </div>
+              <div className="flex items-baseline gap-3">
+                <span className="min-w-[70px] text-right md:min-w-[110px] md:text-left">{tt('event.detail.created_at')}</span>
+                <span className="truncate font-medium" style={{ color: 'var(--text)' }}>{formatDateTime(group.timestamp, locale)}</span>
+              </div>
+              {group.logs.flatMap((log) =>
+                log.metadata
+                  ? Object.entries(log.metadata).map(([key, value]) => (
+                      <div key={key} className="flex items-baseline gap-3">
+                        <span className="min-w-[70px] text-right md:min-w-[110px] md:text-left">{formatMetadataKey(key)}</span>
+                        <span className="truncate font-medium" style={{ color: 'var(--text)' }}>{stringifyMetadataValue(value)}</span>
+                      </div>
+                    ))
+                  : [],
+              )}
+            </div>
+
+            {group.execution && (
+              <div className="detail-execution">
+                <h4>{tt('execution.title')}</h4>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`exec-status ${group.execution.status === 'running' ? 'running' : group.execution.status === 'succeeded' ? 'succeeded' : 'failed'}`}>
+                    {executionStatusLabel(group.execution.status, tc)}
+                  </span>
+                  <span style={{ color: 'var(--muted)', marginLeft: '8px' }}>
+                    {tt('execution.attempts_count_other').replace('%count%', group.execution.maxAttempts.toLocaleString(locale ?? 'fr-FR'))}
+                  </span>
+                  <span className="ml-auto font-mono text-[11px]" style={{ color: 'var(--muted)' }}>{group.execution.traceRef}</span>
+                </div>
+                <div className="attempts-list">
+                  {group.execution.attempts.map((attempt) => (
+                    <ExecutionAttemptRow key={attempt.id} attempt={attempt} locale={locale} tt={tt} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {group.logs.map((log) => {
+              const actionLabel = resolveActionLabel(log, group.execution, tc)
+              return (
+                <div key={log.id} className="detail-log">
+                  <div className="detail-log-header">
+                    <span className="detail-log-author">{renderAuthorLabel(log, tt)}</span>
+                    <span className="detail-log-date">{formatTime(log.createdAt, locale)}</span>
+                    <span className="detail-log-action">{actionLabel}</span>
+                    {log.ticketTaskId && (
+                      <span className="detail-log-task">
+                        {tt('event.detail.ticket_task_id')}: {log.ticketTaskId}
+                      </span>
+                    )}
+                    {log.requiresAnswer && (
+                      <span className="detail-log-answer">
+                        {tt('comment.requires_answer')}
+                      </span>
+                    )}
+                  </div>
+                  {log.content && log.content.trim() !== '' && (
+                    <p className="detail-log-content">
+                      {log.content}
+                    </p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Renders a comment thread card with replies and inline reply form.
+ */
+function CommentThreadCard({
+  entry,
+  locale,
+  isReplying,
+  commentText,
+  setCommentText,
+  onReply,
+  onSubmitReply,
+  onCancelReply,
+  mutationPending,
+  tc,
+  tt,
+}: {
+  entry: ActivityFeedCommentEntry
+  locale?: string
+  isReplying: boolean
+  commentText: string
+  setCommentText: (value: string) => void
+  onReply: () => void
+  onSubmitReply: () => void
+  onCancelReply: () => void
+  mutationPending: boolean
+  tc: (key: CatalogTranslationKey) => string
+  tt: (key: TaskActivityFeedTranslationKey) => string
+}) {
+  const [repliesExpanded, setRepliesExpanded] = useState(false)
+  const root = entry.thread.root
+  const isAgent = root.authorType === 'agent'
+  const rootActionLabel = buildActivityActionLabelKey(readActivityActionKey(root, null))
+  const replyCount = entry.thread.replies.length
+
+  return (
+    <div className={`comment-card ${isAgent ? 'agent-question' : 'user-comment'}`}>
+      <div className="comment-body">
+        <div className="comment-meta">
+          <span className="comment-author">
+            {renderAuthorLabel(root, tt)}
+          </span>
+          {root.requiresAnswer && (
+            <span className="badge-answer">
+              {tt('comment.requires_answer')}
+            </span>
+          )}
+          {rootActionLabel && (
+            <a
+              href={`#activity-log-${root.id}`}
+              className="source-action"
+              title={tt('comment.source_action')}
+            >
+              <Link2 className="h-3 w-3" />
+              {tt('comment.source_action')}: {tc(rootActionLabel)}
+            </a>
+          )}
+          <span className="comment-date">
+            {formatDateTime(root.createdAt, locale)}
+          </span>
+        </div>
+
+        {root.content && (
+          <div className="comment-content">
+            <Markdown content={root.content} density="compact" />
+          </div>
+        )}
+      </div>
+
+      <div className="comment-footer">
+        <button
+          type="button"
+          className="btn-reply"
+          onClick={onReply}
+        >
+          <Reply className="h-3 w-3" />
+          {tt('comment.reply')}
+        </button>
+      </div>
+
+      {replyCount > 0 && (
+        <>
+          <button
+            type="button"
+            className={`replies-toggle ${repliesExpanded ? 'open' : ''}`}
+            onClick={() => setRepliesExpanded(!repliesExpanded)}
+          >
+            <ChevronDown className="h-3 w-3" />
+            <span>
+              {repliesExpanded
+                ? tt('comment.hide_replies')
+                : `${replyCount > 1 ? tt('event.reply_count_other').replace('%count%', String(replyCount)) : tt('event.reply_count_one').replace('%count%', String(replyCount))}`
+              }
+            </span>
+          </button>
+
+          {repliesExpanded && (
+            <div className="replies-list visible">
+              {entry.thread.replies.map((reply) => (
+                <div
+                  key={reply.id}
+                  className={`reply-item ${reply.authorType === 'agent' ? 'agent-reply' : 'user-reply'}`}
+                >
+                  <div className="reply-meta">
+                    <span className="reply-author">
+                      {renderAuthorLabel(reply, tt)}
+                    </span>
+                    <span className="reply-badge">
+                      {tt('comment.reply_label')}
+                    </span>
+                    <span className="reply-date">{formatDateTime(reply.createdAt, locale)}</span>
+                  </div>
+                  {reply.content && (
+                    <div className="reply-content">
+                      <Markdown content={reply.content} density="compact" />
+                    </div>
+                  )}
+                  <div className="reply-footer">
+                    <button
+                      type="button"
+                      className="btn-reply"
+                      onClick={onReply}
+                    >
+                      <Reply className="h-2.5 w-2.5" />
+                      {tt('comment.reply')}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {isReplying && (
+        <ThreadReplyForm
+          authorLabel={root.authorName ?? renderAuthorLabel(root, tt)}
+          commentText={commentText}
+          setCommentText={setCommentText}
+          onSubmit={onSubmitReply}
+          onCancel={onCancelReply}
+          mutationPending={mutationPending}
+          tt={tt}
+        />
+      )}
+    </div>
+  )
+}
+
+/**
+ * Renders the ticket activity feed with a timeline layout, compact event rows,
+ * rich comment threads, and a collapsible comment composer.
+ */
+export default function TaskActivityFeed({
+  logs,
+  executions,
+  commentText,
+  setCommentText,
+  replyToLogId,
+  setReplyToLogId,
+  onSubmitComment,
+  commentMutationPending,
+}: TaskActivityFeedProps) {
+  const [expandedEventIds, setExpandedEventIds] = useState<string[]>([])
+  const [composerOpen, setComposerOpen] = useState(false)
+
+  const { data: i18n } = useQuery({
+    queryKey: ['ui-translations', TASK_ACTIVITY_FEED_DOMAIN],
+    queryFn: () => translationsApi.list([...TASK_ACTIVITY_FEED_TRANSLATION_KEYS], TASK_ACTIVITY_FEED_DOMAIN),
+    staleTime: Infinity,
+  })
+
+  const { data: catalogI18n } = useQuery({
+    queryKey: ['ui-translations', CATALOG_DOMAIN],
+    queryFn: () => translationsApi.list([...CATALOG_TRANSLATION_KEYS], CATALOG_DOMAIN),
+    staleTime: Infinity,
+  })
+
+  const locale = i18n?.locale
+  const tt = (key: TaskActivityFeedTranslationKey) => i18n?.translations[key] ?? key
+  const tc = (key: CatalogTranslationKey) => catalogI18n?.translations[key] ?? key
+  const entries = useMemo(() => buildActivityFeedEntries(logs, executions), [logs, executions])
+  const commentCount = useMemo(
+    () => logs.filter((log) => log.kind === 'comment' && log.requiresAnswer).length,
+    [logs],
+  )
+
+  const toggleEvent = (entryId: string) => {
+    setExpandedEventIds((current) => (
+      current.includes(entryId)
+        ? current.filter((id) => id !== entryId)
+        : [...current, entryId]
+    ))
+  }
+
+  const replyTargetLabel = useMemo(() => {
+    if (!replyToLogId) {
+      return ''
+    }
+
+    const root = logs.find((log) => log.id === replyToLogId)
+    if (!root) {
+      return replyToLogId
+    }
+
+    return root.authorName ?? renderAuthorLabel(root, tt)
+  }, [logs, replyToLogId, tt])
+
+  return (
+    <section className="feed">
+      {/* Header */}
+      <div className="feed-header">
+        <h2>{tt('drawer.title')}</h2>
+        {commentCount > 0 && (
+          <span className="badge-pending">
+            {commentCount === 1
+              ? tt('drawer.questions_pending_one')
+              : tt('drawer.questions_pending_other').replace('%count%', commentCount.toLocaleString(locale ?? 'fr-FR'))}
+          </span>
+        )}
+      </div>
+
+      {/* Composer toggle */}
+      <button
+        type="button"
+        className={`composer-toggle ${composerOpen ? 'open' : ''}`}
+        onClick={() => setComposerOpen(!composerOpen)}
+      >
+        <MessageSquare className="h-3.5 w-3.5" />
+        {tt('comment.add_comment')}
+      </button>
+
+      {/* Composer panel */}
+      {composerOpen && (
+        <div className="comment-composer visible">
+          <textarea
+            className="input min-h-[80px] resize-y"
+            placeholder={replyToLogId
+              ? tt('comment.reply_placeholder')
+              : tt('comment.comment_placeholder')
+            }
+            value={commentText}
+            onChange={(event) => setCommentText(event.target.value)}
+            onKeyDown={(event) => {
+              if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                event.preventDefault()
+                onSubmitComment()
+              }
+            }}
+          />
+
+          {replyToLogId && (
+            <div className="reply-indicator">
+              {tt('comment.reply_to')} {replyTargetLabel || tt('comment.reply_to_fallback')}
+              <button
+                type="button"
+                className="cancel-btn"
+                onClick={() => {
+                  setReplyToLogId(null)
+                  setCommentText('')
+                }}
+              >
+                {tt('common.action.cancel')}
+              </button>
+            </div>
+          )}
+
+          <div className="composer-actions">
+            <button
+              type="button"
+              className="btn-send"
+              onClick={onSubmitComment}
+              disabled={commentMutationPending || commentText.trim() === ''}
+            >
+              {commentMutationPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {tt('comment.submit')}
+            </button>
+            <span className="hint">
+              {tt('comment.submit_hint')}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Feed body with timeline */}
+      <div className="feed-body">
+        {entries.length === 0 && (
+          <div className="empty-state">
+            {tt('drawer.empty')}
+          </div>
+        )}
+
+        <div className="timeline">
+          {entries.map((entry: ActivityFeedEntry) => {
+            if (entry.kind === 'comment-thread') {
+              const commentEntry = entry as ActivityFeedCommentEntry
+              const isReplying = replyToLogId === commentEntry.thread.root.id
+
+              return (
+                <div
+                  key={entry.id}
+                  id={`activity-log-${commentEntry.thread.root.id}`}
+                  className="timeline-entry"
+                >
+                  {/* Timeline icon */}
+                  <div className="timeline-icon icon-comment">
+                    <MessageSquare className="h-[13px] w-[13px]" />
+                  </div>
+
+                  <CommentThreadCard
+                    entry={commentEntry}
+                    locale={locale}
+                    isReplying={isReplying}
+                    commentText={commentText}
+                    setCommentText={setCommentText}
+                    onReply={() => {
+                      setReplyToLogId(commentEntry.thread.root.id)
+                      setCommentText('')
+                    }}
+                    onSubmitReply={onSubmitComment}
+                    onCancelReply={() => {
+                      setReplyToLogId(null)
+                      setCommentText('')
+                    }}
+                    mutationPending={commentMutationPending}
+                    tc={tc}
+                    tt={tt}
+                  />
+                </div>
+              )
+            }
+
+            const eventEntry = entry as ActivityFeedEventEntry
+            const expanded = expandedEventIds.includes(eventEntry.id)
+
+            return (
+              <div
+                key={entry.id}
+                className="timeline-entry"
+              >
+                {/* Timeline icon */}
+                {(() => {
+                  const { category, colorVar } = getEventIconCategory(eventEntry.group.labelKey)
+                  return (
+                    <div
+                      className="timeline-icon"
+                      style={{ background: dimBgForColor(colorVar), color: colorVar }}
+                    >
+                      <EventIcon category={category} size={13} />
+                    </div>
+                  )
+                })()}
+
+                <CompactEventRow
+                  entry={eventEntry}
+                  locale={locale}
+                  expanded={expanded}
+                  onToggle={() => toggleEvent(eventEntry.id)}
+                  tc={tc}
+                  tt={tt}
+                />
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}

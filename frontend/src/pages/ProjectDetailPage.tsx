@@ -35,6 +35,7 @@ import {
   DEFAULT_TAB,
   isProjectTab,
 } from '@/lib/project/constants'
+import { TASK_ACTIVITY_FEED_DOMAIN } from '@/lib/project/taskActivityFeed'
 
 // ─── Page-level translation keys ─────────────────────────────────────────────
 
@@ -46,13 +47,35 @@ const PROJECT_TEAM_GUARD_TRANSLATION_KEYS = [
   'projects.progress.error.request_creation_failed',
 ] as const
 
+const PROJECT_DETAIL_TRANSLATION_KEYS = [
+  'project.detail.back_link',
+  'project.detail.create_request',
+  'project.detail.create_task',
+  'project.detail.create_technical_task',
+  'project.detail.ticket_id_required',
+  'project.detail.delete_message',
+  'project.detail.not_found',
+  'project.detail.transition_impossible',
+      'project.detail.stats.stories_bugs',
+      'project.detail.stats.tasks',
+      'project.detail.stats.modules',
+      'project.detail.stats.team',
+      'project.detail.tabs.general',
+      'project.detail.tabs.board',
+      'project.detail.tabs.tasks',
+      'project.detail.tabs.team',
+      'project.detail.tabs.modules',
+      'project.detail.tabs.audit',
+      'project.detail.tabs.tokens',
+    ] as const
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 // Re-export Tab type so consumers can import it from this module if needed
 export type { Tab }
 
 /**
- * Project detail hub page with multiple tabs: Général, Board, Tâches, Équipe, Modules, Audit, Tokens.
+ * Project detail hub page with multiple tabs: General, Board, Tasks, Team, Modules, Audit, Tokens.
  * Stories/bugs kanban and technical tasks are accessible directly from this page,
  * scoped to the project — no need to navigate to a global Tasks page.
  */
@@ -72,6 +95,8 @@ export default function ProjectDetailPage() {
   const [requestDispatchError, setRequestDispatchError] = useState<string | null>(null)
   const [drawerTaskId, setDrawerTaskId]       = useState<string | null>(null)
   const [agentSheetId, setAgentSheetId]       = useState<string | null>(null)
+  const drawerSize = searchParams.get('drawer')
+  const isTaskDrawerExpanded = drawerSize === 'expanded'
 
   useEffect(() => {
     const requestedTab = searchParams.get('tab')
@@ -191,6 +216,15 @@ export default function ProjectDetailPage() {
   })
   const ttItem = (key: string) => projectItemI18n?.translations[key] ?? key
 
+  const { data: projectDetailI18n } = useQuery({
+    queryKey: ['ui-translations', 'project-detail'],
+    queryFn: () => translationsApi.list([...PROJECT_DETAIL_TRANSLATION_KEYS], TASK_ACTIVITY_FEED_DOMAIN),
+    staleTime: Infinity,
+  })
+  const ttDetail = (key: typeof PROJECT_DETAIL_TRANSLATION_KEYS[number]) => (
+    projectDetailI18n?.translations[key] ?? key
+  )
+
   // ── Mutations ─────────────────────────────────────────────────────────────────
 
   const invalidateTickets = () => qc.invalidateQueries({ queryKey: ['tickets', id] })
@@ -211,7 +245,7 @@ export default function ProjectDetailPage() {
   const createMutation = useMutation({
     mutationFn: (d: TicketTaskPayload & { ticketId?: string }) => {
       if (!d.ticketId) {
-        throw new Error("ticketId manquant pour la création d'une tâche technique.")
+        throw new Error(ttDetail('project.detail.ticket_id_required'))
       }
 
       return ticketTasksApi.create(d.ticketId, {
@@ -236,7 +270,7 @@ export default function ProjectDetailPage() {
     onError: (err: unknown) => {
       setPendingTaskId(null)
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-      setTransitionError(msg ?? 'Transition impossible.')
+      setTransitionError(msg ?? ttDetail('project.detail.transition_impossible'))
     },
   })
 
@@ -266,7 +300,7 @@ export default function ProjectDetailPage() {
 
   if (loadingProject) return <PageSpinner />
   if (errorProject || !project) {
-    return <ErrorMessage message={(errorProject as Error)?.message ?? 'Projet introuvable'} onRetry={() => refetchProject()} />
+    return <ErrorMessage message={(errorProject as Error)?.message ?? ttDetail('project.detail.not_found')} onRetry={() => refetchProject()} />
   }
 
   const stories = tickets
@@ -283,7 +317,7 @@ export default function ProjectDetailPage() {
   return (
     <>
       <Link to="/projects" className="inline-flex items-center gap-1 text-sm mb-4" style={{ color: 'var(--muted)' }}>
-        <ArrowLeft className="w-4 h-4" /> Projets
+        <ArrowLeft className="w-4 h-4" /> {ttDetail('project.detail.back_link')}
       </Link>
 
       <PageHeader
@@ -303,7 +337,7 @@ export default function ProjectDetailPage() {
               if (tab === 'board') setRequestDispatchError(null)
             }}>
               <Plus className="w-4 h-4" />
-              {tab === 'board' ? 'Nouvelle demande' : 'Nouvelle tâche'}
+              {tab === 'board' ? ttDetail('project.detail.create_request') : ttDetail('project.detail.create_task')}
             </button>
           ) : undefined
         }
@@ -312,10 +346,10 @@ export default function ProjectDetailPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
         {[
-          { label: 'Stories & Bugs', value: stories.length },
-          { label: 'Tâches',         value: techTasks.length },
-          { label: 'Modules',        value: modules.length },
-          { label: 'Équipe',         value: project.team?.name ?? '—' },
+          { label: ttDetail('project.detail.stats.stories_bugs'), value: stories.length },
+          { label: ttDetail('project.detail.stats.tasks'), value: techTasks.length },
+          { label: ttDetail('project.detail.stats.modules'), value: modules.length },
+          { label: ttDetail('project.detail.stats.team'), value: project.team?.name ?? '—' },
         ].map(({ label, value }) => (
           <div key={label} className="card p-3 text-center">
             <p className="text-xl font-bold" style={{ color: 'var(--text)' }}>{value}</p>
@@ -332,7 +366,7 @@ export default function ProjectDetailPage() {
 
       {/* Tab bar */}
       <div className="flex gap-0 mb-5 border-b" style={{ borderColor: 'var(--border)' }}>
-        {TABS.map(({ key, label, icon: Icon }) => (
+        {TABS.map(({ key, icon: Icon }) => (
           <button
             key={key}
             onClick={() => handleTabChange(key)}
@@ -343,7 +377,7 @@ export default function ProjectDetailPage() {
             }}
           >
             <Icon className="w-3.5 h-3.5" />
-            {label}
+            {ttDetail(`project.detail.tabs.${key}`)}
           </button>
         ))}
       </div>
@@ -398,7 +432,7 @@ export default function ProjectDetailPage() {
       <Modal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        title={tab === 'board' ? 'Nouvelle demande' : 'Nouvelle tâche technique'}
+        title={tab === 'board' ? ttDetail('project.detail.create_request') : ttDetail('project.detail.create_technical_task')}
       >
         {tab === 'board' ? (
           <RequestForm
@@ -422,7 +456,7 @@ export default function ProjectDetailPage() {
         open={!!deleteTask}
         onClose={() => setDeleteTask(null)}
         onConfirm={() => deleteTask && deleteMutation.mutate(deleteTask)}
-        message={`Supprimer "${deleteTask?.title}" ? Cette action est irréversible.`}
+        message={ttDetail('project.detail.delete_message').replace('%title%', deleteTask?.title ?? '')}
         loading={deleteMutation.isPending}
       />
 
@@ -433,7 +467,21 @@ export default function ProjectDetailPage() {
 
       {/* ── Task drawer ── */}
       {drawerTaskId && (
-        <TaskDrawer taskId={drawerTaskId} onClose={closeTaskDrawer} projectHasTeam={!projectNeedsTeamAssignment} />
+        <TaskDrawer
+          taskId={drawerTaskId}
+          onClose={closeTaskDrawer}
+          projectHasTeam={!projectNeedsTeamAssignment}
+          isExpanded={isTaskDrawerExpanded}
+          onExpandedChange={(expanded) => {
+            const nextParams = new URLSearchParams(searchParams)
+            if (expanded) {
+              nextParams.set('drawer', 'expanded')
+            } else {
+              nextParams.delete('drawer')
+            }
+            setSearchParams(nextParams, { replace: true })
+          }}
+        />
       )}
 
       {id && (

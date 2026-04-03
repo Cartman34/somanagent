@@ -30,6 +30,7 @@ use App\Repository\WorkflowStepRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Uid\Uuid;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class TicketTaskService
 {
@@ -47,6 +48,7 @@ final class TicketTaskService
         private readonly RequestCorrelationService $requestCorrelation,
         private readonly MessageBusInterface $bus,
         private readonly AuditService $audit,
+        private readonly TranslatorInterface $translator,
     ) {}
 
     public function create(
@@ -583,8 +585,26 @@ final class TicketTaskService
 
     private function buildCreateWithTicketTitle(WorkflowStep $workflowStep, AgentAction $action): string
     {
-        return sprintf('%s · %s', $workflowStep->getName(), $action->getLabel());
+        $translationKey = self::AGENT_ACTION_TRANSLATION_KEYS[$action->getKey()] ?? null;
+        $actionLabel = $translationKey !== null
+            ? $this->translator->trans($translationKey, [], 'catalog')
+            : $action->getLabel();
+
+        return sprintf('%s · %s', $workflowStep->getName(), $actionLabel);
     }
+
+    private const AGENT_ACTION_TRANSLATION_KEYS = [
+        'product.specify'        => 'agent_action.product.specify',
+        'tech.plan'              => 'agent_action.tech.plan',
+        'design.ui_mockup'       => 'agent_action.design.ui_mockup',
+        'dev.backend.implement'  => 'agent_action.dev.backend.implement',
+        'dev.frontend.implement' => 'agent_action.dev.frontend.implement',
+        'review.code'            => 'agent_action.review.code',
+        'qa.validate'            => 'agent_action.qa.validate',
+        'docs.write'             => 'agent_action.docs.write',
+        'ops.configure'          => 'agent_action.ops.configure',
+        'manual.unknown'         => 'agent_action.manual.unknown',
+    ];
 
     private function isAutoExecutableInCurrentStep(TicketTask $task, WorkflowStep $currentStep): bool
     {
