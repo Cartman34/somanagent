@@ -15,16 +15,21 @@ use App\Entity\TokenUsage;
 use App\Entity\WorkflowStep;
 use App\Repository\AgentRepository;
 use App\Repository\TokenUsageRepository;
-use Doctrine\ORM\EntityManagerInterface;
 
 class TokenUsageService
 {
+    /**
+     * Initialises the service with its required repositories and entity service.
+     */
     public function __construct(
-        private readonly EntityManagerInterface $em,
-        private readonly TokenUsageRepository   $tokenUsageRepository,
-        private readonly AgentRepository        $agentRepository,
+        private readonly EntityService        $entityService,
+        private readonly TokenUsageRepository $tokenUsageRepository,
+        private readonly AgentRepository      $agentRepository,
     ) {}
 
+    /**
+     * Records a token usage entry for the given agent and model call.
+     */
     public function record(
         ?Agent        $agent,
         string        $model,
@@ -36,8 +41,7 @@ class TokenUsageService
         ?WorkflowStep $workflowStep = null,
     ): TokenUsage {
         $usage = new TokenUsage($agent, $model, $inputTokens, $outputTokens, $durationMs, $ticket, $ticketTask, $workflowStep);
-        $this->em->persist($usage);
-        $this->em->flush();
+        $this->entityService->create($usage);
         return $usage;
     }
 
@@ -61,7 +65,11 @@ class TokenUsageService
         ];
     }
 
-    /** @return TokenUsage[] */
+    /**
+     * Returns the most recent token usage entries for the given agent.
+     *
+     * @return TokenUsage[]
+     */
     public function findByAgent(Agent $agent, int $limit = 100): array
     {
         return $this->tokenUsageRepository->findByAgent($agent, $limit);

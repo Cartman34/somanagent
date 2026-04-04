@@ -252,7 +252,24 @@ Consommation de tokens liée à :
 
 ### AuditLog
 
-Trace transverse des actions applicatives.
+Cross-cutting audit trail for application-level actions (entity CRUD, status transitions, lifecycle events).
+
+Distinct from:
+- `TicketLog`: narrative history scoped to a ticket, intended for display in the activity feed
+- `LogEvent` / `LogOccurrence`: runtime monitoring and error tracking (Monolog)
+
+Fields:
+- `action` — enum `AuditAction` following the `<entity>.<event>` convention
+- `entityType` — short class name of the affected entity (e.g. `Project`, `Ticket`, `TicketTask`)
+- `entityId` — RFC 4122 UUID string of the affected entity (nullable if the entity no longer exists)
+- `data` — optional JSON snapshot: before/after values or relevant parameters; shape varies by action
+- `createdAt`
+
+Key rule: `entityType` is the discriminant when the same `AuditAction` applies to multiple entity
+types. For example, `task.created` covers both `Ticket` (entityType=`Ticket`) and `TicketTask`
+(entityType=`TicketTask`).
+
+Write via `AuditService::log()` only.
 
 ### ChatMessage
 

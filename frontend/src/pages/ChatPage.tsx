@@ -6,17 +6,30 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Send, Bot, User, Reply } from 'lucide-react'
 import { chatApi } from '@/api/chat'
-import { translationsApi } from '@/api/translations'
 import { projectsApi } from '@/api/projects'
 import { agentsApi } from '@/api/agents'
+import { useTranslation } from '@/hooks/useTranslation'
 import { PageSpinner } from '@/components/ui/Spinner'
 import PageHeader from '@/components/ui/PageHeader'
 import ContentLoadingOverlay from '@/components/ui/ContentLoadingOverlay'
 import type { ChatMessage } from '@/types'
 
-function fmt(date: string) {
-  return new Date(date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-}
+const CHAT_PAGE_TRANSLATION_KEYS = [
+  'chat.page.title',
+  'chat.page.description',
+  'chat.item.loading',
+  'common.action.refresh',
+  'chat.reply',
+  'chat.reply_label',
+  'chat.reply_placeholder',
+  'chat.send_reply',
+  'chat.select_project',
+  'chat.select_agent',
+  'chat.select_prompt',
+  'chat.no_messages',
+  'chat.input_placeholder',
+  'common.action.cancel',
+] as const
 
 interface MessageGroup {
   exchangeId: string
@@ -24,6 +37,9 @@ interface MessageGroup {
   parentId: string | null
 }
 
+/**
+ * Chat page — interact with agents through a conversational interface.
+ */
 export default function ChatPage() {
   const qc = useQueryClient()
   const [projectId, setProjectId] = useState('')
@@ -44,18 +60,7 @@ export default function ChatPage() {
     refetchInterval: 5000,
   })
 
-  const { data: chatI18n } = useQuery({
-    queryKey: ['ui-translations', 'chat'],
-    queryFn: () => translationsApi.list([
-      'chat.item.loading',
-      'common.action.refresh',
-      'chat.reply',
-      'chat.reply_label',
-      'chat.reply_placeholder',
-      'chat.send_reply',
-    ]),
-  })
-  const tt = (key: string) => chatI18n?.translations[key] ?? key
+  const { t, formatTime } = useTranslation(CHAT_PAGE_TRANSLATION_KEYS)
 
   const sendMutation = useMutation({
     mutationFn: (content: string) => chatApi.send(projectId, agentId, content),
@@ -84,11 +89,7 @@ export default function ChatPage() {
       const exchangeId = msg.exchangeId
 
       if (!groups.has(exchangeId)) {
-        groups.set(exchangeId, {
-          exchangeId,
-          messages: [],
-          parentId: msg.replyToMessageId ?? null,
-        })
+        groups.set(exchangeId, { exchangeId, messages: [], parentId: msg.replyToMessageId ?? null })
       }
 
       groups.get(exchangeId)!.messages.push(msg)
@@ -135,22 +136,22 @@ export default function ChatPage() {
 
   return (
     <>
-      <PageHeader title="Chat" description="Échangez avec les agents IA au sein d'un projet."
+      <PageHeader title={t('chat.page.title')} description={t('chat.page.description')}
         onRefresh={() => { qc.invalidateQueries({ queryKey: ['projects'] }); qc.invalidateQueries({ queryKey: ['agents'] }); qc.invalidateQueries({ queryKey: ['chat'] }) }}
-        refreshTitle={tt('common.action.refresh')} />
+        refreshTitle={t('common.action.refresh')} />
 
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Projet</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('chat.select_project')}</label>
           <select className="input" value={projectId} onChange={(e) => { setProjectId(e.target.value); setAgentId('') }}>
-            <option value="">— Sélectionner —</option>
+            <option value="">— {t('chat.select_prompt')} —</option>
             {projects?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Agent</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('chat.select_agent')}</label>
           <select className="input" value={agentId} onChange={(e) => setAgentId(e.target.value)} disabled={!projectId}>
-            <option value="">— Sélectionner —</option>
+            <option value="">— {t('chat.select_prompt')} —</option>
             {agents?.map((a) => <option key={a.id} value={a.id}>{a.name}{a.role ? ` — ${a.role.name}` : ''}</option>)}
           </select>
         </div>
@@ -159,22 +160,20 @@ export default function ChatPage() {
       {!(projectId && agentId) ? (
         <div className="card p-8 text-center text-gray-400">
           <Bot className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">Sélectionnez un projet et un agent pour démarrer la conversation.</p>
+          <p className="text-sm">{t('chat.select_prompt')}</p>
         </div>
       ) : (
         <div className="relative card flex flex-col" style={{ height: '60vh' }}>
-          <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={tt('chat.item.loading')} />
-          {/* En-tête */}
+          <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={t('chat.item.loading')} />
           <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
             <Bot className="w-4 h-4 text-brand-600" />
             <span className="text-sm font-medium text-gray-900">{selectedAgent?.name}</span>
             {selectedAgent?.role && <span className="badge-blue text-xs">{selectedAgent.role.name}</span>}
           </div>
 
-          {/* Messages */}
           <div className="list-chat-message flex-1 overflow-y-auto px-4 py-4 space-y-4">
             {isLoading ? <PageSpinner /> : groupedMessages.length === 0 ? (
-              <p className="text-center text-sm text-gray-400 mt-8">Aucun message — démarrez la conversation.</p>
+              <p className="text-center text-sm text-gray-400 mt-8">{t('chat.no_messages')}</p>
             ) : (
               groupedMessages.map((group) => (
                 <div key={group.exchangeId} className="space-y-2">
@@ -193,8 +192,8 @@ export default function ChatPage() {
                           <div className={`rounded-xl px-3 py-2 text-sm ${isReply ? 'bg-gray-50 border border-gray-100' : ''} ${msg.author === 'human' ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
                             <p className="whitespace-pre-wrap">{msg.content}</p>
                             <p className={`text-xs mt-1 ${msg.author === 'human' ? 'text-brand-200' : 'text-gray-400'}`}>
-                              {fmt(msg.createdAt)}
-                              {isReply && <span className="ml-2 text-gray-400">{tt('chat.reply_label')}</span>}
+                              {formatTime(msg.createdAt)}
+                              {isReply && <span className="ml-2 text-gray-400">{t('chat.reply_label')}</span>}
                             </p>
                           </div>
                           {canReply && (
@@ -203,7 +202,7 @@ export default function ChatPage() {
                               className="flex items-center gap-1 mt-1 text-xs text-gray-400 hover:text-brand-600 transition-colors"
                             >
                               <Reply className="w-3 h-3" />
-                              {tt('chat.reply')}
+                              {t('chat.reply')}
                             </button>
                           )}
                           {replyingTo === msg.id && (
@@ -214,7 +213,7 @@ export default function ChatPage() {
                                 rows={2}
                                 value={replyInput}
                                 onChange={(e) => setReplyInput(e.target.value)}
-                                placeholder={tt('chat.reply_placeholder')}
+                                placeholder={t('chat.reply_placeholder')}
                                 disabled={replyMutation.isPending}
                               />
                               <div className="flex flex-col gap-1">
@@ -230,7 +229,7 @@ export default function ChatPage() {
                                   onClick={cancelReply}
                                   className="text-xs text-gray-400 hover:text-gray-600"
                                 >
-                                  {tt('common.action.cancel')}
+                                  {t('common.action.cancel')}
                                 </button>
                               </div>
                             </form>
@@ -245,13 +244,12 @@ export default function ChatPage() {
             <div ref={bottomRef} />
           </div>
 
-          {/* Saisie */}
           <form onSubmit={handleSend} className="px-4 py-3 border-t border-gray-100 flex gap-2">
             <input
               className="input flex-1"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Écrivez votre message…"
+              placeholder={t('chat.input_placeholder')}
               disabled={sendMutation.isPending}
             />
             <button type="submit" className="btn-primary px-3" disabled={!input.trim() || sendMutation.isPending}>

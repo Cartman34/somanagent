@@ -157,28 +157,3 @@ Each step includes:
 | `error` | Error during execution |
 | `skipped` | Skipped (condition not met) |
 
-## Dry-Run Mode
-
-Dry-run mode lets you **simulate a workflow** without sending requests to AI agents. Useful for validating a workflow's configuration before running it for real.
-
-```http
-POST /api/workflows/{id}/run
-Content-Type: application/json
-
-{ "dryRun": true }
-```
-
-In dry-run mode:
-- Steps transition to `done` status with a fictitious output
-- No API calls to Claude are made
-- The audit log records `workflow.dry_run`
-
-## Audit Log
-
-Each workflow execution generates entries in the log:
-- `workflow.run` — started
-- `workflow.step.completed` — step completed
-- `workflow.step.failed` — step failed
-- `workflow.completed` / `workflow.failed` — finished
-
-→ Viewable via `GET /api/audit` or in the interface.

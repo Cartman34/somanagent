@@ -7,9 +7,9 @@ import { Routes, Route, useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, BookOpen, ArrowLeft, Pencil, Trash2, Download, Save } from 'lucide-react'
 import { skillsApi } from '@/api/skills'
-import { translationsApi } from '@/api/translations'
 import type { SkillCreatePayload } from '@/api/skills'
 import type { Skill } from '@/types'
+import { useTranslation } from '@/hooks/useTranslation'
 import { PageSpinner } from '@/components/ui/Spinner'
 import ErrorMessage from '@/components/ui/ErrorMessage'
 import EmptyState from '@/components/ui/EmptyState'
@@ -18,16 +18,54 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import PageHeader from '@/components/ui/PageHeader'
 import ContentLoadingOverlay from '@/components/ui/ContentLoadingOverlay'
 
+const SKILLS_PAGE_TRANSLATION_KEYS = [
+  'common.action.cancel',
+  'common.action.refresh',
+  'skill.list.loading',
+  'skill.page.title',
+  'skill.page.description',
+  'skill.page.empty_title',
+  'skill.page.empty_description',
+  'skill.page.section_imported',
+  'skill.page.section_custom',
+  'skill.form.identifier_label',
+  'skill.form.identifier_placeholder',
+  'skill.form.identifier_hint',
+  'skill.form.name_label',
+  'skill.form.name_placeholder',
+  'skill.form.slug_label',
+  'skill.form.slug_placeholder',
+  'skill.form.description_label',
+  'skill.form.description_placeholder',
+  'skill.form.content_label',
+  'skill.action.import',
+  'skill.action.import_loading',
+  'skill.action.create',
+  'skill.action.create_loading',
+  'skill.action.delete_confirm',
+  'skill.action.edit_content',
+  'skill.action.delete',
+  'skill.modal.import_title',
+  'skill.modal.create_title',
+  'skill.editor.not_found',
+  'skill.editor.saved',
+  'skill.editor.saving',
+  'skill.editor.save',
+  'skill.editor.back_link',
+] as const
+
 // ─── Import Form ──────────────────────────────────────────────────────────────
 
 function ImportForm({
   onSubmit,
   loading,
   onCancel,
+  t,
 }: {
   onSubmit: (ownerAndName: string) => void
   loading: boolean
   onCancel: () => void
+  t: (key: string) => string
 }) {
   const [value, setValue] = useState('')
 
@@ -35,26 +73,23 @@ function ImportForm({
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(value.trim()) }} className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Identifiant de la compétence *
+          {t('skill.form.identifier_label')}
         </label>
         <input
           className="input font-mono"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           required
-          placeholder="owner/skill-name"
+          placeholder={t('skill.form.identifier_placeholder')}
         />
         <p className="text-xs text-gray-400 mt-1">
-          Format : <code>owner/skill-name</code> tel que référencé sur{' '}
-          <a href="https://skills.sh" target="_blank" rel="noreferrer" className="text-brand-600 hover:underline">
-            skills.sh
-          </a>
+          {t('skill.form.identifier_hint')}
         </p>
       </div>
       <div className="flex justify-end gap-3 pt-2">
-        <button type="button" onClick={onCancel} className="btn-secondary">Annuler</button>
+        <button type="button" onClick={onCancel} className="btn-secondary">{t('common.action.cancel')}</button>
         <button type="submit" className="btn-primary" disabled={loading}>
-          {loading ? 'Importation…' : <><Download className="w-4 h-4" /> Importer</>}
+          {loading ? t('skill.action.import_loading') : <><Download className="w-4 h-4" /> {t('skill.action.import')}</>}
         </button>
       </div>
     </form>
@@ -83,10 +118,12 @@ function CreateSkillForm({
   onSubmit,
   loading,
   onCancel,
+  t,
 }: {
   onSubmit: (d: SkillCreatePayload) => void
   loading: boolean
   onCancel: () => void
+  t: (key: string) => string
 }) {
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
@@ -107,20 +144,20 @@ function CreateSkillForm({
     <form onSubmit={(e) => { e.preventDefault(); onSubmit({ name, slug, description: description || undefined, content }) }} className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
-          <input className="input" value={name} onChange={(e) => handleNameChange(e.target.value)} required placeholder="Code Review" />
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('skill.form.name_label')}</label>
+          <input className="input" value={name} onChange={(e) => handleNameChange(e.target.value)} required placeholder={t('skill.form.name_placeholder')} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Slug *</label>
-          <input className="input font-mono" value={slug} onChange={(e) => setSlug(e.target.value)} required placeholder="code-review" />
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('skill.form.slug_label')}</label>
+          <input className="input font-mono" value={slug} onChange={(e) => setSlug(e.target.value)} required placeholder={t('skill.form.slug_placeholder')} />
         </div>
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-        <input className="input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Courte description…" />
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('skill.form.description_label')}</label>
+        <input className="input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('skill.form.description_placeholder')} />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Contenu (SKILL.md)</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('skill.form.content_label')}</label>
         <textarea
           className="input font-mono text-xs resize-none"
           rows={12}
@@ -129,8 +166,8 @@ function CreateSkillForm({
         />
       </div>
       <div className="flex justify-end gap-3 pt-2">
-        <button type="button" onClick={onCancel} className="btn-secondary">Annuler</button>
-        <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Création…' : 'Créer'}</button>
+        <button type="button" onClick={onCancel} className="btn-secondary">{t('common.action.cancel')}</button>
+        <button type="submit" className="btn-primary" disabled={loading}>{loading ? t('skill.action.create_loading') : t('skill.action.create')}</button>
       </div>
     </form>
   )
@@ -141,6 +178,7 @@ function CreateSkillForm({
 function SkillsList() {
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const { t } = useTranslation(SKILLS_PAGE_TRANSLATION_KEYS)
 
   const [importOpen, setImportOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
@@ -151,12 +189,6 @@ function SkillsList() {
     queryKey: ['skills'],
     queryFn: skillsApi.list,
   })
-
-  const { data: skillsI18n } = useQuery({
-    queryKey: ['ui-translations', 'skills'],
-    queryFn: () => translationsApi.list(['skill.list.loading', 'common.action.refresh']),
-  })
-  const tt = (key: string) => skillsI18n?.translations[key] ?? key
 
   const importMutation = useMutation({
     mutationFn: skillsApi.import,
@@ -187,17 +219,17 @@ function SkillsList() {
   return (
     <>
       <PageHeader
-        title="Compétences"
-        description="Importez des compétences depuis le registre ou créez les vôtres."
+        title={t('skill.page.title')}
+        description={t('skill.page.description')}
         onRefresh={() => qc.invalidateQueries({ queryKey: ['skills'] })}
-        refreshTitle={tt('common.action.refresh')}
+        refreshTitle={t('common.action.refresh')}
         action={
           <div className="flex gap-2">
             <button className="btn-secondary" onClick={() => setImportOpen(true)}>
-              <Download className="w-4 h-4" /> Importer
+              <Download className="w-4 h-4" /> {t('skill.action.import')}
             </button>
             <button className="btn-primary" onClick={() => setCreateOpen(true)}>
-              <Plus className="w-4 h-4" /> Créer
+              <Plus className="w-4 h-4" /> {t('skill.action.create')}
             </button>
           </div>
         }
@@ -206,28 +238,28 @@ function SkillsList() {
       {skills?.length === 0 ? (
         <EmptyState
           icon={BookOpen}
-          title="Aucune compétence"
-          description="Importez depuis skills.sh ou créez des compétences personnalisées pour vos agents."
+          title={t('skill.page.empty_title')}
+          description={t('skill.page.empty_description')}
           action={
             <div className="flex gap-2">
-              <button className="btn-secondary" onClick={() => setImportOpen(true)}><Download className="w-4 h-4" /> Importer</button>
-              <button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> Créer</button>
+              <button className="btn-secondary" onClick={() => setImportOpen(true)}><Download className="w-4 h-4" /> {t('skill.action.import')}</button>
+              <button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> {t('skill.action.create')}</button>
             </div>
           }
         />
       ) : (
         <div className="relative">
-          <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={tt('skill.list.loading')} />
+          <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={t('skill.list.loading')} />
           <div className="space-y-6">
           {/* Imported */}
           {imported.length > 0 && (
             <section>
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                Importées du registre ({imported.length})
+                {t('skill.page.section_imported')} ({imported.length})
               </h2>
               <div className="list-skill grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {imported.map((skill) => (
-                  <SkillCard key={skill.id} skill={skill} onEdit={() => navigate(`/skills/${skill.id}/edit`)} onDelete={() => setDeleteTarget(skill)} />
+                  <SkillCard key={skill.id} skill={skill} onEdit={() => navigate(`/skills/${skill.id}/edit`)} onDelete={() => setDeleteTarget(skill)} t={t} />
                 ))}
               </div>
             </section>
@@ -237,11 +269,11 @@ function SkillsList() {
           {custom.length > 0 && (
             <section>
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                Compétences personnalisées ({custom.length})
+                {t('skill.page.section_custom')} ({custom.length})
               </h2>
               <div className="list-skill grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {custom.map((skill) => (
-                  <SkillCard key={skill.id} skill={skill} onEdit={() => navigate(`/skills/${skill.id}/edit`)} onDelete={() => setDeleteTarget(skill)} />
+                  <SkillCard key={skill.id} skill={skill} onEdit={() => navigate(`/skills/${skill.id}/edit`)} onDelete={() => setDeleteTarget(skill)} t={t} />
                 ))}
               </div>
             </section>
@@ -251,7 +283,7 @@ function SkillsList() {
       )}
 
       {/* Import modal */}
-      <Modal open={importOpen} onClose={() => { setImportOpen(false); setImportError(null) }} title="Importer une compétence">
+      <Modal open={importOpen} onClose={() => { setImportOpen(false); setImportError(null) }} title={t('skill.modal.import_title')}>
         {importError && (
           <div className="mb-4 p-3 rounded-lg bg-red-50 text-sm text-red-700">{importError}</div>
         )}
@@ -259,15 +291,17 @@ function SkillsList() {
           onSubmit={(v) => importMutation.mutate(v)}
           loading={importMutation.isPending}
           onCancel={() => { setImportOpen(false); setImportError(null) }}
+          t={t}
         />
       </Modal>
 
       {/* Create modal */}
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Créer une compétence" size="lg">
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title={t('skill.modal.create_title')} size="lg">
         <CreateSkillForm
           onSubmit={(d) => createMutation.mutate(d)}
           loading={createMutation.isPending}
           onCancel={() => setCreateOpen(false)}
+          t={t}
         />
       </Modal>
 
@@ -276,7 +310,7 @@ function SkillsList() {
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
-        message={`Supprimer la compétence "${deleteTarget?.name}" ? Cette action est irréversible.`}
+        message={deleteTarget ? t('skill.action.delete_confirm').replace('%name%', deleteTarget.name) : ''}
         loading={deleteMutation.isPending}
       />
     </>
@@ -285,7 +319,7 @@ function SkillsList() {
 
 // ─── Skill Card ───────────────────────────────────────────────────────────────
 
-function SkillCard({ skill, onEdit, onDelete }: { skill: Skill; onEdit: () => void; onDelete: () => void }) {
+function SkillCard({ skill, onEdit, onDelete, t }: { skill: Skill; onEdit: () => void; onDelete: () => void; t: (key: string) => string }) {
   return (
     <div
       role="button"
@@ -300,10 +334,10 @@ function SkillCard({ skill, onEdit, onDelete }: { skill: Skill; onEdit: () => vo
           <p className="text-xs font-mono text-gray-400">{skill.slug}</p>
         </div>
         <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-          <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-brand-600" title="Modifier le contenu">
+          <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-brand-600" title={t('skill.action.edit_content')}>
             <Pencil className="w-3.5 h-3.5" />
           </button>
-          <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-500" title="Supprimer">
+          <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-500" title={t('skill.action.delete')}>
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -323,6 +357,7 @@ function SkillCard({ skill, onEdit, onDelete }: { skill: Skill; onEdit: () => vo
 function SkillEditor() {
   const { id } = useParams<{ id: string }>()
   const qc = useQueryClient()
+  const { t } = useTranslation(SKILLS_PAGE_TRANSLATION_KEYS)
   const [content, setContent] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
 
@@ -347,23 +382,23 @@ function SkillEditor() {
   })
 
   if (isLoading) return <PageSpinner />
-  if (error || !skill) return <ErrorMessage message={(error as Error)?.message ?? 'Compétence introuvable'} onRetry={() => refetch()} />
+  if (error || !skill) return <ErrorMessage message={(error as Error)?.message ?? t('skill.editor.not_found')} onRetry={() => refetch()} />
 
   return (
     <>
       <div className="flex items-center justify-between mb-4">
         <Link to="/skills" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
-          <ArrowLeft className="w-4 h-4" /> Compétences
+          <ArrowLeft className="w-4 h-4" /> {t('skill.editor.back_link')}
         </Link>
         <div className="flex items-center gap-3">
-          {saved && <span className="text-sm text-green-600 font-medium">Enregistré ✓</span>}
+          {saved && <span className="text-sm text-green-600 font-medium">{t('skill.editor.saved')}</span>}
           <button
             className="btn-primary"
             onClick={() => saveMutation.mutate(content ?? '')}
             disabled={saveMutation.isPending}
           >
             <Save className="w-4 h-4" />
-            {saveMutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
+            {saveMutation.isPending ? t('skill.editor.saving') : t('skill.editor.save')}
           </button>
         </div>
       </div>
@@ -395,6 +430,9 @@ function SkillEditor() {
 
 // ─── Page router ──────────────────────────────────────────────────────────────
 
+/**
+ * Skills management page — routes to skills list and skill editor views.
+ */
 export default function SkillsPage() {
   return (
     <Routes>

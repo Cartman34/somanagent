@@ -10,10 +10,40 @@ import { teamsApi } from '@/api/teams'
 import { agentsApi } from '@/api/agents'
 import { skillsApi } from '@/api/skills'
 import { healthApi } from '@/api/health'
-import { translationsApi } from '@/api/translations'
+import { useTranslation } from '@/hooks/useTranslation'
 import { PageSpinner } from '@/components/ui/Spinner'
 import PageHeader from '@/components/ui/PageHeader'
 import ContentLoadingOverlay from '@/components/ui/ContentLoadingOverlay'
+
+const DASHBOARD_TRANSLATION_KEYS = [
+  'dashboard.title',
+  'dashboard.description',
+  'dashboard.stats.projects',
+  'dashboard.stats.teams',
+  'dashboard.stats.agents',
+  'dashboard.stats.agents_active',
+  'dashboard.stats.skills',
+  'dashboard.system_state',
+  'dashboard.inaccessible',
+  'dashboard.operational',
+  'dashboard.unavailable',
+  'dashboard.claude_cli_auth',
+  'dashboard.connected_via',
+  'dashboard.not_connected',
+  'dashboard.quick_start.title',
+  'dashboard.quick_start.create_team',
+  'dashboard.quick_start.and_add_roles',
+  'dashboard.quick_start.import_skills',
+  'dashboard.quick_start.and_associate_roles',
+  'dashboard.quick_start.configure_agents',
+  'dashboard.quick_start.and_associate_agent_roles',
+  'dashboard.quick_start.create_project',
+  'dashboard.quick_start.and_add_modules',
+  'dashboard.quick_start.define_workflows',
+  'dashboard.quick_start.and_orchestrate_agents',
+  'dashboard.loading',
+  'common.action.refresh',
+] as const
 
 interface StatCardProps {
   label: string
@@ -37,8 +67,12 @@ function StatCard({ label, value, icon: Icon, to, color }: StatCardProps) {
   )
 }
 
+/**
+ * Dashboard page — overview of projects and key metrics.
+ */
 export default function DashboardPage() {
   const qc = useQueryClient()
+  const { t } = useTranslation(DASHBOARD_TRANSLATION_KEYS)
 
   const { data: projects, isLoading: loadingProjects, isFetching: fetchingProjects } = useQuery({
     queryKey: ['projects'],
@@ -81,19 +115,13 @@ export default function DashboardPage() {
   const loading = loadingProjects || loadingTeams || loadingAgents || loadingSkills
   const isFetching = fetchingProjects || fetchingTeams || fetchingAgents || fetchingSkills
 
-  const { data: dashboardI18n } = useQuery({
-    queryKey: ['ui-translations', 'dashboard'],
-    queryFn: () => translationsApi.list(['dashboard.loading', 'common.action.refresh']),
-  })
-  const tt = (key: string) => dashboardI18n?.translations[key] ?? key
-
   if (loading) return <PageSpinner />
 
   const activeAgents = agents?.filter((a) => a.isActive).length ?? 0
 
   return (
     <>
-    <PageHeader title="Tableau de bord" description="Vue d'ensemble de vos projets, équipes et agents."
+    <PageHeader title={t('dashboard.title')} description={t('dashboard.description')}
       onRefresh={() => {
         qc.invalidateQueries({ queryKey: ['projects'] })
         qc.invalidateQueries({ queryKey: ['teams'] })
@@ -101,37 +129,37 @@ export default function DashboardPage() {
         qc.invalidateQueries({ queryKey: ['skills'] })
         qc.invalidateQueries({ queryKey: ['health'] })
       }}
-      refreshTitle={tt('common.action.refresh')} />
+      refreshTitle={t('common.action.refresh')} />
 
     <div className="relative">
-      <ContentLoadingOverlay isLoading={isFetching && !loading} label={tt('dashboard.loading')} />
+      <ContentLoadingOverlay isLoading={isFetching && !loading} label={t('dashboard.loading')} />
 
       <div className="space-y-8">
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="Projets"
+          label={t('dashboard.stats.projects')}
           value={projects?.length ?? 0}
           icon={FolderKanban}
           to="/projects"
           color="bg-blue-500"
         />
         <StatCard
-          label="Équipes"
+          label={t('dashboard.stats.teams')}
           value={teams?.length ?? 0}
           icon={Users}
           to="/teams"
           color="bg-indigo-500"
         />
         <StatCard
-          label={`Agents (${activeAgents} actif${activeAgents !== 1 ? 's' : ''})`}
+          label={`${t('dashboard.stats.agents')} (${activeAgents} ${t('dashboard.stats.agents_active')}${activeAgents !== 1 ? 's' : ''})`}
           value={agents?.length ?? 0}
           icon={Bot}
           to="/agents"
           color="bg-violet-500"
         />
         <StatCard
-          label="Compétences"
+          label={t('dashboard.stats.skills')}
           value={skills?.length ?? 0}
           icon={BookOpen}
           to="/skills"
@@ -144,7 +172,7 @@ export default function DashboardPage() {
         <div className="flex items-center gap-2 mb-4">
           <Activity className="w-5 h-5" style={{ color: 'var(--muted)' }} />
           <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>
-            État du système
+            {t('dashboard.system_state')}
           </h2>
         </div>
 
@@ -164,7 +192,7 @@ export default function DashboardPage() {
                 Backend API
               </p>
               <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                {health ? `v${health.version} — ${health.status}` : 'Inaccessible'}
+                {health ? `v${health.version} — ${health.status}` : t('dashboard.inaccessible')}
               </p>
             </div>
           </div>
@@ -187,7 +215,7 @@ export default function DashboardPage() {
                       {name}
                     </p>
                     <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                      {ok ? 'Opérationnel' : 'Indisponible'}
+                      {ok ? t('dashboard.operational') : t('dashboard.unavailable')}
                     </p>
                   </div>
                 </div>
@@ -205,12 +233,12 @@ export default function DashboardPage() {
             )}
             <div>
               <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>
-                claude_cli auth
+                {t('dashboard.claude_cli_auth')}
               </p>
               <p className="text-xs" style={{ color: 'var(--muted)' }}>
                 {claudeCliAuth?.loggedIn
-                  ? `Connecte via ${claudeCliAuth.authMethod ?? 'unknown'}`
-                  : 'Non connecte'}
+                  ? `${t('dashboard.connected_via')} ${claudeCliAuth.authMethod ?? 'unknown'}`
+                  : t('dashboard.not_connected')}
               </p>
             </div>
           </div>
@@ -220,38 +248,38 @@ export default function DashboardPage() {
       {/* Quick links */}
       <div className="card p-6">
         <h2 className="text-base font-semibold mb-4" style={{ color: 'var(--text)' }}>
-          Démarrage rapide
+          {t('dashboard.quick_start.title')}
         </h2>
         <ol className="space-y-2 text-sm list-decimal list-inside" style={{ color: 'var(--muted)' }}>
           <li>
             <Link to="/teams" className="hover:underline" style={{ color: 'var(--brand)' }}>
-              Créer une équipe
+              {t('dashboard.quick_start.create_team')}
             </Link>{' '}
-            et y ajouter des rôles
+            {t('dashboard.quick_start.and_add_roles')}
           </li>
           <li>
             <Link to="/skills" className="hover:underline" style={{ color: 'var(--brand)' }}>
-              Importer ou créer des compétences
+              {t('dashboard.quick_start.import_skills')}
             </Link>{' '}
-            à associer aux rôles
+            {t('dashboard.quick_start.and_associate_roles')}
           </li>
           <li>
             <Link to="/agents" className="hover:underline" style={{ color: 'var(--brand)' }}>
-              Configurer des agents
+              {t('dashboard.quick_start.configure_agents')}
             </Link>{' '}
-            et les associer à des rôles
+            {t('dashboard.quick_start.and_associate_agent_roles')}
           </li>
           <li>
             <Link to="/projects" className="hover:underline" style={{ color: 'var(--brand)' }}>
-              Créer un projet
+              {t('dashboard.quick_start.create_project')}
             </Link>{' '}
-            et y ajouter des modules (API PHP, Android, etc.)
+            {t('dashboard.quick_start.and_add_modules')}
           </li>
           <li>
             <Link to="/workflows" className="hover:underline" style={{ color: 'var(--brand)' }}>
-              Définir des workflows
+              {t('dashboard.quick_start.define_workflows')}
             </Link>{' '}
-            pour orchestrer vos agents
+            {t('dashboard.quick_start.and_orchestrate_agents')}
           </li>
         </ol>
       </div>

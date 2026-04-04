@@ -20,7 +20,8 @@ if (in_array('-h', $argv, true) || in_array('--help', $argv, true)) {
     echo "Checks (blockers):\n";
     echo "  - French strings in .php (backend/src/) and .ts/.tsx (frontend/src/) files\n";
     echo "  - Missing PHPDoc on public PHP methods (backend/src/ only, not migrations)\n";
-    echo "  - Missing JSDoc on exported TypeScript/React symbols\n\n";
+    echo "  - Missing JSDoc on exported TypeScript/React symbols\n";
+    echo "  - PHP syntax errors, Symfony container, Doctrine schema, frontend lint, TypeScript (via validate-files.php)\n\n";
     echo "Informational (no exit code impact):\n";
     echo "  - Modified files list\n";
     echo "  - Untracked files list\n\n";
@@ -67,7 +68,7 @@ $hasDocBlock = static function (array $lines, int $i): bool {
         if ($prev === '') {
             return false;
         }
-        if ($prev === '*/') {
+        if ($prev === '*/' || (str_starts_with($prev, '/**') && str_ends_with($prev, '*/'))) {
             return true;
         }
         // Single-line comment, doc line, or decorator — keep looking
@@ -251,7 +252,26 @@ if ($missingJsdoc === []) {
 }
 echo "\n";
 
+// ─── Section 6: File validation (syntax, types, lint) ────────────────────────
+
+echo "=== File validation ===\n";
+
+$validateFiles = array_values($allFiles);
+$validateExitCode = 0;
+
+if ($validateFiles === []) {
+    echo "(no files to validate)\n";
+} else {
+    $fileArgs = implode(' ', array_map('escapeshellarg', $validateFiles));
+    [$validateExitCode, $validateLines] = $run('php scripts/validate-files.php --with-types ' . $fileArgs);
+    foreach ($validateLines as $line) {
+        echo $line . "\n";
+    }
+}
+echo "\n";
+
 // ─── Exit code ───────────────────────────────────────────────────────────────
 
-$hasBlockers = $frenchHits !== [] || $missingPhpdoc !== [] || $missingJsdoc !== [];
+$hasBlockers = $frenchHits !== [] || $missingPhpdoc !== [] || $missingJsdoc !== []
+    || $validateExitCode !== 0;
 exit($hasBlockers ? 1 : 0);

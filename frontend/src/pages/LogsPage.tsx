@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { AlertOctagon, ExternalLink } from 'lucide-react'
 import { logsApi, type LogFilters } from '@/api/logs'
-import { translationsApi } from '@/api/translations'
+import { useTranslation } from '@/hooks/useTranslation'
 import type { LogOccurrence, LogEvent } from '@/types'
 import { PageSpinner } from '@/components/ui/Spinner'
 import ErrorMessage from '@/components/ui/ErrorMessage'
@@ -20,12 +20,57 @@ const PAGE_SIZE = 25
 type LogsViewMode = 'occurrences' | 'events'
 type LogOccurrenceStatus = LogOccurrence['status']
 
-function fmtDate(date: string) {
-  return new Date(date).toLocaleString('fr-FR', {
-    year: 'numeric', month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  })
-}
+const LOGS_PAGE_TRANSLATION_KEYS = [
+  'log.page.title',
+  'log.page.description_occurrences',
+  'log.page.description_events',
+  'log.list.loading',
+  'common.action.refresh',
+  'log.filter.all_sources',
+  'log.filter.all_categories',
+  'log.filter.all_levels',
+  'log.filter.all_statuses',
+  'log.filter.placeholder_project',
+  'log.filter.placeholder_task',
+  'log.filter.placeholder_agent',
+  'log.filter.no_status',
+  'log.occurrence.empty.title',
+  'log.occurrence.empty.description',
+  'log.event.empty.title',
+  'log.event.empty.description',
+  'log.col.title',
+  'log.col.level',
+  'log.col.source',
+  'log.col.occurrences',
+  'log.col.last_seen',
+  'log.col.context',
+  'log.status.open',
+  'log.status.acknowledged',
+  'log.status.resolved',
+  'log.status.ignored',
+  'log.occurrence.detail_title',
+  'log.occurrence.window',
+  'log.occurrence.navigation',
+  'log.occurrence.known_attempt',
+  'log.occurrence.first_pass',
+  'log.occurrence.retry',
+  'log.action.mark_seen',
+  'log.action.mark_resolved',
+  'log.action.reopen',
+  'log.col.aggregated_context',
+  'log.col.references',
+  'log.col.stack',
+  'log.no_data',
+  'log.pagination_label_occurrences',
+  'log.pagination_label_events',
+  'log.action.prev',
+  'log.action.next',
+  'log.entity.project',
+  'log.entity.task',
+  'log.entity.agent',
+  'log.attempt_label',
+  'log.retry_label',
+] as const
 
 function badgeStyle(tone: 'red' | 'orange' | 'blue' | 'gray') {
   const map = {
@@ -44,31 +89,12 @@ function levelTone(level: string): 'red' | 'orange' | 'blue' | 'gray' {
   return 'gray'
 }
 
-/**
- * Maps an occurrence triage status to a neutral badge tone for the Logs UI.
- */
 function occurrenceStatusTone(status: LogOccurrenceStatus): 'red' | 'orange' | 'blue' | 'gray' {
   if (status === 'resolved') return 'blue'
   if (status === 'acknowledged') return 'orange'
   return 'gray'
 }
 
-/**
- * Returns the French UI label associated with an occurrence triage status.
- */
-function occurrenceStatusLabel(status: LogOccurrenceStatus) {
-  return status === 'acknowledged'
-    ? 'vu'
-    : status === 'resolved'
-      ? 'résolu'
-      : status === 'ignored'
-        ? 'ignoré'
-        : 'ouvert'
-}
-
-/**
- * Hides the category badge when it does not add any information beyond the level badge.
- */
 function shouldRenderCategoryBadge(level: string, category: string) {
   return category.trim().toLowerCase() !== level.trim().toLowerCase()
 }
@@ -95,8 +121,8 @@ function readMessengerMeta(context: Record<string, unknown> | null | undefined) 
   }
 }
 
-function JsonBlock({ value }: { value: unknown }) {
-  if (value == null) return <span style={{ color: 'var(--muted)' }}>Aucune donnée</span>
+function JsonBlock({ value, t }: { value: unknown; t: (key: string) => string }) {
+  if (value == null) return <span style={{ color: 'var(--muted)' }}>{t('log.no_data')}</span>
 
   return (
     <pre
@@ -108,18 +134,21 @@ function JsonBlock({ value }: { value: unknown }) {
   )
 }
 
-/**
- * Renders the triage state of an occurrence in a compact reusable badge.
- */
-function OccurrenceStatusBadge({ status }: { status: LogOccurrenceStatus }) {
+function OccurrenceStatusBadge({ status, t }: { status: LogOccurrenceStatus; t: (key: string) => string }) {
+  const labels: Record<LogOccurrenceStatus, string> = {
+    acknowledged: t('log.status.acknowledged'),
+    resolved: t('log.status.resolved'),
+    ignored: t('log.status.ignored'),
+    open: t('log.status.open'),
+  }
   return (
     <span className="rounded-full px-2 py-1 text-xs" style={badgeStyle(occurrenceStatusTone(status))}>
-      {occurrenceStatusLabel(status)}
+      {labels[status]}
     </span>
   )
 }
 
-function EntityLinks({ occurrence }: { occurrence: LogOccurrence }) {
+function EntityLinks({ occurrence, t }: { occurrence: LogOccurrence; t: (key: string) => string }) {
   return (
     <div className="flex flex-wrap gap-2 text-xs">
       {occurrence.projectId && (
@@ -128,7 +157,7 @@ function EntityLinks({ occurrence }: { occurrence: LogOccurrence }) {
           className="inline-flex items-center gap-1 rounded-full px-2 py-1"
           style={{ background: 'var(--surface2)', color: 'var(--text)' }}
         >
-          Projet
+          {t('log.entity.project')}
           <ExternalLink className="h-3 w-3" />
         </Link>
       )}
@@ -138,7 +167,7 @@ function EntityLinks({ occurrence }: { occurrence: LogOccurrence }) {
           className="inline-flex items-center gap-1 rounded-full px-2 py-1"
           style={{ background: 'var(--surface2)', color: 'var(--text)' }}
         >
-          Tâche
+          {t('log.entity.task')}
           <ExternalLink className="h-3 w-3" />
         </Link>
       )}
@@ -148,7 +177,7 @@ function EntityLinks({ occurrence }: { occurrence: LogOccurrence }) {
           className="inline-flex items-center gap-1 rounded-full px-2 py-1"
           style={{ background: 'var(--surface2)', color: 'var(--text)' }}
         >
-          Agent
+          {t('log.entity.agent')}
           <ExternalLink className="h-3 w-3" />
         </Link>
       )}
@@ -156,7 +185,7 @@ function EntityLinks({ occurrence }: { occurrence: LogOccurrence }) {
   )
 }
 
-function EventCard({ event }: { event: LogEvent }) {
+function EventCard({ event, t, formatDateTime }: { event: LogEvent; t: (key: string) => string; formatDateTime: (v: string) => string }) {
   const messenger = readMessengerMeta(event.context)
 
   return (
@@ -172,16 +201,16 @@ function EventCard({ event }: { event: LogEvent }) {
         )}
         {messenger.attempt !== null && (
           <span className="rounded-full px-2 py-1 text-xs" style={badgeStyle(messenger.isRetry ? 'orange' : 'gray')}>
-            tentative {messenger.attempt}
+            {t('log.attempt_label').replace('%n%', String(messenger.attempt))}
           </span>
         )}
         {messenger.isRetry && (
           <span className="rounded-full px-2 py-1 text-xs" style={badgeStyle('orange')}>
-            retry
+            {t('log.retry_label')}
           </span>
         )}
         <span className="text-xs" style={{ color: 'var(--muted)' }}>{event.source}</span>
-        <span className="ml-auto text-xs" style={{ color: 'var(--muted)' }}>{fmtDate(event.occurredAt)}</span>
+        <span className="ml-auto text-xs" style={{ color: 'var(--muted)' }}>{formatDateTime(event.occurredAt)}</span>
       </div>
 
       <div className="mt-3 space-y-2">
@@ -192,10 +221,10 @@ function EventCard({ event }: { event: LogEvent }) {
       <div className="mt-3 grid gap-3 lg:grid-cols-2">
         <div className="space-y-2">
           <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Contexte</p>
-          <JsonBlock value={event.context} />
+          <JsonBlock value={event.context} t={t} />
         </div>
         <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Références</p>
+          <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--muted)' }}>{t('log.col.references')}</p>
           <JsonBlock value={{
             projectId: event.projectId,
             taskId: event.taskId,
@@ -204,13 +233,13 @@ function EventCard({ event }: { event: LogEvent }) {
             requestRef: event.requestRef,
             traceRef: event.traceRef,
             origin: event.origin,
-          }} />
+          }} t={t} />
         </div>
       </div>
 
       {event.stack && (
         <div className="mt-3 space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Stack</p>
+          <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--muted)' }}>{t('log.col.stack')}</p>
           <pre
             className="overflow-x-auto rounded-lg p-3 text-xs whitespace-pre-wrap"
             style={{ background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}
@@ -223,7 +252,7 @@ function EventCard({ event }: { event: LogEvent }) {
   )
 }
 
-function OccurrenceDetail({ occurrenceId }: { occurrenceId: string }) {
+function OccurrenceDetail({ occurrenceId, t, formatDateTime }: { occurrenceId: string; t: (key: string) => string; formatDateTime: (v: string) => string }) {
   const qc = useQueryClient()
   const { data, isLoading, error } = useQuery({
     queryKey: ['log-occurrence', occurrenceId],
@@ -256,10 +285,10 @@ function OccurrenceDetail({ occurrenceId }: { occurrenceId: string }) {
               {data.occurrence.category}
             </span>
           )}
-          <OccurrenceStatusBadge status={data.occurrence.status} />
+          <OccurrenceStatusBadge status={data.occurrence.status} t={t} />
           <span className="text-xs" style={{ color: 'var(--muted)' }}>{data.occurrence.source}</span>
           <span className="ml-auto text-xs" style={{ color: 'var(--muted)' }}>
-            {data.occurrence.occurrenceCount} occurrence{data.occurrence.occurrenceCount > 1 ? 's' : ''}
+            {data.occurrence.occurrenceCount} {data.occurrence.occurrenceCount > 1 ? t('log.status.acknowledged') : t('log.status.open')}
           </span>
         </div>
 
@@ -270,21 +299,21 @@ function OccurrenceDetail({ occurrenceId }: { occurrenceId: string }) {
 
         <div className="mt-4 grid gap-3 lg:grid-cols-2">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Fenêtre</p>
+            <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--muted)' }}>{t('log.occurrence.window')}</p>
             <p className="mt-1 text-sm" style={{ color: 'var(--text)' }}>
-              {fmtDate(data.occurrence.firstSeenAt)} → {fmtDate(data.occurrence.lastSeenAt)}
+              {formatDateTime(data.occurrence.firstSeenAt)} → {formatDateTime(data.occurrence.lastSeenAt)}
             </p>
             {occurrenceMessenger.attempt !== null && (
               <p className="mt-2 text-sm" style={{ color: 'var(--text)' }}>
-                Dernière tentative connue : {occurrenceMessenger.attempt}
-                {occurrenceMessenger.isRetry ? ' (retry)' : ' (premier passage)'}
+                {t('log.occurrence.known_attempt').replace('%n%', String(occurrenceMessenger.attempt))}
+                {occurrenceMessenger.isRetry ? ` (${t('log.occurrence.retry')})` : ` (${t('log.occurrence.first_pass')})`}
               </p>
             )}
           </div>
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Navigation</p>
+            <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--muted)' }}>{t('log.occurrence.navigation')}</p>
             <div className="mt-2">
-              <EntityLinks occurrence={data.occurrence} />
+              <EntityLinks occurrence={data.occurrence} t={t} />
             </div>
           </div>
         </div>
@@ -295,14 +324,14 @@ function OccurrenceDetail({ occurrenceId }: { occurrenceId: string }) {
             disabled={statusMutation.isPending || data.occurrence.status === 'acknowledged'}
             className="btn-secondary disabled:opacity-40"
           >
-            Marquer comme vu
+            {t('log.action.mark_seen')}
           </button>
           <button
             onClick={() => statusMutation.mutate('resolved')}
             disabled={statusMutation.isPending || data.occurrence.status === 'resolved'}
             className="btn-primary disabled:opacity-40"
           >
-            Marquer comme résolu
+            {t('log.action.mark_resolved')}
           </button>
           {data.occurrence.status !== 'open' && (
             <button
@@ -310,26 +339,29 @@ function OccurrenceDetail({ occurrenceId }: { occurrenceId: string }) {
               disabled={statusMutation.isPending}
               className="btn-secondary disabled:opacity-40"
             >
-              Réouvrir
+              {t('log.action.reopen')}
             </button>
           )}
         </div>
 
         <div className="mt-4 space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Contexte agrégé</p>
-          <JsonBlock value={data.occurrence.contextSnapshot} />
+          <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--muted)' }}>{t('log.col.aggregated_context')}</p>
+          <JsonBlock value={data.occurrence.contextSnapshot} t={t} />
         </div>
       </div>
 
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
         {data.events.map((event) => (
-          <EventCard key={event.id} event={event} />
+          <EventCard key={event.id} event={event} t={t} formatDateTime={formatDateTime} />
         ))}
       </div>
     </div>
   )
 }
 
+/**
+ * Logs page — view and filter application log events.
+ */
 export default function LogsPage() {
   const qc = useQueryClient()
   const [viewMode, setViewMode] = useState<LogsViewMode>('occurrences')
@@ -373,11 +405,7 @@ export default function LogsPage() {
   const activeQuery = viewMode === 'occurrences' ? occurrencesQuery : eventsQuery
   const activeIsFetching = occurrencesQuery.isFetching || eventsQuery.isFetching
 
-  const { data: logsI18n } = useQuery({
-    queryKey: ['ui-translations', 'logs'],
-    queryFn: () => translationsApi.list(['log.list.loading', 'common.action.refresh']),
-  })
-  const tt = (key: string) => logsI18n?.translations[key] ?? key
+  const { t, formatDateTime } = useTranslation(LOGS_PAGE_TRANSLATION_KEYS)
   const occurrences = occurrencesQuery.data?.data ?? []
   const events = eventsQuery.data?.data ?? []
   const total = activeQuery.data?.total ?? 0
@@ -389,12 +417,12 @@ export default function LogsPage() {
   return (
     <>
       <PageHeader
-        title="Logs"
+        title={t('log.page.title')}
         description={viewMode === 'occurrences'
-          ? "Diagnostic agrégé des warnings et erreurs récurrents."
-          : "Explorateur d'événements bruts pour suivre la chronologie exacte des signaux."}
+          ? t('log.page.description_occurrences')
+          : t('log.page.description_events')}
         onRefresh={() => { qc.invalidateQueries({ queryKey: ['logs'] }) }}
-        refreshTitle={tt('common.action.refresh')}
+        refreshTitle={t('common.action.refresh')}
         action={(
           <div className="inline-flex rounded-xl border p-1" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
             <button
@@ -404,7 +432,7 @@ export default function LogsPage() {
                 ? { background: 'var(--brand)', color: '#fff' }
                 : { color: 'var(--text)' }}
             >
-              Occurrences
+              {t('log.view.occurrences')}
             </button>
             <button
               onClick={() => { setPage(1); setViewMode('events') }}
@@ -413,25 +441,25 @@ export default function LogsPage() {
                 ? { background: 'var(--brand)', color: '#fff' }
                 : { color: 'var(--text)' }}
             >
-              Événements
+              {t('log.view.events')}
             </button>
           </div>
         )}
       />
 
       <div className="relative">
-        <ContentLoadingOverlay isLoading={activeIsFetching && !activeQuery.isLoading} label={tt('log.list.loading')} />
+        <ContentLoadingOverlay isLoading={activeIsFetching && !activeQuery.isLoading} label={t('log.list.loading')} />
 
         <div className="mb-6 grid gap-3 rounded-2xl border p-4 md:grid-cols-3 xl:grid-cols-6" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
         <select className="input" value={source} onChange={(e) => { setPage(1); setSource(e.target.value) }}>
-          <option value="">Toutes les sources</option>
+          <option value="">{t('log.filter.all_sources')}</option>
           <option value="backend">backend</option>
           <option value="worker">worker</option>
           <option value="frontend">frontend</option>
           <option value="infra">infra</option>
         </select>
         <select className="input" value={category} onChange={(e) => { setPage(1); setCategory(e.target.value) }}>
-          <option value="">Toutes les catégories</option>
+          <option value="">{t('log.filter.all_categories')}</option>
           <option value="error">error</option>
           <option value="runtime">runtime</option>
           <option value="http">http</option>
@@ -440,7 +468,7 @@ export default function LogsPage() {
           <option value="auth">auth</option>
         </select>
         <select className="input" value={level} onChange={(e) => { setPage(1); setLevel(e.target.value) }}>
-          <option value="">Tous les niveaux</option>
+          <option value="">{t('log.filter.all_levels')}</option>
           <option value="error">error</option>
           <option value="critical">critical</option>
           <option value="warning">warning</option>
@@ -448,7 +476,7 @@ export default function LogsPage() {
         </select>
         {viewMode === 'occurrences' ? (
           <select className="input" value={status} onChange={(e) => { setPage(1); setStatus(e.target.value) }}>
-            <option value="">Tous les statuts</option>
+            <option value="">{t('log.filter.all_statuses')}</option>
             <option value="open">open</option>
             <option value="acknowledged">acknowledged</option>
             <option value="resolved">resolved</option>
@@ -456,12 +484,12 @@ export default function LogsPage() {
           </select>
         ) : (
           <div className="input flex items-center text-sm" style={{ color: 'var(--muted)' }}>
-            Les événements bruts n’ont pas de statut d’occurrence.
+            {t('log.filter.no_status')}
           </div>
         )}
-        <input className="input" placeholder="Project ID" value={projectId} onChange={(e) => { setPage(1); setProjectId(e.target.value) }} />
-        <input className="input" placeholder="Task ID" value={taskId} onChange={(e) => { setPage(1); setTaskId(e.target.value) }} />
-        <input className="input" placeholder="Agent ID" value={agentId} onChange={(e) => { setPage(1); setAgentId(e.target.value) }} />
+        <input className="input" placeholder={t('log.filter.placeholder_project')} value={projectId} onChange={(e) => { setPage(1); setProjectId(e.target.value) }} />
+        <input className="input" placeholder={t('log.filter.placeholder_task')} value={taskId} onChange={(e) => { setPage(1); setTaskId(e.target.value) }} />
+        <input className="input" placeholder={t('log.filter.placeholder_agent')} value={agentId} onChange={(e) => { setPage(1); setAgentId(e.target.value) }} />
         <input className="input" type="datetime-local" value={from} onChange={(e) => { setPage(1); setFrom(e.target.value) }} />
         <input className="input" type="datetime-local" value={to} onChange={(e) => { setPage(1); setTo(e.target.value) }} />
       </div>
@@ -469,14 +497,14 @@ export default function LogsPage() {
       {viewMode === 'occurrences' && occurrences.length === 0 ? (
         <EmptyState
           icon={AlertOctagon}
-          title="Aucune occurrence"
-          description="Aucun log agrégé ne correspond aux filtres courants."
+          title={t('log.occurrence.empty.title')}
+          description={t('log.occurrence.empty.description')}
         />
       ) : viewMode === 'events' && events.length === 0 ? (
         <EmptyState
           icon={AlertOctagon}
-          title="Aucun événement"
-          description="Aucun événement brut ne correspond aux filtres courants."
+          title={t('log.event.empty.title')}
+          description={t('log.event.empty.description')}
         />
       ) : viewMode === 'occurrences' ? (
         <div className="card overflow-hidden">
@@ -484,12 +512,12 @@ export default function LogsPage() {
             <table className="w-full text-sm">
               <thead style={{ background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--muted)' }}>Titre</th>
-                  <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--muted)' }}>Niveau</th>
-                  <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--muted)' }}>Source</th>
-                  <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--muted)' }}>Occurrences</th>
-                  <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--muted)' }}>Dernière fois</th>
-                  <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--muted)' }}>Contexte</th>
+                  <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--muted)' }}>{t('log.col.title')}</th>
+                  <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--muted)' }}>{t('log.col.level')}</th>
+                  <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--muted)' }}>{t('log.col.source')}</th>
+                  <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--muted)' }}>{t('log.col.occurrences')}</th>
+                  <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--muted)' }}>{t('log.col.last_seen')}</th>
+                  <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--muted)' }}>{t('log.col.context')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -504,7 +532,7 @@ export default function LogsPage() {
                       <div className="space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="font-medium" style={{ color: 'var(--text)' }}>{occurrence.title}</p>
-                          <OccurrenceStatusBadge status={occurrence.status} />
+                          <OccurrenceStatusBadge status={occurrence.status} t={t} />
                         </div>
                         <p className="line-clamp-2 text-xs" style={{ color: 'var(--muted)' }}>{occurrence.message}</p>
                       </div>
@@ -523,9 +551,9 @@ export default function LogsPage() {
                     </td>
                     <td className="px-4 py-3 align-top" style={{ color: 'var(--text)' }}>{occurrence.source}</td>
                     <td className="px-4 py-3 align-top" style={{ color: 'var(--text)' }}>{occurrence.occurrenceCount}</td>
-                    <td className="px-4 py-3 align-top whitespace-nowrap" style={{ color: 'var(--muted)' }}>{fmtDate(occurrence.lastSeenAt)}</td>
+                    <td className="px-4 py-3 align-top whitespace-nowrap" style={{ color: 'var(--muted)' }}>{formatDateTime(occurrence.lastSeenAt)}</td>
                     <td className="px-4 py-3 align-top">
-                      <EntityLinks occurrence={occurrence} />
+                      <EntityLinks occurrence={occurrence} t={t} />
                     </td>
                   </tr>
                 ))}
@@ -536,11 +564,11 @@ export default function LogsPage() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-3" style={{ borderTop: '1px solid var(--border)' }}>
               <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} sur {total} occurrences
+                {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} {t('log.pagination_label_occurrences').replace('%total%', String(total))}
               </p>
               <div className="flex gap-2">
-                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="btn-secondary disabled:opacity-40">Précédent</button>
-                <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="btn-secondary disabled:opacity-40">Suivant</button>
+                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="btn-secondary disabled:opacity-40">{t('log.action.prev')}</button>
+                <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="btn-secondary disabled:opacity-40">{t('log.action.next')}</button>
               </div>
             </div>
           )}
@@ -548,17 +576,17 @@ export default function LogsPage() {
       ) : (
         <div className="list-log-event space-y-3">
           {events.map((event) => (
-            <EventCard key={event.id} event={event} />
+            <EventCard key={event.id} event={event} t={t} formatDateTime={formatDateTime} />
           ))}
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between rounded-2xl border px-4 py-3" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
               <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} sur {total} événements
+                {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} {t('log.pagination_label_events').replace('%total%', String(total))}
               </p>
               <div className="flex gap-2">
-                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="btn-secondary disabled:opacity-40">Précédent</button>
-                <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="btn-secondary disabled:opacity-40">Suivant</button>
+                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="btn-secondary disabled:opacity-40">{t('log.action.prev')}</button>
+                <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="btn-secondary disabled:opacity-40">{t('log.action.next')}</button>
               </div>
             </div>
           )}
@@ -569,10 +597,10 @@ export default function LogsPage() {
       <Modal
         open={selectedOccurrenceId !== null}
         onClose={() => setSelectedOccurrenceId(null)}
-        title="Détail d'occurrence"
+        title={t('log.occurrence.detail_title')}
         size="2xl"
       >
-        {selectedOccurrenceId ? <OccurrenceDetail occurrenceId={selectedOccurrenceId} /> : null}
+        {selectedOccurrenceId ? <OccurrenceDetail occurrenceId={selectedOccurrenceId} t={t} formatDateTime={formatDateTime} /> : null}
       </Modal>
     </>
   )

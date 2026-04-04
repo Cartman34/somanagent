@@ -14,34 +14,35 @@ use App\Entity\TokenUsage;
 use App\Enum\AuditAction;
 use App\Enum\ChatAuthor;
 use App\Repository\ChatMessageRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 use App\ValueObject\Prompt;
 
 class ChatService
 {
+    /**
+     * Initializes the service with its dependencies.
+     */
     public function __construct(
-        private readonly EntityManagerInterface $em,
-        private readonly ChatMessageRepository  $chatMessageRepository,
-        private readonly AgentPortRegistry      $agentPortRegistry,
-        private readonly AgentContextBuilder    $contextBuilder,
-        private readonly AuditService           $audit,
+        private readonly EntityService         $entityService,
+        private readonly ChatMessageRepository $chatMessageRepository,
+        private readonly AgentPortRegistry     $agentPortRegistry,
+        private readonly AgentContextBuilder   $contextBuilder,
     ) {}
 
+    /**
+     * Persists a human-authored chat message for the given project and agent.
+     */
     public function sendHuman(Project $project, Agent $agent, string $content): ChatMessage
     {
-        $message = $this->save($project, $agent, ChatAuthor::Human, $content);
-        $this->em->flush();
-
-        return $message;
+        return $this->save($project, $agent, ChatAuthor::Human, $content);
     }
 
+    /**
+     * Persists an agent-authored chat message for the given project and agent.
+     */
     public function sendAgent(Project $project, Agent $agent, string $content): ChatMessage
     {
-        $message = $this->save($project, $agent, ChatAuthor::Agent, $content);
-        $this->em->flush();
-
-        return $message;
+        return $this->save($project, $agent, ChatAuthor::Agent, $content);
     }
 
     /**
@@ -83,7 +84,8 @@ class ChatService
                 outputTokens: $response->outputTokens,
                 durationMs: (int) $response->durationMs,
             );
-            $this->em->persist($usage);
+            // Stage usage; flushed together with the agent message below.
+            $this->entityService->persist($usage);
 
             $agentMessage = $this->save(
                 $project,
@@ -119,45 +121,46 @@ class ChatService
             );
         }
 
-        $this->em->flush();
-
         return ['human' => $human, 'agent' => $agentMessage];
     }
 
     /**
-     * Persist a new ChatMessage and log the corresponding audit event.
-     *
-     * Does not flush; callers are responsible for calling `$this->em->flush()`.
+     * Persists and flushes a new ChatMessage together with any previously staged entities,
+     * then writes an audit entry.
      *
      * @param array<string, mixed>|null $metadata
      */
     private function save(
-        Project $project,
-        Agent $agent,
+        Project    $project,
+        Agent      $agent,
         ChatAuthor $author,
-        string $content,
-        ?string $exchangeId = null,
-        bool $isError = false,
-        ?array $metadata = null,
+        string     $content,
+        ?string    $exchangeId       = null,
+        bool       $isError          = false,
+        ?array     $metadata         = null,
         ?\Symfony\Component\Uid\Uuid $replyToMessageId = null,
-    ): ChatMessage
-    {
+    ): ChatMessage {
         $message = new ChatMessage($project, $agent, $author, $content, $exchangeId, $isError, $metadata);
         if ($replyToMessageId !== null) {
             $message->setReplyToMessageId($replyToMessageId);
         }
-        $this->em->persist($message);
-        $this->audit->log(AuditAction::ChatMessageSent, 'ChatMessage', (string) $message->getId(), [
-            'project' => (string) $project->getId(),
-            'agent'   => (string) $agent->getId(),
-            'author'  => $author->value,
+
+        $this->entityService->create($message, AuditAction::ChatMessageSent, [
+            'project'  => (string) $project->getId(),
+            'agent'    => (string) $agent->getId(),
+            'author'   => $author->value,
             'exchange' => $message->getExchangeId(),
-            'isError' => $message->isError(),
+            'isError'  => $message->isError(),
         ]);
+
         return $message;
     }
 
-    /** @return ChatMessage[] */
+    /**
+     * Returns the most recent chat messages for a project/agent pair, up to the given limit.
+     *
+     * @return ChatMessage[]
+     */
     public function getConversation(Project $project, Agent $agent, int $limit = 200): array
     {
         return $this->chatMessageRepository->findConversation($project, $agent, $limit);
@@ -177,7 +180,7 @@ class ChatService
             throw new \InvalidArgumentException('Parent message not found');
         }
 
-        $message = $this->save(
+        return $this->save(
             $project,
             $agent,
             ChatAuthor::Human,
@@ -190,8 +193,5 @@ class ChatService
             ],
             $parentMessage->getId(),
         );
-        $this->em->flush();
-
-        return $message;
     }
 }

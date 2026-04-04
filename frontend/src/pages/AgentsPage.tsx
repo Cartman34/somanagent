@@ -3,10 +3,10 @@
  */
 
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, Bot, Pencil, Trash2, CheckCircle, XCircle } from 'lucide-react'
 import { agentsApi } from '@/api/agents'
-import { translationsApi } from '@/api/translations'
+import { useTranslation } from '@/hooks/useTranslation'
 import { rolesApi } from '@/api/roles'
 import { healthApi } from '@/api/health'
 import type { AgentPayload } from '@/api/agents'
@@ -18,6 +18,50 @@ import Modal from '@/components/ui/Modal'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import PageHeader from '@/components/ui/PageHeader'
 import ContentLoadingOverlay from '@/components/ui/ContentLoadingOverlay'
+
+const AGENT_FORM_TRANSLATION_KEYS = [
+  'agents.form.label.name',
+  'agents.form.placeholder.name',
+  'agents.form.label.description',
+  'agents.form.label.role',
+  'agents.form.label.no_role',
+  'agents.form.label.connector',
+  'agents.form.label.claude_api',
+  'agents.form.label.claude_cli',
+  'agents.form.desc.claude_api',
+  'agents.form.desc.claude_cli',
+  'agents.form.label.configuration',
+  'agents.form.label.model',
+  'agents.form.placeholder.model',
+  'agents.form.label.max_tokens',
+  'agents.form.label.temperature',
+  'agents.form.label.timeout',
+  'agents.form.label.is_active',
+  'agents.form.action.cancel',
+  'agents.form.action.save',
+  'agents.form.action.saving',
+] as const
+
+const AGENTS_PAGE_TRANSLATION_KEYS = [
+  ...AGENT_FORM_TRANSLATION_KEYS,
+  'agents.page.title',
+  'agents.page.description',
+  'agents.action.new',
+  'agents.empty.title',
+  'agents.empty.description',
+  'agents.status.claude_cli',
+  'agents.status.connected',
+  'agents.status.not_connected',
+  'agents.status.login_manual',
+  'agents.status.verify',
+  'agents.action.edit',
+  'agents.action.delete',
+  'agents.action.delete_confirm',
+  'agents.edit.title',
+  'agents.create.title',
+  'agent.list.loading',
+  'common.action.refresh',
+] as const
 
 const defaultConfig: AgentConfig = {
   model: 'claude-sonnet-4-6',
@@ -32,6 +76,7 @@ function AgentForm({ initial, onSubmit, loading, onCancel }: {
   loading: boolean
   onCancel: () => void
 }) {
+  const { t } = useTranslation(AGENT_FORM_TRANSLATION_KEYS)
   const [name, setName]               = useState(initial?.name ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [connector, setConnector]     = useState<'claude_api' | 'claude_cli'>(initial?.connector ?? 'claude_api')
@@ -42,7 +87,7 @@ function AgentForm({ initial, onSubmit, loading, onCancel }: {
   const [temperature, setTemperature] = useState(initial?.config?.temperature ?? defaultConfig.temperature)
   const [timeoutSecs, setTimeoutSecs] = useState(initial?.config?.timeout ?? defaultConfig.timeout)
 
-  const { data: roles } = useQuery({ queryKey: ['roles'], queryFn: rolesApi.list })
+  const { data: roles } = useQuery<Awaited<ReturnType<typeof rolesApi.list>>>({ queryKey: ['roles'], queryFn: rolesApi.list })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -53,24 +98,24 @@ function AgentForm({ initial, onSubmit, loading, onCancel }: {
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Nom *</label>
-          <input className="input" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Agent Dev PHP" />
+          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>{t('agents.form.label.name')} *</label>
+          <input className="input" value={name} onChange={(e) => setName(e.target.value)} required placeholder={t('agents.form.placeholder.name')} />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Description</label>
+          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>{t('agents.form.label.description')}</label>
           <textarea className="input resize-none" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Rôle</label>
+          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>{t('agents.form.label.role')}</label>
           <select className="input" value={roleId} onChange={(e) => setRoleId(e.target.value)}>
-            <option value="">— Aucun rôle —</option>
+            <option value="">{t('agents.form.label.no_role')}</option>
             {roles?.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
           </select>
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>Connecteur</label>
+        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>{t('agents.form.label.connector')}</label>
         <div className="grid grid-cols-2 gap-3">
           {(['claude_api', 'claude_cli'] as const).map((c) => (
             <button
@@ -84,31 +129,31 @@ function AgentForm({ initial, onSubmit, loading, onCancel }: {
                 color: connector === c ? 'var(--text)' : 'var(--muted)',
               }}
             >
-              <p className="font-semibold" style={{ color: 'var(--text)' }}>{c === 'claude_api' ? 'Claude API' : 'Claude CLI'}</p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>{c === 'claude_api' ? 'Via HTTPS — clé API requise' : 'Via binaire local'}</p>
+              <p className="font-semibold" style={{ color: 'var(--text)' }}>{c === 'claude_api' ? t('agents.form.label.claude_api') : t('agents.form.label.claude_cli')}</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>{c === 'claude_api' ? t('agents.form.desc.claude_api') : t('agents.form.desc.claude_cli')}</p>
             </button>
           ))}
         </div>
       </div>
 
       <div>
-        <p className="text-sm font-medium mb-3" style={{ color: 'var(--text)' }}>Configuration</p>
+        <p className="text-sm font-medium mb-3" style={{ color: 'var(--text)' }}>{t('agents.form.label.configuration')}</p>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs mb-1" style={{ color: 'var(--muted)' }}>Modèle</label>
-            <input className="input" value={model} onChange={(e) => setModel(e.target.value)} placeholder="claude-sonnet-4-6" />
+            <label className="block text-xs mb-1" style={{ color: 'var(--muted)' }}>{t('agents.form.label.model')}</label>
+            <input className="input" value={model} onChange={(e) => setModel(e.target.value)} placeholder={t('agents.form.placeholder.model')} />
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs mb-1" style={{ color: 'var(--muted)' }}>Max tokens</label>
+              <label className="block text-xs mb-1" style={{ color: 'var(--muted)' }}>{t('agents.form.label.max_tokens')}</label>
               <input className="input" type="number" min={1} max={200000} value={maxTokens} onChange={(e) => setMaxTokens(Number(e.target.value))} />
             </div>
             <div>
-              <label className="block text-xs mb-1" style={{ color: 'var(--muted)' }}>Température</label>
+              <label className="block text-xs mb-1" style={{ color: 'var(--muted)' }}>{t('agents.form.label.temperature')}</label>
               <input className="input" type="number" min={0} max={1} step={0.1} value={temperature} onChange={(e) => setTemperature(Number(e.target.value))} />
             </div>
             <div>
-              <label className="block text-xs mb-1" style={{ color: 'var(--muted)' }}>Timeout (s)</label>
+              <label className="block text-xs mb-1" style={{ color: 'var(--muted)' }}>{t('agents.form.label.timeout')}</label>
               <input className="input" type="number" min={5} max={600} value={timeoutSecs} onChange={(e) => setTimeoutSecs(Number(e.target.value))} />
             </div>
           </div>
@@ -117,31 +162,29 @@ function AgentForm({ initial, onSubmit, loading, onCancel }: {
 
       <label className="flex items-center gap-2 cursor-pointer">
         <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="rounded" style={{ accentColor: 'var(--brand)' }} />
-        <span className="text-sm" style={{ color: 'var(--text)' }}>Agent actif</span>
+        <span className="text-sm" style={{ color: 'var(--text)' }}>{t('agents.form.label.is_active')}</span>
       </label>
 
       <div className="flex justify-end gap-3 pt-2">
-        <button type="button" onClick={onCancel} className="btn-secondary">Annuler</button>
-        <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Enregistrement…' : 'Enregistrer'}</button>
+        <button type="button" onClick={onCancel} className="btn-secondary">{t('agents.form.action.cancel')}</button>
+        <button type="submit" className="btn-primary" disabled={loading}>{loading ? t('agents.form.action.saving') : t('agents.form.action.save')}</button>
       </div>
     </form>
   )
 }
 
+/**
+ * Agents management page — list, create, edit, and delete agents.
+ */
 export default function AgentsPage() {
   const qc = useQueryClient()
+  const { t } = useTranslation(AGENTS_PAGE_TRANSLATION_KEYS)
   const [createOpen, setCreateOpen]   = useState(false)
   const [editAgent, setEditAgent]     = useState<Agent | null>(null)
   const [deleteAgent, setDeleteAgent] = useState<Agent | null>(null)
 
-  const { data: agents, isLoading, isFetching, error, refetch } = useQuery({ queryKey: ['agents'], queryFn: agentsApi.list })
+  const { data: agents, isLoading, isFetching, error, refetch } = useQuery<Awaited<ReturnType<typeof agentsApi.list>>>({ queryKey: ['agents'], queryFn: agentsApi.list })
   const { data: claudeCliAuth } = useQuery({ queryKey: ['health', 'claude-cli-auth'], queryFn: healthApi.claudeCliAuth, retry: false })
-
-  const { data: agentsI18n } = useQuery({
-    queryKey: ['ui-translations', 'agents'],
-    queryFn: () => translationsApi.list(['agent.list.loading', 'common.action.refresh']),
-  })
-  const tt = (key: string) => agentsI18n?.translations[key] ?? key
 
   const createMutation = useMutation({ mutationFn: agentsApi.create, onSuccess: () => { qc.invalidateQueries({ queryKey: ['agents'] }); setCreateOpen(false) } })
   const updateMutation = useMutation({ mutationFn: ({ id, data }: { id: string; data: AgentPayload }) => agentsApi.update(id, data), onSuccess: () => { qc.invalidateQueries({ queryKey: ['agents'] }); setEditAgent(null) } })
@@ -152,10 +195,10 @@ export default function AgentsPage() {
 
   return (
     <>
-      <PageHeader title="Agents" description="Configurez les agents IA et assignez-leur un rôle."
+      <PageHeader title={t('agents.page.title')} description={t('agents.page.description')}
         onRefresh={() => qc.invalidateQueries({ queryKey: ['agents'] })}
-        refreshTitle={tt('common.action.refresh')}
-        action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> Nouvel agent</button>} />
+        refreshTitle={t('common.action.refresh')}
+        action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> {t('agents.action.new')}</button>} />
 
       <div className="card p-4 mb-4">
         <div className="flex items-start gap-3">
@@ -165,16 +208,16 @@ export default function AgentsPage() {
             <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
           )}
           <div className="min-w-0">
-            <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>Claude CLI</p>
+            <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{t('agents.status.claude_cli')}</p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
               {claudeCliAuth?.loggedIn
-                ? `Connecte (${claudeCliAuth.authMethod ?? 'unknown'})`
-                : 'Non connecte dans le conteneur PHP.'}
+                ? t('agents.status.connected')
+                : t('agents.status.not_connected')}
             </p>
             {!claudeCliAuth?.loggedIn && (
               <div className="mt-2 text-xs space-y-1" style={{ color: 'var(--muted)' }}>
-                <p>Login manuel : <code>php scripts/claude-auth.php login</code></p>
-                <p>Verification : <code>php scripts/claude-auth.php status</code></p>
+                <p>{t('agents.status.login_manual')} <code>php scripts/claude-auth.php login</code></p>
+                <p>{t('agents.status.verify')} <code>php scripts/claude-auth.php status</code></p>
               </div>
             )}
           </div>
@@ -182,20 +225,20 @@ export default function AgentsPage() {
       </div>
 
       {agents?.length === 0 ? (
-        <EmptyState icon={Bot} title="Aucun agent" description="Créez votre premier agent et configurez son connecteur IA."
-          action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> Nouvel agent</button>} />
+        <EmptyState icon={Bot} title={t('agents.empty.title')} description={t('agents.empty.description')}
+          action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> {t('agents.action.new')}</button>} />
       ) : (
         <div className="relative">
-          <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={tt('agent.list.loading')} />
+          <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={t('agent.list.loading')} />
           <div className="list-agent card overflow-hidden">
             <table className="w-full text-sm">
             <thead className="border-b" style={{ background: 'var(--surface2)', borderColor: 'var(--border)' }}>
               <tr>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--muted)' }}>Nom</th>
-                <th className="hidden px-4 py-3 text-left font-medium sm:table-cell" style={{ color: 'var(--muted)' }}>Rôle</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--muted)' }}>Connecteur</th>
-                <th className="hidden px-4 py-3 text-left font-medium md:table-cell" style={{ color: 'var(--muted)' }}>Modèle</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--muted)' }}>Statut</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--muted)' }}>{t('agents.form.label.name')}</th>
+                <th className="hidden px-4 py-3 text-left font-medium sm:table-cell" style={{ color: 'var(--muted)' }}>{t('agents.form.label.role')}</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--muted)' }}>{t('agents.form.label.connector')}</th>
+                <th className="hidden px-4 py-3 text-left font-medium md:table-cell" style={{ color: 'var(--muted)' }}>{t('agents.form.label.model')}</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--muted)' }}>{t('agents.table.header.status')}</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -218,8 +261,8 @@ export default function AgentsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1 justify-end">
-                      <button onClick={() => setEditAgent(agent)} className="p-1.5 transition-colors" style={{ color: 'var(--muted)' }} title="Modifier"><Pencil className="w-4 h-4" /></button>
-                      <button onClick={() => setDeleteAgent(agent)} className="p-1.5 transition-colors" style={{ color: 'var(--muted)' }} title="Supprimer"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => setEditAgent(agent)} className="p-1.5 transition-colors" style={{ color: 'var(--muted)' }} title={t('agents.action.edit')}><Pencil className="w-4 h-4" /></button>
+                      <button onClick={() => setDeleteAgent(agent)} className="p-1.5 transition-colors" style={{ color: 'var(--muted)' }} title={t('agents.action.delete')}><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </td>
                 </tr>
@@ -230,11 +273,11 @@ export default function AgentsPage() {
         </div>
       )}
 
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Nouvel agent" size="lg">
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title={t('agents.create.title')} size="lg">
         <AgentForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} onCancel={() => setCreateOpen(false)} />
       </Modal>
 
-      <Modal open={!!editAgent} onClose={() => setEditAgent(null)} title="Modifier l'agent" size="lg">
+      <Modal open={!!editAgent} onClose={() => setEditAgent(null)} title={t('agents.edit.title')} size="lg">
         {editAgent && (
           <AgentForm initial={editAgent} onSubmit={(d) => updateMutation.mutate({ id: editAgent.id, data: d })} loading={updateMutation.isPending} onCancel={() => setEditAgent(null)} />
         )}
@@ -242,7 +285,7 @@ export default function AgentsPage() {
 
       <ConfirmDialog open={!!deleteAgent} onClose={() => setDeleteAgent(null)}
         onConfirm={() => deleteAgent && deleteMutation.mutate(deleteAgent.id)}
-        message={`Supprimer l'agent "${deleteAgent?.name}" ? Cette action est irréversible.`}
+        message={t('agents.action.delete_confirm', { name: deleteAgent?.name ?? '' })}
         loading={deleteMutation.isPending} />
     </>
   )

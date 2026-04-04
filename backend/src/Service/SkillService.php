@@ -12,18 +12,19 @@ use App\Entity\Skill;
 use App\Enum\AuditAction;
 use App\Enum\SkillSource;
 use App\Repository\SkillRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
 class SkillService
 {
     private SkillsShAdapter $skillsShAdapter;
 
+    /**
+     * Initializes the service with its dependencies and builds the skills registry adapter.
+     */
     public function __construct(
-        private readonly EntityManagerInterface $em,
-        private readonly SkillRepository        $skillRepository,
-        private readonly AuditService           $audit,
-        private readonly string                 $skillsDir,
+        private readonly EntityService   $entityService,
+        private readonly SkillRepository $skillRepository,
+        private readonly string          $skillsDir,
     ) {
         $this->skillsShAdapter = new SkillsShAdapter($skillsDir);
     }
@@ -35,13 +36,10 @@ class SkillService
     {
         $data = $this->skillsShAdapter->import($ownerAndName);
 
-        // Vérifie si le slug existe déjà
         $existing = $this->skillRepository->findOneBy(['slug' => $data['slug']]);
         if ($existing !== null) {
-            // Met à jour le contenu
             $existing->setContent($data['content']);
-            $this->em->flush();
-            $this->audit->log(AuditAction::SkillUpdated, 'Skill', (string) $existing->getId(), ['slug' => $data['slug']]);
+            $this->entityService->update($existing, AuditAction::SkillUpdated, ['slug' => $data['slug']]);
             return $existing;
         }
 
@@ -55,14 +53,16 @@ class SkillService
             originalSource: $data['originalSource'],
         );
 
-        $this->em->persist($skill);
-        $this->em->flush();
-        $this->audit->log(AuditAction::SkillImported, 'Skill', (string) $skill->getId(), ['slug' => $data['slug'], 'source' => $ownerAndName]);
+        $this->entityService->create($skill, AuditAction::SkillImported, [
+            'slug'   => $data['slug'],
+            'source' => $ownerAndName,
+        ]);
+
         return $skill;
     }
 
     /**
-     * Crée un skill personnalisé.
+     * Creates a custom skill and writes its SKILL.md file on disk.
      */
     public function createCustom(string $slug, string $name, string $content, ?string $description = null): Skill
     {
@@ -73,7 +73,6 @@ class SkillService
             mkdir($dir, 0755, true);
         }
 
-        // Construit le SKILL.md
         $mdContent = "---\nname: {$name}\ndescription: " . ($description ?? '') . "\n---\n\n{$content}";
         file_put_contents($this->skillsDir . '/' . $filePath, $mdContent);
 
@@ -86,45 +85,50 @@ class SkillService
             description: $description,
         );
 
-        $this->em->persist($skill);
-        $this->em->flush();
-        $this->audit->log(AuditAction::SkillCreated, 'Skill', (string) $skill->getId(), ['slug' => $slug]);
+        $this->entityService->create($skill, AuditAction::SkillCreated, ['slug' => $slug]);
+
         return $skill;
     }
 
     /**
-     * Met à jour le contenu d'un skill (synchronise le fichier SKILL.md).
+     * Updates the skill content and syncs the SKILL.md file on disk.
      */
     public function updateContent(Skill $skill, string $content): Skill
     {
         $skill->setContent($content);
-        $absolutePath = $this->skillsDir . '/' . $skill->getFilePath();
-        file_put_contents($absolutePath, $content);
+        file_put_contents($this->skillsDir . '/' . $skill->getFilePath(), $content);
+        $this->entityService->update($skill, AuditAction::SkillUpdated);
 
-        $this->em->flush();
-        $this->audit->log(AuditAction::SkillUpdated, 'Skill', (string) $skill->getId());
         return $skill;
     }
 
+    /**
+     * Deletes a skill and records the audit event.
+     */
     public function delete(Skill $skill): void
     {
-        $id = (string) $skill->getId();
-        $this->em->remove($skill);
-        $this->em->flush();
-        $this->audit->log(AuditAction::SkillDeleted, 'Skill', $id);
+        $this->entityService->delete($skill, AuditAction::SkillDeleted);
     }
 
-    /** @return Skill[] */
+    /**
+     * @return Skill[]
+     */
     public function findAll(): array
     {
         return $this->skillRepository->findAll();
     }
 
+    /**
+     * Finds a skill by its UUID string identifier.
+     */
     public function findById(string $id): ?Skill
     {
         return $this->skillRepository->find(Uuid::fromString($id));
     }
 
+    /**
+     * Finds a skill by its unique slug.
+     */
     public function findBySlug(string $slug): ?Skill
     {
         return $this->skillRepository->findOneBy(['slug' => $slug]);

@@ -125,6 +125,15 @@ This keeps the frontend simple while preserving the canonical translation identi
 
 ### Frontend
 
+Frontend uses a centralized i18n layer built on React Query and React Context:
+
+- **`I18nProvider`** (`frontend/src/context/I18nContext.tsx`) — bootstraps the global locale from the backend and exposes it via `useI18n()`.
+- **`useTranslation(keys, domain?)`** (`frontend/src/hooks/useTranslation.ts`) — fetches translation keys via `/api/ui/translations`, returns `{ t, locale, isLoading, formatDate, formatDateTime, formatTime, formatNumber }`.
+- **`translationsApi.list()`** must NOT be called directly in UI components. All translation fetching goes through `useTranslation()`.
+- **No local `tt()` / `t()` wrappers** — every component declares `const XXX_TRANSLATION_KEYS = [...] as const` and calls `useTranslation(XXX_TRANSLATION_KEYS)`.
+- **No hardcoded `'fr-FR'`** — use the `formatDate`, `formatDateTime`, `formatTime`, `formatNumber` helpers returned by `useTranslation()`.
+- **React Query cache** is normalized to `['ui-translations', domain, sortedKeys]` so identical requests across components share a single cache entry.
+
 Short term:
 - frontend may still display backend-rendered strings
 
@@ -190,3 +199,21 @@ This strategy implies concrete implementation tasks:
 - add canonical translation metadata to persisted logs
 - migrate frontend observability writes to translation keys and parameters
 - expose rendered strings plus i18n metadata in API payloads where needed
+
+## Frontend i18n Architecture (Phase 2 — Done)
+
+The frontend now has a single centralized i18n layer:
+
+```
+I18nProvider (main.tsx)
+  └── useI18n() → { locale }
+  └── useTranslation(keys, domain?) → { t, locale, isLoading, formatDate, formatDateTime, formatTime, formatNumber }
+```
+
+Conventions:
+- Declare `const XXX_TRANSLATION_KEYS = [...] as const` at module level
+- Call `const { t } = useTranslation(XXX_TRANSLATION_KEYS)` — one call per domain
+- Never call `translationsApi.list()` directly in UI code
+- Never define local `tt()` / `t()` wrapper functions
+- Use `formatDate()`, `formatDateTime()`, `formatTime()`, `formatNumber()` instead of hardcoded `'fr-FR'`
+- Keys follow `<entity>.<subsection>.<key>` convention (no `ui.` prefix, no generic `errors.` prefix)

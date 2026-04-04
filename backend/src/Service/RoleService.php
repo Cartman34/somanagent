@@ -8,78 +8,95 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\Role;
-use App\Entity\Skill;
 use App\Enum\AuditAction;
 use App\Repository\RoleRepository;
 use App\Repository\SkillRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
 class RoleService
 {
+    /**
+     * Initialize the service with its required repositories and entity service.
+     */
     public function __construct(
-        private readonly EntityManagerInterface $em,
-        private readonly RoleRepository         $roleRepository,
-        private readonly SkillRepository        $skillRepository,
-        private readonly AuditService           $audit,
+        private readonly EntityService  $entityService,
+        private readonly RoleRepository $roleRepository,
+        private readonly SkillRepository $skillRepository,
     ) {}
 
+    /**
+     * Create a new role and persist it with an audit trail.
+     */
     public function create(string $slug, string $name, ?string $description = null): Role
     {
         $role = new Role($slug, $name, $description);
-        $this->em->persist($role);
-        $this->em->flush();
-        $this->audit->log(AuditAction::RoleCreated, 'Role', (string) $role->getId(), ['slug' => $slug, 'name' => $name]);
+        $this->entityService->create($role, AuditAction::RoleCreated, ['slug' => $slug, 'name' => $name]);
         return $role;
     }
 
+    /**
+     * Update a role's slug, name, and description, then persist the changes.
+     */
     public function update(Role $role, string $slug, string $name, ?string $description): Role
     {
         $role->setSlug($slug)->setName($name)->setDescription($description);
-        $this->em->flush();
-        $this->audit->log(AuditAction::RoleUpdated, 'Role', (string) $role->getId());
+        $this->entityService->update($role, AuditAction::RoleUpdated);
         return $role;
     }
 
+    /**
+     * Delete a role and record the deletion in the audit log.
+     */
     public function delete(Role $role): void
     {
-        $id = (string) $role->getId();
-        $this->em->remove($role);
-        $this->em->flush();
-        $this->audit->log(AuditAction::RoleDeleted, 'Role', $id);
+        $this->entityService->delete($role, AuditAction::RoleDeleted);
     }
 
+    /**
+     * Add a skill to a role, throwing an exception if the skill does not exist.
+     */
     public function addSkill(Role $role, string $skillId): void
     {
         $skill = $this->skillRepository->find(Uuid::fromString($skillId));
         if ($skill === null) {
-            throw new \InvalidArgumentException("Skill introuvable : {$skillId}");
+            throw new \InvalidArgumentException("Skill not found: {$skillId}");
         }
         $role->addSkill($skill);
-        $this->em->flush();
+        $this->entityService->flush();
     }
 
+    /**
+     * Remove a skill from a role, throwing an exception if the skill does not exist.
+     */
     public function removeSkill(Role $role, string $skillId): void
     {
         $skill = $this->skillRepository->find(Uuid::fromString($skillId));
         if ($skill === null) {
-            throw new \InvalidArgumentException("Skill introuvable : {$skillId}");
+            throw new \InvalidArgumentException("Skill not found: {$skillId}");
         }
         $role->removeSkill($skill);
-        $this->em->flush();
+        $this->entityService->flush();
     }
 
-    /** @return Role[] */
+    /**
+     * @return Role[]
+     */
     public function findAll(): array
     {
         return $this->roleRepository->findAll();
     }
 
+    /**
+     * Find a role by its UUID string, returning null if not found.
+     */
     public function findById(string $id): ?Role
     {
         return $this->roleRepository->find(Uuid::fromString($id));
     }
 
+    /**
+     * Find a role by its slug, returning null if not found.
+     */
     public function findBySlug(string $slug): ?Role
     {
         return $this->roleRepository->findOneBy(['slug' => $slug]);

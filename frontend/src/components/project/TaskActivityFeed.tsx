@@ -3,7 +3,6 @@
  */
 
 import { useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import {
   Calendar,
   ChevronDown,
@@ -15,7 +14,7 @@ import {
   Zap,
 } from 'lucide-react'
 import Markdown from '@/components/ui/Markdown'
-import { translationsApi } from '@/api/translations'
+import { useTranslation } from '@/hooks/useTranslation'
 import type { AgentTaskExecutionAttempt, TicketLog } from '@/types'
 import { formatDateTime, formatTime } from '@/lib/project/constants'
 import {
@@ -373,7 +372,7 @@ function CompactEventRow({
                     {executionStatusLabel(group.execution.status, tc)}
                   </span>
                   <span style={{ color: 'var(--muted)', marginLeft: '8px' }}>
-                    {tt('execution.attempts_count_other').replace('%count%', group.execution.maxAttempts.toLocaleString(locale ?? 'fr-FR'))}
+                    {tt('execution.attempts_count_other').replace('%count%', String(group.execution.maxAttempts))}
                   </span>
                   <span className="ml-auto font-mono text-[11px]" style={{ color: 'var(--muted)' }}>{group.execution.traceRef}</span>
                 </div>
@@ -584,21 +583,8 @@ export default function TaskActivityFeed({
   const [expandedEventIds, setExpandedEventIds] = useState<string[]>([])
   const [composerOpen, setComposerOpen] = useState(false)
 
-  const { data: i18n } = useQuery({
-    queryKey: ['ui-translations', TASK_ACTIVITY_FEED_DOMAIN],
-    queryFn: () => translationsApi.list([...TASK_ACTIVITY_FEED_TRANSLATION_KEYS], TASK_ACTIVITY_FEED_DOMAIN),
-    staleTime: Infinity,
-  })
-
-  const { data: catalogI18n } = useQuery({
-    queryKey: ['ui-translations', CATALOG_DOMAIN],
-    queryFn: () => translationsApi.list([...CATALOG_TRANSLATION_KEYS], CATALOG_DOMAIN),
-    staleTime: Infinity,
-  })
-
-  const locale = i18n?.locale
-  const tt = (key: TaskActivityFeedTranslationKey) => i18n?.translations[key] ?? key
-  const tc = (key: CatalogTranslationKey) => catalogI18n?.translations[key] ?? key
+  const { t: tt, locale } = useTranslation(TASK_ACTIVITY_FEED_TRANSLATION_KEYS, TASK_ACTIVITY_FEED_DOMAIN)
+  const { t: tc } = useTranslation(CATALOG_TRANSLATION_KEYS, CATALOG_DOMAIN)
   const entries = useMemo(() => buildActivityFeedEntries(logs, executions), [logs, executions])
   const commentCount = useMemo(
     () => logs.filter((log) => log.kind === 'comment' && log.requiresAnswer).length,
@@ -635,7 +621,7 @@ export default function TaskActivityFeed({
           <span className="badge-pending">
             {commentCount === 1
               ? tt('drawer.questions_pending_one')
-              : tt('drawer.questions_pending_other').replace('%count%', commentCount.toLocaleString(locale ?? 'fr-FR'))}
+              : tt('drawer.questions_pending_other').replace('%count%', String(commentCount))}
           </span>
         )}
       </div>

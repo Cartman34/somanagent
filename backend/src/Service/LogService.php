@@ -10,7 +10,6 @@ namespace App\Service;
 use App\Entity\LogEvent;
 use App\Entity\LogOccurrence;
 use App\Repository\LogOccurrenceRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -19,11 +18,14 @@ final class LogService
     private const OCCURRENCE_LEVELS = ['warning', 'error', 'critical'];
     private const OCCURRENCE_STATUSES = ['open', 'acknowledged', 'resolved', 'ignored'];
 
+    /**
+     * Initialises the service with its required repositories and supporting services.
+     */
     public function __construct(
-        private readonly EntityManagerInterface $em,
+        private readonly EntityService           $entityService,
         private readonly LogOccurrenceRepository $occurrenceRepository,
         private readonly RequestCorrelationService $requestCorrelation,
-        private readonly TranslatorInterface $translator,
+        private readonly TranslatorInterface     $translator,
     ) {}
 
     /**
@@ -72,7 +74,7 @@ final class LogService
             ->setOrigin($options['origin'] ?? null)
             ->setRawPayload($options['raw_payload'] ?? null);
 
-        $this->em->persist($event);
+        $this->entityService->persist($event);
 
         if ($this->shouldAggregateOccurrence($event) && $event->getFingerprint() !== null) {
             $occurrence = $this->occurrenceRepository->findOneByFingerprint($category, $level, $event->getFingerprint());
@@ -85,13 +87,13 @@ final class LogService
                     ->setAgentId($event->getAgentId())
                     ->setLastLogEventId($event->getId())
                     ->setContextSnapshot($event->getContext());
-                $this->em->persist($occurrence);
+                $this->entityService->persist($occurrence);
             } else {
                 $occurrence->registerOccurrence($event);
             }
         }
 
-        $this->em->flush();
+        $this->entityService->flush();
 
         return $event;
     }
@@ -144,7 +146,7 @@ final class LogService
         }
 
         $occurrence->setStatus($status);
-        $this->em->flush();
+        $this->entityService->flush();
 
         return $occurrence;
     }

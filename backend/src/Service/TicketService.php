@@ -22,29 +22,33 @@ use App\Repository\RoleRepository;
 use App\Repository\TicketRepository;
 use App\Repository\WorkflowStepActionRepository;
 use App\Repository\WorkflowStepRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
 final class TicketService
 {
+    /**
+     * Inject service dependencies.
+     */
     public function __construct(
-        private readonly EntityManagerInterface $em,
-        private readonly TicketRepository $ticketRepository,
-        private readonly FeatureRepository $featureRepository,
-        private readonly RoleRepository $roleRepository,
-        private readonly WorkflowStepRepository $workflowStepRepository,
+        private readonly EntityService                $entityService,
+        private readonly TicketRepository             $ticketRepository,
+        private readonly FeatureRepository            $featureRepository,
+        private readonly RoleRepository               $roleRepository,
+        private readonly WorkflowStepRepository       $workflowStepRepository,
         private readonly WorkflowStepActionRepository $workflowStepActionRepository,
-        private readonly TicketTaskService $ticketTaskService,
-        private readonly AuditService $audit,
+        private readonly TicketTaskService            $ticketTaskService,
     ) {}
 
+    /**
+     * Create a new ticket and initialize its workflow tasks.
+     */
     public function create(
-        Project $project,
-        TaskType $type,
-        string $title,
-        ?string $description = null,
-        TaskPriority $priority = TaskPriority::Medium,
-        ?string $featureId = null,
+        Project       $project,
+        TaskType      $type,
+        string        $title,
+        ?string       $description = null,
+        TaskPriority  $priority    = TaskPriority::Medium,
+        ?string       $featureId   = null,
     ): Ticket {
         $ticket = new Ticket($project, $type, $title, $description, $priority);
 
@@ -65,26 +69,26 @@ final class TicketService
 
         $this->initializeCurrentWorkflowStep($ticket);
 
-        $this->em->persist($ticket);
-        $this->em->flush();
-
-        $this->createWorkflowSeedTasks($ticket);
-
-        $this->audit->log(AuditAction::TaskCreated, 'Ticket', (string) $ticket->getId(), [
-            'title' => $title,
-            'type' => $type->value,
+        $this->entityService->create($ticket, AuditAction::TaskCreated, [
+            'title'   => $title,
+            'type'    => $type->value,
             'project' => (string) $project->getId(),
         ]);
+
+        $this->createWorkflowSeedTasks($ticket);
 
         return $ticket;
     }
 
+    /**
+     * Update the ticket's title, description, priority, and feature.
+     */
     public function update(
-        Ticket $ticket,
-        string $title,
-        ?string $description,
+        Ticket       $ticket,
+        string       $title,
+        ?string      $description,
         TaskPriority $priority,
-        ?string $featureId,
+        ?string      $featureId,
     ): Ticket {
         $ticket
             ->setTitle($title)
@@ -94,27 +98,30 @@ final class TicketService
         $feature = $featureId ? $this->featureRepository->find(Uuid::fromString($featureId)) : null;
         $ticket->setFeature($feature);
 
-        $this->em->flush();
-
-        $this->audit->log(AuditAction::TaskUpdated, 'Ticket', (string) $ticket->getId());
+        $this->entityService->update($ticket, AuditAction::TaskUpdated);
 
         return $ticket;
     }
 
+    /**
+     * Change the status of a ticket and record the transition.
+     */
     public function changeStatus(Ticket $ticket, TaskStatus $status): Ticket
     {
         $previous = $ticket->getStatus();
         $ticket->setStatus($status);
-        $this->em->flush();
 
-        $this->audit->log(AuditAction::TaskStatusChanged, 'Ticket', (string) $ticket->getId(), [
+        $this->entityService->update($ticket, AuditAction::TaskStatusChanged, [
             'from' => $previous->value,
-            'to' => $status->value,
+            'to'   => $status->value,
         ]);
 
         return $ticket;
     }
 
+    /**
+     * Manually advance the ticket to the next workflow step.
+     */
     public function advanceWorkflowStep(Ticket $ticket): Ticket
     {
         $currentStep = $ticket->getWorkflowStep();
@@ -132,36 +139,41 @@ final class TicketService
         }
 
         $ticket->setWorkflowStep($nextStep);
-        $this->em->flush();
 
-        $this->audit->log(AuditAction::TaskUpdated, 'Ticket', (string) $ticket->getId(), [
+        $this->entityService->update($ticket, AuditAction::TaskUpdated, [
             'workflow_step' => $nextStep->getKey(),
         ]);
 
         return $ticket;
     }
 
+    /**
+     * Delete a ticket and log the deletion.
+     */
     public function delete(Ticket $ticket): void
     {
-        $id = (string) $ticket->getId();
-        $this->em->remove($ticket);
-        $this->em->flush();
-
-        $this->audit->log(AuditAction::TaskDeleted, 'Ticket', $id);
+        $this->entityService->delete($ticket, AuditAction::TaskDeleted);
     }
 
-    /** @return Ticket[] */
+    /**
+     * @return Ticket[]
+     */
     public function findByProject(Project $project): array
     {
         return $this->ticketRepository->findByProject($project);
     }
 
-    /** @return Ticket[] */
+    /**
+     * @return Ticket[]
+     */
     public function findByFeature(Feature $feature): array
     {
         return $this->ticketRepository->findBy(['feature' => $feature], ['createdAt' => 'DESC']);
     }
 
+    /**
+     * Find a ticket by its UUID string, or return null if not found.
+     */
     public function findById(string $id): ?Ticket
     {
         return $this->ticketRepository->find(Uuid::fromString($id));

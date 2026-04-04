@@ -27,15 +27,17 @@ use App\Repository\TicketTaskDependencyRepository;
 use App\Repository\TicketTaskRepository;
 use App\Repository\WorkflowStepActionRepository;
 use App\Repository\WorkflowStepRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class TicketTaskService
 {
+    /**
+     * Inject service dependencies.
+     */
     public function __construct(
-        private readonly EntityManagerInterface $em,
+        private readonly EntityService $entityService,
         private readonly TicketTaskRepository $ticketTaskRepository,
         private readonly TicketTaskDependencyRepository $ticketTaskDependencyRepository,
         private readonly AgentTaskExecutionRepository $agentTaskExecutionRepository,
@@ -47,10 +49,12 @@ final class TicketTaskService
         private readonly TicketLogService $ticketLogService,
         private readonly RequestCorrelationService $requestCorrelation,
         private readonly MessageBusInterface $bus,
-        private readonly AuditService $audit,
         private readonly TranslatorInterface $translator,
     ) {}
 
+    /**
+     * Create a new ticket task, resolve its agent, and persist it.
+     */
     public function create(
         Ticket $ticket,
         string $actionKey,
@@ -84,18 +88,18 @@ final class TicketTaskService
             $task->setAssignedAgent($this->resolveAgentForTask($task));
         }
 
-        $this->em->persist($task);
-        $this->em->flush();
-
-        $this->audit->log(AuditAction::TaskCreated, 'TicketTask', (string) $task->getId(), [
-            'title' => $title,
-            'ticket' => (string) $ticket->getId(),
+        $this->entityService->create($task, AuditAction::TaskCreated, [
+            'title'     => $title,
+            'ticket'    => (string) $ticket->getId(),
             'actionKey' => $action->getKey(),
         ]);
 
         return $task;
     }
 
+    /**
+     * Update a ticket task's fields, action, and assigned agent.
+     */
     public function update(
         TicketTask $task,
         string $title,
@@ -121,9 +125,7 @@ final class TicketTaskService
         $agent = $assignedAgentId ? $this->agentRepository->find(Uuid::fromString($assignedAgentId)) : null;
         $task->setAssignedAgent($agent ?? $this->resolveAgentForTask($task));
 
-        $this->em->flush();
-
-        $this->audit->log(AuditAction::TaskUpdated, 'TicketTask', (string) $task->getId());
+        $this->entityService->update($task, AuditAction::TaskUpdated);
 
         return $task;
     }
@@ -135,17 +137,17 @@ final class TicketTaskService
     {
         $activeExecution = $this->agentTaskExecutionRepository->findActiveByTicketTask($task);
         if ($activeExecution !== null) {
-            throw new \RuntimeException('Une exécution agent est déjà active pour cette tâche.');
+            throw new \RuntimeException('An agent execution is already active for this task.');
         }
 
         $skillSlug = $task->getAgentAction()->getSkill()?->getSlug();
         if ($skillSlug === null) {
-            throw new \RuntimeException(sprintf('L’action "%s" ne définit aucun skill exécutable.', $task->getAgentAction()->getKey()));
+            throw new \RuntimeException(sprintf('Action "%s" defines no executable skill.', $task->getAgentAction()->getKey()));
         }
 
         $resolvedAgent = $agent ?? $task->getAssignedAgent() ?? $this->resolveAgentForTask($task);
         if ($resolvedAgent === null) {
-            throw new \RuntimeException(sprintf('Aucun agent actif disponible pour l’action "%s".', $task->getAgentAction()->getKey()));
+            throw new \RuntimeException(sprintf('No active agent available for action "%s".', $task->getAgentAction()->getKey()));
         }
 
         $requestRef = $this->requestCorrelation->getCurrentRequestRef();
@@ -173,7 +175,7 @@ final class TicketTaskService
             ticket: $task->getTicket(),
             action: $triggerType === TaskExecutionTrigger::Manual && $hasExecutionHistory ? 'execution_redispatched' : 'execution_dispatched',
             content: sprintf(
-                'Tâche dispatchée vers %s avec le skill %s',
+                'Task dispatched to %s with skill %s',
                 $resolvedAgent->getName(),
                 $skillSlug,
             ),
@@ -198,7 +200,7 @@ final class TicketTaskService
             traceRef: $traceRef,
         ));
 
-        $this->em->flush();
+        $this->entityService->flush();
 
         return [
             'agent' => $resolvedAgent,
@@ -215,6 +217,9 @@ final class TicketTaskService
         return $this->execute($task, $agent, TaskExecutionTrigger::Manual);
     }
 
+    /**
+     * Dispatch all tasks that became eligible after the given task completed.
+     */
     public function dispatchReadyDependents(TicketTask $completedTask): int
     {
         if ($completedTask->getStatus() !== TaskStatus::Done) {
@@ -224,11 +229,17 @@ final class TicketTaskService
         return $this->dispatchEligibleTasksForCurrentStep($completedTask->getTicket());
     }
 
+    /**
+     * Return whether the task currently has an active agent execution.
+     */
     public function hasActiveExecution(TicketTask $task): bool
     {
         return $this->agentTaskExecutionRepository->findActiveByTicketTask($task) !== null;
     }
 
+    /**
+     * Dispatch all auto-executable tasks in the ticket's current workflow step.
+     */
     public function dispatchEligibleTasksForCurrentStep(Ticket $ticket): int
     {
         $currentStep = $ticket->getWorkflowStep();
@@ -260,7 +271,11 @@ final class TicketTaskService
         return $dispatched;
     }
 
-    /** @return Agent[] */
+    /**
+     * Returns agents eligible to handle this task, filtered by skill and role.
+     *
+     * @return Agent[]
+     */
     public function availableAgents(TicketTask $task): array
     {
         $action = $task->getAgentAction();
@@ -294,6 +309,9 @@ final class TicketTaskService
             : $this->agentRepository->findActiveByRoleSlug($roleSlug);
     }
 
+    /**
+     * Mark a task execution as failed and reset it to backlog status.
+     */
     public function failExecution(TicketTask $task, string $message): TicketTask
     {
         $previous = $task->getStatus();
@@ -301,24 +319,23 @@ final class TicketTaskService
             ->setStatus(TaskStatus::Backlog)
             ->setProgress(0);
 
-        $this->em->flush();
-
         if ($previous !== TaskStatus::Backlog) {
-            $this->audit->log(AuditAction::TaskStatusChanged, 'TicketTask', (string) $task->getId(), [
-                'from' => $previous->value,
-                'to' => TaskStatus::Backlog->value,
-                'reason' => 'execution_error',
+            $this->entityService->update($task, AuditAction::TaskStatusChanged, [
+                'from'    => $previous->value,
+                'to'      => TaskStatus::Backlog->value,
+                'reason'  => 'execution_error',
                 'message' => $message,
             ]);
+        } else {
+            $this->entityService->flush();
         }
-
-        $this->audit->log(AuditAction::TaskUpdated, 'TicketTask', (string) $task->getId(), [
-            'execution_error' => $message,
-        ]);
 
         return $task;
     }
 
+    /**
+     * Change the status of a task and trigger dependent dispatch when done.
+     */
     public function changeStatus(TicketTask $task, TaskStatus $status): TicketTask
     {
         $previous = $task->getStatus();
@@ -327,11 +344,9 @@ final class TicketTaskService
             $task->setProgress(100);
         }
 
-        $this->em->flush();
-
-        $this->audit->log(AuditAction::TaskStatusChanged, 'TicketTask', (string) $task->getId(), [
+        $this->entityService->update($task, AuditAction::TaskStatusChanged, [
             'from' => $previous->value,
-            'to' => $status->value,
+            'to'   => $status->value,
         ]);
 
         if ($status === TaskStatus::Done) {
@@ -341,84 +356,101 @@ final class TicketTaskService
         return $task;
     }
 
+    /**
+     * Update the progress percentage of a task.
+     */
     public function updateProgress(TicketTask $task, int $progress): TicketTask
     {
         $task->setProgress($progress);
-        $this->em->flush();
-
-        $this->audit->log(AuditAction::TaskProgressUpdated, 'TicketTask', (string) $task->getId(), ['progress' => $progress]);
+        $this->entityService->update($task, AuditAction::TaskProgressUpdated, ['progress' => $progress]);
 
         return $task;
     }
 
+    /**
+     * Change the priority of a task and record the transition.
+     */
     public function reprioritize(TicketTask $task, TaskPriority $priority): TicketTask
     {
         $previous = $task->getPriority();
         $task->setPriority($priority);
-        $this->em->flush();
-
-        $this->audit->log(AuditAction::TaskReprioritized, 'TicketTask', (string) $task->getId(), [
+        $this->entityService->update($task, AuditAction::TaskReprioritized, [
             'from' => $previous->value,
-            'to' => $priority->value,
+            'to'   => $priority->value,
         ]);
 
         return $task;
     }
 
+    /**
+     * Move a task to review status and notify that validation is requested.
+     */
     public function requestValidation(TicketTask $task, ?string $comment = null): TicketTask
     {
         $task->setStatus(TaskStatus::Review);
-        $this->em->flush();
-
-        $this->audit->log(AuditAction::TaskValidationAsked, 'TicketTask', (string) $task->getId(), ['comment' => $comment]);
+        $this->entityService->update($task, AuditAction::TaskValidationAsked, ['comment' => $comment]);
 
         return $task;
     }
 
+    /**
+     * Validate a task, mark it as done, and dispatch ready dependents.
+     */
     public function validate(TicketTask $task): TicketTask
     {
         $task->setStatus(TaskStatus::Done)->setProgress(100);
-        $this->em->flush();
-
-        $this->audit->log(AuditAction::TaskValidated, 'TicketTask', (string) $task->getId());
+        $this->entityService->update($task, AuditAction::TaskValidated);
 
         $this->dispatchReadyDependents($task);
 
         return $task;
     }
 
+    /**
+     * Reject a validated task and return it to in-progress status.
+     */
     public function reject(TicketTask $task, ?string $reason = null): TicketTask
     {
         $task->setStatus(TaskStatus::InProgress);
-        $this->em->flush();
-
-        $this->audit->log(AuditAction::TaskRejected, 'TicketTask', (string) $task->getId(), ['reason' => $reason]);
+        $this->entityService->update($task, AuditAction::TaskRejected, ['reason' => $reason]);
 
         return $task;
     }
 
+    /**
+     * Record that a task depends on another task before it can proceed.
+     */
     public function addDependency(TicketTask $task, TicketTask $dependsOn): TicketTaskDependency
     {
         $dependency = new TicketTaskDependency($task, $dependsOn);
-        $this->em->persist($dependency);
-        $this->em->flush();
+        $this->entityService->create($dependency);
 
         return $dependency;
     }
 
-    /** @return TicketTask[] */
+    /**
+     * @return TicketTask[]
+     */
     public function findByTicket(Ticket $ticket): array
     {
         return $this->ticketTaskRepository->findByTicket($ticket);
     }
 
-    /** @return TicketTask[] */
+    /**
+     * Returns only root-level tasks (tasks without a parent) for the ticket.
+     *
+     * @return TicketTask[]
+     */
     public function findRootsByTicket(Ticket $ticket): array
     {
         return $this->ticketTaskRepository->findRootsByTicket($ticket);
     }
 
-    /** @return TicketTask[] */
+    /**
+     * Returns the direct children of a task.
+     *
+     * @return TicketTask[]
+     */
     public function findChildren(TicketTask $task): array
     {
         return $this->ticketTaskRepository->findChildren($task);
@@ -433,25 +465,33 @@ final class TicketTaskService
         return $this->ticketTaskRepository->findChildrenGroupedByParent($tasks);
     }
 
+    /**
+     * Finds a task by its UUID string identifier.
+     */
     public function findById(string $id): ?TicketTask
     {
         return $this->ticketTaskRepository->find(Uuid::fromString($id));
     }
 
+    /**
+     * Returns the agent currently assigned to the task.
+     */
     public function findAssignedAgent(TicketTask $task): ?Agent
     {
         return $task->getAssignedAgent();
     }
 
+    /**
+     * Deletes a task and records the audit event.
+     */
     public function delete(TicketTask $task): void
     {
-        $id = (string) $task->getId();
-        $this->em->remove($task);
-        $this->em->flush();
-
-        $this->audit->log(AuditAction::TaskDeleted, 'TicketTask', $id);
+        $this->entityService->delete($task, AuditAction::TaskDeleted);
     }
 
+    /**
+     * Returns an existing task for the given workflow step action, or creates one if none exists.
+     */
     public function ensureCreateWithTicketTask(Ticket $ticket, WorkflowStepAction $workflowStepAction): TicketTask
     {
         $existing = $this->ticketTaskRepository->findOneLatestByTicketAndWorkflowStepAndAction(
@@ -476,13 +516,10 @@ final class TicketTaskService
             ->setAssignedRole($action->getRole())
             ->setAssignedAgent($this->resolveAgentForTask($task));
 
-        $this->em->persist($task);
-        $this->em->flush();
-
-        $this->audit->log(AuditAction::TaskCreated, 'TicketTask', (string) $task->getId(), [
-            'title' => $task->getTitle(),
-            'ticket' => (string) $ticket->getId(),
-            'actionKey' => $action->getKey(),
+        $this->entityService->create($task, AuditAction::TaskCreated, [
+            'title'            => $task->getTitle(),
+            'ticket'           => (string) $ticket->getId(),
+            'actionKey'        => $action->getKey(),
             'createWithTicket' => true,
         ]);
 
@@ -499,6 +536,9 @@ final class TicketTaskService
         return $action;
     }
 
+    /**
+     * Resolves the workflow step that matches the given action within the ticket's workflow.
+     */
     public function resolveWorkflowStepForAction(Ticket $ticket, AgentAction $action): ?\App\Entity\WorkflowStep
     {
         $workflow = $ticket->getProject()->getWorkflow();
@@ -537,6 +577,9 @@ final class TicketTaskService
         return $agents[0] ?? null;
     }
 
+    /**
+     * Returns true when all tasks this task depends on are in Done status.
+     */
     public function areDependenciesSatisfied(TicketTask $task): bool
     {
         foreach ($this->ticketTaskDependencyRepository->findByTicketTask($task) as $dependency) {
@@ -548,6 +591,9 @@ final class TicketTaskService
         return true;
     }
 
+    /**
+     * Advances the ticket to the next workflow step if the current step is automatic and all tasks are done.
+     */
     public function advanceTicketStepIfAutomatic(Ticket $ticket): void
     {
         $currentStep = $ticket->getWorkflowStep();
@@ -568,7 +614,7 @@ final class TicketTaskService
 
         $ticket->setWorkflowStep($nextStep);
 
-        $this->em->flush();
+        $this->entityService->flush();
         $this->dispatchEligibleTasksForCurrentStep($ticket);
     }
 
