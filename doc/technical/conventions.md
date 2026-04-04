@@ -33,6 +33,26 @@ For PHP files, place the author block immediately after `<?php`, before `declare
 
 ---
 
+## PHP Imports
+
+Always use `use` statements to import classes. Never write fully qualified class names inline (e.g. `\App\Entity\Foo::class` or `new \App\Entity\Foo()`).
+
+```php
+// ✅ correct
+use App\Entity\Project;
+
+$project = new Project();
+self::EXCLUDED = [Project::class];
+
+// ❌ wrong
+$project = new \App\Entity\Project();
+self::EXCLUDED = [\App\Entity\Project::class];
+```
+
+This applies to `::class` references in constants and arrays as well.
+
+---
+
 ## PHPDoc
 
 PHPDoc is required on:

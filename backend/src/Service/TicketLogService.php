@@ -11,25 +11,30 @@ use App\Entity\Ticket;
 use App\Entity\TicketLog;
 use App\Entity\TicketTask;
 use App\Repository\TicketLogRepository;
-use Doctrine\ORM\EntityManagerInterface;
 
 final class TicketLogService
 {
+    /**
+     * Initialises the service with its required repository and entity service.
+     */
     public function __construct(
-        private readonly EntityManagerInterface $em,
+        private readonly EntityService       $entityService,
         private readonly TicketLogRepository $ticketLogRepository,
     ) {}
 
+    /**
+     * Persists a generic activity log entry on a ticket.
+     */
     public function log(
-        Ticket $ticket,
-        string $action,
-        ?string $content = null,
-        ?TicketTask $ticketTask = null,
-        string $kind = 'event',
-        ?string $authorType = null,
-        ?string $authorName = null,
-        bool $requiresAnswer = false,
-        ?array $metadata = null,
+        Ticket      $ticket,
+        string      $action,
+        ?string     $content     = null,
+        ?TicketTask $ticketTask  = null,
+        string      $kind        = 'event',
+        ?string     $authorType  = null,
+        ?string     $authorName  = null,
+        bool        $requiresAnswer = false,
+        ?array      $metadata    = null,
     ): TicketLog {
         $log = (new TicketLog($ticket, $action, $content, $ticketTask))
             ->setKind($kind)
@@ -38,21 +43,24 @@ final class TicketLogService
             ->setRequiresAnswer($requiresAnswer)
             ->setMetadata($metadata);
 
-        $this->em->persist($log);
+        $this->entityService->persist($log);
 
         return $log;
     }
 
+    /**
+     * Adds a comment log entry to a ticket, optionally as a reply to an existing log entry.
+     */
     public function addComment(
-        Ticket $ticket,
-        string $content,
-        ?TicketTask $ticketTask = null,
-        string $authorType = 'user',
-        ?string $authorName = null,
-        ?string $replyToId = null,
-        bool $requiresAnswer = false,
-        ?array $metadata = null,
-        string $action = 'comment',
+        Ticket      $ticket,
+        string      $content,
+        ?TicketTask $ticketTask     = null,
+        string      $authorType     = 'user',
+        ?string     $authorName     = null,
+        ?string     $replyToId      = null,
+        bool        $requiresAnswer = false,
+        ?array      $metadata       = null,
+        string      $action         = 'comment',
     ): TicketLog {
         $replyTo = null;
         if ($replyToId !== null) {
@@ -78,7 +86,7 @@ final class TicketLogService
             $replyTo->setRequiresAnswer(false);
         }
 
-        $this->em->flush();
+        $this->entityService->flush();
 
         return $log;
     }

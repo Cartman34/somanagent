@@ -6,10 +6,19 @@ import {
   XCircle, CheckCircle, Clock, AlertTriangle, ChevronRight,
   GitBranch, User, ArrowRight,
 } from 'lucide-react'
+import { useTranslation } from '@/hooks/useTranslation'
 import type { Ticket, TaskStatus } from '@/types'
 import {
-  TYPE_BADGE, TYPE_LABELS, PRIORITY_COLOR, PRIORITY_LABELS,
+  TYPE_BADGE, TYPE_LABEL_KEYS, PRIORITY_COLOR, PRIORITY_LABEL_KEYS,
 } from '@/lib/project/constants'
+
+const STORY_CARD_TRANSLATION_KEYS = [
+  ...Object.values(TYPE_LABEL_KEYS),
+  ...Object.values(PRIORITY_LABEL_KEYS),
+  'drawer.ticket_tasks.title',
+  'common.action.delete',
+  'story.card.active_subtasks',
+] as const
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
@@ -38,6 +47,8 @@ export default function StoryCard({ ticket, onTransition, onDelete, onOpen, tran
   transitioning: boolean
   progressBlockedReason: string | null
 }) {
+  const { t } = useTranslation(STORY_CARD_TRANSLATION_KEYS)
+
   const progressionBlocked = progressBlockedReason !== null
   const activeSubtasks = ticket.activeStepTasks ?? []
 
@@ -45,10 +56,10 @@ export default function StoryCard({ ticket, onTransition, onDelete, onOpen, tran
     <div className="item-ticket card p-3 space-y-2 text-sm">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className={`${TYPE_BADGE[ticket.type]} text-xs`}>{TYPE_LABELS[ticket.type]}</span>
-          <span className={`text-xs font-medium ${PRIORITY_COLOR[ticket.priority]}`}>{PRIORITY_LABELS[ticket.priority]}</span>
+          <span className={`${TYPE_BADGE[ticket.type]} text-xs`}>{t(TYPE_LABEL_KEYS[ticket.type])}</span>
+          <span className={`text-xs font-medium ${PRIORITY_COLOR[ticket.priority]}`}>{t(PRIORITY_LABEL_KEYS[ticket.priority])}</span>
         </div>
-        <button onClick={() => onDelete(ticket)} className="p-0.5 text-gray-300 hover:text-red-400 flex-shrink-0" title="Supprimer">
+        <button onClick={() => onDelete(ticket)} className="p-0.5 text-gray-300 hover:text-red-400 flex-shrink-0" title={t('common.action.delete')}>
           <XCircle className="w-3.5 h-3.5" />
         </button>
       </div>
@@ -79,7 +90,7 @@ export default function StoryCard({ ticket, onTransition, onDelete, onOpen, tran
       {activeSubtasks.length > 0 && (
         <div className="space-y-1 rounded border px-2 py-2" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
           <p className="text-[11px] font-medium uppercase tracking-wide" style={{ color: 'var(--muted)' }}>
-            Sous-tâches actives
+            {t('story_card.active_subtasks')}
           </p>
           <div className="list-ticket-task space-y-1">
             {activeSubtasks.map((subtask) => (

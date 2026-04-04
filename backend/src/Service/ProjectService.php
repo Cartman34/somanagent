@@ -14,20 +14,21 @@ use App\Repository\ModuleRepository;
 use App\Repository\ProjectRepository;
 use App\Repository\TeamRepository;
 use App\Repository\WorkflowRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class ProjectService
 {
+    /**
+     * Initializes the service with its dependencies.
+     */
     public function __construct(
-        private readonly EntityManagerInterface $em,
-        private readonly ProjectRepository      $projectRepository,
-        private readonly ModuleRepository       $moduleRepository,
-        private readonly TeamRepository         $teamRepository,
-        private readonly WorkflowRepository     $workflowRepository,
-        private readonly AuditService           $audit,
-        private readonly TranslatorInterface    $translator,
+        private readonly EntityService      $entityService,
+        private readonly ProjectRepository  $projectRepository,
+        private readonly ModuleRepository   $moduleRepository,
+        private readonly TeamRepository     $teamRepository,
+        private readonly WorkflowRepository $workflowRepository,
+        private readonly TranslatorInterface $translator,
     ) {}
 
     /**
@@ -57,9 +58,7 @@ class ProjectService
 
         $project->setWorkflow($this->resolveAssignableWorkflow(null, $workflowId));
 
-        $this->em->persist($project);
-        $this->em->flush();
-        $this->audit->log(AuditAction::ProjectCreated, 'Project', (string) $project->getId(), ['name' => $name]);
+        $this->entityService->create($project, AuditAction::ProjectCreated, ['name' => $name]);
         return $project;
     }
 
@@ -86,57 +85,72 @@ class ProjectService
 
         $project->setWorkflow($this->resolveAssignableWorkflow($project, $workflowId));
 
-        $this->em->flush();
-        $this->audit->log(AuditAction::ProjectUpdated, 'Project', (string) $project->getId(), ['name' => $name]);
+        $this->entityService->update($project, AuditAction::ProjectUpdated, ['name' => $name]);
         return $project;
     }
 
+    /**
+     * Deletes a project and records the audit event.
+     */
     public function delete(Project $project): void
     {
-        $id = (string) $project->getId();
-        $this->em->remove($project);
-        $this->em->flush();
-        $this->audit->log(AuditAction::ProjectDeleted, 'Project', $id);
+        $this->entityService->delete($project, AuditAction::ProjectDeleted);
     }
 
+    /**
+     * Creates a new module, attaches it to the project, and persists it.
+     */
     public function addModule(Project $project, string $name, ?string $description = null, ?string $repositoryUrl = null, ?string $stack = null): Module
     {
         $module = new Module($project, $name, $description);
         $module->setRepositoryUrl($repositoryUrl)->setStack($stack);
         $project->addModule($module);
-        $this->em->persist($module);
-        $this->em->flush();
-        $this->audit->log(AuditAction::ModuleCreated, 'Module', (string) $module->getId(), ['name' => $name, 'project' => (string) $project->getId()]);
+        $this->entityService->create($module, AuditAction::ModuleCreated, [
+            'name'    => $name,
+            'project' => (string) $project->getId(),
+        ]);
         return $module;
     }
 
+    /**
+     * Updates a module's fields and persists the changes.
+     */
     public function updateModule(Module $module, string $name, ?string $description, ?string $repositoryUrl, ?string $stack): Module
     {
         $module->setName($name)->setDescription($description)->setRepositoryUrl($repositoryUrl)->setStack($stack);
-        $this->em->flush();
-        $this->audit->log(AuditAction::ModuleUpdated, 'Module', (string) $module->getId());
+        $this->entityService->update($module, AuditAction::ModuleUpdated);
         return $module;
     }
 
+    /**
+     * Deletes a module and records the audit event.
+     */
     public function deleteModule(Module $module): void
     {
-        $id = (string) $module->getId();
-        $this->em->remove($module);
-        $this->em->flush();
-        $this->audit->log(AuditAction::ModuleDeleted, 'Module', $id);
+        $this->entityService->delete($module, AuditAction::ModuleDeleted);
     }
 
-    /** @return Project[] */
+    /**
+     * Returns all projects.
+     *
+     * @return Project[]
+     */
     public function findAll(): array
     {
         return $this->projectRepository->findAll();
     }
 
+    /**
+     * Finds a project by its UUID string identifier.
+     */
     public function findById(string $id): ?Project
     {
         return $this->projectRepository->find(Uuid::fromString($id));
     }
 
+    /**
+     * Finds a module by its UUID string identifier.
+     */
     public function findModuleById(string $id): ?Module
     {
         return $this->moduleRepository->find(Uuid::fromString($id));

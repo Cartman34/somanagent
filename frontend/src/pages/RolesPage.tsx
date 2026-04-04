@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, UserCog, Pencil, Trash2 } from 'lucide-react'
 import { rolesApi } from '@/api/roles'
-import { translationsApi } from '@/api/translations'
+import { useTranslation } from '@/hooks/useTranslation'
 import type { RolePayload } from '@/api/roles'
 import type { Role } from '@/types'
 import { PageSpinner } from '@/components/ui/Spinner'
@@ -17,12 +17,36 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import PageHeader from '@/components/ui/PageHeader'
 import ContentLoadingOverlay from '@/components/ui/ContentLoadingOverlay'
 
+const ROLES_PAGE_TRANSLATION_KEYS = [
+  'common.action.refresh',
+  'role.list.loading',
+  'role.page.title',
+  'role.page.description',
+  'role.action.new',
+  'role.empty.title',
+  'role.empty.description',
+  'role.action.edit',
+  'role.action.delete',
+  'role.modal.create.title',
+  'role.modal.edit.title',
+  'role.confirm.delete.message',
+  'role.form.name.label',
+  'role.form.name.placeholder',
+  'role.form.slug.label',
+  'role.form.slug.help',
+  'role.form.description.label',
+  'role.action.cancel',
+  'role.action.saving',
+  'role.action.save',
+] as const
+
 function RoleForm({ initial, onSubmit, loading, onCancel }: {
   initial?: Partial<RolePayload>
   onSubmit: (d: RolePayload) => void
   loading: boolean
   onCancel: () => void
 }) {
+  const { t } = useTranslation(ROLES_PAGE_TRANSLATION_KEYS)
   const [slug, setSlug]               = useState(initial?.slug ?? '')
   const [name, setName]               = useState(initial?.name ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
@@ -32,39 +56,37 @@ function RoleForm({ initial, onSubmit, loading, onCancel }: {
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit({ slug, name, description: description || undefined }) }} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
-        <input className="input" value={name} onChange={(e) => { setName(e.target.value); if (!initial?.slug) setSlug(autoSlug(e.target.value)) }} required placeholder="Développeur PHP" />
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('role.form.name.label')} *</label>
+        <input className="input" value={name} onChange={(e) => { setName(e.target.value); if (!initial?.slug) setSlug(autoSlug(e.target.value)) }} required placeholder={t('role.form.name.placeholder')} />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Slug *</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('role.form.slug.label')} *</label>
         <input className="input font-mono text-sm" value={slug} onChange={(e) => setSlug(e.target.value)} required placeholder="dev-php" />
-        <p className="text-xs text-gray-400 mt-1">Identifiant unique utilisé dans les workflows.</p>
+        <p className="text-xs text-gray-400 mt-1">{t('role.form.slug.help')}</p>
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('role.form.description.label')}</label>
         <textarea className="input resize-none" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
       </div>
       <div className="flex justify-end gap-3 pt-2">
-        <button type="button" onClick={onCancel} className="btn-secondary">Annuler</button>
-        <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Enregistrement…' : 'Enregistrer'}</button>
+        <button type="button" onClick={onCancel} className="btn-secondary">{t('role.action.cancel')}</button>
+        <button type="submit" className="btn-primary" disabled={loading}>{loading ? t('role.action.saving') : t('role.action.save')}</button>
       </div>
     </form>
   )
 }
 
+/**
+ * Roles management page — list, create, edit, and delete roles.
+ */
 export default function RolesPage() {
+  const { t } = useTranslation(ROLES_PAGE_TRANSLATION_KEYS)
   const qc = useQueryClient()
   const [createOpen, setCreateOpen]   = useState(false)
   const [editRole, setEditRole]       = useState<Role | null>(null)
   const [deleteRole, setDeleteRole]   = useState<Role | null>(null)
 
   const { data: roles, isLoading, isFetching, error, refetch } = useQuery({ queryKey: ['roles'], queryFn: rolesApi.list })
-
-  const { data: rolesI18n } = useQuery({
-    queryKey: ['ui-translations', 'roles'],
-    queryFn: () => translationsApi.list(['role.list.loading', 'common.action.refresh']),
-  })
-  const tt = (key: string) => rolesI18n?.translations[key] ?? key
 
   const createMutation = useMutation({ mutationFn: rolesApi.create, onSuccess: () => { qc.invalidateQueries({ queryKey: ['roles'] }); setCreateOpen(false) } })
   const updateMutation = useMutation({ mutationFn: ({ id, data }: { id: string; data: RolePayload }) => rolesApi.update(id, data), onSuccess: () => { qc.invalidateQueries({ queryKey: ['roles'] }); setEditRole(null) } })
@@ -75,17 +97,17 @@ export default function RolesPage() {
 
   return (
     <>
-      <PageHeader title="Rôles" description="Les rôles définissent la spécialisation de chaque agent."
+      <PageHeader title={t('role.page.title')} description={t('role.page.description')}
         onRefresh={() => qc.invalidateQueries({ queryKey: ['roles'] })}
-        refreshTitle={tt('common.action.refresh')}
-        action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> Nouveau rôle</button>} />
+        refreshTitle={t('common.action.refresh')}
+        action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> {t('role.action.new')}</button>} />
 
       {roles?.length === 0 ? (
-        <EmptyState icon={UserCog} title="Aucun rôle" description="Créez les rôles de votre équipe (PO, Dev, QA…)."
-          action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> Nouveau rôle</button>} />
+        <EmptyState icon={UserCog} title={t('role.empty.title')} description={t('role.empty.description')}
+          action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> {t('role.action.new')}</button>} />
       ) : (
         <div className="relative">
-          <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={tt('role.list.loading')} />
+          <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={t('role.list.loading')} />
           <div className="list-role card divide-y divide-gray-100">
             {roles?.map((role) => (
               <div key={role.id} className="item-role flex items-center gap-3 px-4 py-3">
@@ -101,8 +123,8 @@ export default function RolesPage() {
                   </div>
                 )}
                 <div className="flex gap-1 flex-shrink-0">
-                  <button onClick={() => setEditRole(role)} className="p-1.5 text-gray-400 hover:text-gray-600" title="Modifier"><Pencil className="w-3.5 h-3.5" /></button>
-                  <button onClick={() => setDeleteRole(role)} className="p-1.5 text-gray-400 hover:text-red-500" title="Supprimer"><Trash2 className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => setEditRole(role)} className="p-1.5 text-gray-400 hover:text-gray-600" title={t('role.action.edit')}><Pencil className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => setDeleteRole(role)} className="p-1.5 text-gray-400 hover:text-red-500" title={t('role.action.delete')}><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
               </div>
             ))}
@@ -110,11 +132,11 @@ export default function RolesPage() {
         </div>
       )}
 
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Nouveau rôle">
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title={t('role.modal.create.title')}>
         <RoleForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} onCancel={() => setCreateOpen(false)} />
       </Modal>
 
-      <Modal open={!!editRole} onClose={() => setEditRole(null)} title="Modifier le rôle">
+      <Modal open={!!editRole} onClose={() => setEditRole(null)} title={t('role.modal.edit.title')}>
         {editRole && (
           <RoleForm initial={{ slug: editRole.slug, name: editRole.name, description: editRole.description ?? '' }}
             onSubmit={(d) => updateMutation.mutate({ id: editRole.id, data: d })}
@@ -124,7 +146,7 @@ export default function RolesPage() {
 
       <ConfirmDialog open={!!deleteRole} onClose={() => setDeleteRole(null)}
         onConfirm={() => deleteRole && deleteMutation.mutate(deleteRole.id)}
-        message={`Supprimer le rôle "${deleteRole?.name}" ?`}
+        message={t('role.confirm.delete.message', { name: deleteRole?.name ?? '' })}
         loading={deleteMutation.isPending} />
     </>
   )

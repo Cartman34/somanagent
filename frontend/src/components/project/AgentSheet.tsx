@@ -25,8 +25,28 @@ import Markdown from '@/components/ui/Markdown'
 import { agentsApi } from '@/api/agents'
 import { chatApi } from '@/api/chat'
 import { rolesApi } from '@/api/roles'
-import { translationsApi } from '@/api/translations'
+import { useTranslation } from '@/hooks/useTranslation'
 import type { ChatMessage, SkillSummary } from '@/types'
+
+const AGENT_SHEET_TRANSLATION_KEYS = [
+  'chat.reply', 'chat.reply_placeholder',
+  'common.action.cancel', 'common.action.refresh',
+  'agents.sheet.modal_title', 'agents.sheet.load_error',
+  'agents.sheet.message.author_you', 'agents.sheet.message.author_error',
+  'agents.sheet.message.author_agent',
+  'agents.sheet.message.error_no_detail', 'agents.sheet.message.no_output',
+  'agents.sheet.status.error', 'agents.sheet.status.working', 'agents.sheet.status.available',
+  'agents.sheet.summary.no_role', 'agents.sheet.summary.connector', 'agents.sheet.summary.model',
+  'agents.sheet.summary.timeout', 'agents.sheet.summary.active_status',
+  'agents.sheet.summary.true', 'agents.sheet.summary.false', 'agents.sheet.summary.active_tasks',
+  'agents.sheet.knowledge.title', 'agents.sheet.knowledge.hint',
+  'agents.sheet.knowledge.no_role', 'agents.sheet.knowledge.no_skills',
+  'agents.sheet.skill.none_selected', 'agents.sheet.skill.no_content', 'agents.sheet.skill.content_tab',
+  'agents.sheet.chat.title', 'agents.sheet.chat.description', 'agents.sheet.chat.empty',
+  'agents.sheet.chat.hello', 'agents.sheet.chat.message_placeholder',
+  'agents.sheet.chat.sending', 'agents.sheet.chat.send',
+  'agents.sheet.chat.tab_label',
+] as const
 
 interface AgentSheetProps {
   projectId: string
@@ -40,11 +60,12 @@ type TabKey = 'details' | 'chat'
 interface MessageRowLabels {
   authorYou: string
   authorError: string
+  authorAgent: string
   errorNoDetail: string
   noOutput: string
 }
 
-function MessageRow({ message, labels }: { message: ChatMessage; labels: MessageRowLabels }) {
+function MessageRow({ message, labels, formatDateTime }: { message: ChatMessage; labels: MessageRowLabels; formatDateTime: (v: string) => string }) {
   const isHuman = message.author === 'human'
   const metadata = message.metadata ?? {}
   const hasContent = message.content.trim().length > 0
@@ -77,10 +98,10 @@ function MessageRow({ message, labels }: { message: ChatMessage; labels: Message
           style={{ background: tone.badgeBackground, color: tone.badgeColor }}
         >
           {isHuman ? <MessageSquare className="w-3 h-3" /> : <Bot className="w-3 h-3" />}
-          {isHuman ? labels.authorYou : (message.isError ? labels.authorError : 'Agent')}
+          {isHuman ? labels.authorYou : (message.isError ? labels.authorError : (labels.authorAgent ?? 'Agent'))}
         </span>
         <span style={{ color: 'var(--muted)' }}>
-          {new Date(message.createdAt).toLocaleString('fr-FR')}
+          {formatDateTime(message.createdAt)}
         </span>
         <span className="ml-auto font-mono" style={{ color: 'var(--muted)' }}>
           {message.exchangeId.slice(0, 8)}
@@ -192,6 +213,14 @@ function TabButton({
   )
 }
 
+/**
+ * Slide-over sheet that displays an agent's chat history, skills, and status.
+ *
+ * @param projectId - Parent project identifier.
+ * @param agentId - Agent identifier to display.
+ * @param open - Whether the sheet is visible.
+ * @param onClose - Callback invoked when the sheet is closed.
+ */
 export default function AgentSheet({ projectId, agentId, open, onClose }: AgentSheetProps) {
   const qc = useQueryClient()
   const historyContainerRef = useRef<HTMLDivElement | null>(null)
@@ -207,28 +236,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
   const [desktopPanel, setDesktopPanel] = useState<'chat' | 'skill'>('chat')
   const [isDesktop, setIsDesktop] = useState(false)
 
-  const { data: agentSheetI18n } = useQuery({
-    queryKey: ['ui-translations', 'agent-sheet'],
-    queryFn: () => translationsApi.list([
-      'chat.reply', 'chat.reply_placeholder',
-      'common.action.cancel', 'common.action.refresh',
-      'agents.sheet.modal_title', 'agents.sheet.load_error',
-      'agents.sheet.message.author_you', 'agents.sheet.message.author_error',
-      'agents.sheet.message.error_no_detail', 'agents.sheet.message.no_output',
-      'agents.sheet.status.error', 'agents.sheet.status.working', 'agents.sheet.status.available',
-      'agents.sheet.summary.no_role', 'agents.sheet.summary.connector', 'agents.sheet.summary.model',
-      'agents.sheet.summary.timeout', 'agents.sheet.summary.active_status',
-      'agents.sheet.summary.yes', 'agents.sheet.summary.no', 'agents.sheet.summary.active_tasks',
-      'agents.sheet.knowledge.title', 'agents.sheet.knowledge.hint',
-      'agents.sheet.knowledge.no_role', 'agents.sheet.knowledge.no_skills',
-      'agents.sheet.skill.none_selected', 'agents.sheet.skill.no_content', 'agents.sheet.skill.content_tab',
-      'agents.sheet.chat.title', 'agents.sheet.chat.description', 'agents.sheet.chat.empty',
-      'agents.sheet.chat.hello', 'agents.sheet.chat.message_placeholder',
-      'agents.sheet.chat.sending', 'agents.sheet.chat.send',
-    ]),
-    staleTime: Infinity,
-  })
-  const tt = (key: string) => agentSheetI18n?.translations[key] ?? key
+  const { t, formatDateTime } = useTranslation(AGENT_SHEET_TRANSLATION_KEYS)
 
   const agentQuery = useQuery({
     queryKey: ['agent-detail', agentId],
@@ -283,8 +291,8 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
     ?? (historyQuery.error as Error | null)
   const agent = agentQuery.data
   const role = roleQuery.data
-  const history = historyQuery.data ?? []
-  const skills = role?.skills ?? []
+  const history = useMemo(() => historyQuery.data ?? [], [historyQuery.data])
+  const skills = useMemo(() => role?.skills ?? [], [role?.skills])
   const selectedSkill = skills.find((skill) => skill.id === selectedSkillId) ?? skills[0] ?? null
   const runtimeStatus = statusQuery.data?.status ?? 'idle'
   const runtimeBadgeClass = runtimeStatus === 'error'
@@ -293,10 +301,10 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
       ? 'badge-orange'
       : 'badge-green'
   const runtimeLabel = runtimeStatus === 'error'
-    ? tt('agents.sheet.status.error')
+    ? t('agents.sheet.status.error')
     : runtimeStatus === 'working'
-      ? tt('agents.sheet.status.working')
-      : tt('agents.sheet.status.available')
+      ? t('agents.sheet.status.working')
+      : t('agents.sheet.status.available')
 
   /**
    * Represents a group of messages sharing the same exchange ID.
@@ -457,7 +465,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
         <div>
           <p className="text-lg font-semibold" style={{ color: 'var(--text)' }}>{currentAgent.name}</p>
           <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-            {currentAgent.role?.name ?? tt('agents.sheet.summary.no_role')}
+            {currentAgent.role?.name ?? t('agents.sheet.summary.no_role')}
           </p>
         </div>
         <span className={`${runtimeBadgeClass} text-xs`}>{runtimeLabel}</span>
@@ -465,23 +473,23 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
 
       <div className="mt-4 space-y-2 text-sm">
         <div className="flex items-center justify-between gap-4">
-          <span style={{ color: 'var(--muted)' }}>{tt('agents.sheet.summary.connector')}</span>
+          <span style={{ color: 'var(--muted)' }}>{t('agents.sheet.summary.connector')}</span>
           <span style={{ color: 'var(--text)' }}>{currentAgent.connectorLabel}</span>
         </div>
         <div className="flex items-center justify-between gap-4">
-          <span style={{ color: 'var(--muted)' }}>{tt('agents.sheet.summary.model')}</span>
+          <span style={{ color: 'var(--muted)' }}>{t('agents.sheet.summary.model')}</span>
           <code style={{ color: 'var(--text)' }}>{currentAgent.config.model}</code>
         </div>
         <div className="flex items-center justify-between gap-4">
-          <span style={{ color: 'var(--muted)' }}>{tt('agents.sheet.summary.timeout')}</span>
+          <span style={{ color: 'var(--muted)' }}>{t('agents.sheet.summary.timeout')}</span>
           <span style={{ color: 'var(--text)' }}>{currentAgent.config.timeout}s</span>
         </div>
         <div className="flex items-center justify-between gap-4">
-          <span style={{ color: 'var(--muted)' }}>{tt('agents.sheet.summary.active_status')}</span>
-          <span style={{ color: 'var(--text)' }}>{currentAgent.isActive ? tt('agents.sheet.summary.yes') : tt('agents.sheet.summary.no')}</span>
+          <span style={{ color: 'var(--muted)' }}>{t('agents.sheet.summary.active_status')}</span>
+          <span style={{ color: 'var(--text)' }}>{currentAgent.isActive ? t('agents.sheet.summary.true') : t('agents.sheet.summary.false')}</span>
         </div>
         <div className="flex items-center justify-between gap-4">
-          <span style={{ color: 'var(--muted)' }}>{tt('agents.sheet.summary.active_tasks')}</span>
+          <span style={{ color: 'var(--muted)' }}>{t('agents.sheet.summary.active_tasks')}</span>
           <span style={{ color: 'var(--text)' }}>{statusQuery.data?.activeTaskCount ?? 0}</span>
         </div>
       </div>
@@ -504,16 +512,16 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
   const renderKnowledgePanel = () => (
     <div className="rounded-2xl border min-h-0 h-full overflow-hidden flex flex-col" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
       <div className="shrink-0 px-4 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
-        <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{tt('agents.sheet.knowledge.title')}</p>
+        <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{t('agents.sheet.knowledge.title')}</p>
         <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
-          {tt('agents.sheet.knowledge.hint')}
+          {t('agents.sheet.knowledge.hint')}
         </p>
       </div>
 
       <div className="basis-0 flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
         {!role ? (
           <div className="text-sm" style={{ color: 'var(--muted)' }}>
-            {tt('agents.sheet.knowledge.no_role')}
+            {t('agents.sheet.knowledge.no_role')}
           </div>
         ) : (
           <>
@@ -527,7 +535,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
 
             {skills.length === 0 ? (
               <div className="text-sm" style={{ color: 'var(--muted)' }}>
-                {tt('agents.sheet.knowledge.no_skills')}
+                {t('agents.sheet.knowledge.no_skills')}
               </div>
             ) : (
               <div className="list-skill space-y-2">
@@ -556,7 +564,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
         <FileCode2 className="w-4 h-4" style={{ color: 'var(--brand)' }} />
         <div className="min-w-0">
           <p className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>
-            {selectedSkill?.name ?? tt('agents.sheet.skill.none_selected')}
+            {selectedSkill?.name ?? t('agents.sheet.skill.none_selected')}
           </p>
           {selectedSkill?.filePath && (
             <p className="text-xs font-mono truncate" style={{ color: 'var(--muted)' }}>
@@ -571,7 +579,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
           className="min-h-full text-xs whitespace-pre-wrap break-words"
           style={{ color: 'var(--text)' }}
         >
-          {selectedSkill?.content?.trim() || tt('agents.sheet.skill.no_content')}
+          {selectedSkill?.content?.trim() || t('agents.sheet.skill.no_content')}
         </pre>
       </div>
     </div>
@@ -581,16 +589,16 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
     <div className="rounded-2xl border min-h-0 h-full overflow-hidden flex flex-col" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
       <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
         <div>
-          <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{tt('agents.sheet.chat.title')}</p>
+          <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{t('agents.sheet.chat.title')}</p>
           <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
-            {tt('agents.sheet.chat.description')}
+            {t('agents.sheet.chat.description')}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <span className="badge-blue text-xs">{history.length} message{history.length > 1 ? 's' : ''}</span>
           <button className="btn-secondary" onClick={() => historyQuery.refetch()} disabled={historyQuery.isFetching}>
             <RefreshCw className={`w-4 h-4 ${historyQuery.isFetching ? 'animate-spin' : ''}`} />
-            {tt('common.action.refresh')}
+            {t('common.action.refresh')}
           </button>
         </div>
       </div>
@@ -602,7 +610,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
       >
         {history.length === 0 ? (
           <div className="h-full min-h-[18rem] flex items-center justify-center text-sm" style={{ color: 'var(--muted)' }}>
-            {tt('agents.sheet.chat.empty')}
+            {t('agents.sheet.chat.empty')}
           </div>
         ) : (
           groupedMessages.map((group) => (
@@ -614,11 +622,12 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
                 return (
                   <div>
                     <MessageRow message={msg} labels={{
-                      authorYou: tt('agents.sheet.message.author_you'),
-                      authorError: tt('agents.sheet.message.author_error'),
-                      errorNoDetail: tt('agents.sheet.message.error_no_detail'),
-                      noOutput: tt('agents.sheet.message.no_output'),
-                    }} />
+                      authorYou: t('agents.sheet.message.author_you'),
+                      authorError: t('agents.sheet.message.author_error'),
+                      authorAgent: t('agents.sheet.message.author_agent'),
+                      errorNoDetail: t('agents.sheet.message.error_no_detail'),
+                      noOutput: t('agents.sheet.message.no_output'),
+                    }} formatDateTime={formatDateTime} />
                     {canReply && (
                       <button
                         type="button"
@@ -627,7 +636,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
                         style={{ color: 'var(--muted)' }}
                       >
                         <Reply className="w-3 h-3" />
-                        {tt('chat.reply')}
+                        {t('chat.reply')}
                       </button>
                     )}
                     {replyingTo === msg.id && (
@@ -640,7 +649,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
                           rows={2}
                           value={replyInput}
                           onChange={(e) => setReplyInput(e.target.value)}
-                          placeholder={tt('chat.reply_placeholder')}
+                          placeholder={t('chat.reply_placeholder')}
                           disabled={replyMutation.isPending}
                         />
                         <div className="flex flex-col gap-1">
@@ -657,7 +666,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
                             className="text-xs"
                             style={{ color: 'var(--muted)' }}
                           >
-                            {tt('common.action.cancel')}
+                            {t('common.action.cancel')}
                           </button>
                         </div>
                       </form>
@@ -686,7 +695,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
             disabled={sendMutation.isPending}
           >
             <Send className="w-4 h-4" />
-            {tt('agents.sheet.chat.hello')}
+            {t('agents.sheet.chat.hello')}
           </button>
         </div>
 
@@ -701,7 +710,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
                 handleSend()
               }
             }}
-            placeholder={tt('agents.sheet.chat.message_placeholder')}
+            placeholder={t('agents.sheet.chat.message_placeholder')}
             disabled={sendMutation.isPending}
           />
           <button
@@ -710,7 +719,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
             disabled={sendMutation.isPending || draft.trim() === ''}
           >
             <Send className="w-4 h-4" />
-            {sendMutation.isPending ? tt('agents.sheet.chat.sending') : tt('agents.sheet.chat.send')}
+            {sendMutation.isPending ? t('agents.sheet.chat.sending') : t('agents.sheet.chat.send')}
           </button>
         </div>
       </div>
@@ -718,18 +727,18 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
   )
 
   return (
-    <Modal open={open} onClose={onClose} title={agent ? `Agent ${agent.name}` : tt('agents.sheet.modal_title')} size="2xl">
+    <Modal open={open} onClose={onClose} title={agent ? `Agent ${agent.name}` : t('agents.sheet.modal_title')} size="2xl">
       {!agentId ? null : isLoading ? (
         <PageSpinner />
       ) : error || !agent ? (
-        <ErrorMessage message={error?.message ?? tt('agents.sheet.load_error')} />
+        <ErrorMessage message={error?.message ?? t('agents.sheet.load_error')} />
       ) : (
         <div className="flex min-h-0 h-[min(82vh,860px)] max-h-full flex-col gap-4">
           <div className="flex items-center justify-between gap-3 border-b pb-3" style={{ borderColor: 'var(--border)' }}>
             <div className="min-w-0">
               <p className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>{agent.name}</p>
               <p className="text-xs mt-1 truncate" style={{ color: 'var(--muted)' }}>
-                {agent.role?.name ?? tt('agents.sheet.summary.no_role')} • {agent.connectorLabel}
+                {agent.role?.name ?? t('agents.sheet.summary.no_role')} • {agent.connectorLabel}
               </p>
             </div>
             <div className="hidden lg:flex items-center gap-2">
@@ -743,14 +752,14 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
                 disabled={sendMutation.isPending}
               >
                 <Send className="w-4 h-4" />
-                {tt('agents.sheet.chat.hello')}
+                {t('agents.sheet.chat.hello')}
               </button>
             </div>
           </div>
 
           <div className="lg:hidden flex gap-2 overflow-x-auto" style={{ scrollbarWidth: 'thin' }}>
             <TabButton active={activeTab === 'chat'} onClick={() => setActiveTab('chat')}>Chat</TabButton>
-            <TabButton active={activeTab === 'details'} onClick={() => setActiveTab('details')}>{tt('agents.sheet.knowledge.title')}</TabButton>
+            <TabButton active={activeTab === 'details'} onClick={() => setActiveTab('details')}>{t('agents.sheet.knowledge.title')}</TabButton>
           </div>
 
           {isDesktop ? (
@@ -765,7 +774,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
               <div className="min-h-0 flex flex-col gap-4">
                 <div className="flex gap-2">
                   <TabButton active={desktopPanel === 'chat'} onClick={() => setDesktopPanel('chat')}>Chat</TabButton>
-                  <TabButton active={desktopPanel === 'skill'} onClick={() => setDesktopPanel('skill')}>{tt('agents.sheet.skill.content_tab')}</TabButton>
+                  <TabButton active={desktopPanel === 'skill'} onClick={() => setDesktopPanel('skill')}>{t('agents.sheet.skill.content_tab')}</TabButton>
                 </div>
                 <div className="min-h-0 flex-1">
                   {desktopPanel === 'chat' ? renderChatPanel() : renderSkillContent()}

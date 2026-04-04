@@ -4,11 +4,10 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, Link, useSearchParams } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Plus } from 'lucide-react'
 import { projectsApi } from '@/api/projects'
 import { workflowsApi } from '@/api/workflows'
-import { translationsApi } from '@/api/translations'
 import { ticketsApi, ticketTasksApi, type ProjectRequestPayload, type ProjectRequestResult, type TicketTaskPayload } from '@/api/tickets'
 import type { Ticket, TicketTask, Workflow, Module } from '@/types'
 import { PageSpinner } from '@/components/ui/Spinner'
@@ -28,6 +27,7 @@ import ProjectTeamTab from '@/components/project/ProjectTeamTab'
 import ProjectModulesTab from '@/components/project/ProjectModulesTab'
 import ProjectAuditTab from '@/components/project/ProjectAuditTab'
 import ProjectTokensTab from '@/components/project/ProjectTokensTab'
+import { useTranslation } from '@/hooks/useTranslation'
 import {
   isTicket,
   Tab,
@@ -35,39 +35,36 @@ import {
   DEFAULT_TAB,
   isProjectTab,
 } from '@/lib/project/constants'
-import { TASK_ACTIVITY_FEED_DOMAIN } from '@/lib/project/taskActivityFeed'
 
 // ─── Page-level translation keys ─────────────────────────────────────────────
 
-const PROJECT_TEAM_GUARD_TRANSLATION_KEYS = [
-  'common.action.refresh',
-  'projects.progress.ui.blocked_reason',
-  'projects.progress.ui.banner',
-  'projects.progress.ui.rework_title',
-  'projects.progress.error.request_creation_failed',
-] as const
-
 const PROJECT_DETAIL_TRANSLATION_KEYS = [
+  'common.action.refresh',
   'project.detail.back_link',
   'project.detail.create_request',
   'project.detail.create_task',
   'project.detail.create_technical_task',
-  'project.detail.ticket_id_required',
   'project.detail.delete_message',
   'project.detail.not_found',
+  'project.detail.stats.modules',
+  'project.detail.stats.stories_bugs',
+  'project.detail.stats.tasks',
+  'project.detail.stats.team',
+  'project.detail.tabs.audit',
+  'project.detail.tabs.board',
+  'project.detail.tabs.general',
+  'project.detail.tabs.modules',
+  'project.detail.tabs.tasks',
+  'project.detail.tabs.team',
+  'project.detail.tabs.tokens',
+  'project.detail.ticket_id_required',
   'project.detail.transition_impossible',
-      'project.detail.stats.stories_bugs',
-      'project.detail.stats.tasks',
-      'project.detail.stats.modules',
-      'project.detail.stats.team',
-      'project.detail.tabs.general',
-      'project.detail.tabs.board',
-      'project.detail.tabs.tasks',
-      'project.detail.tabs.team',
-      'project.detail.tabs.modules',
-      'project.detail.tabs.audit',
-      'project.detail.tabs.tokens',
-    ] as const
+  'project.item.loading',
+  'projects.progress.error.request_creation_failed',
+  'projects.progress.ui.banner',
+  'projects.progress.ui.blocked_reason',
+  'projects.progress.ui.rework_title',
+] as const
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
@@ -83,6 +80,8 @@ export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
   const qc = useQueryClient()
+
+  const { t } = useTranslation(PROJECT_DETAIL_TRANSLATION_KEYS)
 
   const [tab, setTab]                         = useState<Tab>(() => {
     const requestedTab = searchParams.get('tab')
@@ -200,31 +199,6 @@ export default function ProjectDetailPage() {
     enabled:  !!id,
   })
 
-  const { data: projectTeamGuardI18n } = useQuery({
-    queryKey: ['ui-translations', 'project-team-guard'],
-    queryFn: () => translationsApi.list([...PROJECT_TEAM_GUARD_TRANSLATION_KEYS]),
-    staleTime: Infinity,
-  })
-
-  const tt = (key: typeof PROJECT_TEAM_GUARD_TRANSLATION_KEYS[number]) => (
-    projectTeamGuardI18n?.translations[key] ?? key
-  )
-
-  const { data: projectItemI18n } = useQuery({
-    queryKey: ['ui-translations', 'project-item'],
-    queryFn: () => translationsApi.list(['project.item.loading']),
-  })
-  const ttItem = (key: string) => projectItemI18n?.translations[key] ?? key
-
-  const { data: projectDetailI18n } = useQuery({
-    queryKey: ['ui-translations', 'project-detail'],
-    queryFn: () => translationsApi.list([...PROJECT_DETAIL_TRANSLATION_KEYS], TASK_ACTIVITY_FEED_DOMAIN),
-    staleTime: Infinity,
-  })
-  const ttDetail = (key: typeof PROJECT_DETAIL_TRANSLATION_KEYS[number]) => (
-    projectDetailI18n?.translations[key] ?? key
-  )
-
   // ── Mutations ─────────────────────────────────────────────────────────────────
 
   const invalidateTickets = () => qc.invalidateQueries({ queryKey: ['tickets', id] })
@@ -238,14 +212,14 @@ export default function ProjectDetailPage() {
     },
     onError: (err: unknown) => {
       const msg = (err as { message?: string })?.message
-      setRequestDispatchError(msg ?? (projectTeamGuardI18n?.translations['projects.progress.error.request_creation_failed'] ?? 'projects.progress.error.request_creation_failed'))
+      setRequestDispatchError(msg ?? t('projects.progress.error.request_creation_failed'))
     },
   })
 
   const createMutation = useMutation({
     mutationFn: (d: TicketTaskPayload & { ticketId?: string }) => {
       if (!d.ticketId) {
-        throw new Error(ttDetail('project.detail.ticket_id_required'))
+        throw new Error(t('project.detail.ticket_id_required'))
       }
 
       return ticketTasksApi.create(d.ticketId, {
@@ -270,7 +244,7 @@ export default function ProjectDetailPage() {
     onError: (err: unknown) => {
       setPendingTaskId(null)
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-      setTransitionError(msg ?? ttDetail('project.detail.transition_impossible'))
+      setTransitionError(msg ?? t('project.detail.transition_impossible'))
     },
   })
 
@@ -283,7 +257,7 @@ export default function ProjectDetailPage() {
 
   const projectNeedsTeamAssignment = project?.team === null
   const projectProgressBlockedReason = projectNeedsTeamAssignment
-    ? (projectTeamGuardI18n?.translations['projects.progress.ui.blocked_reason'] ?? 'projects.progress.ui.blocked_reason')
+    ? t('projects.progress.ui.blocked_reason')
     : null
 
   const refreshAllData = () => {
@@ -300,7 +274,7 @@ export default function ProjectDetailPage() {
 
   if (loadingProject) return <PageSpinner />
   if (errorProject || !project) {
-    return <ErrorMessage message={(errorProject as Error)?.message ?? ttDetail('project.detail.not_found')} onRetry={() => refetchProject()} />
+    return <ErrorMessage message={(errorProject as Error)?.message ?? t('project.detail.not_found')} onRetry={() => refetchProject()} />
   }
 
   const stories = tickets
@@ -317,14 +291,14 @@ export default function ProjectDetailPage() {
   return (
     <>
       <Link to="/projects" className="inline-flex items-center gap-1 text-sm mb-4" style={{ color: 'var(--muted)' }}>
-        <ArrowLeft className="w-4 h-4" /> {ttDetail('project.detail.back_link')}
+        <ArrowLeft className="w-4 h-4" /> {t('project.detail.back_link')}
       </Link>
 
       <PageHeader
         title={project.name}
         description={project.description ?? undefined}
         onRefresh={refreshAllData}
-        refreshTitle={tt('common.action.refresh')}
+        refreshTitle={t('common.action.refresh')}
         action={
           (tab === 'board' || tab === 'tasks') ? (
             <button
@@ -337,7 +311,7 @@ export default function ProjectDetailPage() {
               if (tab === 'board') setRequestDispatchError(null)
             }}>
               <Plus className="w-4 h-4" />
-              {tab === 'board' ? ttDetail('project.detail.create_request') : ttDetail('project.detail.create_task')}
+              {tab === 'board' ? t('project.detail.create_request') : t('project.detail.create_task')}
             </button>
           ) : undefined
         }
@@ -346,10 +320,10 @@ export default function ProjectDetailPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
         {[
-          { label: ttDetail('project.detail.stats.stories_bugs'), value: stories.length },
-          { label: ttDetail('project.detail.stats.tasks'), value: techTasks.length },
-          { label: ttDetail('project.detail.stats.modules'), value: modules.length },
-          { label: ttDetail('project.detail.stats.team'), value: project.team?.name ?? '—' },
+          { label: t('project.detail.stats.stories_bugs'), value: stories.length },
+          { label: t('project.detail.stats.tasks'), value: techTasks.length },
+          { label: t('project.detail.stats.modules'), value: modules.length },
+          { label: t('project.detail.stats.team'), value: project.team?.name ?? '—' },
         ].map(({ label, value }) => (
           <div key={label} className="card p-3 text-center">
             <p className="text-xl font-bold" style={{ color: 'var(--text)' }}>{value}</p>
@@ -360,7 +334,7 @@ export default function ProjectDetailPage() {
 
       {projectNeedsTeamAssignment && (
         <div className="mb-5 rounded border px-4 py-3 text-sm" style={{ borderColor: 'rgba(245,158,11,0.35)', background: 'rgba(245,158,11,0.08)', color: '#92400e' }}>
-          {projectTeamGuardI18n?.translations['projects.progress.ui.banner'] ?? 'projects.progress.ui.banner'}
+          {t('projects.progress.ui.banner')}
         </div>
       )}
 
@@ -377,7 +351,7 @@ export default function ProjectDetailPage() {
             }}
           >
             <Icon className="w-3.5 h-3.5" />
-            {ttDetail(`project.detail.tabs.${key}`)}
+            {t(`project.detail.tabs.${key}`)}
           </button>
         ))}
       </div>
@@ -432,7 +406,7 @@ export default function ProjectDetailPage() {
       <Modal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        title={tab === 'board' ? ttDetail('project.detail.create_request') : ttDetail('project.detail.create_technical_task')}
+        title={tab === 'board' ? t('project.detail.create_request') : t('project.detail.create_technical_task')}
       >
         {tab === 'board' ? (
           <RequestForm
@@ -456,12 +430,12 @@ export default function ProjectDetailPage() {
         open={!!deleteTask}
         onClose={() => setDeleteTask(null)}
         onConfirm={() => deleteTask && deleteMutation.mutate(deleteTask)}
-        message={ttDetail('project.detail.delete_message').replace('%title%', deleteTask?.title ?? '')}
+        message={t('project.detail.delete_message', { title: deleteTask?.title ?? '' })}
         loading={deleteMutation.isPending}
       />
 
       <div className="relative">
-        <ContentLoadingOverlay isLoading={(fetchingProject || fetchingTickets) && !loadingProject && !loadingTickets} label={ttItem('project.item.loading')}       />
+        <ContentLoadingOverlay isLoading={(fetchingProject || fetchingTickets) && !loadingProject && !loadingTickets} label={t('project.item.loading')}       />
 
       </div>
 

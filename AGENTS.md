@@ -44,7 +44,8 @@ Allowed commands:
 Default responsibilities:
 
 - implement tasks
-- run relevant checks
+- run `php scripts/review.php` after every implementation and fix mechanical blockers within scope
+- critically challenge the implementation for gaps, regressions, and convention violations before considering it done
 - update docs when required by the code change
 - record completed work in `local/backlog-changes.md`
 
@@ -177,6 +178,8 @@ Rules:
 
 1. Merge the current open PR with `php scripts/github.php pr merge <number>`
 2. Run `git checkout main && git pull`
+3. Delete the merged branch on the remote: `git push origin --delete <branch>`
+4. Delete the merged branch locally: `git branch -d <branch>`
 
 Rules:
 

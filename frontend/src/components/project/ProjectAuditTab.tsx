@@ -3,18 +3,30 @@
  */
 
 import { useState } from 'react'
-import { History } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import { History } from 'lucide-react'
 import { projectsApi } from '@/api/projects'
-import { AUDIT_ACTION_LABELS } from '@/lib/project/constants'
+import { useTranslation } from '@/hooks/useTranslation'
+import { AUDIT_ACTION_LABEL_KEYS } from '@/lib/project/constants'
 import { PageSpinner } from '@/components/ui/Spinner'
 import EmptyState from '@/components/ui/EmptyState'
+
+const AUDIT_TAB_TRANSLATION_KEYS = [
+  'audit.list.empty_title',
+  'audit.list.empty_description',
+  'audit.list.col_entity',
+  'audit.list.col_date',
+  'ui.project_detail.execution_history.entries_label',
+  'ui.project_detail.execution_history.prev',
+  'ui.project_detail.execution_history.next',
+  ...Object.values(AUDIT_ACTION_LABEL_KEYS),
+] as const
 
 /**
  * Audit tab — paginated list of audit entries for the project.
  *
  * @see projectsApi.getAudit
- * @see AUDIT_ACTION_LABELS
+ * @see AUDIT_ACTION_LABEL_KEYS
  */
 export default function ProjectAuditTab({ projectId }: { projectId: string }) {
   const [auditPage, setAuditPage] = useState(1)
@@ -24,14 +36,16 @@ export default function ProjectAuditTab({ projectId }: { projectId: string }) {
     queryFn:  () => projectsApi.getAudit(projectId, auditPage),
   })
 
+  const { t, formatDate } = useTranslation(AUDIT_TAB_TRANSLATION_KEYS)
+
   if (loadingAudit) return <PageSpinner />
 
   if (!auditData || auditData.data.length === 0) {
     return (
       <EmptyState
         icon={History}
-        title="Aucune entrée d'audit"
-        description="Les actions sur ce projet et ses tâches apparaîtront ici."
+        title={t('audit.list.empty_title')}
+        description={t('audit.list.empty_description')}
       />
     )
   }
@@ -48,10 +62,10 @@ export default function ProjectAuditTab({ projectId }: { projectId: string }) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>
-                {AUDIT_ACTION_LABELS[entry.action] ?? entry.action}
+                {t(AUDIT_ACTION_LABEL_KEYS[entry.action] ?? entry.action)}
               </p>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-xs" style={{ color: 'var(--muted)' }}>{entry.entityType}</span>
+                <span className="text-xs" style={{ color: 'var(--muted)' }}>{t('audit.list.col_entity')}: {entry.entityType}</span>
                 {entry.data && Object.keys(entry.data).length > 0 && (
                   <span className="text-xs" style={{ color: 'var(--muted)' }}>
                     {Object.entries(entry.data).map(([k, v]) => `${k}: ${String(v)}`).join(', ')}
@@ -60,7 +74,7 @@ export default function ProjectAuditTab({ projectId }: { projectId: string }) {
               </div>
             </div>
             <span className="text-xs flex-shrink-0" style={{ color: 'var(--muted)' }}>
-              {new Date(entry.createdAt).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+              {t('audit.list.col_date')}: {formatDate(entry.createdAt)}
             </span>
           </div>
         ))}
@@ -68,19 +82,19 @@ export default function ProjectAuditTab({ projectId }: { projectId: string }) {
 
       {auditData.total > auditData.limit && (
         <div className="flex items-center justify-between text-sm" style={{ color: 'var(--muted)' }}>
-          <span>{auditData.total} entrées</span>
+          <span>{auditData.total} {t('ui.project_detail.execution_history.entries_label')}</span>
           <div className="flex gap-2">
             <button
               className="btn-secondary py-1"
               disabled={auditPage <= 1}
               onClick={() => setAuditPage((p) => p - 1)}
-            >Précédent</button>
+            >{t('ui.project_detail.execution_history.prev')}</button>
             <span className="px-2 py-1">{auditPage} / {totalPages}</span>
             <button
               className="btn-secondary py-1"
               disabled={auditPage >= totalPages}
               onClick={() => setAuditPage((p) => p + 1)}
-            >Suivant</button>
+            >{t('ui.project_detail.execution_history.next')}</button>
           </div>
         </div>
       )}

@@ -20,7 +20,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { ticketsApi, ticketTasksApi } from '@/api/tickets'
-import { translationsApi } from '@/api/translations'
+import { useTranslation } from '@/hooks/useTranslation'
 import type {
   Ticket,
   TicketTask,
@@ -31,12 +31,11 @@ import EntityId from '@/components/ui/EntityId'
 import Markdown from '@/components/ui/Markdown'
 import TaskActivityFeed from '@/components/project/TaskActivityFeed'
 import {
-  STATUS_LABELS,
+  STATUS_LABEL_KEYS,
   isTicket,
 } from '@/lib/project/constants'
 import {
   TASK_ACTIVITY_FEED_DOMAIN,
-  TASK_ACTIVITY_FEED_TRANSLATION_KEYS,
   buildActivityActionLabelKey,
 } from '@/lib/project/taskActivityFeed'
 import {
@@ -44,6 +43,42 @@ import {
   CATALOG_TRANSLATION_KEYS,
   type CatalogTranslationKey,
 } from '@/lib/catalog'
+
+const TASK_DRAWER_TRANSLATION_KEYS = [
+  'common.action.close',
+  'drawer.collapse',
+  'drawer.description',
+  'drawer.error.resume_failed',
+  'drawer.expand',
+  'drawer.loading',
+  'drawer.metrics.tokens_consumed',
+  'drawer.resume.button',
+  'drawer.resume.loading',
+  'drawer.resume.manual_help',
+  'drawer.resume.title',
+  'drawer.subtasks.title',
+  'drawer.ticket.action',
+  'drawer.ticket.agent',
+  'drawer.ticket.description',
+  'drawer.ticket.latest_run',
+  'drawer.ticket.status',
+  'drawer.ticket.step',
+  'drawer.ticket.title',
+  'drawer.ticket_tasks.empty',
+  'drawer.ticket_tasks.title',
+  'drawer.workflow.current_step',
+  'drawer.workflow.no_transition',
+  'drawer.workflow.none',
+  'drawer.workflow.section_title',
+  'drawer.workflow.transition_loading',
+  'drawer.workflow.transition_to',
+  'event.detail.open',
+  ...Object.values(STATUS_LABEL_KEYS),
+] as const
+
+const TASK_DRAWER_CATALOG_KEYS = [
+  ...CATALOG_TRANSLATION_KEYS,
+] as const
 
 function StatusIcon({ status }: { status: TaskStatus }) {
   if (status === 'done') return <CheckCircle className="h-4 w-4 text-green-500" />
@@ -106,11 +141,6 @@ function Badge({
 
 const BLOCK_LABEL_CLASS = 'section-title'
 
-function formatDateLabel(date: string | null | undefined): string {
-  if (!date) return '—'
-  return new Date(date).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })
-}
-
 function latestExecution(task: TicketTask) {
   return [...(task.executions ?? [])].sort((left, right) => {
     const leftDate = new Date(left.finishedAt ?? left.startedAt ?? 0).getTime()
@@ -128,8 +158,8 @@ function resolveTaskActionLabel(task: TicketTask, tc: (key: CatalogTranslationKe
   return actionLabelKey ? tc(actionLabelKey) : task.agentAction.label
 }
 
-function statusLabel(status: TaskStatus): string {
-  return STATUS_LABELS[status]
+function statusLabel(status: TaskStatus, t: (key: string) => string): string {
+  return t(STATUS_LABEL_KEYS[status])
 }
 
 /**
@@ -168,22 +198,15 @@ export default function TaskDrawer({
     },
   })
 
-  const { data: i18n } = useQuery({
-    queryKey: ['ui-translations', TASK_ACTIVITY_FEED_DOMAIN],
-    queryFn: () => translationsApi.list([...TASK_ACTIVITY_FEED_TRANSLATION_KEYS], TASK_ACTIVITY_FEED_DOMAIN),
-    staleTime: Infinity,
-  })
+  const { t, formatDateTime, locale } = useTranslation(
+    TASK_DRAWER_TRANSLATION_KEYS,
+    TASK_ACTIVITY_FEED_DOMAIN,
+  )
 
-  const { data: catalogI18n } = useQuery({
-    queryKey: ['ui-translations', CATALOG_DOMAIN],
-    queryFn: () => translationsApi.list([...CATALOG_TRANSLATION_KEYS], CATALOG_DOMAIN),
-    staleTime: Infinity,
-  })
-
-  const translations = i18n?.translations ?? {}
-  const catalogTranslations = catalogI18n?.translations ?? {}
-  const t = (key: string, fallback?: string) => translations[key] ?? fallback ?? key
-  const tc = (key: CatalogTranslationKey) => catalogTranslations[key] ?? key
+  const { t: tc } = useTranslation(
+    TASK_DRAWER_CATALOG_KEYS,
+    CATALOG_DOMAIN,
+  )
 
   useEffect(() => {
     setCommentText('')
@@ -270,10 +293,10 @@ export default function TaskDrawer({
     return [...(entity.tasks ?? [])].sort((left, right) => {
       const leftStep = left.workflowStep?.name ?? ''
       const rightStep = right.workflowStep?.name ?? ''
-      if (leftStep !== rightStep) return leftStep.localeCompare(rightStep, 'fr')
-      return left.title.localeCompare(right.title, 'fr')
+      if (leftStep !== rightStep) return leftStep.localeCompare(rightStep, locale)
+      return left.title.localeCompare(right.title, locale)
     })
-  }, [entity])
+  }, [entity, locale])
 
   const childItems = useMemo(
     () => (entity && isTicket(entity) ? [] : ((entity?.children ?? []) as TicketTask[])),
@@ -314,7 +337,7 @@ export default function TaskDrawer({
           >
             {advanceMutation.isPending
               ? t('drawer.workflow.transition_loading')
-              : t('drawer.workflow.transition_to').replace('%step%', ticketEntity.workflowStepAllowedTransitions[0]?.name ?? '')}
+              : t('drawer.workflow.transition_to', { step: ticketEntity.workflowStepAllowedTransitions[0]?.name ?? '' })}
           </button>
         )}
       </div>
@@ -419,7 +442,7 @@ export default function TaskDrawer({
                       )}
 
                       <div className="flex flex-wrap items-center gap-2 text-sm">
-                        <Badge tone="neutral">{t('drawer.ticket.status')}: {statusLabel(task.status)}</Badge>
+                        <Badge tone="neutral">{t('drawer.ticket.status')}: {statusLabel(task.status, t)}</Badge>
                         {task.workflowStep && <Badge tone="accent">{t('drawer.ticket.step')}: {task.workflowStep.name}</Badge>}
                         {task.assignedAgent && <Badge tone="primary">{t('drawer.ticket.agent')}: {task.assignedAgent.name}</Badge>}
                         <Badge tone="warning">{t('drawer.ticket.action')}: {resolveTaskActionLabel(task, tc)}</Badge>
@@ -446,7 +469,7 @@ export default function TaskDrawer({
                             {latest.currentAttempt}/{latest.maxAttempts}
                           </span>
                           <span className="ml-auto text-xs" style={{ color: 'var(--muted)' }}>
-                            {formatDateLabel(latest.finishedAt ?? latest.startedAt)}
+                            {formatDateTime(latest.finishedAt ?? latest.startedAt ?? '')}
                           </span>
                         </div>
                       )}
@@ -521,7 +544,7 @@ export default function TaskDrawer({
           </h2>
 
           <div className="flex flex-wrap gap-2">
-            <Badge tone="neutral">{statusLabel(entityData.status)}</Badge>
+            <Badge tone="neutral">{statusLabel(entityData.status, t)}</Badge>
             {isTicket(entityData) && entityData.workflowStep && (
               <Badge tone="accent">{entityData.workflowStep.name}</Badge>
             )}
@@ -542,7 +565,7 @@ export default function TaskDrawer({
             <EntityId id={entityData.id} />
             <span className="inline-flex items-center gap-1">
               <Clock className="h-3.5 w-3.5" />
-              {formatDateLabel(entityData.createdAt)}
+              {formatDateTime(entityData.createdAt)}
             </span>
           </div>
 

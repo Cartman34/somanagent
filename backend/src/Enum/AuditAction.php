@@ -7,9 +7,18 @@ declare(strict_types=1);
 
 namespace App\Enum;
 
+/**
+ * Exhaustive list of auditable actions in the application.
+ *
+ * Convention: values follow the pattern `<entity>.<event>` in snake_case.
+ *
+ * The `entityType` field on {@see \App\Entity\AuditLog} discriminates between entity classes
+ * when the same action applies to multiple types. For example, `task.created` is used for
+ * both `Ticket` (entityType='Ticket') and `TicketTask` (entityType='TicketTask').
+ */
 enum AuditAction: string
 {
-    // Projets
+    // Projects
     case ProjectCreated = 'project.created';
     case ProjectUpdated = 'project.updated';
     case ProjectDeleted = 'project.deleted';
@@ -19,14 +28,14 @@ enum AuditAction: string
     case ModuleUpdated = 'module.updated';
     case ModuleDeleted = 'module.deleted';
 
-    // Équipes
+    // Teams
     case TeamCreated      = 'team.created';
     case TeamUpdated      = 'team.updated';
     case TeamDeleted      = 'team.deleted';
     case TeamAgentAdded   = 'team.agent.added';
     case TeamAgentRemoved = 'team.agent.removed';
 
-    // Rôles
+    // Roles
     case RoleCreated = 'role.created';
     case RoleUpdated = 'role.updated';
     case RoleDeleted = 'role.deleted';
@@ -42,34 +51,26 @@ enum AuditAction: string
     case SkillUpdated  = 'skill.updated';
     case SkillDeleted  = 'skill.deleted';
 
-    // Workflows
-    case WorkflowCreated       = 'workflow.created';
-    case WorkflowUpdated       = 'workflow.updated';
-    case WorkflowDeleted       = 'workflow.deleted';
-    case WorkflowRun           = 'workflow.run';
-    case WorkflowDryRun        = 'workflow.dry_run';
-    case WorkflowStepCompleted = 'workflow.step.completed';
-    case WorkflowStepFailed    = 'workflow.step.failed';
-    case WorkflowCompleted     = 'workflow.completed';
-    case WorkflowFailed        = 'workflow.failed';
-    case WorkflowCancelled     = 'workflow.cancelled';
+    // Workflows — definition only (create/update/delete of workflow configurations)
+    case WorkflowCreated = 'workflow.created';
+    case WorkflowUpdated = 'workflow.updated';
+    case WorkflowDeleted = 'workflow.deleted';
 
     // Features
     case FeatureCreated = 'feature.created';
     case FeatureUpdated = 'feature.updated';
     case FeatureDeleted = 'feature.deleted';
 
-    // Tâches
-    case TaskCreated          = 'task.created';
-    case TaskUpdated          = 'task.updated';
-    case TaskDeleted          = 'task.deleted';
-    case TaskAssigned         = 'task.assigned';
-    case TaskStatusChanged    = 'task.status_changed';
-    case TaskProgressUpdated  = 'task.progress_updated';
-    case TaskValidationAsked  = 'task.validation_asked';
-    case TaskValidated        = 'task.validated';
-    case TaskRejected         = 'task.rejected';
-    case TaskReprioritized    = 'task.reprioritized';
+    // Tickets and ticket tasks — entityType discriminates between Ticket and TicketTask
+    case TaskCreated         = 'task.created';
+    case TaskUpdated         = 'task.updated';
+    case TaskDeleted         = 'task.deleted';
+    case TaskStatusChanged   = 'task.status_changed';
+    case TaskProgressUpdated = 'task.progress_updated';
+    case TaskValidationAsked = 'task.validation_asked';
+    case TaskValidated       = 'task.validated';
+    case TaskRejected        = 'task.rejected';
+    case TaskReprioritized   = 'task.reprioritized';
 
     // Chat
     case ChatMessageSent = 'chat.message_sent';

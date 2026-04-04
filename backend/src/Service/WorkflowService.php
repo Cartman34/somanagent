@@ -13,17 +13,18 @@ use App\Entity\WorkflowStepAction;
 use App\Enum\AuditAction;
 use App\Enum\WorkflowTrigger;
 use App\Repository\WorkflowRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class WorkflowService
 {
+    /**
+     * Initializes the service with its dependencies.
+     */
     public function __construct(
-        private readonly EntityManagerInterface $em,
-        private readonly WorkflowRepository     $workflowRepository,
-        private readonly AuditService           $audit,
-        private readonly TranslatorInterface    $translator,
+        private readonly EntityService      $entityService,
+        private readonly WorkflowRepository $workflowRepository,
+        private readonly TranslatorInterface $translator,
     ) {}
 
     /**
@@ -36,10 +37,7 @@ class WorkflowService
     ): Workflow {
         $workflow = new Workflow($name, $trigger, $description);
         $workflow->validate();
-
-        $this->em->persist($workflow);
-        $this->em->flush();
-        $this->audit->log(AuditAction::WorkflowCreated, 'Workflow', (string) $workflow->getId(), ['name' => $name]);
+        $this->entityService->create($workflow, AuditAction::WorkflowCreated, ['name' => $name]);
 
         return $workflow;
     }
@@ -80,10 +78,8 @@ class WorkflowService
         $duplicate->validate();
         $duplicate->deactivate();
 
-        $this->em->persist($duplicate);
-        $this->em->flush();
-        $this->audit->log(AuditAction::WorkflowCreated, 'Workflow', (string) $duplicate->getId(), [
-            'name' => $duplicate->getName(),
+        $this->entityService->create($duplicate, AuditAction::WorkflowCreated, [
+            'name'             => $duplicate->getName(),
             'duplicatedFromId' => (string) $workflow->getId(),
         ]);
 
@@ -96,10 +92,9 @@ class WorkflowService
     public function activate(Workflow $workflow): Workflow
     {
         $workflow->activate();
-        $this->em->flush();
-        $this->audit->log(AuditAction::WorkflowUpdated, 'Workflow', (string) $workflow->getId(), [
+        $this->entityService->update($workflow, AuditAction::WorkflowUpdated, [
             'isActive' => true,
-            'status' => $workflow->getStatus()->value,
+            'status'   => $workflow->getStatus()->value,
         ]);
 
         return $workflow;
@@ -115,12 +110,14 @@ class WorkflowService
         }
 
         $workflow->deactivate();
-        $this->em->flush();
-        $this->audit->log(AuditAction::WorkflowUpdated, 'Workflow', (string) $workflow->getId(), ['isActive' => false]);
+        $this->entityService->update($workflow, AuditAction::WorkflowUpdated, ['isActive' => false]);
 
         return $workflow;
     }
 
+    /**
+     * Updates a workflow's name, trigger, and description.
+     */
     public function update(
         Workflow        $workflow,
         string          $name,
@@ -131,21 +128,24 @@ class WorkflowService
             ->setTrigger($trigger)
             ->setDescription($description);
 
-        $this->em->flush();
-        $this->audit->log(AuditAction::WorkflowUpdated, 'Workflow', (string) $workflow->getId());
+        $this->entityService->update($workflow, AuditAction::WorkflowUpdated);
 
         return $workflow;
     }
 
+    /**
+     * Deletes a workflow and records the audit event.
+     */
     public function delete(Workflow $workflow): void
     {
-        $id = (string) $workflow->getId();
-        $this->em->remove($workflow);
-        $this->em->flush();
-        $this->audit->log(AuditAction::WorkflowDeleted, 'Workflow', $id);
+        $this->entityService->delete($workflow, AuditAction::WorkflowDeleted);
     }
 
-    /** @return Workflow[] */
+    /**
+     * Returns all workflows ordered by creation date descending.
+     *
+     * @return Workflow[]
+     */
     public function findAll(): array
     {
         return $this->workflowRepository->findBy([], ['createdAt' => 'DESC']);
