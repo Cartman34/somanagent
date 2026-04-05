@@ -17,6 +17,10 @@ export default defineConfig({
         target: 'http://nginx:80',
         changeOrigin: true,
       },
+      '/.well-known/mercure': {
+        target: 'http://mercure:80',
+        changeOrigin: true,
+      },
     },
   },
 })

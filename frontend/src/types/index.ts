@@ -223,6 +223,29 @@ export interface TicketLog {
   createdAt: string
 }
 
+/** One normalized realtime event emitted through Mercure. */
+export interface RealtimeUpdateEvent {
+  id: string
+  type: 'project.changed' | 'ticket.changed' | 'ticket.deleted' | 'task.changed' | 'task.deleted' | 'ticket.log.changed' | 'execution.changed'
+  occurredAt: string
+  payload: {
+    projectId?: string
+    ticketId?: string
+    taskId?: string
+    executionId?: string
+    status?: string
+    reason?: string
+    progress?: number
+    priority?: string
+    workflowStepKey?: string
+    taskIds?: string[]
+    logId?: string
+    action?: string
+    kind?: string
+    requiresAnswer?: boolean
+  }
+}
+
 /** Operational task nested under one ticket. */
 export interface TicketTask {
   id: string

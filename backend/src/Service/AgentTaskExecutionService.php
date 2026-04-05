@@ -28,6 +28,7 @@ final class AgentTaskExecutionService
         private readonly AgentTaskExecutionRepository        $executionRepository,
         private readonly AgentTaskExecutionAttemptRepository $attemptRepository,
         private readonly int                                 $messengerAgentTaskMaxRetries,
+        private readonly RealtimeUpdateService               $realtimeUpdateService,
     ) {}
 
     /**
@@ -62,6 +63,7 @@ final class AgentTaskExecutionService
         }
 
         $this->entityService->create($execution);
+        $this->publishExecutionChanged($execution, 'created');
 
         return $execution;
     }
@@ -102,6 +104,7 @@ final class AgentTaskExecutionService
             ->setFinishedAt(null);
 
         $this->entityService->flush();
+        $this->publishExecutionChanged($execution, 'attempt_started');
 
         return $attempt;
     }
@@ -125,6 +128,7 @@ final class AgentTaskExecutionService
             ->setLastErrorScope(null);
 
         $this->entityService->flush();
+        $this->publishExecutionChanged($execution, 'succeeded');
     }
 
     /**
@@ -156,6 +160,7 @@ final class AgentTaskExecutionService
         }
 
         $this->entityService->flush();
+        $this->publishExecutionChanged($execution, $willRetry ? 'retrying' : 'failed');
     }
 
     /**
@@ -179,5 +184,27 @@ final class AgentTaskExecutionService
     private function getDefaultAsyncMaxAttempts(): int
     {
         return max(1, $this->messengerAgentTaskMaxRetries + 1);
+    }
+
+    /**
+     * Publishes one realtime execution update if the execution is linked to a project task.
+     */
+    private function publishExecutionChanged(AgentTaskExecution $execution, string $reason): void
+    {
+        $ticketTasks = $execution->getTicketTasks()->toArray();
+        $task = $ticketTasks[0] ?? null;
+        if (!$task instanceof TicketTask) {
+            return;
+        }
+
+        $this->realtimeUpdateService->publishExecutionChanged(
+            task: $task,
+            execution: $execution,
+            reason: $reason,
+            taskIds: array_map(
+                static fn(TicketTask $linkedTask): string => (string) $linkedTask->getId(),
+                $ticketTasks,
+            ),
+        );
     }
 }

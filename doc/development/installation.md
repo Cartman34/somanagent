@@ -49,6 +49,7 @@ php scripts/dev.php
 URLs:
 - **API**: `http://localhost:8080/api/health`
 - **Interface**: `http://localhost:5173`
+- **Mercure through proxy**: `http://localhost:5173/.well-known/mercure` in dev, `http://localhost:8080/.well-known/mercure` through Nginx
 - **DB**: `localhost:5432` (user: `somanagent`, pass: `somanagent`)
 
 ## Stopping the Environment
@@ -59,13 +60,14 @@ php scripts/dev.php --stop
 
 ## Docker Structure
 
-The `docker-compose.yml` defines 4 services:
+The `docker-compose.yml` defines 6 services:
 
 | Service | Image | Exposed Port | Role |
 |---|---|---|---|
 | `php` | PHP 8.4-FPM + Composer | — | Runs Symfony |
 | `worker` | PHP CLI Messenger worker | — | Consumes async agent jobs |
 | `nginx` | Nginx alpine | 8080 | Proxy to PHP-FPM |
+| `mercure` | Mercure hub | — | Dedicated realtime transport |
 | `db` | PostgreSQL 16 | 5432 | Database |
 | `node` | Node 20 alpine | 5173 | Vite dev server |
 

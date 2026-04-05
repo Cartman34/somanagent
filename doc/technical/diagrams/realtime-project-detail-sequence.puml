@@ -1,0 +1,26 @@
+@startuml
+title Project Detail Realtime Refresh
+
+actor User
+participant "ProjectDetailPage" as UI
+participant "useProjectRealtime" as Hook
+participant "realtimeClient" as Client
+participant "Mercure Hub" as Hub
+participant "TicketTaskService" as TaskService
+participant "RealtimeUpdateService" as UpdateService
+participant "MercureRealtimePublisher" as Publisher
+
+User -> UI : open project detail
+UI -> Hook : mount(projectId, openEntityId)
+Hook -> Client : subscribe(project topics)
+Client -> Hub : EventSource /.well-known/mercure?topic=...
+
+TaskService -> UpdateService : publishTaskChanged(task, "validated", ...)
+UpdateService -> Publisher : publish(RealtimeUpdate)
+Publisher -> Hub : POST update
+Hub --> Client : task.changed event
+Client --> Hook : onMessage(event)
+Hook -> UI : invalidate relevant queries
+UI -> UI : React Query refetches board/drawer/audit/tokens
+
+@enduml

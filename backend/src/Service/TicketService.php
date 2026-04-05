@@ -37,6 +37,7 @@ final class TicketService
         private readonly WorkflowStepRepository       $workflowStepRepository,
         private readonly WorkflowStepActionRepository $workflowStepActionRepository,
         private readonly TicketTaskService            $ticketTaskService,
+        private readonly RealtimeUpdateService        $realtimeUpdateService,
     ) {}
 
     /**
@@ -76,6 +77,7 @@ final class TicketService
         ]);
 
         $this->createWorkflowSeedTasks($ticket);
+        $this->realtimeUpdateService->publishTicketChanged($ticket, 'created');
 
         return $ticket;
     }
@@ -99,6 +101,7 @@ final class TicketService
         $ticket->setFeature($feature);
 
         $this->entityService->update($ticket, AuditAction::TaskUpdated);
+        $this->realtimeUpdateService->publishTicketChanged($ticket, 'updated');
 
         return $ticket;
     }
@@ -114,6 +117,9 @@ final class TicketService
         $this->entityService->update($ticket, AuditAction::TaskStatusChanged, [
             'from' => $previous->value,
             'to'   => $status->value,
+        ]);
+        $this->realtimeUpdateService->publishTicketChanged($ticket, 'status_changed', [
+            'status' => $status->value,
         ]);
 
         return $ticket;
@@ -143,6 +149,9 @@ final class TicketService
         $this->entityService->update($ticket, AuditAction::TaskUpdated, [
             'workflow_step' => $nextStep->getKey(),
         ]);
+        $this->realtimeUpdateService->publishTicketChanged($ticket, 'workflow_step_changed', [
+            'workflowStepKey' => $nextStep->getKey(),
+        ]);
 
         return $ticket;
     }
@@ -152,7 +161,10 @@ final class TicketService
      */
     public function delete(Ticket $ticket): void
     {
+        $project = $ticket->getProject();
+        $ticketId = (string) $ticket->getId();
         $this->entityService->delete($ticket, AuditAction::TaskDeleted);
+        $this->realtimeUpdateService->publishTicketDeleted($project, $ticketId);
     }
 
     /**

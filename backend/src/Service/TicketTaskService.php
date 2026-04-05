@@ -50,6 +50,7 @@ final class TicketTaskService
         private readonly WorkflowStepRepository $workflowStepRepository,
         private readonly AgentTaskExecutionService $agentTaskExecutionService,
         private readonly TicketLogService $ticketLogService,
+        private readonly RealtimeUpdateService $realtimeUpdateService,
         private readonly RequestCorrelationService $requestCorrelation,
         private readonly MessageBusInterface $bus,
         private readonly TranslatorInterface $translator,
@@ -96,6 +97,7 @@ final class TicketTaskService
             'ticket'    => (string) $ticket->getId(),
             'actionKey' => $action->getKey(),
         ]);
+        $this->realtimeUpdateService->publishTaskChanged($task, 'created');
 
         return $task;
     }
@@ -129,6 +131,7 @@ final class TicketTaskService
         $task->setAssignedAgent($agent ?? $this->resolveAgentForTask($task));
 
         $this->entityService->update($task, AuditAction::TaskUpdated);
+        $this->realtimeUpdateService->publishTaskChanged($task, 'updated');
 
         return $task;
     }
@@ -205,6 +208,9 @@ final class TicketTaskService
         ));
 
         $this->entityService->flush();
+        $this->realtimeUpdateService->publishTaskChanged($task, 'dispatched', [
+            'status' => $task->getStatus()->value,
+        ]);
 
         return [
             'agent' => $resolvedAgent,
@@ -321,6 +327,15 @@ final class TicketTaskService
 
         if ($requiresFlush) {
             $this->entityService->flush();
+            foreach ($this->findTasksForWorkflowStep($ticket, $currentStep) as $task) {
+                if ($task->getStatus() !== TaskStatus::AwaitingDispatch) {
+                    continue;
+                }
+
+                $this->realtimeUpdateService->publishTaskChanged($task, 'awaiting_dispatch', [
+                    'status' => $task->getStatus()->value,
+                ]);
+            }
         }
 
         $this->advanceTicketStepIfAutomatic($ticket);
@@ -386,6 +401,9 @@ final class TicketTaskService
         } else {
             $this->entityService->flush();
         }
+        $this->realtimeUpdateService->publishTaskChanged($task, 'execution_failed', [
+            'status' => $task->getStatus()->value,
+        ]);
 
         return $task;
     }
@@ -405,6 +423,9 @@ final class TicketTaskService
             'from' => $previous->value,
             'to'   => $status->value,
         ]);
+        $this->realtimeUpdateService->publishTaskChanged($task, 'status_changed', [
+            'status' => $status->value,
+        ]);
 
         if ($status === TaskStatus::Done) {
             $this->dispatchReadyDependents($task);
@@ -420,6 +441,9 @@ final class TicketTaskService
     {
         $task->setProgress($progress);
         $this->entityService->update($task, AuditAction::TaskProgressUpdated, ['progress' => $progress]);
+        $this->realtimeUpdateService->publishTaskChanged($task, 'progress_updated', [
+            'progress' => $progress,
+        ]);
 
         return $task;
     }
@@ -435,6 +459,9 @@ final class TicketTaskService
             'from' => $previous->value,
             'to'   => $priority->value,
         ]);
+        $this->realtimeUpdateService->publishTaskChanged($task, 'priority_changed', [
+            'priority' => $priority->value,
+        ]);
 
         return $task;
     }
@@ -446,6 +473,9 @@ final class TicketTaskService
     {
         $task->setStatus(TaskStatus::Review);
         $this->entityService->update($task, AuditAction::TaskValidationAsked, ['comment' => $comment]);
+        $this->realtimeUpdateService->publishTaskChanged($task, 'validation_requested', [
+            'status' => $task->getStatus()->value,
+        ]);
 
         return $task;
     }
@@ -457,6 +487,9 @@ final class TicketTaskService
     {
         $task->setStatus(TaskStatus::Done)->setProgress(100);
         $this->entityService->update($task, AuditAction::TaskValidated);
+        $this->realtimeUpdateService->publishTaskChanged($task, 'validated', [
+            'status' => $task->getStatus()->value,
+        ]);
 
         $this->dispatchReadyDependents($task);
 
@@ -470,6 +503,9 @@ final class TicketTaskService
     {
         $task->setStatus(TaskStatus::InProgress);
         $this->entityService->update($task, AuditAction::TaskRejected, ['reason' => $reason]);
+        $this->realtimeUpdateService->publishTaskChanged($task, 'rejected', [
+            'status' => $task->getStatus()->value,
+        ]);
 
         return $task;
     }
@@ -543,7 +579,11 @@ final class TicketTaskService
      */
     public function delete(TicketTask $task): void
     {
+        $project = $task->getTicket()->getProject();
+        $ticketId = (string) $task->getTicket()->getId();
+        $taskId = (string) $task->getId();
         $this->entityService->delete($task, AuditAction::TaskDeleted);
+        $this->realtimeUpdateService->publishTaskDeleted($project, $ticketId, $taskId);
     }
 
     /**
@@ -579,6 +619,7 @@ final class TicketTaskService
             'actionKey'        => $action->getKey(),
             'createWithTicket' => true,
         ]);
+        $this->realtimeUpdateService->publishTaskChanged($task, 'seed_created');
 
         return $task;
     }
@@ -672,6 +713,9 @@ final class TicketTaskService
         $ticket->setWorkflowStep($nextStep);
 
         $this->entityService->flush();
+        $this->realtimeUpdateService->publishTicketChanged($ticket, 'workflow_step_changed', [
+            'workflowStepKey' => $nextStep->getKey(),
+        ]);
         $this->dispatchEligibleTasksForCurrentStep($ticket);
     }
 

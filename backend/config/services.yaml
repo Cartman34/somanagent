@@ -29,6 +29,8 @@ services:
         arguments:
             $adapters: !tagged_iterator app.agent_adapter
 
+    App\Port\RealtimePublisherPort: '@App\Adapter\Realtime\MercureRealtimePublisher'
+
     # Paramètre skills_dir injecté dans SkillService
     App\Service\SkillService:
         arguments:
@@ -37,3 +39,8 @@ services:
     App\Service\AgentTaskExecutionService:
         arguments:
             $messengerAgentTaskMaxRetries: '%messenger_agent_task_max_retries%'
+
+    App\Adapter\Realtime\MercureRealtimePublisher:
+        arguments:
+            $hubUrl: '%env(MERCURE_PUBLISH_URL)%'
+            $jwtSecret: '%env(MERCURE_PUBLISHER_JWT_KEY)%'
