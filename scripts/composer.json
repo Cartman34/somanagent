@@ -1,0 +1,9 @@
+{
+    "name": "somanagent/scripts",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "SoManAgent\\Script\\": "src/"
+        }
+    }
+}

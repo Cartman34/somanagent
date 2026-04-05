@@ -53,6 +53,12 @@ This applies to `::class` references in constants and arrays as well.
 
 ---
 
+## Abstract Classes
+
+An abstract class name must be prefixed with `Abstract`.
+
+---
+
 ## PHPDoc
 
 PHPDoc is required on:

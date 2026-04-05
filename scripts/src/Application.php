@@ -5,13 +5,15 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/Environment.php';
-require_once __DIR__ . '/Console.php';
-require_once __DIR__ . '/Exception/WslRequiredException.php';
-require_once __DIR__ . '/Exception/PhpNotAvailableException.php';
+namespace SoManAgent\Script;
+
+use SoManAgent\Script\Exception\PhpNotAvailableException;
+use SoManAgent\Script\Exception\WslRequiredException;
 
 /**
  * Main application entry point for SoManAgent CLI scripts.
+ *
+ * Singleton — call Application::getInstance() to bootstrap and retrieve the instance.
  *
  * Responsibilities:
  *  1. Create and expose a Console instance (line endings auto-detected).
@@ -24,30 +26,39 @@ require_once __DIR__ . '/Exception/PhpNotAvailableException.php';
  *
  *   require_once __DIR__ . '/src/Application.php';
  *
- *   try {
- *       $app = new Application();
- *       $app->boot();
- *   } catch (\RuntimeException $e) {
- *       fwrite(STDERR, "\n❌ " . $e->getMessage() . "\n\n");
- *       exit(1);
- *   }
- *
+ *   $app = Application::getInstance();
  *   $c = $app->console;
  *   $c->step('Building containers');
  *   $app->runCommand('docker compose up -d --build');
  */
 final class Application
 {
+    private static ?self $instance = null;
+
     public readonly Console $console;
 
     /** True when running in WSL with stdout piped to a Windows process. */
     private readonly bool $crlfMode;
 
-    public function __construct()
+    private function __construct()
     {
-        $this->console  = new Console();
-        // Console is the single source of truth for CRLF detection
+        $this->console  = Console::getInstance();
         $this->crlfMode = $this->console->usesCrlf();
+    }
+
+    /**
+     * Bootstrap the environment and return the singleton instance.
+     *
+     * @throws WslRequiredException     WSL 2 is not installed or unavailable.
+     * @throws PhpNotAvailableException PHP is not installed inside WSL.
+     */
+    public static function getInstance(): self
+    {
+        if (self::$instance === null) {
+            self::$instance = new self();
+            self::$instance->boot();
+        }
+        return self::$instance;
     }
 
     /**

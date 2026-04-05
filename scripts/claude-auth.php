@@ -8,42 +8,8 @@
 // Usage: php scripts/claude-auth.php sync [--force]
 // Usage: php scripts/claude-auth.php login [--force]
 
-declare(strict_types=1);
+require_once __DIR__ . '/src/bootstrap.php';
 
-if (in_array('-h', $argv, true) || in_array('--help', $argv, true)) {
-    echo "Manage Claude CLI auth with WSL as the source of truth and sync it to Docker\n\n";
-    echo "Usage: php scripts/claude-auth.php status\n";
-    echo "Usage: php scripts/claude-auth.php sync [--force]\n";
-    echo "Usage: php scripts/claude-auth.php login [--force]\n";
-    exit(0);
-}
+use SoManAgent\Script\Runner\ClaudeAuthRunner;
 
-require_once __DIR__ . '/src/Application.php';
-require_once __DIR__ . '/src/ClaudeAuthManager.php';
-
-try {
-    $app = new Application();
-    $app->boot();
-} catch (\RuntimeException $e) {
-    fwrite(STDERR, "\n❌ " . $e->getMessage() . "\n\n");
-    exit(1);
-}
-
-$root = dirname(__DIR__);
-chdir($root);
-
-$command = $argv[1] ?? 'status';
-$force = in_array('--force', $argv, true);
-
-try {
-    $manager = new ClaudeAuthManager($app, $root);
-
-    match ($command) {
-        'status' => $manager->showStatus(),
-        'sync' => $manager->sync($force),
-        'login' => $manager->loginAndSync($force),
-        default => throw new \RuntimeException(sprintf('Unknown command "%s". Use status, sync, or login.', $command)),
-    };
-} catch (\RuntimeException $e) {
-    $app->console->fail($e->getMessage());
-}
+(new ClaudeAuthRunner())->handle($argv);

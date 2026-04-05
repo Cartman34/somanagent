@@ -5,7 +5,10 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/DockerComposeServiceRunner.php';
+namespace SoManAgent\Script\Runner;
+
+use SoManAgent\Script\Application;
+use SoManAgent\Script\Console;
 
 /**
  * Runs Doctrine commands (migrations, fixtures) and psql commands.
