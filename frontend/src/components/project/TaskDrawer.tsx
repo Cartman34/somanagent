@@ -46,38 +46,37 @@ import {
 
 const TASK_DRAWER_TRANSLATION_KEYS = [
   'common.action.close',
-  'drawer.collapse',
-  'drawer.description',
-  'drawer.error.resume_failed',
-  'drawer.expand',
-  'drawer.loading',
-  'drawer.metrics.tokens_consumed',
-  'drawer.resume.button',
-  'drawer.resume.loading',
-  'drawer.resume.manual_help',
-  'drawer.resume.title',
-  'drawer.subtasks.title',
-  'drawer.ticket.action',
-  'drawer.ticket.agent',
-  'drawer.ticket.description',
-  'drawer.ticket.latest_run',
-  'drawer.ticket.status',
-  'drawer.ticket.step',
-  'drawer.ticket.title',
-  'drawer.ticket_tasks.empty',
-  'drawer.ticket_tasks.title',
-  'drawer.workflow.current_step',
-  'drawer.workflow.no_transition',
-  'drawer.workflow.none',
-  'drawer.workflow.section_title',
-  'drawer.workflow.transition_loading',
-  'drawer.workflow.transition_to',
-  'event.detail.open',
-  ...Object.values(STATUS_LABEL_KEYS),
+  'common.action.open',
+  'ticket.detail.collapse',
+  'ticket.detail.description_label',
+  'ticket.detail.expand',
+  'ticket.detail.loading',
+  'ticket.detail.metric.tokens_consumed',
+  'ticket.detail.resume.button',
+  'ticket.detail.resume.error',
+  'ticket.detail.resume.loading',
+  'ticket.detail.resume.manual_help',
+  'ticket.detail.resume.title',
+  'ticket.detail.subtasks_title',
+  'ticket.detail.action_label',
+  'ticket.detail.agent_label',
+  'ticket.detail.latest_run_label',
+  'ticket.detail.status_label',
+  'ticket.detail.step_label',
+  'ticket.detail.title',
+  'ticket.detail.tasks_empty',
+  'ticket.detail.tasks_title',
+  'ticket.detail.workflow.current_step',
+  'ticket.detail.workflow.no_transition',
+  'ticket.detail.workflow.none',
+  'ticket.detail.workflow.section_title',
+  'ticket.detail.workflow.transition_loading',
+  'ticket.detail.workflow.transition_to',
 ] as const
 
 const TASK_DRAWER_CATALOG_KEYS = [
   ...CATALOG_TRANSLATION_KEYS,
+  ...Object.values(STATUS_LABEL_KEYS),
 ] as const
 
 function StatusIcon({ status }: { status: TaskStatus }) {
@@ -158,8 +157,8 @@ function resolveTaskActionLabel(task: TicketTask, tc: (key: CatalogTranslationKe
   return actionLabelKey ? tc(actionLabelKey) : task.agentAction.label
 }
 
-function statusLabel(status: TaskStatus, t: (key: string) => string): string {
-  return t(STATUS_LABEL_KEYS[status])
+function statusLabel(status: TaskStatus, tc: (key: CatalogTranslationKey) => string): string {
+  return tc(STATUS_LABEL_KEYS[status] as CatalogTranslationKey)
 }
 
 /**
@@ -257,7 +256,7 @@ export default function TaskDrawer({
     },
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-      setTaskDispatchError(msg ?? t('drawer.error.resume_failed'))
+      setTaskDispatchError(msg ?? t('ticket.detail.resume.error'))
     },
   })
 
@@ -281,7 +280,7 @@ export default function TaskDrawer({
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
       setPendingTaskActionId(null)
-      setTaskDispatchError(msg ?? t('drawer.error.resume_failed'))
+      setTaskDispatchError(msg ?? t('ticket.detail.resume.error'))
     },
   })
 
@@ -321,10 +320,10 @@ export default function TaskDrawer({
       <div className="section-pilot-transition">
         <div className="space-y-1.5">
           <p className="section-title">
-            {t('drawer.workflow.section_title')}
+            {t('ticket.detail.workflow.section_title')}
           </p>
           <p className="section-legend">
-            {t('drawer.workflow.current_step')}: {ticketEntity.workflowStep?.name ?? t('drawer.workflow.none')}
+            {t('ticket.detail.workflow.current_step')}: {ticketEntity.workflowStep?.name ?? t('ticket.detail.workflow.none')}
           </p>
         </div>
 
@@ -336,15 +335,15 @@ export default function TaskDrawer({
             disabled={!projectHasTeam || advanceMutation.isPending}
           >
             {advanceMutation.isPending
-              ? t('drawer.workflow.transition_loading')
-              : t('drawer.workflow.transition_to', { step: ticketEntity.workflowStepAllowedTransitions[0]?.name ?? '' })}
+              ? t('ticket.detail.workflow.transition_loading')
+              : t('ticket.detail.workflow.transition_to', { step: ticketEntity.workflowStepAllowedTransitions[0]?.name ?? '' })}
           </button>
         )}
       </div>
 
       {ticketEntity.workflowStepAllowedTransitions.length === 0 && (
         <p className="mt-3 text-xs" style={{ color: 'var(--text)' }}>
-          {t('drawer.workflow.no_transition')}
+          {t('ticket.detail.workflow.no_transition')}
         </p>
       )}
 
@@ -352,14 +351,14 @@ export default function TaskDrawer({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: 'var(--muted)' }}>
-              {t('drawer.ticket_tasks.title')}
+              {t('ticket.detail.tasks_title')}
             </p>
           </div>
         </div>
 
         {ticketTasks.length === 0 ? (
           <div className="mt-4 rounded-xl border border-dashed px-4 py-4 text-sm" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
-            {t('drawer.ticket_tasks.empty')}
+            {t('ticket.detail.tasks_empty')}
           </div>
         ) : (
           <div className="mt-4 space-y-3">
@@ -399,8 +398,8 @@ export default function TaskDrawer({
                       className="inline-flex h-9 w-9 items-center justify-center rounded-lg border"
                       style={{ borderColor: 'var(--border)', background: 'var(--surface2)', color: 'var(--muted)' }}
                       disabled={!canDispatch || isPending}
-                      aria-label={t('drawer.resume.button')}
-                      title={t('drawer.resume.button')}
+                      aria-label={t('ticket.detail.resume.button')}
+                      title={t('ticket.detail.resume.button')}
                       onClick={() => taskDispatchMutation.mutate(task)}
                     >
                         {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
@@ -411,8 +410,8 @@ export default function TaskDrawer({
                         className="inline-flex h-9 w-9 items-center justify-center rounded-lg border"
                         style={{ borderColor: 'var(--border)', background: 'var(--surface2)', color: 'var(--muted)' }}
                         onClick={() => setLinkedTaskId(task.id)}
-                        aria-label={t('event.detail.open')}
-                        title={t('event.detail.open')}
+                        aria-label={t('common.action.open')}
+                        title={t('common.action.open')}
                       >
                         <ChevronRight className="h-3.5 w-3.5" />
                       </button>
@@ -422,8 +421,8 @@ export default function TaskDrawer({
                         className="inline-flex h-9 w-9 items-center justify-center rounded-lg border"
                         style={{ borderColor: 'var(--border)', background: 'var(--surface2)', color: 'var(--muted)' }}
                         onClick={() => toggleTaskExpansion(task.id)}
-                        aria-label={expanded ? t('drawer.collapse') : t('drawer.expand')}
-                        title={expanded ? t('drawer.collapse') : t('drawer.expand')}
+                        aria-label={expanded ? t('ticket.detail.collapse') : t('ticket.detail.expand')}
+                        title={expanded ? t('ticket.detail.collapse') : t('ticket.detail.expand')}
                       >
                         {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                       </button>
@@ -435,17 +434,17 @@ export default function TaskDrawer({
                       {task.description && (
                         <div>
                           <p className="mb-1 text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: 'var(--muted)' }}>
-                            {t('drawer.description')}
+                            {t('ticket.detail.description_label')}
                           </p>
                           <Markdown content={task.description} density="compact" />
                         </div>
                       )}
 
                       <div className="flex flex-wrap items-center gap-2 text-sm">
-                        <Badge tone="neutral">{t('drawer.ticket.status')}: {statusLabel(task.status, t)}</Badge>
-                        {task.workflowStep && <Badge tone="accent">{t('drawer.ticket.step')}: {task.workflowStep.name}</Badge>}
-                        {task.assignedAgent && <Badge tone="primary">{t('drawer.ticket.agent')}: {task.assignedAgent.name}</Badge>}
-                        <Badge tone="warning">{t('drawer.ticket.action')}: {resolveTaskActionLabel(task, tc)}</Badge>
+                        <Badge tone="neutral">{t('ticket.detail.status_label')}: {statusLabel(task.status, tc)}</Badge>
+                        {task.workflowStep && <Badge tone="accent">{t('ticket.detail.step_label')}: {task.workflowStep.name}</Badge>}
+                        {task.assignedAgent && <Badge tone="primary">{t('ticket.detail.agent_label')}: {task.assignedAgent.name}</Badge>}
+                        <Badge tone="warning">{t('ticket.detail.action_label')}: {resolveTaskActionLabel(task, tc)}</Badge>
                       </div>
 
                       {task.dependsOn.length > 0 && (
@@ -465,7 +464,7 @@ export default function TaskDrawer({
                         <div className="flex flex-wrap items-center gap-2 rounded-lg border px-3 py-3 text-sm" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
                           <StatusIcon status={task.status} />
                           <span className="text-xs" style={{ color: 'var(--muted)' }}>
-                            {t('drawer.ticket.latest_run')}:{" "}
+                            {t('ticket.detail.latest_run_label')}:{" "}
                             {latest.currentAttempt}/{latest.maxAttempts}
                           </span>
                           <span className="ml-auto text-xs" style={{ color: 'var(--muted)' }}>
@@ -494,10 +493,10 @@ export default function TaskDrawer({
     <section className="space-y-4">
       <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
         <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
-          {t('drawer.resume.title')}
+          {t('ticket.detail.resume.title')}
         </p>
         <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
-          {t('drawer.resume.manual_help')}
+          {t('ticket.detail.resume.manual_help')}
         </p>
         <button
           type="button"
@@ -505,10 +504,10 @@ export default function TaskDrawer({
           style={{ background: 'var(--brand-dim)', color: 'var(--brand)' }}
           onClick={() => taskResumeMutation.mutate(taskEntity.id)}
           disabled={!projectHasTeam || taskHasActiveExecution(taskEntity) || taskResumeMutation.isPending}
-          aria-label={t('drawer.resume.button')}
+          aria-label={t('ticket.detail.resume.button')}
         >
           {taskResumeMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
-          {taskResumeMutation.isPending ? t('drawer.resume.loading') : t('drawer.resume.button')}
+          {taskResumeMutation.isPending ? t('ticket.detail.resume.loading') : t('ticket.detail.resume.button')}
         </button>
         {taskDispatchError && (
           <p className="mt-3 text-sm" style={{ color: '#b91c1c' }}>
@@ -520,7 +519,7 @@ export default function TaskDrawer({
       {childItems.length > 0 && (
         <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
           <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
-            {t('drawer.subtasks.title')}
+            {t('ticket.detail.subtasks_title')}
           </p>
           <div className="mt-4 space-y-2">
             {childItems.map((child) => (
@@ -540,11 +539,11 @@ export default function TaskDrawer({
       <div className="space-y-5 px-5 py-5">
         <div className="space-y-3">
           <h2 className="text-xl font-semibold tracking-tight" style={{ color: 'var(--text)' }}>
-            {isLoading ? t('drawer.loading') : (entityData.title ?? '—')}
+            {isLoading ? t('ticket.detail.loading') : (entityData.title ?? '—')}
           </h2>
 
           <div className="flex flex-wrap gap-2">
-            <Badge tone="neutral">{statusLabel(entityData.status, t)}</Badge>
+            <Badge tone="neutral">{statusLabel(entityData.status, tc)}</Badge>
             {isTicket(entityData) && entityData.workflowStep && (
               <Badge tone="accent">{entityData.workflowStep.name}</Badge>
             )}
@@ -572,7 +571,7 @@ export default function TaskDrawer({
         {entityData.description && (
           <section className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
             <p className={BLOCK_LABEL_CLASS + ' mb-2'}>
-              {t('drawer.ticket.description')}
+              {t('ticket.detail.description_label')}
             </p>
             <Markdown content={entityData.description} density="compact" preserveLineBreaks />
           </section>
@@ -599,7 +598,7 @@ export default function TaskDrawer({
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
-                  {t('drawer.metrics.tokens_consumed')}
+                  {t('ticket.detail.metric.tokens_consumed')}
                 </p>
               </div>
             </div>
@@ -640,7 +639,7 @@ export default function TaskDrawer({
       <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: 'var(--border)' }}>
         <div className="ml-2 min-w-0">
           <span className="truncate text-sm font-semibold" style={{ color: 'var(--text)' }}>
-            {t('drawer.ticket.title')}
+            {t('ticket.detail.title')}
           </span>
         </div>
         <div className="ml-4 flex flex-shrink-0 items-center gap-2">
@@ -649,11 +648,11 @@ export default function TaskDrawer({
             className="inline-flex items-center gap-1.5 rounded border px-3 py-1.5 text-xs font-medium"
             style={{ background: 'var(--surface2)', color: 'var(--muted)' }}
             onClick={() => onExpandedChange(!isExpanded)}
-            aria-label={isExpanded ? t('drawer.collapse') : t('drawer.expand')}
-            title={isExpanded ? t('drawer.collapse') : t('drawer.expand')}
+            aria-label={isExpanded ? t('ticket.detail.collapse') : t('ticket.detail.expand')}
+            title={isExpanded ? t('ticket.detail.collapse') : t('ticket.detail.expand')}
           >
             {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            <span>{isExpanded ? t('drawer.collapse') : t('drawer.expand')}</span>
+            <span>{isExpanded ? t('ticket.detail.collapse') : t('ticket.detail.expand')}</span>
           </button>
           <button
             onClick={onClose}

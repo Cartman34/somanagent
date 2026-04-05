@@ -55,3 +55,29 @@ execution:
     failed: 'Échouée'
     dead_letter: 'Échec définitif'
     cancelled: 'Annulée'
+
+task:
+  type:
+    user_story: 'Story'
+    bug: 'Bug'
+    task: 'Tâche'
+  priority:
+    low: 'Basse'
+    medium: 'Moyenne'
+    high: 'Haute'
+    critical: 'Critique'
+  status:
+    backlog: 'Backlog'
+    todo: 'À faire'
+    in_progress: 'En cours'
+    review: 'En revue'
+    done: 'Terminé'
+    cancelled: 'Annulé'
+  execution_status:
+    pending: 'En attente'
+    running: 'En cours'
+    retrying: 'Nouvelle tentative'
+    succeeded: 'Réussie'
+    failed: 'Échouée'
+    dead_letter: 'Échec définitif'
+    cancelled: 'Annulée'

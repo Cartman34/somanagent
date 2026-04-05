@@ -66,6 +66,16 @@ const PROJECT_DETAIL_TRANSLATION_KEYS = [
   'project.progress.rework_title',
 ] as const
 
+const PROJECT_TAB_LABEL_KEYS: Record<Tab, string> = {
+  general: 'project.detail.tabs.general',
+  board: 'project.detail.tabs.board',
+  tasks: 'project.detail.tabs.tasks',
+  team: 'project.detail.tabs.team',
+  modules: 'project.detail.tabs.modules',
+  audit: 'project.detail.tabs.audit',
+  tokens: 'project.detail.tabs.tokens',
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 // Re-export Tab type so consumers can import it from this module if needed
@@ -351,7 +361,7 @@ export default function ProjectDetailPage() {
             }}
           >
             <Icon className="w-3.5 h-3.5" />
-            {t(`project.detail.tabs.${key}`)}
+            {t(PROJECT_TAB_LABEL_KEYS[key])}
           </button>
         ))}
       </div>

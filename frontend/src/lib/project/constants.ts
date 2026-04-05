@@ -11,6 +11,7 @@ import type { ComponentType } from 'react'
 import {
   Settings, Kanban, ListTodo, Users, Code2, History, Coins,
 } from 'lucide-react'
+import { CATALOG_DOMAIN } from '@/lib/catalog'
 import type {
   TaskType,
   TaskPriority,
@@ -23,7 +24,7 @@ import type {
 // ─── Translation domain & key maps ────────────────────────────────────────────
 
 /** Translation domain identifier for project-level UI constants. */
-export const PROJECT_CONSTANTS_DOMAIN = 'app'
+export const PROJECT_CONSTANTS_DOMAIN = CATALOG_DOMAIN
 
 /** Translation key per task type. */
 export const TYPE_LABEL_KEYS: Record<TaskType, string> = {

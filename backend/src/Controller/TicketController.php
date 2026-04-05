@@ -89,7 +89,7 @@ class TicketController extends AbstractController
 
         $data = $request->toArray();
         if (empty($data['title'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.validation.title_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.title_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $type = TaskType::from($data['type'] ?? TaskType::UserStory->value);
@@ -119,12 +119,12 @@ class TicketController extends AbstractController
     {
         $ticket = $this->ticketService->findById($ticketId);
         if ($ticket === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
         if (empty($data['title'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.validation.title_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.title_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
         if (empty($data['actionKey'])) {
             return $this->json($this->apiErrorPayloadFactory->fromMessage('An actionKey is required to create a task.'), Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -170,7 +170,7 @@ class TicketController extends AbstractController
 
         $data = $request->toArray();
         if (empty($data['title'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.validation.title_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.title_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $priority = TaskPriority::from($data['priority'] ?? TaskPriority::Medium->value);
@@ -203,7 +203,7 @@ class TicketController extends AbstractController
     {
         $ticket = $this->ticketService->findById($id);
         if ($ticket === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json($this->serializeApiTicket(
@@ -224,7 +224,7 @@ class TicketController extends AbstractController
     {
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json($this->serializeApiTicketTask(
@@ -244,7 +244,7 @@ class TicketController extends AbstractController
     {
         $ticket = $this->ticketService->findById($id);
         if ($ticket === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
@@ -268,7 +268,7 @@ class TicketController extends AbstractController
     {
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
@@ -298,7 +298,7 @@ class TicketController extends AbstractController
     {
         $data = $request->toArray();
         if (empty($data['status'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.validation.status_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.status_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $status = TaskStatus::from($data['status']);
@@ -310,7 +310,7 @@ class TicketController extends AbstractController
 
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->ticketTaskService->changeStatus($task, $status);
@@ -326,7 +326,7 @@ class TicketController extends AbstractController
     {
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
@@ -344,7 +344,7 @@ class TicketController extends AbstractController
     {
         $data = $request->toArray();
         if (empty($data['priority'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.validation.priority_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.priority_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $priority = TaskPriority::from($data['priority']);
@@ -356,7 +356,7 @@ class TicketController extends AbstractController
 
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->ticketTaskService->reprioritize($task, $priority);
@@ -372,7 +372,7 @@ class TicketController extends AbstractController
     {
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->ticketTaskService->validate($task);
@@ -388,7 +388,7 @@ class TicketController extends AbstractController
     {
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
@@ -405,7 +405,7 @@ class TicketController extends AbstractController
     {
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
@@ -424,7 +424,7 @@ class TicketController extends AbstractController
         $data = $request->toArray();
         $content = trim((string) ($data['content'] ?? ''));
         if ($content === '') {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.validation.content_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.content_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $ticket = $this->ticketService->findById($id);
@@ -435,7 +435,7 @@ class TicketController extends AbstractController
         }
 
         if ($ticket === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         try {
@@ -467,7 +467,7 @@ class TicketController extends AbstractController
     {
         $ticket = $this->ticketService->findById($id);
         if ($ticket === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         if (($response = $this->requireProjectTeamForProgress($ticket->getProject())) !== null) {
@@ -475,7 +475,7 @@ class TicketController extends AbstractController
         }
 
         if (!$ticket->isStory()) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.story.error.unsupported_user_story_or_bug'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.story.error.unsupported_user_story_or_bug'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         try {
@@ -496,7 +496,7 @@ class TicketController extends AbstractController
     {
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         if (($response = $this->requireProjectTeamForProgress($task->getTicket()->getProject())) !== null) {
@@ -526,12 +526,12 @@ class TicketController extends AbstractController
     {
         $ticket = $this->ticketService->findById($id);
         if ($ticket !== null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.execution.error.ticket_level_execution_unsupported'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.execution.error.ticket_level_execution_unsupported'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         if (($response = $this->requireProjectTeamForProgress($task->getTicket()->getProject())) !== null) {
@@ -560,17 +560,17 @@ class TicketController extends AbstractController
         if (!empty($data['agentId'])) {
             $agent = $this->agentRepository->find($data['agentId']);
             if ($agent === null) {
-                return $this->json($this->apiErrorPayloadFactory->create('tickets.execution.error.agent_not_found'), Response::HTTP_NOT_FOUND);
+                return $this->json($this->apiErrorPayloadFactory->create('ticket.execution.error.agent_not_found'), Response::HTTP_NOT_FOUND);
             }
         }
 
         if ($ticket !== null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.execution.error.ticket_level_execution_unsupported'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.execution.error.ticket_level_execution_unsupported'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         if (($response = $this->requireProjectTeamForProgress($task->getTicket()->getProject())) !== null) {
@@ -599,7 +599,7 @@ class TicketController extends AbstractController
     {
         $ticket = $this->ticketService->findById($id);
         if ($ticket === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->ticketService->delete($ticket);
@@ -615,7 +615,7 @@ class TicketController extends AbstractController
     {
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->ticketTaskService->delete($task);

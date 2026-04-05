@@ -21,6 +21,9 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/logs')]
 final class LogController extends AbstractController
 {
+    /**
+     * Wires log repositories and rendering services used by the logs API.
+     */
     public function __construct(
         private readonly LogOccurrenceRepository $occurrenceRepository,
         private readonly LogEventRepository $eventRepository,
@@ -128,18 +131,18 @@ final class LogController extends AbstractController
     {
         $payload = json_decode($request->getContent(), true);
         if (!is_array($payload)) {
-            return $this->json($this->apiErrorPayloadFactory->createForField('message', 'logs.occurrence.invalid_json'), 400);
+            return $this->json($this->apiErrorPayloadFactory->createForField('message', 'log.validation.occurrence_invalid_json'), 400);
         }
 
         $status = $payload['status'] ?? null;
         if (!is_string($status) || $status === '') {
-            return $this->json($this->apiErrorPayloadFactory->createForField('status', 'logs.occurrence.invalid_status'), 400);
+            return $this->json($this->apiErrorPayloadFactory->createForField('status', 'log.validation.occurrence_invalid_status'), 400);
         }
 
         try {
             $this->logService->updateOccurrenceStatus($occurrence, $status);
         } catch (\InvalidArgumentException) {
-            return $this->json($this->apiErrorPayloadFactory->createForField('status', 'logs.occurrence.invalid_status'), 400);
+            return $this->json($this->apiErrorPayloadFactory->createForField('status', 'log.validation.occurrence_invalid_status'), 400);
         }
 
         return $this->json([
@@ -155,7 +158,7 @@ final class LogController extends AbstractController
     {
         $payload = json_decode($request->getContent(), true);
         if (!is_array($payload)) {
-            return $this->json($this->apiErrorPayloadFactory->createForField('message', 'logs.ingest.invalid_json'), 400);
+            return $this->json($this->apiErrorPayloadFactory->createForField('message', 'log.validation.ingest_invalid_json'), 400);
         }
 
         $titleI18n = $this->readI18nPayload($payload, 'titleI18n');
@@ -167,7 +170,7 @@ final class LogController extends AbstractController
         $message = $this->sanitizeMessage($payload['message'] ?? null) ?? ($messageI18n !== null ? '' : null);
 
         if ($source === null || $category === null || $level === null || $title === null || $message === null) {
-            return $this->json($this->apiErrorPayloadFactory->createForField('message', 'logs.ingest.invalid_fields'), 400);
+            return $this->json($this->apiErrorPayloadFactory->createForField('message', 'log.validation.ingest_invalid_fields'), 400);
         }
 
         $context = is_array($payload['context'] ?? null) ? $payload['context'] : null;

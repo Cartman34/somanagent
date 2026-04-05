@@ -44,9 +44,7 @@ Recommended domains:
 - `logs`
   persisted log titles and messages
 - `catalog`
-  agent action and event labels
-- `ticket-activity-feed`
-  ticket activity feed messages
+  agent action labels, enums, and known persisted string values
 
 Start small, but do not overload `messages` with everything.
 
@@ -74,6 +72,9 @@ Rules:
 - entity names are singular (`project`, `task`, `log`, not `projects`, `tasks`, `logs`)
 - no `ui.`, `drawer.`, or visual-component prefixes — use entity-based namespaces
 - no generic `errors.` prefix — use `error.*` and `common.*` as the only cross-cutting namespaces
+- do not build translation keys dynamically
+- all allowed variations must go through explicit static maps
+- a translation key belongs to exactly one domain for its whole lifecycle
 
 ## Persisted Messages
 
@@ -218,6 +219,9 @@ Conventions:
 - Use `formatDate()`, `formatDateTime()`, `formatTime()`, `formatNumber()` instead of hardcoded `'fr-FR'`
 - Keys follow `<entity>.<subsection>.<key>` convention (no `ui.` prefix, no generic `errors.` prefix)
 - Entity names are singular: `project.*`, `agent.*`, `workflow.*`, `team.*`, `role.*`, `skill.*`, `token.*`, `feature.*`, `log.*`, `audit.*`, `chat.*`, `story.*`, `task.*`, `ticket.*`, `dashboard.*`
+- `catalog` owns referential labels: enums, known database string values, workflow/action catalogs, and similar quasi-static vocabularies
+- Do not write ``t(`foo.${bar}`)`` or equivalent dynamic constructions
+- When a key depends on runtime state, use a typed static map such as `const STATUS_LABEL_KEYS = { ... } as const`
 - Cross-cutting namespaces: `common.*` (shared actions), `error.*` (generic errors)
 - Form fields go under `<entity>.form.*` (not `<entity>.ui.form.*`)
 - Page-level strings go under `<entity>.page.*`

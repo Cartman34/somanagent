@@ -228,8 +228,16 @@ final class ReviewRunner extends AbstractScriptRunner
         }
         echo "\n";
 
+        echo "=== Translation validation ===\n";
+        [$translationExitCode, $translationLines] = $run('php scripts/validate-translations.php');
+        foreach ($translationLines as $line) {
+            echo $line . "\n";
+        }
+        echo "\n";
+
         $hasBlockers = $frenchHits !== [] || $missingPhpdoc !== [] || $missingJsdoc !== []
-            || $validateExitCode !== 0;
+            || $validateExitCode !== 0
+            || $translationExitCode !== 0;
         return $hasBlockers ? 1 : 0;
     }
 }

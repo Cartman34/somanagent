@@ -8,12 +8,16 @@ import {
 import { useTranslation } from '@/hooks/useTranslation'
 import type { Ticket, TicketTask, TaskStatus } from '@/types'
 import { TYPE_BADGE, TYPE_LABEL_KEYS, STATUS_LABEL_KEYS, PRIORITY_COLOR, PRIORITY_LABEL_KEYS } from '@/lib/project/constants'
+import { CATALOG_DOMAIN } from '@/lib/catalog'
 
-const TECH_TASK_ROW_TRANSLATION_KEYS = [
+const TECH_TASK_ROW_APP_TRANSLATION_KEYS = [
+  'common.action.delete',
+] as const
+
+const TECH_TASK_ROW_CATALOG_TRANSLATION_KEYS = [
   ...Object.values(TYPE_LABEL_KEYS),
   ...Object.values(STATUS_LABEL_KEYS),
   ...Object.values(PRIORITY_LABEL_KEYS),
-  'common.action.delete',
 ] as const
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
@@ -51,19 +55,20 @@ export default function TechTaskRow({
   onDelete: (t: TicketTask) => void
   onOpen: (t: TicketTask) => void
 }) {
-  const { t } = useTranslation(TECH_TASK_ROW_TRANSLATION_KEYS)
+  const { t } = useTranslation(TECH_TASK_ROW_APP_TRANSLATION_KEYS)
+  const { t: tc } = useTranslation(TECH_TASK_ROW_CATALOG_TRANSLATION_KEYS, CATALOG_DOMAIN)
 
   return (
     <div className="item-ticket-task px-4 py-3 flex items-center gap-3">
       <StatusIcon status={task.status} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={`${TYPE_BADGE.task} text-xs`}>{t(TYPE_LABEL_KEYS.task)}</span>
+          <span className={`${TYPE_BADGE.task} text-xs`}>{tc(TYPE_LABEL_KEYS.task)}</span>
           <button className="text-sm font-medium truncate hover:underline text-left" style={{ color: 'var(--text)' }} onClick={() => onOpen(task)}>{task.title}</button>
         </div>
         <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-          <span className="text-xs" style={{ color: 'var(--muted)' }}>{t(STATUS_LABEL_KEYS[task.status])}</span>
-          <span className={`text-xs font-medium ${PRIORITY_COLOR[task.priority]}`}>{t(PRIORITY_LABEL_KEYS[task.priority])}</span>
+          <span className="text-xs" style={{ color: 'var(--muted)' }}>{tc(STATUS_LABEL_KEYS[task.status])}</span>
+          <span className={`text-xs font-medium ${PRIORITY_COLOR[task.priority]}`}>{tc(PRIORITY_LABEL_KEYS[task.priority])}</span>
           {task.assignedAgent && <span className="text-xs" style={{ color: 'var(--muted)' }}>→ {task.assignedAgent.name}</span>}
           {task.assignedRole  && <span className="text-xs italic" style={{ color: 'var(--muted)' }}>({task.assignedRole.name})</span>}
           {parent && <span className="text-xs opacity-50" style={{ color: 'var(--muted)' }}>↑ {parent.title}</span>}

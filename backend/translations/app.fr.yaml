@@ -1,22 +1,20 @@
 common:
   action:
+    add: Ajouter
+    adding: Ajout…
     cancel: Annuler
     close: Fermer
-    confirm: Confirmer
-    refresh: Rafraîchir
-    retry: Réessayer
     delete: Supprimer
+    edit: Modifier
+    open: Ouvrir
+    refresh: Rafraîchir
     save: Enregistrer
     saving: Enregistrement…
-error:
-  generic:
-    unexpected: Une erreur inattendue est survenue.
 agent:
   error:
     not_found: Agent introuvable.
   validation:
     name_required: Le champ "name" est obligatoire.
-    workflow_required: Le champ "workflowId" est obligatoire.
   sheet:
     modal_title: Fiche agent
     load_error: Impossible de charger la fiche agent.
@@ -105,6 +103,9 @@ agent:
     title: Nouvel agent
   list:
     loading: Chargement des agents…
+  table:
+    header:
+      status: Statut
 chat:
   error:
     project_or_agent_not_found: Projet ou agent introuvable.
@@ -123,6 +124,7 @@ chat:
   select_agent: Agent
   select_prompt: Sélectionner
   no_messages: Aucun message — démarrez la conversation.
+  send_reply: Envoyer la réponse
   input_placeholder: Écrivez votre message…
 feature:
   error:
@@ -253,11 +255,10 @@ project:
       not_found: Module introuvable.
   validation:
     name_required: Le champ "name" est obligatoire.
+    workflow_required: Le champ "workflowId" est obligatoire.
   page:
     title: Projets
     description: Gérez vos projets et suivez leur avancement.
-  action:
-    delete_confirm: Supprimer le projet "%name%" ?
   list:
     loading: Chargement des projets…
     empty_title: Aucun projet
@@ -293,26 +294,6 @@ project:
       audit: Audit
       tokens: Tokens
   executionHistory:
-    title: Historique des agents
-    requested_agent: Agent demandé
-    effective_agent: Agent effectif
-    started_at: Début
-    finished_at: Fin
-    attempts_count_one: tentative
-    attempts_count_other: tentatives
-    attempt_label: Tentative
-    attempt_failed: KO
-    attempt_succeeded: OK
-    attempt_running: en cours
-    retry_planned: Retry prévu
-    agent: Agent
-    receiver: Receiver
-    request_ref: Request ref
-    error_scope: Error scope
-    not_available: n/a
-    exhausted_retries: Retries épuisés pour cette exécution.
-    auto: auto
-    not_finished: —
     entries_label: entrées
     prev: Précédent
     next: Suivant
@@ -326,20 +307,15 @@ role:
     title: Rôles
     description: Définissez les rôles et associez-y des compétences.
   form:
-    name_label: Nom
-    name_placeholder: Développeur Backend
-    slug_label: Slug
-    slug_placeholder: backend-dev
-    description_label: Description
-    skills_label: Compétences
-    no_skills: Aucune compétence
+    name:
+      label: Nom
+      placeholder: Développeur Backend
+    slug:
+      label: Slug
+      help: Identifiant unique utilisé dans les configurations et URLs.
+    description:
+      label: Description
   list:
-    empty_title: Aucun rôle
-    empty_description: Créez un rôle pour commencer.
-    new_button: Nouveau rôle
-    delete_confirm: Supprimer le rôle "%name%" ?
-    modal_create_title: Nouveau rôle
-    modal_edit_title: Modifier le rôle
     loading: Chargement des rôles…
   action:
     new: Nouveau rôle
@@ -352,8 +328,10 @@ role:
     title: Aucun rôle
     description: Créez un rôle pour commencer.
   modal:
-    create: Nouveau rôle
-    edit: Modifier le rôle
+    create:
+      title: Nouveau rôle
+    edit:
+      title: Modifier le rôle
   confirm:
     delete:
       message: Supprimer le rôle "%name%" ?
@@ -418,12 +396,9 @@ team:
     name_placeholder: Équipe Web
     description_label: Description
   list:
-    empty_title: Aucune équipe
-    empty_description: Créez une équipe pour commencer.
-    new_button: Nouvelle équipe
-    delete_confirm: Supprimer l'équipe "%name%" ?
-    modal_create_title: Nouvelle équipe
-    modal_edit_title: Modifier l'équipe
+    empty:
+      title: Aucune équipe
+      description: Créez une équipe pour commencer.
     loading: Chargement des équipes…
     agent_count: '%count% agent|%count% agents'
   action:
@@ -452,34 +427,50 @@ team:
       title: Modifier l'équipe
   item:
     loading: Chargement de l'équipe…
-    not_found: Équipe introuvable
 ticket:
   error:
     not_found: Tâche introuvable.
+  detail:
+    title: Détail de la tâche
+    loading: Chargement…
+    description_label: Description
+    expand: Étendre
+    collapse: Réduire
+    status_label: État
+    step_label: Étape
+    agent_label: Agent
+    action_label: Action agent
+    latest_run_label: Dernière exécution
+    subtasks_title: Sous-tâches
+    tasks_title: Tâches du ticket
+    tasks_empty: Aucune tâche liée à ce ticket pour l'instant.
+    workflow:
+      section_title: Pilotage
+      current_step: Étape courante
+      none: Aucune
+      transition_loading: Transition…
+      transition_to: Passer à %step%
+      no_transition: Aucun passage manuel disponible depuis cette étape.
+    resume:
+      title: Relance agent
+      manual_help: La relance manuelle se fait désormais au niveau des tâches.
+      button: Relancer la tâche
+      loading: Relance…
+      error: Impossible de relancer la tâche.
+    metric:
+      tokens_consumed: Tokens consommés
   execution:
     error:
       agent_not_found: Agent introuvable.
-      no_automatic_execution: Aucune exécution automatique disponible pour ce statut.
       ticket_level_execution_unsupported: L'exécution manuelle au niveau ticket n'est pas disponible. Exécutez une tâche du ticket.
-      unsupported_story_or_bug: Cette tâche n'est pas une story ou un bug.
-  rework:
-    error:
-      resume_unavailable: La reprise agent depuis le ticket n'est disponible que pour les stories et bugs.
-      step_unavailable: La reprise d'étape agent n'est disponible que pour les stories et bugs.
-    validation:
-      target_objective_required: Les champs "targetKey" et "objective" sont obligatoires.
   story:
     error:
       unsupported_user_story_or_bug: Cette tâche n'est pas une user story ou un bug.
-      unknown_status: 'Statut story inconnu : %status%.'
   discussion:
-    section_title: Discussion ticket
-    description: Les questions agent et vos réponses restent visibles dans le ticket.
     comment_placeholder: Ajoutez un commentaire ou une précision pour l'agent…
     submit: Commenter
     submit_hint: Ctrl/Cmd + Entrée pour envoyer
     send: Envoyer
-    empty: Aucun échange ticket pour l'instant.
     author_you: Vous
     requires_answer: Réponse attendue
     reply: Répondre
@@ -487,6 +478,50 @@ ticket:
     reply_to: Réponse à
     reply_to_fallback: ce commentaire
     reply_placeholder: Écrivez votre réponse…
+    author_agent: Agent
+    source_action: Action source
+    add_comment: Ajouter un commentaire
+    hide_replies: Masquer les réponses
+    type_above: réponse ci-dessus
+  activity:
+    title: Fil d'activités
+    description: Questions, réponses et suivi d'exécution.
+    empty: Aucune activité pour l'instant.
+    questions_pending_one: 1 question en attente
+    questions_pending_other: '%count% questions en attente'
+    event:
+      count_one: '%count% événement'
+      count_other: '%count% événements'
+      category_execution: Exécution
+      category_question_response: Question/Réponse
+      category_planning: Planification
+      reply_count_one: '%count% réponse'
+      reply_count_other: '%count% réponses'
+      detail:
+        action: Action
+        created_at: Créé le
+        ticket_task_id: Tâche liée
+    execution:
+      title: Détail d'exécution
+      requested_agent: Agent demandé
+      effective_agent: Agent effectif
+      started_at: Début
+      finished_at: Fin
+      attempts_count_one: '%count% tentative'
+      attempts_count_other: '%count% tentatives'
+      attempt_label: Tentative
+      attempt_failed: échec
+      attempt_succeeded: réussie
+      attempt_running: en cours
+      retry_planned: Nouvelle tentative prévue
+      agent: Agent
+      receiver: Récepteur
+      request_ref: Référence requête
+      error_scope: Périmètre d'erreur
+      not_available: Indisponible
+      not_finished: Pas encore terminé
+      exhausted_retries: Les tentatives ont été épuisées.
+      auto: Automatique
   validation:
     content_required: Le champ "content" est obligatoire.
     priority_required: Le champ "priority" est obligatoire.
@@ -533,9 +568,6 @@ workflow:
     vcs_event: Événement VCS
     scheduled: Planifié
   status:
-    draft: Brouillon
-    validated: Validé
-    locked: Verrouillé
     immutable_badge: Immuable
     immutable_notice: Définition figée
     active: Actif
@@ -548,7 +580,6 @@ workflow:
   lifecycle:
     new: Nouveau
     ready: Prêt
-    approved: Approuvé
     planning: Planification
     graphic_design: Design
     development: Développement
@@ -569,7 +600,6 @@ workflow:
   detail:
     not_found: Workflow introuvable
     back_link: Workflows
-    team_label: Équipe
     output_label: sortie
     condition_label: Condition
     actions_label: Actions
@@ -583,8 +613,6 @@ workflow:
   error:
     deactivation_used: Ce workflow est déjà utilisé et ne peut plus être désactivé.
     immutable: Ce workflow est immuable après sa création et ne peut plus être modifié, validé ou supprimé.
-    locked_delete: Ce workflow est verrouillé et ne peut pas être supprimé.
-    locked_update: Ce workflow est verrouillé et ne peut pas être modifié.
     not_found: Workflow introuvable.
   validation:
     name_required: Le champ "name" est obligatoire.
@@ -601,7 +629,6 @@ dashboard:
     teams: Équipes
     agents: Agents
     agents_active: actif
-    agents_active_other: actifs
     skills: Compétences
   system_state: État du système
   inaccessible: Inaccessible
@@ -625,3 +652,25 @@ dashboard:
 audit:
   list:
     loading: Chargement du journal…
+    title: Journal d’audit
+    description: Suivez les actions importantes réalisées sur les projets et les tâches.
+    empty_title: Aucun événement d’audit
+    empty_description: Aucun événement d’audit n’a encore été enregistré.
+    col_action: Action
+    col_entity: Entité
+    col_id: Identifiant
+    col_date: Date
+    pagination_label: '%from%–%to% sur %total%'
+  action:
+    project_created: Projet créé
+    project_updated: Projet modifié
+    project_deleted: Projet supprimé
+    task_created: Tâche créée
+    task_updated: Tâche modifiée
+    task_deleted: Tâche supprimée
+    task_status_changed: Statut de la tâche modifié
+    task_progress_updated: Progression de la tâche modifiée
+    task_validation_asked: Validation demandée
+    task_validated: Tâche validée
+    task_rejected: Tâche rejetée
+    task_reprioritized: Priorité de la tâche modifiée

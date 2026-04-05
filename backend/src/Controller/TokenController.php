@@ -48,7 +48,7 @@ class TokenController extends AbstractController
     {
         $agent = $this->agentService->findById($agentId);
         if ($agent === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('token.agent.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('token.error.agent_not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $limit  = (int) ($request->query->get('limit', 100));

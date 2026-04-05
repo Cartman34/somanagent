@@ -92,6 +92,11 @@ const TRIGGER_COLORS: Record<string, string> = {
   scheduled: 'badge-gray',
 }
 
+const TRANSITION_MODE_LABEL_KEYS: Record<WorkflowStep['transitionMode'], string> = {
+  manual: 'workflow.lifecycle.transition.manual',
+  automatic: 'workflow.lifecycle.transition.automatic',
+}
+
 // ─── Small helpers ─────────────────────────────────────────────────────────────
 
 /**
@@ -541,7 +546,7 @@ function WorkflowDetail() {
                   <p className="font-medium" style={{ color: 'var(--text)' }}>{step.name || step.outputKey}</p>
                   <StepStatusIcon status={step.status} />
                   <span className="badge-gray text-xs">
-                    {t(`workflow.lifecycle.transition.${step.transitionMode}`)}
+                    {t(TRANSITION_MODE_LABEL_KEYS[step.transitionMode])}
                   </span>
                 </div>
 
