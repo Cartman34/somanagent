@@ -5,6 +5,8 @@
 
 declare(strict_types=1);
 
+namespace SoManAgent\Script;
+
 /**
  * Manages Claude CLI authentication with WSL as the source of truth and Docker as a synchronized runtime copy.
  */
@@ -346,9 +348,9 @@ final class ClaudeAuthManager
     private function hashDirectory(string $path): string
     {
         $hashes = [];
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::SELF_FIRST,
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::SELF_FIRST,
         );
 
         foreach ($iterator as $item) {

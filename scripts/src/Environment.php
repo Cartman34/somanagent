@@ -9,6 +9,8 @@ declare(strict_types=1);
  * Detects the current runtime environment (Windows, WSL, Linux, macOS)
  * and provides path conversion utilities.
  */
+namespace SoManAgent\Script;
+
 final class Environment
 {
     // ── OS detection ──────────────────────────────────────────────────────────

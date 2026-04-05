@@ -5,7 +5,9 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/Application.php';
+namespace SoManAgent\Script\Runner;
+
+use SoManAgent\Script\Application;
 
 /**
  * Runs commands inside a specific Docker Compose service.

@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/Environment.php';
+namespace SoManAgent\Script;
 
 /**
  * Terminal output helper used by all SoManAgent scripts.
@@ -24,13 +24,21 @@ require_once __DIR__ . '/Environment.php';
  */
 final class Console
 {
+    private static ?self $instance = null;
+
     private string $eol;
 
-    public function __construct()
+    private function __construct()
     {
-        // Use CRLF when: inside WSL AND stdout is not a TTY
-        // (stdout is a pipe → output is consumed by a Windows terminal)
         $this->eol = (Environment::isWsl() && !$this->isTty()) ? "\r\n" : "\n";
+    }
+
+    public static function getInstance(): self
+    {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
     }
 
     // ── Output primitives ─────────────────────────────────────────────────────
