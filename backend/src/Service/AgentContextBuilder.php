@@ -146,6 +146,7 @@ final class AgentContextBuilder
             'operating_notes' => [
                 'identity_is_known' => 'Tu connais déjà ton identité, ton rôle et le projet grâce à ce contexte.',
                 'do_not_ask_identity_again' => 'Ne redemande pas qui tu es, quel rôle tu joues ou sur quel projet tu travailles sauf si le contexte est explicitement contradictoire.',
+                'do_not_repeat_questions' => 'Ne repose pas de questions déjà présentes dans ticket_conversation (action=agent_question). Vérifie ticket_conversation avant de formuler toute question de clarification et omets celles qui y figurent déjà, qu\'elles aient reçu une réponse ou non.',
                 'role_constraints' => $roleNotes,
             ],
         ];
