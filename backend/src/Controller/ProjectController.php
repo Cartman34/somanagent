@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Enum\DispatchMode;
 use App\Repository\AuditLogRepository;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\ProjectService;
@@ -43,6 +44,7 @@ class ProjectController extends AbstractController
             'repositoryUrl' => $p->getRepositoryUrl(),
             'team'          => $p->getTeam() ? ['id' => (string) $p->getTeam()->getId(), 'name' => $p->getTeam()->getName()] : null,
             'workflow'      => $p->getWorkflow() ? ['id' => (string) $p->getWorkflow()->getId(), 'name' => $p->getWorkflow()->getName()] : null,
+            'dispatchMode'  => $p->getDispatchMode()->value,
             'modules'       => $p->getModules()->count(),
             'createdAt'     => $p->getCreatedAt()->format(\DateTimeInterface::ATOM),
             'updatedAt'     => $p->getUpdatedAt()->format(\DateTimeInterface::ATOM),
@@ -67,6 +69,7 @@ class ProjectController extends AbstractController
                 $data['repositoryUrl'] ?? null,
                 $data['teamId'] ?? null,
                 $data['workflowId'] ?? null,
+                DispatchMode::from($data['dispatchMode'] ?? DispatchMode::Auto->value),
             );
         } catch (\LogicException $exception) {
             return $this->json($this->apiErrorPayloadFactory->fromMessage($exception->getMessage()), Response::HTTP_CONFLICT);
@@ -79,6 +82,7 @@ class ProjectController extends AbstractController
             'repositoryUrl' => $project->getRepositoryUrl(),
             'team'          => $project->getTeam() ? ['id' => (string) $project->getTeam()->getId(), 'name' => $project->getTeam()->getName()] : null,
             'workflow'      => $project->getWorkflow() ? ['id' => (string) $project->getWorkflow()->getId(), 'name' => $project->getWorkflow()->getName()] : null,
+            'dispatchMode'  => $project->getDispatchMode()->value,
             'createdAt'     => $project->getCreatedAt()->format(\DateTimeInterface::ATOM),
         ], Response::HTTP_CREATED);
     }
@@ -101,6 +105,7 @@ class ProjectController extends AbstractController
             'repositoryUrl' => $project->getRepositoryUrl(),
             'team'          => $project->getTeam() ? ['id' => (string) $project->getTeam()->getId(), 'name' => $project->getTeam()->getName()] : null,
             'workflow'      => $project->getWorkflow() ? ['id' => (string) $project->getWorkflow()->getId(), 'name' => $project->getWorkflow()->getName()] : null,
+            'dispatchMode'  => $project->getDispatchMode()->value,
             'modules'       => array_map(fn($m) => [
                 'id'            => (string) $m->getId(),
                 'name'          => $m->getName(),
@@ -134,15 +139,17 @@ class ProjectController extends AbstractController
                 $data['repositoryUrl'] ?? null,
                 array_key_exists('teamId', $data) ? ($data['teamId'] ?: null) : ($project->getTeam() ? (string) $project->getTeam()->getId() : null),
                 array_key_exists('workflowId', $data) ? ($data['workflowId'] ?: null) : ($project->getWorkflow() ? (string) $project->getWorkflow()->getId() : null),
+                array_key_exists('dispatchMode', $data) ? DispatchMode::from($data['dispatchMode']) : $project->getDispatchMode(),
             );
         } catch (\LogicException $exception) {
             return $this->json($this->apiErrorPayloadFactory->fromMessage($exception->getMessage()), Response::HTTP_CONFLICT);
         }
         return $this->json([
-            'id'       => (string) $project->getId(),
-            'name'     => $project->getName(),
-            'team'     => $project->getTeam() ? ['id' => (string) $project->getTeam()->getId(), 'name' => $project->getTeam()->getName()] : null,
-            'workflow' => $project->getWorkflow() ? ['id' => (string) $project->getWorkflow()->getId(), 'name' => $project->getWorkflow()->getName()] : null,
+            'id'           => (string) $project->getId(),
+            'name'         => $project->getName(),
+            'team'         => $project->getTeam() ? ['id' => (string) $project->getTeam()->getId(), 'name' => $project->getTeam()->getName()] : null,
+            'workflow'     => $project->getWorkflow() ? ['id' => (string) $project->getWorkflow()->getId(), 'name' => $project->getWorkflow()->getName()] : null,
+            'dispatchMode' => $project->getDispatchMode()->value,
         ]);
     }
 

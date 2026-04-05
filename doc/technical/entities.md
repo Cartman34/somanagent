@@ -57,6 +57,7 @@ Relations :
 Règle produit :
 - un projet peut exister sans équipe
 - mais toute action de progression ou d’exécution agent est bloquée tant qu’aucune équipe n’est affectée
+- `dispatchMode` pilote le départ des tâches éligibles : `auto` les dispatch immédiatement, `manual` les place en attente d’autorisation
 
 ### Feature
 
@@ -99,6 +100,9 @@ Champs principaux :
 - `priority`
 - `progress`
 - `branchName`
+
+Statuts notables :
+- `awaiting_dispatch` = tâche éligible mais en attente d’autorisation explicite quand le projet est en mode `manual`
 
 Relations :
 - `ticket` → `Ticket`

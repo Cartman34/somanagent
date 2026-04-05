@@ -10,9 +10,11 @@ namespace App\Service;
 use App\Entity\Module;
 use App\Entity\Project;
 use App\Enum\AuditAction;
+use App\Enum\DispatchMode;
 use App\Repository\ModuleRepository;
 use App\Repository\ProjectRepository;
 use App\Repository\TeamRepository;
+use App\Repository\TicketRepository;
 use App\Repository\WorkflowRepository;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -27,7 +29,9 @@ class ProjectService
         private readonly ProjectRepository  $projectRepository,
         private readonly ModuleRepository   $moduleRepository,
         private readonly TeamRepository     $teamRepository,
+        private readonly TicketRepository   $ticketRepository,
         private readonly WorkflowRepository $workflowRepository,
+        private readonly TicketTaskService  $ticketTaskService,
         private readonly TranslatorInterface $translator,
     ) {}
 
@@ -40,14 +44,23 @@ class ProjectService
      * @param string|null $teamId        Optional team UUID to assign
      * @param string|null $workflowId    Optional workflow UUID to assign
      */
-    public function create(string $name, ?string $description = null, ?string $repositoryUrl = null, ?string $teamId = null, ?string $workflowId = null): Project
+    public function create(
+        string $name,
+        ?string $description = null,
+        ?string $repositoryUrl = null,
+        ?string $teamId = null,
+        ?string $workflowId = null,
+        DispatchMode $dispatchMode = DispatchMode::Auto,
+    ): Project
     {
         if ($workflowId === null || $workflowId === '') {
             throw new \LogicException($this->translator->trans('project.validation.workflow_required', [], 'app'));
         }
 
         $project = new Project($name, $description);
-        $project->setRepositoryUrl($repositoryUrl);
+        $project
+            ->setRepositoryUrl($repositoryUrl)
+            ->setDispatchMode($dispatchMode);
 
         if ($teamId !== null) {
             $team = $this->teamRepository->find(Uuid::fromString($teamId));
@@ -72,13 +85,28 @@ class ProjectService
      * @param string|null $teamId        Team UUID to assign, or null to detach current team
      * @param string|null $workflowId    Workflow UUID to assign, or null to detach current workflow
      */
-    public function update(Project $project, string $name, ?string $description, ?string $repositoryUrl = null, ?string $teamId = null, ?string $workflowId = null): Project
+    public function update(
+        Project $project,
+        string $name,
+        ?string $description,
+        ?string $repositoryUrl = null,
+        ?string $teamId = null,
+        ?string $workflowId = null,
+        ?DispatchMode $dispatchMode = null,
+    ): Project
     {
         if ($workflowId === null || $workflowId === '') {
             throw new \LogicException($this->translator->trans('project.validation.workflow_required', [], 'app'));
         }
 
-        $project->setName($name)->setDescription($description)->setRepositoryUrl($repositoryUrl);
+        $previousDispatchMode = $project->getDispatchMode();
+        $nextDispatchMode = $dispatchMode ?? $previousDispatchMode;
+
+        $project
+            ->setName($name)
+            ->setDescription($description)
+            ->setRepositoryUrl($repositoryUrl)
+            ->setDispatchMode($nextDispatchMode);
 
         $team = $teamId !== null ? $this->teamRepository->find(Uuid::fromString($teamId)) : null;
         $project->setTeam($team);
@@ -86,6 +114,13 @@ class ProjectService
         $project->setWorkflow($this->resolveAssignableWorkflow($project, $workflowId));
 
         $this->entityService->update($project, AuditAction::ProjectUpdated, ['name' => $name]);
+
+        if ($previousDispatchMode === DispatchMode::Manual && $nextDispatchMode === DispatchMode::Auto && $project->getTeam() !== null) {
+            foreach ($this->ticketRepository->findByProject($project) as $ticket) {
+                $this->ticketTaskService->dispatchEligibleTasksForCurrentStep($ticket);
+            }
+        }
+
         return $project;
     }
 

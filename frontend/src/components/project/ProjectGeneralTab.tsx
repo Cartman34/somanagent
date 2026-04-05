@@ -2,12 +2,33 @@
  * @author Florent HAZARD <f.hazard@sowapps.com>
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AlertCircle } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { projectsApi } from '@/api/projects'
 import { teamsApi } from '@/api/teams'
 import type { Project } from '@/types'
+import { useTranslation } from '@/hooks/useTranslation'
+
+const PROJECT_GENERAL_TAB_TRANSLATION_KEYS = [
+  'common.action.save',
+  'common.action.saving',
+  'project.detail.general.assigned_team_title',
+  'project.detail.general.description_label',
+  'project.detail.general.dispatch_mode_saved_help',
+  'project.detail.general.dispatch_mode_title',
+  'project.detail.general.information_title',
+  'project.detail.general.save_dispatch_mode_error',
+  'project.detail.general.save_team_error',
+  'project.form.name_label',
+  'project.form.dispatch_mode_auto',
+  'project.form.dispatch_mode_hint',
+  'project.form.dispatch_mode_label',
+  'project.form.dispatch_mode_manual',
+  'project.form.no_team_option',
+  'project.form.team_hint',
+  'project.form.team_label',
+] as const
 
 /**
  * General tab — project information and team assignment.
@@ -20,8 +41,15 @@ export default function ProjectGeneralTab({ project, projectId }: {
   projectId: string
 }) {
   const qc = useQueryClient()
+  const { t } = useTranslation(PROJECT_GENERAL_TAB_TRANSLATION_KEYS)
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null)
   const [teamSaveError, setTeamSaveError]   = useState<string | null>(null)
+  const [selectedDispatchMode, setSelectedDispatchMode] = useState(project.dispatchMode)
+  const [dispatchModeSaveError, setDispatchModeSaveError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setSelectedDispatchMode(project.dispatchMode)
+  }, [project.dispatchMode])
 
   const { data: teamsList = [] } = useQuery({
     queryKey: ['teams'],
@@ -32,44 +60,62 @@ export default function ProjectGeneralTab({ project, projectId }: {
     mutationFn: (teamId: string | null) => projectsApi.update(projectId, {
       name:        project.name,
       description: project.description ?? undefined,
+      workflowId:  project.workflow?.id ?? null,
+      dispatchMode: selectedDispatchMode,
       teamId:      teamId,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['projects', projectId] })
       setTeamSaveError(null)
     },
-    onError: () => setTeamSaveError('Impossible de sauvegarder l\'équipe.'),
+    onError: () => setTeamSaveError(t('project.detail.general.save_team_error')),
+  })
+
+  const updateDispatchModeMutation = useMutation({
+    mutationFn: (dispatchMode: Project['dispatchMode']) => projectsApi.update(projectId, {
+      name: project.name,
+      description: project.description ?? undefined,
+      workflowId: project.workflow?.id ?? null,
+      teamId: project.team?.id ?? null,
+      dispatchMode,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['projects', projectId] })
+      qc.invalidateQueries({ queryKey: ['tickets', projectId] })
+      setDispatchModeSaveError(null)
+    },
+    onError: () => setDispatchModeSaveError(t('project.detail.general.save_dispatch_mode_error')),
   })
 
   return (
     <div className="max-w-lg space-y-6">
       <div className="card p-5 space-y-4">
-        <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Informations</h3>
+        <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{t('project.detail.general.information_title')}</h3>
         <div>
-          <p className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>Nom</p>
+          <p className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>{t('project.form.name_label')}</p>
           <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{project.name}</p>
         </div>
         {project.description && (
           <div>
-            <p className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>Description</p>
+            <p className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>{t('project.detail.general.description_label')}</p>
             <p className="text-sm" style={{ color: 'var(--text)' }}>{project.description}</p>
           </div>
         )}
       </div>
 
       <div className="card p-5 space-y-4">
-        <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Équipe assignée</h3>
+        <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{t('project.detail.general.assigned_team_title')}</h3>
         <p className="text-xs" style={{ color: 'var(--muted)' }}>
-          L'équipe détermine les agents disponibles pour l'exécution des stories.
+          {t('project.form.team_hint')}
         </p>
         <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Équipe</label>
+          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>{t('project.form.team_label')}</label>
           <select
             className="input"
             value={selectedTeamId ?? (project.team?.id ?? '')}
             onChange={(e) => setSelectedTeamId(e.target.value)}
           >
-            <option value="">— Aucune équipe —</option>
+            <option value="">{t('project.form.no_team_option')}</option>
             {teamsList.map((t) => (
               <option key={t.id} value={t.id}>{t.name}</option>
             ))}
@@ -88,7 +134,40 @@ export default function ProjectGeneralTab({ project, projectId }: {
             updateTeamMutation.mutate(effectiveId || null)
           }}
         >
-          {updateTeamMutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
+          {updateTeamMutation.isPending ? t('common.action.saving') : t('common.action.save')}
+        </button>
+      </div>
+
+      <div className="card p-5 space-y-4">
+        <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{t('project.detail.general.dispatch_mode_title')}</h3>
+        <p className="text-xs" style={{ color: 'var(--muted)' }}>
+          {t('project.detail.general.dispatch_mode_saved_help')}
+        </p>
+        <div>
+          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>{t('project.form.dispatch_mode_label')}</label>
+          <select
+            className="input"
+            value={selectedDispatchMode}
+            onChange={(event) => setSelectedDispatchMode(event.target.value as Project['dispatchMode'])}
+          >
+            <option value="auto">{t('project.form.dispatch_mode_auto')}</option>
+            <option value="manual">{t('project.form.dispatch_mode_manual')}</option>
+          </select>
+          <p className="mt-2 text-xs" style={{ color: 'var(--muted)' }}>
+            {t('project.form.dispatch_mode_hint')}
+          </p>
+        </div>
+        {dispatchModeSaveError && (
+          <p className="text-sm text-red-600 flex items-center gap-1">
+            <AlertCircle className="w-4 h-4" />{dispatchModeSaveError}
+          </p>
+        )}
+        <button
+          className="btn-primary"
+          disabled={updateDispatchModeMutation.isPending}
+          onClick={() => updateDispatchModeMutation.mutate(selectedDispatchMode)}
+        >
+          {updateDispatchModeMutation.isPending ? t('common.action.saving') : t('common.action.save')}
         </button>
       </div>
     </div>

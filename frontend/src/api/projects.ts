@@ -3,15 +3,18 @@
  */
 
 import apiClient from './client'
-import type { Project, Module, AuditLog, TokenUsageEntry } from '@/types'
+import type { Project, Module, AuditLog, TokenUsageEntry, ProjectDispatchMode } from '@/types'
 
+/** Payload accepted by project creation and update endpoints. */
 export interface ProjectPayload {
   name: string
   description?: string
   teamId?: string | null
   workflowId?: string | null
+  dispatchMode?: ProjectDispatchMode
 }
 
+/** Payload accepted by project module creation and update endpoints. */
 export interface ModulePayload {
   name: string
   description?: string
@@ -20,6 +23,7 @@ export interface ModulePayload {
   status?: 'active' | 'archived'
 }
 
+/** Project-related REST client helpers. */
 export const projectsApi = {
   list: async (): Promise<Project[]> => {
     const { data } = await apiClient.get('/projects')

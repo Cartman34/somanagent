@@ -15,6 +15,7 @@ use App\Entity\TicketTaskDependency;
 use App\Entity\WorkflowStep;
 use App\Entity\WorkflowStepAction;
 use App\Enum\AuditAction;
+use App\Enum\DispatchMode;
 use App\Enum\TaskExecutionTrigger;
 use App\Enum\TaskPriority;
 use App\Enum\TaskStatus;
@@ -23,6 +24,7 @@ use App\Message\AgentTaskMessage;
 use App\Repository\AgentActionRepository;
 use App\Repository\AgentRepository;
 use App\Repository\AgentTaskExecutionRepository;
+use App\Repository\AuditLogRepository;
 use App\Repository\TicketTaskDependencyRepository;
 use App\Repository\TicketTaskRepository;
 use App\Repository\WorkflowStepActionRepository;
@@ -41,6 +43,7 @@ final class TicketTaskService
         private readonly TicketTaskRepository $ticketTaskRepository,
         private readonly TicketTaskDependencyRepository $ticketTaskDependencyRepository,
         private readonly AgentTaskExecutionRepository $agentTaskExecutionRepository,
+        private readonly AuditLogRepository $auditLogRepository,
         private readonly AgentActionRepository $agentActionRepository,
         private readonly AgentRepository $agentRepository,
         private readonly WorkflowStepActionRepository $workflowStepActionRepository,
@@ -153,13 +156,14 @@ final class TicketTaskService
         $requestRef = $this->requestCorrelation->getCurrentRequestRef();
         $traceRef = Uuid::v7()->toRfc4122();
         $hasExecutionHistory = !$task->getExecutions()->isEmpty();
+        $previousStatus = $task->getStatus();
 
         $task
             ->setAssignedRole($task->getAgentAction()->getRole())
             ->setAssignedAgent($resolvedAgent)
             ->setStatus(TaskStatus::InProgress);
 
-        if ($task->getStatus() !== TaskStatus::Done) {
+        if ($previousStatus !== TaskStatus::Done) {
             $task->setProgress(0);
         }
 
@@ -210,11 +214,50 @@ final class TicketTaskService
     }
 
     /**
+     * Authorizes one task that is pending explicit dispatch.
+     *
+     * @return array{agent: Agent, skill: string, executionId: string}
+     */
+    public function authorize(TicketTask $task, ?Agent $agent = null): array
+    {
+        if ($task->getStatus() !== TaskStatus::AwaitingDispatch) {
+            throw new \LogicException('This task is not awaiting explicit dispatch authorization.');
+        }
+
+        $currentStep = $task->getTicket()->getWorkflowStep();
+        if ($currentStep === null || !$this->isDispatchEligibleInCurrentStep($task, $currentStep)) {
+            throw new \LogicException('This task is no longer eligible for dispatch in the current workflow step.');
+        }
+
+        return $this->execute($task, $agent, TaskExecutionTrigger::Manual);
+    }
+
+    /**
      * @return array{agent: Agent, skill: string, executionId: string}
      */
     public function resume(TicketTask $task, ?Agent $agent = null): array
     {
+        if (!$this->canResume($task)) {
+            throw new \LogicException('This task cannot be resumed because it has never been executed or completed before.');
+        }
+
         return $this->execute($task, $agent, TaskExecutionTrigger::Manual);
+    }
+
+    /**
+     * Returns whether this task already has enough history to be replayed safely.
+     */
+    public function canResume(TicketTask $task): bool
+    {
+        if ($task->getStatus() === TaskStatus::Done) {
+            return true;
+        }
+
+        if ($this->agentTaskExecutionRepository->hasAnyByTicketTask($task)) {
+            return true;
+        }
+
+        return $this->auditLogRepository->hasTaskCompletionHistory($task);
     }
 
     /**
@@ -247,9 +290,19 @@ final class TicketTaskService
             return 0;
         }
 
+        $dispatchMode = $ticket->getProject()->getDispatchMode();
         $dispatched = 0;
+        $requiresFlush = false;
         foreach ($this->findTasksForWorkflowStep($ticket, $currentStep) as $task) {
-            if (!$this->isAutoExecutableInCurrentStep($task, $currentStep)) {
+            if (!$this->isDispatchEligibleInCurrentStep($task, $currentStep)) {
+                continue;
+            }
+
+            if ($dispatchMode === DispatchMode::Manual) {
+                if ($this->markAwaitingDispatch($task)) {
+                    ++$dispatched;
+                    $requiresFlush = true;
+                }
                 continue;
             }
 
@@ -264,6 +317,10 @@ final class TicketTaskService
                     ticketTask: $task,
                 );
             }
+        }
+
+        if ($requiresFlush) {
+            $this->entityService->flush();
         }
 
         $this->advanceTicketStepIfAutomatic($ticket);
@@ -652,13 +709,13 @@ final class TicketTaskService
         'manual.unknown'         => 'agent_action.manual.unknown',
     ];
 
-    private function isAutoExecutableInCurrentStep(TicketTask $task, WorkflowStep $currentStep): bool
+    private function isDispatchEligibleInCurrentStep(TicketTask $task, WorkflowStep $currentStep): bool
     {
         if ($task->getWorkflowStep()?->getId()->toRfc4122() !== $currentStep->getId()->toRfc4122()) {
             return false;
         }
 
-        if (!in_array($task->getStatus(), [TaskStatus::Backlog, TaskStatus::Todo], true)) {
+        if (!in_array($task->getStatus(), [TaskStatus::Backlog, TaskStatus::Todo, TaskStatus::AwaitingDispatch], true)) {
             return false;
         }
 
@@ -667,5 +724,30 @@ final class TicketTaskService
         }
 
         return $this->areDependenciesSatisfied($task);
+    }
+
+    /**
+     * Marks one eligible task as awaiting explicit dispatch authorization.
+     */
+    private function markAwaitingDispatch(TicketTask $task): bool
+    {
+        if ($task->getStatus() === TaskStatus::AwaitingDispatch) {
+            return false;
+        }
+
+        $task->setStatus(TaskStatus::AwaitingDispatch);
+        $this->ticketLogService->log(
+            ticket: $task->getTicket(),
+            action: 'execution_pending',
+            content: 'Task is awaiting explicit dispatch authorization.',
+            ticketTask: $task,
+            metadata: [
+                'actionKey' => $task->getAgentAction()->getKey(),
+                'roleSlug' => $task->getAgentAction()->getRole()?->getSlug(),
+                'skillSlug' => $task->getAgentAction()->getSkill()?->getSlug(),
+            ],
+        );
+
+        return true;
     }
 }

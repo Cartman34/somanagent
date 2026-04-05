@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\DispatchMode;
 use App\Repository\ProjectRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -50,10 +51,16 @@ class Project
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?Workflow $workflow = null;
 
+    #[ORM\Column(enumType: DispatchMode::class, options: ['default' => DispatchMode::Auto->value])]
+    private DispatchMode $dispatchMode = DispatchMode::Auto;
+
     #[ORM\OneToMany(targetEntity: Module::class, mappedBy: 'project', cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[ORM\OrderBy(['name' => 'ASC'])]
     private Collection $modules;
 
+    /**
+     * Initializes a project aggregate with its required identity fields.
+     */
     public function __construct(string $name, ?string $description = null)
     {
         $this->id          = Uuid::v7();
@@ -64,30 +71,53 @@ class Project
         $this->modules     = new ArrayCollection();
     }
 
+    /**
+     * Refreshes the update timestamp before Doctrine persists changes.
+     */
     #[ORM\PreUpdate]
     public function touch(): void
     {
         $this->updatedAt = new \DateTimeImmutable();
     }
 
+    /** Returns the project UUID. */
     public function getId(): Uuid                      { return $this->id; }
+    /** Returns the project name. */
     public function getName(): string                  { return $this->name; }
+    /** Returns the optional project description. */
     public function getDescription(): ?string          { return $this->description; }
+    /** Returns the optional repository URL. */
     public function getRepositoryUrl(): ?string        { return $this->repositoryUrl; }
+    /** Returns the assigned team, if any. */
     public function getTeam(): ?Team                   { return $this->team; }
+    /** Returns the assigned workflow, if any. */
     public function getWorkflow(): ?Workflow           { return $this->workflow; }
+    /** Returns the task dispatch mode configured for this project. */
+    public function getDispatchMode(): DispatchMode    { return $this->dispatchMode; }
+    /** Returns the project creation timestamp. */
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
+    /** Returns the latest update timestamp. */
     public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
 
     /** @return Collection<int, Module> */
     public function getModules(): Collection { return $this->modules; }
 
+    /** Updates the project name. */
     public function setName(string $name): static               { $this->name = $name; return $this; }
+    /** Updates the optional project description. */
     public function setDescription(?string $d): static          { $this->description = $d; return $this; }
+    /** Updates the optional repository URL. */
     public function setRepositoryUrl(?string $url): static      { $this->repositoryUrl = $url; return $this; }
+    /** Assigns or clears the project team. */
     public function setTeam(?Team $team): static                { $this->team = $team; return $this; }
+    /** Assigns or clears the project workflow. */
     public function setWorkflow(?Workflow $workflow): static    { $this->workflow = $workflow; return $this; }
+    /** Updates the task dispatch policy. */
+    public function setDispatchMode(DispatchMode $dispatchMode): static { $this->dispatchMode = $dispatchMode; return $this; }
 
+    /**
+     * Adds one module to this project and synchronizes the owning side.
+     */
     public function addModule(Module $module): static
     {
         if (!$this->modules->contains($module)) {
@@ -97,6 +127,9 @@ class Project
         return $this;
     }
 
+    /**
+     * Removes one module from this project.
+     */
     public function removeModule(Module $module): static
     {
         $this->modules->removeElement($module);

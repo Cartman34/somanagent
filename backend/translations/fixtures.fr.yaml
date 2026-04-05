@@ -1,0 +1,71 @@
+fixtures:
+  role:
+    product_owner:
+      name: Product Owner
+      description: Rédige et complète les user stories.
+    lead_tech:
+      name: Lead Tech
+      description: Planifie, découpe, assigne et revoit le code.
+    php_dev:
+      name: Développeur PHP
+      description: Développement backend PHP 8.4 / Symfony 7.
+    frontend_dev:
+      name: Développeur Frontend
+      description: Développement frontend React / TypeScript.
+    ui_ux_designer:
+      name: Designer UX/UI
+      description: Conception graphique, maquettes, charte de style.
+    tester:
+      name: Testeur QA
+      description: Tests fonctionnels et rapports d'anomalies.
+    scrum_master:
+      name: Scrum Master
+      description: Facilitation Agile et levée des blocages.
+    tech_writer:
+      name: Tech Writer
+      description: Documentation fonctionnelle et technique.
+    devops:
+      name: DevOps
+      description: Infrastructure, CI/CD, Docker, déploiement.
+  agent:
+    po_alice:
+      name: Alice (PO)
+    lt_bob:
+      name: Bob (Lead Tech)
+    php_charlie:
+      name: Charlie (PHP Dev)
+    front_diana:
+      name: Diana (Frontend Dev)
+    design_eve:
+      name: Eve (Designer)
+    qa_frank:
+      name: Frank (QA)
+    sm_grace:
+      name: Grace (Scrum Master)
+    doc_henry:
+      name: Henry (Tech Writer)
+    ops_iris:
+      name: Iris (DevOps)
+  team:
+    web_dev:
+      name: Web Dev Team
+      description: Équipe de développement web complète.
+  workflow:
+    standard:
+      name: Développement web standard
+      description: "Workflow de référence pour une équipe web: cadrage PO, préparation, planification, design, développement, revue, terminaison."
+      step:
+        new:
+          name: Nouvelle
+        ready:
+          name: Prête
+        planning:
+          name: Planification
+        graphic_design:
+          name: Conception graphique
+        development:
+          name: Développement
+        code_review:
+          name: Revue
+        done:
+          name: Terminée

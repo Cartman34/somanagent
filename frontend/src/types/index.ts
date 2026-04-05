@@ -6,6 +6,7 @@
 // Shared SoManAgent types aligned with PHP API responses
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Project summary and detail payload returned by the backend API. */
 export interface Project {
   id: string
   name: string
@@ -13,11 +14,13 @@ export interface Project {
   repositoryUrl: string | null
   team: { id: string; name: string } | null
   workflow: { id: string; name: string } | null
+  dispatchMode: ProjectDispatchMode
   modules: number | Module[]
   createdAt: string
   updatedAt: string
 }
 
+/** Application module attached to one project. */
 export interface Module {
   id: string
   name: string
@@ -27,6 +30,7 @@ export interface Module {
   status: 'active' | 'archived'
 }
 
+/** Team entity with optional expanded agent list. */
 export interface Team {
   id: string
   name: string
@@ -37,6 +41,7 @@ export interface Team {
   updatedAt: string
 }
 
+/** Role definition with optional linked skills. */
 export interface Role {
   id: string
   slug: string
@@ -45,6 +50,7 @@ export interface Role {
   skills?: SkillSummary[]
 }
 
+/** Lightweight skill reference embedded in other payloads. */
 export interface SkillSummary {
   id: string
   name: string
@@ -54,6 +60,7 @@ export interface SkillSummary {
   filePath?: string
 }
 
+/** Condensed agent payload used in lists and relations. */
 export interface AgentSummary {
   id: string
   name: string
@@ -61,6 +68,7 @@ export interface AgentSummary {
   role: { id: string; name: string; slug: string } | null
 }
 
+/** Runtime configuration forwarded to an agent connector. */
 export interface AgentConfig {
   model: string
   max_tokens: number
@@ -69,6 +77,7 @@ export interface AgentConfig {
   extra?: Record<string, unknown>
 }
 
+/** Full agent record exposed by the API. */
 export interface Agent {
   id: string
   name: string
@@ -82,6 +91,7 @@ export interface Agent {
   updatedAt: string
 }
 
+/** Full skill record exposed by the API. */
 export interface Skill {
   id: string
   slug: string
@@ -96,6 +106,7 @@ export interface Skill {
   updatedAt: string
 }
 
+/** Product feature tracked for one project. */
 export interface Feature {
   id: string
   name: string
@@ -106,38 +117,49 @@ export interface Feature {
   updatedAt: string
 }
 
+/** Project-level dispatch policy for eligible agent tasks. */
+export type ProjectDispatchMode = 'auto' | 'manual'
+/** Domain-level task kind used for tickets and operational tasks. */
 export type TaskType     = 'user_story' | 'bug' | 'task'
-export type TaskStatus   = 'backlog' | 'todo' | 'in_progress' | 'review' | 'done' | 'cancelled'
+/** Business lifecycle state shared by tickets and ticket tasks. */
+export type TaskStatus   = 'backlog' | 'todo' | 'awaiting_dispatch' | 'in_progress' | 'review' | 'done' | 'cancelled'
+/** Priority scale used by tickets and ticket tasks. */
 export type TaskPriority = 'low' | 'medium' | 'high' | 'critical'
 
+/** Lightweight workflow step reference. */
 export interface WorkflowStepRef {
   id: string
   key?: string
   name: string
 }
 
+/** Lightweight agent reference. */
 export interface AgentRef {
   id: string
   name: string
 }
 
+/** Lightweight role reference. */
 export interface RoleRef {
   id: string
   slug: string
   name: string
 }
 
+/** Lightweight feature reference. */
 export interface FeatureRef {
   id: string
   name: string
 }
 
+/** Lightweight skill reference. */
 export interface SkillRef {
   id: string
   slug: string
   name: string
 }
 
+/** Agent action metadata embedded in task payloads. */
 export interface AgentActionRef {
   id: string
   key: string
@@ -146,6 +168,7 @@ export interface AgentActionRef {
   skill: SkillRef | null
 }
 
+/** One execution attempt for an async agent run. */
 export interface AgentTaskExecutionAttempt {
   id: string
   attemptNumber: number
@@ -160,6 +183,7 @@ export interface AgentTaskExecutionAttempt {
   agent: { id: string; name: string } | null
 }
 
+/** Aggregate execution record with attempts and agent metadata. */
 export interface AgentTaskExecution {
   id: string
   traceRef: string
@@ -183,6 +207,7 @@ export interface AgentTaskExecution {
   attempts: AgentTaskExecutionAttempt[]
 }
 
+/** Activity log entry attached to a ticket or task. */
 export interface TicketLog {
   id: string
   ticketId?: string
@@ -198,6 +223,7 @@ export interface TicketLog {
   createdAt: string
 }
 
+/** Operational task nested under one ticket. */
 export interface TicketTask {
   id: string
   ticketId: string
@@ -213,6 +239,10 @@ export interface TicketTask {
   agentAction: AgentActionRef
   assignedAgent: AgentRef | null
   assignedRole: RoleRef | null
+  awaitingUserAnswer: boolean
+  pendingUserAnswerCount: number
+  canResume: boolean
+  canAuthorize: boolean
   dependsOn: Array<{ id: string; title: string; status: TaskStatus }>
   childTaskIds: string[]
   children?: TicketTask[]
@@ -223,6 +253,7 @@ export interface TicketTask {
   updatedAt: string
 }
 
+/** Top-level board item representing a story or bug. */
 export interface Ticket {
   id: string
   projectId: string
@@ -239,6 +270,8 @@ export interface Ticket {
   workflowStepAllowedTransitions: WorkflowStepRef[]
   assignedAgent: AgentRef | null
   assignedRole: RoleRef | null
+  awaitingUserAnswer: boolean
+  pendingUserAnswerCount: number
   taskCounts: { total: number; root: number; activeStep: number }
   activeStepTasks?: TicketTask[]
   tasks?: TicketTask[]
@@ -249,6 +282,7 @@ export interface Ticket {
   updatedAt: string
 }
 
+/** One message exchanged in the project chat surface. */
 export interface ChatMessage {
   id: string
   exchangeId: string
@@ -260,11 +294,13 @@ export interface ChatMessage {
   createdAt: string
 }
 
+/** Paired human and agent messages for one exchange. */
 export interface ChatExchange {
   humanMessage: ChatMessage
   agentMessage: ChatMessage
 }
 
+/** Token accounting record for one backend call. */
 export interface TokenUsageEntry {
   id: string
   model: string
@@ -276,11 +312,13 @@ export interface TokenUsageEntry {
   createdAt: string
 }
 
+/** Aggregated token usage statistics. */
 export interface TokenSummary {
   total: { input: number; output: number; calls: number }
   byAgent: Array<{ agentId: string; totalInput: string; totalOutput: string; calls: string }>
 }
 
+/** Workflow step configuration returned by workflow endpoints. */
 export interface WorkflowStep {
   id: string
   stepOrder: number
@@ -298,6 +336,7 @@ export interface WorkflowStep {
   }>
 }
 
+/** Workflow definition associated with one project. */
 export interface Workflow {
   id: string
   name: string
@@ -310,8 +349,10 @@ export interface Workflow {
   updatedAt: string
 }
 
+/** High-level runtime availability exposed for one agent. */
 export type AgentRuntimeStatus = 'working' | 'idle' | 'error'
 
+/** Runtime health snapshot for one agent. */
 export interface AgentStatus {
   status: AgentRuntimeStatus
   activeTaskCount: number
@@ -321,6 +362,7 @@ export interface AgentStatus {
   } | null
 }
 
+/** Persisted audit trail entry. */
 export interface AuditLog {
   id: string
   action: string
@@ -351,6 +393,7 @@ export interface PersistedI18nMetadata {
   messageParameters: Record<string, string | number | boolean | null> | null
 }
 
+/** Aggregated operational occurrence used in log monitoring views. */
 export interface LogOccurrence {
   id: string
   category: string
@@ -371,6 +414,7 @@ export interface LogOccurrence {
   i18n: PersistedI18nMetadata | null
 }
 
+/** Raw operational log event returned by observability APIs. */
 export interface LogEvent {
   id: string
   source: string
@@ -393,6 +437,7 @@ export interface LogEvent {
   occurredAt: string
 }
 
+/** Health summary for external agent connectors. */
 export interface ConnectorHealth {
   status: 'ok' | 'degraded'
   connectors: Record<string, boolean>

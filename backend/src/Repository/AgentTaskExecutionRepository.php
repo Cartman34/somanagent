@@ -18,6 +18,9 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 final class AgentTaskExecutionRepository extends ServiceEntityRepository
 {
+    /**
+     * Binds the repository to Doctrine's manager registry.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, AgentTaskExecution::class);
@@ -35,6 +38,9 @@ final class AgentTaskExecutionRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Returns the newest active execution for one task, if any.
+     */
     public function findActiveByTicketTask(TicketTask $ticketTask): ?AgentTaskExecution
     {
         return $this->createQueryBuilder('e')
@@ -51,5 +57,19 @@ final class AgentTaskExecutionRepository extends ServiceEntityRepository
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    /**
+     * Returns whether at least one execution is already linked to this task.
+     */
+    public function hasAnyByTicketTask(TicketTask $ticketTask): bool
+    {
+        return (int) $this->createQueryBuilder('e')
+            ->select('COUNT(e.id)')
+            ->innerJoin('e.ticketTasks', 'tt')
+            ->andWhere('tt = :ticketTask')
+            ->setParameter('ticketTask', $ticketTask)
+            ->getQuery()
+            ->getSingleScalarResult() > 0;
     }
 }

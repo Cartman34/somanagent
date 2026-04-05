@@ -22,6 +22,10 @@ Retourne l’état d’authentification Claude CLI.
 ### `GET /api/projects`
 Liste les projets.
 
+Chaque projet expose aussi `dispatchMode` :
+- `auto` : toute tâche éligible est dispatchée immédiatement
+- `manual` : la tâche passe en `awaiting_dispatch` puis attend une autorisation explicite
+
 ### `POST /api/projects`
 Crée un projet.
 
@@ -30,7 +34,9 @@ Le body peut inclure `teamId` pour affecter une équipe dès la création.
 ### `GET /api/projects/{id}` · `PUT /api/projects/{id}` · `DELETE /api/projects/{id}`
 CRUD projet.
 
-`PUT /api/projects/{id}` permet aussi d’affecter ou retirer l’équipe via `teamId`.
+`PUT /api/projects/{id}` permet aussi :
+- d’affecter ou retirer l’équipe via `teamId`
+- de modifier `dispatchMode`
 
 ### `GET /api/projects/{id}/audit`
 Journal d’audit du projet.
@@ -73,6 +79,7 @@ Chaque ticket expose notamment :
 - `taskCounts`
 - `activeStepTasks`
 - `tasks`
+- `awaitingUserAnswer` / `pendingUserAnswerCount` pour signaler explicitement qu’un ticket ou l’une de ses tâches attend une réponse utilisateur
 
 ### `POST /api/projects/{projectId}/tickets`
 Crée un ticket (`user_story` ou `bug`).
@@ -83,6 +90,7 @@ Retourne le détail complet d’un ticket avec :
 - `logs`
 - `executions`
 - `tokenUsage`
+- `awaitingUserAnswer` / `pendingUserAnswerCount` pour signaler explicitement qu’une réponse utilisateur reste attendue
 
 ### `PUT /api/tickets/{id}`
 Met à jour le ticket.
@@ -133,6 +141,10 @@ Body :
 }
 ```
 
+Si la tâche est immédiatement éligible dans l’étape courante :
+- `dispatchMode=auto` : elle est dispatchée immédiatement
+- `dispatchMode=manual` : elle passe en `awaiting_dispatch`
+
 ### `GET /api/ticket-tasks/{id}`
 Retourne le détail complet d’une tâche opérationnelle avec :
 - `dependsOn`
@@ -140,6 +152,9 @@ Retourne le détail complet d’une tâche opérationnelle avec :
 - `logs`
 - `executions`
 - `tokenUsage`
+- `awaitingUserAnswer` / `pendingUserAnswerCount` pour signaler explicitement qu’une réponse utilisateur est attendue sur cette tâche
+- `canResume` pour indiquer si la tâche a déjà un historique d’exécution ou de complétion lui permettant d’être rejouée
+- `canAuthorize` pour indiquer si la tâche attend encore une autorisation explicite de dispatch
 
 ### `PUT /api/ticket-tasks/{id}`
 Met à jour la tâche.
@@ -168,11 +183,15 @@ Liste les agents disponibles pour l’`AgentAction` de la tâche.
 ### `POST /api/ticket-tasks/{id}/execute`
 Crée une nouvelle `AgentTaskExecution` et la dispatch en asynchrone.
 
+### `POST /api/ticket-tasks/{id}/authorize`
+Autorise explicitement une tâche en `awaiting_dispatch` puis la dispatch immédiatement.
+
 ### `POST /api/ticket-tasks/{id}/resume`
 Relance explicitement la tâche avec une nouvelle `AgentTaskExecution`.
 
 Précondition commune aux routes d’exécution / reprise task-level :
 - le projet du ticket doit avoir une équipe affectée
+- une reprise n’est autorisée que pour une tâche déjà exécutée au moins une fois ou déjà complétée auparavant
 
 ### `POST /api/ticket-tasks/{id}/comments`
 Ajoute un commentaire contextualisé sur la tâche.
