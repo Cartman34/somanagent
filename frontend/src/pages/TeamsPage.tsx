@@ -30,29 +30,29 @@ const TEAMS_PAGE_TRANSLATION_KEYS = [
   'common.action.saving',
   'team.item.loading',
   'team.list.loading',
-  'teams.action.add_agent',
-  'teams.action.new_team',
-  'teams.action.remove',
-  'teams.confirm.delete.message',
-  'teams.confirm.remove.message',
-  'teams.detail.empty.description',
-  'teams.detail.empty.title',
-  'teams.detail.inactive',
-  'teams.detail.members_title',
-  'teams.error.not_found',
-  'teams.form.description_label',
-  'teams.form.name_label',
-  'teams.form.name_placeholder',
-  'teams.list.agent_count',
-  'teams.list.empty.description',
-  'teams.list.empty.title',
-  'teams.modal.add_agent.label',
-  'teams.modal.add_agent.select_placeholder',
-  'teams.modal.add_agent.title',
-  'teams.modal.create.title',
-  'teams.modal.edit.title',
-  'teams.page.description',
-  'teams.page.title',
+  'team.action.add_agent',
+  'team.action.new_team',
+  'team.action.remove',
+  'team.confirm.delete.message',
+  'team.confirm.remove.message',
+  'team.detail.empty.description',
+  'team.detail.empty.title',
+  'team.detail.inactive',
+  'team.detail.members_title',
+  'team.error.not_found',
+  'team.form.description_label',
+  'team.form.name_label',
+  'team.form.name_placeholder',
+  'team.list.agent_count',
+  'team.list.empty.description',
+  'team.list.empty.title',
+  'team.modal.add_agent.label',
+  'team.modal.add_agent.select_placeholder',
+  'team.modal.add_agent.title',
+  'team.modal.create.title',
+  'team.modal.edit.title',
+  'team.page.description',
+  'team.page.title',
 ] as const
 
 function TeamForm({ initial, onSubmit, loading, onCancel }: {
@@ -68,11 +68,11 @@ function TeamForm({ initial, onSubmit, loading, onCancel }: {
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit({ name, description: description || undefined }) }} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('teams.form.name_label')} *</label>
-        <input className="input" value={name} onChange={(e) => setName(e.target.value)} required placeholder={t('teams.form.name_placeholder')} />
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('team.form.name_label')} *</label>
+        <input className="input" value={name} onChange={(e) => setName(e.target.value)} required placeholder={t('team.form.name_placeholder')} />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('teams.form.description_label')}</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('team.form.description_label')}</label>
         <textarea className="input resize-none" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
       </div>
       <div className="flex justify-end gap-3 pt-2">
@@ -113,19 +113,19 @@ function TeamsList() {
   return (
     <>
       <PageHeader
-        title={t('teams.page.title')}
-        description={t('teams.page.description')}
+        title={t('team.page.title')}
+        description={t('team.page.description')}
         onRefresh={() => qc.invalidateQueries({ queryKey: ['teams'] })}
         refreshTitle={t('common.action.refresh')}
-        action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> {t('teams.action.new_team')}</button>}
+        action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> {t('team.action.new_team')}</button>}
       />
 
       <div className="relative">
         <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={t('team.list.loading')} />
 
         {teams?.length === 0 ? (
-          <EmptyState icon={Users} title={t('teams.list.empty.title')} description={t('teams.list.empty.description')}
-            action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> {t('teams.action.new_team')}</button>} />
+          <EmptyState icon={Users} title={t('team.list.empty.title')} description={t('team.list.empty.description')}
+            action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> {t('team.action.new_team')}</button>} />
         ) : (
           <div className="list-team grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {teams?.map((team) => (
@@ -148,7 +148,7 @@ function TeamsList() {
                 </div>
                 {team.description && <p className="text-sm text-gray-500 line-clamp-2">{team.description}</p>}
                 <div className="mt-auto flex items-center justify-between text-xs text-gray-400">
-                  <span>{team.agentCount} {t('teams.list.agent_count', { count: team.agentCount !== 1 ? 'agents' : 'agent' })}</span>
+                  <span>{team.agentCount} {t('team.list.agent_count', { count: team.agentCount !== 1 ? 'agents' : 'agent' })}</span>
                   <span>{formatDate(team.createdAt)}</span>
                 </div>
               </div>
@@ -157,11 +157,11 @@ function TeamsList() {
         )}
       </div>
 
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title={t('teams.modal.create.title')}>
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title={t('team.modal.create.title')}>
         <TeamForm onSubmit={(d) => createMutation.mutate(d)} loading={createMutation.isPending} onCancel={() => setCreateOpen(false)} />
       </Modal>
 
-      <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title={t('teams.modal.edit.title')}>
+      <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title={t('team.modal.edit.title')}>
         {editTarget && (
           <TeamForm initial={{ name: editTarget.name, description: editTarget.description ?? '' }}
             onSubmit={(d) => updateMutation.mutate({ id: editTarget.id, data: d })}
@@ -171,7 +171,7 @@ function TeamsList() {
 
       <ConfirmDialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)}
         onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
-        message={t('teams.confirm.delete.message', { name: deleteTarget?.name ?? '' })}
+        message={t('team.confirm.delete.message', { name: deleteTarget?.name ?? '' })}
         loading={deleteMutation.isPending} />
     </>
   )
@@ -198,7 +198,7 @@ function TeamDetail() {
   })
 
   if (isLoading) return <PageSpinner />
-  if (error || !team) return <ErrorMessage message={(error as Error)?.message ?? t('teams.error.not_found')} onRetry={() => refetch()} />
+  if (error || !team) return <ErrorMessage message={(error as Error)?.message ?? t('team.error.not_found')} onRetry={() => refetch()} />
 
   const agents = team.agents ?? []
   const memberIds = new Set(agents.map((a) => a.id))
@@ -207,22 +207,22 @@ function TeamDetail() {
   return (
     <>
       <Link to="/teams" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4">
-        <ArrowLeft className="w-4 h-4" /> {t('teams.page.title')}
+        <ArrowLeft className="w-4 h-4" /> {t('team.page.title')}
       </Link>
 
       <PageHeader title={team.name} description={team.description ?? undefined}
         onRefresh={() => qc.invalidateQueries({ queryKey: ['teams', id] })}
         refreshTitle={t('common.action.refresh')}
-        action={<button className="btn-primary" onClick={() => setAddOpen(true)}><Plus className="w-4 h-4" /> {t('teams.action.add_agent')}</button>} />
+        action={<button className="btn-primary" onClick={() => setAddOpen(true)}><Plus className="w-4 h-4" /> {t('team.action.add_agent')}</button>} />
 
       <div className="relative">
         <ContentLoadingOverlay isLoading={isFetching && !isLoading} label={t('team.item.loading')} />
 
-        <h2 className="text-base font-semibold text-gray-900 mb-3">{t('teams.detail.members_title', { count: String(agents.length) })}</h2>
+        <h2 className="text-base font-semibold text-gray-900 mb-3">{t('team.detail.members_title', { count: String(agents.length) })}</h2>
 
         {agents.length === 0 ? (
-          <EmptyState icon={Bot} title={t('teams.detail.empty.title')} description={t('teams.detail.empty.description')}
-            action={<button className="btn-primary" onClick={() => setAddOpen(true)}><Plus className="w-4 h-4" /> {t('teams.action.add_agent')}</button>} />
+          <EmptyState icon={Bot} title={t('team.detail.empty.title')} description={t('team.detail.empty.description')}
+            action={<button className="btn-primary" onClick={() => setAddOpen(true)}><Plus className="w-4 h-4" /> {t('team.action.add_agent')}</button>} />
         ) : (
           <div className="list-agent card divide-y divide-gray-100">
             {agents.map((agent) => (
@@ -232,8 +232,8 @@ function TeamDetail() {
                   <p className="text-sm font-medium text-gray-900">{agent.name}</p>
                   {agent.role && <p className="text-xs text-gray-500">{agent.role.name}</p>}
                 </div>
-                {!agent.isActive && <span className="badge-orange text-xs">{t('teams.detail.inactive')}</span>}
-                <button onClick={() => setRemoveTarget(agent)} className="p-1.5 text-gray-400 hover:text-red-500" title={t('teams.action.remove')}>
+                {!agent.isActive && <span className="badge-orange text-xs">{t('team.detail.inactive')}</span>}
+                <button onClick={() => setRemoveTarget(agent)} className="p-1.5 text-gray-400 hover:text-red-500" title={t('team.action.remove')}>
                   <UserMinus className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -242,12 +242,12 @@ function TeamDetail() {
         )}
       </div>
 
-      <Modal open={addOpen} onClose={() => setAddOpen(false)} title={t('teams.modal.add_agent.title')}>
+      <Modal open={addOpen} onClose={() => setAddOpen(false)} title={t('team.modal.add_agent.title')}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('teams.modal.add_agent.label')}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('team.modal.add_agent.label')}</label>
             <select className="input" value={selectedAgentId} onChange={(e) => setSelectedAgentId(e.target.value)}>
-              <option value="">{t('teams.modal.add_agent.select_placeholder')}</option>
+              <option value="">{t('team.modal.add_agent.select_placeholder')}</option>
               {availableAgents.map((a) => (
                 <option key={a.id} value={a.id}>{a.name}{a.role ? ` (${a.role.name})` : ''}</option>
               ))}
@@ -265,7 +265,7 @@ function TeamDetail() {
 
       <ConfirmDialog open={!!removeTarget} onClose={() => setRemoveTarget(null)}
         onConfirm={() => removeTarget && removeMutation.mutate(removeTarget.id)}
-        message={t('teams.confirm.remove.message', { name: removeTarget?.name ?? '' })}
+        message={t('team.confirm.remove.message', { name: removeTarget?.name ?? '' })}
         loading={removeMutation.isPending} />
     </>
   )

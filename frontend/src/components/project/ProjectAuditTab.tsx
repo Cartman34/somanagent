@@ -16,9 +16,9 @@ const AUDIT_TAB_TRANSLATION_KEYS = [
   'audit.list.empty_description',
   'audit.list.col_entity',
   'audit.list.col_date',
-  'ui.project_detail.execution_history.entries_label',
-  'ui.project_detail.execution_history.prev',
-  'ui.project_detail.execution_history.next',
+  'project.executionHistory.entries_label',
+  'project.executionHistory.prev',
+  'project.executionHistory.next',
   ...Object.values(AUDIT_ACTION_LABEL_KEYS),
 ] as const
 
@@ -82,19 +82,19 @@ export default function ProjectAuditTab({ projectId }: { projectId: string }) {
 
       {auditData.total > auditData.limit && (
         <div className="flex items-center justify-between text-sm" style={{ color: 'var(--muted)' }}>
-          <span>{auditData.total} {t('ui.project_detail.execution_history.entries_label')}</span>
+          <span>{auditData.total} {t('project.executionHistory.entries_label')}</span>
           <div className="flex gap-2">
             <button
               className="btn-secondary py-1"
               disabled={auditPage <= 1}
               onClick={() => setAuditPage((p) => p - 1)}
-            >{t('ui.project_detail.execution_history.prev')}</button>
+            >{t('project.executionHistory.prev')}</button>
             <span className="px-2 py-1">{auditPage} / {totalPages}</span>
             <button
               className="btn-secondary py-1"
               disabled={auditPage >= totalPages}
               onClick={() => setAuditPage((p) => p + 1)}
-            >{t('ui.project_detail.execution_history.next')}</button>
+            >{t('project.executionHistory.next')}</button>
           </div>
         </div>
       )}

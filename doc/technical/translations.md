@@ -43,13 +43,8 @@ Recommended domains:
   generic application UI and API messages
 - `logs`
   persisted log titles and messages
-- `projects`
-- `tasks`
-- `agents`
-- `teams`
-- `roles`
-- `skills`
-- `workflows`
+- `catalog`
+  agent action labels, enums, and known persisted string values
 
 Start small, but do not overload `messages` with everything.
 
@@ -63,10 +58,10 @@ Recommended shape:
 - `<bounded-context>.<resource>.<purpose>`
 
 Examples:
-- `projects.error.not_found`
-- `tasks.validation.title_required`
-- `logs.health.degraded_connectors.title`
-- `logs.health.degraded_connectors.message`
+- `project.error.not_found`
+- `task.validation.title_required`
+- `log.health.degraded_connectors.title`
+- `log.health.degraded_connectors.message`
 
 Rules:
 - lowercase only
@@ -74,6 +69,12 @@ Rules:
 - no UI copy inside the key
 - no version suffix in the key
 - keep the key stable even if the French wording evolves
+- entity names are singular (`project`, `task`, `log`, not `projects`, `tasks`, `logs`)
+- no `ui.`, `drawer.`, or visual-component prefixes — use entity-based namespaces
+- no generic `errors.` prefix — use `error.*` and `common.*` as the only cross-cutting namespaces
+- do not build translation keys dynamically
+- all allowed variations must go through explicit static maps
+- a translation key belongs to exactly one domain for its whole lifecycle
 
 ## Persisted Messages
 
@@ -217,3 +218,18 @@ Conventions:
 - Never define local `tt()` / `t()` wrapper functions
 - Use `formatDate()`, `formatDateTime()`, `formatTime()`, `formatNumber()` instead of hardcoded `'fr-FR'`
 - Keys follow `<entity>.<subsection>.<key>` convention (no `ui.` prefix, no generic `errors.` prefix)
+- Entity names are singular: `project.*`, `agent.*`, `workflow.*`, `team.*`, `role.*`, `skill.*`, `token.*`, `feature.*`, `log.*`, `audit.*`, `chat.*`, `story.*`, `task.*`, `ticket.*`, `dashboard.*`
+- `catalog` owns referential labels: enums, known database string values, workflow/action catalogs, and similar quasi-static vocabularies
+- Do not write ``t(`foo.${bar}`)`` or equivalent dynamic constructions
+- When a key depends on runtime state, use a typed static map such as `const STATUS_LABEL_KEYS = { ... } as const`
+- Cross-cutting namespaces: `common.*` (shared actions), `error.*` (generic errors)
+- Form fields go under `<entity>.form.*` (not `<entity>.ui.form.*`)
+- Page-level strings go under `<entity>.page.*`
+- List-level strings go under `<entity>.list.*`
+- Detail-level strings go under `<entity>.detail.*`
+- Status badges go under `<entity>.status.*`
+- Action confirmations go under `<entity>.action.*` or `<entity>.confirm.*`
+- Validation errors go under `<entity>.validation.*`
+- Business errors go under `<entity>.error.*`
+- Progress-related strings go under `<entity>.progress.*` (not `<entity>.progress.ui.*`)
+- Execution history goes under `<entity>.executionHistory.*` (not `ui.project_detail.execution_history.*`)

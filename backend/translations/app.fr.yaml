@@ -1,22 +1,20 @@
 common:
   action:
+    add: Ajouter
+    adding: Ajout…
     cancel: Annuler
     close: Fermer
-    confirm: Confirmer
-    refresh: Rafraîchir
-    retry: Réessayer
     delete: Supprimer
+    edit: Modifier
+    open: Ouvrir
+    refresh: Rafraîchir
     save: Enregistrer
     saving: Enregistrement…
-errors:
-  generic:
-    unexpected: Une erreur inattendue est survenue.
-agents:
+agent:
   error:
     not_found: Agent introuvable.
   validation:
     name_required: Le champ "name" est obligatoire.
-    workflow_required: Le champ "workflowId" est obligatoire.
   sheet:
     modal_title: Fiche agent
     load_error: Impossible de charger la fiche agent.
@@ -57,8 +55,57 @@ agents:
       sending: Envoi...
       send: Envoyer
       tab_label: Chat
+  form:
+    label:
+      name: Nom
+      description: Description
+      role: Rôle
+      no_role: Aucun rôle
+      connector: Connecteur
+      claude_api: Claude API
+      claude_cli: Claude CLI
+      configuration: Configuration
+      model: Modèle
+      max_tokens: Max tokens
+      temperature: Température
+      timeout: Timeout
+      is_active: Actif
+    placeholder:
+      name: Nom de l'agent
+      model: gpt-4
+    desc:
+      claude_api: Clé API Anthropic
+      claude_cli: Via Claude CLI local
+    action:
+      cancel: Annuler
+      save: Enregistrer
+      saving: Enregistrement…
+  page:
+    title: Agents
+    description: Configurez vos agents IA et leurs connecteurs.
   action:
+    new: Nouvel agent
+    edit: Modifier
+    delete: Supprimer
     delete_confirm: Supprimer l'agent "%name%" ?
+  empty:
+    title: Aucun agent
+    description: Créez un agent pour commencer.
+  status:
+    claude_cli: Claude CLI
+    connected: Connecté
+    not_connected: Non connecté
+    login_manual: Connexion manuelle
+    verify: Vérifier
+  edit:
+    title: Modifier l'agent
+  create:
+    title: Nouvel agent
+  list:
+    loading: Chargement des agents…
+  table:
+    header:
+      status: Statut
 chat:
   error:
     project_or_agent_not_found: Projet ou agent introuvable.
@@ -77,337 +124,14 @@ chat:
   select_agent: Agent
   select_prompt: Sélectionner
   no_messages: Aucun message — démarrez la conversation.
+  send_reply: Envoyer la réponse
   input_placeholder: Écrivez votre message…
-features:
+feature:
   error:
     not_found: Feature introuvable.
     project_not_found: Projet introuvable.
   validation:
     name_required: Le champ "name" est obligatoire.
-logs:
-  occurrence:
-    invalid_json: La charge JSON est invalide.
-    invalid_status: Le statut d’occurrence est invalide.
-  ingest:
-    invalid_json: La charge JSON est invalide.
-    invalid_fields: Les champs de log sont manquants ou invalides.
-projects:
-  ui:
-    form:
-      team_label: Équipe
-      no_team_option: — Aucune équipe —
-      team_hint: Une équipe est recommandée dès la création. Sans équipe, vous serez redirigé vers l’onglet Général pour l’assigner avant progression.
-      name_label: Nom
-      name_placeholder: Mon projet
-      description_label: Description
-      workflow_label: Workflow
-      workflow_placeholder: Sélectionner un workflow
-      workflow_hint: Le workflow définit les étapes que les agents vont exécuter.
-  error:
-    not_found: Projet introuvable.
-    workflow_inactive: Ce workflow est inactif et ne peut plus être affecté à ce projet.
-  progress:
-    error:
-      team_required: Une équipe doit être affectée au projet avant toute action de progression ou d’exécution.
-      request_creation_failed: Création de la demande impossible.
-    ui:
-      blocked_reason: Affectez une équipe dans l’onglet Général avant toute action de progression ou d’exécution.
-      banner: Une équipe doit être affectée à ce projet avant toute action de progression ou d’exécution. Rendez-vous dans l’onglet Général pour l’assigner.
-      rework_title: Affectez une équipe au projet avant de relancer une étape agent.
-  modules:
-    error:
-      not_found: Module introuvable.
-  validation:
-    name_required: Le champ "name" est obligatoire.
-  page:
-    title: Projets
-    description: Gérez vos projets et suivez leur avancement.
-  action:
-    delete_confirm: Supprimer le projet "%name%" ?
-roles:
-  error:
-    not_found: Rôle introuvable.
-  validation:
-    skill_id_required: Le champ "skillId" est obligatoire.
-    slug_name_required: Les champs "slug" et "name" sont obligatoires.
-  page:
-    title: Rôles
-    description: Définissez les rôles et associez-y des compétences.
-  form:
-    name_label: Nom
-    name_placeholder: Développeur Backend
-    slug_label: Slug
-    slug_placeholder: backend-dev
-    description_label: Description
-    skills_label: Compétences
-    no_skills: Aucune compétence
-  list:
-    empty_title: Aucun rôle
-    empty_description: Créez un rôle pour commencer.
-    new_button: Nouveau rôle
-    delete_confirm: Supprimer le rôle "%name%" ?
-    modal_create_title: Nouveau rôle
-    modal_edit_title: Modifier le rôle
-skills:
-  error:
-    not_found: Skill introuvable.
-  validation:
-    content_required: Le champ "content" est obligatoire.
-    create_required: Les champs "slug", "name" et "content" sont obligatoires.
-    source_required: 'Le champ "source" (ex: owner/skill-name) est obligatoire.'
-tickets:
-  error:
-    not_found: Tâche introuvable.
-  execution:
-    error:
-      agent_not_found: Agent introuvable.
-      no_automatic_execution: Aucune exécution automatique disponible pour ce statut.
-      ticket_level_execution_unsupported: L’exécution manuelle au niveau ticket n’est pas disponible. Exécutez une tâche du ticket.
-      unsupported_story_or_bug: Cette tâche n’est pas une story ou un bug.
-  rework:
-    error:
-      resume_unavailable: La reprise agent depuis le ticket n’est disponible que pour les stories et bugs.
-      step_unavailable: La reprise d’étape agent n’est disponible que pour les stories et bugs.
-    validation:
-      target_objective_required: Les champs "targetKey" et "objective" sont obligatoires.
-  story:
-    error:
-      unsupported_user_story_or_bug: Cette tâche n’est pas une user story ou un bug.
-      unknown_status: 'Statut story inconnu : %status%.'
-  discussion:
-    section_title: Discussion ticket
-    description: Les questions agent et vos réponses restent visibles dans le ticket.
-    comment_placeholder: Ajoutez un commentaire ou une précision pour l'agent…
-    submit: Commenter
-    submit_hint: Ctrl/Cmd + Entrée pour envoyer
-    send: Envoyer
-    empty: Aucun échange ticket pour l'instant.
-    author_you: Vous
-    requires_answer: Réponse attendue
-    reply: Répondre
-    reply_label: Réponse
-    reply_to: Réponse à
-    reply_to_fallback: ce commentaire
-    reply_placeholder: Écrivez votre réponse…
-  validation:
-    content_required: Le champ "content" est obligatoire.
-    priority_required: Le champ "priority" est obligatoire.
-    status_required: Le champ "status" est obligatoire.
-    title_required: Le champ "title" est obligatoire.
-teams:
-  error:
-    not_found: Équipe introuvable.
-  validation:
-    agent_id_required: Le champ "agentId" est obligatoire.
-    name_required: Le champ "name" est obligatoire.
-  page:
-    title: Équipes
-    description: Gérez les équipes et leurs agents.
-  form:
-    name_label: Nom de l'équipe
-    name_placeholder: Équipe Web
-  list:
-    empty_title: Aucune équipe
-    empty_description: Créez une équipe pour commencer.
-    new_button: Nouvelle équipe
-    delete_confirm: Supprimer l'équipe "%name%" ?
-    modal_create_title: Nouvelle équipe
-    modal_edit_title: Modifier l'équipe
-  confirm:
-    delete.message: Supprimer l'équipe "%name%" ?
-    remove.message: Retirer l'agent de l'équipe "%name%" ?
-tokens:
-  agents:
-    error:
-      not_found: Agent introuvable.
-  page:
-    title: Tokens
-    description: Suivi de la consommation de tokens par agent et par modèle.
-  card:
-    input: Tokens en entrée
-    output: Tokens en sortie
-    totalCalls: Total des appels
-  section:
-    byAgent: Répartition par agent
-  empty:
-    noConsumption: Aucune consommation
-  table:
-    agent: Agent
-    input: Entrée
-    output: Sortie
-    total: Total
-    calls: Appels
-workflows:
-  duplication:
-    copy_name: '%name% (copie)'
-  ui:
-    form:
-      name_label: Nom
-      name_placeholder: Workflow de revue de code
-      description_label: Description
-      trigger_label: Déclencheur
-      immutable_hint: La définition est figée après création. Pour la faire évoluer, créez un nouveau workflow.
-      submit_loading: Enregistrement…
-      submit_create: Créer le workflow
-      submit_save: Enregistrer
-      modal_create_title: Nouveau workflow
-      modal_edit_title: Modifier le brouillon
-    trigger:
-      manual: Manuel
-      vcs_event: Événement VCS
-      scheduled: Planifié
-    status:
-      draft: Brouillon
-      validated: Validé
-      locked: Verrouillé
-      immutable_badge: Immuable
-      immutable_notice: Définition figée
-      active: Actif
-      inactive: Inactif
-      activate: Activer
-      deactivate: Désactiver
-      duplicate: Dupliquer
-      edit: Modifier
-      action_loading: Traitement…
-    lifecycle:
-      new: Nouveau
-      ready: Prêt
-      approved: Approuvé
-      planning: Planification
-      graphic_design: Design
-      development: Développement
-      code_review: Revue
-      done: Terminé
-      conditional: Conditionnelle
-      configured_title: Cycle de vie — étapes du workflow configurées
-      configured_empty: Aucune étape configurée. Les étapes avec un déclencheur de cycle de vie apparaîtront ici.
-      transition:
-        manual: Transition manuelle
-        automatic: Transition automatique
-    page:
-      empty_title: Aucun workflow
-      create_button: Nouveau workflow
-      description: Définissez des séquences multi-étapes exécutées par vos équipes d’agents.
-      empty_description: Créez un workflow pour orchestrer vos agents étape par étape.
-      title: Workflows
-    detail:
-      not_found: Workflow introuvable
-      back_link: Workflows
-      team_label: Équipe
-      output_label: sortie
-      condition_label: Condition
-      actions_label: Actions
-      create_with_ticket: Avec ticket
-      steps_title: Étapes
-      empty_steps_title: Aucune étape
-      empty_steps_description: Les étapes sont définies lors de l’exécution du workflow.
-    count:
-      step_one: étape
-      step_other: étapes
-  error:
-    deactivation_used: Ce workflow est déjà utilisé et ne peut plus être désactivé.
-    immutable: Ce workflow est immuable après sa création et ne peut plus être modifié, validé ou supprimé.
-    locked_delete: Ce workflow est verrouillé et ne peut pas être supprimé.
-    locked_update: Ce workflow est verrouillé et ne peut pas être modifié.
-    not_found: Workflow introuvable.
-  validation:
-    name_required: Le champ "name" est obligatoire.
-dashboard:
-  loading: Chargement des données…
-  title: Tableau de bord
-  description: Vue d'ensemble de vos projets, équipes et agents.
-  stats:
-    projects: Projets
-    teams: Équipes
-    agents: Agents
-    agents_active: actif
-    agents_active_other: actifs
-    skills: Compétences
-  system_state: État du système
-  inaccessible: Inaccessible
-  operational: Opérationnel
-  unavailable: Indisponible
-  claude_cli_auth: claude_cli auth
-  connected_via: Connecté via
-  not_connected: Non connecté
-  quick_start:
-    title: Démarrage rapide
-    create_team: Créer une équipe
-    and_add_roles: et y ajouter des rôles
-    import_skills: Importer ou créer des compétences
-    and_associate_roles: à associer aux rôles
-    configure_agents: Configurer des agents
-    and_associate_agent_roles: et les associer à des rôles
-    create_project: Créer un projet
-    and_add_modules: et y ajouter des modules (API PHP, Android, etc.)
-    define_workflows: Définir des workflows
-    and_orchestrate_agents: pour orchestrer vos agents
-project:
-  list:
-    loading: Chargement des projets…
-    empty_title: Aucun projet
-    empty_description: Créez votre premier projet pour commencer.
-    new_button: Nouveau projet
-    edit_button: Modifier
-    delete_button: Supprimer
-    delete_confirm: Supprimer le projet "%name%" ?
-    modal_create_title: Nouveau projet
-    modal_edit_title: Modifier le projet
-  item:
-    loading: Chargement des données…
-  detail:
-    back_link: Retour aux projets
-    create_request: Nouvelle demande
-    create_task: Nouvelle tâche
-    create_technical_task: Nouvelle tâche technique
-    delete_message: Supprimer "%title%" ?
-    not_found: Projet introuvable.
-    ticket_id_required: Le ticket est requis.
-    transition_impossible: Transition impossible.
-    stats:
-      stories_bugs: Stories / Bugs
-      tasks: Tâches
-      modules: Modules
-      team: Équipe
-    tabs:
-      general: Général
-      board: Tableau
-      tasks: Tâches
-      team: Équipe
-      modules: Modules
-      audit: Audit
-      tokens: Tokens
-team:
-  list:
-    loading: Chargement des équipes…
-  item:
-    loading: Chargement de l'équipe…
-    not_found: Équipe introuvable
-role:
-  list:
-    loading: Chargement des rôles…
-  form:
-    name.placeholder: Développeur PHP
-  confirm:
-    delete.message: Supprimer le rôle "%name%" ?
-agent:
-  list:
-    loading: Chargement des agents…
-workflow:
-  list:
-    loading: Chargement des workflows…
-  item:
-    loading: Chargement du workflow…
-skill:
-  list:
-    loading: Chargement des compétences…
-token:
-  list:
-    loading: Chargement des tokens…
-audit:
-  list:
-    loading: Chargement du journal…
-feature:
   list:
     loading: Chargement des features…
   page:
@@ -417,6 +141,7 @@ feature:
     new: Nouvelle feature
     save: Enregistrer
     saving: Enregistrement…
+    delete: Supprimer
   select_project: Projet
   select_prompt: Sélectionner un projet
   empty:
@@ -437,6 +162,11 @@ feature:
   confirm:
     delete: Supprimer la feature "%name%" ?
 log:
+  validation:
+    occurrence_invalid_json: La charge JSON est invalide.
+    occurrence_invalid_status: Le statut d'occurrence est invalide.
+    ingest_invalid_json: La charge JSON est invalide.
+    ingest_invalid_fields: Les champs de log sont manquants ou invalides.
   list:
     loading: Chargement des logs…
   page:
@@ -499,32 +229,448 @@ log:
   view:
     occurrences: Occurrences
     events: Événements
-ui:
-  project_detail:
-    execution_history:
-      title: Historique des agents
+project:
+  form:
+    team_label: Équipe
+    no_team_option: — Aucune équipe —
+    team_hint: Une équipe est recommandée dès la création. Sans équipe, vous serez redirigé vers l'onglet Général pour l'assigner avant progression.
+    name_label: Nom
+    name_placeholder: Mon projet
+    description_label: Description
+    workflow_label: Workflow
+    workflow_placeholder: Sélectionner un workflow
+    workflow_hint: Le workflow définit les étapes que les agents vont exécuter.
+  error:
+    not_found: Projet introuvable.
+    workflow_inactive: Ce workflow est inactif et ne peut plus être affecté à ce projet.
+  progress:
+    error:
+      team_required: Une équipe doit être affectée au projet avant toute action de progression ou d'exécution.
+      request_creation_failed: Création de la demande impossible.
+    blocked_reason: Affectez une équipe dans l'onglet Général avant toute action de progression ou d'exécution.
+    banner: Une équipe doit être affectée à ce projet avant toute action de progression ou d'exécution. Rendez-vous dans l'onglet Général pour l'assigner.
+    rework_title: Affectez une équipe au projet avant de relancer une étape agent.
+  module:
+    error:
+      not_found: Module introuvable.
+  validation:
+    name_required: Le champ "name" est obligatoire.
+    workflow_required: Le champ "workflowId" est obligatoire.
+  page:
+    title: Projets
+    description: Gérez vos projets et suivez leur avancement.
+  list:
+    loading: Chargement des projets…
+    empty_title: Aucun projet
+    empty_description: Créez votre premier projet pour commencer.
+    new_button: Nouveau projet
+    edit_button: Modifier
+    delete_button: Supprimer
+    delete_confirm: Supprimer le projet "%name%" ?
+    modal_create_title: Nouveau projet
+    modal_edit_title: Modifier le projet
+  item:
+    loading: Chargement des données…
+  detail:
+    back_link: Retour aux projets
+    create_request: Nouvelle demande
+    create_task: Nouvelle tâche
+    create_technical_task: Nouvelle tâche technique
+    delete_message: Supprimer "%title%" ?
+    not_found: Projet introuvable.
+    ticket_id_required: Le ticket est requis.
+    transition_impossible: Transition impossible.
+    stats:
+      stories_bugs: Stories / Bugs
+      tasks: Tâches
+      modules: Modules
+      team: Équipe
+    tabs:
+      general: Général
+      board: Tableau
+      tasks: Tâches
+      team: Équipe
+      modules: Modules
+      audit: Audit
+      tokens: Tokens
+  executionHistory:
+    entries_label: entrées
+    prev: Précédent
+    next: Suivant
+role:
+  error:
+    not_found: Rôle introuvable.
+  validation:
+    skill_id_required: Le champ "skillId" est obligatoire.
+    slug_name_required: Les champs "slug" et "name" sont obligatoires.
+  page:
+    title: Rôles
+    description: Définissez les rôles et associez-y des compétences.
+  form:
+    name:
+      label: Nom
+      placeholder: Développeur Backend
+    slug:
+      label: Slug
+      help: Identifiant unique utilisé dans les configurations et URLs.
+    description:
+      label: Description
+  list:
+    loading: Chargement des rôles…
+  action:
+    new: Nouveau rôle
+    edit: Modifier
+    delete: Supprimer
+    cancel: Annuler
+    saving: Enregistrement…
+    save: Enregistrer
+  empty:
+    title: Aucun rôle
+    description: Créez un rôle pour commencer.
+  modal:
+    create:
+      title: Nouveau rôle
+    edit:
+      title: Modifier le rôle
+  confirm:
+    delete:
+      message: Supprimer le rôle "%name%" ?
+skill:
+  error:
+    not_found: Skill introuvable.
+  validation:
+    content_required: Le champ "content" est obligatoire.
+    create_required: Les champs "slug", "name" et "content" sont obligatoires.
+    source_required: 'Le champ "source" (ex: owner/skill-name) est obligatoire.'
+  list:
+    loading: Chargement des compétences…
+  page:
+    title: Compétences
+    description: Gérez les compétences de vos agents.
+    empty_title: Aucune compétence
+    empty_description: Importez ou créez des compétences pour commencer.
+    section_imported: Compétences importées
+    section_custom: Compétences personnalisées
+  form:
+    identifier_label: Identifiant
+    identifier_placeholder: mon-skill
+    identifier_hint: Identifiant unique utilisé dans les configurations.
+    name_label: Nom
+    name_placeholder: Mon skill
+    slug_label: Slug
+    slug_placeholder: mon-skill
+    description_label: Description
+    description_placeholder: Description du skill
+    content_label: Contenu
+  action:
+    import: Importer
+    import_loading: Importation…
+    create: Créer
+    create_loading: Création…
+    delete_confirm: Supprimer le skill "%name%" ?
+    edit_content: Modifier le contenu
+    delete: Supprimer
+  modal:
+    import_title: Importer un skill
+    create_title: Nouveau skill
+  editor:
+    not_found: Skill introuvable
+    back_link: Retour aux compétences
+    saved: Enregistré
+    saving: Enregistrement…
+    save: Enregistrer
+story:
+  card:
+    active_subtasks: Sous-tâches actives
+team:
+  error:
+    not_found: Équipe introuvable.
+  validation:
+    agent_id_required: Le champ "agentId" est obligatoire.
+    name_required: Le champ "name" est obligatoire.
+  page:
+    title: Équipes
+    description: Gérez les équipes et leurs agents.
+  form:
+    name_label: Nom de l'équipe
+    name_placeholder: Équipe Web
+    description_label: Description
+  list:
+    empty:
+      title: Aucune équipe
+      description: Créez une équipe pour commencer.
+    loading: Chargement des équipes…
+    agent_count: '%count% agent|%count% agents'
+  action:
+    add_agent: Ajouter un agent
+    new_team: Nouvelle équipe
+    remove: Retirer
+  confirm:
+    delete:
+      message: Supprimer l'équipe "%name%" ?
+    remove:
+      message: Retirer l'agent de l'équipe "%name%" ?
+  detail:
+    empty:
+      title: Aucun membre
+      description: Ajoutez des agents à cette équipe.
+    inactive: Inactive
+    members_title: Membres
+  modal:
+    add_agent:
+      title: Ajouter un agent
+      label: Sélectionner un agent
+      select_placeholder: Rechercher un agent…
+    create:
+      title: Nouvelle équipe
+    edit:
+      title: Modifier l'équipe
+  item:
+    loading: Chargement de l'équipe…
+ticket:
+  error:
+    not_found: Tâche introuvable.
+  detail:
+    title: Détail de la tâche
+    loading: Chargement…
+    description_label: Description
+    expand: Étendre
+    collapse: Réduire
+    status_label: État
+    step_label: Étape
+    agent_label: Agent
+    action_label: Action agent
+    latest_run_label: Dernière exécution
+    subtasks_title: Sous-tâches
+    tasks_title: Tâches du ticket
+    tasks_empty: Aucune tâche liée à ce ticket pour l'instant.
+    workflow:
+      section_title: Pilotage
+      current_step: Étape courante
+      none: Aucune
+      transition_loading: Transition…
+      transition_to: Passer à %step%
+      no_transition: Aucun passage manuel disponible depuis cette étape.
+    resume:
+      title: Relance agent
+      manual_help: La relance manuelle se fait désormais au niveau des tâches.
+      button: Relancer la tâche
+      loading: Relance…
+      error: Impossible de relancer la tâche.
+    metric:
+      tokens_consumed: Tokens consommés
+  execution:
+    error:
+      agent_not_found: Agent introuvable.
+      ticket_level_execution_unsupported: L'exécution manuelle au niveau ticket n'est pas disponible. Exécutez une tâche du ticket.
+  story:
+    error:
+      unsupported_user_story_or_bug: Cette tâche n'est pas une user story ou un bug.
+  discussion:
+    comment_placeholder: Ajoutez un commentaire ou une précision pour l'agent…
+    submit: Commenter
+    submit_hint: Ctrl/Cmd + Entrée pour envoyer
+    send: Envoyer
+    author_you: Vous
+    requires_answer: Réponse attendue
+    reply: Répondre
+    reply_label: Réponse
+    reply_to: Réponse à
+    reply_to_fallback: ce commentaire
+    reply_placeholder: Écrivez votre réponse…
+    author_agent: Agent
+    source_action: Action source
+    add_comment: Ajouter un commentaire
+    hide_replies: Masquer les réponses
+    type_above: réponse ci-dessus
+  activity:
+    title: Fil d'activités
+    description: Questions, réponses et suivi d'exécution.
+    empty: Aucune activité pour l'instant.
+    questions_pending_one: 1 question en attente
+    questions_pending_other: '%count% questions en attente'
+    event:
+      count_one: '%count% événement'
+      count_other: '%count% événements'
+      category_execution: Exécution
+      category_question_response: Question/Réponse
+      category_planning: Planification
+      reply_count_one: '%count% réponse'
+      reply_count_other: '%count% réponses'
+      detail:
+        action: Action
+        created_at: Créé le
+        ticket_task_id: Tâche liée
+    execution:
+      title: Détail d'exécution
       requested_agent: Agent demandé
       effective_agent: Agent effectif
       started_at: Début
       finished_at: Fin
-      attempts_count_one: tentative
-      attempts_count_other: tentatives
+      attempts_count_one: '%count% tentative'
+      attempts_count_other: '%count% tentatives'
       attempt_label: Tentative
-      attempt_failed: KO
-      attempt_succeeded: OK
+      attempt_failed: échec
+      attempt_succeeded: réussie
       attempt_running: en cours
-      retry_planned: Retry prévu
+      retry_planned: Nouvelle tentative prévue
       agent: Agent
-      receiver: Receiver
-      request_ref: Request ref
-      error_scope: Error scope
-      not_available: n/a
-      exhausted_retries: Retries épuisés pour cette exécution.
-      auto: auto
-      not_finished: —
-      entries_label: entrées
-      prev: Précédent
-      next: Suivant
-story:
+      receiver: Récepteur
+      request_ref: Référence requête
+      error_scope: Périmètre d'erreur
+      not_available: Indisponible
+      not_finished: Pas encore terminé
+      exhausted_retries: Les tentatives ont été épuisées.
+      auto: Automatique
+  validation:
+    content_required: Le champ "content" est obligatoire.
+    priority_required: Le champ "priority" est obligatoire.
+    status_required: Le champ "status" est obligatoire.
+    title_required: Le champ "title" est obligatoire.
+token:
+  error:
+    agent_not_found: Agent introuvable.
+  page:
+    title: Tokens
+    description: Suivi de la consommation de tokens par agent et par modèle.
   card:
-    active_subtasks: Sous-tâches actives
+    input: Tokens en entrée
+    output: Tokens en sortie
+    totalCalls: Total des appels
+  section:
+    byAgent: Répartition par agent
+  empty:
+    noConsumption: Aucune consommation
+  table:
+    agent: Agent
+    input: Entrée
+    output: Sortie
+    total: Total
+    calls: Appels
+  list:
+    loading: Chargement des tokens…
+workflow:
+  duplication:
+    copy_name: '%name% (copie)'
+  form:
+    name_label: Nom
+    name_placeholder: Workflow de revue de code
+    description_label: Description
+    trigger_label: Déclencheur
+    immutable_hint: La définition est figée après création. Pour la faire évoluer, créez un nouveau workflow.
+    submit_loading: Enregistrement…
+    submit_create: Créer le workflow
+    submit_save: Enregistrer
+    modal_create_title: Nouveau workflow
+    modal_edit_title: Modifier le brouillon
+  trigger:
+    manual: Manuel
+    vcs_event: Événement VCS
+    scheduled: Planifié
+  status:
+    immutable_badge: Immuable
+    immutable_notice: Définition figée
+    active: Actif
+    inactive: Inactif
+    activate: Activer
+    deactivate: Désactiver
+    duplicate: Dupliquer
+    edit: Modifier
+    action_loading: Traitement…
+  lifecycle:
+    new: Nouveau
+    ready: Prêt
+    planning: Planification
+    graphic_design: Design
+    development: Développement
+    code_review: Revue
+    done: Terminé
+    conditional: Conditionnelle
+    configured_title: Cycle de vie — étapes du workflow configurées
+    configured_empty: Aucune étape configurée. Les étapes avec un déclencheur de cycle de vie apparaîtront ici.
+    transition:
+      manual: Transition manuelle
+      automatic: Transition automatique
+  page:
+    empty_title: Aucun workflow
+    create_button: Nouveau workflow
+    description: Définissez des séquences multi-étapes exécutées par vos équipes d'agents.
+    empty_description: Créez un workflow pour orchestrer vos agents étape par étape.
+    title: Workflows
+  detail:
+    not_found: Workflow introuvable
+    back_link: Workflows
+    output_label: sortie
+    condition_label: Condition
+    actions_label: Actions
+    create_with_ticket: Avec ticket
+    steps_title: Étapes
+    empty_steps_title: Aucune étape
+    empty_steps_description: Les étapes sont définies lors de l'exécution du workflow.
+  count:
+    step_one: étape
+    step_other: étapes
+  error:
+    deactivation_used: Ce workflow est déjà utilisé et ne peut plus être désactivé.
+    immutable: Ce workflow est immuable après sa création et ne peut plus être modifié, validé ou supprimé.
+    not_found: Workflow introuvable.
+  validation:
+    name_required: Le champ "name" est obligatoire.
+  list:
+    loading: Chargement des workflows…
+  item:
+    loading: Chargement du workflow…
+dashboard:
+  loading: Chargement des données…
+  title: Tableau de bord
+  description: Vue d'ensemble de vos projets, équipes et agents.
+  stats:
+    projects: Projets
+    teams: Équipes
+    agents: Agents
+    agents_active: actif
+    skills: Compétences
+  system_state: État du système
+  inaccessible: Inaccessible
+  operational: Opérationnel
+  unavailable: Indisponible
+  claude_cli_auth: claude_cli auth
+  connected_via: Connecté via
+  not_connected: Non connecté
+  quick_start:
+    title: Démarrage rapide
+    create_team: Créer une équipe
+    and_add_roles: et y ajouter des rôles
+    import_skills: Importer ou créer des compétences
+    and_associate_roles: à associer aux rôles
+    configure_agents: Configurer des agents
+    and_associate_agent_roles: et les associer à des rôles
+    create_project: Créer un projet
+    and_add_modules: et y ajouter des modules (API PHP, Android, etc.)
+    define_workflows: Définir des workflows
+    and_orchestrate_agents: pour orchestrer vos agents
+audit:
+  list:
+    loading: Chargement du journal…
+    title: Journal d’audit
+    description: Suivez les actions importantes réalisées sur les projets et les tâches.
+    empty_title: Aucun événement d’audit
+    empty_description: Aucun événement d’audit n’a encore été enregistré.
+    col_action: Action
+    col_entity: Entité
+    col_id: Identifiant
+    col_date: Date
+    pagination_label: '%from%–%to% sur %total%'
+  action:
+    project_created: Projet créé
+    project_updated: Projet modifié
+    project_deleted: Projet supprimé
+    task_created: Tâche créée
+    task_updated: Tâche modifiée
+    task_deleted: Tâche supprimée
+    task_status_changed: Statut de la tâche modifié
+    task_progress_updated: Progression de la tâche modifiée
+    task_validation_asked: Validation demandée
+    task_validated: Tâche validée
+    task_rejected: Tâche rejetée
+    task_reprioritized: Priorité de la tâche modifiée

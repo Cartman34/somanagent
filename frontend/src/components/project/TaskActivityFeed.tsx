@@ -60,12 +60,12 @@ function ThreadReplyForm({
     <div className="inline-reply visible">
       <div className="inline-reply-header">
         <Reply className="h-3 w-3" />
-        {tt('comment.reply_to')} <strong>{authorLabel}</strong>
+        {tt('ticket.discussion.reply_to')} <strong>{authorLabel}</strong>
       </div>
       <textarea
         className="input min-h-[60px] resize-y text-sm"
         style={{ borderRadius: '6px', background: 'var(--surface2)' }}
-        placeholder={tt('comment.reply_placeholder')}
+        placeholder={tt('ticket.discussion.reply_placeholder')}
         value={commentText}
         onChange={(e) => setCommentText(e.target.value)}
         onKeyDown={(e) => {
@@ -85,7 +85,7 @@ function ThreadReplyForm({
           disabled={mutationPending || commentText.trim() === ''}
         >
           {mutationPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-          {tt('comment.send')}
+          {tt('ticket.discussion.send')}
         </button>
         <button type="button" className="btn-cancel" onClick={onCancel}>
           {tt('common.action.cancel')}
@@ -136,11 +136,11 @@ function stringifyMetadataValue(value: unknown): string {
 /**
  * Resolves the display author label for a log entry.
  */
-function renderAuthorLabel(log: TicketLog, tt: (key: 'comment.author_you' | 'comment.author_agent') => string): string {
+function renderAuthorLabel(log: TicketLog, tt: (key: 'ticket.discussion.author_you' | 'ticket.discussion.author_agent') => string): string {
   if (log.authorName) {
     return log.authorName
   }
-  return log.authorType === 'agent' ? tt('comment.author_agent') : tt('comment.author_you')
+  return log.authorType === 'agent' ? tt('ticket.discussion.author_agent') : tt('ticket.discussion.author_you')
 }
 
 /**
@@ -179,11 +179,11 @@ function attemptStatusLabel(
 ): string {
   switch (status) {
     case 'failed':
-      return tt('execution.attempt_failed')
+      return tt('ticket.activity.execution.attempt_failed')
     case 'succeeded':
-      return tt('execution.attempt_succeeded')
+      return tt('ticket.activity.execution.attempt_succeeded')
     case 'running':
-      return tt('execution.attempt_running')
+      return tt('ticket.activity.execution.attempt_running')
   }
 }
 
@@ -248,31 +248,31 @@ function ExecutionAttemptRow({
     <div className="attempt-row">
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <span className="attempt-status" style={{ color: tone }}>
-          {tt('execution.attempt_label')} {attempt.attemptNumber}{' '}
+          {tt('ticket.activity.execution.attempt_label')} {attempt.attemptNumber}{' '}
           {attemptStatusLabel(attempt.status, tt)}
         </span>
         {attempt.willRetry && (
           <span className="badge-retry">
-            {tt('execution.retry_planned')}
+            {tt('ticket.activity.execution.retry_planned')}
           </span>
         )}
         <span className="attempt-agent">
-          {attempt.agent?.name ?? tt('execution.not_available')}
+          {attempt.agent?.name ?? tt('ticket.activity.execution.not_available')}
         </span>
         <span className="attempt-time">
           {attempt.finishedAt
             ? formatTime(attempt.finishedAt, locale)
             : attempt.startedAt
               ? formatTime(attempt.startedAt, locale)
-              : tt('execution.not_finished')}
+              : tt('ticket.activity.execution.not_finished')}
         </span>
       </div>
 
       <div className="mt-2 grid gap-2 md:grid-cols-2" style={{ color: 'var(--muted)' }}>
-        <div>{tt('execution.agent')}: {attempt.agent?.name ?? tt('execution.not_available')}</div>
-        <div>{tt('execution.receiver')}: {attempt.messengerReceiver ?? tt('execution.not_available')}</div>
-        <div>{tt('execution.request_ref')}: {attempt.requestRef ?? tt('execution.not_available')}</div>
-        <div>{tt('execution.error_scope')}: {attempt.errorScope ?? tt('execution.not_available')}</div>
+        <div>{tt('ticket.activity.execution.agent')}: {attempt.agent?.name ?? tt('ticket.activity.execution.not_available')}</div>
+        <div>{tt('ticket.activity.execution.receiver')}: {attempt.messengerReceiver ?? tt('ticket.activity.execution.not_available')}</div>
+        <div>{tt('ticket.activity.execution.request_ref')}: {attempt.requestRef ?? tt('ticket.activity.execution.not_available')}</div>
+        <div>{tt('ticket.activity.execution.error_scope')}: {attempt.errorScope ?? tt('ticket.activity.execution.not_available')}</div>
       </div>
 
       {attempt.errorMessage && (
@@ -306,10 +306,10 @@ function CompactEventRow({
   const { category } = getEventIconCategory(group.labelKey)
 
   const categoryLabel = category === 'execution'
-    ? tt('event.category_execution')
+    ? tt('ticket.activity.event.category_execution')
     : category === 'questionResponse'
-      ? tt('event.category_question_response')
-      : tt('event.category_planning')
+      ? tt('ticket.activity.event.category_question_response')
+      : tt('ticket.activity.event.category_planning')
 
   const agentName = group.execution?.effectiveAgent?.name
     ?? group.execution?.requestedAgent?.name
@@ -345,11 +345,11 @@ function CompactEventRow({
           <div className="event-detail-inner anim-fade-in">
             <div className="grid grid-cols-1 gap-x-4 gap-y-2 text-xs md:grid-cols-2" style={{ color: 'var(--muted)' }}>
               <div className="flex items-baseline gap-3">
-                <span className="min-w-[70px] text-right md:min-w-[110px] md:text-left">{tt('event.detail.action')}</span>
+                <span className="min-w-[70px] text-right md:min-w-[110px] md:text-left">{tt('ticket.activity.event.detail.action')}</span>
                 <span className="truncate font-medium" style={{ color: 'var(--text)' }}>{resolveActionLabel(group.logs[0], group.execution, tc)}</span>
               </div>
               <div className="flex items-baseline gap-3">
-                <span className="min-w-[70px] text-right md:min-w-[110px] md:text-left">{tt('event.detail.created_at')}</span>
+                <span className="min-w-[70px] text-right md:min-w-[110px] md:text-left">{tt('ticket.activity.event.detail.created_at')}</span>
                 <span className="truncate font-medium" style={{ color: 'var(--text)' }}>{formatDateTime(group.timestamp, locale)}</span>
               </div>
               {group.logs.flatMap((log) =>
@@ -366,13 +366,13 @@ function CompactEventRow({
 
             {group.execution && (
               <div className="detail-execution">
-                <h4>{tt('execution.title')}</h4>
+                <h4>{tt('ticket.activity.execution.title')}</h4>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={`exec-status ${group.execution.status === 'running' ? 'running' : group.execution.status === 'succeeded' ? 'succeeded' : 'failed'}`}>
                     {executionStatusLabel(group.execution.status, tc)}
                   </span>
                   <span style={{ color: 'var(--muted)', marginLeft: '8px' }}>
-                    {tt('execution.attempts_count_other').replace('%count%', String(group.execution.maxAttempts))}
+                    {tt('ticket.activity.execution.attempts_count_other').replace('%count%', String(group.execution.maxAttempts))}
                   </span>
                   <span className="ml-auto font-mono text-[11px]" style={{ color: 'var(--muted)' }}>{group.execution.traceRef}</span>
                 </div>
@@ -394,12 +394,12 @@ function CompactEventRow({
                     <span className="detail-log-action">{actionLabel}</span>
                     {log.ticketTaskId && (
                       <span className="detail-log-task">
-                        {tt('event.detail.ticket_task_id')}: {log.ticketTaskId}
+                        {tt('ticket.activity.event.detail.ticket_task_id')}: {log.ticketTaskId}
                       </span>
                     )}
                     {log.requiresAnswer && (
                       <span className="detail-log-answer">
-                        {tt('comment.requires_answer')}
+                        {tt('ticket.discussion.requires_answer')}
                       </span>
                     )}
                   </div>
@@ -461,17 +461,17 @@ function CommentThreadCard({
           </span>
           {root.requiresAnswer && (
             <span className="badge-answer">
-              {tt('comment.requires_answer')}
+              {tt('ticket.discussion.requires_answer')}
             </span>
           )}
           {rootActionLabel && (
             <a
               href={`#activity-log-${root.id}`}
               className="source-action"
-              title={tt('comment.source_action')}
+              title={tt('ticket.discussion.source_action')}
             >
               <Link2 className="h-3 w-3" />
-              {tt('comment.source_action')}: {tc(rootActionLabel)}
+              {tt('ticket.discussion.source_action')}: {tc(rootActionLabel)}
             </a>
           )}
           <span className="comment-date">
@@ -493,7 +493,7 @@ function CommentThreadCard({
           onClick={onReply}
         >
           <Reply className="h-3 w-3" />
-          {tt('comment.reply')}
+          {tt('ticket.discussion.reply')}
         </button>
       </div>
 
@@ -507,8 +507,8 @@ function CommentThreadCard({
             <ChevronDown className="h-3 w-3" />
             <span>
               {repliesExpanded
-                ? tt('comment.hide_replies')
-                : `${replyCount > 1 ? tt('event.reply_count_other').replace('%count%', String(replyCount)) : tt('event.reply_count_one').replace('%count%', String(replyCount))}`
+                ? tt('ticket.discussion.hide_replies')
+                : `${replyCount > 1 ? tt('ticket.activity.event.reply_count_other').replace('%count%', String(replyCount)) : tt('ticket.activity.event.reply_count_one').replace('%count%', String(replyCount))}`
               }
             </span>
           </button>
@@ -525,7 +525,7 @@ function CommentThreadCard({
                       {renderAuthorLabel(reply, tt)}
                     </span>
                     <span className="reply-badge">
-                      {tt('comment.reply_label')}
+                      {tt('ticket.discussion.reply_label')}
                     </span>
                     <span className="reply-date">{formatDateTime(reply.createdAt, locale)}</span>
                   </div>
@@ -541,7 +541,7 @@ function CommentThreadCard({
                       onClick={onReply}
                     >
                       <Reply className="h-2.5 w-2.5" />
-                      {tt('comment.reply')}
+                      {tt('ticket.discussion.reply')}
                     </button>
                   </div>
                 </div>
@@ -616,12 +616,12 @@ export default function TaskActivityFeed({
     <section className="feed">
       {/* Header */}
       <div className="feed-header">
-        <h2>{tt('drawer.title')}</h2>
+        <h2>{tt('ticket.activity.title')}</h2>
         {commentCount > 0 && (
           <span className="badge-pending">
             {commentCount === 1
-              ? tt('drawer.questions_pending_one')
-              : tt('drawer.questions_pending_other').replace('%count%', String(commentCount))}
+              ? tt('ticket.activity.questions_pending_one')
+              : tt('ticket.activity.questions_pending_other').replace('%count%', String(commentCount))}
           </span>
         )}
       </div>
@@ -633,7 +633,7 @@ export default function TaskActivityFeed({
         onClick={() => setComposerOpen(!composerOpen)}
       >
         <MessageSquare className="h-3.5 w-3.5" />
-        {tt('comment.add_comment')}
+        {tt('ticket.discussion.add_comment')}
       </button>
 
       {/* Composer panel */}
@@ -642,8 +642,8 @@ export default function TaskActivityFeed({
           <textarea
             className="input min-h-[80px] resize-y"
             placeholder={replyToLogId
-              ? tt('comment.reply_placeholder')
-              : tt('comment.comment_placeholder')
+              ? tt('ticket.discussion.reply_placeholder')
+              : tt('ticket.discussion.comment_placeholder')
             }
             value={commentText}
             onChange={(event) => setCommentText(event.target.value)}
@@ -657,7 +657,7 @@ export default function TaskActivityFeed({
 
           {replyToLogId && (
             <div className="reply-indicator">
-              {tt('comment.reply_to')} {replyTargetLabel || tt('comment.reply_to_fallback')}
+              {tt('ticket.discussion.reply_to')} {replyTargetLabel || tt('ticket.discussion.reply_to_fallback')}
               <button
                 type="button"
                 className="cancel-btn"
@@ -679,10 +679,10 @@ export default function TaskActivityFeed({
               disabled={commentMutationPending || commentText.trim() === ''}
             >
               {commentMutationPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              {tt('comment.submit')}
+              {tt('ticket.discussion.submit')}
             </button>
             <span className="hint">
-              {tt('comment.submit_hint')}
+              {tt('ticket.discussion.submit_hint')}
             </span>
           </div>
         </div>
@@ -692,7 +692,7 @@ export default function TaskActivityFeed({
       <div className="feed-body">
         {entries.length === 0 && (
           <div className="empty-state">
-            {tt('drawer.empty')}
+            {tt('ticket.activity.empty')}
           </div>
         )}
 

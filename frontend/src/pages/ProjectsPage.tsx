@@ -21,17 +21,17 @@ import ContentLoadingOverlay from '@/components/ui/ContentLoadingOverlay'
 import ProjectDetailPage from './ProjectDetailPage'
 
 const PROJECTS_PAGE_TRANSLATION_KEYS = [
-  'projects.page.title',
-  'projects.page.description',
-  'projects.ui.form.name_label',
-  'projects.ui.form.name_placeholder',
-  'projects.ui.form.description_label',
-  'projects.ui.form.team_label',
-  'projects.ui.form.no_team_option',
-  'projects.ui.form.team_hint',
-  'projects.ui.form.workflow_label',
-  'projects.ui.form.workflow_placeholder',
-  'projects.ui.form.workflow_hint',
+  'project.page.title',
+  'project.page.description',
+  'project.form.name_label',
+  'project.form.name_placeholder',
+  'project.form.description_label',
+  'project.form.team_label',
+  'project.form.no_team_option',
+  'project.form.team_hint',
+  'project.form.workflow_label',
+  'project.form.workflow_placeholder',
+  'project.form.workflow_hint',
   'common.action.cancel',
   'common.action.refresh',
   'common.action.save',
@@ -82,35 +82,35 @@ function ProjectForm({
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit({ name, description: description || undefined, teamId: teamId || null, workflowId }) }} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('projects.ui.form.name_label')} *</label>
-        <input className="input" value={name} onChange={(e) => setName(e.target.value)} required placeholder={t('projects.ui.form.name_placeholder')} />
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('project.form.name_label')} *</label>
+        <input className="input" value={name} onChange={(e) => setName(e.target.value)} required placeholder={t('project.form.name_placeholder')} />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('projects.ui.form.description_label')}</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('project.form.description_label')}</label>
         <textarea className="input resize-none" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('projects.ui.form.team_label')}</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('project.form.team_label')}</label>
         <select className="input" value={teamId} onChange={(e) => setTeamId(e.target.value)}>
-          <option value="">{t('projects.ui.form.no_team_option')}</option>
+          <option value="">{t('project.form.no_team_option')}</option>
           {teams.map((team) => (
             <option key={team.id} value={team.id}>{team.name}</option>
           ))}
         </select>
         <p className="mt-1 text-xs text-gray-500">
-          {t('projects.ui.form.team_hint')}
+          {t('project.form.team_hint')}
         </p>
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('projects.ui.form.workflow_label')} *</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('project.form.workflow_label')} *</label>
         <select className="input" value={workflowId} onChange={(e) => setWorkflowId(e.target.value)} required>
-          <option value="" disabled>{t('projects.ui.form.workflow_placeholder')}</option>
+          <option value="" disabled>{t('project.form.workflow_placeholder')}</option>
           {availableWorkflows.map((workflow) => (
             <option key={workflow.id} value={workflow.id}>{workflow.name}</option>
           ))}
         </select>
         <p className="mt-1 text-xs text-gray-500">
-          {t('projects.ui.form.workflow_hint')}
+          {t('project.form.workflow_hint')}
         </p>
       </div>
       <div className="flex justify-end gap-3 pt-2">
@@ -165,8 +165,8 @@ function ProjectsList() {
   return (
     <>
       <PageHeader
-        title={t('projects.page.title')}
-        description={t('projects.page.description')}
+        title={t('project.page.title')}
+        description={t('project.page.description')}
         onRefresh={() => qc.invalidateQueries({ queryKey: ['projects'] })}
         refreshTitle={t('common.action.refresh')}
         action={

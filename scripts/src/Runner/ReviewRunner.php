@@ -51,7 +51,7 @@ final class ReviewRunner extends AbstractScriptRunner
                 if ($prev === '*/' || (str_starts_with($prev, '/**') && str_ends_with($prev, '*/'))) {
                     return true;
                 }
-                if (str_starts_with($prev, '//') || str_starts_with($prev, '*') || str_starts_with($prev, '@')) {
+                if (str_starts_with($prev, '//') || str_starts_with($prev, '*') || str_starts_with($prev, '@') || str_starts_with($prev, '#[')) {
                     continue;
                 }
                 return false;
@@ -228,8 +228,16 @@ final class ReviewRunner extends AbstractScriptRunner
         }
         echo "\n";
 
+        echo "=== Translation validation ===\n";
+        [$translationExitCode, $translationLines] = $run('php scripts/validate-translations.php');
+        foreach ($translationLines as $line) {
+            echo $line . "\n";
+        }
+        echo "\n";
+
         $hasBlockers = $frenchHits !== [] || $missingPhpdoc !== [] || $missingJsdoc !== []
-            || $validateExitCode !== 0;
+            || $validateExitCode !== 0
+            || $translationExitCode !== 0;
         return $hasBlockers ? 1 : 0;
     }
 }

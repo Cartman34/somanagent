@@ -36,6 +36,9 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api')]
 class TicketController extends AbstractController
 {
+    /**
+     * Initializes the controller with its dependencies.
+     */
     public function __construct(
         private readonly TicketService $ticketService,
         private readonly TicketTaskService $ticketTaskService,
@@ -50,12 +53,15 @@ class TicketController extends AbstractController
         private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
     ) {}
 
+    /**
+     * Lists all tickets for a given project.
+     */
     #[Route('/projects/{projectId}/tickets', name: 'ticket_list_api', methods: ['GET'])]
     public function listTickets(string $projectId): JsonResponse
     {
         $project = $this->projectService->findById($projectId);
         if ($project === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('projects.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('project.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $tickets = $this->ticketService->findByProject($project);
@@ -70,22 +76,25 @@ class TicketController extends AbstractController
         ));
     }
 
+    /**
+     * Creates a new ticket (story or bug) for a project.
+     */
     #[Route('/projects/{projectId}/tickets', name: 'ticket_create_api', methods: ['POST'])]
     public function createTicket(string $projectId, Request $request): JsonResponse
     {
         $project = $this->projectService->findById($projectId);
         if ($project === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('projects.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('project.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
         if (empty($data['title'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.validation.title_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.title_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $type = TaskType::from($data['type'] ?? TaskType::UserStory->value);
         if ($type === TaskType::Task) {
-            return $this->json($this->apiErrorPayloadFactory->fromMessage('Utiliser POST /api/tickets/{ticketId}/tasks pour créer une tâche opérationnelle.'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->fromMessage('Use POST /api/tickets/{ticketId}/tasks to create an operational task.'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $priority = TaskPriority::from($data['priority'] ?? TaskPriority::Medium->value);
@@ -102,17 +111,20 @@ class TicketController extends AbstractController
         return $this->json($this->serializeApiTicket($ticket), Response::HTTP_CREATED);
     }
 
+    /**
+     * Creates a new operational task within a ticket.
+     */
     #[Route('/tickets/{ticketId}/tasks', name: 'ticket_task_create_api', methods: ['POST'])]
     public function createTicketTask(string $ticketId, Request $request): JsonResponse
     {
         $ticket = $this->ticketService->findById($ticketId);
         if ($ticket === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
         if (empty($data['title'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.validation.title_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.title_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
         if (empty($data['actionKey'])) {
             return $this->json($this->apiErrorPayloadFactory->fromMessage('An actionKey is required to create a task.'), Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -121,7 +133,7 @@ class TicketController extends AbstractController
         $priority = TaskPriority::from($data['priority'] ?? TaskPriority::Medium->value);
         $parent = isset($data['parentTaskId']) ? $this->ticketTaskService->findById((string) $data['parentTaskId']) : null;
         if ($parent !== null && (string) $parent->getTicket()->getId() !== (string) $ticket->getId()) {
-            return $this->json($this->apiErrorPayloadFactory->fromMessage('La tâche parente doit appartenir au même ticket.'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->fromMessage('The parent task must belong to the same ticket.'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         try {
@@ -141,12 +153,15 @@ class TicketController extends AbstractController
         return $this->json($this->serializeApiTicketTask($task), Response::HTTP_CREATED);
     }
 
+    /**
+     * Creates a new request (story) for a project and dispatches eligible tasks.
+     */
     #[Route('/projects/{projectId}/requests', name: 'project_request_create', methods: ['POST'])]
     public function createRequest(string $projectId, Request $request): JsonResponse
     {
         $project = $this->projectService->findById($projectId);
         if ($project === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('projects.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('project.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         if (($response = $this->requireProjectTeamForProgress($project)) !== null) {
@@ -155,7 +170,7 @@ class TicketController extends AbstractController
 
         $data = $request->toArray();
         if (empty($data['title'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.validation.title_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.title_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $priority = TaskPriority::from($data['priority'] ?? TaskPriority::Medium->value);
@@ -180,12 +195,15 @@ class TicketController extends AbstractController
         ), Response::HTTP_CREATED);
     }
 
+    /**
+     * Retrieves a single ticket with full details.
+     */
     #[Route('/tickets/{id}', name: 'ticket_get_api', methods: ['GET'])]
     public function getTicket(string $id): JsonResponse
     {
         $ticket = $this->ticketService->findById($id);
         if ($ticket === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json($this->serializeApiTicket(
@@ -198,12 +216,15 @@ class TicketController extends AbstractController
         ));
     }
 
+    /**
+     * Retrieves a single ticket task with full details.
+     */
     #[Route('/ticket-tasks/{id}', name: 'ticket_task_get_api', methods: ['GET'])]
     public function getTicketTask(string $id): JsonResponse
     {
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json($this->serializeApiTicketTask(
@@ -215,12 +236,15 @@ class TicketController extends AbstractController
         ));
     }
 
+    /**
+     * Updates an existing ticket.
+     */
     #[Route('/tickets/{id}', name: 'ticket_update_api', methods: ['PUT'])]
     public function updateTicket(string $id, Request $request): JsonResponse
     {
         $ticket = $this->ticketService->findById($id);
         if ($ticket === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
@@ -236,12 +260,15 @@ class TicketController extends AbstractController
         return $this->json($this->serializeApiTicket($ticket));
     }
 
+    /**
+     * Updates an existing ticket task.
+     */
     #[Route('/ticket-tasks/{id}', name: 'ticket_task_update_api', methods: ['PUT'])]
     public function updateTicketTask(string $id, Request $request): JsonResponse
     {
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
@@ -262,13 +289,16 @@ class TicketController extends AbstractController
         return $this->json($this->serializeApiTicketTask($task));
     }
 
+    /**
+     * Changes the status of a ticket or ticket task.
+     */
     #[Route('/tickets/{id}/status', name: 'ticket_status_api', methods: ['PATCH'])]
     #[Route('/ticket-tasks/{id}/status', name: 'ticket_task_status_api', methods: ['PATCH'])]
     public function changeStatus(string $id, Request $request): JsonResponse
     {
         $data = $request->toArray();
         if (empty($data['status'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.validation.status_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.status_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $status = TaskStatus::from($data['status']);
@@ -280,7 +310,7 @@ class TicketController extends AbstractController
 
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->ticketTaskService->changeStatus($task, $status);
@@ -288,12 +318,15 @@ class TicketController extends AbstractController
         return $this->json($this->serializeApiTicketTask($task));
     }
 
+    /**
+     * Updates the progress of a ticket task.
+     */
     #[Route('/ticket-tasks/{id}/progress', name: 'ticket_task_progress_api', methods: ['PATCH'])]
     public function updateProgress(string $id, Request $request): JsonResponse
     {
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
@@ -302,13 +335,16 @@ class TicketController extends AbstractController
         return $this->json($this->serializeApiTicketTask($task));
     }
 
+    /**
+     * Reprioritizes a ticket or ticket task.
+     */
     #[Route('/tickets/{id}/priority', name: 'ticket_reprioritize_api', methods: ['PATCH'])]
     #[Route('/ticket-tasks/{id}/priority', name: 'ticket_task_reprioritize_api', methods: ['PATCH'])]
     public function reprioritize(string $id, Request $request): JsonResponse
     {
         $data = $request->toArray();
         if (empty($data['priority'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.validation.priority_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.priority_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $priority = TaskPriority::from($data['priority']);
@@ -320,7 +356,7 @@ class TicketController extends AbstractController
 
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->ticketTaskService->reprioritize($task, $priority);
@@ -328,12 +364,15 @@ class TicketController extends AbstractController
         return $this->json($this->serializeApiTicketTask($task));
     }
 
+    /**
+     * Validates a completed ticket task.
+     */
     #[Route('/ticket-tasks/{id}/validate', name: 'ticket_task_validate_api', methods: ['POST'])]
     public function validate(string $id, Request $request): JsonResponse
     {
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->ticketTaskService->validate($task);
@@ -341,12 +380,15 @@ class TicketController extends AbstractController
         return $this->json($this->serializeApiTicketTask($task));
     }
 
+    /**
+     * Rejects a completed ticket task with an optional reason.
+     */
     #[Route('/ticket-tasks/{id}/reject', name: 'ticket_task_reject_api', methods: ['POST'])]
     public function reject(string $id, Request $request): JsonResponse
     {
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
@@ -355,12 +397,15 @@ class TicketController extends AbstractController
         return $this->json($this->serializeApiTicketTask($task));
     }
 
+    /**
+     * Requests validation for a ticket task.
+     */
     #[Route('/ticket-tasks/{id}/request-validation', name: 'ticket_task_request_validation_api', methods: ['POST'])]
     public function requestValidation(string $id, Request $request): JsonResponse
     {
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
@@ -369,6 +414,9 @@ class TicketController extends AbstractController
         return $this->json($this->serializeApiTicketTask($task));
     }
 
+    /**
+     * Adds a comment to a ticket or ticket task.
+     */
     #[Route('/tickets/{id}/comments', name: 'ticket_comment_create_api', methods: ['POST'])]
     #[Route('/ticket-tasks/{id}/comments', name: 'ticket_task_comment_create_api', methods: ['POST'])]
     public function createComment(string $id, Request $request): JsonResponse
@@ -376,7 +424,7 @@ class TicketController extends AbstractController
         $data = $request->toArray();
         $content = trim((string) ($data['content'] ?? ''));
         if ($content === '') {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.validation.content_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.content_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $ticket = $this->ticketService->findById($id);
@@ -387,7 +435,7 @@ class TicketController extends AbstractController
         }
 
         if ($ticket === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         try {
@@ -411,12 +459,15 @@ class TicketController extends AbstractController
         return $this->json($this->serializeApiLog($log), Response::HTTP_CREATED);
     }
 
+    /**
+     * Advances a ticket to the next workflow step.
+     */
     #[Route('/tickets/{id}/advance', name: 'ticket_advance_api', methods: ['POST'])]
     public function advance(string $id): JsonResponse
     {
         $ticket = $this->ticketService->findById($id);
         if ($ticket === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         if (($response = $this->requireProjectTeamForProgress($ticket->getProject())) !== null) {
@@ -424,7 +475,7 @@ class TicketController extends AbstractController
         }
 
         if (!$ticket->isStory()) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.story.error.unsupported_user_story_or_bug'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.story.error.unsupported_user_story_or_bug'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         try {
@@ -437,12 +488,15 @@ class TicketController extends AbstractController
         return $this->json($this->serializeApiTicket($ticket));
     }
 
+    /**
+     * Resumes an agent step from a ticket task.
+     */
     #[Route('/ticket-tasks/{id}/resume', name: 'ticket_task_resume_api', methods: ['POST'])]
     public function resume(string $id, Request $request): JsonResponse
     {
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         if (($response = $this->requireProjectTeamForProgress($task->getTicket()->getProject())) !== null) {
@@ -463,18 +517,21 @@ class TicketController extends AbstractController
         ]);
     }
 
+    /**
+     * Returns available agents for executing a ticket task.
+     */
     #[Route('/tickets/{id}/execute', name: 'ticket_execute_agents_api', methods: ['GET'])]
     #[Route('/ticket-tasks/{id}/execute', name: 'ticket_task_execute_agents_api', methods: ['GET'])]
     public function executeAgents(string $id): JsonResponse
     {
         $ticket = $this->ticketService->findById($id);
         if ($ticket !== null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.execution.error.ticket_level_execution_unsupported'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.execution.error.ticket_level_execution_unsupported'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         if (($response = $this->requireProjectTeamForProgress($task->getTicket()->getProject())) !== null) {
@@ -490,6 +547,9 @@ class TicketController extends AbstractController
         ], $agents));
     }
 
+    /**
+     * Executes a ticket task with the specified agent.
+     */
     #[Route('/tickets/{id}/execute', name: 'ticket_execute_api', methods: ['POST'])]
     #[Route('/ticket-tasks/{id}/execute', name: 'ticket_task_execute_api', methods: ['POST'])]
     public function execute(string $id, Request $request): JsonResponse
@@ -500,17 +560,17 @@ class TicketController extends AbstractController
         if (!empty($data['agentId'])) {
             $agent = $this->agentRepository->find($data['agentId']);
             if ($agent === null) {
-                return $this->json($this->apiErrorPayloadFactory->create('tickets.execution.error.agent_not_found'), Response::HTTP_NOT_FOUND);
+                return $this->json($this->apiErrorPayloadFactory->create('ticket.execution.error.agent_not_found'), Response::HTTP_NOT_FOUND);
             }
         }
 
         if ($ticket !== null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.execution.error.ticket_level_execution_unsupported'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.execution.error.ticket_level_execution_unsupported'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         if (($response = $this->requireProjectTeamForProgress($task->getTicket()->getProject())) !== null) {
@@ -531,12 +591,15 @@ class TicketController extends AbstractController
         ]);
     }
 
+    /**
+     * Deletes a ticket and its associated tasks.
+     */
     #[Route('/tickets/{id}', name: 'ticket_delete_api', methods: ['DELETE'])]
     public function deleteTicket(string $id): JsonResponse
     {
         $ticket = $this->ticketService->findById($id);
         if ($ticket === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->ticketService->delete($ticket);
@@ -544,12 +607,15 @@ class TicketController extends AbstractController
         return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 
+    /**
+     * Deletes a ticket task.
+     */
     #[Route('/ticket-tasks/{id}', name: 'ticket_task_delete_api', methods: ['DELETE'])]
     public function deleteTicketTask(string $id): JsonResponse
     {
         $task = $this->ticketTaskService->findById($id);
         if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tickets.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->ticketTaskService->delete($task);
@@ -818,7 +884,7 @@ class TicketController extends AbstractController
         }
 
         return $this->json(
-            $this->apiErrorPayloadFactory->create('projects.progress.error.team_required'),
+            $this->apiErrorPayloadFactory->create('project.progress.error.team_required'),
             Response::HTTP_UNPROCESSABLE_ENTITY,
         );
     }

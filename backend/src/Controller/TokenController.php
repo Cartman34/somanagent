@@ -19,12 +19,18 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/tokens')]
 class TokenController extends AbstractController
 {
+    /**
+     * Initializes the controller with its dependencies.
+     */
     public function __construct(
         private readonly TokenUsageService $tokenUsageService,
         private readonly AgentService      $agentService,
         private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
     ) {}
 
+    /**
+     * Returns token consumption summary, optionally filtered by date range.
+     */
     #[Route('/summary', name: 'token_summary', methods: ['GET'])]
     public function summary(Request $request): JsonResponse
     {
@@ -34,12 +40,15 @@ class TokenController extends AbstractController
         return $this->json($this->tokenUsageService->getSummary($from, $to));
     }
 
+    /**
+     * Returns token usage for a specific agent.
+     */
     #[Route('/agents/{agentId}', name: 'token_by_agent', methods: ['GET'])]
     public function byAgent(string $agentId, Request $request): JsonResponse
     {
         $agent = $this->agentService->findById($agentId);
         if ($agent === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('tokens.agents.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('token.error.agent_not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $limit  = (int) ($request->query->get('limit', 100));

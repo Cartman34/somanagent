@@ -19,6 +19,9 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/workflows')]
 class WorkflowController extends AbstractController
 {
+    /**
+     * Initializes the controller with its dependencies.
+     */
     public function __construct(
         private readonly WorkflowService $workflowService,
         private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
@@ -41,7 +44,7 @@ class WorkflowController extends AbstractController
     {
         $data = $request->toArray();
         if (empty($data['name'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('workflows.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('workflow.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $trigger  = WorkflowTrigger::tryFrom($data['trigger'] ?? 'manual') ?? WorkflowTrigger::Manual;
@@ -62,7 +65,7 @@ class WorkflowController extends AbstractController
     {
         $workflow = $this->workflowService->findById($id);
         if ($workflow === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('workflows.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('workflow.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json($this->buildWorkflowPayload($workflow, true));
@@ -76,11 +79,11 @@ class WorkflowController extends AbstractController
     {
         $workflow = $this->workflowService->findById($id);
         if ($workflow === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('workflows.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('workflow.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         if (!$this->workflowService->canEdit($workflow)) {
-            return $this->json($this->apiErrorPayloadFactory->create('workflows.error.immutable'), Response::HTTP_CONFLICT);
+            return $this->json($this->apiErrorPayloadFactory->create('workflow.error.immutable'), Response::HTTP_CONFLICT);
         }
 
         $data = $request->toArray();
@@ -103,11 +106,11 @@ class WorkflowController extends AbstractController
     {
         $workflow = $this->workflowService->findById($id);
         if ($workflow === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('workflows.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('workflow.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         if (!$this->workflowService->canEdit($workflow)) {
-            return $this->json($this->apiErrorPayloadFactory->create('workflows.error.immutable'), Response::HTTP_CONFLICT);
+            return $this->json($this->apiErrorPayloadFactory->create('workflow.error.immutable'), Response::HTTP_CONFLICT);
         }
 
         $this->workflowService->delete($workflow);
@@ -123,7 +126,7 @@ class WorkflowController extends AbstractController
     {
         $workflow = $this->workflowService->findById($id);
         if ($workflow === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('workflows.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('workflow.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $duplicate = $this->workflowService->duplicate($workflow);
@@ -143,7 +146,7 @@ class WorkflowController extends AbstractController
     {
         $workflow = $this->workflowService->findById($id);
         if ($workflow === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('workflows.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('workflow.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $workflow = $this->workflowService->activate($workflow);
@@ -162,7 +165,7 @@ class WorkflowController extends AbstractController
     {
         $workflow = $this->workflowService->findById($id);
         if ($workflow === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('workflows.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('workflow.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         try {
