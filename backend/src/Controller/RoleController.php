@@ -18,11 +18,17 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/roles')]
 class RoleController extends AbstractController
 {
+    /**
+     * Initializes the controller with its dependencies.
+     */
     public function __construct(
         private readonly RoleService $roleService,
         private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
     ) {}
 
+    /**
+     * Returns the list of all roles with their associated skills.
+     */
     #[Route('', name: 'role_list', methods: ['GET'])]
     public function list(): JsonResponse
     {
@@ -38,24 +44,34 @@ class RoleController extends AbstractController
         ], $this->roleService->findAll()));
     }
 
+    /**
+     * Creates a new role.
+     *
+     * @param Request $request JSON body containing slug, name, and optional description
+     */
     #[Route('', name: 'role_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         $data = $request->toArray();
         if (empty($data['slug']) || empty($data['name'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('roles.validation.slug_name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('role.validation.slug_name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $role = $this->roleService->create($data['slug'], $data['name'], $data['description'] ?? null);
         return $this->json(['id' => (string) $role->getId(), 'slug' => $role->getSlug(), 'name' => $role->getName()], Response::HTTP_CREATED);
     }
 
+    /**
+     * Returns a single role by its ID with full skill details.
+     *
+     * @param string $id the role identifier
+     */
     #[Route('/{id}', name: 'role_get', methods: ['GET'])]
     public function get(string $id): JsonResponse
     {
         $role = $this->roleService->findById($id);
         if ($role === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('roles.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('role.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json([
@@ -74,12 +90,18 @@ class RoleController extends AbstractController
         ]);
     }
 
+    /**
+     * Updates an existing role.
+     *
+     * @param string  $id      the role identifier
+     * @param Request $request JSON body containing optional slug, name, and description fields
+     */
     #[Route('/{id}', name: 'role_update', methods: ['PUT'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $role = $this->roleService->findById($id);
         if ($role === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('roles.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('role.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
@@ -92,31 +114,42 @@ class RoleController extends AbstractController
         return $this->json(['id' => (string) $role->getId(), 'slug' => $role->getSlug(), 'name' => $role->getName()]);
     }
 
+    /**
+     * Deletes a role by its ID.
+     *
+     * @param string $id the role identifier
+     */
     #[Route('/{id}', name: 'role_delete', methods: ['DELETE'])]
     public function delete(string $id): JsonResponse
     {
         $role = $this->roleService->findById($id);
         if ($role === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('roles.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('role.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->roleService->delete($role);
         return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 
-    // --- Skills du rôle ---
+    // --- Role skills ---
 
+    /**
+     * Adds a skill to a role.
+     *
+     * @param string  $id      the role identifier
+     * @param Request $request JSON body containing the skillId to add
+     */
     #[Route('/{id}/skills', name: 'role_add_skill', methods: ['POST'])]
     public function addSkill(string $id, Request $request): JsonResponse
     {
         $role = $this->roleService->findById($id);
         if ($role === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('roles.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('role.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
         if (empty($data['skillId'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('roles.validation.skill_id_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('role.validation.skill_id_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         try {
@@ -128,12 +161,18 @@ class RoleController extends AbstractController
         return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 
+    /**
+     * Removes a skill from a role.
+     *
+     * @param string $id     the role identifier
+     * @param string $skillId the skill identifier
+     */
     #[Route('/{id}/skills/{skillId}', name: 'role_remove_skill', methods: ['DELETE'])]
     public function removeSkill(string $id, string $skillId): JsonResponse
     {
         $role = $this->roleService->findById($id);
         if ($role === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('roles.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('role.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         try {

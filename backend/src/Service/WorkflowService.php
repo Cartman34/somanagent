@@ -48,7 +48,7 @@ class WorkflowService
     public function duplicate(Workflow $workflow): Workflow
     {
         $duplicate = new Workflow(
-            $this->translator->trans('workflows.duplication.copy_name', ['%name%' => $workflow->getName()], 'app'),
+            $this->translator->trans('workflow.duplication.copy_name', ['%name%' => $workflow->getName()], 'app'),
             $workflow->getTrigger(),
             $workflow->getDescription(),
         );
@@ -106,7 +106,7 @@ class WorkflowService
     public function deactivate(Workflow $workflow): Workflow
     {
         if ($this->workflowRepository->hasUsage($workflow)) {
-            throw new \LogicException($this->translator->trans('workflows.error.deactivation_used', domain: 'app'));
+            throw new \LogicException($this->translator->trans('workflow.error.deactivation_used', domain: 'app'));
         }
 
         $workflow->deactivate();

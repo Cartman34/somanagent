@@ -18,11 +18,17 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/teams')]
 class TeamController extends AbstractController
 {
+    /**
+     * Initializes the controller with its dependencies.
+     */
     public function __construct(
         private readonly TeamService $teamService,
         private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
     ) {}
 
+    /**
+     * Lists all teams.
+     */
     #[Route('', name: 'team_list', methods: ['GET'])]
     public function list(): JsonResponse
     {
@@ -35,24 +41,30 @@ class TeamController extends AbstractController
         ], $this->teamService->findAll()));
     }
 
+    /**
+     * Creates a new team.
+     */
     #[Route('', name: 'team_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         $data = $request->toArray();
         if (empty($data['name'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('teams.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('team.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $team = $this->teamService->create($data['name'], $data['description'] ?? null);
         return $this->json(['id' => (string) $team->getId(), 'name' => $team->getName()], Response::HTTP_CREATED);
     }
 
+    /**
+     * Retrieves a single team by ID with its agents.
+     */
     #[Route('/{id}', name: 'team_get', methods: ['GET'])]
     public function get(string $id): JsonResponse
     {
         $team = $this->teamService->findById($id);
         if ($team === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('teams.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('team.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json([
@@ -70,12 +82,15 @@ class TeamController extends AbstractController
         ]);
     }
 
+    /**
+     * Updates an existing team.
+     */
     #[Route('/{id}', name: 'team_update', methods: ['PUT'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $team = $this->teamService->findById($id);
         if ($team === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('teams.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('team.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
@@ -83,12 +98,15 @@ class TeamController extends AbstractController
         return $this->json(['id' => (string) $team->getId(), 'name' => $team->getName()]);
     }
 
+    /**
+     * Deletes a team.
+     */
     #[Route('/{id}', name: 'team_delete', methods: ['DELETE'])]
     public function delete(string $id): JsonResponse
     {
         $team = $this->teamService->findById($id);
         if ($team === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('teams.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('team.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->teamService->delete($team);
@@ -97,39 +115,45 @@ class TeamController extends AbstractController
 
     // --- Membres ---
 
+    /**
+     * Adds an agent to a team.
+     */
     #[Route('/{id}/agents', name: 'team_add_agent', methods: ['POST'])]
     public function addAgent(string $id, Request $request): JsonResponse
     {
         $team = $this->teamService->findById($id);
         if ($team === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('teams.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('team.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
         if (empty($data['agentId'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('teams.validation.agent_id_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('team.validation.agent_id_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $agent = $this->teamService->findAgentById($data['agentId']);
         if ($agent === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('agents.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('agent.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->teamService->addAgent($team, $agent);
         return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 
+    /**
+     * Removes an agent from a team.
+     */
     #[Route('/{id}/agents/{agentId}', name: 'team_remove_agent', methods: ['DELETE'])]
     public function removeAgent(string $id, string $agentId): JsonResponse
     {
         $team = $this->teamService->findById($id);
         if ($team === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('teams.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('team.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $agent = $this->teamService->findAgentById($agentId);
         if ($agent === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('agents.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('agent.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->teamService->removeAgent($team, $agent);

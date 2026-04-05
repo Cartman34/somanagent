@@ -20,18 +20,24 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api')]
 class FeatureController extends AbstractController
 {
+    /**
+     * Initializes the controller with its dependencies.
+     */
     public function __construct(
         private readonly FeatureService $featureService,
         private readonly ProjectService $projectService,
         private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
     ) {}
 
+    /**
+     * Lists all features for a given project.
+     */
     #[Route('/projects/{projectId}/features', name: 'feature_list', methods: ['GET'])]
     public function list(string $projectId): JsonResponse
     {
         $project = $this->projectService->findById($projectId);
         if ($project === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('features.error.project_not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('feature.error.project_not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json(array_map(fn($f) => [
@@ -44,29 +50,35 @@ class FeatureController extends AbstractController
         ], $this->featureService->findByProject($project)));
     }
 
+    /**
+     * Creates a new feature for a given project.
+     */
     #[Route('/projects/{projectId}/features', name: 'feature_create', methods: ['POST'])]
     public function create(string $projectId, Request $request): JsonResponse
     {
         $project = $this->projectService->findById($projectId);
         if ($project === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('features.error.project_not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('feature.error.project_not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
         if (empty($data['name'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('features.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('feature.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $feature = $this->featureService->create($project, $data['name'], $data['description'] ?? null);
         return $this->json(['id' => (string) $feature->getId(), 'name' => $feature->getName()], Response::HTTP_CREATED);
     }
 
+    /**
+     * Retrieves a single feature by ID.
+     */
     #[Route('/features/{id}', name: 'feature_get', methods: ['GET'])]
     public function get(string $id): JsonResponse
     {
         $feature = $this->featureService->findById($id);
         if ($feature === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('features.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('feature.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json([
@@ -80,12 +92,15 @@ class FeatureController extends AbstractController
         ]);
     }
 
+    /**
+     * Updates an existing feature.
+     */
     #[Route('/features/{id}', name: 'feature_update', methods: ['PUT'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $feature = $this->featureService->findById($id);
         if ($feature === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('features.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('feature.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data   = $request->toArray();
@@ -94,12 +109,15 @@ class FeatureController extends AbstractController
         return $this->json(['id' => (string) $feature->getId(), 'name' => $feature->getName()]);
     }
 
+    /**
+     * Deletes a feature by ID.
+     */
     #[Route('/features/{id}', name: 'feature_delete', methods: ['DELETE'])]
     public function delete(string $id): JsonResponse
     {
         $feature = $this->featureService->findById($id);
         if ($feature === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('features.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('feature.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->featureService->delete($feature);

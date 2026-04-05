@@ -43,7 +43,7 @@ export const TASK_ACTIVITY_FEED_TRANSLATION_KEYS = [
   'drawer.metrics.questions_pending',
   'drawer.questions_pending_one',
   'drawer.questions_pending_other',
-  'projects.progress.ui.blocked_reason',
+  'project.progress.blocked_reason',
   'comment.author_you',
   'comment.author_agent',
   'comment.requires_answer',

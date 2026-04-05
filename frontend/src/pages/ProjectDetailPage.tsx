@@ -60,10 +60,10 @@ const PROJECT_DETAIL_TRANSLATION_KEYS = [
   'project.detail.ticket_id_required',
   'project.detail.transition_impossible',
   'project.item.loading',
-  'projects.progress.error.request_creation_failed',
-  'projects.progress.ui.banner',
-  'projects.progress.ui.blocked_reason',
-  'projects.progress.ui.rework_title',
+  'project.progress.error.request_creation_failed',
+  'project.progress.banner',
+  'project.progress.blocked_reason',
+  'project.progress.rework_title',
 ] as const
 
 // ─── Main page ────────────────────────────────────────────────────────────────
@@ -212,7 +212,7 @@ export default function ProjectDetailPage() {
     },
     onError: (err: unknown) => {
       const msg = (err as { message?: string })?.message
-      setRequestDispatchError(msg ?? t('projects.progress.error.request_creation_failed'))
+      setRequestDispatchError(msg ?? t('project.progress.error.request_creation_failed'))
     },
   })
 
@@ -257,7 +257,7 @@ export default function ProjectDetailPage() {
 
   const projectNeedsTeamAssignment = project?.team === null
   const projectProgressBlockedReason = projectNeedsTeamAssignment
-    ? t('projects.progress.ui.blocked_reason')
+    ? t('project.progress.blocked_reason')
     : null
 
   const refreshAllData = () => {
@@ -334,7 +334,7 @@ export default function ProjectDetailPage() {
 
       {projectNeedsTeamAssignment && (
         <div className="mb-5 rounded border px-4 py-3 text-sm" style={{ borderColor: 'rgba(245,158,11,0.35)', background: 'rgba(245,158,11,0.08)', color: '#92400e' }}>
-          {t('projects.progress.ui.banner')}
+          {t('project.progress.banner')}
         </div>
       )}
 

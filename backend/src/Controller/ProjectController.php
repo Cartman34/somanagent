@@ -20,6 +20,9 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/projects')]
 class ProjectController extends AbstractController
 {
+    /**
+     * Initializes the controller with its dependencies.
+     */
     public function __construct(
         private readonly ProjectService    $projectService,
         private readonly AuditLogRepository $auditLogRepository,
@@ -27,6 +30,9 @@ class ProjectController extends AbstractController
         private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
     ) {}
 
+    /**
+     * Lists all projects.
+     */
     #[Route('', name: 'project_list', methods: ['GET'])]
     public function list(): JsonResponse
     {
@@ -43,12 +49,15 @@ class ProjectController extends AbstractController
         ], $this->projectService->findAll()));
     }
 
+    /**
+     * Creates a new project.
+     */
     #[Route('', name: 'project_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         $data = $request->toArray();
         if (empty($data['name'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('projects.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('project.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         try {
@@ -74,12 +83,15 @@ class ProjectController extends AbstractController
         ], Response::HTTP_CREATED);
     }
 
+    /**
+     * Gets a single project by ID with its modules.
+     */
     #[Route('/{id}', name: 'project_get', methods: ['GET'])]
     public function get(string $id): JsonResponse
     {
         $project = $this->projectService->findById($id);
         if ($project === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('projects.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('project.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json([
@@ -102,12 +114,15 @@ class ProjectController extends AbstractController
         ]);
     }
 
+    /**
+     * Updates an existing project.
+     */
     #[Route('/{id}', name: 'project_update', methods: ['PUT'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $project = $this->projectService->findById($id);
         if ($project === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('projects.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('project.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
@@ -131,12 +146,15 @@ class ProjectController extends AbstractController
         ]);
     }
 
+    /**
+     * Deletes a project.
+     */
     #[Route('/{id}', name: 'project_delete', methods: ['DELETE'])]
     public function delete(string $id): JsonResponse
     {
         $project = $this->projectService->findById($id);
         if ($project === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('projects.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('project.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->projectService->delete($project);
@@ -151,7 +169,7 @@ class ProjectController extends AbstractController
     {
         $project = $this->projectService->findById($id);
         if ($project === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('projects.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('project.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $page  = max(1, (int) $request->query->get('page', 1));
@@ -183,7 +201,7 @@ class ProjectController extends AbstractController
     {
         $project = $this->projectService->findById($id);
         if ($project === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('projects.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('project.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json($this->tokenUsageService->getProjectTokens($project));
@@ -191,17 +209,20 @@ class ProjectController extends AbstractController
 
     // --- Modules ---
 
+    /**
+     * Adds a module to a project.
+     */
     #[Route('/{id}/modules', name: 'module_create', methods: ['POST'])]
     public function addModule(string $id, Request $request): JsonResponse
     {
         $project = $this->projectService->findById($id);
         if ($project === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('projects.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('project.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data = $request->toArray();
         if (empty($data['name'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('projects.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('project.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $module = $this->projectService->addModule($project, $data['name'], $data['description'] ?? null, $data['repositoryUrl'] ?? null, $data['stack'] ?? null);
@@ -213,12 +234,15 @@ class ProjectController extends AbstractController
         ], Response::HTTP_CREATED);
     }
 
+    /**
+     * Updates an existing module.
+     */
     #[Route('/modules/{id}', name: 'module_update', methods: ['PUT'])]
     public function updateModule(string $id, Request $request): JsonResponse
     {
         $module = $this->projectService->findModuleById($id);
         if ($module === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('projects.modules.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('project.module.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data   = $request->toArray();
@@ -226,12 +250,15 @@ class ProjectController extends AbstractController
         return $this->json(['id' => (string) $module->getId(), 'name' => $module->getName()]);
     }
 
+    /**
+     * Deletes a module.
+     */
     #[Route('/modules/{id}', name: 'module_delete', methods: ['DELETE'])]
     public function deleteModule(string $id): JsonResponse
     {
         $module = $this->projectService->findModuleById($id);
         if ($module === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('projects.modules.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('project.module.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->projectService->deleteModule($module);

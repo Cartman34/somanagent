@@ -21,12 +21,20 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/agents')]
 class AgentController extends AbstractController
 {
+    /**
+     * Initializes the controller with its dependencies.
+     */
     public function __construct(
         private readonly AgentService    $agentService,
         private readonly AgentRepository $agentRepository,
         private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
     ) {}
 
+    /**
+     * Lists all agents.
+     *
+     * @return JsonResponse Collection of agents with their details
+     */
     #[Route('', name: 'agent_list', methods: ['GET'])]
     public function list(): JsonResponse
     {
@@ -44,12 +52,18 @@ class AgentController extends AbstractController
         ], $this->agentService->findAll()));
     }
 
+    /**
+     * Creates a new agent.
+     *
+     * @param Request $request JSON payload containing name, connector, config, description, and roleId
+     * @return JsonResponse Created agent id and name with HTTP 201
+     */
     #[Route('', name: 'agent_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         $data = $request->toArray();
         if (empty($data['name'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('agents.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->json($this->apiErrorPayloadFactory->create('agent.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $connector = ConnectorType::from($data['connector'] ?? ConnectorType::ClaudeApi->value);
@@ -60,12 +74,18 @@ class AgentController extends AbstractController
         return $this->json(['id' => (string) $agent->getId(), 'name' => $agent->getName()], Response::HTTP_CREATED);
     }
 
+    /**
+     * Retrieves a single agent by id.
+     *
+     * @param string $id Agent UUID
+     * @return JsonResponse Agent details or 404 if not found
+     */
     #[Route('/{id}', name: 'agent_get', methods: ['GET'])]
     public function get(string $id): JsonResponse
     {
         $agent = $this->agentService->findById($id);
         if ($agent === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('agents.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('agent.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         return $this->json([
@@ -81,12 +101,19 @@ class AgentController extends AbstractController
         ]);
     }
 
+    /**
+     * Updates an existing agent.
+     *
+     * @param string  $id      Agent UUID
+     * @param Request $request JSON payload with fields to update
+     * @return JsonResponse Updated agent id and name or 404 if not found
+     */
     #[Route('/{id}', name: 'agent_update', methods: ['PUT'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $agent = $this->agentService->findById($id);
         if ($agent === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('agents.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('agent.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $data      = $request->toArray();
@@ -97,12 +124,18 @@ class AgentController extends AbstractController
         return $this->json(['id' => (string) $agent->getId(), 'name' => $agent->getName()]);
     }
 
+    /**
+     * Deletes an agent.
+     *
+     * @param string $id Agent UUID
+     * @return JsonResponse No content on success or 404 if not found
+     */
     #[Route('/{id}', name: 'agent_delete', methods: ['DELETE'])]
     public function delete(string $id): JsonResponse
     {
         $agent = $this->agentService->findById($id);
         if ($agent === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('agents.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('agent.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $this->agentService->delete($agent);
@@ -125,7 +158,7 @@ class AgentController extends AbstractController
     {
         $agent = $this->agentService->findById($id);
         if ($agent === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('agents.error.not_found'), Response::HTTP_NOT_FOUND);
+            return $this->json($this->apiErrorPayloadFactory->create('agent.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
         $activeTaskCount = $this->agentRepository->countInProgressTasks($agent);

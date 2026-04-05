@@ -8,9 +8,9 @@ import { agentsApi } from '@/api/agents'
 import { useTranslation } from '@/hooks/useTranslation'
 
 const AGENT_STATUS_BADGE_TRANSLATION_KEYS = [
-  'agents.sheet.status.error',
-  'agents.sheet.status.working',
-  'agents.sheet.status.available',
+  'agent.sheet.status.error',
+  'agent.sheet.status.working',
+  'agent.sheet.status.available',
 ] as const
 
 /**
@@ -31,7 +31,7 @@ export default function AgentStatusBadge({ agentId }: { agentId: string }) {
   if (isLoading) return <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: 'var(--muted)' }} />
 
   const status = data?.status ?? 'idle'
-  if (status === 'working') return <span className="badge-orange text-xs">{t('agents.sheet.status.working')}</span>
-  if (status === 'error')   return <span className="badge-red text-xs">{t('agents.sheet.status.error')}</span>
-  return <span className="badge-green text-xs">{t('agents.sheet.status.available')}</span>
+  if (status === 'working') return <span className="badge-orange text-xs">{t('agent.sheet.status.working')}</span>
+  if (status === 'error')   return <span className="badge-red text-xs">{t('agent.sheet.status.error')}</span>
+  return <span className="badge-green text-xs">{t('agent.sheet.status.available')}</span>
 }

@@ -43,7 +43,7 @@ class ProjectService
     public function create(string $name, ?string $description = null, ?string $repositoryUrl = null, ?string $teamId = null, ?string $workflowId = null): Project
     {
         if ($workflowId === null || $workflowId === '') {
-            throw new \LogicException($this->translator->trans('projects.validation.workflow_required', [], 'app'));
+            throw new \LogicException($this->translator->trans('project.validation.workflow_required', [], 'app'));
         }
 
         $project = new Project($name, $description);
@@ -75,7 +75,7 @@ class ProjectService
     public function update(Project $project, string $name, ?string $description, ?string $repositoryUrl = null, ?string $teamId = null, ?string $workflowId = null): Project
     {
         if ($workflowId === null || $workflowId === '') {
-            throw new \LogicException($this->translator->trans('projects.validation.workflow_required', [], 'app'));
+            throw new \LogicException($this->translator->trans('project.validation.workflow_required', [], 'app'));
         }
 
         $project->setName($name)->setDescription($description)->setRepositoryUrl($repositoryUrl);
@@ -165,7 +165,7 @@ class ProjectService
 
         $currentWorkflowId = $project?->getWorkflow()?->getId()->toRfc4122();
         if (!$workflow->isActive() && $currentWorkflowId !== $workflowId) {
-            throw new \LogicException($this->translator->trans('projects.error.workflow_inactive', [], 'app'));
+            throw new \LogicException($this->translator->trans('project.error.workflow_inactive', [], 'app'));
         }
 
         return $workflow;

@@ -51,7 +51,7 @@ final class ReviewRunner extends AbstractScriptRunner
                 if ($prev === '*/' || (str_starts_with($prev, '/**') && str_ends_with($prev, '*/'))) {
                     return true;
                 }
-                if (str_starts_with($prev, '//') || str_starts_with($prev, '*') || str_starts_with($prev, '@')) {
+                if (str_starts_with($prev, '//') || str_starts_with($prev, '*') || str_starts_with($prev, '@') || str_starts_with($prev, '#[')) {
                     continue;
                 }
                 return false;
