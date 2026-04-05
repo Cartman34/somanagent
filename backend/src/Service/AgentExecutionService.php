@@ -105,6 +105,7 @@ final class AgentExecutionService
         );
 
         $questions = $this->extractClarificationQuestions($response->content);
+        $questions = $this->filterDuplicateQuestions($questions, $task->getTicket());
         $normalizedContent = mb_strtolower($response->content);
         $isClarificationRequest = count($questions) >= 2
             || str_contains($normalizedContent, 'questions')
@@ -200,6 +201,48 @@ final class AgentExecutionService
         }
 
         return array_values(array_unique(array_slice($questions, 0, 5)));
+    }
+
+    private static function normalizeQuestion(string $question): string
+    {
+        $normalized = mb_strtolower(trim($question));
+        $normalized = rtrim($normalized, '?!.');
+        $normalized = (string) preg_replace('/\s+/', ' ', $normalized);
+
+        return trim($normalized);
+    }
+
+    /**
+     * @param string[] $candidates
+     * @return string[]
+     */
+    private function filterDuplicateQuestions(array $candidates, Ticket $ticket): array
+    {
+        if ($candidates === []) {
+            return [];
+        }
+
+        $existingLogs = $this->ticketLogRepository->findAgentQuestionsByTicket($ticket);
+        $existingNormalized = [];
+        foreach ($existingLogs as $log) {
+            $existingNormalized[self::normalizeQuestion($log->getContent())] = true;
+        }
+
+        $filtered = array_values(array_filter(
+            $candidates,
+            static fn(string $q) => !isset($existingNormalized[self::normalizeQuestion($q)]),
+        ));
+
+        $skipped = count($candidates) - count($filtered);
+        if ($skipped > 0) {
+            $this->logger->info('AgentExecution: filtered duplicate questions', [
+                'ticket' => (string) $ticket->getId(),
+                'skipped' => $skipped,
+                'kept' => count($filtered),
+            ]);
+        }
+
+        return $filtered;
     }
 
     private function handlePlanningTicketTaskResponse(TicketTask $planningTask, Agent $leadTech, string $rawContent): void

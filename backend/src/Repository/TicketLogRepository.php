@@ -39,4 +39,10 @@ final class TicketLogRepository extends ServiceEntityRepository
     {
         return $this->findOneBy(['ticket' => $ticket, 'id' => \Symfony\Component\Uid\Uuid::fromString($id)]);
     }
+
+    /** @return TicketLog[] */
+    public function findAgentQuestionsByTicket(Ticket $ticket): array
+    {
+        return $this->findBy(['ticket' => $ticket, 'action' => 'agent_question'], ['createdAt' => 'ASC']);
+    }
 }
