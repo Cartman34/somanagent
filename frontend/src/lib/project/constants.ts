@@ -45,6 +45,7 @@ export const PRIORITY_LABEL_KEYS: Record<TaskPriority, string> = {
 export const STATUS_LABEL_KEYS: Record<TaskStatus, string> = {
   backlog: 'task.status.backlog',
   todo: 'task.status.todo',
+  awaiting_dispatch: 'task.status.awaiting_dispatch',
   in_progress: 'task.status.in_progress',
   review: 'task.status.review',
   done: 'task.status.done',
@@ -128,6 +129,7 @@ export function STATUS_LABELS(t: (key: string) => string): Record<TaskStatus, st
   return {
     backlog: t(STATUS_LABEL_KEYS.backlog),
     todo: t(STATUS_LABEL_KEYS.todo),
+    awaiting_dispatch: t(STATUS_LABEL_KEYS.awaiting_dispatch),
     in_progress: t(STATUS_LABEL_KEYS.in_progress),
     review: t(STATUS_LABEL_KEYS.review),
     done: t(STATUS_LABEL_KEYS.done),

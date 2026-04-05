@@ -38,7 +38,7 @@ const AGENT_SHEET_TRANSLATION_KEYS = [
   'agent.sheet.status.error', 'agent.sheet.status.working', 'agent.sheet.status.available',
   'agent.sheet.summary.no_role', 'agent.sheet.summary.connector', 'agent.sheet.summary.model',
   'agent.sheet.summary.timeout', 'agent.sheet.summary.active_status',
-  'agent.sheet.summary.true', 'agent.sheet.summary.false', 'agent.sheet.summary.active_tasks',
+  'agent.sheet.summary.yes', 'agent.sheet.summary.no', 'agent.sheet.summary.active_tasks',
   'agent.sheet.knowledge.title', 'agent.sheet.knowledge.hint',
   'agent.sheet.knowledge.no_role', 'agent.sheet.knowledge.no_skills',
   'agent.sheet.skill.none_selected', 'agent.sheet.skill.no_content', 'agent.sheet.skill.content_tab',
@@ -486,7 +486,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
         </div>
         <div className="flex items-center justify-between gap-4">
           <span style={{ color: 'var(--muted)' }}>{t('agent.sheet.summary.active_status')}</span>
-          <span style={{ color: 'var(--text)' }}>{currentAgent.isActive ? t('agent.sheet.summary.true') : t('agent.sheet.summary.false')}</span>
+          <span style={{ color: 'var(--text)' }}>{currentAgent.isActive ? t('agent.sheet.summary.yes') : t('agent.sheet.summary.no')}</span>
         </div>
         <div className="flex items-center justify-between gap-4">
           <span style={{ color: 'var(--muted)' }}>{t('agent.sheet.summary.active_tasks')}</span>

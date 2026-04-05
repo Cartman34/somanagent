@@ -69,6 +69,7 @@ task:
   status:
     backlog: 'Backlog'
     todo: 'À faire'
+    awaiting_dispatch: "En attente d'autorisation"
     in_progress: 'En cours'
     review: 'En revue'
     done: 'Terminé'

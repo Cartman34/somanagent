@@ -5,6 +5,7 @@
 import apiClient from './client'
 import type { Ticket, TicketTask, TaskPriority, TaskStatus, TaskType } from '@/types'
 
+/** Payload accepted by ticket creation and update endpoints. */
 export interface TicketPayload {
   title: string
   description?: string
@@ -13,6 +14,7 @@ export interface TicketPayload {
   featureId?: string
 }
 
+/** Payload accepted by operational task creation and update endpoints. */
 export interface TicketTaskPayload {
   title: string
   description?: string
@@ -22,22 +24,26 @@ export interface TicketTaskPayload {
   assignedAgentId?: string
 }
 
+/** Payload accepted by ticket and task comment endpoints. */
 export interface TicketCommentPayload {
   content: string
   replyToLogId?: string
   context?: string
 }
 
+/** Payload accepted by project request creation. */
 export interface ProjectRequestPayload {
   title: string
   description?: string
   priority?: TaskPriority
 }
 
+/** Ticket creation result optionally augmented with dispatch feedback. */
 export interface ProjectRequestResult extends Ticket {
   dispatchError?: string
 }
 
+/** Ticket-level REST client helpers. */
 export const ticketsApi = {
   listByProject: async (projectId: string): Promise<Ticket[]> => {
     const { data } = await apiClient.get(`/projects/${projectId}/tickets`)
@@ -89,6 +95,7 @@ export const ticketsApi = {
   },
 }
 
+/** Operational task REST client helpers. */
 export const ticketTasksApi = {
   create: async (ticketId: string, payload: TicketTaskPayload): Promise<TicketTask> => {
     const { data } = await apiClient.post(`/tickets/${ticketId}/tasks`, payload)
@@ -142,6 +149,11 @@ export const ticketTasksApi = {
 
   resume: async (id: string): Promise<{ ticketTask: TicketTask; agent: { id: string; name: string }; skill: string; executionId: string }> => {
     const { data } = await apiClient.post(`/ticket-tasks/${id}/resume`)
+    return data
+  },
+
+  authorize: async (id: string): Promise<{ ticketTask: TicketTask; agent: { id: string; name: string }; skill: string; executionId: string }> => {
+    const { data } = await apiClient.post(`/ticket-tasks/${id}/authorize`)
     return data
   },
 

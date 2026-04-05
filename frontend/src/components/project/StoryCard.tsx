@@ -16,6 +16,9 @@ import {
 const STORY_CARD_APP_TRANSLATION_KEYS = [
   'common.action.delete',
   'story.card.active_subtasks',
+  'ticket.activity.questions_pending_one',
+  'ticket.activity.questions_pending_other',
+  'ticket.discussion.requires_answer',
 ] as const
 
 const STORY_CARD_CATALOG_TRANSLATION_KEYS = [
@@ -28,6 +31,7 @@ const STORY_CARD_CATALOG_TRANSLATION_KEYS = [
 function StatusIcon({ status }: { status: TaskStatus }) {
   if (status === 'done')       return <CheckCircle className="w-4 h-4 text-green-500" />
   if (status === 'cancelled')  return <XCircle className="w-4 h-4 text-gray-400" />
+  if (status === 'awaiting_dispatch') return <Clock className="w-4 h-4 text-amber-500" />
   if (status === 'in_progress' || status === 'review') return <Clock className="w-4 h-4 text-blue-500" />
   if (status === 'backlog')    return <AlertTriangle className="w-4 h-4 text-gray-300" />
   return <ChevronRight className="w-4 h-4 text-gray-400" />
@@ -62,6 +66,13 @@ export default function StoryCard({ ticket, onTransition, onDelete, onOpen, tran
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className={`${TYPE_BADGE[ticket.type]} text-xs`}>{tc(TYPE_LABEL_KEYS[ticket.type])}</span>
           <span className={`text-xs font-medium ${PRIORITY_COLOR[ticket.priority]}`}>{tc(PRIORITY_LABEL_KEYS[ticket.priority])}</span>
+          {ticket.awaitingUserAnswer && (
+            <span className="rounded-full border px-2 py-0.5 text-[11px] font-medium" style={{ color: '#9a3412', borderColor: 'rgba(249,115,22,0.25)', background: 'rgba(249,115,22,0.12)' }}>
+              {ticket.pendingUserAnswerCount === 1
+                ? t('ticket.activity.questions_pending_one')
+                : t('ticket.activity.questions_pending_other', { count: String(ticket.pendingUserAnswerCount) })}
+            </span>
+          )}
         </div>
         <button onClick={() => onDelete(ticket)} className="p-0.5 text-gray-300 hover:text-red-400 flex-shrink-0" title={t('common.action.delete')}>
           <XCircle className="w-3.5 h-3.5" />
@@ -101,6 +112,11 @@ export default function StoryCard({ ticket, onTransition, onDelete, onOpen, tran
               <div key={subtask.id} className="item-ticket-task flex items-center gap-2 text-xs">
                 <StatusIcon status={subtask.status} />
                 <span className="truncate" style={{ color: 'var(--text)' }}>{subtask.title}</span>
+                {subtask.awaitingUserAnswer && (
+                  <span className="rounded-full border px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap" style={{ color: '#9a3412', borderColor: 'rgba(249,115,22,0.25)', background: 'rgba(249,115,22,0.12)' }}>
+                    {t('ticket.discussion.requires_answer')}
+                  </span>
+                )}
               </div>
             ))}
           </div>

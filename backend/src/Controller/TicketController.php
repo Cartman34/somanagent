@@ -150,6 +150,10 @@ class TicketController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
+        if ($ticket->getProject()->getTeam() !== null) {
+            $this->ticketTaskService->dispatchEligibleTasksForCurrentStep($ticket);
+        }
+
         return $this->json($this->serializeApiTicketTask($task), Response::HTTP_CREATED);
     }
 
@@ -489,6 +493,35 @@ class TicketController extends AbstractController
     }
 
     /**
+     * Authorizes an awaiting-dispatch task and dispatches it immediately.
+     */
+    #[Route('/ticket-tasks/{id}/authorize', name: 'ticket_task_authorize_api', methods: ['POST'])]
+    public function authorize(string $id): JsonResponse
+    {
+        $task = $this->ticketTaskService->findById($id);
+        if ($task === null) {
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
+        }
+
+        if (($response = $this->requireProjectTeamForProgress($task->getTicket()->getProject())) !== null) {
+            return $response;
+        }
+
+        try {
+            $result = $this->ticketTaskService->authorize($task, $task->getAssignedAgent());
+        } catch (\RuntimeException|\LogicException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        return $this->json([
+            'ticketTask' => $this->serializeApiTicketTask($task),
+            'agent' => ['id' => (string) $result['agent']->getId(), 'name' => $result['agent']->getName()],
+            'skill' => $result['skill'],
+            'executionId' => $result['executionId'],
+        ]);
+    }
+
+    /**
      * Resumes an agent step from a ticket task.
      */
     #[Route('/ticket-tasks/{id}/resume', name: 'ticket_task_resume_api', methods: ['POST'])]
@@ -700,6 +733,7 @@ class TicketController extends AbstractController
             $rootTasks,
             fn(TicketTask $task) => $task->getWorkflowStep()?->getId()?->toRfc4122() === $ticket->getWorkflowStep()?->getId()?->toRfc4122()
         ));
+        $pendingAnswerSummary = $this->buildPendingAnswerSummary($ticket);
 
         $payload = [
             'id' => (string) $ticket->getId(),
@@ -728,6 +762,8 @@ class TicketController extends AbstractController
             ),
             'assignedAgent' => $ticket->getAssignedAgent() ? ['id' => (string) $ticket->getAssignedAgent()->getId(), 'name' => $ticket->getAssignedAgent()->getName()] : null,
             'assignedRole' => $ticket->getAssignedRole() ? ['id' => (string) $ticket->getAssignedRole()->getId(), 'slug' => $ticket->getAssignedRole()->getSlug(), 'name' => $ticket->getAssignedRole()->getName()] : null,
+            'awaitingUserAnswer' => $pendingAnswerSummary['ticket'] > 0,
+            'pendingUserAnswerCount' => $pendingAnswerSummary['ticket'],
             'createdAt' => $ticket->getCreatedAt()->format(\DateTimeInterface::ATOM),
             'updatedAt' => $ticket->getUpdatedAt()->format(\DateTimeInterface::ATOM),
             'taskCounts' => [
@@ -739,14 +775,20 @@ class TicketController extends AbstractController
 
         if ($includeActiveStepTasks) {
             $payload['activeStepTasks'] = array_map(
-                fn(TicketTask $task) => $this->serializeApiTicketTask($task),
+                fn(TicketTask $task) => $this->serializeApiTicketTask(
+                    $task,
+                    pendingAnswerCount: $pendingAnswerSummary['tasks'][(string) $task->getId()] ?? 0,
+                ),
                 $activeStepTasks,
             );
         }
 
         if ($includeAllTasks) {
             $payload['tasks'] = array_map(
-                fn(TicketTask $task) => $this->serializeApiTicketTask($task),
+                fn(TicketTask $task) => $this->serializeApiTicketTask(
+                    $task,
+                    pendingAnswerCount: $pendingAnswerSummary['tasks'][(string) $task->getId()] ?? 0,
+                ),
                 $tasks,
             );
         }
@@ -778,9 +820,11 @@ class TicketController extends AbstractController
         bool $includeLogs = false,
         bool $includeExecutions = false,
         bool $includeTokenUsage = false,
+        ?int $pendingAnswerCount = null,
     ): array {
         $dependencies = $this->ticketTaskDependencyRepository->findByTicketTask($task);
         $children = $includeChildren ? $this->ticketTaskService->findChildren($task) : [];
+        $pendingAnswerCount ??= $this->countPendingAnswersForTask($task);
 
         $payload = [
             'id' => (string) $task->getId(),
@@ -815,6 +859,10 @@ class TicketController extends AbstractController
             ],
             'assignedAgent' => $task->getAssignedAgent() ? ['id' => (string) $task->getAssignedAgent()->getId(), 'name' => $task->getAssignedAgent()->getName()] : null,
             'assignedRole' => $task->getAssignedRole() ? ['id' => (string) $task->getAssignedRole()->getId(), 'slug' => $task->getAssignedRole()->getSlug(), 'name' => $task->getAssignedRole()->getName()] : null,
+            'awaitingUserAnswer' => $pendingAnswerCount > 0,
+            'pendingUserAnswerCount' => $pendingAnswerCount,
+            'canResume' => $this->ticketTaskService->canResume($task),
+            'canAuthorize' => $task->getStatus() === TaskStatus::AwaitingDispatch,
             'dependsOn' => array_map(
                 static fn($dependency) => [
                     'id' => (string) $dependency->getDependsOn()->getId(),
@@ -857,6 +905,52 @@ class TicketController extends AbstractController
         }
 
         return $payload;
+    }
+
+    /**
+     * Builds unresolved answer counts for a ticket and its linked tasks from ticket logs.
+     *
+     * @return array{ticket: int, tasks: array<string, int>}
+     */
+    private function buildPendingAnswerSummary(Ticket $ticket): array
+    {
+        $taskCounts = [];
+        $ticketCount = 0;
+
+        foreach ($this->ticketLogRepository->findByTicket($ticket) as $log) {
+            if (!$log->requiresAnswer()) {
+                continue;
+            }
+
+            $ticketCount++;
+
+            $taskId = $log->getTicketTask()?->getId()->toRfc4122();
+            if ($taskId === null) {
+                continue;
+            }
+
+            $taskCounts[$taskId] = ($taskCounts[$taskId] ?? 0) + 1;
+        }
+
+        return [
+            'ticket' => $ticketCount,
+            'tasks' => $taskCounts,
+        ];
+    }
+
+    /**
+     * Counts unresolved answer requests directly linked to one operational task.
+     */
+    private function countPendingAnswersForTask(TicketTask $task): int
+    {
+        $count = 0;
+        foreach ($this->ticketLogRepository->findByTicketTask($task) as $log) {
+            if ($log->requiresAnswer()) {
+                $count++;
+            }
+        }
+
+        return $count;
     }
 
     private function serializeApiLog(TicketLog $log): array

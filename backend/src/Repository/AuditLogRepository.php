@@ -9,6 +9,8 @@ namespace App\Repository;
 
 use App\Entity\AuditLog;
 use App\Entity\Project;
+use App\Entity\TicketTask;
+use App\Enum\AuditAction;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -18,6 +20,9 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class AuditLogRepository extends ServiceEntityRepository
 {
+    /**
+     * Binds the repository to Doctrine's manager registry.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, AuditLog::class);
@@ -47,6 +52,42 @@ class AuditLogRepository extends ServiceEntityRepository
             ->select('COUNT(al.id)')
             ->getQuery()
             ->getSingleScalarResult();
+    }
+
+    /**
+     * Returns whether a task was already completed at least once in its audit trail.
+     */
+    public function hasTaskCompletionHistory(TicketTask $ticketTask): bool
+    {
+        $logs = $this->createQueryBuilder('al')
+            ->select('al')
+            ->where('al.entityType = :entityType')
+            ->andWhere('al.entityId = :entityId')
+            ->andWhere('al.action IN (:actions)')
+            ->setParameter('entityType', 'TicketTask')
+            ->setParameter('entityId', (string) $ticketTask->getId())
+            ->setParameter('actions', [
+                AuditAction::TaskValidated,
+                AuditAction::TaskStatusChanged,
+            ])
+            ->getQuery()
+            ->getResult();
+
+        foreach ($logs as $log) {
+            if (!$log instanceof AuditLog) {
+                continue;
+            }
+
+            if ($log->getAction() === AuditAction::TaskValidated) {
+                return true;
+            }
+
+            if ($log->getAction() === AuditAction::TaskStatusChanged && ($log->getData()['to'] ?? null) === 'done') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
