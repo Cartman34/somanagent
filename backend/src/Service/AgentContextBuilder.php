@@ -12,12 +12,18 @@ use App\Entity\ChatMessage;
 use App\Entity\Project;
 use App\Entity\TicketLog;
 use App\Entity\TicketTask;
-
 /**
  * Builds the context payload sent to an agent: project info, ticket, task, role, skill, and conversation history.
  */
 final class AgentContextBuilder
 {
+    /**
+     * Wires the services required to expose execution capabilities alongside business context.
+     */
+    public function __construct(
+        private readonly TicketTaskService $ticketTaskService,
+    ) {}
+
     /**
      * @param TicketLog[] $ticketComments
      */
@@ -25,10 +31,22 @@ final class AgentContextBuilder
     {
         $ticket = $task->getTicket();
         $context = $this->buildProjectAgentContext($ticket->getProject(), $agent);
+        $executionScope = $this->ticketTaskService->describeExecutionScope($task);
+
         $context['interaction'] = [
             'type' => 'ticket_task_execution',
             'skill' => $skillSlug,
             'action_key' => $task->getAgentAction()->getKey(),
+            'capabilities' => [
+                'current_action' => [
+                    'key' => $task->getAgentAction()->getKey(),
+                    'label' => $task->getAgentAction()->getLabel(),
+                ],
+                'ticket_transitions' => $executionScope['ticket_transitions'],
+                'task_actions' => $executionScope['task_actions'],
+                'allowed_effects' => $executionScope['allowed_effects'],
+                'must_stay_within_scope' => true,
+            ],
         ];
         $context['ticket'] = [
             'id' => (string) $ticket->getId(),
@@ -38,6 +56,7 @@ final class AgentContextBuilder
             'status' => $ticket->getStatus()->value,
             'feature' => $ticket->getFeature()?->getName(),
             'workflow_step' => $ticket->getWorkflowStep()?->getKey(),
+            'allowed_transitions' => $executionScope['ticket_transitions'],
         ];
         $context['ticket_task'] = [
             'id' => (string) $task->getId(),
@@ -54,9 +73,16 @@ final class AgentContextBuilder
             ],
             'assigned_role' => $task->getAssignedRole()?->getName(),
             'assigned_agent' => $task->getAssignedAgent()?->getName(),
+            'allowed_actions' => $executionScope['task_actions'],
         ];
 
         if ($ticketComments !== []) {
+            $pendingQuestions = array_values(array_filter(
+                $ticketComments,
+                static fn(TicketLog $log): bool => $log->requiresAnswer()
+                    && $log->getTicketTask()?->getId()?->toRfc4122() === $task->getId()->toRfc4122(),
+            ));
+
             $context['ticket_conversation'] = array_map(static fn(TicketLog $log) => [
                 'author' => $log->getAuthorName() ?? $log->getAuthorType() ?? 'system',
                 'author_type' => $log->getAuthorType(),
@@ -68,6 +94,14 @@ final class AgentContextBuilder
                 'content' => $log->getContent(),
                 'created_at' => $log->getCreatedAt()->format(\DateTimeInterface::ATOM),
             ], $ticketComments);
+
+            if ($pendingQuestions !== []) {
+                $context['pending_questions'] = array_map(static fn(TicketLog $log) => [
+                    'id' => $log->getId()->toRfc4122(),
+                    'content' => $log->getContent(),
+                    'created_at' => $log->getCreatedAt()->format(\DateTimeInterface::ATOM),
+                ], $pendingQuestions);
+            }
         }
 
         return $context;
@@ -150,6 +184,8 @@ final class AgentContextBuilder
                 'identity_is_known' => 'Your identity, role, and project are already provided in this context.',
                 'do_not_ask_identity_again' => 'Do not ask again who you are, which role you play, or which project you are working on unless the context is explicitly contradictory.',
                 'do_not_repeat_questions' => 'Do not repeat questions already present in ticket_conversation (action=agent_question). Check ticket_conversation before asking for clarification and omit questions that already appear there, whether answered or not.',
+                'pending_questions_rule' => 'When pending_questions is not empty, do not finalize the deliverable. Wait for the user to answer those pending questions first.',
+                'scope_rule' => 'Stay strictly within the allowed actions and ticket transitions exposed in the context. If a requested change falls outside that scope, say so explicitly instead of improvising.',
                 'role_constraints' => $roleNotes,
             ],
         ];

@@ -24,18 +24,21 @@ use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * Orchestre l'exécution d'une tâche par un agent IA.
+ * Orchestrates ticket-task execution through the current agent stack.
  *
- * Flow :
- *  1. Charger le skill depuis la BDD
- *  2. Construire le prompt (skill + contexte de la tâche)
- *  3. Récupérer l'adapter adapté au ConnectorType de l'agent
- *  4. Appeler l'agent, persister TokenUsage + TicketLog
- *  5. Si skill = tech-planning → parser le JSON, créer les sous-tâches + dépendances, faire avancer le ticket
- *  6. Sinon → passer la tâche à Done
+ * Flow:
+ *  1. Load the skill from the database
+ *  2. Build the prompt from skill content plus ticket/task context
+ *  3. Resolve the connector adapter for the target agent
+ *  4. Call the agent and persist TokenUsage plus TicketLog entries
+ *  5. When the skill is `tech-planning`, parse the JSON plan, create subtasks, and move the ticket forward
+ *  6. Otherwise, mark the task as done
  */
 final class AgentExecutionService
 {
+    /**
+     * Wires every dependency required to execute ticket tasks and process agent output.
+     */
     public function __construct(
         private readonly AgentPortRegistry     $portRegistry,
         private readonly SkillRepository       $skillRepository,
@@ -104,15 +107,19 @@ final class AgentExecutionService
             ],
         );
 
+        $this->assertAllowedEffects($task, ['log_agent_response']);
+
         $questions = $this->extractClarificationQuestions($response->content);
         $questions = $this->filterDuplicateQuestions($questions, $task->getTicket());
         $normalizedContent = mb_strtolower($response->content);
         $isClarificationRequest = count($questions) >= 2
             || str_contains($normalizedContent, 'questions')
-            || str_contains($normalizedContent, 'précis')
+            || str_contains($normalizedContent, 'precis')
             || str_contains($normalizedContent, 'clarification');
 
         if ($questions !== [] && $isClarificationRequest) {
+            $this->assertAllowedEffects($task, ['ask_clarification']);
+
             foreach ($questions as $question) {
                 $this->ticketLogService->log(
                     ticket: $task->getTicket(),
@@ -138,10 +145,23 @@ final class AgentExecutionService
         }
 
         if ($skillSlug === 'tech-planning') {
+            $this->assertAllowedEffects($task, [
+                'complete_current_task',
+                'replace_planning_tasks',
+                'create_subtasks',
+                'prepare_branch',
+                'update_ticket_progress',
+            ]);
             $this->handlePlanningTicketTaskResponse($task, $agent, $response->content);
         } elseif ($skillSlug === 'product-owner') {
+            $this->assertAllowedEffects($task, [
+                'rewrite_ticket',
+                'complete_current_task',
+                'complete_ticket',
+            ]);
             $this->handleProductOwnerTicketTaskResponse($task, $response->content);
         } else {
+            $this->assertAllowedEffects($task, ['complete_current_task']);
             $task->setStatus(TaskStatus::Done)->setProgress(100);
         }
         $this->em->flush();
@@ -245,6 +265,28 @@ final class AgentExecutionService
         return $filtered;
     }
 
+    /**
+     * Ensures the backend effects attempted by the current handler stay within the declared execution scope.
+     *
+     * @param string[] $effects
+     */
+    private function assertAllowedEffects(TicketTask $task, array $effects): void
+    {
+        $allowedEffects = $this->ticketTaskService->describeExecutionScope($task)['allowed_effects'];
+
+        foreach ($effects as $effect) {
+            if (in_array($effect, $allowedEffects, true)) {
+                continue;
+            }
+
+            throw new \LogicException(sprintf(
+                'Execution effect "%s" is outside the declared scope for action "%s".',
+                $effect,
+                $task->getAgentAction()->getKey(),
+            ));
+        }
+    }
+
     private function handlePlanningTicketTaskResponse(TicketTask $planningTask, Agent $leadTech, string $rawContent): void
     {
         $ticket = $planningTask->getTicket();
@@ -253,7 +295,7 @@ final class AgentExecutionService
             $plan = $this->planningParser->parse($rawContent);
         } catch (\InvalidArgumentException $e) {
             $message = sprintf(
-                'Plan lead-tech invalide: %s Rejouer la planification avec un JSON strict et des dependsOn limités à des indices précédents.',
+                'Invalid lead-tech plan: %s Replay the planning step with strict JSON and dependsOn limited to previous indexes.',
                 $e->getMessage(),
             );
 
@@ -274,7 +316,7 @@ final class AgentExecutionService
             $this->ticketLogService->log(
                 $ticket,
                 'planning_replaced',
-                sprintf('Ancien plan supprimé avant régénération (%d sous-tâche%s).', $removedSubtasks, $removedSubtasks > 1 ? 's' : ''),
+                sprintf('Previous plan removed before regeneration (%d subtask%s).', $removedSubtasks, $removedSubtasks > 1 ? 's' : ''),
                 $planningTask,
             );
         }
@@ -348,7 +390,7 @@ final class AgentExecutionService
         $this->ticketLogService->log(
             $ticket,
             'branch_prepared',
-            sprintf('Branche simulée pour le planning: %s', $branchName),
+            sprintf('Simulated planning branch created: %s', $branchName),
             $planningTask,
             metadata: [
                 'provider' => $repository['provider'],
@@ -404,7 +446,7 @@ final class AgentExecutionService
         $this->ticketLogService->log(
             $ticket,
             'product_owner_completed',
-            'La demande a été reformulée en user story prête pour validation.',
+            'The request was reframed into a user story ready for validation.',
             $task,
         );
     }

@@ -22,6 +22,7 @@ use App\Repository\RoleRepository;
 use App\Repository\TicketRepository;
 use App\Repository\WorkflowStepActionRepository;
 use App\Repository\WorkflowStepRepository;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -40,7 +41,9 @@ final class TicketService
         private readonly WorkflowStepRepository       $workflowStepRepository,
         private readonly WorkflowStepActionRepository $workflowStepActionRepository,
         private readonly TicketTaskService            $ticketTaskService,
+        private readonly TicketLogService             $ticketLogService,
         private readonly RealtimeUpdateService        $realtimeUpdateService,
+        private readonly TranslatorInterface          $translator,
     ) {}
 
     /**
@@ -140,6 +143,17 @@ final class TicketService
 
         if ($currentStep->getTransitionMode()->value !== 'manual') {
             throw new \LogicException('Only manual workflow steps can be advanced explicitly.');
+        }
+
+        $currentStepTasks = array_filter(
+            $this->ticketTaskService->findByTicket($ticket),
+            static fn(TicketTask $task): bool => $task->getWorkflowStep()?->getId()?->toRfc4122() === $currentStep->getId()->toRfc4122(),
+        );
+
+        foreach ($currentStepTasks as $task) {
+            if ($this->ticketLogService->countPendingAnswersForTask($task) > 0) {
+                throw new \LogicException($this->translator->trans('ticket.error.pending_answers_before_workflow_transition', [], 'app'));
+            }
         }
 
         $nextStep = $this->workflowStepRepository->findNextByWorkflowStep($currentStep);

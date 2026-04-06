@@ -80,7 +80,9 @@ const TASK_DRAWER_TRANSLATION_KEYS = [
   'ticket.detail.tasks_empty',
   'ticket.detail.tasks_title',
   'ticket.detail.workflow.current_step',
+  'ticket.detail.workflow.error',
   'ticket.detail.workflow.no_transition',
+  'ticket.detail.workflow.pending_answers_help',
   'ticket.detail.workflow.none',
   'ticket.detail.workflow.section_title',
   'ticket.detail.workflow.transition_loading',
@@ -199,6 +201,7 @@ export default function TaskDrawer({
   const [taskDispatchError, setTaskDispatchError] = useState<string | null>(null)
   const [expandedTaskIds, setExpandedTaskIds] = useState<string[]>([])
   const [pendingTaskActionId, setPendingTaskActionId] = useState<string | null>(null)
+  const [advanceError, setAdvanceError] = useState<string | null>(null)
   const [isEditingDetails, setIsEditingDetails] = useState(false)
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
@@ -233,6 +236,7 @@ export default function TaskDrawer({
     setTaskDispatchError(null)
     setExpandedTaskIds([])
     setPendingTaskActionId(null)
+    setAdvanceError(null)
     setIsEditingDetails(false)
     setEditTitle('')
     setEditDescription('')
@@ -273,8 +277,13 @@ export default function TaskDrawer({
   const advanceMutation = useMutation({
     mutationFn: (ticketEntityId: string) => ticketsApi.advance(ticketEntityId),
     onSuccess: async () => {
+      setAdvanceError(null)
       await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
       await qc.invalidateQueries({ queryKey: ['tickets'] })
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+      setAdvanceError(msg ?? t('ticket.detail.workflow.error'))
     },
   })
 
@@ -419,6 +428,11 @@ export default function TaskDrawer({
 
   const renderPilotBlock = (ticketEntity: Ticket) => (
     <section className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
+      {(() => {
+        const transitionDisabled = !projectHasTeam || advanceMutation.isPending || ticketEntity.awaitingUserAnswer
+
+        return (
+          <>
       <div className="section-pilot-transition">
         <div className="space-y-1.5">
           <p className="section-title">
@@ -434,7 +448,7 @@ export default function TaskDrawer({
             type="button"
             className="btn-primary"
             onClick={() => advanceMutation.mutate(ticketEntity.id)}
-            disabled={!projectHasTeam || advanceMutation.isPending}
+            disabled={transitionDisabled}
           >
             {advanceMutation.isPending
               ? t('ticket.detail.workflow.transition_loading')
@@ -448,6 +462,21 @@ export default function TaskDrawer({
           {t('ticket.detail.workflow.no_transition')}
         </p>
       )}
+
+      {ticketEntity.awaitingUserAnswer && (
+        <p className="mt-3 text-sm" style={{ color: '#b45309' }}>
+          {t('ticket.detail.workflow.pending_answers_help')}
+        </p>
+      )}
+
+      {advanceError && (
+        <p className="mt-3 text-sm" style={{ color: '#b91c1c' }}>
+          {advanceError}
+        </p>
+      )}
+          </>
+        )
+      })()}
 
       <div className="mt-5 border-t pt-5" style={{ borderColor: 'var(--border)' }}>
         <div className="flex flex-wrap items-center justify-between gap-3">

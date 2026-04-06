@@ -270,6 +270,73 @@ final class TicketTaskService
     }
 
     /**
+     * Returns the next workflow step after the given one, if any.
+     */
+    public function findNextWorkflowStep(WorkflowStep $workflowStep): ?WorkflowStep
+    {
+        return $this->workflowStepRepository->findNextByWorkflowStep($workflowStep);
+    }
+
+    /**
+     * Describes the execution scope attached to the current task state.
+     *
+     * @return array{
+     *   task_actions: array<int, array<string, mixed>>,
+     *   ticket_transitions: array<int, array<string, mixed>>,
+     *   allowed_effects: string[]
+     * }
+     */
+    public function describeExecutionScope(TicketTask $task): array
+    {
+        $taskActions = [[
+            'type' => 'execute_current_action',
+            'action_key' => $task->getAgentAction()->getKey(),
+            'action_label' => $task->getAgentAction()->getLabel(),
+        ]];
+
+        if ($task->getStatus() === TaskStatus::AwaitingDispatch) {
+            $taskActions[] = [
+                'type' => 'authorize_dispatch',
+                'action_key' => $task->getAgentAction()->getKey(),
+                'action_label' => $task->getAgentAction()->getLabel(),
+            ];
+        }
+
+        if ($this->canResume($task)) {
+            $taskActions[] = [
+                'type' => 'resume_current_action',
+                'action_key' => $task->getAgentAction()->getKey(),
+                'action_label' => $task->getAgentAction()->getLabel(),
+            ];
+        }
+
+        $ticketTransitions = [];
+        $currentStep = $task->getTicket()->getWorkflowStep();
+        if ($currentStep !== null && $currentStep->getTransitionMode()->value === 'manual') {
+            $nextStep = $this->findNextWorkflowStep($currentStep);
+            if ($nextStep !== null) {
+                $ticketTransitions[] = [
+                    'type' => 'advance_workflow_step',
+                    'from_step' => [
+                        'key' => $currentStep->getKey(),
+                        'name' => $currentStep->getName(),
+                    ],
+                    'to_step' => [
+                        'key' => $nextStep->getKey(),
+                        'name' => $nextStep->getName(),
+                    ],
+                ];
+            }
+        }
+
+        return [
+            'task_actions' => $taskActions,
+            'ticket_transitions' => $ticketTransitions,
+            'allowed_effects' => $this->buildAllowedEffectsForTask($task),
+        ];
+    }
+
+    /**
      * Dispatch all tasks that became eligible after the given task completed.
      */
     public function dispatchReadyDependents(TicketTask $completedTask): int
@@ -287,6 +354,36 @@ final class TicketTaskService
     public function hasActiveExecution(TicketTask $task): bool
     {
         return $this->agentTaskExecutionRepository->findActiveByTicketTask($task) !== null;
+    }
+
+    /**
+     * Returns the backend effects that are allowed for one task execution.
+     *
+     * @return string[]
+     */
+    private function buildAllowedEffectsForTask(TicketTask $task): array
+    {
+        $effects = [
+            'log_agent_response',
+            'ask_clarification',
+            'complete_current_task',
+        ];
+
+        return match ($task->getAgentAction()->getKey()) {
+            'product.specify' => [
+                ...$effects,
+                'rewrite_ticket',
+                'complete_ticket',
+            ],
+            'tech.plan' => [
+                ...$effects,
+                'replace_planning_tasks',
+                'create_subtasks',
+                'prepare_branch',
+                'update_ticket_progress',
+            ],
+            default => $effects,
+        };
     }
 
     /**
