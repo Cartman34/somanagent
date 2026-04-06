@@ -7,8 +7,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\AgentTaskExecution;
+use App\Entity\AgentTaskExecutionAttempt;
+use App\Entity\TicketTask;
 use App\Enum\ConnectorType;
 use App\Repository\AgentRepository;
+use App\Repository\AgentTaskExecutionRepository;
 use App\Service\AgentService;
 use App\Service\ApiErrorPayloadFactory;
 use App\ValueObject\AgentConfig;
@@ -30,6 +34,7 @@ class AgentController extends AbstractController
     public function __construct(
         private readonly AgentService    $agentService,
         private readonly AgentRepository $agentRepository,
+        private readonly AgentTaskExecutionRepository $agentTaskExecutionRepository,
         private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
     ) {}
 
@@ -183,5 +188,87 @@ class AgentController extends AbstractController
                 'createdAt' => $lastRuntimeSignal['createdAt']->format(\DateTimeInterface::ATOM),
             ],
         ]);
+    }
+
+    /**
+     * Returns the execution history for a given agent.
+     *
+     * @param string $id Agent UUID
+     * @return JsonResponse List of executions with business context (ticket title, task title)
+     */
+    #[Route('/{id}/executions', name: 'agent_executions', methods: ['GET'])]
+    public function executions(string $id): JsonResponse
+    {
+        $agent = $this->agentService->findById($id);
+        if ($agent === null) {
+            return $this->json($this->apiErrorPayloadFactory->create('agent.error.not_found'), Response::HTTP_NOT_FOUND);
+        }
+
+        $executions = $this->agentTaskExecutionRepository->findByAgent($id, 50);
+
+        return $this->json(array_map(
+            fn(AgentTaskExecution $execution) => $this->serializeExecution($execution),
+            $executions,
+        ));
+    }
+
+    /**
+     * Serializes an AgentTaskExecution for API response, including business context.
+     */
+    private function serializeExecution(AgentTaskExecution $execution): array
+    {
+        $ticketTasks = [];
+        foreach ($execution->getTicketTasks() as $task) {
+            $ticketTasks[] = [
+                'id' => (string) $task->getId(),
+                'ticketId' => (string) $task->getTicket()->getId(),
+                'ticketTitle' => $task->getTicket()->getTitle(),
+                'title' => $task->getTitle(),
+            ];
+        }
+
+        return [
+            'id' => (string) $execution->getId(),
+            'traceRef' => $execution->getTraceRef(),
+            'triggerType' => $execution->getTriggerType()->value,
+            'actionKey' => $execution->getActionKey(),
+            'actionLabel' => $execution->getActionLabel(),
+            'roleSlug' => $execution->getRoleSlug(),
+            'skillSlug' => $execution->getSkillSlug(),
+            'status' => $execution->getStatus()->value,
+            'currentAttempt' => $execution->getCurrentAttempt(),
+            'maxAttempts' => $execution->getMaxAttempts(),
+            'requestRef' => $execution->getRequestRef(),
+            'lastErrorMessage' => $execution->getLastErrorMessage(),
+            'lastErrorScope' => $execution->getLastErrorScope(),
+            'createdAt' => $execution->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            'startedAt' => $execution->getStartedAt()?->format(\DateTimeInterface::ATOM),
+            'finishedAt' => $execution->getFinishedAt()?->format(\DateTimeInterface::ATOM),
+            'requestedAgent' => $execution->getRequestedAgent() ? [
+                'id' => (string) $execution->getRequestedAgent()->getId(),
+                'name' => $execution->getRequestedAgent()->getName(),
+            ] : null,
+            'effectiveAgent' => $execution->getEffectiveAgent() ? [
+                'id' => (string) $execution->getEffectiveAgent()->getId(),
+                'name' => $execution->getEffectiveAgent()->getName(),
+            ] : null,
+            'ticketTasks' => $ticketTasks,
+            'attempts' => array_map(fn(AgentTaskExecutionAttempt $attempt) => [
+                'id' => (string) $attempt->getId(),
+                'attemptNumber' => $attempt->getAttemptNumber(),
+                'status' => $attempt->getStatus()->value,
+                'willRetry' => $attempt->willRetry(),
+                'messengerReceiver' => $attempt->getMessengerReceiver(),
+                'requestRef' => $attempt->getRequestRef(),
+                'errorMessage' => $attempt->getErrorMessage(),
+                'errorScope' => $attempt->getErrorScope(),
+                'startedAt' => $attempt->getStartedAt()?->format(\DateTimeInterface::ATOM),
+                'finishedAt' => $attempt->getFinishedAt()?->format(\DateTimeInterface::ATOM),
+                'agent' => $attempt->getAgent() ? [
+                    'id' => (string) $attempt->getAgent()->getId(),
+                    'name' => $attempt->getAgent()->getName(),
+                ] : null,
+            ], $execution->getAttempts()->toArray()),
+        ];
     }
 }

@@ -56,6 +56,38 @@ agent:
       sending: Envoi...
       send: Envoyer
       tab_label: Chat
+    executions:
+      tab_label: Exécutions
+      title: Historique des exécutions
+      empty: Aucune exécution pour cet agent.
+      load_error: Impossible de charger l'historique des exécutions.
+      count_one: '%count% exécution'
+      count_other: '%count% exécutions'
+      action: Action
+      ticket: Ticket
+      task: Tâche
+      effective_agent: Agent effectif
+      attempts: Tentatives
+      attempt_count_one: '%count% tentative'
+      attempt_count_other: '%count% tentatives'
+      started_at: Démarré le
+      duration: Durée
+      no_ticket: Sans ticket
+      no_task: Sans tâche
+      expand_attempts: Voir les tentatives
+      collapse_attempts: Masquer les tentatives
+      attempt: Tentative
+      receiver: Récepteur
+      error_message: Message d'erreur
+      no_error: Aucune erreur
+      status:
+        pending: En attente
+        running: En cours
+        retrying: Nouvelle tentative
+        succeeded: Terminé avec succès
+        failed: Échoué
+        dead_letter: File morte
+        cancelled: Annulé
   form:
     label:
       name: Nom

@@ -7,9 +7,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertCircle,
   Bot,
+  ChevronDown,
+  ChevronRight,
   Clock3,
   Cpu,
   FileCode2,
+  History,
   MessageSquare,
   RefreshCw,
   Reply,
@@ -23,6 +26,7 @@ import EntityId from '@/components/ui/EntityId'
 import ErrorMessage from '@/components/ui/ErrorMessage'
 import Markdown from '@/components/ui/Markdown'
 import { agentsApi } from '@/api/agents'
+import type { AgentExecution } from '@/api/agents'
 import { chatApi } from '@/api/chat'
 import { rolesApi } from '@/api/roles'
 import { useTranslation } from '@/hooks/useTranslation'
@@ -46,6 +50,22 @@ const AGENT_SHEET_TRANSLATION_KEYS = [
   'agent.sheet.chat.hello', 'agent.sheet.chat.message_placeholder',
   'agent.sheet.chat.sending', 'agent.sheet.chat.send',
   'agent.sheet.chat.tab_label',
+  'agent.sheet.executions.tab_label', 'agent.sheet.executions.title',
+  'agent.sheet.executions.empty', 'agent.sheet.executions.load_error',
+  'agent.sheet.executions.count_one', 'agent.sheet.executions.count_other',
+  'agent.sheet.executions.action', 'agent.sheet.executions.ticket',
+  'agent.sheet.executions.task', 'agent.sheet.executions.effective_agent',
+  'agent.sheet.executions.attempts', 'agent.sheet.executions.attempt_count_one',
+  'agent.sheet.executions.attempt_count_other', 'agent.sheet.executions.started_at',
+  'agent.sheet.executions.duration', 'agent.sheet.executions.no_ticket',
+  'agent.sheet.executions.no_task', 'agent.sheet.executions.expand_attempts',
+  'agent.sheet.executions.collapse_attempts', 'agent.sheet.executions.attempt',
+  'agent.sheet.executions.receiver', 'agent.sheet.executions.error_message',
+  'agent.sheet.executions.no_error',
+  'agent.sheet.executions.status.pending', 'agent.sheet.executions.status.running',
+  'agent.sheet.executions.status.retrying', 'agent.sheet.executions.status.succeeded',
+  'agent.sheet.executions.status.failed', 'agent.sheet.executions.status.dead_letter',
+  'agent.sheet.executions.status.cancelled',
 ] as const
 
 interface AgentSheetProps {
@@ -55,7 +75,7 @@ interface AgentSheetProps {
   onClose: () => void
 }
 
-type TabKey = 'details' | 'chat'
+type TabKey = 'details' | 'chat' | 'executions'
 
 interface MessageRowLabels {
   authorYou: string
@@ -233,8 +253,9 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
   const [replyInput, setReplyInput] = useState('')
   const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<TabKey>('chat')
-  const [desktopPanel, setDesktopPanel] = useState<'chat' | 'skill'>('chat')
+  const [desktopPanel, setDesktopPanel] = useState<'chat' | 'skill' | 'executions'>('chat')
   const [isDesktop, setIsDesktop] = useState(false)
+  const [expandedExecutionId, setExpandedExecutionId] = useState<string | null>(null)
 
   const { t, formatDateTime } = useTranslation(AGENT_SHEET_TRANSLATION_KEYS)
 
@@ -263,6 +284,12 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
     enabled: open && !!agentId,
   })
 
+  const executionsQuery = useQuery({
+    queryKey: ['agent-executions', agentId],
+    queryFn: () => agentsApi.getExecutions(agentId!),
+    enabled: open && !!agentId,
+  })
+
   const sendMutation = useMutation({
     mutationFn: (content: string) => chatApi.send(projectId, agentId!, content),
     onSuccess: async () => {
@@ -284,7 +311,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
     },
   })
 
-  const isLoading = agentQuery.isLoading || statusQuery.isLoading || historyQuery.isLoading
+  const isLoading = agentQuery.isLoading || statusQuery.isLoading || historyQuery.isLoading || executionsQuery.isLoading
   const error = (agentQuery.error as Error | null)
     ?? (roleQuery.error as Error | null)
     ?? (statusQuery.error as Error | null)
@@ -368,6 +395,7 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
       setDraft('')
       setActiveTab('chat')
       setDesktopPanel('chat')
+      setExpandedExecutionId(null)
       return
     }
 
@@ -452,6 +480,201 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
     }
 
     historyBottomRef.current?.scrollIntoView({ block: 'end' })
+  }
+
+  const formatDuration = (startedAt: string | null, finishedAt: string | null): string => {
+    if (!startedAt) return '—'
+    const start = new Date(startedAt).getTime()
+    const end = finishedAt ? new Date(finishedAt).getTime() : Date.now()
+    const ms = end - start
+    if (ms < 0) return '—'
+    if (ms < 60_000) return `${Math.round(ms / 1000)}s`
+    if (ms < 3_600_000) return `${Math.floor(ms / 60_000)}min ${Math.round((ms % 60_000) / 1000)}s`
+    return `${Math.floor(ms / 3_600_000)}h ${Math.floor((ms % 3_600_000) / 60_000)}min`
+  }
+
+  const getStatusBadgeStyle = (status: string): { bg: string; color: string; label: string } => {
+    const map: Record<string, { bg: string; color: string; label: string }> = {
+      pending: { bg: 'var(--surface2)', color: 'var(--muted)', label: t('agent.sheet.executions.status.pending') },
+      running: { bg: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', label: t('agent.sheet.executions.status.running') },
+      retrying: { bg: 'rgba(251, 191, 36, 0.15)', color: '#fbbf24', label: t('agent.sheet.executions.status.retrying') },
+      succeeded: { bg: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', label: t('agent.sheet.executions.status.succeeded') },
+      failed: { bg: 'rgba(220, 38, 38, 0.15)', color: '#f87171', label: t('agent.sheet.executions.status.failed') },
+      dead_letter: { bg: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', label: t('agent.sheet.executions.status.dead_letter') },
+      cancelled: { bg: 'var(--surface2)', color: 'var(--muted)', label: t('agent.sheet.executions.status.cancelled') },
+    }
+    return map[status] ?? { bg: 'var(--surface2)', color: 'var(--muted)', label: status }
+  }
+
+  const formatExecutionCount = (count: number): string =>
+    t(count > 1 ? 'agent.sheet.executions.count_other' : 'agent.sheet.executions.count_one', { count: String(count) })
+
+  const formatAttemptCount = (count: number): string =>
+    t(count > 1 ? 'agent.sheet.executions.attempt_count_other' : 'agent.sheet.executions.attempt_count_one', { count: String(count) })
+
+  const renderExecutionsPanel = () => {
+    const executions = executionsQuery.data ?? []
+    const isFetching = executionsQuery.isFetching
+
+    if (executionsQuery.isLoading) {
+      return (
+        <div className="rounded-2xl border min-h-0 h-full overflow-hidden flex flex-col items-center justify-center" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
+          <PageSpinner />
+        </div>
+      )
+    }
+
+    if (executionsQuery.error) {
+      return (
+        <div className="rounded-2xl border min-h-0 h-full overflow-hidden flex flex-col" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
+            <History className="w-8 h-8" style={{ color: 'var(--muted)' }} />
+            <p className="text-sm" style={{ color: 'var(--muted)' }}>
+              {t('agent.sheet.executions.load_error')}
+            </p>
+            <button className="btn-secondary" onClick={() => executionsQuery.refetch()} disabled={isFetching}>
+              <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+              {t('common.action.refresh')}
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    if (executions.length === 0) {
+      return (
+        <div className="rounded-2xl border min-h-0 h-full overflow-hidden flex flex-col" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
+          <div className="flex-1 flex items-center justify-center text-sm" style={{ color: 'var(--muted)' }}>
+            {t('agent.sheet.executions.empty')}
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="rounded-2xl border min-h-0 h-full overflow-hidden flex flex-col" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
+        <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
+          <div>
+            <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{t('agent.sheet.executions.title')}</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+              {formatExecutionCount(executions.length)}
+            </p>
+          </div>
+          <button className="btn-secondary" onClick={() => executionsQuery.refetch()} disabled={isFetching}>
+            <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+            {t('common.action.refresh')}
+          </button>
+        </div>
+
+        <div className="basis-0 flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
+          {executions.map((exec: AgentExecution) => {
+            const badge = getStatusBadgeStyle(exec.status)
+            const isExpanded = expandedExecutionId === exec.id
+            const actionLabel = exec.actionLabel ?? exec.actionKey
+            const firstTask = exec.ticketTasks[0] ?? null
+            const effectiveDiffers = exec.effectiveAgent && exec.requestedAgent && exec.effectiveAgent.id !== exec.requestedAgent.id
+
+            return (
+              <div key={exec.id} className="rounded-xl border overflow-hidden" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
+                <div className="p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: badge.bg, color: badge.color }}>
+                      {badge.label}
+                    </span>
+                    <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{actionLabel}</span>
+                  </div>
+
+                  {firstTask && (
+                    <div className="text-xs space-y-0.5" style={{ color: 'var(--muted)' }}>
+                      <div>
+                        <span className="font-medium">{t('agent.sheet.executions.ticket')}</span> : {firstTask.ticketTitle}
+                      </div>
+                      <div>
+                        <span className="font-medium">{t('agent.sheet.executions.task')}</span> : {firstTask.title}
+                      </div>
+                    </div>
+                  )}
+
+                  {!firstTask && (
+                    <div className="text-xs" style={{ color: 'var(--muted)' }}>
+                      {t('agent.sheet.executions.no_ticket')}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs" style={{ color: 'var(--muted)' }}>
+                    <span>{t('agent.sheet.executions.started_at')} {formatDateTime(exec.startedAt ?? exec.createdAt)}</span>
+                    <span>{t('agent.sheet.executions.duration')} {formatDuration(exec.startedAt ?? exec.createdAt, exec.finishedAt)}</span>
+                    <span>{formatAttemptCount(exec.attempts.length)}</span>
+                    {effectiveDiffers && (
+                      <span title={`${t('agent.sheet.executions.effective_agent')}: ${exec.effectiveAgent!.name}`}>
+                        → {exec.effectiveAgent!.name}
+                      </span>
+                    )}
+                  </div>
+
+                  {exec.attempts.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setExpandedExecutionId(isExpanded ? null : exec.id)}
+                      className="flex items-center gap-1 mt-2 text-xs transition-colors hover:opacity-70"
+                      style={{ color: 'var(--brand)' }}
+                    >
+                      {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                      {isExpanded ? t('agent.sheet.executions.collapse_attempts') : t('agent.sheet.executions.expand_attempts')}
+                    </button>
+                  )}
+                </div>
+
+                {isExpanded && (
+                  <div className="border-t px-3 py-2 space-y-2" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
+                    {exec.attempts.map((attempt) => {
+                      const attemptBadge = getStatusBadgeStyle(attempt.status)
+                      return (
+                        <div key={attempt.id} className="rounded-lg border p-2 text-xs" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full" style={{ background: attemptBadge.bg, color: attemptBadge.color }}>
+                              {attemptBadge.label}
+                            </span>
+                            <span className="font-medium" style={{ color: 'var(--text)' }}>
+                              {t('agent.sheet.executions.attempt')} {attempt.attemptNumber}
+                            </span>
+                            {attempt.agent && (
+                              <span style={{ color: 'var(--muted)' }}>— {attempt.agent.name}</span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-x-4 gap-y-1" style={{ color: 'var(--muted)' }}>
+                            {attempt.messengerReceiver && (
+                              <span><span className="font-medium">{t('agent.sheet.executions.receiver')}</span> : {attempt.messengerReceiver}</span>
+                            )}
+                            {attempt.startedAt && (
+                              <span>{t('agent.sheet.executions.started_at')} {formatDateTime(attempt.startedAt)}</span>
+                            )}
+                            {attempt.startedAt && attempt.finishedAt && (
+                              <span>{t('agent.sheet.executions.duration')} {formatDuration(attempt.startedAt, attempt.finishedAt)}</span>
+                            )}
+                          </div>
+                          {attempt.errorMessage && (
+                            <div className="mt-1 rounded px-2 py-1 text-xs" style={{ background: 'rgba(220, 38, 38, 0.1)', color: '#f87171' }}>
+                              <span className="font-medium">{t('agent.sheet.executions.error_message')}</span> : {attempt.errorMessage}
+                              {attempt.errorScope && <span> ({attempt.errorScope})</span>}
+                            </div>
+                          )}
+                          {!attempt.errorMessage && (
+                            <div className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>
+                              {t('agent.sheet.executions.no_error')}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
   }
 
   const renderAgentSummary = () => (
@@ -758,7 +981,13 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
           </div>
 
           <div className="lg:hidden flex gap-2 overflow-x-auto" style={{ scrollbarWidth: 'thin' }}>
-            <TabButton active={activeTab === 'chat'} onClick={() => setActiveTab('chat')}>Chat</TabButton>
+            <TabButton active={activeTab === 'chat'} onClick={() => setActiveTab('chat')}>{t('agent.sheet.chat.tab_label')}</TabButton>
+            <TabButton active={activeTab === 'executions'} onClick={() => setActiveTab('executions')}>
+              <span className="inline-flex items-center gap-2">
+                <History className="w-4 h-4" />
+                {t('agent.sheet.executions.tab_label')}
+              </span>
+            </TabButton>
             <TabButton active={activeTab === 'details'} onClick={() => setActiveTab('details')}>{t('agent.sheet.knowledge.title')}</TabButton>
           </div>
 
@@ -773,11 +1002,21 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
 
               <div className="min-h-0 flex flex-col gap-4">
                 <div className="flex gap-2">
-                  <TabButton active={desktopPanel === 'chat'} onClick={() => setDesktopPanel('chat')}>Chat</TabButton>
+                  <TabButton active={desktopPanel === 'chat'} onClick={() => setDesktopPanel('chat')}>{t('agent.sheet.chat.tab_label')}</TabButton>
+                  <TabButton active={desktopPanel === 'executions'} onClick={() => setDesktopPanel('executions')}>
+                    <span className="inline-flex items-center gap-2">
+                      <History className="w-4 h-4" />
+                      {t('agent.sheet.executions.tab_label')}
+                    </span>
+                  </TabButton>
                   <TabButton active={desktopPanel === 'skill'} onClick={() => setDesktopPanel('skill')}>{t('agent.sheet.skill.content_tab')}</TabButton>
                 </div>
                 <div className="min-h-0 flex-1">
-                  {desktopPanel === 'chat' ? renderChatPanel() : renderSkillContent()}
+                  {desktopPanel === 'chat'
+                    ? renderChatPanel()
+                    : desktopPanel === 'executions'
+                      ? renderExecutionsPanel()
+                      : renderSkillContent()}
                 </div>
               </div>
             </div>
@@ -785,6 +1024,8 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
             <div className="min-h-0 flex-1">
               {activeTab === 'chat' ? (
                 renderChatPanel()
+              ) : activeTab === 'executions' ? (
+                renderExecutionsPanel()
               ) : (
                 <div className="min-h-0 h-full flex flex-col gap-4 overflow-y-auto pr-1">
                   {renderAgentSummary()}

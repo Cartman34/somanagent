@@ -49,4 +49,59 @@ export const agentsApi = {
     const { data } = await apiClient.get(`/agents/${id}/status`)
     return data
   },
+
+  /**
+   * Returns the execution history for a given agent.
+   */
+  getExecutions: async (id: string): Promise<AgentExecution[]> => {
+    const { data } = await apiClient.get(`/agents/${id}/executions`)
+    return data
+  },
+}
+
+/** Linked ticket task with its parent ticket title. */
+export interface ExecutionTicketTask {
+  id: string
+  ticketId: string
+  ticketTitle: string
+  title: string
+}
+
+/** Single attempt within an execution. */
+export interface ExecutionAttempt {
+  id: string
+  attemptNumber: number
+  status: string
+  willRetry: boolean
+  messengerReceiver: string | null
+  requestRef: string | null
+  errorMessage: string | null
+  errorScope: string | null
+  startedAt: string | null
+  finishedAt: string | null
+  agent: { id: string; name: string } | null
+}
+
+/** Agent execution record returned by the API. */
+export interface AgentExecution {
+  id: string
+  traceRef: string
+  triggerType: string
+  actionKey: string
+  actionLabel: string | null
+  roleSlug: string | null
+  skillSlug: string | null
+  status: string
+  currentAttempt: number
+  maxAttempts: number
+  requestRef: string | null
+  lastErrorMessage: string | null
+  lastErrorScope: string | null
+  createdAt: string
+  startedAt: string | null
+  finishedAt: string | null
+  requestedAgent: { id: string; name: string } | null
+  effectiveAgent: { id: string; name: string } | null
+  ticketTasks: ExecutionTicketTask[]
+  attempts: ExecutionAttempt[]
 }
