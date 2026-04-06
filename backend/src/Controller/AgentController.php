@@ -262,6 +262,7 @@ class AgentController extends AbstractController
                 'requestRef' => $attempt->getRequestRef(),
                 'errorMessage' => $attempt->getErrorMessage(),
                 'errorScope' => $attempt->getErrorScope(),
+                'resourceSnapshot' => $attempt->getResourceSnapshot(),
                 'startedAt' => $attempt->getStartedAt()?->format(\DateTimeInterface::ATOM),
                 'finishedAt' => $attempt->getFinishedAt()?->format(\DateTimeInterface::ATOM),
                 'agent' => $attempt->getAgent() ? [

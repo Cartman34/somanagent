@@ -337,6 +337,16 @@ final class TicketTaskService
     }
 
     /**
+     * Persists the runtime resource snapshot captured for one execution attempt.
+     *
+     * @param array<string, mixed> $resourceSnapshot
+     */
+    public function captureExecutionResourceSnapshot(\App\Entity\AgentTaskExecutionAttempt $attempt, array $resourceSnapshot): void
+    {
+        $this->agentTaskExecutionService->captureResourceSnapshot($attempt, $resourceSnapshot);
+    }
+
+    /**
      * Dispatch all tasks that became eligible after the given task completed.
      */
     public function dispatchReadyDependents(TicketTask $completedTask): int

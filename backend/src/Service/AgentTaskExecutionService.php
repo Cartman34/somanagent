@@ -167,6 +167,19 @@ final class AgentTaskExecutionService
     }
 
     /**
+     * Persists the immutable resource snapshot captured for one runtime execution attempt.
+     *
+     * @param array<string, mixed> $resourceSnapshot
+     */
+    public function captureResourceSnapshot(AgentTaskExecutionAttempt $attempt, array $resourceSnapshot): void
+    {
+        $attempt->setResourceSnapshot($resourceSnapshot);
+
+        $this->entityService->flush();
+        $this->publishExecutionChanged($attempt->getExecution(), 'resources_captured');
+    }
+
+    /**
      * Returns all executions associated with the given ticket task.
      *
      * @return AgentTaskExecution[]

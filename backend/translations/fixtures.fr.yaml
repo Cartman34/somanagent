@@ -56,9 +56,9 @@ fixtures:
       description: "Workflow de référence pour une équipe web: cadrage PO, préparation, planification, design, développement, revue, terminaison."
       step:
         new:
-          name: Nouvelle
+          name: Nouveau
         ready:
-          name: Prête
+          name: Prêt
         planning:
           name: Planification
         graphic_design:
@@ -68,4 +68,4 @@ fixtures:
         code_review:
           name: Revue
         done:
-          name: Terminée
+          name: Terminé
