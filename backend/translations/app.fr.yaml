@@ -478,6 +478,7 @@ team:
 ticket:
   error:
     not_found: Tâche introuvable.
+    pending_answers_before_workflow_transition: Impossible de passer à l'étape suivante tant que les questions en attente n'ont pas reçu de réponse.
   detail:
     title: Détail de la tâche
     title_label: Titre
@@ -500,9 +501,11 @@ ticket:
       section_title: Pilotage
       current_step: Étape courante
       none: Aucune
+      error: Impossible de faire avancer le ticket.
       transition_loading: Transition…
       transition_to: Passer à %step%
       no_transition: Aucun passage manuel disponible depuis cette étape.
+      pending_answers_help: Répondez d'abord aux questions en attente dans le fil d'activités avant de valider l'étape suivante.
     authorize:
       title: Autorisation de dispatch
       help: Cette tâche est prête mais attend une autorisation explicite avant d'être envoyée à un agent.

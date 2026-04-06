@@ -93,4 +93,49 @@ final class TicketLogService
 
         return $log;
     }
+
+    /**
+     * Counts unresolved answer requests across the whole ticket conversation.
+     */
+    public function countPendingAnswersForTicket(Ticket $ticket): int
+    {
+        $count = 0;
+
+        foreach ($this->ticketLogRepository->findByTicket($ticket) as $log) {
+            if ($log->requiresAnswer()) {
+                ++$count;
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * Counts unresolved answer requests directly linked to one operational task.
+     */
+    public function countPendingAnswersForTask(TicketTask $task): int
+    {
+        $count = 0;
+
+        foreach ($this->ticketLogRepository->findByTicketTask($task) as $log) {
+            if ($log->requiresAnswer()) {
+                ++$count;
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * Returns unresolved answer requests linked to one operational task.
+     *
+     * @return TicketLog[]
+     */
+    public function findPendingQuestionsForTask(TicketTask $task): array
+    {
+        return array_values(array_filter(
+            $this->ticketLogRepository->findByTicketTask($task),
+            static fn(TicketLog $log): bool => $log->requiresAnswer(),
+        ));
+    }
 }
