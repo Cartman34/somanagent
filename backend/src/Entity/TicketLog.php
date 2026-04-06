@@ -97,6 +97,8 @@ class TicketLog
 
     /** Assigns or clears the related ticket task. */
     public function setTicketTask(?TicketTask $ticketTask): static { $this->ticketTask = $ticketTask; return $this; }
+    /** Updates the log content. */
+    public function setContent(?string $content): static { $this->content = $content; return $this; }
     /** Updates the log entry kind. */
     public function setKind(string $kind): static { $this->kind = $kind; return $this; }
     /** Updates the author type. */

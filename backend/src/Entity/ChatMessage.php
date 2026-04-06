@@ -89,12 +89,16 @@ class ChatMessage
     public function getExchangeId(): string            { return $this->exchangeId; }
     /** Returns the replied message identifier, if any. */
     public function getReplyToMessageId(): ?Uuid       { return $this->replyToMessageId; }
+    /** Updates the message body. */
+    public function setContent(string $content): static { $this->content = $content; return $this; }
     /** Links the message to the replied message identifier. */
     public function setReplyToMessageId(?Uuid $replyToMessageId): static { $this->replyToMessageId = $replyToMessageId; return $this; }
     /** Indicates whether the message represents an error response. */
     public function isError(): bool                    { return $this->isError; }
     /** Returns optional structured metadata attached to the message. */
     public function getMetadata(): ?array              { return $this->metadata; }
+    /** Replaces structured metadata attached to the message. */
+    public function setMetadata(?array $metadata): static { $this->metadata = $metadata; return $this; }
     /** Returns when the message was created. */
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
 }

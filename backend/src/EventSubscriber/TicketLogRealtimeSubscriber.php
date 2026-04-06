@@ -11,12 +11,14 @@ use App\Entity\TicketLog;
 use App\Service\RealtimeUpdateService;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
 use Doctrine\ORM\Event\PostPersistEventArgs;
+use Doctrine\ORM\Event\PostUpdateEventArgs;
 use Doctrine\ORM\Events;
 
 /**
  * Publishes realtime updates for persisted ticket logs after Doctrine inserts them.
  */
 #[AsDoctrineListener(event: Events::postPersist)]
+#[AsDoctrineListener(event: Events::postUpdate)]
 final class TicketLogRealtimeSubscriber
 {
     /**
@@ -31,7 +33,22 @@ final class TicketLogRealtimeSubscriber
      */
     public function postPersist(PostPersistEventArgs $args): void
     {
-        $entity = $args->getObject();
+        $this->publishIfTicketLog($args->getObject());
+    }
+
+    /**
+     * Publishes one realtime update when an existing TicketLog row is updated.
+     */
+    public function postUpdate(PostUpdateEventArgs $args): void
+    {
+        $this->publishIfTicketLog($args->getObject());
+    }
+
+    /**
+     * Publishes one realtime update only for TicketLog entities.
+     */
+    private function publishIfTicketLog(object $entity): void
+    {
         if (!$entity instanceof TicketLog) {
             return;
         }

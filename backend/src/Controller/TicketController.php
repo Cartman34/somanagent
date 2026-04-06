@@ -467,6 +467,44 @@ class TicketController extends AbstractController
     }
 
     /**
+     * Edits one existing user-authored comment or reply on a ticket or ticket task.
+     */
+    #[Route('/tickets/{id}/comments/{logId}', name: 'ticket_comment_update_api', methods: ['PATCH'])]
+    #[Route('/ticket-tasks/{id}/comments/{logId}', name: 'ticket_task_comment_update_api', methods: ['PATCH'])]
+    public function updateComment(string $id, string $logId, Request $request): JsonResponse
+    {
+        $data = $request->toArray();
+        $content = trim((string) ($data['content'] ?? ''));
+        if ($content === '') {
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.content_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $ticket = $this->ticketService->findById($id);
+        $ticketTask = null;
+        if ($ticket === null) {
+            $ticketTask = $this->ticketTaskService->findById($id);
+            $ticket = $ticketTask?->getTicket();
+        }
+
+        if ($ticket === null) {
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
+        }
+
+        try {
+            $log = $this->ticketLogService->editComment($ticket, $logId, $content, $ticketTask);
+        } catch (\InvalidArgumentException $e) {
+            $key = $e->getMessage();
+            if ($key === 'ticket.comment.error.not_found') {
+                return $this->json($this->apiErrorPayloadFactory->create('ticket.comment.error.not_found'), Response::HTTP_NOT_FOUND);
+            }
+
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.comment.error.not_editable'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        return $this->json($this->serializeApiLog($log));
+    }
+
+    /**
      * Advances a ticket to the next workflow step.
      */
     #[Route('/tickets/{id}/advance', name: 'ticket_advance_api', methods: ['POST'])]

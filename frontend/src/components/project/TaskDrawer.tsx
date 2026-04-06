@@ -197,6 +197,8 @@ export default function TaskDrawer({
   const qc = useQueryClient()
   const [commentText, setCommentText] = useState('')
   const [replyToLogId, setReplyToLogId] = useState<string | null>(null)
+  const [editingLogId, setEditingLogId] = useState<string | null>(null)
+  const [editingCommentText, setEditingCommentText] = useState('')
   const [linkedTaskId, setLinkedTaskId] = useState<string | null>(null)
   const [taskDispatchError, setTaskDispatchError] = useState<string | null>(null)
   const [expandedTaskIds, setExpandedTaskIds] = useState<string[]>([])
@@ -232,6 +234,8 @@ export default function TaskDrawer({
   useEffect(() => {
     setCommentText('')
     setReplyToLogId(null)
+    setEditingLogId(null)
+    setEditingCommentText('')
     setLinkedTaskId(null)
     setTaskDispatchError(null)
     setExpandedTaskIds([])
@@ -269,6 +273,26 @@ export default function TaskDrawer({
     onSuccess: async () => {
       setCommentText('')
       setReplyToLogId(null)
+      setEditingLogId(null)
+      setEditingCommentText('')
+      await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
+      await qc.invalidateQueries({ queryKey: ['tickets'] })
+    },
+  })
+
+  const editCommentMutation = useMutation({
+    mutationFn: () => {
+      if (!editingLogId) {
+        throw new Error('No comment selected for edition.')
+      }
+
+      return entity && isTicket(entity)
+        ? ticketsApi.updateComment(taskId, editingLogId, { content: editingCommentText.trim() })
+        : ticketTasksApi.updateComment(taskId, editingLogId, { content: editingCommentText.trim() })
+    },
+    onSuccess: async () => {
+      setEditingLogId(null)
+      setEditingCommentText('')
       await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
       await qc.invalidateQueries({ queryKey: ['tickets'] })
     },
@@ -822,6 +846,24 @@ export default function TaskDrawer({
             setReplyToLogId={setReplyToLogId}
             onSubmitComment={submitComment}
             commentMutationPending={commentMutation.isPending}
+            editingLogId={editingLogId}
+            editingCommentText={editingCommentText}
+            setEditingCommentText={setEditingCommentText}
+            onStartEditLog={(log) => {
+              setReplyToLogId(null)
+              setCommentText('')
+              setEditingLogId(log.id)
+              setEditingCommentText(log.content ?? '')
+            }}
+            onSubmitEditLog={() => {
+              if (editingCommentText.trim() === '') return
+              editCommentMutation.mutate()
+            }}
+            onCancelEditLog={() => {
+              setEditingLogId(null)
+              setEditingCommentText('')
+            }}
+            editMutationPending={editCommentMutation.isPending}
           />
         )}
 

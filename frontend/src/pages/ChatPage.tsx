@@ -4,7 +4,7 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Send, Bot, User, Reply } from 'lucide-react'
+import { Send, Bot, User, Reply, Pencil } from 'lucide-react'
 import { chatApi } from '@/api/chat'
 import { projectsApi } from '@/api/projects'
 import { agentsApi } from '@/api/agents'
@@ -22,12 +22,16 @@ const CHAT_PAGE_TRANSLATION_KEYS = [
   'chat.reply',
   'chat.reply_label',
   'chat.reply_placeholder',
+  'chat.edited_label',
+  'chat.edit_placeholder',
   'chat.send_reply',
   'chat.select_project',
   'chat.select_agent',
   'chat.select_prompt',
   'chat.no_messages',
   'chat.input_placeholder',
+  'common.action.edit',
+  'common.action.save',
   'common.action.cancel',
 ] as const
 
@@ -47,8 +51,11 @@ export default function ChatPage() {
   const [input, setInput]         = useState('')
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [replyInput, setReplyInput] = useState('')
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+  const [editInput, setEditInput] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const replyInputRef = useRef<HTMLTextAreaElement>(null)
+  const editInputRef = useRef<HTMLTextAreaElement>(null)
 
   const { data: projects } = useQuery({ queryKey: ['projects'], queryFn: projectsApi.list })
   const { data: agents }   = useQuery({ queryKey: ['agents'], queryFn: agentsApi.list })
@@ -77,6 +84,16 @@ export default function ChatPage() {
       qc.invalidateQueries({ queryKey: ['chat', projectId, agentId] })
       setReplyInput('')
       setReplyingTo(null)
+    },
+  })
+
+  const editMutation = useMutation({
+    mutationFn: ({ messageId, content }: { messageId: string; content: string }) =>
+      chatApi.updateMessage(projectId, agentId, messageId, content),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['chat', projectId, agentId] })
+      setEditInput('')
+      setEditingMessageId(null)
     },
   })
 
@@ -110,6 +127,12 @@ export default function ChatPage() {
     }
   }, [replyingTo])
 
+  useEffect(() => {
+    if (editingMessageId && editInputRef.current) {
+      editInputRef.current.focus()
+    }
+  }, [editingMessageId])
+
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault()
     if (input.trim()) sendMutation.mutate(input.trim())
@@ -123,6 +146,8 @@ export default function ChatPage() {
   }
 
   const startReply = (messageId: string) => {
+    setEditingMessageId(null)
+    setEditInput('')
     setReplyingTo(messageId)
     setReplyInput('')
   }
@@ -130,6 +155,18 @@ export default function ChatPage() {
   const cancelReply = () => {
     setReplyingTo(null)
     setReplyInput('')
+  }
+
+  const startEdit = (message: ChatMessage) => {
+    setReplyingTo(null)
+    setReplyInput('')
+    setEditingMessageId(message.id)
+    setEditInput(message.content)
+  }
+
+  const cancelEdit = () => {
+    setEditingMessageId(null)
+    setEditInput('')
   }
 
   const selectedAgent = agents?.find((a) => a.id === agentId)
@@ -180,6 +217,8 @@ export default function ChatPage() {
                   {group.messages.map((msg, idx) => {
                     const isReply = msg.replyToMessageId !== null
                     const canReply = idx === 0 && !isReply
+                    const isEditable = msg.author === 'human'
+                    const isEdited = typeof msg.metadata?.editedAt === 'string'
 
                     return (
                       <div key={msg.id} className={`item-chat-message flex gap-2 ${msg.author === 'human' ? 'flex-row-reverse' : ''}`}>
@@ -190,21 +229,60 @@ export default function ChatPage() {
                         </div>
                         <div className={`flex-1 max-w-[75%] ${isReply ? 'ml-8' : ''}`}>
                           <div className={`rounded-xl px-3 py-2 text-sm ${isReply ? 'bg-gray-50 border border-gray-100' : ''} ${msg.author === 'human' ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
-                            <p className="whitespace-pre-wrap">{msg.content}</p>
+                            {editingMessageId === msg.id ? (
+                              <div className="space-y-2">
+                                <textarea
+                                  ref={editInputRef}
+                                  className="input w-full text-sm resize-none"
+                                  rows={3}
+                                  value={editInput}
+                                  onChange={(e) => setEditInput(e.target.value)}
+                                  placeholder={t('chat.edit_placeholder')}
+                                  disabled={editMutation.isPending}
+                                />
+                                <div className="flex gap-2">
+                                  <button
+                                    type="button"
+                                    className="btn-primary px-3 py-1"
+                                    onClick={() => editMutation.mutate({ messageId: msg.id, content: editInput.trim() })}
+                                    disabled={!editInput.trim() || editMutation.isPending}
+                                  >
+                                    {t('common.action.save')}
+                                  </button>
+                                  <button type="button" className="btn-secondary px-3 py-1" onClick={cancelEdit}>
+                                    {t('common.action.cancel')}
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="whitespace-pre-wrap">{msg.content}</p>
+                            )}
                             <p className={`text-xs mt-1 ${msg.author === 'human' ? 'text-brand-200' : 'text-gray-400'}`}>
                               {formatTime(msg.createdAt)}
+                              {isEdited && <span className="ml-2">{t('chat.edited_label')}</span>}
                               {isReply && <span className="ml-2 text-gray-400">{t('chat.reply_label')}</span>}
                             </p>
                           </div>
-                          {canReply && (
-                            <button
-                              onClick={() => startReply(msg.id)}
-                              className="flex items-center gap-1 mt-1 text-xs text-gray-400 hover:text-brand-600 transition-colors"
-                            >
-                              <Reply className="w-3 h-3" />
-                              {t('chat.reply')}
-                            </button>
-                          )}
+                          <div className="flex gap-3">
+                            {canReply && (
+                              <button
+                                onClick={() => startReply(msg.id)}
+                                className="flex items-center gap-1 mt-1 text-xs text-gray-400 hover:text-brand-600 transition-colors"
+                              >
+                                <Reply className="w-3 h-3" />
+                                {t('chat.reply')}
+                              </button>
+                            )}
+                            {isEditable && (
+                              <button
+                                onClick={() => startEdit(msg)}
+                                className="flex items-center gap-1 mt-1 text-xs text-gray-400 hover:text-brand-600 transition-colors"
+                              >
+                                <Pencil className="w-3 h-3" />
+                                {t('common.action.edit')}
+                              </button>
+                            )}
+                          </div>
                           {replyingTo === msg.id && (
                             <form onSubmit={handleReply} className="mt-2 flex gap-2">
                               <textarea

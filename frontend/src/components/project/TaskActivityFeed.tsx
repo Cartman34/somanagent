@@ -10,6 +10,7 @@ import {
   Loader2,
   MessageSquare,
   Minus,
+  Pencil,
   Plus,
   Reply,
   Send,
@@ -107,6 +108,13 @@ interface TaskActivityFeedProps {
   setReplyToLogId: (value: string | null) => void
   onSubmitComment: () => void
   commentMutationPending: boolean
+  editingLogId: string | null
+  editingCommentText: string
+  setEditingCommentText: (value: string) => void
+  onStartEditLog: (log: TicketLog) => void
+  onSubmitEditLog: () => void
+  onCancelEditLog: () => void
+  editMutationPending: boolean
 }
 
 /**
@@ -144,6 +152,77 @@ function renderAuthorLabel(log: TicketLog, tt: (key: 'ticket.discussion.author_y
     return log.authorName
   }
   return log.authorType === 'agent' ? tt('ticket.discussion.author_agent') : tt('ticket.discussion.author_you')
+}
+
+/**
+ * Returns whether one ticket log is editable by the current user.
+ */
+function isEditableUserLog(log: TicketLog): boolean {
+  return log.kind === 'comment' && log.authorType === 'user'
+}
+
+/**
+ * Returns whether a discussion item carries edit trace metadata.
+ */
+function isEdited(metadata: Record<string, unknown> | null): boolean {
+  return typeof metadata?.editedAt === 'string'
+}
+
+/**
+ * Inline edit form used for comment and reply edition.
+ */
+function InlineCommentEditForm({
+  value,
+  setValue,
+  onSubmit,
+  onCancel,
+  pending,
+  placeholder,
+  submitLabel,
+  tt,
+}: {
+  value: string
+  setValue: (value: string) => void
+  onSubmit: () => void
+  onCancel: () => void
+  pending: boolean
+  placeholder: string
+  submitLabel: string
+  tt: (key: TaskActivityFeedTranslationKey) => string
+}) {
+  return (
+    <div className="inline-reply visible">
+      <textarea
+        className="input min-h-[60px] resize-y text-sm"
+        style={{ borderRadius: '6px', background: 'var(--surface2)' }}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault()
+            onSubmit()
+          }
+        }}
+        autoFocus
+      />
+      <div className="inline-reply-actions">
+        <button
+          type="button"
+          className="btn-send"
+          style={{ padding: '5px 12px', fontSize: '12px' }}
+          onClick={onSubmit}
+          disabled={pending || value.trim() === ''}
+        >
+          {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+          {submitLabel}
+        </button>
+        <button type="button" className="btn-cancel" onClick={onCancel}>
+          {tt('common.action.cancel')}
+        </button>
+      </div>
+    </div>
+  )
 }
 
 /**
@@ -466,6 +545,13 @@ function CommentThreadCard({
   onSubmitReply,
   onCancelReply,
   mutationPending,
+  editingLogId,
+  editingCommentText,
+  setEditingCommentText,
+  onStartEditLog,
+  onSubmitEditLog,
+  onCancelEditLog,
+  editMutationPending,
   tc,
   tt,
 }: {
@@ -478,6 +564,13 @@ function CommentThreadCard({
   onSubmitReply: () => void
   onCancelReply: () => void
   mutationPending: boolean
+  editingLogId: string | null
+  editingCommentText: string
+  setEditingCommentText: (value: string) => void
+  onStartEditLog: (log: TicketLog) => void
+  onSubmitEditLog: () => void
+  onCancelEditLog: () => void
+  editMutationPending: boolean
   tc: (key: CatalogTranslationKey) => string
   tt: (key: TaskActivityFeedTranslationKey) => string
 }) {
@@ -494,6 +587,11 @@ function CommentThreadCard({
           <span className="comment-author">
             {renderAuthorLabel(root, tt)}
           </span>
+          {isEdited(root.metadata) && (
+            <span className="reply-badge">
+              {tt('ticket.discussion.edited_label')}
+            </span>
+          )}
           {root.requiresAnswer && (
             <span className="badge-answer">
               {tt('ticket.discussion.requires_answer')}
@@ -516,7 +614,20 @@ function CommentThreadCard({
 
         {root.content && (
           <div className="comment-content">
-            <Markdown content={root.content} density="compact" />
+            {editingLogId === root.id ? (
+              <InlineCommentEditForm
+                value={editingCommentText}
+                setValue={setEditingCommentText}
+                onSubmit={onSubmitEditLog}
+                onCancel={onCancelEditLog}
+                pending={editMutationPending}
+                placeholder={tt('ticket.discussion.edit_placeholder')}
+                submitLabel={tt('ticket.discussion.save_edit')}
+                tt={tt}
+              />
+            ) : (
+              <Markdown content={root.content} density="compact" />
+            )}
           </div>
         )}
       </div>
@@ -530,6 +641,16 @@ function CommentThreadCard({
           <Reply className="h-3 w-3" />
           {tt('ticket.discussion.reply')}
         </button>
+        {isEditableUserLog(root) && (
+          <button
+            type="button"
+            className="btn-reply"
+            onClick={() => onStartEditLog(root)}
+          >
+            <Pencil className="h-3 w-3" />
+            {tt('common.action.edit')}
+          </button>
+        )}
       </div>
 
       {replyCount > 0 && (
@@ -559,6 +680,11 @@ function CommentThreadCard({
                     <span className="reply-author">
                       {renderAuthorLabel(reply, tt)}
                     </span>
+                    {isEdited(reply.metadata) && (
+                      <span className="reply-badge">
+                        {tt('ticket.discussion.edited_label')}
+                      </span>
+                    )}
                     <span className="reply-badge">
                       {tt('ticket.discussion.reply_label')}
                     </span>
@@ -566,7 +692,20 @@ function CommentThreadCard({
                   </div>
                   {reply.content && (
                     <div className="reply-content">
-                      <Markdown content={reply.content} density="compact" />
+                      {editingLogId === reply.id ? (
+                        <InlineCommentEditForm
+                          value={editingCommentText}
+                          setValue={setEditingCommentText}
+                          onSubmit={onSubmitEditLog}
+                          onCancel={onCancelEditLog}
+                          pending={editMutationPending}
+                          placeholder={tt('ticket.discussion.edit_placeholder')}
+                          submitLabel={tt('ticket.discussion.save_edit')}
+                          tt={tt}
+                        />
+                      ) : (
+                        <Markdown content={reply.content} density="compact" />
+                      )}
                     </div>
                   )}
                   <div className="reply-footer">
@@ -578,6 +717,16 @@ function CommentThreadCard({
                       <Reply className="h-2.5 w-2.5" />
                       {tt('ticket.discussion.reply')}
                     </button>
+                    {isEditableUserLog(reply) && (
+                      <button
+                        type="button"
+                        className="btn-reply"
+                        onClick={() => onStartEditLog(reply)}
+                      >
+                        <Pencil className="h-2.5 w-2.5" />
+                        {tt('common.action.edit')}
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -614,6 +763,13 @@ export default function TaskActivityFeed({
   setReplyToLogId,
   onSubmitComment,
   commentMutationPending,
+  editingLogId,
+  editingCommentText,
+  setEditingCommentText,
+  onStartEditLog,
+  onSubmitEditLog,
+  onCancelEditLog,
+  editMutationPending,
 }: TaskActivityFeedProps) {
   const [expandedEventIds, setExpandedEventIds] = useState<string[]>([])
   const [composerOpen, setComposerOpen] = useState(false)
@@ -760,15 +916,23 @@ export default function TaskActivityFeed({
                     commentText={commentText}
                     setCommentText={setCommentText}
                     onReply={() => {
-                      setReplyToLogId(commentEntry.thread.root.id)
-                      setCommentText('')
-                    }}
+                    setReplyToLogId(commentEntry.thread.root.id)
+                    setCommentText('')
+                    onCancelEditLog()
+                  }}
                     onSubmitReply={onSubmitComment}
                     onCancelReply={() => {
                       setReplyToLogId(null)
                       setCommentText('')
                     }}
                     mutationPending={commentMutationPending}
+                    editingLogId={editingLogId}
+                    editingCommentText={editingCommentText}
+                    setEditingCommentText={setEditingCommentText}
+                    onStartEditLog={onStartEditLog}
+                    onSubmitEditLog={onSubmitEditLog}
+                    onCancelEditLog={onCancelEditLog}
+                    editMutationPending={editMutationPending}
                     tc={tc}
                     tt={tt}
                   />
