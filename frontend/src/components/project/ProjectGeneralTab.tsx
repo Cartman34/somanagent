@@ -88,8 +88,8 @@ export default function ProjectGeneralTab({ project, projectId }: {
   })
 
   return (
-    <div className="max-w-lg space-y-6">
-      <div className="card p-5 space-y-4">
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+      <div className="card p-5 space-y-4 xl:min-h-full">
         <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{t('project.detail.general.information_title')}</h3>
         <div>
           <p className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>{t('project.form.name_label')}</p>
@@ -103,72 +103,74 @@ export default function ProjectGeneralTab({ project, projectId }: {
         )}
       </div>
 
-      <div className="card p-5 space-y-4">
-        <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{t('project.detail.general.assigned_team_title')}</h3>
-        <p className="text-xs" style={{ color: 'var(--muted)' }}>
-          {t('project.form.team_hint')}
-        </p>
-        <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>{t('project.form.team_label')}</label>
-          <select
-            className="input"
-            value={selectedTeamId ?? (project.team?.id ?? '')}
-            onChange={(e) => setSelectedTeamId(e.target.value)}
-          >
-            <option value="">{t('project.form.no_team_option')}</option>
-            {teamsList.map((t) => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
-        </div>
-        {teamSaveError && (
-          <p className="text-sm text-red-600 flex items-center gap-1">
-            <AlertCircle className="w-4 h-4" />{teamSaveError}
+      <div className="grid gap-6">
+        <div className="card p-5 space-y-4">
+          <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{t('project.detail.general.assigned_team_title')}</h3>
+          <p className="text-xs" style={{ color: 'var(--muted)' }}>
+            {t('project.form.team_hint')}
           </p>
-        )}
-        <button
-          className="btn-primary"
-          disabled={updateTeamMutation.isPending}
-          onClick={() => {
-            const effectiveId = selectedTeamId ?? (project.team?.id ?? '')
-            updateTeamMutation.mutate(effectiveId || null)
-          }}
-        >
-          {updateTeamMutation.isPending ? t('common.action.saving') : t('common.action.save')}
-        </button>
-      </div>
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>{t('project.form.team_label')}</label>
+            <select
+              className="input"
+              value={selectedTeamId ?? (project.team?.id ?? '')}
+              onChange={(e) => setSelectedTeamId(e.target.value)}
+            >
+              <option value="">{t('project.form.no_team_option')}</option>
+              {teamsList.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+          {teamSaveError && (
+            <p className="text-sm text-red-600 flex items-center gap-1">
+              <AlertCircle className="w-4 h-4" />{teamSaveError}
+            </p>
+          )}
+          <button
+            className="btn-primary"
+            disabled={updateTeamMutation.isPending}
+            onClick={() => {
+              const effectiveId = selectedTeamId ?? (project.team?.id ?? '')
+              updateTeamMutation.mutate(effectiveId || null)
+            }}
+          >
+            {updateTeamMutation.isPending ? t('common.action.saving') : t('common.action.save')}
+          </button>
+        </div>
 
-      <div className="card p-5 space-y-4">
-        <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{t('project.detail.general.dispatch_mode_title')}</h3>
-        <p className="text-xs" style={{ color: 'var(--muted)' }}>
-          {t('project.detail.general.dispatch_mode_saved_help')}
-        </p>
-        <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>{t('project.form.dispatch_mode_label')}</label>
-          <select
-            className="input"
-            value={selectedDispatchMode}
-            onChange={(event) => setSelectedDispatchMode(event.target.value as Project['dispatchMode'])}
+        <div className="card p-5 space-y-4">
+          <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{t('project.detail.general.dispatch_mode_title')}</h3>
+          <p className="text-xs" style={{ color: 'var(--muted)' }}>
+            {t('project.detail.general.dispatch_mode_saved_help')}
+          </p>
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>{t('project.form.dispatch_mode_label')}</label>
+            <select
+              className="input"
+              value={selectedDispatchMode}
+              onChange={(event) => setSelectedDispatchMode(event.target.value as Project['dispatchMode'])}
+            >
+              <option value="auto">{t('project.form.dispatch_mode_auto')}</option>
+              <option value="manual">{t('project.form.dispatch_mode_manual')}</option>
+            </select>
+            <p className="mt-2 text-xs" style={{ color: 'var(--muted)' }}>
+              {t('project.form.dispatch_mode_hint')}
+            </p>
+          </div>
+          {dispatchModeSaveError && (
+            <p className="text-sm text-red-600 flex items-center gap-1">
+              <AlertCircle className="w-4 h-4" />{dispatchModeSaveError}
+            </p>
+          )}
+          <button
+            className="btn-primary"
+            disabled={updateDispatchModeMutation.isPending}
+            onClick={() => updateDispatchModeMutation.mutate(selectedDispatchMode)}
           >
-            <option value="auto">{t('project.form.dispatch_mode_auto')}</option>
-            <option value="manual">{t('project.form.dispatch_mode_manual')}</option>
-          </select>
-          <p className="mt-2 text-xs" style={{ color: 'var(--muted)' }}>
-            {t('project.form.dispatch_mode_hint')}
-          </p>
+            {updateDispatchModeMutation.isPending ? t('common.action.saving') : t('common.action.save')}
+          </button>
         </div>
-        {dispatchModeSaveError && (
-          <p className="text-sm text-red-600 flex items-center gap-1">
-            <AlertCircle className="w-4 h-4" />{dispatchModeSaveError}
-          </p>
-        )}
-        <button
-          className="btn-primary"
-          disabled={updateDispatchModeMutation.isPending}
-          onClick={() => updateDispatchModeMutation.mutate(selectedDispatchMode)}
-        >
-          {updateDispatchModeMutation.isPending ? t('common.action.saving') : t('common.action.save')}
-        </button>
       </div>
     </div>
   )
