@@ -197,4 +197,63 @@ class ChatService
             $parentMessage->getId(),
         );
     }
+
+    /**
+     * Edits one human-authored chat message while keeping a minimal edit trace in metadata.
+     */
+    public function editHumanMessage(Project $project, Agent $agent, string $messageId, string $content): ChatMessage
+    {
+        $message = $this->chatMessageRepository->find($messageId);
+        if (
+            $message === null
+            || $message->getProject()->getId()->toRfc4122() !== $project->getId()->toRfc4122()
+            || $message->getAgent()->getId()->toRfc4122() !== $agent->getId()->toRfc4122()
+        ) {
+            throw new \InvalidArgumentException('chat.error.message_not_found');
+        }
+
+        if ($message->getAuthor() !== ChatAuthor::Human) {
+            throw new \InvalidArgumentException('chat.error.message_not_editable');
+        }
+
+        $previousContent = trim($message->getContent());
+        $nextContent = trim($content);
+        if ($previousContent === $nextContent) {
+            return $message;
+        }
+
+        $message
+            ->setContent($nextContent)
+            ->setMetadata($this->buildEditedMetadata($message->getMetadata(), $previousContent));
+
+        $this->entityService->flush();
+
+        return $message;
+    }
+
+    /**
+     * Returns updated metadata with an appended edit history entry.
+     *
+     * @param array<string, mixed>|null $metadata
+     * @return array<string, mixed>
+     */
+    private function buildEditedMetadata(?array $metadata, string $previousContent): array
+    {
+        $metadata = $metadata ?? [];
+        $history = $metadata['editHistory'] ?? [];
+        if (!is_array($history)) {
+            $history = [];
+        }
+
+        $history[] = [
+            'editedAt' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+            'previousContent' => $previousContent,
+        ];
+
+        $metadata['editHistory'] = $history;
+        $metadata['editCount'] = count($history);
+        $metadata['editedAt'] = $history[array_key_last($history)]['editedAt'];
+
+        return $metadata;
+    }
 }

@@ -96,6 +96,39 @@ final class TicketLogService
     }
 
     /**
+     * Edits one user-authored comment or reply while preserving a minimal edit history in metadata.
+     */
+    public function editComment(Ticket $ticket, string $logId, string $content, ?TicketTask $ticketTask = null): TicketLog
+    {
+        $log = $this->ticketLogRepository->findOneByTicketAndId($ticket, $logId);
+        if ($log === null || $log->getKind() !== 'comment') {
+            throw new \InvalidArgumentException('ticket.comment.error.not_found');
+        }
+
+        if ($ticketTask !== null && $log->getTicketTask()?->getId()?->toRfc4122() !== $ticketTask->getId()->toRfc4122()) {
+            throw new \InvalidArgumentException('ticket.comment.error.not_found');
+        }
+
+        if ($log->getAuthorType() !== 'user') {
+            throw new \InvalidArgumentException('ticket.comment.error.not_editable');
+        }
+
+        $previousContent = trim((string) $log->getContent());
+        $nextContent = trim($content);
+        if ($previousContent === $nextContent) {
+            return $log;
+        }
+
+        $log
+            ->setContent($nextContent)
+            ->setMetadata($this->buildEditedMetadata($log->getMetadata(), $previousContent));
+
+        $this->entityService->flush();
+
+        return $log;
+    }
+
+    /**
      * Counts unresolved answer requests across the whole ticket conversation.
      */
     public function countPendingAnswersForTicket(Ticket $ticket): int
@@ -160,5 +193,31 @@ final class TicketLogService
             $this->ticketLogRepository->findByTicketTask($task),
             static fn(TicketLog $log): bool => $log->requiresAnswer(),
         ));
+    }
+
+    /**
+     * Returns updated metadata with an appended edit history entry.
+     *
+     * @param array<string, mixed>|null $metadata
+     * @return array<string, mixed>
+     */
+    private function buildEditedMetadata(?array $metadata, string $previousContent): array
+    {
+        $metadata = $metadata ?? [];
+        $history = $metadata['editHistory'] ?? [];
+        if (!is_array($history)) {
+            $history = [];
+        }
+
+        $history[] = [
+            'editedAt' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+            'previousContent' => $previousContent,
+        ];
+
+        $metadata['editHistory'] = $history;
+        $metadata['editCount'] = count($history);
+        $metadata['editedAt'] = $history[array_key_last($history)]['editedAt'];
+
+        return $metadata;
     }
 }

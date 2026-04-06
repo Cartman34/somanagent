@@ -163,11 +163,15 @@ agent:
 chat:
   error:
     project_or_agent_not_found: Projet ou agent introuvable.
+    message_not_found: Message introuvable.
+    message_not_editable: Ce message ne peut pas être modifié.
   item:
     loading: Chargement en cours…
   reply: Répondre
   reply_label: · Réponse
   reply_placeholder: Écrire une réponse...
+  edited_label: modifié
+  edit_placeholder: Modifier le message…
   validation:
     content_required: Le champ "content" est obligatoire.
     reply_to_required: Le champ "replyToMessageId" est obligatoire.
@@ -555,6 +559,7 @@ ticket:
     submit: Commenter
     submit_hint: Ctrl/Cmd + Entrée pour envoyer
     send: Envoyer
+    save_edit: Enregistrer
     author_you: Vous
     requires_answer: Réponse attendue
     reply: Répondre
@@ -562,11 +567,17 @@ ticket:
     reply_to: Réponse à
     reply_to_fallback: ce commentaire
     reply_placeholder: Écrivez votre réponse…
+    edit_placeholder: Modifiez votre commentaire…
+    edited_label: modifié
     author_agent: Agent
     source_action: Action source
     add_comment: Ajouter un commentaire
     hide_replies: Masquer les réponses
     type_above: réponse ci-dessus
+  comment:
+    error:
+      not_found: Commentaire introuvable.
+      not_editable: Ce commentaire ne peut pas être modifié.
   activity:
     title: Fil d'activités
     description: Questions, réponses et suivi d'exécution.

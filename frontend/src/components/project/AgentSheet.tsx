@@ -14,6 +14,7 @@ import {
   FileCode2,
   History,
   MessageSquare,
+  Pencil,
   RefreshCw,
   Reply,
   Send,
@@ -35,6 +36,8 @@ import type { ChatMessage, SkillSummary } from '@/types'
 
 const AGENT_SHEET_TRANSLATION_KEYS = [
   'chat.reply', 'chat.reply_placeholder',
+  'chat.edited_label', 'chat.edit_placeholder',
+  'common.action.edit', 'common.action.save',
   'common.action.cancel', 'common.action.refresh',
   'execution_resource.title', 'execution_resource.captured_at',
   'execution_resource.agent', 'execution_resource.skill',
@@ -95,6 +98,7 @@ interface MessageRowLabels {
   authorAgent: string
   errorNoDetail: string
   noOutput: string
+  editedLabel: string
 }
 
 function MessageRow({ message, labels, formatDateTime }: { message: ChatMessage; labels: MessageRowLabels; formatDateTime: (v: string) => string }) {
@@ -135,6 +139,11 @@ function MessageRow({ message, labels, formatDateTime }: { message: ChatMessage;
         <span style={{ color: 'var(--muted)' }}>
           {formatDateTime(message.createdAt)}
         </span>
+        {typeof metadata.editedAt === 'string' && (
+          <span style={{ color: 'var(--muted)' }}>
+            {labels.editedLabel}
+          </span>
+        )}
         <span className="ml-auto font-mono" style={{ color: 'var(--muted)' }}>
           {message.exchangeId.slice(0, 8)}
         </span>
@@ -263,6 +272,8 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
   const [draft, setDraft] = useState('')
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [replyInput, setReplyInput] = useState('')
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+  const [editInput, setEditInput] = useState('')
   const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<TabKey>('chat')
   const [desktopPanel, setDesktopPanel] = useState<'chat' | 'skill' | 'executions'>('chat')
@@ -344,6 +355,16 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
       setReplyInput('')
       setReplyingTo(null)
       await qc.invalidateQueries({ queryKey: ['project-agent-chat', projectId, agentId] })
+    },
+  })
+
+  const editMutation = useMutation({
+    mutationFn: ({ content, messageId }: { content: string; messageId: string }) =>
+      chatApi.updateMessage(projectId, agentId!, messageId, content),
+    onSuccess: () => {
+      historyQuery.refetch()
+      setEditingMessageId(null)
+      setEditInput('')
     },
   })
 
@@ -891,16 +912,28 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
                       authorAgent: t('agent.sheet.message.author_agent'),
                       errorNoDetail: t('agent.sheet.message.error_no_detail'),
                       noOutput: t('agent.sheet.message.no_output'),
+                      editedLabel: t('chat.edited_label'),
                     }} formatDateTime={formatDateTime} />
                     {canReply && (
                       <button
                         type="button"
-                        onClick={() => { setReplyingTo(msg.id); setReplyInput('') }}
+                        onClick={() => { setEditingMessageId(null); setEditInput(''); setReplyingTo(msg.id); setReplyInput('') }}
                         className="flex items-center gap-1 mt-1 text-xs transition-colors hover:opacity-70"
                         style={{ color: 'var(--muted)' }}
                       >
                         <Reply className="w-3 h-3" />
                         {t('chat.reply')}
+                      </button>
+                    )}
+                    {msg.author === 'human' && (
+                      <button
+                        type="button"
+                        onClick={() => { setReplyingTo(null); setReplyInput(''); setEditingMessageId(msg.id); setEditInput(msg.content) }}
+                        className="flex items-center gap-1 mt-1 text-xs transition-colors hover:opacity-70"
+                        style={{ color: 'var(--muted)' }}
+                      >
+                        <Pencil className="w-3 h-3" />
+                        {t('common.action.edit')}
                       </button>
                     )}
                     {replyingTo === msg.id && (
@@ -927,6 +960,38 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
                           <button
                             type="button"
                             onClick={() => { setReplyingTo(null); setReplyInput('') }}
+                            className="text-xs"
+                            style={{ color: 'var(--muted)' }}
+                          >
+                            {t('common.action.cancel')}
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                    {editingMessageId === msg.id && (
+                      <form
+                        onSubmit={(e) => { e.preventDefault(); editMutation.mutate({ content: editInput.trim(), messageId: msg.id }) }}
+                        className="mt-2 flex gap-2"
+                      >
+                        <textarea
+                          className="input flex-1 text-sm resize-none"
+                          rows={2}
+                          value={editInput}
+                          onChange={(e) => setEditInput(e.target.value)}
+                          placeholder={t('chat.edit_placeholder')}
+                          disabled={editMutation.isPending}
+                        />
+                        <div className="flex flex-col gap-1">
+                          <button
+                            type="submit"
+                            className="btn-primary px-3 py-1"
+                            disabled={!editInput.trim() || editMutation.isPending}
+                          >
+                            {t('common.action.save')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setEditingMessageId(null); setEditInput('') }}
                             className="text-xs"
                             style={{ color: 'var(--muted)' }}
                           >

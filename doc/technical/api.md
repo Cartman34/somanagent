@@ -121,6 +121,14 @@ Body :
 
 Un commentaire peut avoir des réponses. On appelle "thread" un fil de discussion qui commence par un message sans parent (`replyToLogId` null). Les réponses sont des enfants directs de ce message racine (structure plate : pas de réponses aux réponses).
 
+### `PATCH /api/tickets/{id}/comments/{logId}`
+Modifie un commentaire utilisateur existant sur le ticket.
+
+Règles :
+- seuls les commentaires/réponses `authorType=user` sont éditables
+- l'édition conserve une trace minimale dans `metadata` (`editedAt`, `editCount`, `editHistory`)
+- l'historique conserve les contenus précédents, sans créer un nouveau `TicketLog`
+
 ### `DELETE /api/tickets/{id}`
 Supprime le ticket.
 
@@ -224,6 +232,24 @@ Body :
 ```
 
 Un commentaire peut avoir des réponses. Les réponses sont des enfants directs du message racine (structure plate : pas de réponses aux réponses).
+
+### `PATCH /api/ticket-tasks/{id}/comments/{logId}`
+Modifie un commentaire utilisateur existant contextualisé sur la tâche.
+
+Règles :
+- seuls les commentaires/réponses `authorType=user` sont éditables
+- l'édition conserve une trace minimale dans `metadata` (`editedAt`, `editCount`, `editHistory`)
+- l'historique conserve les contenus précédents, sans créer un nouveau `TicketLog`
+
+## Chat
+
+### `PATCH /api/projects/{projectId}/chat/{agentId}/messages/{messageId}`
+Modifie un message humain existant dans la conversation projet/agent.
+
+Règles :
+- seuls les messages `author=human` sont éditables
+- l'édition conserve une trace minimale dans `metadata` (`editedAt`, `editCount`, `editHistory`)
+- l'édition ne rejoue pas automatiquement l'agent et ne réécrit pas les réponses déjà produites
 
 ### `DELETE /api/ticket-tasks/{id}`
 Supprime la tâche.

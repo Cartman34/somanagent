@@ -108,6 +108,38 @@ class ChatController extends AbstractController
         return $this->json($this->serializeMessage($message), Response::HTTP_CREATED);
     }
 
+    /**
+     * Edits one existing human-authored chat message within the same project / agent conversation.
+     */
+    #[Route('/{agentId}/messages/{messageId}', name: 'chat_message_update', methods: ['PATCH'])]
+    public function updateMessage(string $projectId, string $agentId, string $messageId, Request $request): JsonResponse
+    {
+        $project = $this->projectService->findById($projectId);
+        $agent   = $this->agentService->findById($agentId);
+
+        if ($project === null || $agent === null) {
+            return $this->json($this->apiErrorPayloadFactory->create('chat.error.project_or_agent_not_found'), Response::HTTP_NOT_FOUND);
+        }
+
+        $data = $request->toArray();
+        if (empty($data['content'])) {
+            return $this->json($this->apiErrorPayloadFactory->create('chat.validation.content_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        try {
+            $message = $this->chatService->editHumanMessage($project, $agent, $messageId, trim((string) $data['content']));
+        } catch (\InvalidArgumentException $e) {
+            $key = $e->getMessage();
+            if ($key === 'chat.error.message_not_found') {
+                return $this->json($this->apiErrorPayloadFactory->create('chat.error.message_not_found'), Response::HTTP_NOT_FOUND);
+            }
+
+            return $this->json($this->apiErrorPayloadFactory->create('chat.error.message_not_editable'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        return $this->json($this->serializeMessage($message));
+    }
+
     /** @return array<string, mixed> */
     private function serializeMessage(ChatMessage $message): array
     {

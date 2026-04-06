@@ -99,6 +99,13 @@ A **Story** (user story) or **Bug** is a ticket that progresses through the step
 - **Workflow step names**: use masculine labels for the default progression (`Nouveau`, `Prêt`, `Planification`, `Design`, `Développement`, `Revue`, `Terminé`)
 - **Ready / Prêt**: a ticket in `Prêt` has completed the Product Owner framing step and can enter implementation planning
 
+### Discussion and Chat Editing
+
+- user-authored ticket comments and replies can be edited after publication
+- user-authored project chat messages can also be edited
+- agent outputs and system-generated entries are not editable
+- edits keep the same discussion item/message and preserve a minimal edit history for traceability instead of creating duplicate conversation entries
+
 ---
 
 ## Skill
