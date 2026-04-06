@@ -27,8 +27,7 @@ const PROJECTS_PAGE_TRANSLATION_KEYS = [
   'project.form.name_placeholder',
   'project.form.description_label',
   'project.form.team_label',
-  'project.form.no_team_option',
-  'project.form.team_hint',
+  'project.form.team_placeholder',
   'project.form.workflow_label',
   'project.form.workflow_placeholder',
   'project.form.workflow_hint',
@@ -80,7 +79,7 @@ function ProjectForm({
   const availableWorkflows = workflows.filter((workflow) => workflow.isActive || workflow.id === workflowId)
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit({ name, description: description || undefined, teamId: teamId || null, workflowId }) }} className="space-y-4">
+    <form onSubmit={(e) => { e.preventDefault(); onSubmit({ name, description: description || undefined, teamId, workflowId }) }} className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">{t('project.form.name_label')} *</label>
         <input className="input" value={name} onChange={(e) => setName(e.target.value)} required placeholder={t('project.form.name_placeholder')} />
@@ -90,16 +89,13 @@ function ProjectForm({
         <textarea className="input resize-none" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('project.form.team_label')}</label>
-        <select className="input" value={teamId} onChange={(e) => setTeamId(e.target.value)}>
-          <option value="">{t('project.form.no_team_option')}</option>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('project.form.team_label')} *</label>
+        <select className="input" value={teamId} onChange={(e) => setTeamId(e.target.value)} required>
+          <option value="" disabled>{t('project.form.team_placeholder')}</option>
           {teams.map((team) => (
             <option key={team.id} value={team.id}>{team.name}</option>
           ))}
         </select>
-        <p className="mt-1 text-xs text-gray-500">
-          {t('project.form.team_hint')}
-        </p>
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">{t('project.form.workflow_label')} *</label>
@@ -139,13 +135,9 @@ function ProjectsList() {
 
   const createMutation = useMutation({
     mutationFn: projectsApi.create,
-    onSuccess: (project) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['projects'] })
       setCreateOpen(false)
-
-      if (!project.team) {
-        navigate(`/projects/${project.id}?tab=general`)
-      }
     },
   })
 

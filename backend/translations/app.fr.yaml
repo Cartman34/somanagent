@@ -233,6 +233,7 @@ log:
 project:
   form:
     team_label: Équipe
+    team_placeholder: Sélectionner une équipe
     no_team_option: — Aucune équipe —
     team_hint: Une équipe est recommandée dès la création. Sans équipe, vous serez redirigé vers l'onglet Général pour l'assigner avant progression.
     dispatch_mode_label: Mode de dispatch
@@ -261,6 +262,8 @@ project:
   validation:
     name_required: Le champ "name" est obligatoire.
     workflow_required: Le champ "workflowId" est obligatoire.
+    team_required: Le champ "teamId" est obligatoire.
+    team_invalid: L'équipe sélectionnée est introuvable.
   page:
     title: Projets
     description: Gérez vos projets et suivez leur avancement.
