@@ -9,6 +9,8 @@ namespace App\Service;
 
 use App\Entity\Agent;
 use App\Entity\AgentAction;
+use App\Entity\AgentTaskExecutionAttempt;
+use App\Entity\Skill;
 use App\Entity\Ticket;
 use App\Entity\TicketLog;
 use App\Entity\TicketTask;
@@ -61,7 +63,7 @@ final class AgentExecutionService
      *
      * @throws \RuntimeException if the skill is not found or if the agent call fails
      */
-    public function executeTicketTask(TicketTask $task, Agent $agent, string $skillSlug): void
+    public function executeTicketTask(TicketTask $task, Agent $agent, string $skillSlug, AgentTaskExecutionAttempt $attempt): void
     {
         $skill = $this->skillRepository->findOneBy(['slug' => $skillSlug]);
         if ($skill === null) {
@@ -70,6 +72,10 @@ final class AgentExecutionService
 
         $config = $agent->getAgentConfig();
         $prompt = $this->buildPromptForTicketTask($task, $agent, $skill->getContent(), $skillSlug);
+        $this->ticketTaskService->captureExecutionResourceSnapshot(
+            $attempt,
+            $this->buildExecutionResourceSnapshot($task, $agent, $skill, $prompt),
+        );
         $adapter = $this->portRegistry->getFor($agent->getConnector());
 
         $this->logger->info('AgentExecution: calling agent for ticket task', [
@@ -93,6 +99,8 @@ final class AgentExecutionService
         );
         $this->em->persist($usage);
 
+        $this->assertAllowedEffects($task, ['log_agent_response']);
+
         $this->ticketLogService->log(
             ticket: $task->getTicket(),
             action: 'agent_response',
@@ -106,8 +114,6 @@ final class AgentExecutionService
                 'actionKey' => $task->getAgentAction()->getKey(),
             ],
         );
-
-        $this->assertAllowedEffects($task, ['log_agent_response']);
 
         $questions = $this->extractClarificationQuestions($response->content);
         $questions = $this->filterDuplicateQuestions($questions, $task->getTicket());
@@ -285,6 +291,60 @@ final class AgentExecutionService
                 $task->getAgentAction()->getKey(),
             ));
         }
+    }
+
+    /**
+     * Builds the immutable execution resource snapshot persisted on the execution record.
+     *
+     * @return array<string, mixed>
+     */
+    private function buildExecutionResourceSnapshot(TicketTask $task, Agent $agent, Skill $skill, Prompt $prompt): array
+    {
+        $scope = $this->ticketTaskService->describeExecutionScope($task);
+        $role = $agent->getRole();
+
+        return [
+            'capturedAt' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+            'agent' => [
+                'resourceKind' => 'database_agent',
+                'filePath' => null,
+                'id' => $agent->getId()->toRfc4122(),
+                'name' => $agent->getName(),
+                'description' => $agent->getDescription(),
+                'connector' => $agent->getConnector()->value,
+                'role' => $role ? [
+                    'id' => $role->getId()->toRfc4122(),
+                    'slug' => $role->getSlug(),
+                    'name' => $role->getName(),
+                ] : null,
+                'config' => $agent->getAgentConfig()->toArray(),
+            ],
+            'skill' => [
+                'resourceKind' => 'skill_file',
+                'id' => $skill->getId()->toRfc4122(),
+                'slug' => $skill->getSlug(),
+                'name' => $skill->getName(),
+                'description' => $skill->getDescription(),
+                'source' => $skill->getSource()->value,
+                'originalSource' => $skill->getOriginalSource(),
+                'filePath' => $skill->getFilePath(),
+                'content' => $skill->getContent(),
+            ],
+            'prompt' => [
+                'instruction' => $prompt->getTaskInstruction(),
+                'context' => $prompt->getContext(),
+                'rendered' => $prompt->build(),
+            ],
+            'scope' => [
+                'taskActions' => $scope['task_actions'],
+                'ticketTransitions' => $scope['ticket_transitions'],
+                'allowedEffects' => $scope['allowed_effects'],
+            ],
+            'limits' => [
+                'agentFilePathAvailable' => false,
+                'agentFilePathReason' => 'Agents are database-backed records and currently have no dedicated file path.',
+            ],
+        ];
     }
 
     private function handlePlanningTicketTaskResponse(TicketTask $planningTask, Agent $leadTech, string $rawContent): void

@@ -202,6 +202,20 @@ Règles :
 
 ### AgentTaskExecutionAttempt
 
+Champs principaux :
+- `execution`
+- `attemptNumber`
+- `agent`
+- `status`
+- `willRetry`
+- `errorMessage`
+- `errorScope`
+- `resourceSnapshot`
+
+Règles :
+- `resourceSnapshot` stores the immutable runtime resources injected into that specific agent call
+- one execution may therefore expose different snapshots across attempts if retries happen under different runtime conditions
+- the agent side currently has no dedicated file path, so that part of the snapshot records an explicit limitation instead of inventing a fake file reference
 Tentative individuelle d’une exécution agent.
 
 Champs principaux :

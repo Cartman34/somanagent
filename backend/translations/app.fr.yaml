@@ -11,6 +11,28 @@ common:
     refresh: Rafraîchir
     save: Enregistrer
     saving: Enregistrement…
+execution_resource:
+  title: Ressources injectées
+  captured_at: Capturé le
+  agent: Ressource agent
+  skill: Ressource skill
+  prompt: Prompt
+  scope: Périmètre autorisé
+  source: Source
+  file_path: Fichier
+  connector: Connecteur
+  model: Modèle
+  role: Rôle
+  original_source: Source d'origine
+  content: Contenu
+  instruction: Instruction
+  context: Contexte
+  rendered_prompt: Prompt rendu
+  task_actions: Actions de tâche autorisées
+  ticket_transitions: Transitions ticket autorisées
+  allowed_effects: Effets backend autorisés
+  not_available: Indisponible
+  no_agent_file: Pas de fichier agent
 agent:
   error:
     not_found: Agent introuvable.

@@ -60,6 +60,14 @@ class AgentTaskExecutionAttempt
     #[ORM\Column(length: 64, nullable: true)]
     private ?string $errorScope = null;
 
+    /**
+     * Immutable snapshot of the resources injected into this specific agent call.
+     *
+     * @var array<string, mixed>|null
+     */
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $resourceSnapshot = null;
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
@@ -99,6 +107,8 @@ class AgentTaskExecutionAttempt
     public function getErrorMessage(): ?string { return $this->errorMessage; }
     /** Returns the scope associated with the last error. */
     public function getErrorScope(): ?string { return $this->errorScope; }
+    /** Returns the runtime resource snapshot captured for this attempt, if any. */
+    public function getResourceSnapshot(): ?array { return $this->resourceSnapshot; }
     /** Returns when the attempt record was created. */
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
 
@@ -120,4 +130,6 @@ class AgentTaskExecutionAttempt
     public function setErrorMessage(?string $errorMessage): static { $this->errorMessage = $errorMessage; return $this; }
     /** Stores the scope associated with the last error. */
     public function setErrorScope(?string $errorScope): static { $this->errorScope = $errorScope; return $this; }
+    /** Stores the immutable runtime resource snapshot for this attempt. */
+    public function setResourceSnapshot(?array $resourceSnapshot): static { $this->resourceSnapshot = $resourceSnapshot; return $this; }
 }

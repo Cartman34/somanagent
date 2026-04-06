@@ -25,6 +25,9 @@ use Symfony\Component\Uid\Uuid;
 #[AsMessageHandler]
 final class AgentTaskHandler
 {
+    /**
+     * Wires repositories and services required to execute queued agent tasks.
+     */
     public function __construct(
         private readonly AgentRepository       $agentRepository,
         private readonly TicketTaskRepository  $ticketTaskRepository,
@@ -36,6 +39,9 @@ final class AgentTaskHandler
         private readonly LoggerInterface       $logger,
     ) {}
 
+    /**
+     * Processes one queued agent-task execution attempt.
+     */
     public function __invoke(AgentTaskMessage $message): void
     {
         $messengerContext = $this->messengerExecutionContext->getOrDefault();
@@ -216,7 +222,7 @@ final class AgentTaskHandler
                 ],
             );
 
-            $this->executionService->executeTicketTask($ticketTask, $agent, $message->skillSlug);
+            $this->executionService->executeTicketTask($ticketTask, $agent, $message->skillSlug, $attemptEntity);
             $this->agentTaskExecutionService->markSucceeded($agentTaskExecution, $attemptEntity);
             $this->ticketTaskService->dispatchReadyDependents($ticketTask);
         } catch (\Throwable $e) {
