@@ -343,7 +343,8 @@
   .composer-toggle {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: space-between;
+    gap: 12px;
     width: 100%;
     padding: 10px 16px;
     border: none;
@@ -354,15 +355,40 @@
     cursor: pointer;
     transition: color 0.15s, background 0.15s;
   }
+  .composer-toggle-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .composer-toggle-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--surface) 82%, transparent);
+    color: var(--muted);
+    transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+  }
   .composer-toggle:hover {
     color: var(--text);
     background: color-mix(in srgb, var(--surface) 50%, transparent);
   }
-  .composer-toggle:hover svg {
+  .composer-toggle:hover .composer-toggle-label svg {
     animation: feed-icon-bounce 0.4s ease;
   }
-  .composer-toggle.open svg {
-    transform: rotate(180deg);
+  .composer-toggle:hover .composer-toggle-indicator {
+    color: var(--text);
+  }
+  .composer-toggle.open {
+    color: var(--text);
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
+  }
+  .composer-toggle.open .composer-toggle-indicator {
+    background: var(--brand-dim);
+    color: var(--brand);
+    transform: scale(1.05);
   }
 
   .comment-composer {
