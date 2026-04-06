@@ -34,30 +34,19 @@ final class MigrateRunner extends AbstractScriptRunner
         ];
     }
 
+    /**
+     * Runs Doctrine migrations through the shared Doctrine runner.
+     *
+     * @param list<string> $args
+     */
     public function run(array $args): int
     {
-        $dryRun = in_array('--dry-run', $args, true);
-
-        $this->console->step('Doctrine migrations' . ($dryRun ? ' (dry-run)' : ''));
-
         try {
-            $args = ['doctrine:migrations:migrate', '--no-interaction'];
-            if ($dryRun) {
-                $args[] = '--dry-run';
-            }
-
-            $escapedArgs = implode(' ', array_map('escapeshellarg', $args));
-            $code        = $this->app->runCommand("docker compose exec -T php php bin/console $escapedArgs");
-
-            if ($code !== 0) {
-                throw new \RuntimeException("Migration command failed (exit $code).");
-            }
-
-            $this->console->ok('Migrations complete.');
+            return (new DoctrineRunner($this->app))->run(['migrate', ...$args]);
         } catch (\RuntimeException $e) {
             $this->console->fail($e->getMessage());
+        } catch (\InvalidArgumentException $e) {
+            $this->console->fail($e->getMessage());
         }
-
-        return 0;
     }
 }

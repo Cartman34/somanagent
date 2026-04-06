@@ -7,6 +7,7 @@
 // Usage: php scripts/db.php query "SELECT 1"
 // Usage: php scripts/db.php exec -c "\\dt"
 // Usage: php scripts/db.php shell
+// Usage: php scripts/db.php migrate [--dry-run]
 // Usage: php scripts/db.php reset [--fixtures [--force]]
 
 require_once __DIR__ . '/src/bootstrap.php';
