@@ -17,6 +17,9 @@ use App\Repository\ChatMessageRepository;
 use Symfony\Component\Uid\Uuid;
 use App\ValueObject\Prompt;
 
+/**
+ * Manages chat conversations within a project, including agent interactions and message persistence.
+ */
 class ChatService
 {
     /**

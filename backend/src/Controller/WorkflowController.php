@@ -16,6 +16,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * REST controller managing workflows, their steps, and activation lifecycle.
+ */
 #[Route('/api/workflows')]
 class WorkflowController extends AbstractController
 {

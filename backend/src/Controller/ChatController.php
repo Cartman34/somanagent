@@ -18,9 +18,15 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * REST controller managing chat conversations within a project.
+ */
 #[Route('/api/projects/{projectId}/chat')]
 class ChatController extends AbstractController
 {
+    /**
+     * Initializes the controller with the services required for project chat endpoints.
+     */
     public function __construct(
         private readonly ChatService    $chatService,
         private readonly ProjectService $projectService,
@@ -28,6 +34,9 @@ class ChatController extends AbstractController
         private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
     ) {}
 
+    /**
+     * Returns the chat history for a given project and agent.
+     */
     #[Route('/{agentId}', name: 'chat_history', methods: ['GET'])]
     public function history(string $projectId, string $agentId): JsonResponse
     {
@@ -43,6 +52,9 @@ class ChatController extends AbstractController
         return $this->json(array_map(fn($m) => $this->serializeMessage($m), $messages));
     }
 
+    /**
+     * Sends a new user message and returns both the stored human and agent replies.
+     */
     #[Route('/{agentId}', name: 'chat_send', methods: ['POST'])]
     public function send(string $projectId, string $agentId, Request $request): JsonResponse
     {

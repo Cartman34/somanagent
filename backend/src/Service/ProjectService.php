@@ -19,6 +19,9 @@ use App\Repository\WorkflowRepository;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+/**
+ * Manages projects: CRUD, module management, team/workflow assignment, and dispatch mode transitions.
+ */
 class ProjectService
 {
     /**

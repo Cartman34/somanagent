@@ -16,6 +16,9 @@ use App\Repository\WorkflowRepository;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+/**
+ * Manages workflows: CRUD, step configuration, activation/locking, and duplication.
+ */
 class WorkflowService
 {
     /**

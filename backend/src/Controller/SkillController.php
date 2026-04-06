@@ -15,6 +15,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * REST controller managing skills: CRUD, import from skills.sh, and metadata.
+ */
 #[Route('/api/skills')]
 class SkillController extends AbstractController
 {

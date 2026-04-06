@@ -14,6 +14,9 @@ use App\Enum\SkillSource;
 use App\Repository\SkillRepository;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * Manages skills: CRUD, import from skills.sh marketplace, and custom skill creation.
+ */
 class SkillService
 {
     private SkillsShAdapter $skillsShAdapter;

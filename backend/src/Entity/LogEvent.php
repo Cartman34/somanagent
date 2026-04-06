@@ -11,6 +11,9 @@ use App\Repository\LogEventRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * Represents a single structured log event with source, category, level, and contextual metadata.
+ */
 #[ORM\Entity(repositoryClass: LogEventRepository::class)]
 #[ORM\Table(name: 'log_event')]
 #[ORM\Index(columns: ['occurred_at'], name: 'idx_log_event_occurred_at')]
@@ -99,6 +102,9 @@ class LogEvent
     #[ORM\Column(name: 'occurred_at')]
     private \DateTimeImmutable $occurredAt;
 
+    /**
+     * Creates a structured log event with its core source, category, level, title, and message.
+     */
     public function __construct(string $source, string $category, string $level, string $title, string $message)
     {
         $this->id = Uuid::v7();
@@ -110,41 +116,76 @@ class LogEvent
         $this->occurredAt = new \DateTimeImmutable();
     }
 
+    /** Returns the log event identifier. */
     public function getId(): Uuid { return $this->id; }
+    /** Returns the event source. */
     public function getSource(): string { return $this->source; }
+    /** Returns the event category. */
     public function getCategory(): string { return $this->category; }
+    /** Returns the event severity level. */
     public function getLevel(): string { return $this->level; }
+    /** Returns the fallback event title. */
     public function getTitle(): string { return $this->title; }
+    /** Returns the translation domain used for the title, if any. */
     public function getTitleDomain(): ?string { return $this->titleDomain; }
+    /** Returns the translation key used for the title, if any. */
     public function getTitleKey(): ?string { return $this->titleKey; }
+    /** Returns translation parameters used for the title, if any. */
     public function getTitleParameters(): ?array { return $this->titleParameters; }
+    /** Returns the fallback event message. */
     public function getMessage(): string { return $this->message; }
+    /** Returns the translation domain used for the message, if any. */
     public function getMessageDomain(): ?string { return $this->messageDomain; }
+    /** Returns the translation key used for the message, if any. */
     public function getMessageKey(): ?string { return $this->messageKey; }
+    /** Returns translation parameters used for the message, if any. */
     public function getMessageParameters(): ?array { return $this->messageParameters; }
+    /** Returns the deduplication fingerprint, if any. */
     public function getFingerprint(): ?string { return $this->fingerprint; }
+    /** Returns the related project identifier, if any. */
     public function getProjectId(): ?Uuid { return $this->projectId; }
+    /** Returns the related task identifier, if any. */
     public function getTaskId(): ?Uuid { return $this->taskId; }
+    /** Returns the related agent identifier, if any. */
     public function getAgentId(): ?Uuid { return $this->agentId; }
+    /** Returns the related exchange reference, if any. */
     public function getExchangeRef(): ?string { return $this->exchangeRef; }
+    /** Returns the request correlation reference, if any. */
     public function getRequestRef(): ?string { return $this->requestRef; }
+    /** Returns the trace reference, if any. */
     public function getTraceRef(): ?string { return $this->traceRef; }
+    /** Returns structured context attached to the event, if any. */
     public function getContext(): ?array { return $this->context; }
+    /** Returns the stack trace attached to the event, if any. */
     public function getStack(): ?string { return $this->stack; }
+    /** Returns the origin of the event, if any. */
     public function getOrigin(): ?string { return $this->origin; }
+    /** Returns the raw provider payload, if any. */
     public function getRawPayload(): ?array { return $this->rawPayload; }
+    /** Returns when the event occurred. */
     public function getOccurredAt(): \DateTimeImmutable { return $this->occurredAt; }
 
+    /** Stores the deduplication fingerprint. */
     public function setFingerprint(?string $fingerprint): static { $this->fingerprint = $fingerprint; return $this; }
+    /** Stores the related project identifier. */
     public function setProjectId(?Uuid $projectId): static { $this->projectId = $projectId; return $this; }
+    /** Stores the related task identifier. */
     public function setTaskId(?Uuid $taskId): static { $this->taskId = $taskId; return $this; }
+    /** Stores the related agent identifier. */
     public function setAgentId(?Uuid $agentId): static { $this->agentId = $agentId; return $this; }
+    /** Stores the related exchange reference. */
     public function setExchangeRef(?string $exchangeRef): static { $this->exchangeRef = $exchangeRef; return $this; }
+    /** Stores the request correlation reference. */
     public function setRequestRef(?string $requestRef): static { $this->requestRef = $requestRef; return $this; }
+    /** Stores the trace reference. */
     public function setTraceRef(?string $traceRef): static { $this->traceRef = $traceRef; return $this; }
+    /** Stores structured context for the event. */
     public function setContext(?array $context): static { $this->context = $context; return $this; }
+    /** Stores the stack trace for the event. */
     public function setStack(?string $stack): static { $this->stack = $stack; return $this; }
+    /** Stores the event origin label. */
     public function setOrigin(?string $origin): static { $this->origin = $origin; return $this; }
+    /** Stores the raw provider payload. */
     public function setRawPayload(?array $rawPayload): static { $this->rawPayload = $rawPayload; return $this; }
 
     /**

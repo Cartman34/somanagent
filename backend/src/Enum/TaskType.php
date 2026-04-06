@@ -7,6 +7,9 @@ declare(strict_types=1);
 
 namespace App\Enum;
 
+/**
+ * Type of work a ticket represents: user story, bug, or generic task.
+ */
 enum TaskType: string
 {
     case UserStory = 'user_story';

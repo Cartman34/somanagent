@@ -18,6 +18,9 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * REST controller exposing structured log events and occurrences with filtering and rendering.
+ */
 #[Route('/api/logs')]
 final class LogController extends AbstractController
 {

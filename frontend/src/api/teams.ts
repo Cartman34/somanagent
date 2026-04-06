@@ -5,11 +5,13 @@
 import apiClient from './client'
 import type { Team } from '@/types'
 
+/** Payload for creating or updating a team. */
 export interface TeamPayload {
   name: string
   description?: string
 }
 
+/** API client for team CRUD operations and agent membership updates. */
 export const teamsApi = {
   list: async (): Promise<Team[]> => {
     const { data } = await apiClient.get('/teams')

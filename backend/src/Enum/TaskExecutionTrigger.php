@@ -7,6 +7,9 @@ declare(strict_types=1);
 
 namespace App\Enum;
 
+/**
+ * Trigger mechanism that initiated a task execution.
+ */
 enum TaskExecutionTrigger: string
 {
     case Auto = 'auto';

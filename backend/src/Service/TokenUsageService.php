@@ -16,6 +16,9 @@ use App\Entity\WorkflowStep;
 use App\Repository\AgentRepository;
 use App\Repository\TokenUsageRepository;
 
+/**
+ * Tracks and reports token consumption for agents, projects, tickets, and workflow steps.
+ */
 class TokenUsageService
 {
     /**

@@ -7,6 +7,9 @@ declare(strict_types=1);
 
 namespace App\Enum;
 
+/**
+ * Execution status of a single step within a workflow.
+ */
 enum WorkflowStepStatus: string
 {
     case Pending = 'pending';
@@ -15,14 +18,17 @@ enum WorkflowStepStatus: string
     case Error   = 'error';
     case Skipped = 'skipped';
 
+    /**
+     * Returns a human-readable label for the workflow step execution status.
+     */
     public function label(): string
     {
         return match($this) {
-            self::Pending => 'En attente',
-            self::Running => 'En cours',
-            self::Done    => 'Terminé',
-            self::Error   => 'Erreur',
-            self::Skipped => 'Ignoré',
+            self::Pending => 'Pending',
+            self::Running => 'Running',
+            self::Done    => 'Done',
+            self::Error   => 'Error',
+            self::Skipped => 'Skipped',
         };
     }
 }

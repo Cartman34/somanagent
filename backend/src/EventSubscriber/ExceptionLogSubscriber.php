@@ -13,13 +13,24 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
+/**
+ * Logs unhandled exceptions with request correlation ID for traceability.
+ */
 final class ExceptionLogSubscriber implements EventSubscriberInterface
 {
+    /**
+     * Initializes the subscriber with logging and request-correlation services.
+     */
     public function __construct(
         private readonly LogService $logService,
         private readonly RequestCorrelationService $correlation,
     ) {}
 
+    /**
+     * Declares the kernel events handled by this subscriber.
+     *
+     * @return array<string, string>
+     */
     public static function getSubscribedEvents(): array
     {
         return [
@@ -27,6 +38,9 @@ final class ExceptionLogSubscriber implements EventSubscriberInterface
         ];
     }
 
+    /**
+     * Records uncaught main-request exceptions into the structured log stream.
+     */
     public function onException(ExceptionEvent $event): void
     {
         if (!$event->isMainRequest()) {

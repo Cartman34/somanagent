@@ -13,11 +13,20 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * REST controller exposing audit logs with pagination and filtering.
+ */
 #[Route('/api/audit')]
 class AuditController extends AbstractController
 {
+    /**
+     * Initializes the controller with the audit log repository.
+     */
     public function __construct(private readonly AuditLogRepository $auditLogRepository) {}
 
+    /**
+     * Returns a paginated list of audit log entries.
+     */
     #[Route('', name: 'audit_list', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {

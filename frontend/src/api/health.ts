@@ -4,17 +4,20 @@
 
 import apiClient from './client'
 
+/** Overall application health status. */
 export interface HealthStatus {
   status: 'ok' | 'degraded'
   version: string
   timestamp: string
 }
 
+/** Health status of individual connectors. */
 export interface ConnectorHealth {
   status: 'ok' | 'degraded'
   connectors: Record<string, boolean>
 }
 
+/** Health status of Claude CLI authentication. */
 export interface ClaudeCliAuthHealth {
   status: 'ok' | 'degraded'
   loggedIn: boolean
@@ -24,6 +27,7 @@ export interface ClaudeCliAuthHealth {
   error: string | null
 }
 
+/** API client for application and connector health endpoints. */
 export const healthApi = {
   check: async (): Promise<HealthStatus> => {
     const { data } = await apiClient.get('/health')

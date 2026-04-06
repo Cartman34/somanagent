@@ -5,23 +5,27 @@
 import apiClient from './client'
 import type { Workflow } from '@/types'
 
+/** Payload for creating or updating a workflow. */
 export interface WorkflowPayload {
   name: string
   description?: string
   trigger: 'manual' | 'vcs_event' | 'scheduled'
 }
 
+/** Response from activating a workflow. */
 export interface WorkflowActivationResponse {
   id: string
   isActive: boolean
 }
 
+/** Response from duplicating a workflow. */
 export interface WorkflowDuplicateResponse {
   id: string
   name: string
   isActive: boolean
 }
 
+/** API client for workflow CRUD operations and lifecycle actions. */
 export const workflowsApi = {
   list: async (): Promise<Workflow[]> => {
     const { data } = await apiClient.get('/workflows')

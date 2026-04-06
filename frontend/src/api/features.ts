@@ -5,12 +5,14 @@
 import apiClient from './client'
 import type { Feature } from '@/types'
 
+/** Payload for creating or updating a feature. */
 export interface FeaturePayload {
   name: string
   description?: string
   status?: 'open' | 'in_progress' | 'closed'
 }
 
+/** API client for feature CRUD operations within projects. */
 export const featuresApi = {
   listByProject: async (projectId: string): Promise<Feature[]> => {
     const { data } = await apiClient.get(`/projects/${projectId}/features`)

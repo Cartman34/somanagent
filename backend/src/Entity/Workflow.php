@@ -15,6 +15,9 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * Represents a workflow composed of ordered steps that define automated task processing pipelines.
+ */
 #[ORM\Entity(repositoryClass: WorkflowRepository::class)]
 #[ORM\Table(name: 'workflow')]
 #[ORM\HasLifecycleCallbacks]
@@ -49,6 +52,9 @@ class Workflow
     #[ORM\OrderBy(['stepOrder' => 'ASC'])]
     private Collection $steps;
 
+    /**
+     * Creates a workflow with its name, trigger type, and optional description.
+     */
     public function __construct(
         string          $name,
         WorkflowTrigger $trigger = WorkflowTrigger::Manual,
@@ -64,25 +70,41 @@ class Workflow
     }
 
     #[ORM\PreUpdate]
+    /**
+     * Updates the modification timestamp before Doctrine persists an update.
+     */
     public function touch(): void
     {
         $this->updatedAt = new \DateTimeImmutable();
     }
 
+    /** Returns the workflow identifier. */
     public function getId(): Uuid                      { return $this->id; }
+    /** Returns the workflow name. */
     public function getName(): string                  { return $this->name; }
+    /** Returns the optional workflow description. */
     public function getDescription(): ?string          { return $this->description; }
+    /** Returns the workflow trigger mode. */
     public function getTrigger(): WorkflowTrigger      { return $this->trigger; }
+    /** Returns the workflow lifecycle status. */
     public function getStatus(): WorkflowStatus        { return $this->status; }
+    /** Indicates whether the workflow is active for runtime selection. */
     public function isActive(): bool                   { return $this->isActive; }
+    /** Indicates whether the workflow can currently be edited. */
     public function isEditable(): bool                 { return !$this->isActive && $this->status === WorkflowStatus::Validated; }
+    /** Indicates whether the workflow is valid for runtime use. */
     public function isUsable(): bool                   { return $this->status->isUsable() && $this->isActive; }
+    /** Returns when the workflow was created. */
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
+    /** Returns when the workflow was last updated. */
     public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
 
     /** @return Collection<int, WorkflowStep> */
     public function getSteps(): Collection { return $this->steps; }
 
+    /**
+     * Updates the workflow name while it remains editable.
+     */
     public function setName(string $name): static
     {
         $this->assertEditable();
@@ -90,6 +112,9 @@ class Workflow
         return $this;
     }
 
+    /**
+     * Updates the workflow description while it remains editable.
+     */
     public function setDescription(?string $d): static
     {
         $this->assertEditable();
@@ -97,6 +122,9 @@ class Workflow
         return $this;
     }
 
+    /**
+     * Updates the workflow trigger while it remains editable.
+     */
     public function setTrigger(WorkflowTrigger $t): static
     {
         $this->assertEditable();
@@ -104,12 +132,18 @@ class Workflow
         return $this;
     }
 
+    /**
+     * Marks the workflow as validated.
+     */
     public function validate(): static
     {
         $this->status = WorkflowStatus::Validated;
         return $this;
     }
 
+    /**
+     * Locks a validated workflow against further edits.
+     */
     public function lock(): static
     {
         if ($this->status !== WorkflowStatus::Validated) {
@@ -139,6 +173,9 @@ class Workflow
         return $this;
     }
 
+    /**
+     * Adds a step to the workflow while preserving editability constraints.
+     */
     public function addStep(WorkflowStep $step): static
     {
         $this->assertEditable();
@@ -149,6 +186,9 @@ class Workflow
         return $this;
     }
 
+    /**
+     * Removes a step from the workflow while preserving editability constraints.
+     */
     public function removeStep(WorkflowStep $step): static
     {
         $this->assertEditable();

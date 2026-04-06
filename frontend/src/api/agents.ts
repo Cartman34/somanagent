@@ -5,6 +5,7 @@
 import apiClient from './client'
 import type { Agent, AgentConfig, AgentStatus } from '@/types'
 
+/** Payload for creating or updating an agent. */
 export interface AgentPayload {
   name: string
   description?: string
@@ -14,6 +15,7 @@ export interface AgentPayload {
   config?: Partial<AgentConfig>
 }
 
+/** API client for agent CRUD operations and status lookup. */
 export const agentsApi = {
   list: async (): Promise<Agent[]> => {
     const { data } = await apiClient.get('/agents')

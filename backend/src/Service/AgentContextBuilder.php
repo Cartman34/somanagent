@@ -13,6 +13,9 @@ use App\Entity\Project;
 use App\Entity\TicketLog;
 use App\Entity\TicketTask;
 
+/**
+ * Builds the context payload sent to an agent: project info, ticket, task, role, skill, and conversation history.
+ */
 final class AgentContextBuilder
 {
     /**
@@ -99,10 +102,10 @@ final class AgentContextBuilder
 
         $roleNotes = match ($roleSlug) {
             'product-owner' => [
-                'scope' => 'Tu es responsable de la reformulation produit et du cadrage fonctionnel.',
-                'constraint' => 'Tu ne prends pas de décision technique de ton propre chef.',
-                'allowed' => 'Tu peux relayer des contraintes techniques explicitement fournies et ajouter du périmètre fonctionnel comme les plateformes, langues ou profils utilisateurs.',
-                'handoff' => 'Les arbitrages techniques, l’analyse technique et le découpage appartiennent au Lead Tech.',
+                'scope' => 'You are responsible for product reframing and functional scoping.',
+                'constraint' => 'Do not make technical decisions on your own.',
+                'allowed' => 'You may relay explicitly provided technical constraints and add functional scope such as platforms, languages, or user profiles.',
+                'handoff' => 'Technical tradeoffs, technical analysis, and task breakdown belong to the Lead Tech.',
             ],
             default => [],
         };
@@ -144,9 +147,9 @@ final class AgentContextBuilder
                 ),
             ],
             'operating_notes' => [
-                'identity_is_known' => 'Tu connais déjà ton identité, ton rôle et le projet grâce à ce contexte.',
-                'do_not_ask_identity_again' => 'Ne redemande pas qui tu es, quel rôle tu joues ou sur quel projet tu travailles sauf si le contexte est explicitement contradictoire.',
-                'do_not_repeat_questions' => 'Ne repose pas de questions déjà présentes dans ticket_conversation (action=agent_question). Vérifie ticket_conversation avant de formuler toute question de clarification et omets celles qui y figurent déjà, qu\'elles aient reçu une réponse ou non.',
+                'identity_is_known' => 'Your identity, role, and project are already provided in this context.',
+                'do_not_ask_identity_again' => 'Do not ask again who you are, which role you play, or which project you are working on unless the context is explicitly contradictory.',
+                'do_not_repeat_questions' => 'Do not repeat questions already present in ticket_conversation (action=agent_question). Check ticket_conversation before asking for clarification and omit questions that already appear there, whether answered or not.',
                 'role_constraints' => $roleNotes,
             ],
         ];

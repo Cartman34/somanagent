@@ -7,18 +7,21 @@ declare(strict_types=1);
 
 namespace App\Port;
 
+/**
+ * Hexagonal port for skill registry operations (import, search).
+ */
 interface SkillPort
 {
     /**
-     * Importe un skill depuis le registry (ex: "anthropics/code-reviewer").
-     * Retourne les métadonnées parsées du SKILL.md.
+     * Imports a skill from the registry (for example: "anthropics/code-reviewer").
+     * Returns the parsed metadata extracted from SKILL.md.
      *
      * @return array{slug: string, name: string, description: string, content: string, filePath: string}
      */
     public function import(string $ownerAndName): array;
 
     /**
-     * Liste les skills disponibles dans le registry.
+     * Lists the skills available from the registry.
      *
      * @return array<array{slug: string, name: string, description: string}>
      */

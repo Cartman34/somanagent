@@ -11,8 +11,14 @@ use App\Entity\LogEvent;
 use App\Entity\LogOccurrence;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+/**
+ * Renders human-readable log messages from structured log events and occurrences.
+ */
 final class LogMessageRenderer
 {
+    /**
+     * Initializes the renderer with the translator used for persisted i18n metadata.
+     */
     public function __construct(private readonly TranslatorInterface $translator) {}
 
     /**

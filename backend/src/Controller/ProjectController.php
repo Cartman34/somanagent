@@ -18,6 +18,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * REST controller managing projects, their modules, audit logs, and token usage.
+ */
 #[Route('/api/projects')]
 class ProjectController extends AbstractController
 {

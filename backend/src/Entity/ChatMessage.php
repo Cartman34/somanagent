@@ -12,6 +12,9 @@ use App\Repository\ChatMessageRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * Represents a single message in a conversation between a user and an agent within a project.
+ */
 #[ORM\Entity(repositoryClass: ChatMessageRepository::class)]
 #[ORM\Table(name: 'chat_message')]
 class ChatMessage
@@ -49,6 +52,9 @@ class ChatMessage
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
+    /**
+     * Creates a chat message linked to a project, agent, and exchange thread.
+     */
     public function __construct(
         Project    $project,
         Agent      $agent,
@@ -69,15 +75,26 @@ class ChatMessage
         $this->createdAt = new \DateTimeImmutable();
     }
 
+    /** Returns the message identifier. */
     public function getId(): Uuid                      { return $this->id; }
+    /** Returns the project that owns the conversation. */
     public function getProject(): Project              { return $this->project; }
+    /** Returns the agent involved in the conversation. */
     public function getAgent(): Agent                  { return $this->agent; }
+    /** Returns the author kind of the message. */
     public function getAuthor(): ChatAuthor            { return $this->author; }
+    /** Returns the message body. */
     public function getContent(): string               { return $this->content; }
+    /** Returns the exchange identifier grouping related messages. */
     public function getExchangeId(): string            { return $this->exchangeId; }
+    /** Returns the replied message identifier, if any. */
     public function getReplyToMessageId(): ?Uuid       { return $this->replyToMessageId; }
+    /** Links the message to the replied message identifier. */
     public function setReplyToMessageId(?Uuid $replyToMessageId): static { $this->replyToMessageId = $replyToMessageId; return $this; }
+    /** Indicates whether the message represents an error response. */
     public function isError(): bool                    { return $this->isError; }
+    /** Returns optional structured metadata attached to the message. */
     public function getMetadata(): ?array              { return $this->metadata; }
+    /** Returns when the message was created. */
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
 }

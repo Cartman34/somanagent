@@ -15,8 +15,14 @@ use App\ValueObject\Prompt;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 
+/**
+ * AgentPort implementation using the Claude CLI (local process execution).
+ */
 class ClaudeCliAdapter implements AgentPort
 {
+    /**
+     * Executes the Claude CLI, parses its output, and normalizes the resulting response.
+     */
     public function sendPrompt(Prompt $prompt, AgentConfig $config): AgentResponse
     {
         $start = microtime(true);
@@ -77,6 +83,9 @@ class ClaudeCliAdapter implements AgentPort
         return AgentResponse::fromCli($output, $durationMs);
     }
 
+    /**
+     * Checks whether the Claude CLI executable is available in the runtime environment.
+     */
     public function healthCheck(): bool
     {
         $process = new Process(
@@ -88,6 +97,9 @@ class ClaudeCliAdapter implements AgentPort
         return $process->isSuccessful();
     }
 
+    /**
+     * Indicates whether this adapter handles the Claude CLI connector type.
+     */
     public function supportsConnector(ConnectorType $type): bool
     {
         return $type === ConnectorType::ClaudeCli;

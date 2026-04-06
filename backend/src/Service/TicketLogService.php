@@ -12,6 +12,9 @@ use App\Entity\TicketLog;
 use App\Entity\TicketTask;
 use App\Repository\TicketLogRepository;
 
+/**
+ * Manages ticket log entries: creation of events, replies, and system messages.
+ */
 final class TicketLogService
 {
     /**
