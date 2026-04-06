@@ -445,10 +445,14 @@ ticket:
     not_found: Tâche introuvable.
   detail:
     title: Détail de la tâche
+    title_label: Titre
     loading: Chargement…
     description_label: Description
+    empty_description: Aucune description pour l'instant.
     expand: Étendre
     collapse: Réduire
+    edit:
+      error: Impossible d'enregistrer les modifications.
     status_label: État
     step_label: Étape
     agent_label: Agent

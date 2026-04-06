@@ -11,8 +11,6 @@ The current standard transport is **Mercure**:
 - the frontend subscribes to canonical topics through one shared client
 - screens react by invalidating or refreshing their local data stores
 
-This replaces screen-specific SSE endpoints and keeps realtime concerns reusable across the application.
-
 ## Architecture
 
 The backend keeps a hexagonal split:
@@ -100,6 +98,56 @@ Because of this:
 - backend events must always provide a stable update ID
 - frontend code should avoid rebuilding subscriptions unnecessarily
 - cache invalidation must remain idempotent
+
+## Frontend Debugging and Health Checks
+
+The frontend realtime client exposes one explicit diagnostics service.
+
+Available commands:
+- `window.so.realtimeDiagnostics.setDebugEnabled(true)` enables verbose `console.info` logging for every streamed message
+- `window.so.realtimeDiagnostics.setDebugEnabled(false)` disables verbose message logging
+- `window.so.realtimeDiagnostics.getHealthSnapshot()` returns the current health snapshot
+- `window.so.realtimeDiagnostics.assertHealthy()` logs a health verdict to the console and returns a boolean
+
+Debug persistence:
+- the debug flag is persisted in `sessionStorage`
+- it survives page refreshes in the same browser tab
+- it does not intentionally propagate to other tabs
+
+Health snapshot fields include:
+- whether the client is started
+- whether at least one active subscription is currently healthy
+- active/open/reconnecting subscription counts
+
+Important note:
+- the browser `EventSource` API does not expose rich low-level disconnect reasons
+- when the stream stops unexpectedly, the client logs the best available reason derived from `readyState`
+- startup, successful connection, closure, reconnection, parsing failures, and stream errors are always sent to the browser console
+- full streamed payloads are logged only when realtime diagnostics debug is enabled
+
+## Current Project Detail Refresh Coverage
+
+The current project detail realtime hook refreshes these areas automatically:
+- board list and columns when a ticket is added, moved, updated, or deleted
+- ticket drawer basic information when the opened ticket is affected
+- ticket drawer task list when a task is added, removed, or modified under the opened ticket
+- ticket drawer activity feed when a related `TicketLog` is persisted
+- ticket drawer execution-derived token details when a related execution update is received
+- project tokens tab when execution events update token usage
+
+Current invalidation matrix:
+- `project.changed`: refreshes project header/details, board data, audit tab, and tokens tab
+- `ticket.changed` / `ticket.deleted`: refreshes board data, audit tab, and the opened drawer when the ticket matches
+- `task.changed` / `task.deleted`: refreshes board data, audit tab, and the opened drawer when the task or parent ticket matches
+- `ticket.log.changed`: refreshes board data and the opened drawer when the log belongs to the opened ticket or task
+- `execution.changed`: refreshes board data, tokens tab, and the opened drawer when the execution belongs to the opened ticket or task
+
+For project detail, this means the following user expectations are covered:
+- a ticket added, moved, deleted, or modified on the board refreshes automatically
+- a ticket description or other base ticket data change refreshes automatically
+- task SAM inside the drawer refreshes automatically
+- activity SAM inside the drawer refreshes automatically
+- tokens shown in the project tokens tab and related drawer data refresh automatically
 
 ## Diagrams
 

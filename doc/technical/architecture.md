@@ -19,7 +19,7 @@ The centralized observability chain is shared across layers:
 The centralized realtime chain is also shared across layers:
 - backend services emit normalized business updates through `RealtimeUpdateService`
 - a Mercure adapter publishes them to the hub
-- the frontend subscribes through one shared Mercure client instead of screen-specific SSE code
+- the frontend subscribes through one shared Mercure client
 
 Application translations are managed through Symfony translation files under `backend/translations/`.
 

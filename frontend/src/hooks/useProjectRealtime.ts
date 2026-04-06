@@ -9,7 +9,7 @@ import { realtimeTopics } from '@/lib/realtime/topics'
 import type { RealtimeUpdateEvent } from '@/types'
 
 /**
- * Subscribes the project detail page to backend SSE events and invalidates affected caches.
+ * Subscribes the project detail page to normalized realtime events and invalidates affected caches.
  */
 export function useProjectRealtime(projectId: string | undefined, openEntityId: string | null): void {
   const qc = useQueryClient()
@@ -32,6 +32,7 @@ export function useProjectRealtime(projectId: string | undefined, openEntityId: 
     }
 
     const subscription = realtimeClient.subscribe({
+      label: `project-detail:${projectId}`,
       topics,
       onMessage: (event: RealtimeUpdateEvent) => {
       try {
@@ -85,7 +86,7 @@ export function useProjectRealtime(projectId: string | undefined, openEntityId: 
     })
 
     return () => {
-      subscription.close()
+      subscription.close('project_detail_effect_cleanup')
     }
   }, [openEntityId, projectId, qc])
 }
