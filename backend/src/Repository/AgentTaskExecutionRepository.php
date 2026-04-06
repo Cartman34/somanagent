@@ -72,4 +72,53 @@ final class AgentTaskExecutionRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult() > 0;
     }
+
+    /**
+     * Returns all executions where the given agent was requested or effective, ordered by creation date descending.
+     *
+     * @param string $agentId UUID of the agent
+     * @param int    $limit   Maximum number of results
+     *
+     * @return AgentTaskExecution[]
+     */
+    public function findByAgent(string $agentId, int $limit = 50): array
+    {
+        $executionIds = array_column(
+            $this->createQueryBuilder('e')
+                ->select('e.id')
+                ->leftJoin('e.requestedAgent', 'ra')
+                ->leftJoin('e.effectiveAgent', 'ea')
+                ->andWhere('ra.id = :agentId OR ea.id = :agentId')
+                ->setParameter('agentId', $agentId)
+                ->orderBy('e.createdAt', 'DESC')
+                ->setMaxResults($limit)
+                ->getQuery()
+                ->getScalarResult(),
+            'id',
+        );
+
+        if ($executionIds === []) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('e')
+            ->distinct()
+            ->leftJoin('e.requestedAgent', 'ra')
+            ->addSelect('ra')
+            ->leftJoin('e.effectiveAgent', 'ea')
+            ->addSelect('ea')
+            ->leftJoin('e.attempts', 'attempt')
+            ->addSelect('attempt')
+            ->leftJoin('attempt.agent', 'attemptAgent')
+            ->addSelect('attemptAgent')
+            ->leftJoin('e.ticketTasks', 'tt')
+            ->addSelect('tt')
+            ->leftJoin('tt.ticket', 'ticket')
+            ->addSelect('ticket')
+            ->andWhere('e.id IN (:executionIds)')
+            ->setParameter('executionIds', $executionIds)
+            ->orderBy('e.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }
