@@ -15,6 +15,9 @@ use App\ValueObject\Prompt;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
+/**
+ * AgentPort implementation using the Claude API (Anthropic REST API).
+ */
 class ClaudeApiAdapter implements AgentPort
 {
     private const API_URL = 'https://api.anthropic.com/v1/messages';
@@ -22,11 +25,17 @@ class ClaudeApiAdapter implements AgentPort
 
     private Client $http;
 
+    /**
+     * Initializes the API client with the configured Anthropic API key.
+     */
     public function __construct(private readonly string $apiKey)
     {
         $this->http = new Client(['timeout' => 120]);
     }
 
+    /**
+     * Sends a prompt to the Anthropic Messages API and normalizes the response payload.
+     */
     public function sendPrompt(Prompt $prompt, AgentConfig $config): AgentResponse
     {
         $start = microtime(true);
@@ -55,6 +64,9 @@ class ClaudeApiAdapter implements AgentPort
         return AgentResponse::fromApi($content, $usage, $durationMs);
     }
 
+    /**
+     * Checks whether the Anthropic API is reachable with the configured credentials.
+     */
     public function healthCheck(): bool
     {
         try {
@@ -68,6 +80,9 @@ class ClaudeApiAdapter implements AgentPort
         }
     }
 
+    /**
+     * Indicates whether this adapter handles the Claude API connector type.
+     */
     public function supportsConnector(ConnectorType $type): bool
     {
         return $type === ConnectorType::ClaudeApi;

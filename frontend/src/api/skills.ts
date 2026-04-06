@@ -5,6 +5,7 @@
 import apiClient from './client'
 import type { Skill } from '@/types'
 
+/** Payload for creating a custom skill. */
 export interface SkillCreatePayload {
   name: string
   slug: string
@@ -12,6 +13,7 @@ export interface SkillCreatePayload {
   content: string
 }
 
+/** API client for skill CRUD operations and marketplace import. */
 export const skillsApi = {
   list: async (): Promise<Skill[]> => {
     const { data } = await apiClient.get('/skills')

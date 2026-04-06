@@ -9,6 +9,9 @@ namespace App\Service;
 
 use Symfony\Component\Process\Process;
 
+/**
+ * Manages Claude CLI authentication state and health checks.
+ */
 final class ClaudeCliAuthService
 {
     /**

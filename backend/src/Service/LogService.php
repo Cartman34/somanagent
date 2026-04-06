@@ -13,6 +13,9 @@ use App\Repository\LogOccurrenceRepository;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * Manages structured log events and occurrences: creation, deduplication, and status tracking.
+ */
 final class LogService
 {
     private const OCCURRENCE_LEVELS = ['warning', 'error', 'critical'];

@@ -14,6 +14,9 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * Represents a project, the top-level aggregate containing modules, tickets, workflows, and an assigned team.
+ */
 #[ORM\Entity(repositoryClass: ProjectRepository::class)]
 #[ORM\Table(name: 'project')]
 #[ORM\HasLifecycleCallbacks]

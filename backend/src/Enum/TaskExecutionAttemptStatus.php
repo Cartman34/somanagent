@@ -7,6 +7,9 @@ declare(strict_types=1);
 
 namespace App\Enum;
 
+/**
+ * Result of a single execution attempt within a task execution.
+ */
 enum TaskExecutionAttemptStatus: string
 {
     case Running = 'running';

@@ -17,6 +17,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * REST controller managing features (epics) within projects.
+ */
 #[Route('/api')]
 class FeatureController extends AbstractController
 {

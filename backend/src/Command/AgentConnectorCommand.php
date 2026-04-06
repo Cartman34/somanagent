@@ -17,17 +17,26 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
+/**
+ * CLI command to change the connector type for one or all agents.
+ */
 #[AsCommand(
     name: 'somanagent:agent:connector',
     description: 'Changes the connector for one agent or for every agent',
 )]
 final class AgentConnectorCommand extends Command
 {
+    /**
+     * Initializes the command with the agent service used to update connectors.
+     */
     public function __construct(private readonly AgentService $agentService)
     {
         parent::__construct();
     }
 
+    /**
+     * Declares the command arguments and options.
+     */
     protected function configure(): void
     {
         $this
@@ -36,6 +45,9 @@ final class AgentConnectorCommand extends Command
             ->addOption('all', null, InputOption::VALUE_NONE, 'Applies the change to every agent');
     }
 
+    /**
+     * Switches the connector for one agent or for every agent.
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);

@@ -4,9 +4,13 @@
 
 import { useState, useEffect } from 'react'
 
+/** Supported UI theme identifiers in display order. */
 export const THEMES = ['terminal', 'slate', 'obsidian', 'aurora', 'neo', 'chalk'] as const
+
+/** Available UI theme identifiers. */
 export type Theme = (typeof THEMES)[number]
 
+/** Display metadata associated with each supported theme. */
 export const THEME_META: Record<Theme, { label: string; accent: string }> = {
   terminal: { label: 'Terminal', accent: '#4ade80' },
   slate:    { label: 'Slate',    accent: '#4f46e5' },
@@ -28,6 +32,7 @@ function applyTheme(theme: Theme) {
   }
 }
 
+/** React hook that manages the current UI theme with localStorage persistence. */
 export function useTheme() {
   const [theme, setThemeState] = useState<Theme>(() => {
     const saved = localStorage.getItem(STORAGE_KEY) as Theme | null

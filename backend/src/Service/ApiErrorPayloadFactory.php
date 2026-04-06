@@ -9,8 +9,14 @@ namespace App\Service;
 
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+/**
+ * Factory for standardized API error response payloads using translation keys.
+ */
 final class ApiErrorPayloadFactory
 {
+    /**
+     * Initializes the factory with the translator used to render error texts.
+     */
     public function __construct(private readonly TranslatorInterface $translator) {}
 
     /**

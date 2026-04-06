@@ -15,6 +15,7 @@ const sizes = {
   lg: 'w-10 h-10',
 }
 
+/** Reusable loading spinner with size variants for inline loading states. */
 export default function Spinner({ size = 'md', className }: SpinnerProps) {
   return (
     <div
@@ -29,6 +30,7 @@ export default function Spinner({ size = 'md', className }: SpinnerProps) {
   )
 }
 
+/** Full-page centered spinner for page-level loading states. */
 export function PageSpinner() {
   return (
     <div className="flex items-center justify-center h-64">

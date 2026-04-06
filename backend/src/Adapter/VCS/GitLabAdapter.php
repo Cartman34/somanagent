@@ -11,10 +11,16 @@ use App\Port\VCSPort;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
+/**
+ * VCSPort implementation for GitLab repository operations.
+ */
 class GitLabAdapter implements VCSPort
 {
     private Client $http;
 
+    /**
+     * Initializes the GitLab API client with the configured token and base URL.
+     */
     public function __construct(
         private readonly string $token,
         private readonly string $baseUrl = 'https://gitlab.com',
@@ -28,6 +34,9 @@ class GitLabAdapter implements VCSPort
         ]);
     }
 
+    /**
+     * Fetches repository metadata from GitLab.
+     */
     public function getRepository(string $owner, string $repo): array
     {
         $id       = urlencode("{$owner}/{$repo}");
@@ -35,6 +44,9 @@ class GitLabAdapter implements VCSPort
         return json_decode((string) $response->getBody(), true);
     }
 
+    /**
+     * Creates a branch from the given source branch in GitLab.
+     */
     public function createBranch(string $owner, string $repo, string $branch, string $from = 'main'): void
     {
         $id = urlencode("{$owner}/{$repo}");
@@ -43,6 +55,9 @@ class GitLabAdapter implements VCSPort
         ]);
     }
 
+    /**
+     * Opens a merge request from the source branch into the target base branch.
+     */
     public function openPullRequest(string $owner, string $repo, string $title, string $body, string $head, string $base = 'main'): array
     {
         $id       = urlencode("{$owner}/{$repo}");
@@ -57,6 +72,9 @@ class GitLabAdapter implements VCSPort
         return json_decode((string) $response->getBody(), true);
     }
 
+    /**
+     * Returns the concatenated diff of all changes in a merge request.
+     */
     public function getDiff(string $owner, string $repo, string $pullRequestId): string
     {
         $id       = urlencode("{$owner}/{$repo}");
@@ -70,6 +88,9 @@ class GitLabAdapter implements VCSPort
         return $diff;
     }
 
+    /**
+     * Checks whether the configured token can reach the GitLab user endpoint.
+     */
     public function healthCheck(): bool
     {
         try {
@@ -80,6 +101,9 @@ class GitLabAdapter implements VCSPort
         }
     }
 
+    /**
+     * Returns the provider slug handled by this adapter.
+     */
     public function getProviderName(): string
     {
         return 'gitlab';

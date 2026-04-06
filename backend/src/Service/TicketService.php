@@ -24,6 +24,9 @@ use App\Repository\WorkflowStepActionRepository;
 use App\Repository\WorkflowStepRepository;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * Manages tickets: CRUD, status transitions, workflow step progression, and feature association.
+ */
 final class TicketService
 {
     /**

@@ -22,6 +22,9 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
+/**
+ * CLI command to seed default web development roles, skills, agents, and team.
+ */
 #[AsCommand(
     name: 'somanagent:seed:web-team',
     description: 'Creates the default web development roles and team.',
@@ -29,27 +32,27 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class SeedWebTeamCommand extends Command
 {
     private const ROLES = [
-        ['slug' => 'product-owner',   'name' => 'Product Owner',           'description' => 'Définit les US, priorise le backlog, accepte les livrables.'],
-        ['slug' => 'scrum-master',    'name' => 'Scrum Master',             'description' => 'Facilite les cérémonies agile, lève les obstacles.'],
-        ['slug' => 'lead-tech',       'name' => 'Lead Tech',                'description' => 'Architecture technique, revue de code, mentoring.'],
-        ['slug' => 'dev-php',         'name' => 'Développeur PHP',          'description' => 'Développement backend PHP / Symfony.'],
-        ['slug' => 'dev-frontend',    'name' => 'Développeur Frontend',     'description' => 'Développement React / TypeScript / CSS.'],
-        ['slug' => 'qa-tester',       'name' => 'Testeur QA',               'description' => 'Tests fonctionnels, rédaction d\'anomalies, recette.'],
-        ['slug' => 'ui-ux-designer',  'name' => 'Designer UI/UX',           'description' => 'Maquettes, design system, expérience utilisateur.'],
-        ['slug' => 'tech-writer',     'name' => 'Documentaliste Technique', 'description' => 'Rédaction documentation technique et fonctionnelle.'],
-        ['slug' => 'devops',          'name' => 'DevOps',                   'description' => 'CI/CD, infrastructure, monitoring, déploiements.'],
+        ['slug' => 'product-owner',   'name' => 'Product Owner',      'description' => 'Defines user stories, prioritizes the backlog, and accepts deliveries.'],
+        ['slug' => 'scrum-master',    'name' => 'Scrum Master',       'description' => 'Facilitates agile ceremonies and removes blockers.'],
+        ['slug' => 'lead-tech',       'name' => 'Lead Tech',          'description' => 'Handles technical architecture, code review, and mentoring.'],
+        ['slug' => 'dev-php',         'name' => 'PHP Developer',      'description' => 'Builds the PHP/Symfony backend.'],
+        ['slug' => 'dev-frontend',    'name' => 'Frontend Developer', 'description' => 'Builds React, TypeScript, and CSS interfaces.'],
+        ['slug' => 'qa-tester',       'name' => 'QA Tester',          'description' => 'Runs functional tests, reports issues, and validates releases.'],
+        ['slug' => 'ui-ux-designer',  'name' => 'UI/UX Designer',     'description' => 'Produces mockups, design system assets, and user experience guidance.'],
+        ['slug' => 'tech-writer',     'name' => 'Technical Writer',   'description' => 'Writes technical and functional documentation.'],
+        ['slug' => 'devops',          'name' => 'DevOps',             'description' => 'Owns CI/CD, infrastructure, monitoring, and deployments.'],
     ];
 
     private const AGENTS = [
-        ['name' => 'PO — Alice',       'slug' => 'product-owner',  'description' => 'Agent Product Owner. Rédige les US, priorise le backlog.'],
-        ['name' => 'Scrum — Bob',      'slug' => 'scrum-master',   'description' => 'Agent Scrum Master. Facilite et synchronise l\'équipe.'],
-        ['name' => 'Lead — Clara',     'slug' => 'lead-tech',      'description' => 'Agent Lead Tech. Valide l\'architecture et fait les revues de code.'],
-        ['name' => 'PHP — David',      'slug' => 'dev-php',        'description' => 'Agent Dev PHP. Implémente les fonctionnalités backend.'],
-        ['name' => 'Front — Emma',     'slug' => 'dev-frontend',   'description' => 'Agent Dev Frontend. Implémente les interfaces React.'],
-        ['name' => 'QA — Félix',       'slug' => 'qa-tester',      'description' => 'Agent Testeur QA. Rédige et exécute les tests, remonte les anomalies.'],
-        ['name' => 'Design — Grace',   'slug' => 'ui-ux-designer', 'description' => 'Agent Designer UI/UX. Produit les maquettes et le design system.'],
-        ['name' => 'Doc — Hugo',       'slug' => 'tech-writer',    'description' => 'Agent Documentaliste. Rédige la documentation technique.'],
-        ['name' => 'DevOps — Iris',    'slug' => 'devops',         'description' => 'Agent DevOps. Gère l\'infrastructure et les déploiements.'],
+        ['name' => 'PO - Alice',     'slug' => 'product-owner',  'description' => 'Product Owner agent. Writes user stories and prioritizes the backlog.'],
+        ['name' => 'Scrum - Bob',    'slug' => 'scrum-master',   'description' => 'Scrum Master agent. Facilitates the team and keeps work synchronized.'],
+        ['name' => 'Lead - Clara',   'slug' => 'lead-tech',      'description' => 'Lead Tech agent. Reviews architecture and code decisions.'],
+        ['name' => 'PHP - David',    'slug' => 'dev-php',        'description' => 'PHP developer agent. Implements backend features.'],
+        ['name' => 'Front - Emma',   'slug' => 'dev-frontend',   'description' => 'Frontend developer agent. Implements React interfaces.'],
+        ['name' => 'QA - Felix',     'slug' => 'qa-tester',      'description' => 'QA agent. Writes and executes tests, then reports issues.'],
+        ['name' => 'Design - Grace', 'slug' => 'ui-ux-designer', 'description' => 'UI/UX designer agent. Produces mockups and design system assets.'],
+        ['name' => 'Doc - Hugo',     'slug' => 'tech-writer',    'description' => 'Technical writer agent. Produces technical documentation.'],
+        ['name' => 'DevOps - Iris',  'slug' => 'devops',         'description' => 'DevOps agent. Manages infrastructure and deployments.'],
     ];
 
     private const ACTIONS = [
@@ -64,16 +67,25 @@ class SeedWebTeamCommand extends Command
         ['key' => 'ops.configure', 'label' => 'Infrastructure configuration', 'role' => 'devops', 'skill' => null],
     ];
 
+    /**
+     * Initializes the command with the entity manager used to persist the seed dataset.
+     */
     public function __construct(private readonly EntityManagerInterface $em)
     {
         parent::__construct();
     }
 
+    /**
+     * Declares the optional force flag used to recreate the dataset.
+     */
     protected function configure(): void
     {
         $this->addOption('force', null, InputOption::VALUE_NONE, 'Recreate the dataset even if roles already exist.');
     }
 
+    /**
+     * Seeds default roles, agents, actions, and team records for a web development setup.
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io    = new SymfonyStyle($input, $output);
@@ -102,9 +114,9 @@ class SeedWebTeamCommand extends Command
         }
 
         // Team
-        $team = new Team('Équipe Web', 'Équipe de développement web full-stack.');
+        $team = new Team('Web Team', 'Full-stack web development team.');
         $this->em->persist($team);
-        $io->text('  Team: <info>Équipe Web</info>');
+        $io->text('  Team: <info>Web Team</info>');
 
         // Agents
         $config = AgentConfig::fromArray(['model' => 'claude-sonnet-4-6']);

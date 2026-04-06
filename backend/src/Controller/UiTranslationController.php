@@ -13,11 +13,20 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+/**
+ * REST controller serving UI translation keys to the frontend.
+ */
 #[Route('/api/ui')]
 final class UiTranslationController extends AbstractController
 {
+    /**
+     * Initializes the controller with the Symfony translator.
+     */
     public function __construct(private readonly TranslatorInterface $translator) {}
 
+    /**
+     * Returns the requested UI translation keys for the current locale.
+     */
     #[Route('/translations', name: 'ui_translations_api', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {

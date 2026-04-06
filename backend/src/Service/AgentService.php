@@ -16,6 +16,9 @@ use App\Repository\TeamRepository;
 use App\ValueObject\AgentConfig;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * Manages agent CRUD, connector configuration, role assignment, and team membership.
+ */
 class AgentService
 {
     /**

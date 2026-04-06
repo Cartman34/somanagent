@@ -33,6 +33,9 @@ use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+/**
+ * Manages ticket tasks: creation, dependency resolution, agent dispatch, and execution lifecycle.
+ */
 final class TicketTaskService
 {
     /**

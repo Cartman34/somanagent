@@ -10,6 +10,9 @@ namespace App\Service;
 use App\Enum\ConnectorType;
 use App\Port\AgentPort;
 
+/**
+ * Registry that maps connector types to their corresponding AgentPort implementations.
+ */
 class AgentPortRegistry
 {
     /** @var AgentPort[] */
@@ -21,6 +24,9 @@ class AgentPortRegistry
         $this->adapters = iterator_to_array($adapters);
     }
 
+    /**
+     * Returns the adapter supporting the requested connector type.
+     */
     public function getFor(ConnectorType $type): AgentPort
     {
         foreach ($this->adapters as $adapter) {
@@ -30,7 +36,7 @@ class AgentPortRegistry
         }
 
         throw new \RuntimeException(
-            sprintf('Aucun adapter disponible pour le connecteur "%s"', $type->value)
+            sprintf('No adapter available for connector "%s".', $type->value)
         );
     }
 

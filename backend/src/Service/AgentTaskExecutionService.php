@@ -18,6 +18,9 @@ use App\Repository\AgentTaskExecutionAttemptRepository;
 use App\Repository\AgentTaskExecutionRepository;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * Manages agent task execution lifecycle: creation, attempt tracking, retries, and terminal state resolution.
+ */
 final class AgentTaskExecutionService
 {
     /**

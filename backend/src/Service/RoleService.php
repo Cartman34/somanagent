@@ -13,6 +13,9 @@ use App\Repository\RoleRepository;
 use App\Repository\SkillRepository;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * Manages specialization roles: CRUD, skill assignment, and agent association.
+ */
 class RoleService
 {
     /**

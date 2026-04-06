@@ -7,6 +7,9 @@ declare(strict_types=1);
 
 namespace App\Enum;
 
+/**
+ * Priority level of a ticket task.
+ */
 enum TaskPriority: string
 {
     case Low      = 'low';

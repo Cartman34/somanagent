@@ -7,6 +7,9 @@ declare(strict_types=1);
 
 namespace App\Enum;
 
+/**
+ * Identifies the author of a chat message: human user or agent.
+ */
 enum ChatAuthor: string
 {
     case Human = 'human';

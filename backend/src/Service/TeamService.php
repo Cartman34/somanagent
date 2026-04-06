@@ -14,6 +14,9 @@ use App\Repository\AgentRepository;
 use App\Repository\TeamRepository;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * Manages teams: CRUD, agent membership, and project assignment.
+ */
 class TeamService
 {
     /**

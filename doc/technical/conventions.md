@@ -62,8 +62,21 @@ An abstract class name must be prefixed with `Abstract`.
 ## PHPDoc
 
 PHPDoc is required on:
+- every PHP class, enum, interface, and trait (class-level docblock)
 - every public PHP method (unless truly trivial)
 - non-trivial private helpers
+
+The class-level docblock must describe the role and responsibility of the class/enum/interface/trait in one or two sentences.
+
+```php
+/**
+ * Manages projects: CRUD, module management, team/workflow assignment, and dispatch mode transitions.
+ */
+class ProjectService
+{
+    // ...
+}
+```
 
 When a Symfony method uses both a PHPDoc block and PHP attributes such as `#[Route(...)]`, keep the order:
 1. PHPDoc
@@ -86,7 +99,8 @@ public function create(Request $request): JsonResponse
 ## JSDoc / TSDoc
 
 JSDoc/TSDoc is mandatory on:
-- every exported component, hook, function, and utility
+- every exported type, interface, and const declaration in `.ts` files
+- every exported component, hook, function, and utility in `.tsx`/`.ts` files
 - every non-trivial internal helper
 
 The documentation must explain the role, the important inputs/outputs, and any side effects or behavioral constraints worth knowing before reuse. Avoid comments that merely paraphrase the code line by line.

@@ -16,15 +16,24 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * Health check endpoints for monitoring application and connector status.
+ */
 #[Route('/api/health')]
 class HealthController extends AbstractController
 {
+    /**
+     * Initializes the controller with services used by the health endpoints.
+     */
     public function __construct(
         private readonly AgentPortRegistry $agentPortRegistry,
         private readonly ClaudeCliAuthService $claudeCliAuthService,
         private readonly LogService $logService,
     ) {}
 
+    /**
+     * Returns a simple application health payload.
+     */
     #[Route('', name: 'health_check', methods: ['GET'])]
     public function index(): JsonResponse
     {

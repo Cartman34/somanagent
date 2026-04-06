@@ -11,6 +11,9 @@ use App\Repository\TicketTaskDependencyRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * Represents a dependency relationship between two ticket tasks (one task depends on another).
+ */
 #[ORM\Entity(repositoryClass: TicketTaskDependencyRepository::class)]
 #[ORM\Table(name: 'ticket_task_dependency')]
 #[ORM\UniqueConstraint(columns: ['ticket_task_id', 'depends_on_id'])]
@@ -28,6 +31,9 @@ class TicketTaskDependency
     #[ORM\JoinColumn(name: 'depends_on_id', nullable: false, onDelete: 'CASCADE')]
     private TicketTask $dependsOn;
 
+    /**
+     * Creates a dependency link from one ticket task to another.
+     */
     public function __construct(TicketTask $ticketTask, TicketTask $dependsOn)
     {
         $this->id = Uuid::v7();
@@ -35,7 +41,10 @@ class TicketTaskDependency
         $this->dependsOn = $dependsOn;
     }
 
+    /** Returns the dependency identifier. */
     public function getId(): Uuid { return $this->id; }
+    /** Returns the task that depends on another task. */
     public function getTicketTask(): TicketTask { return $this->ticketTask; }
+    /** Returns the prerequisite task. */
     public function getDependsOn(): TicketTask { return $this->dependsOn; }
 }

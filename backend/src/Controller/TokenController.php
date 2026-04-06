@@ -16,6 +16,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * REST controller exposing token usage statistics for agents and projects.
+ */
 #[Route('/api/tokens')]
 class TokenController extends AbstractController
 {

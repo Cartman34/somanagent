@@ -5,6 +5,7 @@
 import apiClient from './client'
 import type { LogEvent, LogOccurrence } from '@/types'
 
+/** Filter options for querying log events and occurrences. */
 export interface LogFilters {
   source?: string
   category?: string
@@ -26,6 +27,7 @@ export interface LogOccurrenceStatusPayload {
   status: LogOccurrence['status']
 }
 
+/** API client for querying log occurrences, raw events, and triage updates. */
 export const logsApi = {
   listOccurrences: async (filters: LogFilters): Promise<{ data: LogOccurrence[]; total: number; page: number; limit: number }> => {
     const { data } = await apiClient.get('/logs/occurrences', { params: filters })

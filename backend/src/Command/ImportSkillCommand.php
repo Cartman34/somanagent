@@ -15,19 +15,31 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
+/**
+ * CLI command to import a skill definition from skills.sh.
+ */
 #[AsCommand(name: 'somanagent:skill:import', description: 'Imports a skill from skills.sh (for example: owner/skill-name)')]
 class ImportSkillCommand extends Command
 {
+    /**
+     * Initializes the command with the skill service.
+     */
     public function __construct(private readonly SkillService $skillService)
     {
         parent::__construct();
     }
 
+    /**
+     * Declares the skill source argument.
+     */
     protected function configure(): void
     {
         $this->addArgument('source', InputArgument::REQUIRED, 'Skill source (for example: anthropics/code-reviewer)');
     }
 
+    /**
+     * Imports a skill from the registry and prints the resulting identifier.
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io     = new SymfonyStyle($input, $output);

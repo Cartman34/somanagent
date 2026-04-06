@@ -33,6 +33,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * REST controller managing tickets, tasks, execution history, and workflow transitions.
+ */
 #[Route('/api')]
 class TicketController extends AbstractController
 {

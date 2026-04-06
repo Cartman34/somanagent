@@ -14,14 +14,23 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
+/**
+ * CLI command to check the health of AI and VCS connectors.
+ */
 #[AsCommand(name: 'somanagent:health', description: 'Checks the health of AI and VCS connectors')]
 class HealthCheckCommand extends Command
 {
+    /**
+     * Initializes the command with the connector registry.
+     */
     public function __construct(private readonly AgentPortRegistry $registry)
     {
         parent::__construct();
     }
 
+    /**
+     * Prints the health status of every registered connector.
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io      = new SymfonyStyle($input, $output);

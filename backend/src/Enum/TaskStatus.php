@@ -7,6 +7,9 @@ declare(strict_types=1);
 
 namespace App\Enum;
 
+/**
+ * Lifecycle status of a ticket task within a project workflow.
+ */
 enum TaskStatus: string
 {
     case Backlog          = 'backlog';

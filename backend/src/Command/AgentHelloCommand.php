@@ -18,12 +18,18 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
+/**
+ * CLI command to send a test message to an agent in a project context.
+ */
 #[AsCommand(
     name: 'somanagent:agent:hello',
     description: 'Sends a test message to an agent in a project context',
 )]
 final class AgentHelloCommand extends Command
 {
+    /**
+     * Initializes the command with the services required to send a test chat message.
+     */
     public function __construct(
         private readonly ProjectService $projectService,
         private readonly AgentService $agentService,
@@ -32,6 +38,9 @@ final class AgentHelloCommand extends Command
         parent::__construct();
     }
 
+    /**
+     * Declares the command arguments and options.
+     */
     protected function configure(): void
     {
         $this
@@ -40,6 +49,9 @@ final class AgentHelloCommand extends Command
             ->addOption('message', null, InputOption::VALUE_REQUIRED, 'Message to send', 'hello');
     }
 
+    /**
+     * Sends a test message to an agent within a project context and prints the reply.
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);

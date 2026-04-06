@@ -21,12 +21,18 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * CLI command to redispatch a lost ticket execution to an agent.
+ */
 #[AsCommand(
     name: 'somanagent:task:redispatch',
     description: 'Redispatches an existing ticket execution when a Messenger message was lost.',
 )]
 final class RedispatchTaskCommand extends Command
 {
+    /**
+     * Initializes the command with services used to resolve and redispatch tasks.
+     */
     public function __construct(
         private readonly TicketTaskService $ticketTaskService,
         private readonly AgentRepository $agentRepository,
@@ -35,6 +41,9 @@ final class RedispatchTaskCommand extends Command
         parent::__construct();
     }
 
+    /**
+     * Declares the task selection arguments and redispatch options.
+     */
     protected function configure(): void
     {
         $this
@@ -45,6 +54,9 @@ final class RedispatchTaskCommand extends Command
             ->addOption('sync', null, InputOption::VALUE_NONE, 'Deprecated. The refactored model only supports redispatch through Messenger.');
     }
 
+    /**
+     * Redispatches a task execution using the provided selector and optional agent override.
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
@@ -98,6 +110,9 @@ final class RedispatchTaskCommand extends Command
         return Command::SUCCESS;
     }
 
+    /**
+     * Resolves a task from exactly one selector mode and reports errors through the console.
+     */
     private function resolveTask(?string $taskId, ?string $title, bool $latest, SymfonyStyle $io): ?\App\Entity\TicketTask
     {
         $modeCount = (int) ($taskId !== null) + (int) ($title !== null) + (int) $latest;

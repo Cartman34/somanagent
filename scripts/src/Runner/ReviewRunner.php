@@ -14,6 +14,8 @@ namespace SoManAgent\Script\Runner;
  */
 final class ReviewRunner extends AbstractScriptRunner
 {
+    private const FRENCH_REGEX = '/[\x{00C0}-\x{00FF}\x{0152}\x{0153}]/u';
+
     protected function getDescription(): string
     {
         return 'Run mechanical review checks on modified and untracked files';
@@ -28,131 +30,192 @@ final class ReviewRunner extends AbstractScriptRunner
 
     public function run(array $args): int
     {
-        $run = static function (string $command): array {
-            $lines = [];
-            exec($command . ' 2>&1', $lines, $code);
-            return [$code, $lines];
-        };
+        [$modifiedFiles, $untrackedFiles] = $this->collectGitStatusFiles();
+        $allFiles = $this->filterExistingFiles(array_merge($modifiedFiles, $untrackedFiles));
+        $phpFiles = $this->filterPhpSourceFiles($allFiles);
+        $tsFiles = $this->filterFrontendSourceFiles($allFiles);
 
-        $readLines = static function (string $path): array {
-            $content = file_get_contents($path);
-            if ($content === false) {
-                return [];
-            }
-            return explode("\n", $content);
-        };
+        echo "=== Modified files ===\n";
+        $this->printPrefixedList($modifiedFiles, 'M  ');
+        echo "\n";
 
-        $hasDocBlock = static function (array $lines, int $i): bool {
-            for ($j = $i - 1; $j >= 0; $j--) {
-                $prev = trim($lines[$j]);
-                if ($prev === '') {
-                    return false;
-                }
-                if ($prev === '*/' || (str_starts_with($prev, '/**') && str_ends_with($prev, '*/'))) {
-                    return true;
-                }
-                if (str_starts_with($prev, '//') || str_starts_with($prev, '*') || str_starts_with($prev, '@') || str_starts_with($prev, '#[')) {
-                    continue;
-                }
-                return false;
-            }
-            return false;
-        };
+        echo "=== Untracked files ===\n";
+        $this->printPrefixedList($untrackedFiles, '?? ');
+        echo "\n";
 
-        [, $statusLines] = $run('git status --porcelain');
+        $frenchHits = $this->collectFrenchStringHits($allFiles);
+        echo "=== French strings in modified/new source files ===\n";
+        $this->printList($frenchHits);
+        echo "\n";
 
-        $modifiedFiles  = [];
+        $missingClassPhpdoc = $this->collectMissingClassPhpdoc($phpFiles);
+        echo "=== Missing PHPDoc on PHP classes, enums, and interfaces (backend/src/) ===\n";
+        $this->printList($missingClassPhpdoc);
+        echo "\n";
+
+        $missingPhpdoc = $this->collectMissingPublicMethodPhpdoc($phpFiles);
+        echo "=== Missing PHPDoc on public PHP methods (backend/src/) ===\n";
+        $this->printList($missingPhpdoc);
+        echo "\n";
+
+        $missingJsdoc = $this->collectMissingJsdoc($tsFiles);
+        echo "=== Missing JSDoc on exported declarations (frontend/src/ .ts/.tsx) ===\n";
+        $this->printList($missingJsdoc);
+        echo "\n";
+
+        echo "=== File validation ===\n";
+        $validateExitCode = $this->printFileValidation($allFiles);
+        echo "\n";
+
+        echo "=== Translation validation ===\n";
+        $translationExitCode = $this->printTranslationValidation();
+        echo "\n";
+
+        $hasBlockers = $frenchHits !== [] || $missingPhpdoc !== [] || $missingJsdoc !== []
+            || $validateExitCode !== 0
+            || $translationExitCode !== 0;
+
+        return $hasBlockers ? 1 : 0;
+    }
+
+    /**
+     * @return array{0: list<string>, 1: list<string>}
+     */
+    private function collectGitStatusFiles(): array
+    {
+        [, $statusLines] = $this->runCommand('git status --porcelain');
+
+        $modifiedFiles = [];
         $untrackedFiles = [];
 
         foreach ($statusLines as $line) {
             if (strlen($line) < 4) {
                 continue;
             }
-            $xy   = substr($line, 0, 2);
+
+            $xy = substr($line, 0, 2);
             $path = trim(substr($line, 3));
 
             if (str_contains($path, ' -> ')) {
                 $path = substr($path, strrpos($path, ' -> ') + 4);
             }
+
             $path = trim($path, '"');
 
             if ($xy === '??') {
                 $untrackedFiles[] = $path;
-            } elseif (str_contains($xy, 'M') || str_contains($xy, 'A')) {
+                continue;
+            }
+
+            if (str_contains($xy, 'M') || str_contains($xy, 'A')) {
                 $modifiedFiles[] = $path;
             }
         }
 
-        $allFiles = array_filter(
-            array_merge($modifiedFiles, $untrackedFiles),
-            static fn(string $p) => !str_ends_with($p, '/') && file_exists($p)
-        );
+        return [$modifiedFiles, $untrackedFiles];
+    }
 
-        echo "=== Modified files ===\n";
-        if ($modifiedFiles === []) {
-            echo "(none)\n";
-        } else {
-            foreach ($modifiedFiles as $f) {
-                echo "M  $f\n";
-            }
-        }
-        echo "\n";
+    /**
+     * @param string[] $files
+     * @return string[]
+     */
+    private function filterExistingFiles(array $files): array
+    {
+        return array_values(array_filter(
+            $files,
+            static fn(string $path): bool => !str_ends_with($path, '/') && file_exists($path)
+        ));
+    }
 
-        echo "=== Untracked files ===\n";
-        if ($untrackedFiles === []) {
-            echo "(none)\n";
-        } else {
-            foreach ($untrackedFiles as $path) {
-                echo "?? $path\n";
-            }
-        }
-        echo "\n";
+    /**
+     * @param string[] $files
+     * @return string[]
+     */
+    private function filterPhpSourceFiles(array $files): array
+    {
+        return array_values(array_filter($files, static function (string $path): bool {
+            return pathinfo($path, PATHINFO_EXTENSION) === 'php'
+                && str_starts_with($path, 'backend/src/');
+        }));
+    }
 
-        echo "=== French strings in modified/new source files ===\n";
-
-        $frenchSourceFiles = array_filter($allFiles, static function (string $path): bool {
+    /**
+     * @param string[] $files
+     * @return string[]
+     */
+    private function filterFrontendSourceFiles(array $files): array
+    {
+        return array_values(array_filter($files, static function (string $path): bool {
             $ext = pathinfo($path, PATHINFO_EXTENSION);
-            if ($ext === 'php') {
-                return str_starts_with($path, 'backend/src/');
-            }
-            if ($ext === 'ts' || $ext === 'tsx') {
-                return str_starts_with($path, 'frontend/src/');
-            }
-            return false;
-        });
+            return ($ext === 'ts' || $ext === 'tsx') && str_starts_with($path, 'frontend/src/');
+        }));
+    }
 
-        $frenchRegex = '/[\x{00C0}-\x{00FF}\x{0152}\x{0153}]/u';
+    /**
+     * @param string[] $files
+     * @return string[]
+     */
+    private function collectFrenchStringHits(array $files): array
+    {
+        $hits = [];
 
-        $frenchHits = [];
-        foreach ($frenchSourceFiles as $path) {
-            $lines = $readLines($path);
-            foreach ($lines as $lineNum => $lineContent) {
-                if (preg_match($frenchRegex, $lineContent) === 1) {
-                    $frenchHits[] = sprintf('%s:%d  %s', $path, $lineNum + 1, trim($lineContent));
+        foreach ($this->filterPhpSourceFiles($files) as $path) {
+            foreach ($this->readLines($path) as $lineNum => $lineContent) {
+                if (preg_match(self::FRENCH_REGEX, $lineContent) === 1) {
+                    $hits[] = sprintf('%s:%d  %s', $path, $lineNum + 1, trim($lineContent));
                 }
             }
         }
 
-        if ($frenchHits === []) {
-            echo "(none)\n";
-        } else {
-            foreach ($frenchHits as $hit) {
-                echo $hit . "\n";
+        foreach ($this->filterFrontendSourceFiles($files) as $path) {
+            foreach ($this->readLines($path) as $lineNum => $lineContent) {
+                if (preg_match(self::FRENCH_REGEX, $lineContent) === 1) {
+                    $hits[] = sprintf('%s:%d  %s', $path, $lineNum + 1, trim($lineContent));
+                }
             }
         }
-        echo "\n";
 
-        echo "=== Missing PHPDoc on public PHP methods (backend/src/) ===\n";
+        return $hits;
+    }
 
-        $phpFiles = array_filter($allFiles, static function (string $path): bool {
-            return pathinfo($path, PATHINFO_EXTENSION) === 'php'
-                && str_starts_with($path, 'backend/src/');
-        });
-
-        $missingPhpdoc = [];
+    /**
+     * @param string[] $phpFiles
+     * @return string[]
+     */
+    private function collectMissingClassPhpdoc(array $phpFiles): array
+    {
+        $hits = [];
 
         foreach ($phpFiles as $path) {
-            $lines     = $readLines($path);
+            $lines = $this->readLines($path);
+            $lineCount = count($lines);
+
+            for ($i = 0; $i < $lineCount; $i++) {
+                $line = $lines[$i];
+
+                if (!preg_match('/^\s*(abstract\s+|final\s+)?(class|enum|interface|trait)\s+\w+/', $line)) {
+                    continue;
+                }
+
+                if (!$this->hasDocBlock($lines, $i)) {
+                    $hits[] = sprintf('%s:%d  %s', $path, $i + 1, trim($line));
+                }
+            }
+        }
+
+        return $hits;
+    }
+
+    /**
+     * @param string[] $phpFiles
+     * @return string[]
+     */
+    private function collectMissingPublicMethodPhpdoc(array $phpFiles): array
+    {
+        $hits = [];
+
+        foreach ($phpFiles as $path) {
+            $lines = $this->readLines($path);
             $lineCount = count($lines);
 
             for ($i = 0; $i < $lineCount; $i++) {
@@ -162,32 +225,25 @@ final class ReviewRunner extends AbstractScriptRunner
                     continue;
                 }
 
-                if (!$hasDocBlock($lines, $i)) {
-                    $missingPhpdoc[] = sprintf('%s:%d  %s', $path, $i + 1, trim($line));
+                if (!$this->hasDocBlock($lines, $i)) {
+                    $hits[] = sprintf('%s:%d  %s', $path, $i + 1, trim($line));
                 }
             }
         }
 
-        if ($missingPhpdoc === []) {
-            echo "(none)\n";
-        } else {
-            foreach ($missingPhpdoc as $hit) {
-                echo $hit . "\n";
-            }
-        }
-        echo "\n";
+        return $hits;
+    }
 
-        echo "=== Missing JSDoc on exported declarations (frontend/src/ .ts/.tsx) ===\n";
-
-        $tsFiles = array_filter($allFiles, static function (string $path): bool {
-            $ext = pathinfo($path, PATHINFO_EXTENSION);
-            return ($ext === 'ts' || $ext === 'tsx') && str_starts_with($path, 'frontend/src/');
-        });
-
-        $missingJsdoc = [];
+    /**
+     * @param string[] $tsFiles
+     * @return string[]
+     */
+    private function collectMissingJsdoc(array $tsFiles): array
+    {
+        $hits = [];
 
         foreach ($tsFiles as $path) {
-            $lines     = $readLines($path);
+            $lines = $this->readLines($path);
             $lineCount = count($lines);
 
             for ($i = 0; $i < $lineCount; $i++) {
@@ -197,47 +253,145 @@ final class ReviewRunner extends AbstractScriptRunner
                     continue;
                 }
 
-                if (!$hasDocBlock($lines, $i)) {
-                    $missingJsdoc[] = sprintf('%s:%d  %s', $path, $i + 1, trim($line));
+                if (!$this->hasDocBlock($lines, $i)) {
+                    $hits[] = sprintf('%s:%d  %s', $path, $i + 1, trim($line));
                 }
             }
         }
 
-        if ($missingJsdoc === []) {
-            echo "(none)\n";
-        } else {
-            foreach ($missingJsdoc as $hit) {
-                echo $hit . "\n";
-            }
-        }
-        echo "\n";
+        return $hits;
+    }
 
-        echo "=== File validation ===\n";
-
-        $validateFiles = array_values($allFiles);
-        $validateExitCode = 0;
-
-        if ($validateFiles === []) {
+    /**
+     * @param string[] $files
+     */
+    private function printFileValidation(array $files): int
+    {
+        if ($files === []) {
             echo "(no files to validate)\n";
-        } else {
-            $fileArgs = implode(' ', array_map('escapeshellarg', $validateFiles));
-            [$validateExitCode, $validateLines] = $run('php scripts/validate-files.php --with-types ' . $fileArgs);
-            foreach ($validateLines as $line) {
-                echo $line . "\n";
-            }
+            return 0;
         }
-        echo "\n";
 
-        echo "=== Translation validation ===\n";
-        [$translationExitCode, $translationLines] = $run('php scripts/validate-translations.php');
-        foreach ($translationLines as $line) {
+        $fileArgs = implode(' ', array_map('escapeshellarg', $files));
+        [$exitCode, $lines] = $this->runCommand('php scripts/validate-files.php --with-types ' . $fileArgs);
+
+        foreach ($lines as $line) {
             echo $line . "\n";
         }
-        echo "\n";
 
-        $hasBlockers = $frenchHits !== [] || $missingPhpdoc !== [] || $missingJsdoc !== []
-            || $validateExitCode !== 0
-            || $translationExitCode !== 0;
-        return $hasBlockers ? 1 : 0;
+        return $exitCode;
+    }
+
+    private function printTranslationValidation(): int
+    {
+        [$exitCode, $lines] = $this->runCommand('php scripts/validate-translations.php');
+
+        foreach ($lines as $line) {
+            echo $line . "\n";
+        }
+
+        return $exitCode;
+    }
+
+    /**
+     * @return array{0: int, 1: string[]}
+     */
+    private function runCommand(string $command): array
+    {
+        $lines = [];
+        exec($command . ' 2>&1', $lines, $code);
+
+        return [$code, $lines];
+    }
+
+    /**
+     * @return string[]
+     */
+    private function readLines(string $path): array
+    {
+        $content = file_get_contents($path);
+
+        if ($content === false) {
+            return [];
+        }
+
+        return explode("\n", $content);
+    }
+
+    /**
+     * @param string[] $lines
+     */
+    private function hasDocBlock(array $lines, int $lineIndex): bool
+    {
+        $inMultiLineAttr = false;
+
+        for ($i = $lineIndex - 1; $i >= 0; $i--) {
+            $previous = trim($lines[$i]);
+
+            if ($previous === '') {
+                return false;
+            }
+
+            if ($inMultiLineAttr) {
+                if (str_starts_with($previous, '#[')) {
+                    $inMultiLineAttr = false;
+                }
+                continue;
+            }
+
+            if ($previous === '*/' || (str_starts_with($previous, '/**') && str_ends_with($previous, '*/'))) {
+                return true;
+            }
+
+            if (str_starts_with($previous, '//') || str_starts_with($previous, '*') || str_starts_with($previous, '@')) {
+                continue;
+            }
+
+            if (str_starts_with($previous, '#[')) {
+                if (!str_ends_with($previous, ']') && !str_ends_with($previous, ')]')) {
+                    $inMultiLineAttr = true;
+                }
+                continue;
+            }
+
+            if (str_ends_with($previous, ')]') || str_ends_with($previous, ']')) {
+                $inMultiLineAttr = true;
+                continue;
+            }
+
+            return false;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param string[] $items
+     */
+    private function printList(array $items): void
+    {
+        if ($items === []) {
+            echo "(none)\n";
+            return;
+        }
+
+        foreach ($items as $item) {
+            echo $item . "\n";
+        }
+    }
+
+    /**
+     * @param string[] $items
+     */
+    private function printPrefixedList(array $items, string $prefix): void
+    {
+        if ($items === []) {
+            echo "(none)\n";
+            return;
+        }
+
+        foreach ($items as $item) {
+            echo $prefix . $item . "\n";
+        }
     }
 }

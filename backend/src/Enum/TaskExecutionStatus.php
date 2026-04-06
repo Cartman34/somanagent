@@ -7,6 +7,9 @@ declare(strict_types=1);
 
 namespace App\Enum;
 
+/**
+ * Lifecycle status of a task execution, from pending to terminal states.
+ */
 enum TaskExecutionStatus: string
 {
     case Pending = 'pending';

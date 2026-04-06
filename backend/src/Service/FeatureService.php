@@ -14,6 +14,9 @@ use App\Enum\FeatureStatus;
 use App\Repository\FeatureRepository;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * Manages features (epics) within projects: CRUD, status transitions, and ticket association.
+ */
 class FeatureService
 {
     /**

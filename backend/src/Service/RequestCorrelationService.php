@@ -11,13 +11,22 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * Generates and retrieves per-request correlation IDs for distributed tracing.
+ */
 final class RequestCorrelationService
 {
     public const ATTRIBUTE = '_request_ref';
     public const HEADER = 'X-Request-Ref';
 
+    /**
+     * Initializes the service with the current request stack.
+     */
     public function __construct(private readonly RequestStack $requestStack) {}
 
+    /**
+     * Returns the current request correlation identifier when a request is active.
+     */
     public function getCurrentRequestRef(): ?string
     {
         $request = $this->requestStack->getCurrentRequest();
@@ -28,6 +37,9 @@ final class RequestCorrelationService
         return $this->ensureRequestRef($request);
     }
 
+    /**
+     * Reuses an incoming request reference or generates a new one and stores it on the request.
+     */
     public function ensureRequestRef(Request $request): string
     {
         $existing = $request->attributes->get(self::ATTRIBUTE)

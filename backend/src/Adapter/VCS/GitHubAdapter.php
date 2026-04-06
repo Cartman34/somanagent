@@ -11,12 +11,18 @@ use App\Port\VCSPort;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
+/**
+ * VCSPort implementation for GitHub repository operations.
+ */
 class GitHubAdapter implements VCSPort
 {
     private const BASE_URL = 'https://api.github.com';
 
     private Client $http;
 
+    /**
+     * Initializes the GitHub API client with the provided personal access token.
+     */
     public function __construct(private readonly string $token)
     {
         $this->http = new Client([
@@ -29,15 +35,21 @@ class GitHubAdapter implements VCSPort
         ]);
     }
 
+    /**
+     * Fetches repository metadata from GitHub.
+     */
     public function getRepository(string $owner, string $repo): array
     {
         $response = $this->http->get("/repos/{$owner}/{$repo}");
         return json_decode((string) $response->getBody(), true);
     }
 
+    /**
+     * Creates a branch from the given source branch in the target repository.
+     */
     public function createBranch(string $owner, string $repo, string $branch, string $from = 'main'): void
     {
-        // Récupère le SHA de la branche source
+        // Fetch the SHA of the source branch before creating the new ref.
         $refResponse = $this->http->get("/repos/{$owner}/{$repo}/git/ref/heads/{$from}");
         $sha         = json_decode((string) $refResponse->getBody(), true)['object']['sha'];
 
@@ -46,6 +58,9 @@ class GitHubAdapter implements VCSPort
         ]);
     }
 
+    /**
+     * Opens a pull request from the source branch into the target base branch.
+     */
     public function openPullRequest(string $owner, string $repo, string $title, string $body, string $head, string $base = 'main'): array
     {
         $response = $this->http->post("/repos/{$owner}/{$repo}/pulls", [
@@ -54,6 +69,9 @@ class GitHubAdapter implements VCSPort
         return json_decode((string) $response->getBody(), true);
     }
 
+    /**
+     * Returns the unified diff for a pull request.
+     */
     public function getDiff(string $owner, string $repo, string $pullRequestId): string
     {
         $response = $this->http->get("/repos/{$owner}/{$repo}/pulls/{$pullRequestId}", [
@@ -62,6 +80,9 @@ class GitHubAdapter implements VCSPort
         return (string) $response->getBody();
     }
 
+    /**
+     * Checks whether the configured token can reach the GitHub user endpoint.
+     */
     public function healthCheck(): bool
     {
         try {
@@ -72,6 +93,9 @@ class GitHubAdapter implements VCSPort
         }
     }
 
+    /**
+     * Returns the provider slug handled by this adapter.
+     */
     public function getProviderName(): string
     {
         return 'github';

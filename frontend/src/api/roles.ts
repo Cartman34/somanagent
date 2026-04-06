@@ -5,12 +5,14 @@
 import apiClient from './client'
 import type { Role } from '@/types'
 
+/** Payload for creating or updating a role. */
 export interface RolePayload {
   slug: string
   name: string
   description?: string
 }
 
+/** API client for role CRUD operations and skill assignments. */
 export const rolesApi = {
   list: async (): Promise<Role[]> => {
     const { data } = await apiClient.get('/roles')
