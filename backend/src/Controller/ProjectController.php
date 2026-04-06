@@ -61,6 +61,9 @@ class ProjectController extends AbstractController
         if (empty($data['name'])) {
             return $this->json($this->apiErrorPayloadFactory->create('project.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
+        if (empty($data['teamId'])) {
+            return $this->json($this->apiErrorPayloadFactory->create('project.validation.team_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
 
         try {
             $project = $this->projectService->create(

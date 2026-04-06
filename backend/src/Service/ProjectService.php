@@ -58,17 +58,20 @@ class ProjectService
             throw new \LogicException($this->translator->trans('project.validation.workflow_required', [], 'app'));
         }
 
+        if ($teamId === null || $teamId === '') {
+            throw new \LogicException($this->translator->trans('project.validation.team_required', [], 'app'));
+        }
+
+        $team = $this->teamRepository->find(Uuid::fromString($teamId));
+        if ($team === null) {
+            throw new \LogicException($this->translator->trans('project.validation.team_invalid', [], 'app'));
+        }
+
         $project = new Project($name, $description);
         $project
             ->setRepositoryUrl($repositoryUrl)
-            ->setDispatchMode($dispatchMode);
-
-        if ($teamId !== null) {
-            $team = $this->teamRepository->find(Uuid::fromString($teamId));
-            if ($team !== null) {
-                $project->setTeam($team);
-            }
-        }
+            ->setDispatchMode($dispatchMode)
+            ->setTeam($team);
 
         $project->setWorkflow($this->resolveAssignableWorkflow(null, $workflowId));
 
