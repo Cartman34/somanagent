@@ -30,6 +30,36 @@ Rules:
 - For `local/backlog-board.md`, `local/backlog-changes.md`, and `local/backlog-review.md`, always follow the rules written in each file's `## Règles d'usage` section.
 - Every modification to project files must be recorded in `local/backlog-changes.md`.
 
+## Worktrees
+
+- Unless the user explicitly asks otherwise, work on the main workspace.
+- When the user asks for isolated parallel work, create and use a dedicated worktree per agent.
+- Create agent worktrees under `.worktrees/` inside the main repository so they stay in the same WSL filesystem and remain easy to ignore.
+- Use one dedicated branch per agent worktree.
+- Name worktrees and branches with the agent identifier when one is provided, for example `agent-01`.
+- Keep `.worktrees/` ignored in the root `.gitignore`.
+
+Backlog rules with worktrees:
+
+- `local/backlog-board.md`, `local/backlog-changes.md`, and `local/backlog-review.md` remain the source of truth in the main workspace.
+- Do not maintain a parallel backlog state inside a worktree.
+- If the user asks to move a task into `local/backlog-changes.md` before repatriation, edit the file in the main workspace, not inside the worktree.
+- After a repatriation, continue on the main workspace until a new task is explicitly started in a worktree.
+
+Implementation rules with worktrees:
+
+- Code changes for the isolated task must be done in the dedicated worktree.
+- Avoid modifying the main workspace while the task is still isolated, except for shared coordination changes explicitly requested by the user, such as `.gitignore` or backlog updates in `local/`.
+- Before considering the isolated task done, run `php scripts/review.php` in the worktree and fix mechanical blockers within scope.
+
+Repatriation rules:
+
+- Repatriate changes with git-based workflows whenever possible.
+- Prefer reviewing the worktree diff, then using git tools such as commit plus `cherry-pick`, generated patch application, or a targeted merge strategy instead of copying files manually.
+- Resolve conflicts explicitly and verify the merged result in the main workspace.
+- After repatriation, run `php scripts/review.php` in the main workspace and fix mechanical blockers within scope.
+- Once repatriation is complete, update `local/backlog-changes.md` in the main workspace according to the relevant file rules.
+
 ## Role Selection
 
 Use one active role only.

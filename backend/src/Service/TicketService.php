@@ -150,11 +150,8 @@ final class TicketService
             static fn(TicketTask $task): bool => $task->getWorkflowStep()?->getId()?->toRfc4122() === $currentStep->getId()->toRfc4122(),
         );
 
-        foreach ($currentStepTasks as $task) {
-            if ($this->ticketLogService->countPendingAnswersForTask($task) > 0) {
-                throw new \LogicException($this->translator->trans('ticket.error.pending_answers_before_workflow_transition', [], 'app'));
-            }
-        }
+        $this->assertAdvanceableCurrentStepTasks($currentStepTasks);
+        $this->completeManualReviewTasks($currentStepTasks);
 
         $nextStep = $this->workflowStepRepository->findNextByWorkflowStep($currentStep);
         if ($nextStep === null) {
@@ -218,9 +215,77 @@ final class TicketService
             return [];
         }
 
+        $currentStepTasks = array_filter(
+            $this->ticketTaskService->findByTicket($ticket),
+            static fn(TicketTask $task): bool => $task->getWorkflowStep()?->getId()?->toRfc4122() === $currentStep->getId()->toRfc4122(),
+        );
+        if (!$this->canAdvanceCurrentStepTasks($currentStepTasks)) {
+            return [];
+        }
+
         $nextStep = $this->workflowStepRepository->findNextByWorkflowStep($currentStep);
 
         return $nextStep !== null ? [$nextStep] : [];
+    }
+
+    /**
+     * @param TicketTask[] $currentStepTasks
+     */
+    private function assertAdvanceableCurrentStepTasks(array $currentStepTasks): void
+    {
+        foreach ($currentStepTasks as $task) {
+            if ($this->ticketLogService->countPendingAnswersForTask($task) > 0) {
+                throw new \LogicException($this->translator->trans('ticket.error.pending_answers_before_workflow_transition', [], 'app'));
+            }
+
+            if ($this->ticketTaskService->hasActiveExecution($task)) {
+                throw new \LogicException($this->translator->trans('ticket.error.active_execution_before_workflow_transition', [], 'app'));
+            }
+
+            if ($task->getStatus() === TaskStatus::Review || $task->getStatus()->isDone()) {
+                continue;
+            }
+
+            throw new \LogicException($this->translator->trans('ticket.error.current_step_tasks_incomplete_before_workflow_transition', [], 'app'));
+        }
+    }
+
+    /**
+     * @param TicketTask[] $currentStepTasks
+     */
+    private function completeManualReviewTasks(array $currentStepTasks): void
+    {
+        foreach ($currentStepTasks as $task) {
+            if ($task->getStatus() !== TaskStatus::Review) {
+                continue;
+            }
+
+            $this->ticketTaskService->changeStatus($task, TaskStatus::Done);
+        }
+    }
+
+    /**
+     * @param TicketTask[] $currentStepTasks
+     */
+    private function canAdvanceCurrentStepTasks(array $currentStepTasks): bool
+    {
+        foreach ($currentStepTasks as $task) {
+            if ($this->ticketLogService->countPendingAnswersForTask($task) > 0) {
+                return false;
+            }
+
+            if ($this->ticketTaskService->hasActiveExecution($task)) {
+                return false;
+            }
+
+            if ($task->getStatus() === TaskStatus::Review || $task->getStatus()->isDone()) {
+                continue;
+            }
+
+            return false;
+        }
+
+        return true;
     }
 
     private function initializeCurrentWorkflowStep(Ticket $ticket): void

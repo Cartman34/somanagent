@@ -91,6 +91,13 @@ A **Story** (user story) or **Bug** is a ticket that progresses through the step
 - the current progression state is stored on `Ticket.workflowStep`
 - a ticket may expose manual next steps depending on the current workflow step
 - agent execution depends on the current step and the tasks attached to that step
+- a manual workflow transition is allowed only when the current-step tasks are already terminal or explicitly waiting for human validation; approving the transition also closes those review tasks
+
+### Product terminology
+
+- **Board**: the kanban tab inside one project. Use `Board` as the tab label, not `Tableau`
+- **Workflow step names**: use masculine labels for the default progression (`Nouveau`, `Prêt`, `Planification`, `Design`, `Développement`, `Revue`, `Terminé`)
+- **Ready / Prêt**: a ticket in `Prêt` has completed the Product Owner framing step and can enter implementation planning
 
 ---
 
