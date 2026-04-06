@@ -28,6 +28,9 @@ final class ReviewRunner extends AbstractScriptRunner
         ];
     }
 
+    /**
+     * Executes the review checks against modified and untracked files.
+     */
     public function run(array $args): int
     {
         [$modifiedFiles, $untrackedFiles] = $this->collectGitStatusFiles();
@@ -49,12 +52,12 @@ final class ReviewRunner extends AbstractScriptRunner
         echo "\n";
 
         $missingClassPhpdoc = $this->collectMissingClassPhpdoc($phpFiles);
-        echo "=== Missing PHPDoc on PHP classes, enums, and interfaces (backend/src/) ===\n";
+        echo "=== Missing PHPDoc on PHP classes, enums, and interfaces (backend/src/ + scripts/src/) ===\n";
         $this->printList($missingClassPhpdoc);
         echo "\n";
 
         $missingPhpdoc = $this->collectMissingPublicMethodPhpdoc($phpFiles);
-        echo "=== Missing PHPDoc on public PHP methods (backend/src/) ===\n";
+        echo "=== Missing PHPDoc on public PHP methods (backend/src/ + scripts/src/) ===\n";
         $this->printList($missingPhpdoc);
         echo "\n";
 
@@ -135,7 +138,7 @@ final class ReviewRunner extends AbstractScriptRunner
     {
         return array_values(array_filter($files, static function (string $path): bool {
             return pathinfo($path, PATHINFO_EXTENSION) === 'php'
-                && str_starts_with($path, 'backend/src/');
+                && (str_starts_with($path, 'backend/src/') || str_starts_with($path, 'scripts/src/'));
         }));
     }
 
