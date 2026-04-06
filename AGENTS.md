@@ -43,6 +43,7 @@ Backlog rules with worktrees:
 
 - `local/backlog-board.md`, `local/backlog-changes.md`, and `local/backlog-review.md` remain the source of truth in the main workspace.
 - Do not maintain a parallel backlog state inside a worktree.
+- Before taking a new task in a worktree, first resync that worktree with the current `main` branch state and make sure it is clean.
 - If the user asks to move a task into `local/backlog-changes.md` before repatriation, edit the file in the main workspace, not inside the worktree.
 - After a repatriation, continue on the main workspace until a new task is explicitly started in a worktree.
 
@@ -59,6 +60,8 @@ Repatriation rules:
 - Resolve conflicts explicitly and verify the merged result in the main workspace.
 - After repatriation, run `php scripts/review.php` in the main workspace and fix mechanical blockers within scope.
 - Once repatriation is complete, update `local/backlog-changes.md` in the main workspace according to the relevant file rules.
+- Once repatriation is complete, clean the worktree so the task-specific code changes are gone and the worktree is ready to be resynced for the next task.
+- Worktree setup symlinks such as `backend/vendor`, `frontend/node_modules`, or similar local dependency links must stay in place when cleaning the worktree.
 
 ## Role Selection
 
