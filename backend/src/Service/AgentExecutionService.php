@@ -118,7 +118,8 @@ final class AgentExecutionService
         $questions = $this->extractClarificationQuestions($response->content);
         $questions = $this->filterDuplicateQuestions($questions, $task->getTicket());
         $normalizedContent = mb_strtolower($response->content);
-        $isClarificationRequest = count($questions) >= 2
+        $minimumQuestionsForClarification = $skillSlug === 'product-owner' ? 1 : 2;
+        $isClarificationRequest = count($questions) >= $minimumQuestionsForClarification
             || str_contains($normalizedContent, 'questions')
             || str_contains($normalizedContent, 'precis')
             || str_contains($normalizedContent, 'clarification');
@@ -145,6 +146,16 @@ final class AgentExecutionService
                 );
             }
 
+            $task->setStatus(TaskStatus::InProgress);
+            $this->em->flush();
+            return;
+        }
+
+        if ($skillSlug === 'product-owner' && $pendingAnswersCount > 0) {
+            $this->logger->info('AgentExecution: kept product-owner task open because ticket still has pending blockers', [
+                'ticket' => (string) $task->getTicket()->getId(),
+                'pending_answers' => $pendingAnswersCount,
+            ]);
             $task->setStatus(TaskStatus::InProgress);
             $this->em->flush();
             return;
@@ -210,7 +221,7 @@ final class AgentExecutionService
      *
      * @return string[]
      */
-    private function extractClarificationQuestions(string $content): array
+    private function extractClarificationQuestions(string $content, string $skillSlug): array
     {
         $questions = [];
         foreach (preg_split('/\R+/', $content) ?: [] as $line) {
@@ -226,7 +237,9 @@ final class AgentExecutionService
             $questions[] = $candidate;
         }
 
-        return array_values(array_unique(array_slice($questions, 0, 5)));
+        $maxQuestions = $skillSlug === 'product-owner' ? 2 : 5;
+
+        return array_values(array_unique(array_slice($questions, 0, $maxQuestions)));
     }
 
     private static function normalizeQuestion(string $question): string
@@ -242,9 +255,18 @@ final class AgentExecutionService
      * @param string[] $candidates
      * @return string[]
      */
-    private function filterDuplicateQuestions(array $candidates, Ticket $ticket): array
+    private function filterDuplicateQuestions(array $candidates, Ticket $ticket, string $skillSlug, int $pendingAnswersCount = 0): array
     {
         if ($candidates === []) {
+            return [];
+        }
+
+        if ($skillSlug === 'product-owner' && $pendingAnswersCount > 0) {
+            $this->logger->info('AgentExecution: skipped new product-owner questions because pending blockers already exist', [
+                'ticket' => (string) $ticket->getId(),
+                'skipped' => count($candidates),
+            ]);
+
             return [];
         }
 

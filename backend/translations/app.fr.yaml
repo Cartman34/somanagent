@@ -2,7 +2,6 @@ common:
   action:
     add: Ajouter
     adding: Ajout…
-    authorize: Autoriser
     cancel: Annuler
     close: Fermer
     delete: Supprimer
@@ -291,7 +290,7 @@ project:
     no_team_option: — Aucune équipe —
     team_hint: Une équipe est recommandée dès la création. Sans équipe, vous serez redirigé vers l'onglet Général pour l'assigner avant progression.
     dispatch_mode_label: Mode de dispatch
-    dispatch_mode_hint: En mode auto, les tâches éligibles partent immédiatement. En mode manuel, elles attendent une autorisation explicite.
+    dispatch_mode_hint: En mode auto, les tâches éligibles partent immédiatement. En mode manuel, elles attendent un lancement explicite depuis l'interface.
     dispatch_mode_auto: Automatique
     dispatch_mode_manual: Manuel
     name_label: Nom
@@ -530,11 +529,12 @@ ticket:
       transition_to: Passer à %step%
       no_transition: Aucun passage manuel disponible depuis cette étape.
       pending_answers_help: Répondez d'abord aux questions en attente dans le fil d'activités avant de valider l'étape suivante.
-    authorize:
-      title: Autorisation de dispatch
-      help: Cette tâche est prête mais attend une autorisation explicite avant d'être envoyée à un agent.
-      loading: Autorisation…
-      error: Impossible d'autoriser cette tâche.
+    execute:
+      title: Lancement de la tâche
+      button: Lancer la tâche
+      help: Cette tâche est prête mais attend un lancement manuel explicite avant d'être envoyée à un agent.
+      loading: Lancement…
+      error: Impossible de lancer cette tâche.
     resume:
       title: Relance agent
       manual_help: La relance manuelle se fait désormais au niveau des tâches.

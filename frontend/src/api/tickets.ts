@@ -152,11 +152,6 @@ export const ticketTasksApi = {
     return data
   },
 
-  authorize: async (id: string): Promise<{ ticketTask: TicketTask; agent: { id: string; name: string }; skill: string; executionId: string }> => {
-    const { data } = await apiClient.post(`/ticket-tasks/${id}/authorize`)
-    return data
-  },
-
   comment: async (id: string, payload: TicketCommentPayload) => {
     const { data } = await apiClient.post(`/ticket-tasks/${id}/comments`, payload)
     return data

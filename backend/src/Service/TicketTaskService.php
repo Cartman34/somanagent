@@ -149,6 +149,13 @@ final class TicketTaskService
             throw new \RuntimeException('An agent execution is already active for this task.');
         }
 
+        if ($task->getStatus() === TaskStatus::AwaitingDispatch) {
+            $currentStep = $task->getTicket()->getWorkflowStep();
+            if ($currentStep === null || !$this->isDispatchEligibleInCurrentStep($task, $currentStep)) {
+                throw new \LogicException('This task is no longer eligible for dispatch in the current workflow step.');
+            }
+        }
+
         $skillSlug = $task->getAgentAction()->getSkill()?->getSlug();
         if ($skillSlug === null) {
             throw new \RuntimeException(sprintf('Action "%s" defines no executable skill.', $task->getAgentAction()->getKey()));
@@ -223,25 +230,6 @@ final class TicketTaskService
     }
 
     /**
-     * Authorizes one task that is pending explicit dispatch.
-     *
-     * @return array{agent: Agent, skill: string, executionId: string}
-     */
-    public function authorize(TicketTask $task, ?Agent $agent = null): array
-    {
-        if ($task->getStatus() !== TaskStatus::AwaitingDispatch) {
-            throw new \LogicException('This task is not awaiting explicit dispatch authorization.');
-        }
-
-        $currentStep = $task->getTicket()->getWorkflowStep();
-        if ($currentStep === null || !$this->isDispatchEligibleInCurrentStep($task, $currentStep)) {
-            throw new \LogicException('This task is no longer eligible for dispatch in the current workflow step.');
-        }
-
-        return $this->execute($task, $agent, TaskExecutionTrigger::Manual);
-    }
-
-    /**
      * @return array{agent: Agent, skill: string, executionId: string}
      */
     public function resume(TicketTask $task, ?Agent $agent = null): array
@@ -293,14 +281,6 @@ final class TicketTaskService
             'action_key' => $task->getAgentAction()->getKey(),
             'action_label' => $task->getAgentAction()->getLabel(),
         ]];
-
-        if ($task->getStatus() === TaskStatus::AwaitingDispatch) {
-            $taskActions[] = [
-                'type' => 'authorize_dispatch',
-                'action_key' => $task->getAgentAction()->getKey(),
-                'action_label' => $task->getAgentAction()->getLabel(),
-            ];
-        }
 
         if ($this->canResume($task)) {
             $taskActions[] = [
