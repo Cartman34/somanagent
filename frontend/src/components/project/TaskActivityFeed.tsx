@@ -9,6 +9,8 @@ import {
   Link2,
   Loader2,
   MessageSquare,
+  Minus,
+  Plus,
   Reply,
   Send,
   Zap,
@@ -632,8 +634,13 @@ export default function TaskActivityFeed({
         className={`composer-toggle ${composerOpen ? 'open' : ''}`}
         onClick={() => setComposerOpen(!composerOpen)}
       >
-        <MessageSquare className="h-3.5 w-3.5" />
-        {tt('ticket.discussion.add_comment')}
+        <span className="composer-toggle-label">
+          <MessageSquare className="h-3.5 w-3.5" />
+          {tt('ticket.discussion.add_comment')}
+        </span>
+        <span className="composer-toggle-indicator" aria-hidden="true">
+          {composerOpen ? <Minus className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+        </span>
       </button>
 
       {/* Composer panel */}
