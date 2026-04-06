@@ -46,6 +46,7 @@ import {
 } from '@/lib/catalog'
 
 const TASK_DRAWER_TRANSLATION_KEYS = [
+  'common.action.authorize',
   'common.action.cancel',
   'common.action.close',
   'common.action.edit',
@@ -67,11 +68,10 @@ const TASK_DRAWER_TRANSLATION_KEYS = [
   'ticket.detail.subtasks_title',
   'ticket.detail.action_label',
   'ticket.detail.agent_label',
-  'ticket.detail.execute.button',
-  'ticket.detail.execute.error',
-  'ticket.detail.execute.help',
-  'ticket.detail.execute.loading',
-  'ticket.detail.execute.title',
+  'ticket.detail.authorize.error',
+  'ticket.detail.authorize.help',
+  'ticket.detail.authorize.loading',
+  'ticket.detail.authorize.title',
   'ticket.detail.latest_run_label',
   'ticket.detail.status_label',
   'ticket.detail.step_label',
@@ -301,8 +301,8 @@ export default function TaskDrawer({
     },
   })
 
-  const taskExecuteMutation = useMutation({
-    mutationFn: (linkedId: string) => ticketTasksApi.execute(linkedId),
+  const taskAuthorizeMutation = useMutation({
+    mutationFn: (linkedId: string) => ticketTasksApi.authorize(linkedId),
     onSuccess: async (_, linkedId) => {
       setTaskDispatchError(null)
       setPendingTaskActionId(null)
@@ -313,14 +313,14 @@ export default function TaskDrawer({
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
       setPendingTaskActionId(null)
-      setTaskDispatchError(msg ?? t('ticket.detail.execute.error'))
+      setTaskDispatchError(msg ?? t('ticket.detail.authorize.error'))
     },
   })
 
   const taskDispatchMutation = useMutation({
     mutationFn: (task: TicketTask) => {
-      return task.canManualDispatch
-        ? ticketTasksApi.execute(task.id)
+      return task.canAuthorize
+        ? ticketTasksApi.authorize(task.id)
         : task.canResume
         ? ticketTasksApi.resume(task.id)
         : ticketTasksApi.execute(task.id, task.assignedAgent?.id)
@@ -533,7 +533,7 @@ export default function TaskDrawer({
                           disabled={!canDispatch || isPending}
                           onClick={() => taskDispatchMutation.mutate(task)}
                         >
-                          {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t('ticket.detail.execute.button')}
+                          {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t('common.action.authorize')}
                         </button>
                       ) : (
                         <button
@@ -637,29 +637,29 @@ export default function TaskDrawer({
     <section className="space-y-4">
       <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
         <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
-          {taskEntity.canManualDispatch ? t('ticket.detail.execute.title') : t('ticket.detail.resume.title')}
+          {taskEntity.canAuthorize ? t('ticket.detail.authorize.title') : t('ticket.detail.resume.title')}
         </p>
         <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
-          {taskEntity.canManualDispatch ? t('ticket.detail.execute.help') : t('ticket.detail.resume.manual_help')}
+          {taskEntity.canAuthorize ? t('ticket.detail.authorize.help') : t('ticket.detail.resume.manual_help')}
         </p>
         <button
           type="button"
           className="mt-4 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium"
           style={{ background: 'var(--brand-dim)', color: 'var(--brand)' }}
           onClick={() => {
-            if (taskEntity.canManualDispatch) {
-              taskExecuteMutation.mutate(taskEntity.id)
+            if (taskEntity.canAuthorize) {
+              taskAuthorizeMutation.mutate(taskEntity.id)
               return
             }
 
             taskResumeMutation.mutate(taskEntity.id)
           }}
-          disabled={!projectHasTeam || (!taskEntity.canManualDispatch && !taskEntity.canResume) || taskHasActiveExecution(taskEntity) || taskResumeMutation.isPending || taskExecuteMutation.isPending}
-          aria-label={taskEntity.canManualDispatch ? t('ticket.detail.execute.button') : t('ticket.detail.resume.button')}
+          disabled={!projectHasTeam || (!taskEntity.canAuthorize && !taskEntity.canResume) || taskHasActiveExecution(taskEntity) || taskResumeMutation.isPending || taskAuthorizeMutation.isPending}
+          aria-label={taskEntity.canAuthorize ? t('common.action.authorize') : t('ticket.detail.resume.button')}
         >
-          {(taskResumeMutation.isPending || taskExecuteMutation.isPending) ? <Loader2 className="h-4 w-4 animate-spin" /> : (taskEntity.canManualDispatch ? <Play className="h-4 w-4" /> : <RotateCcw className="h-4 w-4" />)}
-          {taskEntity.canManualDispatch
-            ? (taskExecuteMutation.isPending ? t('ticket.detail.execute.loading') : t('ticket.detail.execute.button'))
+          {(taskResumeMutation.isPending || taskAuthorizeMutation.isPending) ? <Loader2 className="h-4 w-4 animate-spin" /> : (taskEntity.canAuthorize ? <Play className="h-4 w-4" /> : <RotateCcw className="h-4 w-4" />)}
+          {taskEntity.canAuthorize
+            ? (taskAuthorizeMutation.isPending ? t('ticket.detail.authorize.loading') : t('common.action.authorize'))
             : (taskResumeMutation.isPending ? t('ticket.detail.resume.loading') : t('ticket.detail.resume.button'))}
         </button>
         {taskDispatchError && (

@@ -321,7 +321,7 @@ export interface TicketTask {
   awaitingUserAnswer: boolean
   pendingUserAnswerCount: number
   canResume: boolean
-  canManualDispatch: boolean
+  canAuthorize: boolean
   dependsOn: Array<{ id: string; title: string; status: TaskStatus }>
   childTaskIds: string[]
   children?: TicketTask[]
