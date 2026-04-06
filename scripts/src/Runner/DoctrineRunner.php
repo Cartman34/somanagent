@@ -21,6 +21,9 @@ final class DoctrineRunner
     private DockerComposeServiceRunner $dbRunner;
     private readonly Console $console;
 
+    /**
+     * Builds the database helper runners for PHP and PostgreSQL services.
+     */
     public function __construct(
         private readonly Application $app,
     ) {
@@ -42,6 +45,7 @@ final class DoctrineRunner
             'shell' => $this->dbRunner->run(self::DEFAULT_PSQL_ARGS, true),
             'query' => $this->runQuery(array_slice($args, 1)),
             'exec' => $this->runExec(array_slice($args, 1)),
+            'migrate' => $this->runMigrate(array_slice($args, 1)),
             'reset' => $this->runReset(array_slice($args, 1)),
             default => throw new \InvalidArgumentException(sprintf('Unsupported database command: %s', $args[0])),
         };
@@ -69,6 +73,30 @@ final class DoctrineRunner
         }
 
         return $this->dbRunner->run([...self::DEFAULT_PSQL_ARGS, ...$args]);
+    }
+
+    /**
+     * @param list<string> $args
+     */
+    private function runMigrate(array $args): int
+    {
+        $dryRun = in_array('--dry-run', $args, true);
+
+        $this->console->step('Doctrine migrations' . ($dryRun ? ' (dry-run)' : ''));
+
+        $command = ['php', 'bin/console', 'doctrine:migrations:migrate', '--no-interaction'];
+        if ($dryRun) {
+            $command[] = '--dry-run';
+        }
+
+        $code = $this->phpRunner->run($command);
+        if ($code !== 0) {
+            throw new \RuntimeException("Migration command failed (exit $code).");
+        }
+
+        $this->console->ok('Migrations complete.');
+
+        return 0;
     }
 
     /**
@@ -114,11 +142,7 @@ final class DoctrineRunner
                 throw new \RuntimeException("Database creation failed (exit $code).");
             }
 
-            $c->step('Running migrations');
-            $code = $this->phpRunner->run(['php', 'bin/console', 'doctrine:migrations:migrate', '--no-interaction']);
-            if ($code !== 0) {
-                throw new \RuntimeException("Migration command failed (exit $code).");
-            }
+            $this->runMigrate([]);
 
             if ($withFixtures) {
                 $c->step('Reloading fixtures');

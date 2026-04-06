@@ -26,6 +26,11 @@ final class StatusRunner extends AbstractScriptRunner
         ];
     }
 
+    /**
+     * Prints a compact operational status summary for Docker, migrations, schema, and git.
+     *
+     * @param list<string> $args
+     */
     public function run(array $args): int
     {
         $ok   = fn(string $msg) => print("  [OK]   {$msg}\n");
@@ -73,7 +78,7 @@ final class StatusRunner extends AbstractScriptRunner
                         if (preg_match('/(\d+)/', $line, $m)) {
                             $count = (int) $m[1];
                             if (str_contains($line, 'New') && $count > 0) {
-                                $warn("{$count} pending migration(s) → php scripts/migrate.php");
+                                $warn("{$count} pending migration(s) → php scripts/db.php migrate");
                             } elseif (str_contains($line, 'New') && $count === 0) {
                                 $ok("No pending migrations.");
                             } else {

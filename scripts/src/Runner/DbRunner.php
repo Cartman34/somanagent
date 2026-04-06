@@ -25,6 +25,7 @@ final class DbRunner extends AbstractScriptRunner
             ['name' => 'query', 'description' => 'Execute a SQL query'],
             ['name' => 'exec', 'description' => 'Run psql arguments interactively'],
             ['name' => 'shell', 'description' => 'Open a psql shell'],
+            ['name' => 'migrate', 'description' => 'Run Doctrine migrations'],
             ['name' => 'reset', 'description' => 'Recreate the local database'],
         ];
     }
@@ -43,18 +44,26 @@ final class DbRunner extends AbstractScriptRunner
             'php scripts/db.php query "SELECT 1"',
             'php scripts/db.php exec -c "\\dt"',
             'php scripts/db.php shell',
+            'php scripts/db.php migrate',
+            'php scripts/db.php migrate --dry-run',
             'php scripts/db.php reset',
             'php scripts/db.php reset --fixtures',
             'php scripts/db.php reset --fixtures --force',
         ];
     }
 
+    /**
+     * Delegates database subcommands to DoctrineRunner.
+     *
+     * @param list<string> $args
+     */
     public function run(array $args): int
     {
         if ($args === []) {
             $this->console->line('Usage: php scripts/db.php query "SELECT 1"');
             $this->console->line('Usage: php scripts/db.php exec -c "\\dt"');
             $this->console->line('Usage: php scripts/db.php shell');
+            $this->console->line('Usage: php scripts/db.php migrate [--dry-run]');
             $this->console->line('Usage: php scripts/db.php reset [--fixtures [--force]]');
             return 1;
         }
