@@ -355,7 +355,7 @@ function CompactEventRow({
               {group.logs.flatMap((log) =>
                 log.metadata
                   ? Object.entries(log.metadata).map(([key, value]) => (
-                      <div key={key} className="flex items-baseline gap-3">
+                      <div key={`${log.id}:${key}`} className="flex items-baseline gap-3">
                         <span className="min-w-[70px] text-right md:min-w-[110px] md:text-left">{formatMetadataKey(key)}</span>
                         <span className="truncate font-medium" style={{ color: 'var(--text)' }}>{stringifyMetadataValue(value)}</span>
                       </div>

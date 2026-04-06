@@ -27,6 +27,7 @@ import ProjectTeamTab from '@/components/project/ProjectTeamTab'
 import ProjectModulesTab from '@/components/project/ProjectModulesTab'
 import ProjectAuditTab from '@/components/project/ProjectAuditTab'
 import ProjectTokensTab from '@/components/project/ProjectTokensTab'
+import { useProjectRealtime } from '@/hooks/useProjectRealtime'
 import { useTranslation } from '@/hooks/useTranslation'
 import {
   isTicket,
@@ -208,6 +209,8 @@ export default function ProjectDetailPage() {
     queryFn:  () => ticketsApi.listByProject(id!),
     enabled:  !!id,
   })
+
+  useProjectRealtime(id, drawerTaskId)
 
   // ── Mutations ─────────────────────────────────────────────────────────────────
 

@@ -32,6 +32,7 @@ class ProjectService
         private readonly TicketRepository   $ticketRepository,
         private readonly WorkflowRepository $workflowRepository,
         private readonly TicketTaskService  $ticketTaskService,
+        private readonly RealtimeUpdateService $realtimeUpdateService,
         private readonly TranslatorInterface $translator,
     ) {}
 
@@ -72,6 +73,7 @@ class ProjectService
         $project->setWorkflow($this->resolveAssignableWorkflow(null, $workflowId));
 
         $this->entityService->create($project, AuditAction::ProjectCreated, ['name' => $name]);
+        $this->realtimeUpdateService->publishProjectChanged($project, 'created');
         return $project;
     }
 
@@ -114,6 +116,7 @@ class ProjectService
         $project->setWorkflow($this->resolveAssignableWorkflow($project, $workflowId));
 
         $this->entityService->update($project, AuditAction::ProjectUpdated, ['name' => $name]);
+        $this->realtimeUpdateService->publishProjectChanged($project, 'updated');
 
         if ($previousDispatchMode === DispatchMode::Manual && $nextDispatchMode === DispatchMode::Auto && $project->getTeam() !== null) {
             foreach ($this->ticketRepository->findByProject($project) as $ticket) {
@@ -144,6 +147,7 @@ class ProjectService
             'name'    => $name,
             'project' => (string) $project->getId(),
         ]);
+        $this->realtimeUpdateService->publishProjectChanged($project, 'module_created');
         return $module;
     }
 
@@ -154,6 +158,7 @@ class ProjectService
     {
         $module->setName($name)->setDescription($description)->setRepositoryUrl($repositoryUrl)->setStack($stack);
         $this->entityService->update($module, AuditAction::ModuleUpdated);
+        $this->realtimeUpdateService->publishProjectChanged($module->getProject(), 'module_updated');
         return $module;
     }
 
@@ -162,7 +167,9 @@ class ProjectService
      */
     public function deleteModule(Module $module): void
     {
+        $project = $module->getProject();
         $this->entityService->delete($module, AuditAction::ModuleDeleted);
+        $this->realtimeUpdateService->publishProjectChanged($project, 'module_deleted');
     }
 
     /**

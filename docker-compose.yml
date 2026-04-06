@@ -99,6 +99,26 @@ services:
       - somanagent
 
   # ============================================================
+  # Mercure hub (standard realtime transport)
+  # ============================================================
+  mercure:
+    image: dunglas/mercure:v0.15
+    container_name: somanagent_mercure
+    restart: unless-stopped
+    environment:
+      SERVER_NAME: ':80'
+      MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_PUBLISHER_JWT_KEY:-!ChangeThisMercureHubJWTSecretKey!}
+      MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_SUBSCRIBER_JWT_KEY:-!ChangeThisMercureHubJWTSecretKey!}
+      MERCURE_EXTRA_DIRECTIVES: |-
+        anonymous
+        subscriptions
+        transport_url bolt:///data/mercure.db
+    volumes:
+      - mercure_data:/data
+    networks:
+      - somanagent
+
+  # ============================================================
   # Redis (Messenger transport queue)
   # ============================================================
   redis:
@@ -153,3 +173,4 @@ networks:
 
 volumes:
   redis_data:
+  mercure_data:

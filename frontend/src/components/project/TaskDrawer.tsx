@@ -14,6 +14,7 @@ import {
   Loader2,
   Maximize2,
   Minimize2,
+  Pencil,
   Play,
   RotateCcw,
   X,
@@ -46,11 +47,17 @@ import {
 
 const TASK_DRAWER_TRANSLATION_KEYS = [
   'common.action.authorize',
+  'common.action.cancel',
   'common.action.close',
+  'common.action.edit',
   'common.action.open',
+  'common.action.save',
+  'common.action.saving',
   'ticket.detail.collapse',
   'ticket.detail.description_label',
   'ticket.detail.expand',
+  'ticket.detail.edit.error',
+  'ticket.detail.empty_description',
   'ticket.detail.loading',
   'ticket.detail.metric.tokens_consumed',
   'ticket.detail.resume.button',
@@ -69,6 +76,7 @@ const TASK_DRAWER_TRANSLATION_KEYS = [
   'ticket.detail.status_label',
   'ticket.detail.step_label',
   'ticket.detail.title',
+  'ticket.detail.title_label',
   'ticket.detail.tasks_empty',
   'ticket.detail.tasks_title',
   'ticket.detail.workflow.current_step',
@@ -77,6 +85,7 @@ const TASK_DRAWER_TRANSLATION_KEYS = [
   'ticket.detail.workflow.section_title',
   'ticket.detail.workflow.transition_loading',
   'ticket.detail.workflow.transition_to',
+  'ticket.validation.title_required',
 ] as const
 
 const TASK_DRAWER_CATALOG_KEYS = [
@@ -190,6 +199,10 @@ export default function TaskDrawer({
   const [taskDispatchError, setTaskDispatchError] = useState<string | null>(null)
   const [expandedTaskIds, setExpandedTaskIds] = useState<string[]>([])
   const [pendingTaskActionId, setPendingTaskActionId] = useState<string | null>(null)
+  const [isEditingDetails, setIsEditingDetails] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editError, setEditError] = useState<string | null>(null)
   const backdropMouseDownRef = useRef(false)
 
   const { data: entity, isLoading } = useQuery<Ticket | TicketTask>({
@@ -220,7 +233,20 @@ export default function TaskDrawer({
     setTaskDispatchError(null)
     setExpandedTaskIds([])
     setPendingTaskActionId(null)
+    setIsEditingDetails(false)
+    setEditTitle('')
+    setEditDescription('')
+    setEditError(null)
   }, [taskId])
+
+  useEffect(() => {
+    if (!entity || isEditingDetails) {
+      return
+    }
+
+    setEditTitle(entity.title ?? '')
+    setEditDescription(entity.description ?? '')
+  }, [entity, isEditingDetails])
 
   const commentMutation = useMutation({
     mutationFn: () => (
@@ -307,6 +333,28 @@ export default function TaskDrawer({
     },
   })
 
+  const detailUpdateMutation = useMutation({
+    mutationFn: async (payload: { title: string; description?: string }) => {
+      if (!entity) {
+        throw new Error('No entity loaded.')
+      }
+
+      return isTicket(entity)
+        ? ticketsApi.update(entity.id, payload)
+        : ticketTasksApi.update(entity.id, payload)
+    },
+    onSuccess: async () => {
+      setIsEditingDetails(false)
+      setEditError(null)
+      await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
+      await qc.invalidateQueries({ queryKey: ['tickets'] })
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+      setEditError(msg ?? t('ticket.detail.edit.error'))
+    },
+  })
+
   const ticketTasks = useMemo(() => {
     if (!entity || !isTicket(entity)) {
       return []
@@ -336,6 +384,37 @@ export default function TaskDrawer({
         ? current.filter((id) => id !== targetTaskId)
         : [...current, targetTaskId]
     ))
+  }
+
+  const startEditingDetails = (entityData: Ticket | TicketTask) => {
+    setEditTitle(entityData.title ?? '')
+    setEditDescription(entityData.description ?? '')
+    setEditError(null)
+    setIsEditingDetails(true)
+  }
+
+  const cancelEditingDetails = () => {
+    if (!entity) {
+      return
+    }
+
+    setEditTitle(entity.title ?? '')
+    setEditDescription(entity.description ?? '')
+    setEditError(null)
+    setIsEditingDetails(false)
+  }
+
+  const submitDetailsEdition = () => {
+    const title = editTitle.trim()
+    if (title === '') {
+      setEditError(t('ticket.validation.title_required'))
+      return
+    }
+
+    detailUpdateMutation.mutate({
+      title,
+      description: editDescription.trim() === '' ? undefined : editDescription,
+    })
   }
 
   const renderPilotBlock = (ticketEntity: Ticket) => (
@@ -583,9 +662,82 @@ export default function TaskDrawer({
     <div className="flex-1 overflow-y-auto">
       <div className="space-y-5 px-5 py-5">
         <div className="space-y-3">
-          <h2 className="text-xl font-semibold tracking-tight" style={{ color: 'var(--text)' }}>
-            {isLoading ? t('ticket.detail.loading') : (entityData.title ?? '—')}
-          </h2>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              {isEditingDetails ? (
+                <div className="space-y-3 rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
+                  <div>
+                    <p className={BLOCK_LABEL_CLASS + ' mb-2'}>
+                      {t('ticket.detail.title_label')}
+                    </p>
+                    <input
+                      className="input"
+                      value={editTitle}
+                      onChange={(event) => setEditTitle(event.target.value)}
+                      disabled={detailUpdateMutation.isPending}
+                    />
+                  </div>
+
+                  <div>
+                    <p className={BLOCK_LABEL_CLASS + ' mb-2'}>
+                      {t('ticket.detail.description_label')}
+                    </p>
+                    <textarea
+                      className="input resize-y"
+                      rows={24}
+                      value={editDescription}
+                      onChange={(event) => setEditDescription(event.target.value)}
+                      disabled={detailUpdateMutation.isPending}
+                    />
+                  </div>
+
+                  {editError && (
+                    <p className="text-sm" style={{ color: '#b91c1c' }}>
+                      {editError}
+                    </p>
+                  )}
+
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={submitDetailsEdition}
+                      disabled={detailUpdateMutation.isPending}
+                    >
+                      {detailUpdateMutation.isPending ? t('common.action.saving') : t('common.action.save')}
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-lg border px-3 py-2 text-sm font-medium"
+                      style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--muted)' }}
+                      onClick={cancelEditingDetails}
+                      disabled={detailUpdateMutation.isPending}
+                    >
+                      {t('common.action.cancel')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <h2 className="text-xl font-semibold tracking-tight" style={{ color: 'var(--text)' }}>
+                  {isLoading ? t('ticket.detail.loading') : (entityData.title ?? '—')}
+                </h2>
+              )}
+            </div>
+
+            {!isEditingDetails && (
+              <button
+                type="button"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold"
+                style={{ borderColor: 'var(--border)', background: 'var(--surface2)', color: 'var(--muted)' }}
+                onClick={() => startEditingDetails(entityData)}
+                title={t('common.action.edit')}
+                aria-label={t('common.action.edit')}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                <span>{t('common.action.edit')}</span>
+              </button>
+            )}
+          </div>
 
           <div className="flex flex-wrap gap-2">
             <Badge tone="neutral">{statusLabel(entityData.status, tc)}</Badge>
@@ -613,12 +765,18 @@ export default function TaskDrawer({
             </span>
           </div>
 
-        {entityData.description && (
+        {!isEditingDetails && (
           <section className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
             <p className={BLOCK_LABEL_CLASS + ' mb-2'}>
               {t('ticket.detail.description_label')}
             </p>
-            <Markdown content={entityData.description} density="compact" preserveLineBreaks />
+            {entityData.description ? (
+              <Markdown content={entityData.description} density="compact" preserveLineBreaks />
+            ) : (
+              <p className="text-sm italic" style={{ color: 'var(--muted)' }}>
+                {t('ticket.detail.empty_description')}
+              </p>
+            )}
           </section>
         )}
         </div>

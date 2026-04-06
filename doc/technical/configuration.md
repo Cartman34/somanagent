@@ -75,6 +75,20 @@ GITLAB_URL=https://gitlab.com
 
 `GITLAB_URL` can be the URL of a self-hosted GitLab instance.
 
+### Mercure Realtime Hub
+
+```ini
+MERCURE_PUBLISH_URL=http://mercure/.well-known/mercure
+MERCURE_PUBLISHER_JWT_KEY=!ChangeThisMercureHubJWTSecretKey!
+MERCURE_SUBSCRIBER_JWT_KEY=!ChangeThisMercureHubJWTSecretKey!
+```
+
+| Parameter | Description |
+|---|---|
+| `MERCURE_PUBLISH_URL` | Internal hub URL used by the backend adapter |
+| `MERCURE_PUBLISHER_JWT_KEY` | Shared HMAC secret used by the backend to publish updates |
+| `MERCURE_SUBSCRIBER_JWT_KEY` | Shared HMAC secret used by the hub for subscriber auth policies |
+
 ### Symfony Application
 
 ```ini
@@ -120,6 +134,10 @@ Manages dependency injection. Key points:
 
 ### `config/packages/nelmio_cors.yaml`
 Allows cross-origin requests from the frontend (`localhost:5173`).
+
+### Realtime transport
+
+Mercure is documented in detail in [`realtime.md`](realtime.md).
 
 ## Verifying the Configuration
 

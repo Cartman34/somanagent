@@ -1,6 +1,6 @@
 # Technical Architecture
 
-> See also: [Entities](entities.md) · [Adapters](adapters.md) · [REST API](api.md)
+> See also: [Entities](entities.md) · [Adapters](adapters.md) · [REST API](api.md) · [Realtime Updates](realtime.md)
 
 ## Overview
 
@@ -16,11 +16,16 @@ The centralized observability chain is shared across layers:
 - infra degradations are surfaced as `infra` log events from health endpoints
 - warning/error/critical events are aggregated into `LogOccurrence` for the `/logs` UI
 
+The centralized realtime chain is also shared across layers:
+- backend services emit normalized business updates through `RealtimeUpdateService`
+- a Mercure adapter publishes them to the hub
+- the frontend subscribes through one shared Mercure client
+
 Application translations are managed through Symfony translation files under `backend/translations/`.
 
 ## Hexagonal Architecture (Partial)
 
-The hexagonal architecture is applied **only to external integration points** (AI, VCS, Skills), not to the entire application. Symfony and Doctrine are fixed choices.
+The hexagonal architecture is applied **only to external integration points** (AI, VCS, Skills, Realtime), not to the entire application. Symfony and Doctrine are fixed choices.
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -33,7 +38,8 @@ The hexagonal architecture is applied **only to external integration points** (A
 │                                  ├── ClaudeCliAdapter│
 │                                  ├── GitHubAdapter   │
 │                                  ├── GitLabAdapter   │
-│                                  └── SkillsShAdapter │
+│                                  ├── SkillsShAdapter │
+│                                  └── MercureRealtime │
 └─────────────────────────────────────────────────────┘
 ```
 

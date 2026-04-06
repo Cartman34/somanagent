@@ -1,0 +1,41 @@
+@startuml
+title Realtime Components
+
+package "Frontend" {
+  [ProjectDetailPage]
+  [useProjectRealtime]
+  [realtimeClient]
+  [realtimeTopics]
+}
+
+package "Backend Application" {
+  [TicketService]
+  [TicketTaskService]
+  [TicketLogService]
+  [AgentTaskExecutionService]
+  [RealtimeUpdateService]
+  [RealtimeTopicFactory]
+  interface RealtimePublisherPort
+}
+
+package "Backend Adapter" {
+  [MercureRealtimePublisher]
+}
+
+database "Mercure Hub" as Hub
+
+[ProjectDetailPage] --> [useProjectRealtime]
+[useProjectRealtime] --> [realtimeTopics]
+[useProjectRealtime] --> [realtimeClient]
+[realtimeClient] --> Hub : subscribe(topic...)
+
+[TicketService] --> [RealtimeUpdateService]
+[TicketTaskService] --> [RealtimeUpdateService]
+[TicketLogService] --> [RealtimeUpdateService]
+[AgentTaskExecutionService] --> [RealtimeUpdateService]
+[RealtimeUpdateService] --> [RealtimeTopicFactory]
+[RealtimeUpdateService] --> RealtimePublisherPort
+[MercureRealtimePublisher] ..|> RealtimePublisherPort
+[MercureRealtimePublisher] --> Hub : publish(update)
+
+@enduml
