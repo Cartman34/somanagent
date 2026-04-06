@@ -90,6 +90,8 @@ final class AgentContextBuilder
                 'requires_answer' => $log->requiresAnswer(),
                 'reply_to' => $log->getReplyToLogId()?->toRfc4122(),
                 'context' => $log->getMetadata()['context'] ?? null,
+                'necessity_level' => $log->getMetadata()['necessityLevel'] ?? null,
+                'necessity_reason' => $log->getMetadata()['necessityReason'] ?? null,
                 'ticket_task_id' => $log->getTicketTask()?->getId()->toRfc4122(),
                 'content' => $log->getContent(),
                 'created_at' => $log->getCreatedAt()->format(\DateTimeInterface::ATOM),
@@ -99,6 +101,8 @@ final class AgentContextBuilder
                 $context['pending_questions'] = array_map(static fn(TicketLog $log) => [
                     'id' => $log->getId()->toRfc4122(),
                     'content' => $log->getContent(),
+                    'necessity_level' => $log->getMetadata()['necessityLevel'] ?? null,
+                    'necessity_reason' => $log->getMetadata()['necessityReason'] ?? null,
                     'created_at' => $log->getCreatedAt()->format(\DateTimeInterface::ATOM),
                 ], $pendingQuestions);
             }
@@ -140,9 +144,6 @@ final class AgentContextBuilder
                 'constraint' => 'Do not make technical decisions on your own.',
                 'allowed' => 'You may relay explicitly provided technical constraints and add functional scope such as platforms, languages, or user profiles.',
                 'handoff' => 'Technical tradeoffs, technical analysis, and task breakdown belong to the Lead Tech.',
-                'question_policy' => 'Ask a clarification only when it is strictly blocking for reframing or validating the request. Do not ask exploratory or comfort questions.',
-                'question_batching' => 'When clarification is unavoidable, ask the smallest possible batch of blocking questions, ideally one and never more than two at once.',
-                'question_reasoning' => 'Each clarification question must explicitly state the business blocker it resolves so the user can distinguish a mandatory answer from simple curiosity.',
             ],
             default => [],
         };
@@ -187,9 +188,12 @@ final class AgentContextBuilder
                 'identity_is_known' => 'Your identity, role, and project are already provided in this context.',
                 'do_not_ask_identity_again' => 'Do not ask again who you are, which role you play, or which project you are working on unless the context is explicitly contradictory.',
                 'do_not_repeat_questions' => 'Do not repeat questions already present in ticket_conversation (action=agent_question). Check ticket_conversation before asking for clarification and omit questions that already appear there, whether answered or not.',
-                'pending_questions_rule' => 'When pending_questions is not empty, do not finalize the deliverable. Wait for the user to answer those pending questions first.',
-                'no_question_stacking' => 'When pending_questions is not empty, do not add more clarification questions. Reuse the existing blockers and wait for answers.',
+                'pending_questions_rule' => 'Pending questions are visible in pending_questions. Reuse that context, avoid duplicates, and do not ask low-value follow-up questions.',
                 'scope_rule' => 'Stay strictly within the allowed actions and ticket transitions exposed in the context. If a requested change falls outside that scope, say so explicitly instead of improvising.',
+                'clarification_rule' => 'If allowed_effects contains ask_clarification, ask only questions that are at least useful for the requested outcome.',
+                'clarification_batching' => 'When clarification is needed, ask the smallest useful batch possible and avoid broad questionnaires.',
+                'clarification_format' => 'Each clarification question must use the format [necessity_level] necessity reason :: question?, where necessity_level is one of blocking, important, useful.',
+                'clarification_blocking_rule' => 'Use blocking only when the task cannot be completed correctly without that answer.',
                 'role_constraints' => $roleNotes,
             ],
         ];

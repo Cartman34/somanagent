@@ -16,6 +16,7 @@ use App\Entity\TicketLog;
 use App\Entity\TicketTask;
 use App\Entity\TicketTaskDependency;
 use App\Entity\TokenUsage;
+use App\Enum\ClarificationQuestionNecessity;
 use App\Enum\TaskStatus;
 use App\Adapter\VCS\MockVcsAdapter;
 use App\Repository\AgentActionRepository;
@@ -115,11 +116,17 @@ final class AgentExecutionService
             ],
         );
 
-        $questions = $this->extractClarificationQuestions($response->content);
+        $allowedEffects = $this->ticketTaskService->describeExecutionScope($task)['allowed_effects'];
+        $canAskClarification = in_array('ask_clarification', $allowedEffects, true);
+        $pendingBlockingAnswersCount = $canAskClarification
+            ? $this->ticketLogService->countPendingBlockingAnswersForTask($task)
+            : 0;
+        $questions = $canAskClarification
+            ? $this->extractClarificationQuestions($response->content)
+            : [];
         $questions = $this->filterDuplicateQuestions($questions, $task->getTicket());
         $normalizedContent = mb_strtolower($response->content);
-        $minimumQuestionsForClarification = $skillSlug === 'product-owner' ? 1 : 2;
-        $isClarificationRequest = count($questions) >= $minimumQuestionsForClarification
+        $isClarificationRequest = count($questions) >= 1
             || str_contains($normalizedContent, 'questions')
             || str_contains($normalizedContent, 'precis')
             || str_contains($normalizedContent, 'clarification');
@@ -131,7 +138,7 @@ final class AgentExecutionService
                 $this->ticketLogService->log(
                     ticket: $task->getTicket(),
                     action: 'agent_question',
-                    content: $question,
+                    content: $question['content'],
                     ticketTask: $task,
                     kind: 'comment',
                     authorType: 'agent',
@@ -139,6 +146,8 @@ final class AgentExecutionService
                     requiresAnswer: true,
                     metadata: [
                         'context' => 'clarification_request',
+                        'necessityLevel' => $question['necessityLevel']->value,
+                        'necessityReason' => $question['necessityReason'],
                         'skillSlug' => $skillSlug,
                         'agentId' => (string) $agent->getId(),
                         'actionKey' => $task->getAgentAction()->getKey(),
@@ -151,10 +160,11 @@ final class AgentExecutionService
             return;
         }
 
-        if ($skillSlug === 'product-owner' && $pendingAnswersCount > 0) {
-            $this->logger->info('AgentExecution: kept product-owner task open because ticket still has pending blockers', [
+        if ($canAskClarification && $pendingBlockingAnswersCount > 0) {
+            $this->logger->info('AgentExecution: kept task open because blocking clarification questions are still pending', [
                 'ticket' => (string) $task->getTicket()->getId(),
-                'pending_answers' => $pendingAnswersCount,
+                'pending_answers' => $pendingBlockingAnswersCount,
+                'action' => $task->getAgentAction()->getKey(),
             ]);
             $task->setStatus(TaskStatus::InProgress);
             $this->em->flush();
@@ -219,27 +229,36 @@ final class AgentExecutionService
      * Detects agent clarification questions from the raw response so they can
      * become actionable ticket comments instead of opaque free text.
      *
-     * @return string[]
+     * @return array<int, array{content: string, necessityLevel: ClarificationQuestionNecessity, necessityReason: string}>
      */
-    private function extractClarificationQuestions(string $content, string $skillSlug): array
+    private function extractClarificationQuestions(string $content): array
     {
         $questions = [];
         foreach (preg_split('/\R+/', $content) ?: [] as $line) {
             $candidate = trim(preg_replace('/^[-*0-9.)\s]+/', '', trim($line)) ?? '');
-            if ($candidate === '' || !str_ends_with($candidate, '?')) {
+            if ($candidate === '') {
                 continue;
             }
 
-            if (mb_strlen($candidate) < 8) {
+            $question = $this->parseClarificationQuestion($candidate);
+            if ($question === null) {
                 continue;
             }
 
-            $questions[] = $candidate;
+            $questions[] = $question;
         }
 
-        $maxQuestions = $skillSlug === 'product-owner' ? 2 : 5;
+        $uniqueQuestions = [];
+        foreach ($questions as $question) {
+            $normalized = self::normalizeQuestion($question['content']);
+            if (isset($uniqueQuestions[$normalized])) {
+                continue;
+            }
 
-        return array_values(array_unique(array_slice($questions, 0, $maxQuestions)));
+            $uniqueQuestions[$normalized] = $question;
+        }
+
+        return array_values(array_slice($uniqueQuestions, 0, 2));
     }
 
     private static function normalizeQuestion(string $question): string
@@ -252,21 +271,34 @@ final class AgentExecutionService
     }
 
     /**
-     * @param string[] $candidates
-     * @return string[]
+     * @return array{content: string, necessityLevel: ClarificationQuestionNecessity, necessityReason: string}|null
      */
-    private function filterDuplicateQuestions(array $candidates, Ticket $ticket, string $skillSlug, int $pendingAnswersCount = 0): array
+    private function parseClarificationQuestion(string $candidate): ?array
     {
-        if ($candidates === []) {
-            return [];
+        if (preg_match('/^\[(blocking|important|useful)\]\s+(.+?)\s+::\s+(.+\?)$/iu', $candidate, $matches) === 1) {
+            $question = trim($matches[3]);
+            $reason = trim($matches[2]);
+            if (mb_strlen($question) < 8 || $reason === '') {
+                return null;
+            }
+
+            return [
+                'content' => $question,
+                'necessityLevel' => ClarificationQuestionNecessity::from(mb_strtolower($matches[1])),
+                'necessityReason' => $reason,
+            ];
         }
 
-        if ($skillSlug === 'product-owner' && $pendingAnswersCount > 0) {
-            $this->logger->info('AgentExecution: skipped new product-owner questions because pending blockers already exist', [
-                'ticket' => (string) $ticket->getId(),
-                'skipped' => count($candidates),
-            ]);
+        return null;
+    }
 
+    /**
+     * @param array<int, array{content: string, necessityLevel: ClarificationQuestionNecessity, necessityReason: string}> $candidates
+     * @return array<int, array{content: string, necessityLevel: ClarificationQuestionNecessity, necessityReason: string}>
+     */
+    private function filterDuplicateQuestions(array $candidates, Ticket $ticket): array
+    {
+        if ($candidates === []) {
             return [];
         }
 
@@ -278,7 +310,7 @@ final class AgentExecutionService
 
         $filtered = array_values(array_filter(
             $candidates,
-            static fn(string $q) => !isset($existingNormalized[self::normalizeQuestion($q)]),
+            static fn(array $question) => !isset($existingNormalized[self::normalizeQuestion($question['content'])]),
         ));
 
         $skipped = count($candidates) - count($filtered);

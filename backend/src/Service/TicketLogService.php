@@ -10,6 +10,7 @@ namespace App\Service;
 use App\Entity\Ticket;
 use App\Entity\TicketLog;
 use App\Entity\TicketTask;
+use App\Enum\ClarificationQuestionNecessity;
 use App\Repository\TicketLogRepository;
 
 /**
@@ -105,6 +106,28 @@ final class TicketLogService
             if ($log->requiresAnswer()) {
                 ++$count;
             }
+        }
+
+        return $count;
+    }
+
+    /**
+     * Counts unresolved clarification requests that are explicitly marked as blocking.
+     */
+    public function countPendingBlockingAnswersForTask(TicketTask $task): int
+    {
+        $count = 0;
+
+        foreach ($this->ticketLogRepository->findByTicketTask($task) as $log) {
+            if (!$log->requiresAnswer()) {
+                continue;
+            }
+
+            if (!ClarificationQuestionNecessity::tryFromMetadata($log->getMetadata())?->isBlocking()) {
+                continue;
+            }
+
+            ++$count;
         }
 
         return $count;

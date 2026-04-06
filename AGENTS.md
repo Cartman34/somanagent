@@ -58,6 +58,7 @@ Repatriation rules:
 - Repatriate changes with git-based workflows whenever possible.
 - Prefer reviewing the worktree diff, then using git tools such as commit plus `cherry-pick`, generated patch application, or a targeted merge strategy instead of copying files manually.
 - Resolve conflicts explicitly and verify the merged result in the main workspace.
+- After repatriation, keep the changes unstaged in the main workspace so they remain reviewable before any commit workflow.
 - After repatriation, run `php scripts/review.php` in the main workspace and fix mechanical blockers within scope.
 - Once repatriation is complete, update `local/backlog-changes.md` in the main workspace according to the relevant file rules.
 - Once repatriation is complete, clean the worktree so the task-specific code changes are gone and the worktree is ready to be resynced for the next task.
