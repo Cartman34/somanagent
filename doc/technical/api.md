@@ -193,6 +193,24 @@ Précondition commune aux routes d’exécution / reprise task-level :
 - le projet du ticket doit avoir une équipe affectée
 - une reprise n’est autorisée que pour une tâche déjà exécutée au moins une fois ou déjà complétée auparavant
 
+### Execution resource snapshots
+
+Every `AgentTaskExecutionAttempt` returned by ticket or agent execution APIs may include `resourceSnapshot`.
+
+The snapshot is captured at runtime, just before the agent call is sent, and is meant to remain immutable even if the agent, role, skill, or workflow later change.
+
+Captured fields:
+- `agent`: database-backed agent snapshot (`id`, `name`, `description`, `connector`, `role`, `config`)
+- `skill`: skill snapshot (`id`, `slug`, `name`, `source`, `originalSource`, `filePath`, `content`)
+- `prompt`: `instruction`, structured `context`, and fully `rendered` prompt
+- `scope`: `taskActions`, `ticketTransitions`, and backend `allowedEffects`
+- `limits`: explicit capture limits such as the current absence of a dedicated agent file path
+
+Current limits:
+- agents do not have a dedicated source file, so the snapshot stores a database representation rather than an agent file path
+- the snapshot reflects injected runtime resources only; it does not attempt to recursively capture every external dependency those resources may reference
+- existing attempts created before this feature may expose `resourceSnapshot=null`
+
 ### `POST /api/ticket-tasks/{id}/comments`
 Ajoute un commentaire contextualisé sur la tâche.
 

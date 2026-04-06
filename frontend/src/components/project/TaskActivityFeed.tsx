@@ -16,6 +16,7 @@ import {
   Zap,
 } from 'lucide-react'
 import Markdown from '@/components/ui/Markdown'
+import ExecutionResourceSnapshot from '@/components/project/ExecutionResourceSnapshot'
 import { useTranslation } from '@/hooks/useTranslation'
 import type { AgentTaskExecutionAttempt, TicketLog } from '@/types'
 import { formatDateTime, formatTime } from '@/lib/project/constants'
@@ -228,6 +229,32 @@ function EventIcon({ category, size = 12 }: { category: EventIconCategory; size?
   }
 }
 
+function executionResourceLabels(tt: (key: TaskActivityFeedTranslationKey) => string) {
+  return {
+    title: tt('execution_resource.title'),
+    capturedAt: tt('execution_resource.captured_at'),
+    agent: tt('execution_resource.agent'),
+    skill: tt('execution_resource.skill'),
+    prompt: tt('execution_resource.prompt'),
+    scope: tt('execution_resource.scope'),
+    source: tt('execution_resource.source'),
+    filePath: tt('execution_resource.file_path'),
+    connector: tt('execution_resource.connector'),
+    model: tt('execution_resource.model'),
+    role: tt('execution_resource.role'),
+    originalSource: tt('execution_resource.original_source'),
+    content: tt('execution_resource.content'),
+    instruction: tt('execution_resource.instruction'),
+    context: tt('execution_resource.context'),
+    renderedPrompt: tt('execution_resource.rendered_prompt'),
+    taskActions: tt('execution_resource.task_actions'),
+    ticketTransitions: tt('execution_resource.ticket_transitions'),
+    allowedEffects: tt('execution_resource.allowed_effects'),
+    notAvailable: tt('execution_resource.not_available'),
+    noAgentFile: tt('execution_resource.no_agent_file'),
+  }
+}
+
 /**
  * Renders a single execution attempt block.
  */
@@ -282,6 +309,12 @@ function ExecutionAttemptRow({
           {attempt.errorMessage}
         </pre>
       )}
+
+      <ExecutionResourceSnapshot
+        snapshot={attempt.resourceSnapshot}
+        labels={executionResourceLabels(tt)}
+        formatDateTime={(value) => formatDateTime(value, locale)}
+      />
     </div>
   )
 }

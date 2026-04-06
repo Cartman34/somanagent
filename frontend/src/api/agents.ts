@@ -3,7 +3,7 @@
  */
 
 import apiClient from './client'
-import type { Agent, AgentConfig, AgentStatus } from '@/types'
+import type { Agent, AgentConfig, AgentStatus, AgentTaskExecutionResourceSnapshot } from '@/types'
 
 /** Payload for creating or updating an agent. */
 export interface AgentPayload {
@@ -77,6 +77,7 @@ export interface ExecutionAttempt {
   requestRef: string | null
   errorMessage: string | null
   errorScope: string | null
+  resourceSnapshot: AgentTaskExecutionResourceSnapshot | null
   startedAt: string | null
   finishedAt: string | null
   agent: { id: string; name: string } | null

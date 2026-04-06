@@ -178,9 +178,65 @@ export interface AgentTaskExecutionAttempt {
   requestRef: string | null
   errorMessage: string | null
   errorScope: string | null
+  resourceSnapshot?: AgentTaskExecutionResourceSnapshot | null
   startedAt: string | null
   finishedAt: string | null
   agent: { id: string; name: string } | null
+}
+
+/** Snapshot of the database-backed agent resource used for one execution. */
+export interface ExecutionAgentResourceSnapshot {
+  resourceKind: 'database_agent'
+  filePath: string | null
+  id: string
+  name: string
+  description: string | null
+  connector: string
+  role: RoleRef | null
+  config: AgentConfig
+}
+
+/** Snapshot of the skill resource injected into one execution. */
+export interface ExecutionSkillResourceSnapshot {
+  resourceKind: 'skill_file'
+  id: string
+  slug: string
+  name: string
+  description: string | null
+  source: string
+  originalSource: string | null
+  filePath: string
+  content: string
+}
+
+/** Snapshot of the prompt material sent to the agent for one execution. */
+export interface ExecutionPromptResourceSnapshot {
+  instruction: string
+  context: Record<string, unknown>
+  rendered: string
+}
+
+/** Snapshot of runtime execution scope and allowed effects. */
+export interface ExecutionScopeResourceSnapshot {
+  taskActions: Record<string, unknown>[]
+  ticketTransitions: Record<string, unknown>[]
+  allowedEffects: string[]
+}
+
+/** Capture limits attached to one execution resource snapshot. */
+export interface ExecutionResourceSnapshotLimits {
+  agentFilePathAvailable: boolean
+  agentFilePathReason: string
+}
+
+/** Immutable runtime resource snapshot stored on an execution. */
+export interface AgentTaskExecutionResourceSnapshot {
+  capturedAt: string
+  agent: ExecutionAgentResourceSnapshot
+  skill: ExecutionSkillResourceSnapshot
+  prompt: ExecutionPromptResourceSnapshot
+  scope: ExecutionScopeResourceSnapshot
+  limits: ExecutionResourceSnapshotLimits
 }
 
 /** Aggregate execution record with attempts and agent metadata. */

@@ -10,6 +10,28 @@ common:
     refresh: Rafraîchir
     save: Enregistrer
     saving: Enregistrement…
+execution_resource:
+  title: Ressources injectées
+  captured_at: Capturé le
+  agent: Ressource agent
+  skill: Ressource skill
+  prompt: Prompt
+  scope: Périmètre autorisé
+  source: Source
+  file_path: Fichier
+  connector: Connecteur
+  model: Modèle
+  role: Rôle
+  original_source: Source d'origine
+  content: Contenu
+  instruction: Instruction
+  context: Contexte
+  rendered_prompt: Prompt rendu
+  task_actions: Actions de tâche autorisées
+  ticket_transitions: Transitions ticket autorisées
+  allowed_effects: Effets backend autorisés
+  not_available: Indisponible
+  no_agent_file: Pas de fichier agent
 agent:
   error:
     not_found: Agent introuvable.
@@ -326,7 +348,7 @@ project:
       team: Équipe
     tabs:
       general: Général
-      board: Tableau
+      board: Board
       tasks: Tâches
       team: Équipe
       modules: Modules
@@ -477,6 +499,8 @@ team:
 ticket:
   error:
     not_found: Tâche introuvable.
+    active_execution_before_workflow_transition: Impossible de passer à l'étape suivante tant qu'une exécution agent est encore en cours sur l'étape courante.
+    current_step_tasks_incomplete_before_workflow_transition: Impossible de passer à l'étape suivante tant que les tâches de l'étape courante ne sont pas terminées ou validées.
     pending_answers_before_workflow_transition: Impossible de passer à l'étape suivante tant que les questions en attente n'ont pas reçu de réponse.
   detail:
     title: Détail de la tâche

@@ -25,6 +25,7 @@ import { PageSpinner } from '@/components/ui/Spinner'
 import EntityId from '@/components/ui/EntityId'
 import ErrorMessage from '@/components/ui/ErrorMessage'
 import Markdown from '@/components/ui/Markdown'
+import ExecutionResourceSnapshot from '@/components/project/ExecutionResourceSnapshot'
 import { agentsApi } from '@/api/agents'
 import type { AgentExecution } from '@/api/agents'
 import { chatApi } from '@/api/chat'
@@ -35,6 +36,17 @@ import type { ChatMessage, SkillSummary } from '@/types'
 const AGENT_SHEET_TRANSLATION_KEYS = [
   'chat.reply', 'chat.reply_placeholder',
   'common.action.cancel', 'common.action.refresh',
+  'execution_resource.title', 'execution_resource.captured_at',
+  'execution_resource.agent', 'execution_resource.skill',
+  'execution_resource.prompt', 'execution_resource.scope',
+  'execution_resource.source', 'execution_resource.file_path',
+  'execution_resource.connector', 'execution_resource.model',
+  'execution_resource.role', 'execution_resource.original_source',
+  'execution_resource.content', 'execution_resource.instruction',
+  'execution_resource.context', 'execution_resource.rendered_prompt',
+  'execution_resource.task_actions', 'execution_resource.ticket_transitions',
+  'execution_resource.allowed_effects', 'execution_resource.not_available',
+  'execution_resource.no_agent_file',
   'agent.sheet.modal_title', 'agent.sheet.load_error',
   'agent.sheet.message.author_you', 'agent.sheet.message.author_error',
   'agent.sheet.message.author_agent',
@@ -258,6 +270,30 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
   const [expandedExecutionId, setExpandedExecutionId] = useState<string | null>(null)
 
   const { t, formatDateTime } = useTranslation(AGENT_SHEET_TRANSLATION_KEYS)
+
+  const executionResourceLabels = {
+    title: t('execution_resource.title'),
+    capturedAt: t('execution_resource.captured_at'),
+    agent: t('execution_resource.agent'),
+    skill: t('execution_resource.skill'),
+    prompt: t('execution_resource.prompt'),
+    scope: t('execution_resource.scope'),
+    source: t('execution_resource.source'),
+    filePath: t('execution_resource.file_path'),
+    connector: t('execution_resource.connector'),
+    model: t('execution_resource.model'),
+    role: t('execution_resource.role'),
+    originalSource: t('execution_resource.original_source'),
+    content: t('execution_resource.content'),
+    instruction: t('execution_resource.instruction'),
+    context: t('execution_resource.context'),
+    renderedPrompt: t('execution_resource.rendered_prompt'),
+    taskActions: t('execution_resource.task_actions'),
+    ticketTransitions: t('execution_resource.ticket_transitions'),
+    allowedEffects: t('execution_resource.allowed_effects'),
+    notAvailable: t('execution_resource.not_available'),
+    noAgentFile: t('execution_resource.no_agent_file'),
+  }
 
   const agentQuery = useQuery({
     queryKey: ['agent-detail', agentId],
@@ -664,6 +700,11 @@ export default function AgentSheet({ projectId, agentId, open, onClose }: AgentS
                               {t('agent.sheet.executions.no_error')}
                             </div>
                           )}
+                          <ExecutionResourceSnapshot
+                            snapshot={attempt.resourceSnapshot}
+                            labels={executionResourceLabels}
+                            formatDateTime={formatDateTime}
+                          />
                         </div>
                       )
                     })}

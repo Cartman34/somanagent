@@ -10,6 +10,7 @@ import { projectsApi } from '@/api/projects'
 import { teamsApi } from '@/api/teams'
 import { workflowsApi } from '@/api/workflows'
 import type { ProjectPayload } from '@/api/projects'
+import type { ProjectDispatchMode } from '@/types'
 import { useTranslation } from '@/hooks/useTranslation'
 import { PageSpinner } from '@/components/ui/Spinner'
 import ErrorMessage from '@/components/ui/ErrorMessage'
@@ -31,6 +32,10 @@ const PROJECTS_PAGE_TRANSLATION_KEYS = [
   'project.form.workflow_label',
   'project.form.workflow_placeholder',
   'project.form.workflow_hint',
+  'project.form.dispatch_mode_label',
+  'project.form.dispatch_mode_hint',
+  'project.form.dispatch_mode_auto',
+  'project.form.dispatch_mode_manual',
   'common.action.cancel',
   'common.action.refresh',
   'common.action.save',
@@ -64,6 +69,7 @@ function ProjectForm({
   const [description, setDescription] = useState(initial?.description ?? '')
   const [teamId, setTeamId] = useState(initial?.teamId ?? '')
   const [workflowId, setWorkflowId] = useState(initial?.workflowId ?? '')
+  const [dispatchMode, setDispatchMode] = useState<ProjectDispatchMode>(initial?.dispatchMode ?? 'auto')
 
   const { data: teams = [] } = useQuery({
     queryKey: ['teams'],
@@ -79,35 +85,57 @@ function ProjectForm({
   const availableWorkflows = workflows.filter((workflow) => workflow.isActive || workflow.id === workflowId)
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit({ name, description: description || undefined, teamId, workflowId }) }} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('project.form.name_label')} *</label>
-        <input className="input" value={name} onChange={(e) => setName(e.target.value)} required placeholder={t('project.form.name_placeholder')} />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('project.form.description_label')}</label>
-        <textarea className="input resize-none" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('project.form.team_label')} *</label>
-        <select className="input" value={teamId} onChange={(e) => setTeamId(e.target.value)} required>
-          <option value="" disabled>{t('project.form.team_placeholder')}</option>
-          {teams.map((team) => (
-            <option key={team.id} value={team.id}>{team.name}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('project.form.workflow_label')} *</label>
-        <select className="input" value={workflowId} onChange={(e) => setWorkflowId(e.target.value)} required>
-          <option value="" disabled>{t('project.form.workflow_placeholder')}</option>
-          {availableWorkflows.map((workflow) => (
-            <option key={workflow.id} value={workflow.id}>{workflow.name}</option>
-          ))}
-        </select>
-        <p className="mt-1 text-xs text-gray-500">
-          {t('project.form.workflow_hint')}
-        </p>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        onSubmit({ name, description: description || undefined, teamId, workflowId, dispatchMode })
+      }}
+      className="space-y-5"
+    >
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('project.form.name_label')} *</label>
+          <input className="input" value={name} onChange={(e) => setName(e.target.value)} required placeholder={t('project.form.name_placeholder')} />
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('project.form.description_label')}</label>
+          <textarea className="input resize-none" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('project.form.team_label')} *</label>
+          <select className="input" value={teamId} onChange={(e) => setTeamId(e.target.value)} required>
+            <option value="" disabled>{t('project.form.team_placeholder')}</option>
+            {teams.map((team) => (
+              <option key={team.id} value={team.id}>{team.name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('project.form.workflow_label')} *</label>
+          <select className="input" value={workflowId} onChange={(e) => setWorkflowId(e.target.value)} required>
+            <option value="" disabled>{t('project.form.workflow_placeholder')}</option>
+            {availableWorkflows.map((workflow) => (
+              <option key={workflow.id} value={workflow.id}>{workflow.name}</option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-gray-500">
+            {t('project.form.workflow_hint')}
+          </p>
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('project.form.dispatch_mode_label')}</label>
+          <select
+            className="input"
+            value={dispatchMode}
+            onChange={(e) => setDispatchMode(e.target.value as ProjectDispatchMode)}
+          >
+            <option value="auto">{t('project.form.dispatch_mode_auto')}</option>
+            <option value="manual">{t('project.form.dispatch_mode_manual')}</option>
+          </select>
+          <p className="mt-1 text-xs text-gray-500">
+            {t('project.form.dispatch_mode_hint')}
+          </p>
+        </div>
       </div>
       <div className="flex justify-end gap-3 pt-2">
         <button type="button" onClick={onCancel} className="btn-secondary">{t('common.action.cancel')}</button>
@@ -125,7 +153,7 @@ function ProjectsList() {
   const { t, formatDate } = useTranslation(PROJECTS_PAGE_TRANSLATION_KEYS)
 
   const [createOpen, setCreateOpen] = useState(false)
-  const [editTarget, setEditTarget] = useState<{ id: string; name: string; description: string | null; teamId?: string | null; workflowId?: string | null } | null>(null)
+  const [editTarget, setEditTarget] = useState<{ id: string; name: string; description: string | null; teamId?: string | null; workflowId?: string | null; dispatchMode?: ProjectDispatchMode } | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
 
   const { data: projects, isLoading, isFetching, error, refetch } = useQuery({
@@ -204,6 +232,7 @@ function ProjectsList() {
                           description: project.description,
                           teamId: project.team?.id ?? null,
                           workflowId: project.workflow?.id ?? null,
+                          dispatchMode: project.dispatchMode,
                         })
                       }}
                       className="p-1.5 text-gray-400 hover:text-gray-600"
@@ -245,7 +274,7 @@ function ProjectsList() {
       <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title={t('project.list.modal_edit_title')}>
         {editTarget && (
           <ProjectForm
-            initial={{ name: editTarget.name, description: editTarget.description ?? '', teamId: editTarget.teamId ?? null, workflowId: editTarget.workflowId ?? null }}
+            initial={{ name: editTarget.name, description: editTarget.description ?? '', teamId: editTarget.teamId ?? null, workflowId: editTarget.workflowId ?? null, dispatchMode: editTarget.dispatchMode }}
             onSubmit={(d) => updateMutation.mutate({ id: editTarget.id, data: d })}
             loading={updateMutation.isPending}
             onCancel={() => setEditTarget(null)}
