@@ -496,35 +496,6 @@ class TicketController extends AbstractController
     }
 
     /**
-     * Authorizes an awaiting-dispatch task and dispatches it immediately.
-     */
-    #[Route('/ticket-tasks/{id}/authorize', name: 'ticket_task_authorize_api', methods: ['POST'])]
-    public function authorize(string $id): JsonResponse
-    {
-        $task = $this->ticketTaskService->findById($id);
-        if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
-        }
-
-        if (($response = $this->requireProjectTeamForProgress($task->getTicket()->getProject())) !== null) {
-            return $response;
-        }
-
-        try {
-            $result = $this->ticketTaskService->authorize($task, $task->getAssignedAgent());
-        } catch (\RuntimeException|\LogicException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        return $this->json([
-            'ticketTask' => $this->serializeApiTicketTask($task),
-            'agent' => ['id' => (string) $result['agent']->getId(), 'name' => $result['agent']->getName()],
-            'skill' => $result['skill'],
-            'executionId' => $result['executionId'],
-        ]);
-    }
-
-    /**
      * Resumes an agent step from a ticket task.
      */
     #[Route('/ticket-tasks/{id}/resume', name: 'ticket_task_resume_api', methods: ['POST'])]
@@ -865,7 +836,7 @@ class TicketController extends AbstractController
             'awaitingUserAnswer' => $pendingAnswerCount > 0,
             'pendingUserAnswerCount' => $pendingAnswerCount,
             'canResume' => $this->ticketTaskService->canResume($task),
-            'canAuthorize' => $task->getStatus() === TaskStatus::AwaitingDispatch,
+            'canManualDispatch' => $task->getStatus() === TaskStatus::AwaitingDispatch,
             'dependsOn' => array_map(
                 static fn($dependency) => [
                     'id' => (string) $dependency->getDependsOn()->getId(),
