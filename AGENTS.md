@@ -228,7 +228,7 @@ Rules:
 
 ## Conventions Snapshot
 
-- PHPDoc is required on public PHP methods unless they are truly trivial, and on non-trivial private helpers.
+- PHPDoc is required on public PHP methods unless they are truly trivial, and on non-trivial private helpers. PHPDoc must describe what the class or callable does, not merely restate types or generic boilerplate.
 - JSDoc/TSDoc is required on exported TypeScript/React code and on non-trivial internal helpers.
 - When a Symfony method has both PHPDoc and attributes, keep the order: PHPDoc, attribute, method declaration.
 - For detailed conventions, read [`doc/technical/conventions.md`](/home/sowapps/projects/somanagent/doc/technical/conventions.md) only when needed.

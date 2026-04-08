@@ -40,7 +40,7 @@ final class AgentConnectorCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addArgument('connector', InputArgument::REQUIRED, 'claude_api or claude_cli')
+            ->addArgument('connector', InputArgument::REQUIRED, 'Connector value such as claude_api, codex_api, codex_cli, or opencode_cli')
             ->addArgument('agentId', InputArgument::OPTIONAL, 'UUID of the agent to update')
             ->addOption('all', null, InputOption::VALUE_NONE, 'Applies the change to every agent');
     }
@@ -59,7 +59,8 @@ final class AgentConnectorCommand extends Command
         try {
             $connector = ConnectorType::from($connectorValue);
         } catch (\ValueError) {
-            $io->error(sprintf('Invalid connector: %s. Accepted values: claude_api, claude_cli.', $connectorValue));
+            $acceptedValues = implode(', ', array_map(static fn (ConnectorType $type): string => $type->value, ConnectorType::cases()));
+            $io->error(sprintf('Invalid connector: %s. Accepted values: %s.', $connectorValue, $acceptedValues));
             return Command::INVALID;
         }
 

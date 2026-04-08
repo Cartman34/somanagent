@@ -10,6 +10,7 @@ namespace App\Service;
 use App\Entity\Feature;
 use App\Entity\Project;
 use App\Entity\Ticket;
+use App\Entity\TicketTask;
 use App\Entity\Role;
 use App\Entity\WorkflowStep;
 use App\Entity\WorkflowStepAction;

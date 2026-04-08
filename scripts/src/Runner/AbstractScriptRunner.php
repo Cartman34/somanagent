@@ -47,6 +47,9 @@ abstract class AbstractScriptRunner
     protected Console $console;
     protected string $projectRoot;
 
+    /**
+     * Initializes the shared application and console singletons and resolves the project root.
+     */
     public function __construct()
     {
         $this->projectRoot = dirname(__DIR__, 3);
@@ -119,7 +122,7 @@ abstract class AbstractScriptRunner
     {
         $args = array_slice($argv, 1);
 
-        if (in_array('-h', $args, true) || in_array('--help', $args, true)) {
+        if (($args[0] ?? null) === '-h' || ($args[0] ?? null) === '--help') {
             $this->printHelp();
             exit(0);
         }

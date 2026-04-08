@@ -3,16 +3,23 @@
  */
 
 import apiClient from './client'
-import type { Agent, AgentConfig, AgentStatus, AgentTaskExecutionResourceSnapshot } from '@/types'
+import type {
+  Agent,
+  AgentConnector,
+  AgentConnectorDescriptor,
+  AgentStatus,
+  ConnectorConfig,
+  AgentTaskExecutionResourceSnapshot,
+} from '@/types'
 
 /** Payload for creating or updating an agent. */
 export interface AgentPayload {
   name: string
   description?: string
-  connector: 'claude_api' | 'claude_cli'
+  connector: AgentConnector
   roleId?: string
   isActive?: boolean
-  config?: Partial<AgentConfig>
+  config?: Partial<ConnectorConfig>
 }
 
 /** API client for agent CRUD operations and status lookup. */
@@ -39,6 +46,24 @@ export const agentsApi = {
 
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/agents/${id}`)
+  },
+
+  listConnectors: async (): Promise<AgentConnectorDescriptor[]> => {
+    const { data } = await apiClient.get('/agents/connectors')
+    return data
+  },
+
+  getConnectorModels: async (
+    connector: AgentConnector,
+    options: { selectedModel?: string; refresh?: boolean } = {},
+  ): Promise<AgentConnectorDescriptor> => {
+    const { data } = await apiClient.get(`/agents/connectors/${connector}/models`, {
+      params: {
+        selectedModel: options.selectedModel || undefined,
+        refresh: options.refresh ? 1 : undefined,
+      },
+    })
+    return data
   },
 
   /**

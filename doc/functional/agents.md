@@ -12,6 +12,9 @@ An agent is a **configured AI instance**: it combines a connector (how to reach 
 |---|---|---|
 | Claude API | `claude_api` | HTTP calls to `api.anthropic.com` — requires `CLAUDE_API_KEY` |
 | Claude CLI | `claude_cli` | Executes the locally installed `claude` binary — requires Claude Code |
+| Codex API | `codex_api` | HTTP calls to OpenAI Responses API — requires `OPENAI_API_KEY` |
+| Codex CLI | `codex_cli` | Executes the locally installed `codex` binary |
+| OpenCode CLI | `opencode_cli` | Executes the locally installed `opencode` binary |
 
 ## Creating an Agent
 
@@ -36,7 +39,7 @@ Content-Type: application/json
 }
 ```
 
-## Configuration (`AgentConfig`)
+## Configuration (`ConnectorConfig`)
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
@@ -45,6 +48,19 @@ Content-Type: application/json
 | `temperature` | float | 0.7 | Creativity (0 = deterministic, 1 = creative) |
 | `timeout` | int | 120 | Timeout in seconds |
 | `extra` | object | {} | Additional connector-specific parameters |
+
+## Model Discovery And Preselection
+
+The agent form now relies on connector-driven model discovery instead of a hardcoded model list.
+
+- `GET /api/agents/connectors` exposes the available connectors and whether they support runtime discovery
+- `GET /api/agents/connectors/{connector}/models` returns a normalized model catalog, a short-lived cache state, and a `recommendedModel`
+- manual model choice is still allowed, but the UI surfaces advisories when the selected model differs from the connector recommendation
+
+Current preselection strategy:
+- `balanced_coding`
+- prefers coding-capable models first
+- keeps manual override possible for latency or cost-driven use cases
 
 ### Recommendations by Use Case
 
@@ -66,13 +82,21 @@ Or via the API:
 GET /api/health/connectors
 ```
 
-Returns:
+Returns a structured connector status:
 ```json
 {
-  "status": "ok",
+  "status": "degraded",
   "connectors": {
-    "claude_api": true,
-    "claude_cli": false
+    "claude_api": {
+      "ok": false,
+      "reason": "API key not configured (CLAUDE_API_KEY).",
+      "checks": [
+        { "name": "runtime", "status": "degraded" },
+        { "name": "auth", "status": "degraded" },
+        { "name": "prompt_test", "status": "degraded" },
+        { "name": "models", "status": "skipped" }
+      ]
+    }
   }
 }
 ```
@@ -83,9 +107,9 @@ When a story is dispatched for execution:
 
 1. SoManAgent identifies the agent assigned to the story's current status role
 2. Retrieves the content of the associated SKILL.md
-3. Builds a `Prompt` (skill + context + ticket or ticket-task instruction)
-4. Sends it via the configured connector (`ClaudeApiAdapter` or `ClaudeCliAdapter`)
-5. Receives an `AgentResponse` with the content + metadata (tokens, duration)
+3. Builds a `Prompt` and wraps it into a low-level `ConnectorRequest`
+4. Sends it via the configured connector (`ClaudeApiConnector`, `ClaudeCliConnector`, `CodexApiConnector`, `CodexCliConnector`, or `OpenCodeCliConnector`)
+5. Receives a normalized `ConnectorResponse` with the content + metadata (tokens, duration, session id when available)
 6. Records the narrative history in `TicketLog` and the technical trace in `AgentTaskExecution`
 7. For `tech-planning` skill: parses JSON output, creates subtasks + dependency DAG, sets branch name
 

@@ -1,6 +1,13 @@
 parameters:
     skills_dir: '%kernel.project_dir%/../skills'
     messenger_agent_task_max_retries: 3
+    openai_api_key: ''
+    agent_model_recommendation_policies:
+        claude_api: ['claude-sonnet*', 'claude-opus*']
+        claude_cli: ['claude-sonnet*', 'claude-opus*']
+        codex_api: ['codex*', 'gpt-5*', 'o3*', 'o4*']
+        codex_cli: ['codex*', 'gpt-5*', 'o3*', 'o4*']
+        opencode_cli: ['*/codex*', '*/gpt-5*', '*/o3*', '*/o4*', 'opencode/*']
 
 services:
     _defaults:
@@ -16,18 +23,44 @@ services:
             - '../src/ValueObject/'
             - '../src/Kernel.php'
 
-    # Adapters IA — taggés pour AgentPortRegistry
-    App\Adapter\AI\ClaudeApiAdapter:
+    # Connectors — tagged for ConnectorRegistry
+    App\Adapter\AI\ClaudeApiConnector:
         arguments:
             $apiKey: '%env(CLAUDE_API_KEY)%'
-        tags: ['app.agent_adapter']
+        tags: ['app.connector']
 
-    App\Adapter\AI\ClaudeCliAdapter:
-        tags: ['app.agent_adapter']
+    App\Adapter\AI\ClaudeCliConnector:
+        tags: ['app.connector']
 
-    App\Service\AgentPortRegistry:
+    App\Adapter\AI\CodexApiConnector:
         arguments:
-            $adapters: !tagged_iterator app.agent_adapter
+            $apiKey: '%env(default:openai_api_key:OPENAI_API_KEY)%'
+        tags: ['app.connector']
+
+    App\Adapter\AI\CodexCliConnector:
+        tags: ['app.connector']
+
+    App\Adapter\AI\OpenCodeCliConnector:
+        tags: ['app.connector']
+
+    App\Service\ConnectorRegistry:
+        arguments:
+            $connectors: !tagged_iterator app.connector
+            $cache: '@cache.app'
+
+    App\Service\AgentModelCatalogService:
+        arguments:
+            $cache: '@cache.app'
+
+    App\Service\AgentModelRecommendationPolicyResolver:
+        arguments:
+            $policies: '%agent_model_recommendation_policies%'
+
+    App\Command\ListAgentAdaptersCommand:
+        tags: ['console.command']
+
+    App\Command\ListAgentModelsCommand:
+        tags: ['console.command']
 
     App\Port\RealtimePublisherPort: '@App\Adapter\Realtime\MercureRealtimePublisher'
 

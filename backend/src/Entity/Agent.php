@@ -9,7 +9,7 @@ namespace App\Entity;
 
 use App\Enum\ConnectorType;
 use App\Repository\AgentRepository;
-use App\ValueObject\AgentConfig;
+use App\ValueObject\ConnectorConfig;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -73,7 +73,7 @@ class Agent
     public function __construct(
         string        $name,
         ConnectorType $connector,
-        AgentConfig   $config,
+        ConnectorConfig $config,
         ?string       $description = null,
     ) {
         $this->id          = Uuid::v7();
@@ -118,9 +118,9 @@ class Agent
     /**
      * Returns the normalized agent configuration value object.
      */
-    public function getAgentConfig(): AgentConfig
+    public function getConnectorConfig(): ConnectorConfig
     {
-        return AgentConfig::fromArray($this->config);
+        return ConnectorConfig::fromArray($this->config);
     }
 
     /** Updates the agent name. */
@@ -137,7 +137,7 @@ class Agent
     /**
      * Replaces the stored connector configuration.
      */
-    public function setAgentConfig(AgentConfig $config): static
+    public function setConnectorConfig(ConnectorConfig $config): static
     {
         $this->config = $config->toArray();
         return $this;

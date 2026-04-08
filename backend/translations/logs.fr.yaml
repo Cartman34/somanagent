@@ -29,6 +29,9 @@ logs:
     claude_cli_unavailable:
       title: 'Authentification Claude CLI indisponible'
       message: 'La CLI Claude n’est pas authentifiée dans l’environnement runtime.'
+    connector_auth_unavailable:
+      title: 'Authentification connecteur indisponible'
+      message: 'Le connecteur %connector% n’est pas correctement authentifié dans l’environnement runtime.'
   worker:
     error:
       task_execution_not_found:

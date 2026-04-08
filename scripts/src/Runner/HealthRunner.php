@@ -10,13 +10,13 @@ namespace SoManAgent\Script\Runner;
 /**
  * Health check script runner.
  *
- * Checks application and connector health via the API.
+ * Checks API reachability, then delegates connector diagnostics to somanagent:health.
  */
 final class HealthRunner extends AbstractScriptRunner
 {
     protected function getDescription(): string
     {
-        return 'Check application and connector health via the API';
+        return 'Check application reachability and run somanagent:health';
     }
 
     protected function getOptions(): array
@@ -34,6 +34,9 @@ final class HealthRunner extends AbstractScriptRunner
         ];
     }
 
+    /**
+     * Checks API reachability, then runs the application health command.
+     */
     public function run(array $args): int
     {
         $baseUrl = $this->parseBaseUrl($args);
@@ -41,29 +44,18 @@ final class HealthRunner extends AbstractScriptRunner
         $this->console->step("Checking SoManAgent ($baseUrl)");
 
         try {
-            $app = $this->httpGet("$baseUrl/api/health");
-            $this->console->ok("Application  : {$app['app']} v{$app['version']}");
-
-            $connectors = $this->httpGet("$baseUrl/api/health/connectors");
-
-            $this->console->line();
-            $this->console->line('  Connectors:');
-            $allOk = true;
-            foreach ($connectors['connectors'] as $name => $ok) {
-                $icon   = $ok ? '✓' : '✗';
-                $status = $ok ? 'OK' : 'UNREACHABLE';
-                $this->console->line("    $icon  $name : $status");
-                if (!$ok) {
-                    $allOk = false;
-                }
-            }
-
-            $this->console->line();
-            $this->console->line('  Overall status: ' . ($allOk ? '✓ OK' : '⚠  Degraded'));
-            return $allOk ? 0 : 1;
+            $app = $this->httpGet("$baseUrl/api/health", 5);
+            $this->console->ok("Application : {$app['app']} v{$app['version']} — reachable");
         } catch (\RuntimeException $e) {
-            $this->console->fail($e->getMessage() . "\n     → Run: php scripts/dev.php");
+            $this->console->line("  ❌ API unreachable: " . $e->getMessage());
+            $this->console->line('  → Start the stack with: php scripts/dev.php');
+            return 1;
         }
+
+        $this->console->line();
+        $this->console->step('Connector health via somanagent:health');
+
+        return $this->app->runCommand('php scripts/console.php somanagent:health');
     }
 
     /**
@@ -83,13 +75,14 @@ final class HealthRunner extends AbstractScriptRunner
     }
 
     /**
-     * Perform a GET request and decode JSON response.
+     * Performs a GET request and decodes the JSON response.
      *
      * @return array<mixed>
+     * @throws \RuntimeException when the request fails or the response is not valid JSON.
      */
-    private function httpGet(string $url): array
+    private function httpGet(string $url, int $timeout = 10): array
     {
-        $ctx = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]);
+        $ctx = stream_context_create(['http' => ['timeout' => $timeout, 'ignore_errors' => true]]);
         $raw = @file_get_contents($url, false, $ctx);
         if ($raw === false) {
             throw new \RuntimeException("Cannot reach $url");

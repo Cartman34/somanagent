@@ -61,7 +61,7 @@ A Role:
 An **Agent** is a configured AI instance, ready to receive tasks.
 
 An Agent:
-- Has a **connector**: `claude_api` (HTTP) or `claude_cli` (local binary)
+- Has a **connector**: `claude_api`, `claude_cli`, `codex_api`, `codex_cli`, or `opencode_cli`
 - Has a **configuration**: model, temperature, max_tokens, timeout
 - Can be assigned to a **Role**
 - Has an active/inactive status

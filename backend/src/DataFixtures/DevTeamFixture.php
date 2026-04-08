@@ -19,7 +19,7 @@ use App\Enum\ConnectorType;
 use App\Enum\SkillSource;
 use App\Enum\WorkflowStepTransitionMode;
 use App\Enum\WorkflowTrigger;
-use App\ValueObject\AgentConfig;
+use App\ValueObject\ConnectorConfig;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -188,7 +188,7 @@ class DevTeamFixture extends Fixture
     /** @return array<string, Agent> */
     private function createAgents(ObjectManager $manager, array $roles): array
     {
-        $config = AgentConfig::default();
+        $config = ConnectorConfig::default();
 
         $definitions = [
             'po-alice'    => ['name' => $this->tr('fixtures.agent.po_alice.name'),    'role' => 'product-owner'],
