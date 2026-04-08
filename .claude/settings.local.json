@@ -37,7 +37,9 @@
       "Bash(git *)",
       "Bash(gh *)",
       "Bash(python3 *)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Read(//home/sowapps/.local/share/**)",
+      "Bash(opencode --help)"
     ]
   }
 }

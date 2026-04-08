@@ -13,7 +13,7 @@ use App\Entity\Role;
 use App\Entity\Skill;
 use App\Entity\Team;
 use App\Enum\ConnectorType;
-use App\ValueObject\AgentConfig;
+use App\ValueObject\ConnectorConfig;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -119,7 +119,7 @@ class SeedWebTeamCommand extends Command
         $io->text('  Team: <info>Web Team</info>');
 
         // Agents
-        $config = AgentConfig::fromArray(['model' => 'claude-sonnet-4-6']);
+        $config = ConnectorConfig::fromArray(['model' => 'claude-sonnet-4-6']);
         foreach (self::AGENTS as $def) {
             $agent = new Agent($def['name'], ConnectorType::ClaudeApi, $config, $def['description']);
             $agent->setRole($roles[$def['slug']]);

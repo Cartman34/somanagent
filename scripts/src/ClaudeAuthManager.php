@@ -22,6 +22,9 @@ final class ClaudeAuthManager
     private readonly string $sharedClaudeDir;
     private readonly string $sharedClaudeJson;
 
+    /**
+     * Wires the shared application services and resolves the WSL/Docker auth paths.
+     */
     public function __construct(
         private readonly Application $app,
         string $root,
@@ -45,6 +48,8 @@ final class ClaudeAuthManager
         $this->console->step('Checking WSL Claude auth files');
         $this->console->info($this->describePathState($this->wslClaudeDir));
         $this->console->info($this->describePathState($this->wslClaudeJson));
+
+        $this->assertSharedDirectoryAccessible($this->sharedRoot);
 
         $this->console->step('Checking Docker shared auth files');
         $this->console->info($this->describePathState($this->sharedClaudeDir));
@@ -80,6 +85,8 @@ final class ClaudeAuthManager
             );
         }
 
+        $this->assertSharedDirectoryAccessible($this->sharedRoot);
+
         $this->console->step('Syncing WSL Claude auth to Docker shared directory');
         $this->clearDockerSharedCopy();
         $this->ensureDirectory($this->sharedRoot);
@@ -87,6 +94,7 @@ final class ClaudeAuthManager
         $this->clearDirectoryContents($this->sharedClaudeDir);
         $this->copyDirectory($this->wslClaudeDir, $this->sharedClaudeDir);
         $this->copyFile($this->wslClaudeJson, $this->sharedClaudeJson);
+        $this->openSharedReadPermissions($this->sharedRoot);
         $this->recreateClaudeContainers();
         $this->console->ok('Docker Claude auth copy updated from WSL.');
     }
@@ -296,6 +304,38 @@ final class ClaudeAuthManager
     }
 
     /**
+     * Grants world-readable and world-writable permissions on all files and directories under
+     * the given path so that the www-data PHP-FPM process can both read and refresh the auth
+     * state at runtime (e.g. OAuth token rotation).
+     */
+    private function openSharedReadPermissions(string $path): void
+    {
+        if (is_file($path)) {
+            chmod($path, 0666);
+            return;
+        }
+
+        if (!is_dir($path)) {
+            return;
+        }
+
+        chmod($path, 0777);
+
+        $items = scandir($path);
+        if ($items === false) {
+            return;
+        }
+
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            $this->openSharedReadPermissions($path . '/' . $item);
+        }
+    }
+
+    /**
      * Copies a directory tree recursively.
      */
     private function copyDirectory(string $source, string $destination): void
@@ -340,6 +380,61 @@ final class ClaudeAuthManager
         }
 
         @chmod($destination, 0600);
+    }
+
+    /**
+     * Throws a descriptive error when any entry in the shared directory tree is not accessible by the current user.
+     *
+     * This typically happens when Docker created the directory as root before the host-side scripts
+     * had a chance to create it themselves (e.g. after a fresh clone without running setup.php first).
+     * The thrown message includes the exact fix command so the user can recover immediately.
+     */
+    private function assertSharedDirectoryAccessible(string $path): void
+    {
+        if (!is_dir($path)) {
+            return;
+        }
+
+        $problematic = [];
+
+        if (!is_readable($path) || !is_writable($path)) {
+            $problematic[] = $path;
+        }
+
+        if ($problematic === []) {
+            try {
+                $iterator = new \RecursiveIteratorIterator(
+                    new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS),
+                    \RecursiveIteratorIterator::SELF_FIRST,
+                );
+
+                foreach ($iterator as $item) {
+                    if (!is_readable($item->getPathname())) {
+                        $problematic[] = $item->getPathname();
+                    }
+                }
+            } catch (\Exception) {
+                // The directory itself was unreadable — already captured above.
+            }
+        }
+
+        if ($problematic === []) {
+            return;
+        }
+
+        $sample = array_slice($problematic, 0, 3);
+
+        throw new \RuntimeException(sprintf(
+            "%d path(s) in %s are not accessible by the current user.\n" .
+            "  This happens when Docker creates mount directories as root before setup.php runs.\n\n" .
+            "  Affected path(s):\n    %s\n\n" .
+            "  Fix:\n    sudo chown -R \$(whoami): %s\n\n" .
+            "  Then re-run this command.",
+            count($problematic),
+            $path,
+            implode("\n    ", $sample),
+            $path,
+        ));
     }
 
     /**

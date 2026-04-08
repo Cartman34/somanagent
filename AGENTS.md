@@ -11,6 +11,7 @@ Read only this file first. Read additional files only when the active command or
 - Use project scripts in `scripts/` first.
 - Prefer `php scripts/console.php`, `php scripts/node.php`, `php scripts/logs.php`, `php scripts/db.php`, `php scripts/dev.php`, `php scripts/health.php`, and similar wrappers over raw container commands.
 - Use relative paths in commands. Do not rely on `cd` into subfolders.
+- For temporary files needed by repo procedures (for example PR body files), write them under `local/tmp/` inside the repository, not `/tmp`.
 - Keep chat updates concise.
 - Do not infer backlog or review state from chat alone.
 - UI text is French, but must go through translation keys.
@@ -228,7 +229,7 @@ Rules:
 
 ## Conventions Snapshot
 
-- PHPDoc is required on public PHP methods unless they are truly trivial, and on non-trivial private helpers.
+- PHPDoc is required on public PHP methods unless they are truly trivial, and on non-trivial private helpers. PHPDoc must describe what the class or callable does, not merely restate types or generic boilerplate.
 - JSDoc/TSDoc is required on exported TypeScript/React code and on non-trivial internal helpers.
 - When a Symfony method has both PHPDoc and attributes, keep the order: PHPDoc, attribute, method declaration.
 - For detailed conventions, read [`doc/technical/conventions.md`](/home/sowapps/projects/somanagent/doc/technical/conventions.md) only when needed.

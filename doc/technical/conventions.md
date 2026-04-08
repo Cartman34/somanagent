@@ -67,6 +67,19 @@ PHPDoc is required on:
 - non-trivial private helpers
 
 The class-level docblock must describe the role and responsibility of the class/enum/interface/trait in one or two sentences.
+The method/function PHPDoc must describe what the callable does, not just restate its signature or types.
+In practice, the first sentence must explain the observable behavior or responsibility of the callable.
+
+Avoid weak PHPDoc such as:
+- `Initializes the object.`
+- `Constructor.`
+- `Getter.`
+- `Converts to array.`
+
+Prefer PHPDoc that makes the behavior explicit, for example:
+- `Builds the immutable pricing snapshot used by model catalogs.`
+- `Rebuilds pricing metadata from the normalized cache payload.`
+- `Returns the connector catalog serialized for API responses.`
 
 ```php
 /**

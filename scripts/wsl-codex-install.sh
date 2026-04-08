@@ -89,7 +89,8 @@ if [[ "$SKIP_LOGIN" -eq 0 ]]; then
 
 ==> Next step: authenticate Codex
 Run:
-  codex --login
+  codex login
+  php scripts/codex-auth.php sync
 
 Then start Codex from the project root:
   cd "$ROOT_DIR"

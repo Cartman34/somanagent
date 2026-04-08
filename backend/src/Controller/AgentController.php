@@ -9,13 +9,13 @@ namespace App\Controller;
 
 use App\Entity\AgentTaskExecution;
 use App\Entity\AgentTaskExecutionAttempt;
-use App\Entity\TicketTask;
 use App\Enum\ConnectorType;
 use App\Repository\AgentRepository;
 use App\Repository\AgentTaskExecutionRepository;
+use App\Service\AgentModelCatalogService;
 use App\Service\AgentService;
 use App\Service\ApiErrorPayloadFactory;
-use App\ValueObject\AgentConfig;
+use App\ValueObject\ConnectorConfig;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -35,6 +35,7 @@ class AgentController extends AbstractController
         private readonly AgentService    $agentService,
         private readonly AgentRepository $agentRepository,
         private readonly AgentTaskExecutionRepository $agentTaskExecutionRepository,
+        private readonly AgentModelCatalogService $agentModelCatalogService,
         private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
     ) {}
 
@@ -54,7 +55,7 @@ class AgentController extends AbstractController
             'connectorLabel' => $a->getConnector()->label(),
             'isActive'       => $a->isActive(),
             'role'           => $a->getRole() ? ['id' => (string) $a->getRole()->getId(), 'name' => $a->getRole()->getName()] : null,
-            'config'         => $a->getAgentConfig()->toArray(),
+            'config'         => $a->getConnectorConfig()->toArray(),
             'createdAt'      => $a->getCreatedAt()->format(\DateTimeInterface::ATOM),
             'updatedAt'      => $a->getUpdatedAt()->format(\DateTimeInterface::ATOM),
         ], $this->agentService->findAll()));
@@ -74,8 +75,12 @@ class AgentController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('agent.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
+        if (!is_array($data['config'] ?? null) || !is_string($data['config']['model'] ?? null) || trim($data['config']['model']) === '') {
+            return $this->json($this->apiErrorPayloadFactory->create('agent.validation.model_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
         $connector = ConnectorType::from($data['connector'] ?? ConnectorType::ClaudeApi->value);
-        $config    = AgentConfig::fromArray($data['config'] ?? ['model' => 'claude-sonnet-4-5']);
+        $config    = ConnectorConfig::fromArray($data['config']);
 
         $agent = $this->agentService->create($data['name'], $connector, $config, $data['description'] ?? null, $data['roleId'] ?? null);
 
@@ -88,7 +93,7 @@ class AgentController extends AbstractController
      * @param string $id Agent UUID
      * @return JsonResponse Agent details or 404 if not found
      */
-    #[Route('/{id}', name: 'agent_get', methods: ['GET'])]
+    #[Route('/{id}', name: 'agent_get', requirements: ['id' => '[0-9a-fA-F-]{36}'], methods: ['GET'])]
     public function get(string $id): JsonResponse
     {
         $agent = $this->agentService->findById($id);
@@ -104,7 +109,7 @@ class AgentController extends AbstractController
             'connectorLabel' => $agent->getConnector()->label(),
             'isActive'    => $agent->isActive(),
             'role'        => $agent->getRole() ? ['id' => (string) $agent->getRole()->getId(), 'name' => $agent->getRole()->getName()] : null,
-            'config'      => $agent->getAgentConfig()->toArray(),
+            'config'      => $agent->getConnectorConfig()->toArray(),
             'createdAt'   => $agent->getCreatedAt()->format(\DateTimeInterface::ATOM),
         ]);
     }
@@ -116,7 +121,7 @@ class AgentController extends AbstractController
      * @param Request $request JSON payload with fields to update
      * @return JsonResponse Updated agent id and name or 404 if not found
      */
-    #[Route('/{id}', name: 'agent_update', methods: ['PUT'])]
+    #[Route('/{id}', name: 'agent_update', requirements: ['id' => '[0-9a-fA-F-]{36}'], methods: ['PUT'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $agent = $this->agentService->findById($id);
@@ -126,7 +131,13 @@ class AgentController extends AbstractController
 
         $data      = $request->toArray();
         $connector = ConnectorType::from($data['connector'] ?? $agent->getConnector()->value);
-        $config    = AgentConfig::fromArray($data['config'] ?? $agent->getAgentConfig()->toArray());
+        $configData = $data['config'] ?? $agent->getConnectorConfig()->toArray();
+
+        if (!is_array($configData) || !is_string($configData['model'] ?? null) || trim($configData['model']) === '') {
+            return $this->json($this->apiErrorPayloadFactory->create('agent.validation.model_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $config = ConnectorConfig::fromArray($configData);
 
         $this->agentService->update($agent, $data['name'] ?? $agent->getName(), $data['description'] ?? null, $connector, $config, $data['roleId'] ?? null);
         return $this->json(['id' => (string) $agent->getId(), 'name' => $agent->getName()]);
@@ -138,7 +149,7 @@ class AgentController extends AbstractController
      * @param string $id Agent UUID
      * @return JsonResponse No content on success or 404 if not found
      */
-    #[Route('/{id}', name: 'agent_delete', methods: ['DELETE'])]
+    #[Route('/{id}', name: 'agent_delete', requirements: ['id' => '[0-9a-fA-F-]{36}'], methods: ['DELETE'])]
     public function delete(string $id): JsonResponse
     {
         $agent = $this->agentService->findById($id);
@@ -161,7 +172,7 @@ class AgentController extends AbstractController
      * @param string $id Agent UUID
      * @return JsonResponse { status: 'working'|'idle'|'error', activeTaskCount: int, lastRuntimeSignal?: array|null }
      */
-    #[Route('/{id}/status', name: 'agent_status', methods: ['GET'])]
+    #[Route('/{id}/status', name: 'agent_status', requirements: ['id' => '[0-9a-fA-F-]{36}'], methods: ['GET'])]
     public function status(string $id): JsonResponse
     {
         $agent = $this->agentService->findById($id);
@@ -196,7 +207,7 @@ class AgentController extends AbstractController
      * @param string $id Agent UUID
      * @return JsonResponse List of executions with business context (ticket title, task title)
      */
-    #[Route('/{id}/executions', name: 'agent_executions', methods: ['GET'])]
+    #[Route('/{id}/executions', name: 'agent_executions', requirements: ['id' => '[0-9a-fA-F-]{36}'], methods: ['GET'])]
     public function executions(string $id): JsonResponse
     {
         $agent = $this->agentService->findById($id);
@@ -210,6 +221,39 @@ class AgentController extends AbstractController
             fn(AgentTaskExecution $execution) => $this->serializeExecution($execution),
             $executions,
         ));
+    }
+
+    /**
+     * Returns all supported connectors with their model selection metadata.
+     */
+    #[Route('/connectors', name: 'agent_connectors', methods: ['GET'])]
+    public function connectors(): JsonResponse
+    {
+        return $this->json(array_map(
+            static fn ($catalog): array => $catalog->toArray(),
+            $this->agentModelCatalogService->listConnectors(),
+        ));
+    }
+
+    /**
+     * Returns the normalized model catalog for one connector.
+     */
+    #[Route('/connectors/{connector}/models', name: 'agent_connector_models', methods: ['GET'])]
+    public function connectorModels(string $connector, Request $request): JsonResponse
+    {
+        try {
+            $connectorType = ConnectorType::from($connector);
+        } catch (\ValueError) {
+            return $this->json($this->apiErrorPayloadFactory->create('agent.error.connector_not_found'), Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->json(
+            $this->agentModelCatalogService->describeConnector(
+                connector: $connectorType,
+                selectedModel: $request->query->get('selectedModel'),
+                refresh: $request->query->getBoolean('refresh'),
+            )->toArray(),
+        );
     }
 
     /**

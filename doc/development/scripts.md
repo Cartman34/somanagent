@@ -34,6 +34,9 @@ php scripts/help.php migrate.php
 | `health.php` | PHP | Check application status |
 | `review.php` | PHP | Run mechanical review checks (French strings, PHPDoc, JSDoc) |
 | `validate-files.php` | PHP | Run targeted backend/frontend validations for an explicit file list |
+| `claude-auth.php` | PHP | Sync Claude CLI auth from WSL to the Docker runtime |
+| `codex-auth.php` | PHP | Sync Codex CLI ChatGPT auth from WSL to the Docker runtime |
+| `opencode-auth.php` | PHP | Sync OpenCode provider credentials from WSL to the Docker runtime |
 | `wsl-claude-install.sh` | Bash | Install Claude CLI inside the configured WSL distro |
 | `wsl-codex-install.sh` | Bash | Install or upgrade OpenAI Codex CLI inside WSL |
 | `wsl-migrate.sh` | Bash | Copy the project to the WSL native filesystem for faster Docker I/O |
@@ -101,6 +104,42 @@ php scripts/claude-auth.php sync --force
 ```
 
 Use `login` to authenticate in WSL, then sync the resulting auth files to `./.docker/claude/shared/`.
+
+---
+
+### `codex-auth.php`
+Manages Codex CLI auth with WSL as the source of truth, then synchronizes the Docker shared copy used by the containers.
+
+```bash
+php scripts/codex-auth.php status
+php scripts/codex-auth.php sync
+php scripts/codex-auth.php login
+php scripts/codex-auth.php sync --force
+```
+
+Important rule:
+- the script only accepts a ChatGPT-based Codex login
+- if Codex is logged in with an API key, `sync` fails on purpose because `codex_cli` must consume account usage limits, not API credits
+
+Use `login` to authenticate with ChatGPT in WSL, then sync the resulting auth directory to `./.docker/codex/shared/`.
+
+---
+
+### `opencode-auth.php`
+Manages OpenCode provider credentials with WSL as the source of truth, then synchronizes the Docker shared copy used by the containers.
+
+```bash
+php scripts/opencode-auth.php status
+php scripts/opencode-auth.php sync
+php scripts/opencode-auth.php login
+php scripts/opencode-auth.php login openrouter
+```
+
+Important rule:
+- OpenCode currently authenticates through provider credentials
+- no subscription-based account usage mode has been detected, so this connector cannot currently satisfy the same “use plan limits instead of API credits” constraint as `codex_cli`
+
+Use `login [provider]` to configure a provider in WSL, then sync the resulting auth file to `./.docker/opencode/shared/`.
 
 ---
 
@@ -182,7 +221,7 @@ Use this script in priority instead of raw `docker logs` when the target contain
 ---
 
 ### `health.php`
-Queries the API to check the application and connector status.
+Checks API reachability, then runs `somanagent:health` for the detailed connector battery.
 
 ```bash
 php scripts/health.php
@@ -243,7 +282,8 @@ bash scripts/wsl-codex-install.sh --skip-login
 After installation:
 
 ```bash
-codex --login
+codex login
+php scripts/codex-auth.php sync
 cd ~/projects/somanagent
 codex
 ```

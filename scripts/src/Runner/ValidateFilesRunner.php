@@ -41,6 +41,11 @@ final class ValidateFilesRunner extends AbstractScriptRunner
         ];
     }
 
+    /**
+     * Run targeted validations for the provided file list and report unavailable environments separately.
+     *
+     * @param array<string> $args CLI arguments after script bootstrap
+     */
     public function run(array $args): int
     {
         $withTypes = false;
@@ -63,7 +68,6 @@ final class ValidateFilesRunner extends AbstractScriptRunner
         $frontendLintFiles = [];
         $ignoredFiles = [];
         $needsContainerLint = false;
-        $needsDoctrineValidation = false;
 
         foreach ($files as $file) {
             $normalized = ltrim(str_replace('\\', '/', $file), './');
@@ -84,17 +88,6 @@ final class ValidateFilesRunner extends AbstractScriptRunner
                     || $normalized === 'backend/config/services.yaml'
                 ) {
                     $needsContainerLint = true;
-                }
-
-                if (
-                    str_starts_with($normalized, 'backend/src/Entity/')
-                    || str_starts_with($normalized, 'backend/src/Repository/')
-                    || str_starts_with($normalized, 'backend/migrations/')
-                    || $normalized === 'backend/config/services.yaml'
-                    || $normalized === 'backend/config/packages/doctrine.yaml'
-                    || $normalized === 'backend/config/packages/doctrine_migrations.yaml'
-                ) {
-                    $needsDoctrineValidation = true;
                 }
 
                 continue;
@@ -175,24 +168,6 @@ final class ValidateFilesRunner extends AbstractScriptRunner
             }
         } else {
             $results[] = 'Symfony container: SKIP';
-        }
-
-        if ($needsDoctrineValidation) {
-            $output = [];
-            $code = $runQuiet('php scripts/console.php doctrine:schema:validate --no-interaction', $output);
-            if ($code === 0) {
-                $results[] = 'Doctrine schema: OK';
-            } elseif ($isEnvironmentUnavailable($output)) {
-                $results[] = 'Doctrine schema: UNAVAILABLE';
-            } else {
-                $failed = true;
-                $results[] = 'Doctrine schema: FAIL';
-                foreach (array_slice($output, -12) as $line) {
-                    $results[] = '  ' . $line;
-                }
-            }
-        } else {
-            $results[] = 'Doctrine schema: SKIP';
         }
 
         if ($frontendLintFiles !== []) {

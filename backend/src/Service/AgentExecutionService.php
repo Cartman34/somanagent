@@ -22,6 +22,7 @@ use App\Adapter\VCS\MockVcsAdapter;
 use App\Repository\AgentActionRepository;
 use App\Repository\SkillRepository;
 use App\Repository\TicketLogRepository;
+use App\ValueObject\ConnectorRequest;
 use App\ValueObject\Prompt;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -43,7 +44,7 @@ final class AgentExecutionService
      * Wires every dependency required to execute ticket tasks and process agent output.
      */
     public function __construct(
-        private readonly AgentPortRegistry     $portRegistry,
+        private readonly ConnectorRegistry     $connectorRegistry,
         private readonly SkillRepository       $skillRepository,
         private readonly AgentActionRepository $agentActionRepository,
         private readonly TicketLogRepository   $ticketLogRepository,
@@ -71,13 +72,13 @@ final class AgentExecutionService
             throw new \RuntimeException("Skill '{$skillSlug}' not found in database.");
         }
 
-        $config = $agent->getAgentConfig();
+        $config = $agent->getConnectorConfig();
         $prompt = $this->buildPromptForTicketTask($task, $agent, $skill->getContent(), $skillSlug);
         $this->ticketTaskService->captureExecutionResourceSnapshot(
             $attempt,
             $this->buildExecutionResourceSnapshot($task, $agent, $skill, $prompt),
         );
-        $adapter = $this->portRegistry->getFor($agent->getConnector());
+        $adapter = $this->connectorRegistry->getFor($agent->getConnector());
 
         $this->logger->info('AgentExecution: calling agent for ticket task', [
             'ticket_task' => $task->getTitle(),
@@ -86,7 +87,7 @@ final class AgentExecutionService
             'action' => $task->getAgentAction()->getKey(),
         ]);
 
-        $response = $adapter->sendPrompt($prompt, $config);
+        $response = $adapter->sendRequest(ConnectorRequest::fromPrompt($prompt, ConnectorRequest::DEFAULT_WORKING_DIRECTORY), $config);
 
         $usage = new TokenUsage(
             agent: $agent,
@@ -371,7 +372,7 @@ final class AgentExecutionService
                     'slug' => $role->getSlug(),
                     'name' => $role->getName(),
                 ] : null,
-                'config' => $agent->getAgentConfig()->toArray(),
+                'config' => $agent->getConnectorConfig()->toArray(),
             ],
             'skill' => [
                 'resourceKind' => 'skill_file',

@@ -36,6 +36,9 @@ final class SetupRunner extends AbstractScriptRunner
         ];
     }
 
+    /**
+     * Runs the end-to-end local setup flow, with an option to skip frontend dependencies.
+     */
     public function run(array $args): int
     {
         $skipFrontend = in_array('--skip-frontend', $args, true);
@@ -67,6 +70,10 @@ final class SetupRunner extends AbstractScriptRunner
                 return 0;
             }
             $this->console->ok('.env present');
+
+            $this->console->step('Preparing Docker shared auth directories');
+            $this->ensureDockerAuthDirectories();
+            $this->console->ok('Shared auth directories ready');
 
             $this->console->step('Starting Docker containers');
             $run('docker compose up -d --build');
@@ -133,6 +140,32 @@ final class SetupRunner extends AbstractScriptRunner
             $this->console->fail('Aborted. Run: bash scripts/wsl-migrate.sh');
         }
         $this->console->line();
+    }
+
+    /**
+     * Creates the Docker shared auth directories before containers start.
+     *
+     * These directories are bind-mounted in docker-compose.yml but are excluded from git (.docker/ is
+     * gitignored). Without pre-creation, Docker creates them as root on first run, which causes
+     * permission errors in the auth sync scripts running as the current user.
+     */
+    private function ensureDockerAuthDirectories(): void
+    {
+        $dirs = [
+            '.docker/claude/shared/.claude',
+            '.docker/codex/shared/.codex',
+            '.docker/opencode/shared/.local',
+        ];
+
+        foreach ($dirs as $dir) {
+            $path = $this->projectRoot . '/' . $dir;
+            if (!is_dir($path)) {
+                if (!mkdir($path, 0o755, recursive: true)) {
+                    throw new \RuntimeException(sprintf('Failed to create directory: %s', $path));
+                }
+                $this->console->info(sprintf('Created %s', $dir));
+            }
+        }
     }
 
     private function waitForPostgreSQL(): void

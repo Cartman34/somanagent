@@ -2,15 +2,14 @@
  * @author Florent HAZARD <f.hazard@sowapps.com>
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus, Bot, Pencil, Trash2, CheckCircle, XCircle } from 'lucide-react'
+import { Plus, Bot, Pencil, Trash2, CheckCircle, RotateCcw, XCircle } from 'lucide-react'
 import { agentsApi } from '@/api/agents'
 import { useTranslation } from '@/hooks/useTranslation'
 import { rolesApi } from '@/api/roles'
-import { healthApi } from '@/api/health'
 import type { AgentPayload } from '@/api/agents'
-import type { Agent, AgentConfig } from '@/types'
+import type { Agent, AgentConnector, AgentConnectorDescriptor, ConnectorConfig } from '@/types'
 import { PageSpinner } from '@/components/ui/Spinner'
 import ErrorMessage from '@/components/ui/ErrorMessage'
 import EmptyState from '@/components/ui/EmptyState'
@@ -28,11 +27,29 @@ const AGENT_FORM_TRANSLATION_KEYS = [
   'agent.form.label.connector',
   'agent.form.label.claude_api',
   'agent.form.label.claude_cli',
+  'agent.form.label.codex_api',
+  'agent.form.label.codex_cli',
+  'agent.form.label.opencode_cli',
   'agent.form.desc.claude_api',
   'agent.form.desc.claude_cli',
+  'agent.form.desc.codex_api',
+  'agent.form.desc.codex_cli',
+  'agent.form.desc.opencode_cli',
   'agent.form.label.configuration',
   'agent.form.label.model',
   'agent.form.placeholder.model',
+  'agent.form.model.loading',
+  'agent.form.model.refresh',
+  'agent.form.model.recommended',
+  'agent.form.model.strategy',
+  'agent.form.model.discovery_unavailable',
+  'agent.form.model.manual_entry',
+  'agent.form.model.cached',
+  'agent.form.model.live',
+  'agent.form.model.advisory.recommended_model_available',
+  'agent.form.model.advisory.selected_model_not_discovered',
+  'agent.form.model.advisory.selected_model_differs_from_recommendation',
+  'agent.form.model.advisory.model_discovery_unavailable',
   'agent.form.label.max_tokens',
   'agent.form.label.temperature',
   'agent.form.label.timeout',
@@ -49,11 +66,6 @@ const AGENTS_PAGE_TRANSLATION_KEYS = [
   'agent.action.new',
   'agent.empty.title',
   'agent.empty.description',
-  'agent.status.claude_cli',
-  'agent.status.connected',
-  'agent.status.not_connected',
-  'agent.status.login_manual',
-  'agent.status.verify',
   'agent.action.edit',
   'agent.action.delete',
   'agent.action.delete_confirm',
@@ -63,11 +75,48 @@ const AGENTS_PAGE_TRANSLATION_KEYS = [
   'common.action.refresh',
 ] as const
 
-const defaultConfig: AgentConfig = {
-  model: 'claude-sonnet-4-6',
+
+const defaultConfig: ConnectorConfig = {
+  model: '',
   max_tokens: 4096,
   temperature: 0.7,
   timeout: 120,
+}
+
+const CONNECTOR_TRANSLATION_KEYS: Record<AgentConnector, { label: typeof AGENT_FORM_TRANSLATION_KEYS[number]; description: typeof AGENT_FORM_TRANSLATION_KEYS[number] }> = {
+  claude_api: { label: 'agent.form.label.claude_api', description: 'agent.form.desc.claude_api' },
+  claude_cli: { label: 'agent.form.label.claude_cli', description: 'agent.form.desc.claude_cli' },
+  codex_api: { label: 'agent.form.label.codex_api', description: 'agent.form.desc.codex_api' },
+  codex_cli: { label: 'agent.form.label.codex_cli', description: 'agent.form.desc.codex_cli' },
+  opencode_cli: { label: 'agent.form.label.opencode_cli', description: 'agent.form.desc.opencode_cli' },
+}
+
+const FALLBACK_CONNECTORS: AgentConnectorDescriptor[] = (['claude_api', 'claude_cli', 'codex_api', 'codex_cli', 'opencode_cli'] as const).map((connector) => ({
+  connector,
+  label: connector,
+  supportsPromptExecution: true,
+  supportsModelDiscovery: false,
+  selectionStrategy: 'balanced_coding',
+  recommendedModel: null,
+  models: [],
+  advisories: [],
+  cached: false,
+  cacheTtlSeconds: 0,
+}))
+
+function getModelAdvisoryKey(code: string): typeof AGENT_FORM_TRANSLATION_KEYS[number] | null {
+  switch (code) {
+    case 'recommended_model_available':
+      return 'agent.form.model.advisory.recommended_model_available'
+    case 'selected_model_not_discovered':
+      return 'agent.form.model.advisory.selected_model_not_discovered'
+    case 'selected_model_differs_from_recommendation':
+      return 'agent.form.model.advisory.selected_model_differs_from_recommendation'
+    case 'model_discovery_unavailable':
+      return 'agent.form.model.advisory.model_discovery_unavailable'
+    default:
+      return null
+  }
 }
 
 function AgentForm({ initial, onSubmit, loading, onCancel }: {
@@ -79,15 +128,32 @@ function AgentForm({ initial, onSubmit, loading, onCancel }: {
   const { t } = useTranslation(AGENT_FORM_TRANSLATION_KEYS)
   const [name, setName]               = useState(initial?.name ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
-  const [connector, setConnector]     = useState<'claude_api' | 'claude_cli'>(initial?.connector ?? 'claude_api')
+  const [connector, setConnector]     = useState<AgentConnector>(initial?.connector ?? 'claude_api')
   const [roleId, setRoleId]           = useState(initial?.role?.id ?? '')
   const [isActive, setIsActive]       = useState(initial?.isActive ?? true)
   const [model, setModel]             = useState(initial?.config?.model ?? defaultConfig.model)
   const [maxTokens, setMaxTokens]     = useState(initial?.config?.max_tokens ?? defaultConfig.max_tokens)
   const [temperature, setTemperature] = useState(initial?.config?.temperature ?? defaultConfig.temperature)
   const [timeoutSecs, setTimeoutSecs] = useState(initial?.config?.timeout ?? defaultConfig.timeout)
+  const [refreshNonce, setRefreshNonce] = useState(0)
 
   const { data: roles } = useQuery<Awaited<ReturnType<typeof rolesApi.list>>>({ queryKey: ['roles'], queryFn: rolesApi.list })
+  const { data: connectors = FALLBACK_CONNECTORS } = useQuery<AgentConnectorDescriptor[]>({
+    queryKey: ['agent-connectors'],
+    queryFn: agentsApi.listConnectors,
+  })
+  const { data: modelCatalog, isFetching: isFetchingModels } = useQuery<AgentConnectorDescriptor>({
+    queryKey: ['agent-connector-models', connector, model, refreshNonce],
+    queryFn: () => agentsApi.getConnectorModels(connector, { selectedModel: model, refresh: refreshNonce > 0 }),
+  })
+
+  useEffect(() => {
+    if (!modelCatalog?.recommendedModel || model.trim() !== '') {
+      return
+    }
+
+    setModel(modelCatalog.recommendedModel)
+  }, [model, modelCatalog])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -117,20 +183,20 @@ function AgentForm({ initial, onSubmit, loading, onCancel }: {
       <div>
         <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>{t('agent.form.label.connector')}</label>
         <div className="grid grid-cols-2 gap-3">
-          {(['claude_api', 'claude_cli'] as const).map((c) => (
+          {connectors.map((connectorOption) => (
             <button
-              key={c}
+              key={connectorOption.connector}
               type="button"
-              onClick={() => setConnector(c)}
+              onClick={() => setConnector(connectorOption.connector)}
               className="rounded-lg border-2 p-3 text-left text-sm font-medium transition-colors"
               style={{
-                borderColor: connector === c ? 'var(--brand)' : 'var(--border)',
-                background: connector === c ? 'var(--brand-dim)' : 'var(--surface)',
-                color: connector === c ? 'var(--text)' : 'var(--muted)',
+                borderColor: connector === connectorOption.connector ? 'var(--brand)' : 'var(--border)',
+                background: connector === connectorOption.connector ? 'var(--brand-dim)' : 'var(--surface)',
+                color: connector === connectorOption.connector ? 'var(--text)' : 'var(--muted)',
               }}
             >
-              <p className="font-semibold" style={{ color: 'var(--text)' }}>{c === 'claude_api' ? t('agent.form.label.claude_api') : t('agent.form.label.claude_cli')}</p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>{c === 'claude_api' ? t('agent.form.desc.claude_api') : t('agent.form.desc.claude_cli')}</p>
+              <p className="font-semibold" style={{ color: 'var(--text)' }}>{t(CONNECTOR_TRANSLATION_KEYS[connectorOption.connector].label)}</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>{t(CONNECTOR_TRANSLATION_KEYS[connectorOption.connector].description)}</p>
             </button>
           ))}
         </div>
@@ -140,8 +206,46 @@ function AgentForm({ initial, onSubmit, loading, onCancel }: {
         <p className="text-sm font-medium mb-3" style={{ color: 'var(--text)' }}>{t('agent.form.label.configuration')}</p>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs mb-1" style={{ color: 'var(--muted)' }}>{t('agent.form.label.model')}</label>
-            <input className="input" value={model} onChange={(e) => setModel(e.target.value)} placeholder={t('agent.form.placeholder.model')} />
+            <div className="mb-1 flex items-center justify-between gap-3">
+              <label className="block text-xs" style={{ color: 'var(--muted)' }}>{t('agent.form.label.model')}</label>
+              <button
+                type="button"
+                className="inline-flex items-center gap-1 text-xs"
+                style={{ color: 'var(--muted)' }}
+                onClick={() => setRefreshNonce((value) => value + 1)}
+              >
+                <RotateCcw className="w-3 h-3" /> {t('agent.form.model.refresh')}
+              </button>
+            </div>
+            <input
+              className="input"
+              list={`agent-models-${connector}`}
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              placeholder={t('agent.form.placeholder.model')}
+              required
+            />
+            <datalist id={`agent-models-${connector}`}>
+              {modelCatalog?.models.map((candidate) => (
+                <option key={candidate.id} value={candidate.id}>{candidate.label}</option>
+              ))}
+            </datalist>
+            <div className="mt-2 space-y-1 text-xs" style={{ color: 'var(--muted)' }}>
+              {isFetchingModels && <p>{t('agent.form.model.loading')}</p>}
+              {modelCatalog?.recommendedModel && <p>{t('agent.form.model.recommended')} <code>{modelCatalog.recommendedModel}</code></p>}
+              <p>{t('agent.form.model.strategy')} <code>{modelCatalog?.selectionStrategy ?? 'balanced_coding'}</code></p>
+              <p>{modelCatalog?.cached ? t('agent.form.model.cached') : t('agent.form.model.live')}</p>
+              {!modelCatalog?.supportsModelDiscovery && <p>{t('agent.form.model.discovery_unavailable')}</p>}
+              {modelCatalog?.supportsModelDiscovery && modelCatalog.models.length === 0 && !isFetchingModels && <p>{t('agent.form.model.manual_entry')}</p>}
+              {modelCatalog?.advisories.map((advisory) => (
+                <p
+                  key={advisory.code}
+                  style={{ color: advisory.level === 'warning' ? 'var(--danger)' : 'var(--muted)' }}
+                >
+                  {getModelAdvisoryKey(advisory.code) ? t(getModelAdvisoryKey(advisory.code)!) : advisory.message}
+                </p>
+              ))}
+            </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
@@ -184,7 +288,6 @@ export default function AgentsPage() {
   const [deleteAgent, setDeleteAgent] = useState<Agent | null>(null)
 
   const { data: agents, isLoading, isFetching, error, refetch } = useQuery<Awaited<ReturnType<typeof agentsApi.list>>>({ queryKey: ['agents'], queryFn: agentsApi.list })
-  const { data: claudeCliAuth } = useQuery({ queryKey: ['health', 'claude-cli-auth'], queryFn: healthApi.claudeCliAuth, retry: false })
 
   const createMutation = useMutation({ mutationFn: agentsApi.create, onSuccess: () => { qc.invalidateQueries({ queryKey: ['agents'] }); setCreateOpen(false) } })
   const updateMutation = useMutation({ mutationFn: ({ id, data }: { id: string; data: AgentPayload }) => agentsApi.update(id, data), onSuccess: () => { qc.invalidateQueries({ queryKey: ['agents'] }); setEditAgent(null) } })
@@ -200,29 +303,6 @@ export default function AgentsPage() {
         refreshTitle={t('common.action.refresh')}
         action={<button className="btn-primary" onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4" /> {t('agent.action.new')}</button>} />
 
-      <div className="card p-4 mb-4">
-        <div className="flex items-start gap-3">
-          {claudeCliAuth?.loggedIn ? (
-            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-          ) : (
-            <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-          )}
-          <div className="min-w-0">
-            <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{t('agent.status.claude_cli')}</p>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
-              {claudeCliAuth?.loggedIn
-                ? t('agent.status.connected')
-                : t('agent.status.not_connected')}
-            </p>
-            {!claudeCliAuth?.loggedIn && (
-              <div className="mt-2 text-xs space-y-1" style={{ color: 'var(--muted)' }}>
-                <p>{t('agent.status.login_manual')} <code>php scripts/claude-auth.php login</code></p>
-                <p>{t('agent.status.verify')} <code>php scripts/claude-auth.php status</code></p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
 
       {agents?.length === 0 ? (
         <EmptyState icon={Bot} title={t('agent.empty.title')} description={t('agent.empty.description')}
@@ -253,7 +333,9 @@ export default function AgentsPage() {
                     {agent.role?.name ?? <span style={{ color: 'var(--muted)' }}>—</span>}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={agent.connector === 'claude_api' ? 'badge-blue' : 'badge-orange'}>{agent.connectorLabel}</span>
+                    <span className={agent.connector === 'claude_api' || agent.connector === 'codex_api' ? 'badge-blue' : 'badge-orange'}>
+                      {t(CONNECTOR_TRANSLATION_KEYS[agent.connector].label)}
+                    </span>
                   </td>
                   <td className="hidden px-4 py-3 font-mono text-xs md:table-cell" style={{ color: 'var(--muted)' }}>{agent.config.model}</td>
                   <td className="px-4 py-3">

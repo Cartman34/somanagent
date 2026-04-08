@@ -35,8 +35,10 @@ execution_resource:
 agent:
   error:
     not_found: Agent introuvable.
+    connector_not_found: Connecteur introuvable.
   validation:
     name_required: Le champ "name" est obligatoire.
+    model_required: Le champ "config.model" est obligatoire.
   sheet:
     modal_title: Fiche agent
     load_error: Impossible de charger la fiche agent.
@@ -118,6 +120,9 @@ agent:
       connector: Connecteur
       claude_api: Claude API
       claude_cli: Claude CLI
+      codex_api: Codex API
+      codex_cli: Codex CLI
+      opencode_cli: OpenCode CLI
       configuration: Configuration
       model: Modèle
       max_tokens: Max tokens
@@ -130,6 +135,23 @@ agent:
     desc:
       claude_api: Clé API Anthropic
       claude_cli: Via Claude CLI local
+      codex_api: Via OpenAI Responses API
+      codex_cli: Via Codex CLI local
+      opencode_cli: Via OpenCode CLI local
+    model:
+      loading: Chargement des modèles disponibles…
+      refresh: Actualiser
+      recommended: Recommandé :
+      strategy: Stratégie :
+      discovery_unavailable: La découverte des modèles n'est pas disponible pour ce connecteur.
+      manual_entry: Saisissez un modèle manuellement si nécessaire.
+      cached: Catalogue mis en cache
+      live: Catalogue actualisé
+      advisory:
+        recommended_model_available: Utilisez le modèle recommandé sauf si vous avez une contrainte explicite de coût ou de latence.
+        selected_model_not_discovered: Le modèle choisi n'apparaît pas dans le catalogue découvert pour ce connecteur.
+        selected_model_differs_from_recommendation: Le modèle choisi s'écarte de la recommandation équilibrée pour ce connecteur.
+        model_discovery_unavailable: Impossible de découvrir les modèles pour ce connecteur avec l'environnement courant.
     action:
       cancel: Annuler
       save: Enregistrer
@@ -145,12 +167,6 @@ agent:
   empty:
     title: Aucun agent
     description: Créez un agent pour commencer.
-  status:
-    claude_cli: Claude CLI
-    connected: Connecté
-    not_connected: Non connecté
-    login_manual: Connexion manuelle
-    verify: Vérifier
   edit:
     title: Modifier l'agent
   create:
@@ -729,9 +745,8 @@ dashboard:
   inaccessible: Inaccessible
   operational: Opérationnel
   unavailable: Indisponible
-  claude_cli_auth: claude_cli auth
-  connected_via: Connecté via
-  not_connected: Non connecté
+  fix_hint: 'Corriger avec :'
+  test_connectors: Tester les connecteurs
   quick_start:
     title: Démarrage rapide
     create_team: Créer une équipe

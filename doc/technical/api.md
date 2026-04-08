@@ -12,10 +12,26 @@
 Retourne l’état global de l’application.
 
 ### `GET /api/health/connectors`
-Retourne l’état des connecteurs agent.
+Retourne l’état détaillé des connecteurs avec checks normalisés.
+
+Chaque connecteur expose notamment :
+- `ok`
+- `reason`
+- `fixCommand`
+- `authMethod`
+- `checks.runtime`
+- `checks.auth`
+- `checks.prompt_test`
+- `checks.models`
 
 ### `GET /api/health/claude-cli-auth`
 Retourne l’état d’authentification Claude CLI.
+
+### `GET /api/health/connectors/{connector}/auth`
+Retourne le sous-état d’authentification normalisé pour un connecteur donné.
+
+### `POST /api/health/connectors/{connector}/test`
+Envoie un test réel `Say OK` via le connecteur ciblé, avec `message` et `model` optionnels.
 
 ## Projets
 
@@ -291,6 +307,31 @@ Liste les agents.
 
 ### `POST /api/agents`
 Crée un agent.
+
+Précondition :
+- `config.model` est obligatoire
+
+### `GET /api/agents/connectors`
+Liste les connecteurs agent disponibles et leur stratégie de présélection de modèle.
+
+Réponse :
+- `connector`
+- `supportsModelDiscovery`
+- `selectionStrategy`
+
+### `GET /api/agents/connectors/{connector}/models`
+Retourne le catalogue normalisé des modèles pour un connecteur donné.
+
+Query params :
+- `selectedModel` : modèle actuellement choisi pour obtenir des advisories
+- `refresh=1` : invalide le cache court et relance la découverte runtime
+
+Réponse :
+- `recommendedModel`
+- `models[]`
+- `advisories[]`
+- `cached`
+- `cacheTtlSeconds`
 
 ### `GET /api/agents/{id}` · `PUT /api/agents/{id}` · `DELETE /api/agents/{id}`
 CRUD agent.

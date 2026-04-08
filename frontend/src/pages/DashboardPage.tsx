@@ -2,8 +2,9 @@
  * @author Florent HAZARD <f.hazard@sowapps.com>
  */
 
+import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { FolderKanban, Users, Bot, BookOpen, CheckCircle, XCircle, Activity } from 'lucide-react'
+import { FolderKanban, Users, Bot, BookOpen, CheckCircle, XCircle, Activity, RefreshCw } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { projectsApi } from '@/api/projects'
 import { teamsApi } from '@/api/teams'
@@ -27,9 +28,6 @@ const DASHBOARD_TRANSLATION_KEYS = [
   'dashboard.inaccessible',
   'dashboard.operational',
   'dashboard.unavailable',
-  'dashboard.claude_cli_auth',
-  'dashboard.connected_via',
-  'dashboard.not_connected',
   'dashboard.quick_start.title',
   'dashboard.quick_start.create_team',
   'dashboard.quick_start.and_add_roles',
@@ -42,6 +40,8 @@ const DASHBOARD_TRANSLATION_KEYS = [
   'dashboard.quick_start.define_workflows',
   'dashboard.quick_start.and_orchestrate_agents',
   'dashboard.loading',
+  'dashboard.fix_hint',
+  'dashboard.test_connectors',
   'common.action.refresh',
 ] as const
 
@@ -100,17 +100,23 @@ export default function DashboardPage() {
     retry: false,
   })
 
+  const [testingConnector, setTestingConnector] = useState<string | null>(null)
+
   const { data: connectors } = useQuery({
     queryKey: ['health', 'connectors'],
-    queryFn: healthApi.connectors,
+    queryFn: () => healthApi.connectors(),
     retry: false,
   })
 
-  const { data: claudeCliAuth } = useQuery({
-    queryKey: ['health', 'claude-cli-auth'],
-    queryFn: healthApi.claudeCliAuth,
-    retry: false,
-  })
+  const handleTestConnector = async (connector: string) => {
+    setTestingConnector(connector)
+    try {
+      await healthApi.connectors({ refresh: true })
+      await qc.invalidateQueries({ queryKey: ['health', 'connectors'] })
+    } finally {
+      setTestingConnector(null)
+    }
+  }
 
   const loading = loadingProjects || loadingTeams || loadingAgents || loadingSkills
   const isFetching = fetchingProjects || fetchingTeams || fetchingAgents || fetchingSkills
@@ -177,7 +183,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* API */}
+          {/* Backend API */}
           <div
             className="flex items-center gap-3 p-3 rounded-lg"
             style={{ background: 'var(--surface2)' }}
@@ -197,51 +203,46 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Connectors */}
+          {/* Connectors — unified runtime + auth health from /health/connectors */}
           {connectors
-            ? Object.entries(connectors.connectors).map(([name, ok]) => (
+            ? Object.entries(connectors.connectors).map(([name, entry]) => (
                 <div
                   key={name}
-                  className="flex items-center gap-3 p-3 rounded-lg"
+                  className="flex items-start gap-3 p-3 rounded-lg"
                   style={{ background: 'var(--surface2)' }}
                 >
-                  {ok ? (
-                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                  {entry.ok ? (
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                   ) : (
-                    <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                    <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                   )}
-                  <div>
-                    <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>
-                      {name}
-                    </p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{entry.label}</p>
                     <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                      {ok ? t('dashboard.operational') : t('dashboard.unavailable')}
+                      {entry.ok ? t('dashboard.operational') : t('dashboard.unavailable')}
                     </p>
+                    {!entry.ok && entry.reason && (
+                      <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>{entry.reason}</p>
+                    )}
+                    {!entry.ok && entry.fixCommand && (
+                      <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+                        {t('dashboard.fix_hint')} <code>{entry.fixCommand}</code>
+                      </p>
+                    )}
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => handleTestConnector(name)}
+                    disabled={testingConnector !== null}
+                    title={t('dashboard.test_connectors')}
+                    className="flex-shrink-0 rounded p-1 transition-opacity hover:opacity-70 disabled:opacity-40"
+                    style={{ color: 'var(--muted)' }}
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${testingConnector === name ? 'animate-spin' : ''}`} />
+                  </button>
                 </div>
               ))
             : null}
-
-          <div
-            className="flex items-center gap-3 p-3 rounded-lg"
-            style={{ background: 'var(--surface2)' }}
-          >
-            {claudeCliAuth?.loggedIn ? (
-              <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-            ) : (
-              <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-            )}
-            <div>
-              <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>
-                {t('dashboard.claude_cli_auth')}
-              </p>
-              <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                {claudeCliAuth?.loggedIn
-                  ? `${t('dashboard.connected_via')} ${claudeCliAuth.authMethod ?? 'unknown'}`
-                  : t('dashboard.not_connected')}
-              </p>
-            </div>
-          </div>
         </div>
       </div>
 

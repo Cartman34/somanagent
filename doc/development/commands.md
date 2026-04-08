@@ -18,19 +18,52 @@ Command rule:
 These commands are specific to SoManAgent (prefix `somanagent:`).
 
 ### `somanagent:health`
-Checks the status of AI connectors (Claude API, Claude CLI).
+Runs the shared connector health battery (`runtime`, `auth`, `prompt_test`, `models`) for every registered connector.
 
 ```bash
 php scripts/console.php somanagent:health
 ```
 
-Output:
+Each connector now prints one table row per shared check, including `Say OK` prompt execution.
+
+---
+
+### `somanagent:connector:send`
+Sends a direct low-level request through one connector, without project context.
+
+```bash
+php scripts/console.php somanagent:connector:send claude_cli --message "Hello"
+php scripts/console.php somanagent:connector:send codex_cli --conversation
+php scripts/console.php somanagent:connector:send claude_api --test
+php scripts/console.php somanagent:connector:send codex_api --agent <agent-uuid> --message "Explain this error"
 ```
-SoManAgent — Connector Check
- ✓ claude_api
- ✗ claude_cli
- [WARNING] Some connectors are unreachable.
+
+Options:
+- `--message` sends one one-shot message
+- `--conversation` opens a local interactive loop until `/exit`
+- `--test` sends the generic `Say OK` probe
+- `--agent` reuses one agent configuration as the config source, while the command still forces the connector passed on the CLI
+
+---
+
+### `somanagent:agent:adapters`
+Lists registered agent adapters with their connector, health status, and model discovery capability.
+
+```bash
+php scripts/console.php somanagent:agent:adapters
 ```
+
+---
+
+### `somanagent:agent:models`
+Lists the models available for one connector.
+
+```bash
+php scripts/console.php somanagent:agent:models codex_api
+php scripts/console.php somanagent:agent:models opencode_cli --refresh --details
+```
+
+The detailed mode prints any extra model metadata exposed by the provider, such as pricing, release date, and capabilities.
 
 ---
 

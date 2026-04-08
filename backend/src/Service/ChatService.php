@@ -15,6 +15,7 @@ use App\Enum\AuditAction;
 use App\Enum\ChatAuthor;
 use App\Repository\ChatMessageRepository;
 use Symfony\Component\Uid\Uuid;
+use App\ValueObject\ConnectorRequest;
 use App\ValueObject\Prompt;
 
 /**
@@ -28,7 +29,7 @@ class ChatService
     public function __construct(
         private readonly EntityService         $entityService,
         private readonly ChatMessageRepository $chatMessageRepository,
-        private readonly AgentPortRegistry     $agentPortRegistry,
+        private readonly ConnectorRegistry     $connectorRegistry,
         private readonly AgentContextBuilder   $contextBuilder,
     ) {}
 
@@ -54,7 +55,7 @@ class ChatService
     public function sendAndReceive(Project $project, Agent $agent, string $content): array
     {
         $exchangeId = (string) Uuid::v7();
-        $config     = $agent->getAgentConfig();
+        $config     = $agent->getConnectorConfig();
 
         $human = $this->save(
             $project,
@@ -76,9 +77,9 @@ class ChatService
                 ...$this->contextBuilder->buildForProjectChat($project, $agent, $recentConversation),
             ]);
 
-            $response = $this->agentPortRegistry
+            $response = $this->connectorRegistry
                 ->getFor($agent->getConnector())
-                ->sendPrompt($prompt, $config);
+                ->sendRequest(ConnectorRequest::fromPrompt($prompt, ConnectorRequest::DEFAULT_WORKING_DIRECTORY), $config);
 
             $usage = new TokenUsage(
                 agent: $agent,

@@ -58,6 +58,60 @@ The synchronized Docker auth files are mounted as:
 ./.docker/claude/shared/.claude.json -> /claude-home/.claude.json
 ```
 
+### Codex CLI Login
+
+The `codex_cli` connector uses WSL Codex auth as the source of truth, then synchronizes it into the Docker shared mount used by the containers.
+
+Recommended commands:
+
+```bash
+php scripts/codex-auth.php login
+php scripts/codex-auth.php status
+```
+
+If you already authenticated in WSL and only need to refresh the Docker copy:
+
+```bash
+php scripts/codex-auth.php sync
+```
+
+Important rule:
+- the synchronized login must be a ChatGPT account login
+- API-key logins are rejected by the sync script because `codex_cli` must use ChatGPT plan usage limits instead of API credits
+
+The synchronized Docker auth directory is mounted as:
+
+```text
+./.docker/codex/shared/.codex -> /codex-home/.codex
+```
+
+### OpenCode CLI Credentials
+
+The `opencode_cli` connector uses WSL OpenCode credentials as the source of truth, then synchronizes them into the Docker shared mount used by the containers.
+
+Recommended commands:
+
+```bash
+php scripts/opencode-auth.php login
+php scripts/opencode-auth.php status
+```
+
+If you already authenticated in WSL and only need to refresh the Docker copy:
+
+```bash
+php scripts/opencode-auth.php sync
+```
+
+Important rule:
+- OpenCode currently authenticates through provider credentials stored in `~/.local/share/opencode/auth.json`
+- no subscription-based account usage mode has been detected, so this connector does not currently meet the same “use plan limits instead of API credits” requirement as `codex_cli`
+
+The synchronized Docker auth tree is mounted as:
+
+```text
+./.docker/opencode/shared/.local -> /opencode-home/.local
+```
+
 ### GitHub Integration
 
 ```ini
@@ -123,9 +177,10 @@ APP_SECRET=changethis
 
 ### `config/services.yaml`
 Manages dependency injection. Key points:
-- `CLAUDE_API_KEY` is injected into `ClaudeApiAdapter`
+- `CLAUDE_API_KEY` is injected into `ClaudeApiConnector`
+- `OPENAI_API_KEY` is injected into `CodexApiConnector`
 - `skills_dir` points to `../skills` (relative to the backend directory)
-- AI adapters are tagged `app.agent_adapter` for `AgentPortRegistry`
+- AI connectors are tagged `app.connector` for `ConnectorRegistry`
 
 ### `config/packages/doctrine.yaml`
 - Doctrine mapping on `src/Entity/` (prefix `App\Entity`)

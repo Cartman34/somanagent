@@ -13,7 +13,7 @@ use App\Enum\ConnectorType;
 use App\Repository\AgentRepository;
 use App\Repository\RoleRepository;
 use App\Repository\TeamRepository;
-use App\ValueObject\AgentConfig;
+use App\ValueObject\ConnectorConfig;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -37,7 +37,7 @@ class AgentService
     public function create(
         string        $name,
         ConnectorType $connector,
-        AgentConfig   $config,
+        ConnectorConfig $config,
         ?string       $description = null,
         ?string       $roleId      = null,
     ): Agent {
@@ -66,10 +66,10 @@ class AgentService
         string        $name,
         ?string       $description,
         ConnectorType $connector,
-        AgentConfig   $config,
+        ConnectorConfig $config,
         ?string       $roleId,
     ): Agent {
-        $agent->setName($name)->setDescription($description)->setConnector($connector)->setAgentConfig($config);
+        $agent->setName($name)->setDescription($description)->setConnector($connector)->setConnectorConfig($config);
 
         $role = $roleId ? $this->roleRepository->find(Uuid::fromString($roleId)) : null;
         $agent->setRole($role);

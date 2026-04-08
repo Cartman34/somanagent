@@ -68,8 +68,11 @@ export interface AgentSummary {
   role: { id: string; name: string; slug: string } | null
 }
 
-/** Runtime configuration forwarded to an agent connector. */
-export interface AgentConfig {
+/** Supported connector identifiers for agent runtimes. */
+export type AgentConnector = 'claude_api' | 'claude_cli' | 'codex_api' | 'codex_cli' | 'opencode_cli'
+
+/** Runtime configuration forwarded to a connector execution. */
+export interface ConnectorConfig {
   model: string
   max_tokens: number
   temperature: number
@@ -82,13 +85,70 @@ export interface Agent {
   id: string
   name: string
   description: string | null
-  connector: 'claude_api' | 'claude_cli'
+  connector: AgentConnector
   connectorLabel: string
   isActive: boolean
   role: { id: string; name: string; slug: string } | null
-  config: AgentConfig
+  config: ConnectorConfig
   createdAt: string
   updatedAt: string
+}
+
+/** One connector exposed by the agent configuration API. */
+export interface AgentConnectorDescriptor {
+  connector: AgentConnector
+  label: string
+  supportsPromptExecution: boolean
+  supportsModelDiscovery: boolean
+  selectionStrategy: string
+  recommendedModel: string | null
+  models: AgentModelDescriptor[]
+  advisories: AgentModelAdvisory[]
+  cached: boolean
+  cacheTtlSeconds: number
+}
+
+/** One normalized model option exposed by a connector. */
+export interface AgentModelDescriptor {
+  id: string
+  label: string
+  provider: string | null
+  family: string | null
+  description: string | null
+  contextWindow: number | null
+  maxOutputTokens: number | null
+  status: string | null
+  releaseDate: string | null
+  pricing: AgentModelPricingDescriptor | null
+  capabilities: AgentModelCapabilitiesDescriptor | null
+  metadata: Record<string, unknown>
+}
+
+/** Typed pricing metadata exposed by a connector model. */
+export interface AgentModelPricingDescriptor {
+  input: number | null
+  output: number | null
+  cacheRead: number | null
+  cacheWrite: number | null
+  isFree: boolean | null
+}
+
+/** Typed capability metadata exposed by a connector model. */
+export interface AgentModelCapabilitiesDescriptor {
+  reasoning: boolean | null
+  toolCall: boolean | null
+  attachment: boolean | null
+  temperature: boolean | null
+  input: Record<string, boolean>
+  output: Record<string, boolean>
+  additional: Record<string, unknown>
+}
+
+/** One advisory attached to a model selection state. */
+export interface AgentModelAdvisory {
+  level: 'info' | 'warning'
+  code: string
+  message: string
 }
 
 /** Full skill record exposed by the API. */
@@ -193,7 +253,7 @@ export interface ExecutionAgentResourceSnapshot {
   description: string | null
   connector: string
   role: RoleRef | null
-  config: AgentConfig
+  config: ConnectorConfig
 }
 
 /** Snapshot of the skill resource injected into one execution. */
@@ -516,8 +576,16 @@ export interface LogEvent {
   occurredAt: string
 }
 
+/** Health entry for one connector. */
+export interface ConnectorHealthEntry {
+  label: string
+  ok: boolean
+  reason: string | null
+  fixCommand: string | null
+}
+
 /** Health summary for external agent connectors. */
 export interface ConnectorHealth {
   status: 'ok' | 'degraded'
-  connectors: Record<string, boolean>
+  connectors: Record<string, ConnectorHealthEntry>
 }
