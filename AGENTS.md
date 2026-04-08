@@ -11,6 +11,7 @@ Read only this file first. Read additional files only when the active command or
 - Use project scripts in `scripts/` first.
 - Prefer `php scripts/console.php`, `php scripts/node.php`, `php scripts/logs.php`, `php scripts/db.php`, `php scripts/dev.php`, `php scripts/health.php`, and similar wrappers over raw container commands.
 - Use relative paths in commands. Do not rely on `cd` into subfolders.
+- For temporary files needed by repo procedures (for example PR body files), write them under `local/tmp/` inside the repository, not `/tmp`.
 - Keep chat updates concise.
 - Do not infer backlog or review state from chat alone.
 - UI text is French, but must go through translation keys.
