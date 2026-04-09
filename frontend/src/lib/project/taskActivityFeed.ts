@@ -18,6 +18,7 @@ export const TASK_ACTIVITY_FEED_DOMAIN = 'app'
 export const TASK_ACTIVITY_FEED_TRANSLATION_KEYS = [
   'common.action.cancel',
   'common.action.close',
+  'common.action.delete',
   'common.action.edit',
   'common.action.open',
   'common.action.save',
@@ -88,6 +89,9 @@ export const TASK_ACTIVITY_FEED_TRANSLATION_KEYS = [
   'ticket.discussion.submit_hint',
   'ticket.discussion.send',
   'ticket.discussion.save_edit',
+  'ticket.discussion.delete_reply_title',
+  'ticket.discussion.delete_reply_confirm',
+  'ticket.discussion.delete_reply_loading',
   'ticket.discussion.add_comment',
   'ticket.discussion.hide_replies',
   'ticket.discussion.type_above',

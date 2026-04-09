@@ -925,6 +925,17 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/Ok'
+    delete:
+      tags:
+        - Tickets
+      summary: 'Delete a ticket comment'
+      operationId: deleteTicketComment
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - $ref: '#/components/parameters/LogIdPath'
+      responses:
+        204:
+          $ref: '#/components/responses/NoContent'
   '/api/ticket-tasks/{id}/comments/{logId}':
     patch:
       tags:
@@ -939,6 +950,17 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/Ok'
+    delete:
+      tags:
+        - 'Ticket Tasks'
+      summary: 'Delete a ticket task comment'
+      operationId: deleteTicketTaskComment
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - $ref: '#/components/parameters/LogIdPath'
+      responses:
+        204:
+          $ref: '#/components/responses/NoContent'
   '/api/tickets/{id}/advance':
     post:
       tags:

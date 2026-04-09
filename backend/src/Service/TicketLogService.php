@@ -129,6 +129,46 @@ final class TicketLogService
     }
 
     /**
+     * Deletes one user-authored comment or reply and restores pending-answer state when needed.
+     */
+    public function deleteComment(Ticket $ticket, string $logId, ?TicketTask $ticketTask = null): void
+    {
+        $log = $this->ticketLogRepository->findOneByTicketAndId($ticket, $logId);
+        if ($log === null || $log->getKind() !== 'comment') {
+            throw new \InvalidArgumentException('ticket.comment.error.not_found');
+        }
+
+        if ($ticketTask !== null && $log->getTicketTask()?->getId()?->toRfc4122() !== $ticketTask->getId()->toRfc4122()) {
+            throw new \InvalidArgumentException('ticket.comment.error.not_found');
+        }
+
+        if ($log->getAuthorType() !== 'user') {
+            throw new \InvalidArgumentException('ticket.comment.error.not_deletable');
+        }
+
+        if ($this->ticketLogRepository->hasReplies($ticket, $log)) {
+            throw new \InvalidArgumentException('ticket.comment.error.has_replies');
+        }
+
+        $replyTo = null;
+        if ($log->getReplyToLogId() !== null) {
+            $replyTo = $this->ticketLogRepository->findOneByTicketAndId($ticket, $log->getReplyToLogId()->toRfc4122());
+        }
+
+        $this->entityService->delete($log);
+
+        if (
+            $replyTo !== null
+            && $replyTo->getAction() === 'agent_question'
+            && !$replyTo->requiresAnswer()
+            && !$this->ticketLogRepository->hasReplies($ticket, $replyTo)
+        ) {
+            $replyTo->setRequiresAnswer(true);
+            $this->entityService->flush();
+        }
+    }
+
+    /**
      * Counts unresolved answer requests across the whole ticket conversation.
      */
     public function countPendingAnswersForTicket(Ticket $ticket): int

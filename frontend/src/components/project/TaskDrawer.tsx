@@ -298,6 +298,27 @@ export default function TaskDrawer({
     },
   })
 
+  const deleteCommentMutation = useMutation({
+    mutationFn: (logId: string) => (
+      entity && isTicket(entity)
+        ? ticketsApi.deleteComment(taskId, logId)
+        : ticketTasksApi.deleteComment(taskId, logId)
+    ),
+    onSuccess: async (_, logId) => {
+      if (editingLogId === logId) {
+        setEditingLogId(null)
+        setEditingCommentText('')
+      }
+
+      if (replyToLogId === logId) {
+        setReplyToLogId(null)
+      }
+
+      await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
+      await qc.invalidateQueries({ queryKey: ['tickets'] })
+    },
+  })
+
   const advanceMutation = useMutation({
     mutationFn: (ticketEntityId: string) => ticketsApi.advance(ticketEntityId),
     onSuccess: async () => {
@@ -864,6 +885,13 @@ export default function TaskDrawer({
               setEditingCommentText('')
             }}
             editMutationPending={editCommentMutation.isPending}
+            deletingLogId={deleteCommentMutation.variables ?? null}
+            onDeleteLog={(log) => {
+              setReplyToLogId(null)
+              setCommentText('')
+              deleteCommentMutation.mutate(log.id)
+            }}
+            deleteMutationPending={deleteCommentMutation.isPending}
           />
         )}
 

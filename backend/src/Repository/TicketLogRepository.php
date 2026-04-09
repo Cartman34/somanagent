@@ -18,6 +18,9 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 final class TicketLogRepository extends ServiceEntityRepository
 {
+    /**
+     * Initialises the repository for ticket log entities.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, TicketLog::class);
@@ -35,9 +38,33 @@ final class TicketLogRepository extends ServiceEntityRepository
         return $this->findBy(['ticketTask' => $ticketTask], ['createdAt' => 'ASC']);
     }
 
+    /**
+     * Returns one ticket log by ticket scope and identifier.
+     */
     public function findOneByTicketAndId(Ticket $ticket, string $id): ?TicketLog
     {
         return $this->findOneBy(['ticket' => $ticket, 'id' => \Symfony\Component\Uid\Uuid::fromString($id)]);
+    }
+
+    /**
+     * Returns whether a log already has direct replies within the same ticket thread.
+     */
+    public function hasReplies(Ticket $ticket, TicketLog $log, ?TicketLog $excluding = null): bool
+    {
+        $qb = $this->createQueryBuilder('log')
+            ->select('COUNT(log.id)')
+            ->andWhere('log.ticket = :ticket')
+            ->andWhere('log.replyToLogId = :replyToLogId')
+            ->setParameter('ticket', $ticket)
+            ->setParameter('replyToLogId', $log->getId(), 'uuid');
+
+        if ($excluding !== null) {
+            $qb
+                ->andWhere('log.id != :excludingId')
+                ->setParameter('excludingId', $excluding->getId(), 'uuid');
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult() > 0;
     }
 
     /** @return TicketLog[] */

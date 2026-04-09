@@ -576,6 +576,9 @@ ticket:
     submit_hint: Ctrl/Cmd + Entrée pour envoyer
     send: Envoyer
     save_edit: Enregistrer
+    delete_reply_title: Supprimer la réponse
+    delete_reply_confirm: Supprimer cette réponse ?
+    delete_reply_loading: Suppression…
     author_you: Vous
     requires_answer: Réponse attendue
     reply: Répondre
@@ -594,6 +597,8 @@ ticket:
     error:
       not_found: Commentaire introuvable.
       not_editable: Ce commentaire ne peut pas être modifié.
+      not_deletable: Ce commentaire ne peut pas être supprimé.
+      has_replies: Ce commentaire ne peut pas être supprimé tant qu'il contient des réponses.
   activity:
     title: Fil d'activités
     description: Questions, réponses et suivi d'exécution.

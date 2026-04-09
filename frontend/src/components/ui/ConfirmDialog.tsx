@@ -11,9 +11,14 @@ interface ConfirmDialogProps {
   title?: string
   message: string
   confirmLabel?: string
+  cancelLabel?: string
+  loadingLabel?: string
   loading?: boolean
 }
 
+/**
+ * Displays a small confirmation modal for destructive or irreversible actions.
+ */
 export default function ConfirmDialog({
   open,
   onClose,
@@ -21,6 +26,8 @@ export default function ConfirmDialog({
   title = 'Confirm deletion',
   message,
   confirmLabel = 'Delete',
+  cancelLabel = 'Cancel',
+  loadingLabel,
   loading = false,
 }: ConfirmDialogProps) {
   return (
@@ -28,10 +35,10 @@ export default function ConfirmDialog({
       <p className="text-sm text-gray-600 mb-6">{message}</p>
       <div className="flex justify-end gap-3">
         <button onClick={onClose} className="btn-secondary" disabled={loading}>
-          Cancel
+          {cancelLabel}
         </button>
         <button onClick={onConfirm} className="btn-danger" disabled={loading}>
-          {loading ? 'Deleting…' : confirmLabel}
+          {loading ? (loadingLabel ?? confirmLabel) : confirmLabel}
         </button>
       </div>
     </Modal>

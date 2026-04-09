@@ -95,6 +95,10 @@ export const ticketsApi = {
     return data
   },
 
+  deleteComment: async (id: string, logId: string): Promise<void> => {
+    await apiClient.delete(`/tickets/${id}/comments/${logId}`)
+  },
+
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/tickets/${id}`)
   },
@@ -165,6 +169,10 @@ export const ticketTasksApi = {
   updateComment: async (id: string, logId: string, payload: Pick<TicketCommentPayload, 'content'>) => {
     const { data } = await apiClient.patch(`/ticket-tasks/${id}/comments/${logId}`, payload)
     return data
+  },
+
+  deleteComment: async (id: string, logId: string): Promise<void> => {
+    await apiClient.delete(`/ticket-tasks/${id}/comments/${logId}`)
   },
 
   delete: async (id: string): Promise<void> => {
