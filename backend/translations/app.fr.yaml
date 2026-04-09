@@ -585,6 +585,9 @@ ticket:
     delete_reply_loading: Suppression…
     author_you: Vous
     requires_answer: Réponse attendue
+    necessity_blocking: Bloquante
+    necessity_important: Importante
+    necessity_useful: Utile
     reply: Répondre
     reply_label: Réponse
     reply_to: Réponse à
