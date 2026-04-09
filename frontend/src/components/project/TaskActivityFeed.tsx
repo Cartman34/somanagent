@@ -14,10 +14,12 @@ import {
   Plus,
   Reply,
   Send,
+  Trash2,
   Zap,
 } from 'lucide-react'
 import Markdown from '@/components/ui/Markdown'
 import ExecutionResourceSnapshot from '@/components/project/ExecutionResourceSnapshot'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { useTranslation } from '@/hooks/useTranslation'
 import type { AgentTaskExecutionAttempt, TicketLog } from '@/types'
 import { formatDateTime, formatTime } from '@/lib/project/constants'
@@ -115,6 +117,9 @@ interface TaskActivityFeedProps {
   onSubmitEditLog: () => void
   onCancelEditLog: () => void
   editMutationPending: boolean
+  deletingLogId: string | null
+  onDeleteLog: (log: TicketLog) => void
+  deleteMutationPending: boolean
 }
 
 /**
@@ -552,6 +557,9 @@ function CommentThreadCard({
   onSubmitEditLog,
   onCancelEditLog,
   editMutationPending,
+  deletingLogId,
+  onDeleteLog,
+  deleteMutationPending,
   tc,
   tt,
 }: {
@@ -571,10 +579,14 @@ function CommentThreadCard({
   onSubmitEditLog: () => void
   onCancelEditLog: () => void
   editMutationPending: boolean
+  deletingLogId: string | null
+  onDeleteLog: (log: TicketLog) => void
+  deleteMutationPending: boolean
   tc: (key: CatalogTranslationKey) => string
   tt: (key: TaskActivityFeedTranslationKey) => string
 }) {
   const [repliesExpanded, setRepliesExpanded] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<TicketLog | null>(null)
   const root = entry.thread.root
   const isAgent = root.authorType === 'agent'
   const rootActionLabel = buildActivityActionLabelKey(readActivityActionKey(root, null))
@@ -718,14 +730,25 @@ function CommentThreadCard({
                       {tt('ticket.discussion.reply')}
                     </button>
                     {isEditableUserLog(reply) && (
-                      <button
-                        type="button"
-                        className="btn-reply"
-                        onClick={() => onStartEditLog(reply)}
-                      >
-                        <Pencil className="h-2.5 w-2.5" />
-                        {tt('common.action.edit')}
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          className="btn-reply"
+                          onClick={() => onStartEditLog(reply)}
+                        >
+                          <Pencil className="h-2.5 w-2.5" />
+                          {tt('common.action.edit')}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-reply"
+                          onClick={() => setDeleteTarget(reply)}
+                          disabled={deleteMutationPending}
+                        >
+                          <Trash2 className="h-2.5 w-2.5" />
+                          {tt('common.action.delete')}
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -746,6 +769,23 @@ function CommentThreadCard({
           tt={tt}
         />
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (deleteTarget !== null) {
+            setDeleteTarget(null)
+            onDeleteLog(deleteTarget)
+          }
+        }}
+        title={tt('ticket.discussion.delete_reply_title')}
+        message={tt('ticket.discussion.delete_reply_confirm')}
+        confirmLabel={tt('common.action.delete')}
+        cancelLabel={tt('common.action.cancel')}
+        loadingLabel={tt('ticket.discussion.delete_reply_loading')}
+        loading={deleteMutationPending && deletingLogId === deleteTarget?.id}
+      />
     </div>
   )
 }
@@ -770,6 +810,9 @@ export default function TaskActivityFeed({
   onSubmitEditLog,
   onCancelEditLog,
   editMutationPending,
+  deletingLogId,
+  onDeleteLog,
+  deleteMutationPending,
 }: TaskActivityFeedProps) {
   const [expandedEventIds, setExpandedEventIds] = useState<string[]>([])
   const [composerOpen, setComposerOpen] = useState(false)
@@ -916,10 +959,10 @@ export default function TaskActivityFeed({
                     commentText={commentText}
                     setCommentText={setCommentText}
                     onReply={() => {
-                    setReplyToLogId(commentEntry.thread.root.id)
-                    setCommentText('')
-                    onCancelEditLog()
-                  }}
+                      setReplyToLogId(commentEntry.thread.root.id)
+                      setCommentText('')
+                      onCancelEditLog()
+                    }}
                     onSubmitReply={onSubmitComment}
                     onCancelReply={() => {
                       setReplyToLogId(null)
@@ -933,6 +976,9 @@ export default function TaskActivityFeed({
                     onSubmitEditLog={onSubmitEditLog}
                     onCancelEditLog={onCancelEditLog}
                     editMutationPending={editMutationPending}
+                    deletingLogId={deletingLogId}
+                    onDeleteLog={onDeleteLog}
+                    deleteMutationPending={deleteMutationPending}
                     tc={tc}
                     tt={tt}
                   />

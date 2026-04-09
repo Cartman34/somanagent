@@ -531,6 +531,42 @@ class TicketController extends AbstractController
     }
 
     /**
+     * Deletes one existing user-authored comment or reply on a ticket or ticket task.
+     */
+    #[Route('/tickets/{id}/comments/{logId}', name: 'ticket_comment_delete_api', methods: ['DELETE'])]
+    #[Route('/ticket-tasks/{id}/comments/{logId}', name: 'ticket_task_comment_delete_api', methods: ['DELETE'])]
+    public function deleteComment(string $id, string $logId): JsonResponse
+    {
+        $ticket = $this->ticketService->findById($id);
+        $ticketTask = null;
+        if ($ticket === null) {
+            $ticketTask = $this->ticketTaskService->findById($id);
+            $ticket = $ticketTask?->getTicket();
+        }
+
+        if ($ticket === null) {
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
+        }
+
+        try {
+            $this->ticketLogService->deleteComment($ticket, $logId, $ticketTask);
+        } catch (\InvalidArgumentException $e) {
+            $key = $e->getMessage();
+            if ($key === 'ticket.comment.error.not_found') {
+                return $this->json($this->apiErrorPayloadFactory->create('ticket.comment.error.not_found'), Response::HTTP_NOT_FOUND);
+            }
+
+            if ($key === 'ticket.comment.error.has_replies') {
+                return $this->json($this->apiErrorPayloadFactory->create('ticket.comment.error.has_replies'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.comment.error.not_deletable'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+    }
+
+    /**
      * Advances a ticket to the next workflow step.
      */
     #[Route('/tickets/{id}/advance', name: 'ticket_advance_api', methods: ['POST'])]
