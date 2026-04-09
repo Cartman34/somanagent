@@ -517,6 +517,28 @@
     background: rgba(245, 158, 11, 0.14);
     color: #b45309;
   }
+  .badge-necessity {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-weight: 600;
+  }
+  .badge-necessity.blocking {
+    background: rgba(220, 38, 38, 0.12);
+    border-color: rgba(220, 38, 38, 0.2);
+    color: #b91c1c;
+  }
+  .badge-necessity.important {
+    background: rgba(245, 158, 11, 0.14);
+    border-color: rgba(245, 158, 11, 0.22);
+    color: #b45309;
+  }
+  .badge-necessity.useful {
+    background: rgba(37, 99, 235, 0.1);
+    border-color: rgba(37, 99, 235, 0.18);
+    color: #1d4ed8;
+  }
   .source-action {
     display: inline-flex;
     align-items: center;

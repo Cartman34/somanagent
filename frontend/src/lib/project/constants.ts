@@ -47,7 +47,6 @@ export const STATUS_LABEL_KEYS: Record<TaskStatus, string> = {
   todo: 'task.status.todo',
   awaiting_dispatch: 'task.status.awaiting_dispatch',
   in_progress: 'task.status.in_progress',
-  review: 'task.status.review',
   done: 'task.status.done',
   cancelled: 'task.status.cancelled',
 }
@@ -62,9 +61,6 @@ export const AUDIT_ACTION_LABEL_KEYS: Record<string, string> = {
   'task.deleted': 'audit.action.task_deleted',
   'task.status_changed': 'audit.action.task_status_changed',
   'task.progress_updated': 'audit.action.task_progress_updated',
-  'task.validation_asked': 'audit.action.task_validation_asked',
-  'task.validated': 'audit.action.task_validated',
-  'task.rejected': 'audit.action.task_rejected',
   'task.reprioritized': 'audit.action.task_reprioritized',
 }
 
@@ -131,7 +127,6 @@ export function STATUS_LABELS(t: (key: string) => string): Record<TaskStatus, st
     todo: t(STATUS_LABEL_KEYS.todo),
     awaiting_dispatch: t(STATUS_LABEL_KEYS.awaiting_dispatch),
     in_progress: t(STATUS_LABEL_KEYS.in_progress),
-    review: t(STATUS_LABEL_KEYS.review),
     done: t(STATUS_LABEL_KEYS.done),
     cancelled: t(STATUS_LABEL_KEYS.cancelled),
   }

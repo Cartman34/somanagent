@@ -846,45 +846,6 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/Ok'
-  '/api/ticket-tasks/{id}/validate':
-    post:
-      tags:
-        - 'Ticket Tasks'
-      summary: 'Validate a ticket task'
-      operationId: validateTicketTask
-      parameters:
-        - $ref: '#/components/parameters/IdPath'
-      requestBody:
-        $ref: '#/components/requestBodies/ArbitraryJsonBody'
-      responses:
-        200:
-          $ref: '#/components/responses/Ok'
-  '/api/ticket-tasks/{id}/reject':
-    post:
-      tags:
-        - 'Ticket Tasks'
-      summary: 'Reject a ticket task'
-      operationId: rejectTicketTask
-      parameters:
-        - $ref: '#/components/parameters/IdPath'
-      requestBody:
-        $ref: '#/components/requestBodies/ArbitraryJsonBody'
-      responses:
-        200:
-          $ref: '#/components/responses/Ok'
-  '/api/ticket-tasks/{id}/request-validation':
-    post:
-      tags:
-        - 'Ticket Tasks'
-      summary: 'Request human validation for a ticket task'
-      operationId: requestTicketTaskValidation
-      parameters:
-        - $ref: '#/components/parameters/IdPath'
-      requestBody:
-        $ref: '#/components/requestBodies/ArbitraryJsonBody'
-      responses:
-        200:
-          $ref: '#/components/responses/Ok'
   '/api/tickets/{id}/comments':
     post:
       tags:

@@ -520,8 +520,8 @@ ticket:
   error:
     not_found: Tâche introuvable.
     active_execution_before_workflow_transition: Impossible de passer à l'étape suivante tant qu'une exécution agent est encore en cours sur l'étape courante.
-    current_step_tasks_incomplete_before_workflow_transition: Impossible de passer à l'étape suivante tant que les tâches de l'étape courante ne sont pas terminées ou validées.
-    pending_answers_before_workflow_transition: Impossible de passer à l'étape suivante tant que les questions en attente n'ont pas reçu de réponse.
+    current_step_tasks_incomplete_before_workflow_transition: Impossible de passer à l'étape suivante tant que les tâches de l'étape courante ne sont pas terminées.
+    pending_answers_before_workflow_transition: Impossible de passer à l'étape suivante tant que des questions bloquantes restent en attente de réponse.
   detail:
     title: Détail de la tâche
     title_label: Titre
@@ -545,10 +545,14 @@ ticket:
       current_step: Étape courante
       none: Aucune
       error: Impossible de faire avancer le ticket.
+      ready_help: Les conditions sont réunies pour passer à l'étape suivante.
+      ready_with_warnings_help: Des questions non bloquantes restent ouvertes, mais l'avancement vers l'étape suivante reste autorisé.
+      blocked_pending_blocking_answers_help: Des questions bloquantes restent en attente de réponse avant de pouvoir passer à l'étape suivante.
+      blocked_active_execution_help: Une exécution agent est encore en cours sur l'étape courante.
+      blocked_incomplete_tasks_help: Des tâches de l'étape courante ne sont pas encore terminées.
       transition_loading: Transition…
       transition_to: Passer à %step%
       no_transition: Aucun passage manuel disponible depuis cette étape.
-      pending_answers_help: Répondez d'abord aux questions en attente dans le fil d'activités avant de valider l'étape suivante.
     execute:
       title: Lancement de la tâche
       button: Lancer la tâche
@@ -581,6 +585,9 @@ ticket:
     delete_reply_loading: Suppression…
     author_you: Vous
     requires_answer: Réponse attendue
+    necessity_blocking: Bloquante
+    necessity_important: Importante
+    necessity_useful: Utile
     reply: Répondre
     reply_label: Réponse
     reply_to: Réponse à
@@ -785,7 +792,4 @@ audit:
     task_deleted: Tâche supprimée
     task_status_changed: Statut de la tâche modifié
     task_progress_updated: Progression de la tâche modifiée
-    task_validation_asked: Validation demandée
-    task_validated: Tâche validée
-    task_rejected: Tâche rejetée
     task_reprioritized: Priorité de la tâche modifiée

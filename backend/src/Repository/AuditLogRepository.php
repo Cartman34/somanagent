@@ -63,23 +63,16 @@ class AuditLogRepository extends ServiceEntityRepository
             ->select('al')
             ->where('al.entityType = :entityType')
             ->andWhere('al.entityId = :entityId')
-            ->andWhere('al.action IN (:actions)')
             ->setParameter('entityType', 'TicketTask')
             ->setParameter('entityId', (string) $ticketTask->getId())
-            ->setParameter('actions', [
-                AuditAction::TaskValidated,
-                AuditAction::TaskStatusChanged,
-            ])
+            ->andWhere('al.action = :action')
+            ->setParameter('action', AuditAction::TaskStatusChanged)
             ->getQuery()
             ->getResult();
 
         foreach ($logs as $log) {
             if (!$log instanceof AuditLog) {
                 continue;
-            }
-
-            if ($log->getAction() === AuditAction::TaskValidated) {
-                return true;
             }
 
             if ($log->getAction() === AuditAction::TaskStatusChanged && ($log->getData()['to'] ?? null) === 'done') {

@@ -18,6 +18,8 @@ use App\Repository\TicketLogRepository;
  */
 final class TicketLogService
 {
+    private const CLARIFICATION_CONTEXT = 'clarification_request';
+
     /**
      * Initialises the service with its required repository and entity service.
      */
@@ -236,6 +238,22 @@ final class TicketLogService
     }
 
     /**
+     * Counts clarification requests linked to one operational task.
+     */
+    public function countClarificationQuestionsForTask(TicketTask $task): int
+    {
+        $count = 0;
+
+        foreach ($this->ticketLogRepository->findByTicketTask($task) as $log) {
+            if ($this->isClarificationRequest($log)) {
+                ++$count;
+            }
+        }
+
+        return $count;
+    }
+
+    /**
      * Returns updated metadata with an appended edit history entry.
      *
      * @param array<string, mixed>|null $metadata
@@ -259,5 +277,12 @@ final class TicketLogService
         $metadata['editedAt'] = $history[array_key_last($history)]['editedAt'];
 
         return $metadata;
+    }
+
+    private function isClarificationRequest(TicketLog $log): bool
+    {
+        $metadata = $log->getMetadata();
+
+        return is_array($metadata) && ($metadata['context'] ?? null) === self::CLARIFICATION_CONTEXT;
     }
 }

@@ -82,7 +82,6 @@ export const CATALOG_TRANSLATION_KEYS = [
   'task.status.backlog',
   'task.status.todo',
   'task.status.in_progress',
-  'task.status.review',
   'task.status.done',
   'task.status.cancelled',
   'task.execution_status.pending',

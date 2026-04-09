@@ -388,62 +388,6 @@ class TicketController extends AbstractController
     }
 
     /**
-     * Validates a completed ticket task.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
-     */
-    #[Route('/ticket-tasks/{id}/validate', name: 'ticket_task_validate_api', methods: ['POST'])]
-    public function validate(string $id, Request $request): JsonResponse
-    {
-        $task = $this->ticketTaskService->findById($id);
-        if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
-        }
-
-        $this->ticketTaskService->validate($task);
-
-        return $this->json($this->serializeApiTicketTask($task));
-    }
-
-    /**
-     * Rejects a completed ticket task with an optional reason.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
-     */
-    #[Route('/ticket-tasks/{id}/reject', name: 'ticket_task_reject_api', methods: ['POST'])]
-    public function reject(string $id, Request $request): JsonResponse
-    {
-        $task = $this->ticketTaskService->findById($id);
-        if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
-        }
-
-        $data = $request->toArray();
-        $this->ticketTaskService->reject($task, $data['reason'] ?? null);
-
-        return $this->json($this->serializeApiTicketTask($task));
-    }
-
-    /**
-     * Requests validation for a ticket task.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
-     */
-    #[Route('/ticket-tasks/{id}/request-validation', name: 'ticket_task_request_validation_api', methods: ['POST'])]
-    public function requestValidation(string $id, Request $request): JsonResponse
-    {
-        $task = $this->ticketTaskService->findById($id);
-        if ($task === null) {
-            return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
-        }
-
-        $data = $request->toArray();
-        $this->ticketTaskService->requestValidation($task, $data['comment'] ?? null);
-
-        return $this->json($this->serializeApiTicketTask($task));
-    }
-
-    /**
      * Adds a comment to a ticket or ticket task.
      *
      * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
@@ -813,6 +757,7 @@ class TicketController extends AbstractController
             fn(TicketTask $task) => $task->getWorkflowStep()?->getId()?->toRfc4122() === $ticket->getWorkflowStep()?->getId()?->toRfc4122()
         ));
         $pendingAnswerSummary = $this->buildPendingAnswerSummary($ticket);
+        $workflowProgress = $this->ticketTaskService->describeWorkflowStepProgress($ticket);
 
         $payload = [
             'id' => (string) $ticket->getId(),
@@ -843,6 +788,7 @@ class TicketController extends AbstractController
             'assignedRole' => $ticket->getAssignedRole() ? ['id' => (string) $ticket->getAssignedRole()->getId(), 'slug' => $ticket->getAssignedRole()->getSlug(), 'name' => $ticket->getAssignedRole()->getName()] : null,
             'awaitingUserAnswer' => $pendingAnswerSummary['ticket'] > 0,
             'pendingUserAnswerCount' => $pendingAnswerSummary['ticket'],
+            'workflowProgress' => $workflowProgress,
             'createdAt' => $ticket->getCreatedAt()->format(\DateTimeInterface::ATOM),
             'updatedAt' => $ticket->getUpdatedAt()->format(\DateTimeInterface::ATOM),
             'taskCounts' => [
@@ -1022,14 +968,7 @@ class TicketController extends AbstractController
      */
     private function countPendingAnswersForTask(TicketTask $task): int
     {
-        $count = 0;
-        foreach ($this->ticketLogRepository->findByTicketTask($task) as $log) {
-            if ($log->requiresAnswer()) {
-                $count++;
-            }
-        }
-
-        return $count;
+        return $this->ticketLogService->countPendingAnswersForTask($task);
     }
 
     private function serializeApiLog(TicketLog $log): array

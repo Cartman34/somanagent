@@ -35,6 +35,7 @@ import {
   type ActivityFeedCommentEntry,
   type TaskActivityFeedTranslationKey,
   type EventIconCategory,
+  readMetadataString,
 } from '@/lib/project/taskActivityFeed'
 import {
   CATALOG_DOMAIN,
@@ -171,6 +172,30 @@ function isEditableUserLog(log: TicketLog): boolean {
  */
 function isEdited(metadata: Record<string, unknown> | null): boolean {
   return typeof metadata?.editedAt === 'string'
+}
+
+/**
+ * Resolves the clarification necessity badge for one agent question when available.
+ */
+function readNecessityBadge(
+  log: TicketLog,
+  tt: (key: TaskActivityFeedTranslationKey) => string,
+): { tone: 'blocking' | 'important' | 'useful'; label: string } | null {
+  if (log.action !== 'agent_question') {
+    return null
+  }
+
+  const necessity = readMetadataString(log.metadata, 'necessityLevel')
+  switch (necessity) {
+    case 'blocking':
+      return { tone: 'blocking', label: tt('ticket.discussion.necessity_blocking') }
+    case 'important':
+      return { tone: 'important', label: tt('ticket.discussion.necessity_important') }
+    case 'useful':
+      return { tone: 'useful', label: tt('ticket.discussion.necessity_useful') }
+    default:
+      return null
+  }
 }
 
 /**
@@ -591,6 +616,7 @@ function CommentThreadCard({
   const isAgent = root.authorType === 'agent'
   const rootActionLabel = buildActivityActionLabelKey(readActivityActionKey(root, null))
   const replyCount = entry.thread.replies.length
+  const necessityBadge = readNecessityBadge(root, tt)
 
   return (
     <div className={`comment-card ${isAgent ? 'agent-question' : 'user-comment'}`}>
@@ -602,6 +628,11 @@ function CommentThreadCard({
           {isEdited(root.metadata) && (
             <span className="reply-badge">
               {tt('ticket.discussion.edited_label')}
+            </span>
+          )}
+          {necessityBadge && (
+            <span className={`badge-necessity ${necessityBadge.tone}`}>
+              {necessityBadge.label}
             </span>
           )}
           {root.requiresAnswer && (

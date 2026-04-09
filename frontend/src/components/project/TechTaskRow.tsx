@@ -34,7 +34,7 @@ function StatusIcon({ status }: { status: TaskStatus }) {
   if (status === 'done')       return <CheckCircle className="w-4 h-4 text-green-500" />
   if (status === 'cancelled')  return <XCircle className="w-4 h-4 text-gray-400" />
   if (status === 'awaiting_dispatch') return <Clock className="w-4 h-4 text-amber-500" />
-  if (status === 'in_progress' || status === 'review') return <Clock className="w-4 h-4 text-blue-500" />
+  if (status === 'in_progress') return <Clock className="w-4 h-4 text-blue-500" />
   if (status === 'backlog')    return <AlertTriangle className="w-4 h-4 text-gray-300" />
   return <ChevronRight className="w-4 h-4 text-gray-400" />
 }

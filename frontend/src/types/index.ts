@@ -182,7 +182,7 @@ export type ProjectDispatchMode = 'auto' | 'manual'
 /** Domain-level task kind used for tickets and operational tasks. */
 export type TaskType     = 'user_story' | 'bug' | 'task'
 /** Business lifecycle state shared by tickets and ticket tasks. */
-export type TaskStatus   = 'backlog' | 'todo' | 'awaiting_dispatch' | 'in_progress' | 'review' | 'done' | 'cancelled'
+export type TaskStatus   = 'backlog' | 'todo' | 'awaiting_dispatch' | 'in_progress' | 'done' | 'cancelled'
 /** Priority scale used by tickets and ticket tasks. */
 export type TaskPriority = 'low' | 'medium' | 'high' | 'critical'
 
@@ -191,6 +191,14 @@ export interface WorkflowStepRef {
   id: string
   key?: string
   name: string
+}
+
+/** Workflow progression state for the current ticket step. */
+export interface WorkflowProgressState {
+  canAdvance: boolean
+  status: 'ready' | 'ready_with_warnings' | 'blocked_pending_blocking_answers' | 'blocked_active_execution' | 'blocked_incomplete_tasks' | 'unavailable'
+  pendingAnswerCount: number
+  pendingBlockingAnswerCount: number
 }
 
 /** Lightweight agent reference. */
@@ -407,6 +415,7 @@ export interface Ticket {
   branchUrl: string | null
   workflowStep: WorkflowStepRef | null
   workflowStepAllowedTransitions: WorkflowStepRef[]
+  workflowProgress: WorkflowProgressState
   assignedAgent: AgentRef | null
   assignedRole: RoleRef | null
   awaitingUserAnswer: boolean

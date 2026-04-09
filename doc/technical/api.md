@@ -207,15 +207,6 @@ Met à jour la progression.
 ### `PATCH /api/ticket-tasks/{id}/priority`
 Change la priorité.
 
-### `POST /api/ticket-tasks/{id}/validate`
-Valide la tâche.
-
-### `POST /api/ticket-tasks/{id}/reject`
-Rejette la tâche.
-
-### `POST /api/ticket-tasks/{id}/request-validation`
-Demande une validation humaine.
-
 ### `GET /api/ticket-tasks/{id}/execute`
 Liste les agents disponibles pour l’`AgentAction` de la tâche.
 
