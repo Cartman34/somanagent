@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Runner;
 
+use SoManAgent\Script\Validation\OpenApiConsistencyValidator;
+
 /**
  * Validate files script runner.
  *
@@ -65,9 +67,12 @@ final class ValidateFilesRunner extends AbstractScriptRunner
         }
 
         $backendPhpFiles = [];
+        $scriptPhpFiles = [];
         $frontendLintFiles = [];
         $ignoredFiles = [];
         $needsContainerLint = false;
+        $needsDoctrineValidation = false;
+        $needsOpenApiValidation = false;
 
         foreach ($files as $file) {
             $normalized = ltrim(str_replace('\\', '/', $file), './');
@@ -90,6 +95,26 @@ final class ValidateFilesRunner extends AbstractScriptRunner
                     $needsContainerLint = true;
                 }
 
+                if (
+                    str_starts_with($normalized, 'backend/src/Entity/')
+                    || str_starts_with($normalized, 'backend/src/Repository/')
+                    || str_starts_with($normalized, 'backend/migrations/')
+                    || $normalized === 'backend/config/services.yaml'
+                    || $normalized === 'backend/config/packages/doctrine.yaml'
+                    || $normalized === 'backend/config/packages/doctrine_migrations.yaml'
+                ) {
+                    $needsDoctrineValidation = true;
+                }
+
+                if (str_starts_with($normalized, 'backend/src/Controller/')) {
+                    $needsOpenApiValidation = true;
+                }
+
+                continue;
+            }
+
+            if (str_starts_with($normalized, 'scripts/') && str_ends_with($normalized, '.php')) {
+                $scriptPhpFiles[] = $normalized;
                 continue;
             }
 
@@ -98,6 +123,15 @@ final class ValidateFilesRunner extends AbstractScriptRunner
                 && preg_match('/\.(ts|tsx|js|jsx)$/', $normalized) === 1
             ) {
                 $frontendLintFiles[] = substr($normalized, strlen('frontend/'));
+                continue;
+            }
+
+            if (
+                $normalized === 'doc/technical/openapi.yaml'
+                || $normalized === 'doc/technical/api.md'
+                || $normalized === 'doc/README.md'
+            ) {
+                $needsOpenApiValidation = true;
                 continue;
             }
 
@@ -118,6 +152,7 @@ final class ValidateFilesRunner extends AbstractScriptRunner
             $joined = mb_strtolower(implode("\n", $output));
 
             return str_contains($joined, 'permission denied while trying to connect to the docker daemon socket')
+                || str_contains($joined, 'permission denied while trying to connect to the docker api')
                 || str_contains($joined, 'cannot connect to the docker daemon')
                 || str_contains($joined, 'is the docker daemon running')
                 || str_contains($joined, 'service "php" is not running')
@@ -152,6 +187,33 @@ final class ValidateFilesRunner extends AbstractScriptRunner
             $results[] = 'PHP syntax: SKIP';
         }
 
+        if ($scriptPhpFiles !== []) {
+            $syntaxFailures = [];
+
+            foreach ($scriptPhpFiles as $file) {
+                $output = [];
+                $code = $runQuiet('php -l ' . escapeshellarg($file), $output);
+                if ($code !== 0) {
+                    $syntaxFailures[] = [$file, $output];
+                }
+            }
+
+            if ($syntaxFailures === []) {
+                $results[] = sprintf('Script PHP syntax: OK (%d file%s)', count($scriptPhpFiles), count($scriptPhpFiles) > 1 ? 's' : '');
+            } else {
+                $failed = true;
+                $results[] = sprintf('Script PHP syntax: FAIL (%d/%d)', count($syntaxFailures), count($scriptPhpFiles));
+                foreach ($syntaxFailures as [$file, $output]) {
+                    $results[] = '  - ' . $file;
+                    foreach (array_slice($output, -3) as $line) {
+                        $results[] = '    ' . $line;
+                    }
+                }
+            }
+        } else {
+            $results[] = 'Script PHP syntax: SKIP';
+        }
+
         if ($needsContainerLint) {
             $output = [];
             $code = $runQuiet('php scripts/console.php lint:container --no-interaction', $output);
@@ -168,6 +230,41 @@ final class ValidateFilesRunner extends AbstractScriptRunner
             }
         } else {
             $results[] = 'Symfony container: SKIP';
+        }
+
+        if ($needsDoctrineValidation) {
+            $output = [];
+            $code = $runQuiet('php scripts/console.php doctrine:schema:validate --no-interaction', $output);
+            if ($code === 0) {
+                $results[] = 'Doctrine schema: OK';
+            } elseif ($isEnvironmentUnavailable($output)) {
+                $results[] = 'Doctrine schema: UNAVAILABLE';
+            } else {
+                $failed = true;
+                $results[] = 'Doctrine schema: FAIL';
+                foreach (array_slice($output, -12) as $line) {
+                    $results[] = '  ' . $line;
+                }
+            }
+        } else {
+            $results[] = 'Doctrine schema: SKIP';
+        }
+
+        if ($needsOpenApiValidation) {
+            $validator = new OpenApiConsistencyValidator();
+            $errors = $validator->validate($this->projectRoot);
+
+            if ($errors === []) {
+                $results[] = 'OpenAPI consistency: OK';
+            } else {
+                $failed = true;
+                $results[] = 'OpenAPI consistency: FAIL';
+                foreach ($errors as $error) {
+                    $results[] = '  ' . $error;
+                }
+            }
+        } else {
+            $results[] = 'OpenAPI consistency: SKIP';
         }
 
         if ($frontendLintFiles !== []) {

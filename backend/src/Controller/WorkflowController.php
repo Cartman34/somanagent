@@ -41,6 +41,8 @@ class WorkflowController extends AbstractController
 
     /**
      * Creates a new immutable workflow definition.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('', name: 'workflow_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
@@ -76,6 +78,8 @@ class WorkflowController extends AbstractController
 
     /**
      * Updates an inactive workflow definition.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/{id}', name: 'workflow_update', methods: ['PUT'])]
     public function update(string $id, Request $request): JsonResponse

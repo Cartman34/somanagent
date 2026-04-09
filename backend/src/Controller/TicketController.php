@@ -81,6 +81,8 @@ class TicketController extends AbstractController
 
     /**
      * Creates a new ticket (story or bug) for a project.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/projects/{projectId}/tickets', name: 'ticket_create_api', methods: ['POST'])]
     public function createTicket(string $projectId, Request $request): JsonResponse
@@ -116,6 +118,8 @@ class TicketController extends AbstractController
 
     /**
      * Creates a new operational task within a ticket.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/tickets/{ticketId}/tasks', name: 'ticket_task_create_api', methods: ['POST'])]
     public function createTicketTask(string $ticketId, Request $request): JsonResponse
@@ -162,6 +166,8 @@ class TicketController extends AbstractController
 
     /**
      * Creates a new request (story) for a project and dispatches eligible tasks.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/projects/{projectId}/requests', name: 'project_request_create', methods: ['POST'])]
     public function createRequest(string $projectId, Request $request): JsonResponse
@@ -245,6 +251,8 @@ class TicketController extends AbstractController
 
     /**
      * Updates an existing ticket.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/tickets/{id}', name: 'ticket_update_api', methods: ['PUT'])]
     public function updateTicket(string $id, Request $request): JsonResponse
@@ -269,6 +277,8 @@ class TicketController extends AbstractController
 
     /**
      * Updates an existing ticket task.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/ticket-tasks/{id}', name: 'ticket_task_update_api', methods: ['PUT'])]
     public function updateTicketTask(string $id, Request $request): JsonResponse
@@ -298,6 +308,8 @@ class TicketController extends AbstractController
 
     /**
      * Changes the status of a ticket or ticket task.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/tickets/{id}/status', name: 'ticket_status_api', methods: ['PATCH'])]
     #[Route('/ticket-tasks/{id}/status', name: 'ticket_task_status_api', methods: ['PATCH'])]
@@ -327,6 +339,8 @@ class TicketController extends AbstractController
 
     /**
      * Updates the progress of a ticket task.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/ticket-tasks/{id}/progress', name: 'ticket_task_progress_api', methods: ['PATCH'])]
     public function updateProgress(string $id, Request $request): JsonResponse
@@ -344,6 +358,8 @@ class TicketController extends AbstractController
 
     /**
      * Reprioritizes a ticket or ticket task.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/tickets/{id}/priority', name: 'ticket_reprioritize_api', methods: ['PATCH'])]
     #[Route('/ticket-tasks/{id}/priority', name: 'ticket_task_reprioritize_api', methods: ['PATCH'])]
@@ -373,6 +389,8 @@ class TicketController extends AbstractController
 
     /**
      * Validates a completed ticket task.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/ticket-tasks/{id}/validate', name: 'ticket_task_validate_api', methods: ['POST'])]
     public function validate(string $id, Request $request): JsonResponse
@@ -389,6 +407,8 @@ class TicketController extends AbstractController
 
     /**
      * Rejects a completed ticket task with an optional reason.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/ticket-tasks/{id}/reject', name: 'ticket_task_reject_api', methods: ['POST'])]
     public function reject(string $id, Request $request): JsonResponse
@@ -406,6 +426,8 @@ class TicketController extends AbstractController
 
     /**
      * Requests validation for a ticket task.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/ticket-tasks/{id}/request-validation', name: 'ticket_task_request_validation_api', methods: ['POST'])]
     public function requestValidation(string $id, Request $request): JsonResponse
@@ -423,6 +445,8 @@ class TicketController extends AbstractController
 
     /**
      * Adds a comment to a ticket or ticket task.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/tickets/{id}/comments', name: 'ticket_comment_create_api', methods: ['POST'])]
     #[Route('/ticket-tasks/{id}/comments', name: 'ticket_task_comment_create_api', methods: ['POST'])]
@@ -468,6 +492,8 @@ class TicketController extends AbstractController
 
     /**
      * Edits one existing user-authored comment or reply on a ticket or ticket task.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/tickets/{id}/comments/{logId}', name: 'ticket_comment_update_api', methods: ['PATCH'])]
     #[Route('/ticket-tasks/{id}/comments/{logId}', name: 'ticket_task_comment_update_api', methods: ['PATCH'])]
@@ -535,6 +561,8 @@ class TicketController extends AbstractController
 
     /**
      * Resumes an agent step from a ticket task.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/ticket-tasks/{id}/resume', name: 'ticket_task_resume_api', methods: ['POST'])]
     public function resume(string $id, Request $request): JsonResponse
@@ -594,6 +622,8 @@ class TicketController extends AbstractController
 
     /**
      * Executes a ticket task with the specified agent.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/tickets/{id}/execute', name: 'ticket_execute_api', methods: ['POST'])]
     #[Route('/ticket-tasks/{id}/execute', name: 'ticket_task_execute_api', methods: ['POST'])]

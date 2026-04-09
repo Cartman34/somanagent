@@ -128,6 +128,8 @@ final class LogController extends AbstractController
 
     /**
      * Updates the triage status of an occurrence (`open`, `acknowledged`, `resolved`, `ignored`).
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/occurrences/{id}/status', name: 'log_occurrence_status_update', methods: ['PATCH'])]
     public function updateStatus(Request $request, LogOccurrence $occurrence): JsonResponse
@@ -155,6 +157,8 @@ final class LogController extends AbstractController
 
     /**
      * Accepts client-side observability events so frontend diagnostics can be centralized with backend logs.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/events', name: 'log_event_ingest', methods: ['POST'])]
     public function ingest(Request $request): JsonResponse

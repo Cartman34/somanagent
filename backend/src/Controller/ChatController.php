@@ -54,6 +54,8 @@ class ChatController extends AbstractController
 
     /**
      * Sends a new user message and returns both the stored human and agent replies.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/{agentId}', name: 'chat_send', methods: ['POST'])]
     public function send(string $projectId, string $agentId, Request $request): JsonResponse
@@ -80,6 +82,8 @@ class ChatController extends AbstractController
 
     /**
      * Reply to an existing chat message in the given project / agent conversation.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      *
      * @param string $projectId Project UUID
      * @param string $agentId   Agent UUID
@@ -110,6 +114,8 @@ class ChatController extends AbstractController
 
     /**
      * Edits one existing human-authored chat message within the same project / agent conversation.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/{agentId}/messages/{messageId}', name: 'chat_message_update', methods: ['PATCH'])]
     public function updateMessage(string $projectId, string $agentId, string $messageId, Request $request): JsonResponse

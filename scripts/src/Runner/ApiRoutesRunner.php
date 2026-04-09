@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Runner;
 
+use SoManAgent\Script\Api\ControllerRouteCatalog;
+
 /**
  * Lists all REST routes from Symfony controllers by parsing #[Route] attributes.
  */
@@ -32,72 +34,21 @@ final class ApiRoutesRunner extends AbstractScriptRunner
         ];
     }
 
+    /**
+     * Prints the current REST route catalog in human-readable or JSON format.
+     *
+     * @param array<string> $args Raw CLI arguments after the script name
+     */
     public function run(array $args): int
     {
         $jsonMode = in_array('--json', $args, true);
         $controllerDir = $this->projectRoot . '/backend/src/Controller';
+        $routeCatalog = new ControllerRouteCatalog();
 
-        if (!is_dir($controllerDir)) {
-            $this->console->fail("Directory not found: $controllerDir");
-        }
-
-        $routes = [];
-
-        foreach (glob($controllerDir . '/*.php') as $file) {
-            $content         = file_get_contents($file);
-            $controllerClass = basename($file, '.php');
-
-            $prefix    = '';
-            $seenClass = false;
-            $pending   = [];
-
-            foreach (explode("\n", $content) as $line) {
-                $t = trim($line);
-
-                if (preg_match('/#\[Route\(\s*[\'"]([^\'"]*)[\'"]/', $t, $pathM)) {
-                    $methods = [];
-                    if (preg_match('/methods:\s*\[([^\]]+)\]/', $t, $mM)) {
-                        foreach (explode(',', $mM[1]) as $m) {
-                            $methods[] = strtoupper(trim(trim($m, " '\"")));
-                        }
-                    }
-
-                    if (!$seenClass) {
-                        $prefix = $pathM[1];
-                    } else {
-                        $pending[] = ['path' => $pathM[1], 'methods' => $methods ?: ['ANY']];
-                    }
-                    continue;
-                }
-
-                if (!$seenClass && preg_match('/^(?:final\s+)?(?:abstract\s+)?class\s+(\w+)/', $t)) {
-                    $seenClass = true;
-                    continue;
-                }
-
-                if ($seenClass && !empty($pending) && preg_match('/public\s+function\s+(\w+)\s*\(/', $t, $funcM)) {
-                    foreach ($pending as $p) {
-                        $fullPath = rtrim($prefix, '/') . $p['path'];
-                        $routes[] = [
-                            'method'     => implode('|', $p['methods']),
-                            'path'       => $fullPath ?: '/',
-                            'controller' => $controllerClass,
-                            'action'     => $funcM[1],
-                        ];
-                    }
-                    $pending = [];
-                    continue;
-                }
-
-                if ($seenClass && !empty($pending) && !empty($t)
-                    && !str_starts_with($t, '#[')
-                    && !str_starts_with($t, '//')
-                    && !str_starts_with($t, '*')
-                    && !in_array($t, ['{', '}'])
-                ) {
-                    $pending = [];
-                }
-            }
+        try {
+            $routes = $routeCatalog->listRoutes($controllerDir);
+        } catch (\RuntimeException $exception) {
+            $this->console->fail($exception->getMessage());
         }
 
         if ($jsonMode) {

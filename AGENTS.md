@@ -18,6 +18,8 @@ Read only this file first. Read additional files only when the active command or
 - Technical source content is English: code, comments, docs in source, PHPDoc/JSDoc/TSDoc, CLI output, commit messages.
 - Keep `doc/` up to date when code changes require documentation updates.
 - `doc/README.md` is the documentation index. Read it only when documentation is actually needed, then open only the relevant file(s).
+- `doc/technical/openapi.yaml` is the source of truth for the HTTP API contract. Update it in the same change as any backend API route or payload change, keep it hand-written and readable, and keep `x-somanagent-implemented: false` on planned operations not yet implemented.
+- Do not take product, architecture, exposure, workflow, or library-choice initiatives that were not explicitly requested when they carry meaningful tradeoffs. Stop and ask the user before introducing them.
 
 ## Local Source Of Truth
 
@@ -30,6 +32,8 @@ Rules:
 - Files under `local/` are local-only and must not be committed.
 - For `local/backlog-board.md`, `local/backlog-changes.md`, and `local/backlog-review.md`, always follow the rules written in each file's `## Règles d'usage` section.
 - Every modification to project files must be recorded in `local/backlog-changes.md`.
+- Do not add entries to `local/backlog-changes.md` for changes limited to local backlog files under `local/`.
+- Do not add entries to `local/backlog-changes.md` for corrections to an existing `local/backlog-changes.md` entry when those corrections only realign the local backlog bookkeeping with work already recorded.
 
 ## Worktrees
 

@@ -50,6 +50,8 @@ class RoleController extends AbstractController
     /**
      * Creates a new role.
      *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
+     *
      * @param Request $request JSON body containing slug, name, and optional description
      */
     #[Route('', name: 'role_create', methods: ['POST'])]
@@ -96,6 +98,8 @@ class RoleController extends AbstractController
     /**
      * Updates an existing role.
      *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
+     *
      * @param string  $id      the role identifier
      * @param Request $request JSON body containing optional slug, name, and description fields
      */
@@ -138,6 +142,8 @@ class RoleController extends AbstractController
 
     /**
      * Adds a skill to a role.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      *
      * @param string  $id      the role identifier
      * @param Request $request JSON body containing the skillId to add

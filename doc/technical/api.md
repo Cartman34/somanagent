@@ -2,6 +2,21 @@
 
 > Voir aussi : [Architecture](architecture.md) · [Entités](entities.md)
 
+## OpenAPI Contract
+
+The versioned HTTP contract for the API is maintained in [`openapi.yaml`](openapi.yaml).
+
+The spec may document a route ahead of its implementation, but any operation that is not yet delivered must be explicitly marked with `x-somanagent-implemented: false`.
+
+Maintenance rules for this file:
+- update `doc/technical/openapi.yaml` in the same change as any API route, request, response, parameter, or payload format change
+- keep the file hand-written and readable; prefer explicit schemas over generated output
+- specify `required`, value formats, enums, and examples whenever they are needed to build usable example requests
+- use `additionalProperties: false` for structured objects unless a free-form map is intentional
+- if a route is planned but not implemented yet, keep it in the spec only with `x-somanagent-implemented: false`
+- keep narrative business rules in `api.md`, but keep route-level contract details in `openapi.yaml`
+- run `php scripts/validate-files.php ...` or `php scripts/review.php` after editing the spec so OpenAPI consistency stays enforced
+
 **Base URL** : `http://localhost:8080/api`
 **Format** : JSON
 **Authentification** : aucune en local

@@ -56,6 +56,8 @@ class ProjectController extends AbstractController
 
     /**
      * Creates a new project.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('', name: 'project_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
@@ -127,6 +129,8 @@ class ProjectController extends AbstractController
 
     /**
      * Updates an existing project.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/{id}', name: 'project_update', methods: ['PUT'])]
     public function update(string $id, Request $request): JsonResponse
@@ -224,6 +228,8 @@ class ProjectController extends AbstractController
 
     /**
      * Adds a module to a project.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/{id}/modules', name: 'module_create', methods: ['POST'])]
     public function addModule(string $id, Request $request): JsonResponse
@@ -249,6 +255,8 @@ class ProjectController extends AbstractController
 
     /**
      * Updates an existing module.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/modules/{id}', name: 'module_update', methods: ['PUT'])]
     public function updateModule(string $id, Request $request): JsonResponse

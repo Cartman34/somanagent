@@ -1,0 +1,1200 @@
+openapi: 3.1.0
+info:
+  title: 'SoManAgent API'
+  version: 1.0.0
+  description: 'Versioned OpenAPI contract for the SoManAgent backend. This specification is spec-first: operations may be documented ahead of implementation when they explicitly set `x-somanagent-implemented` to `false`.'
+servers:
+  - url: 'http://localhost:8080'
+tags:
+  - name: Health
+  - name: Projects
+  - name: Tickets
+  - name: 'Ticket Tasks'
+  - name: Chat
+  - name: Agents
+  - name: Teams
+  - name: Roles
+  - name: Skills
+  - name: Workflows
+  - name: Features
+  - name: Logs
+  - name: Audit
+  - name: Tokens
+  - name: UI
+paths:
+  /api/agents:
+    get:
+      tags:
+        - Agents
+      summary: 'List agents'
+      operationId: listAgents
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    post:
+      tags:
+        - Agents
+      summary: 'Create an agent'
+      operationId: createAgent
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        201:
+          $ref: '#/components/responses/Created'
+  '/api/agents/{id}':
+    get:
+      tags:
+        - Agents
+      summary: 'Get an agent'
+      operationId: getAgent
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    put:
+      tags:
+        - Agents
+      summary: 'Update an agent'
+      operationId: updateAgent
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    delete:
+      tags:
+        - Agents
+      summary: 'Delete an agent'
+      operationId: deleteAgent
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        204:
+          $ref: '#/components/responses/NoContent'
+  '/api/agents/{id}/status':
+    get:
+      tags:
+        - Agents
+      summary: 'Get agent status'
+      operationId: getAgentStatus
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  /api/agents/connectors:
+    get:
+      tags:
+        - Agents
+      summary: 'List available agent connectors'
+      operationId: listAgentConnectors
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/agents/connectors/{connector}/models':
+    get:
+      tags:
+        - Agents
+      summary: 'List normalized models for an agent connector'
+      operationId: listAgentConnectorModels
+      parameters:
+        - $ref: '#/components/parameters/ConnectorPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/agents/{id}/executions':
+    get:
+      tags:
+        - Agents
+      summary: 'List executions for an agent'
+      operationId: listAgentExecutions
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  /api/audit:
+    get:
+      tags:
+        - Audit
+      summary: 'List audit entries'
+      operationId: listAuditEntries
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/projects/{projectId}/chat/{agentId}':
+    get:
+      tags:
+        - Chat
+      summary: 'Get chat history with an agent'
+      operationId: getChatHistory
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdPath'
+        - $ref: '#/components/parameters/AgentIdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    post:
+      tags:
+        - Chat
+      summary: 'Send a chat message to an agent'
+      operationId: sendChatMessage
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdPath'
+        - $ref: '#/components/parameters/AgentIdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/projects/{projectId}/chat/{agentId}/reply':
+    post:
+      tags:
+        - Chat
+      summary: 'Reply in an agent chat thread'
+      operationId: replyChatMessage
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdPath'
+        - $ref: '#/components/parameters/AgentIdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/projects/{projectId}/chat/{agentId}/messages/{messageId}':
+    patch:
+      tags:
+        - Chat
+      summary: 'Update a human chat message'
+      operationId: updateChatMessage
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdPath'
+        - $ref: '#/components/parameters/AgentIdPath'
+        - $ref: '#/components/parameters/MessageIdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/projects/{projectId}/features':
+    get:
+      tags:
+        - Features
+      summary: 'List project features'
+      operationId: listFeatures
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    post:
+      tags:
+        - Features
+      summary: 'Create a project feature'
+      operationId: createFeature
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        201:
+          $ref: '#/components/responses/Created'
+  '/api/features/{id}':
+    get:
+      tags:
+        - Features
+      summary: 'Get a feature'
+      operationId: getFeature
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    put:
+      tags:
+        - Features
+      summary: 'Update a feature'
+      operationId: updateFeature
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    delete:
+      tags:
+        - Features
+      summary: 'Delete a feature'
+      operationId: deleteFeature
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        204:
+          $ref: '#/components/responses/NoContent'
+  /api/health:
+    get:
+      tags:
+        - Health
+      summary: 'Get application health'
+      operationId: getHealth
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  /api/health/connectors:
+    get:
+      tags:
+        - Health
+      summary: 'Get connector health'
+      operationId: getConnectorHealth
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/health/connectors/{connector}/auth':
+    get:
+      tags:
+        - Health
+      summary: 'Get normalized authentication health for one connector'
+      operationId: getConnectorAuthHealth
+      parameters:
+        - $ref: '#/components/parameters/ConnectorPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/health/connectors/{connector}/test':
+    post:
+      tags:
+        - Health
+      summary: 'Run a live prompt test for one connector'
+      operationId: testConnectorHealth
+      parameters:
+        - $ref: '#/components/parameters/ConnectorPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  /api/health/claude-cli-auth:
+    get:
+      tags:
+        - Health
+      summary: 'Get Claude CLI authentication health'
+      operationId: getClaudeCliAuthHealth
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  /api/logs/occurrences:
+    get:
+      tags:
+        - Logs
+      summary: 'List log occurrences'
+      operationId: listLogOccurrences
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  /api/logs/events:
+    get:
+      tags:
+        - Logs
+      summary: 'List log events'
+      operationId: listLogEvents
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    post:
+      tags:
+        - Logs
+      summary: 'Ingest a log event'
+      operationId: ingestLogEvent
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        202:
+          $ref: '#/components/responses/Accepted'
+  '/api/logs/occurrences/{id}':
+    get:
+      tags:
+        - Logs
+      summary: 'Get a log occurrence'
+      operationId: getLogOccurrence
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/logs/occurrences/{id}/status':
+    patch:
+      tags:
+        - Logs
+      summary: 'Update log occurrence status'
+      operationId: updateLogOccurrenceStatus
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  /api/projects:
+    get:
+      tags:
+        - Projects
+      summary: 'List projects'
+      operationId: listProjects
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    post:
+      tags:
+        - Projects
+      summary: 'Create a project'
+      operationId: createProject
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        201:
+          $ref: '#/components/responses/Created'
+  '/api/projects/{id}':
+    get:
+      tags:
+        - Projects
+      summary: 'Get a project'
+      operationId: getProject
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    put:
+      tags:
+        - Projects
+      summary: 'Update a project'
+      operationId: updateProject
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    delete:
+      tags:
+        - Projects
+      summary: 'Delete a project'
+      operationId: deleteProject
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        204:
+          $ref: '#/components/responses/NoContent'
+  '/api/projects/{id}/audit':
+    get:
+      tags:
+        - Projects
+      summary: 'Get project audit entries'
+      operationId: getProjectAudit
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/projects/{id}/tokens':
+    get:
+      tags:
+        - Projects
+      summary: 'Get project token usage'
+      operationId: getProjectTokens
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/projects/{id}/modules':
+    post:
+      tags:
+        - Projects
+      summary: 'Add a project module'
+      operationId: addProjectModule
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        201:
+          $ref: '#/components/responses/Created'
+  '/api/projects/modules/{id}':
+    put:
+      tags:
+        - Projects
+      summary: 'Update a project module'
+      operationId: updateProjectModule
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    delete:
+      tags:
+        - Projects
+      summary: 'Delete a project module'
+      operationId: deleteProjectModule
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        204:
+          $ref: '#/components/responses/NoContent'
+  /api/roles:
+    get:
+      tags:
+        - Roles
+      summary: 'List roles'
+      operationId: listRoles
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    post:
+      tags:
+        - Roles
+      summary: 'Create a role'
+      operationId: createRole
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        201:
+          $ref: '#/components/responses/Created'
+  '/api/roles/{id}':
+    get:
+      tags:
+        - Roles
+      summary: 'Get a role'
+      operationId: getRole
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    put:
+      tags:
+        - Roles
+      summary: 'Update a role'
+      operationId: updateRole
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    delete:
+      tags:
+        - Roles
+      summary: 'Delete a role'
+      operationId: deleteRole
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        204:
+          $ref: '#/components/responses/NoContent'
+  '/api/roles/{id}/skills':
+    post:
+      tags:
+        - Roles
+      summary: 'Attach a skill to a role'
+      operationId: addRoleSkill
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/roles/{id}/skills/{skillId}':
+    delete:
+      tags:
+        - Roles
+      summary: 'Detach a skill from a role'
+      operationId: removeRoleSkill
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - $ref: '#/components/parameters/SkillIdPath'
+      responses:
+        204:
+          $ref: '#/components/responses/NoContent'
+  /api/skills:
+    get:
+      tags:
+        - Skills
+      summary: 'List skills'
+      operationId: listSkills
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    post:
+      tags:
+        - Skills
+      summary: 'Create a skill'
+      operationId: createSkill
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        201:
+          $ref: '#/components/responses/Created'
+  '/api/skills/{id}':
+    get:
+      tags:
+        - Skills
+      summary: 'Get a skill'
+      operationId: getSkill
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    delete:
+      tags:
+        - Skills
+      summary: 'Delete a skill'
+      operationId: deleteSkill
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        204:
+          $ref: '#/components/responses/NoContent'
+  /api/skills/import:
+    post:
+      tags:
+        - Skills
+      summary: 'Import a skill'
+      operationId: importSkill
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        201:
+          $ref: '#/components/responses/Created'
+  '/api/skills/{id}/content':
+    put:
+      tags:
+        - Skills
+      summary: 'Update skill content'
+      operationId: updateSkillContent
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  /api/teams:
+    get:
+      tags:
+        - Teams
+      summary: 'List teams'
+      operationId: listTeams
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    post:
+      tags:
+        - Teams
+      summary: 'Create a team'
+      operationId: createTeam
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        201:
+          $ref: '#/components/responses/Created'
+  '/api/teams/{id}':
+    get:
+      tags:
+        - Teams
+      summary: 'Get a team'
+      operationId: getTeam
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    put:
+      tags:
+        - Teams
+      summary: 'Update a team'
+      operationId: updateTeam
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    delete:
+      tags:
+        - Teams
+      summary: 'Delete a team'
+      operationId: deleteTeam
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        204:
+          $ref: '#/components/responses/NoContent'
+  '/api/teams/{id}/agents':
+    post:
+      tags:
+        - Teams
+      summary: 'Attach an agent to a team'
+      operationId: addTeamAgent
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/teams/{id}/agents/{agentId}':
+    delete:
+      tags:
+        - Teams
+      summary: 'Detach an agent from a team'
+      operationId: removeTeamAgent
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - $ref: '#/components/parameters/AgentIdPath'
+      responses:
+        204:
+          $ref: '#/components/responses/NoContent'
+  '/api/projects/{projectId}/tickets':
+    get:
+      tags:
+        - Tickets
+      summary: 'List project tickets'
+      operationId: listProjectTickets
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    post:
+      tags:
+        - Tickets
+      summary: 'Create a ticket'
+      operationId: createTicket
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        201:
+          $ref: '#/components/responses/Created'
+  '/api/tickets/{ticketId}/tasks':
+    post:
+      tags:
+        - 'Ticket Tasks'
+      summary: 'Create a task under a ticket'
+      operationId: createTicketTask
+      parameters:
+        - $ref: '#/components/parameters/TicketIdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        201:
+          $ref: '#/components/responses/Created'
+  '/api/projects/{projectId}/requests':
+    post:
+      tags:
+        - Tickets
+      summary: 'Create a business request and convert it into a ticket'
+      operationId: createProjectRequest
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        201:
+          $ref: '#/components/responses/Created'
+  '/api/tickets/{id}':
+    get:
+      tags:
+        - Tickets
+      summary: 'Get a ticket'
+      operationId: getTicket
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    put:
+      tags:
+        - Tickets
+      summary: 'Update a ticket'
+      operationId: updateTicket
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    delete:
+      tags:
+        - Tickets
+      summary: 'Delete a ticket'
+      operationId: deleteTicket
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        204:
+          $ref: '#/components/responses/NoContent'
+  '/api/ticket-tasks/{id}':
+    get:
+      tags:
+        - 'Ticket Tasks'
+      summary: 'Get a ticket task'
+      operationId: getTicketTask
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    put:
+      tags:
+        - 'Ticket Tasks'
+      summary: 'Update a ticket task'
+      operationId: updateTicketTask
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    delete:
+      tags:
+        - 'Ticket Tasks'
+      summary: 'Delete a ticket task'
+      operationId: deleteTicketTask
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        204:
+          $ref: '#/components/responses/NoContent'
+  '/api/tickets/{id}/status':
+    patch:
+      tags:
+        - Tickets
+      summary: 'Change ticket status'
+      operationId: changeTicketStatus
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/ticket-tasks/{id}/status':
+    patch:
+      tags:
+        - 'Ticket Tasks'
+      summary: 'Change ticket task status'
+      operationId: changeTicketTaskStatus
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/ticket-tasks/{id}/progress':
+    patch:
+      tags:
+        - 'Ticket Tasks'
+      summary: 'Update ticket task progress'
+      operationId: updateTicketTaskProgress
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/tickets/{id}/priority':
+    patch:
+      tags:
+        - Tickets
+      summary: 'Change ticket priority'
+      operationId: changeTicketPriority
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/ticket-tasks/{id}/priority':
+    patch:
+      tags:
+        - 'Ticket Tasks'
+      summary: 'Change ticket task priority'
+      operationId: changeTicketTaskPriority
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/ticket-tasks/{id}/validate':
+    post:
+      tags:
+        - 'Ticket Tasks'
+      summary: 'Validate a ticket task'
+      operationId: validateTicketTask
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/ticket-tasks/{id}/reject':
+    post:
+      tags:
+        - 'Ticket Tasks'
+      summary: 'Reject a ticket task'
+      operationId: rejectTicketTask
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/ticket-tasks/{id}/request-validation':
+    post:
+      tags:
+        - 'Ticket Tasks'
+      summary: 'Request human validation for a ticket task'
+      operationId: requestTicketTaskValidation
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/tickets/{id}/comments':
+    post:
+      tags:
+        - Tickets
+      summary: 'Create a ticket comment'
+      operationId: createTicketComment
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        201:
+          $ref: '#/components/responses/Created'
+  '/api/ticket-tasks/{id}/comments':
+    post:
+      tags:
+        - 'Ticket Tasks'
+      summary: 'Create a ticket task comment'
+      operationId: createTicketTaskComment
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        201:
+          $ref: '#/components/responses/Created'
+  '/api/tickets/{id}/comments/{logId}':
+    patch:
+      tags:
+        - Tickets
+      summary: 'Update a ticket comment'
+      operationId: updateTicketComment
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - $ref: '#/components/parameters/LogIdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/ticket-tasks/{id}/comments/{logId}':
+    patch:
+      tags:
+        - 'Ticket Tasks'
+      summary: 'Update a ticket task comment'
+      operationId: updateTicketTaskComment
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - $ref: '#/components/parameters/LogIdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/tickets/{id}/advance':
+    post:
+      tags:
+        - Tickets
+      summary: 'Advance a ticket in its workflow'
+      operationId: advanceTicket
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/ticket-tasks/{id}/resume':
+    post:
+      tags:
+        - 'Ticket Tasks'
+      summary: 'Resume a ticket task'
+      operationId: resumeTicketTask
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/tickets/{id}/execute':
+    get:
+      tags:
+        - Tickets
+      summary: 'List executable agents for a ticket'
+      operationId: listTicketExecutionAgents
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    post:
+      tags:
+        - Tickets
+      summary: 'Execute a ticket with an agent'
+      operationId: executeTicket
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        202:
+          $ref: '#/components/responses/Accepted'
+  '/api/ticket-tasks/{id}/execute':
+    get:
+      tags:
+        - 'Ticket Tasks'
+      summary: 'List executable agents for a ticket task'
+      operationId: listTicketTaskExecutionAgents
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    post:
+      tags:
+        - 'Ticket Tasks'
+      summary: 'Execute a ticket task with an agent'
+      operationId: executeTicketTask
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        202:
+          $ref: '#/components/responses/Accepted'
+  /api/tokens/summary:
+    get:
+      tags:
+        - Tokens
+      summary: 'Get token usage summary'
+      operationId: getTokenSummary
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/tokens/agents/{agentId}':
+    get:
+      tags:
+        - Tokens
+      summary: 'Get token usage for one agent'
+      operationId: getAgentTokenUsage
+      parameters:
+        - $ref: '#/components/parameters/AgentIdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  /api/ui/translations:
+    get:
+      tags:
+        - UI
+      summary: 'Get UI translations'
+      operationId: listUiTranslations
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  /api/workflows:
+    get:
+      tags:
+        - Workflows
+      summary: 'List workflows'
+      operationId: listWorkflows
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    post:
+      tags:
+        - Workflows
+      summary: 'Create a workflow'
+      operationId: createWorkflow
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        201:
+          $ref: '#/components/responses/Created'
+  '/api/workflows/{id}':
+    get:
+      tags:
+        - Workflows
+      summary: 'Get a workflow'
+      operationId: getWorkflow
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    put:
+      tags:
+        - Workflows
+      summary: 'Update a workflow'
+      operationId: updateWorkflow
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+    delete:
+      tags:
+        - Workflows
+      summary: 'Delete a workflow'
+      operationId: deleteWorkflow
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        204:
+          $ref: '#/components/responses/NoContent'
+  '/api/workflows/{id}/duplicate':
+    post:
+      tags:
+        - Workflows
+      summary: 'Duplicate a workflow'
+      operationId: duplicateWorkflow
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        201:
+          $ref: '#/components/responses/Created'
+  '/api/workflows/{id}/activate':
+    post:
+      tags:
+        - Workflows
+      summary: 'Activate a workflow'
+      operationId: activateWorkflow
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+  '/api/workflows/{id}/deactivate':
+    post:
+      tags:
+        - Workflows
+      summary: 'Deactivate a workflow'
+      operationId: deactivateWorkflow
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        200:
+          $ref: '#/components/responses/Ok'
+components:
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    AgentIdPath:
+      name: agentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ConnectorPath:
+      name: connector
+      in: path
+      required: true
+      schema:
+        type: string
+    ProjectIdPath:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    MessageIdPath:
+      name: messageId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    LogIdPath:
+      name: logId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    SkillIdPath:
+      name: skillId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TicketIdPath:
+      name: ticketId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  requestBodies:
+    ArbitraryJsonBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ArbitraryJsonObject'
+  responses:
+    Ok:
+      description: 'Successful response'
+    Created:
+      description: 'Resource created'
+    Accepted:
+      description: 'Request accepted for asynchronous processing'
+    NoContent:
+      description: 'Resource deleted successfully'
+  schemas:
+    ArbitraryJsonObject:
+      type: object
+      additionalProperties: true

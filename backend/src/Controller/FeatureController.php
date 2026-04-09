@@ -55,6 +55,8 @@ class FeatureController extends AbstractController
 
     /**
      * Creates a new feature for a given project.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/projects/{projectId}/features', name: 'feature_create', methods: ['POST'])]
     public function create(string $projectId, Request $request): JsonResponse
@@ -97,6 +99,8 @@ class FeatureController extends AbstractController
 
     /**
      * Updates an existing feature.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/features/{id}', name: 'feature_update', methods: ['PUT'])]
     public function update(string $id, Request $request): JsonResponse
