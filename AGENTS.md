@@ -34,6 +34,7 @@ Rules:
 - Every modification to project files must be recorded in `local/backlog-changes.md`.
 - Do not add entries to `local/backlog-changes.md` for changes limited to local backlog files under `local/`.
 - Do not add entries to `local/backlog-changes.md` for corrections to an existing `local/backlog-changes.md` entry when those corrections only realign the local backlog bookkeeping with work already recorded.
+- Do not append a duplicate entry to `local/backlog-changes.md` for the same still-unapproved work item. When additional changes are part of the same work item, update the existing entry instead of adding a second top-level bullet.
 
 ## Worktrees
 

@@ -58,7 +58,7 @@ final class GitHubRunner extends AbstractScriptRunner
     {
         return [
             'php scripts/github.php pr create --title "Fix login" --head fix/login --body "Description..."',
-            'php scripts/github.php pr create --title "Fix login" --head fix/login --body-file /tmp/pr_body.md',
+            'php scripts/github.php pr create --title "Fix login" --head fix/login --body-file local/tmp/pr_body.md',
             'php scripts/github.php pr merge 42 --squash',
             'php scripts/github.php pr close 42',
             'php scripts/github.php pr edit 42 --title "Updated title"',
@@ -67,6 +67,11 @@ final class GitHubRunner extends AbstractScriptRunner
         ];
     }
 
+    /**
+     * Dispatches GitHub pull request subcommands after credentials are loaded.
+     *
+     * @param array<string> $args
+     */
     public function run(array $args): int
     {
         $this->ensureCredentials();
@@ -107,11 +112,7 @@ final class GitHubRunner extends AbstractScriptRunner
         $bodyFile = $flags['body-file'] ?? null;
 
         if ($bodyFile !== null) {
-            if (!file_exists($bodyFile)) {
-                throw new \RuntimeException("--body-file: file not found: {$bodyFile}");
-            }
-            $body = file_get_contents($bodyFile);
-            unlink($bodyFile);
+            $body = $this->readBodyFile($bodyFile);
         } else {
             $body = $flags['body'] ?? '';
         }
@@ -131,6 +132,11 @@ final class GitHubRunner extends AbstractScriptRunner
             'head'  => $head,
             'base'  => $base,
         ]);
+
+        if ($bodyFile !== null) {
+            $this->deleteBodyFile($bodyFile);
+        }
+
         $this->console->ok("PR #{$pr['number']} created: {$pr['html_url']}");
     }
 
@@ -185,11 +191,7 @@ final class GitHubRunner extends AbstractScriptRunner
         }
 
         if (isset($flags['body-file'])) {
-            if (!file_exists($flags['body-file'])) {
-                throw new \RuntimeException("--body-file: file not found: {$flags['body-file']}");
-            }
-            $patch['body'] = file_get_contents($flags['body-file']);
-            unlink($flags['body-file']);
+            $patch['body'] = $this->readBodyFile((string) $flags['body-file']);
         } elseif (isset($flags['body'])) {
             $patch['body'] = $flags['body'];
         }
@@ -200,6 +202,11 @@ final class GitHubRunner extends AbstractScriptRunner
 
         $this->console->step("Editing PR #{$number}");
         $pr = $this->api('PATCH', "/pulls/{$number}", $patch);
+
+        if (isset($flags['body-file'])) {
+            $this->deleteBodyFile((string) $flags['body-file']);
+        }
+
         $this->console->ok("PR #{$number} updated: {$pr['html_url']}");
     }
 
@@ -281,13 +288,65 @@ final class GitHubRunner extends AbstractScriptRunner
             CURLOPT_POSTFIELDS => $body ? json_encode($body) : null,
         ]);
         $response = curl_exec($ch);
+        if ($response === false) {
+            $error = curl_error($ch);
+            curl_close($ch);
+            throw new \RuntimeException('GitHub API transport error: ' . ($error !== '' ? $error : 'unknown curl error'));
+        }
+
         $code     = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
         $data = json_decode($response, true) ?? [];
         if ($code >= 400) {
-            throw new \RuntimeException("GitHub API error {$code}: " . ($data['message'] ?? $response));
+            $message = $data['message'] ?? $response;
+
+            if (isset($data['errors']) && is_array($data['errors']) && $data['errors'] !== []) {
+                $details = [];
+
+                foreach ($data['errors'] as $error) {
+                    if (!is_array($error)) {
+                        $details[] = (string) $error;
+                        continue;
+                    }
+
+                    $detailParts = [];
+
+                    foreach (['resource', 'field', 'code', 'message'] as $key) {
+                        if (isset($error[$key]) && $error[$key] !== '') {
+                            $detailParts[] = sprintf('%s=%s', $key, (string) $error[$key]);
+                        }
+                    }
+
+                    $details[] = implode(', ', $detailParts);
+                }
+
+                $message .= ' [' . implode(' | ', array_filter($details)) . ']';
+            }
+
+            throw new \RuntimeException("GitHub API error {$code}: {$message}");
         }
         return $data;
+    }
+
+    private function readBodyFile(string $path): string
+    {
+        if (!file_exists($path)) {
+            throw new \RuntimeException("--body-file: file not found: {$path}");
+        }
+
+        $contents = file_get_contents($path);
+        if ($contents === false) {
+            throw new \RuntimeException("--body-file: unable to read file: {$path}");
+        }
+
+        return $contents;
+    }
+
+    private function deleteBodyFile(string $path): void
+    {
+        if (file_exists($path) && !unlink($path)) {
+            throw new \RuntimeException("--body-file: unable to delete file after successful request: {$path}");
+        }
     }
 
     /**
