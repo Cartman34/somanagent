@@ -46,6 +46,8 @@ class TeamController extends AbstractController
 
     /**
      * Creates a new team.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('', name: 'team_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
@@ -87,6 +89,8 @@ class TeamController extends AbstractController
 
     /**
      * Updates an existing team.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/{id}', name: 'team_update', methods: ['PUT'])]
     public function update(string $id, Request $request): JsonResponse
@@ -120,6 +124,8 @@ class TeamController extends AbstractController
 
     /**
      * Adds an agent to a team.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/{id}/agents', name: 'team_add_agent', methods: ['POST'])]
     public function addAgent(string $id, Request $request): JsonResponse

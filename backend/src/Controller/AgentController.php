@@ -64,6 +64,8 @@ class AgentController extends AbstractController
     /**
      * Creates a new agent.
      *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
+     *
      * @param Request $request JSON payload containing name, connector, config, description, and roleId
      * @return JsonResponse Created agent id and name with HTTP 201
      */
@@ -116,6 +118,8 @@ class AgentController extends AbstractController
 
     /**
      * Updates an existing agent.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      *
      * @param string  $id      Agent UUID
      * @param Request $request JSON payload with fields to update

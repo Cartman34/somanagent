@@ -27,7 +27,8 @@ It lets you assemble generic AI agent teams, assign them roles and skills, then 
 | [Architecture](technical/architecture.md) | Code structure, hexagonal architecture, data flow |
 | [Conventions](technical/conventions.md) | PHPDoc, JSDoc, translations, entity CSS classes, author header |
 | [Entities](technical/entities.md) | Data model, Doctrine entities and their relationships |
-| [REST API](technical/api.md) | Complete reference for all endpoints |
+| [REST API](technical/api.md) | API conventions, domain semantics, and how the OpenAPI contract is maintained |
+| [OpenAPI specification](technical/openapi.yaml) | Versioned machine-readable HTTP contract |
 | [Realtime Updates](technical/realtime.md) | Mercure architecture, event model, topics, and diagrams |
 | [Adapters](technical/adapters.md) | Hexagonal ports and their implementations |
 | [Configuration](technical/configuration.md) | Environment variables, .env file |
@@ -37,7 +38,7 @@ It lets you assemble generic AI agent teams, assign them roles and skills, then 
 
 | Task | Document |
 |---|---|
-| Adding a new API endpoint | [api.md](technical/api.md) |
+| Adding or changing an API endpoint | [openapi.yaml](technical/openapi.yaml) and [api.md](technical/api.md) |
 | Adding a realtime subscription or publication | [realtime.md](technical/realtime.md) |
 | Adding or modifying a Doctrine entity | [entities.md](technical/entities.md) |
 | Applying a PHPDoc, JSDoc, or CSS class rule | [conventions.md](technical/conventions.md) |

@@ -76,6 +76,8 @@ class SkillController extends AbstractController
     /**
      * Imports a skill from the registry using a source identifier.
      *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
+     *
      * @param Request $request JSON body containing the "source" field
      */
     #[Route('/import', name: 'skill_import', methods: ['POST'])]
@@ -93,6 +95,8 @@ class SkillController extends AbstractController
     /**
      * Creates a new custom skill.
      *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
+     *
      * @param Request $request JSON body containing "slug", "name", "content", and optional "description"
      */
     #[Route('', name: 'skill_create', methods: ['POST'])]
@@ -109,6 +113,8 @@ class SkillController extends AbstractController
 
     /**
      * Updates the content of an existing skill.
+     *
+     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      *
      * @param string  $id      The skill UUID
      * @param Request $request JSON body containing the "content" field
