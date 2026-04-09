@@ -67,9 +67,6 @@ enum AuditAction: string
     case TaskDeleted         = 'task.deleted';
     case TaskStatusChanged   = 'task.status_changed';
     case TaskProgressUpdated = 'task.progress_updated';
-    case TaskValidationAsked = 'task.validation_asked';
-    case TaskValidated       = 'task.validated';
-    case TaskRejected        = 'task.rejected';
     case TaskReprioritized   = 'task.reprioritized';
 
     // Chat

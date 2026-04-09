@@ -557,50 +557,6 @@ final class TicketTaskService
     }
 
     /**
-     * Move a task to review status and notify that validation is requested.
-     */
-    public function requestValidation(TicketTask $task, ?string $comment = null): TicketTask
-    {
-        $task->setStatus(TaskStatus::Review);
-        $this->entityService->update($task, AuditAction::TaskValidationAsked, ['comment' => $comment]);
-        $this->realtimeUpdateService->publishTaskChanged($task, 'validation_requested', [
-            'status' => $task->getStatus()->value,
-        ]);
-
-        return $task;
-    }
-
-    /**
-     * Validate a task, mark it as done, and dispatch ready dependents.
-     */
-    public function validate(TicketTask $task): TicketTask
-    {
-        $task->setStatus(TaskStatus::Done)->setProgress(100);
-        $this->entityService->update($task, AuditAction::TaskValidated);
-        $this->realtimeUpdateService->publishTaskChanged($task, 'validated', [
-            'status' => $task->getStatus()->value,
-        ]);
-
-        $this->dispatchReadyDependents($task);
-
-        return $task;
-    }
-
-    /**
-     * Reject a validated task and return it to in-progress status.
-     */
-    public function reject(TicketTask $task, ?string $reason = null): TicketTask
-    {
-        $task->setStatus(TaskStatus::InProgress);
-        $this->entityService->update($task, AuditAction::TaskRejected, ['reason' => $reason]);
-        $this->realtimeUpdateService->publishTaskChanged($task, 'rejected', [
-            'status' => $task->getStatus()->value,
-        ]);
-
-        return $task;
-    }
-
-    /**
      * Record that a task depends on another task before it can proceed.
      */
     public function addDependency(TicketTask $task, TicketTask $dependsOn): TicketTaskDependency
@@ -789,10 +745,8 @@ final class TicketTaskService
             return;
         }
 
-        foreach ($this->findTasksForWorkflowStep($ticket, $currentStep) as $task) {
-            if ($task->getStatus() !== TaskStatus::Done) {
-                return;
-            }
+        if (!$this->describeWorkflowStepProgress($ticket)['canAdvance']) {
+            return;
         }
 
         $nextStep = $this->workflowStepRepository->findNextByWorkflowStep($currentStep);
@@ -818,6 +772,90 @@ final class TicketTaskService
             $this->findByTicket($ticket),
             static fn(TicketTask $task): bool => $task->getWorkflowStep()?->getId()->toRfc4122() === $workflowStep->getId()->toRfc4122(),
         ));
+    }
+
+    /**
+     * Describes whether the current workflow step can advance and why.
+     *
+     * @return array{
+     *   canAdvance: bool,
+     *   status: 'ready'|'ready_with_warnings'|'blocked_pending_blocking_answers'|'blocked_active_execution'|'blocked_incomplete_tasks'|'unavailable',
+     *   pendingAnswerCount: int,
+     *   pendingBlockingAnswerCount: int
+     * }
+     */
+    public function describeWorkflowStepProgress(Ticket $ticket): array
+    {
+        $currentStep = $ticket->getWorkflowStep();
+        if ($currentStep === null) {
+            return [
+                'canAdvance' => false,
+                'status' => 'unavailable',
+                'pendingAnswerCount' => 0,
+                'pendingBlockingAnswerCount' => 0,
+            ];
+        }
+
+        $pendingAnswerCount = 0;
+        $pendingBlockingAnswerCount = 0;
+        $hasActiveExecution = false;
+        $hasIncompleteTask = false;
+
+        foreach ($this->findTasksForWorkflowStep($ticket, $currentStep) as $task) {
+            $taskPendingAnswerCount = $this->ticketLogService->countPendingAnswersForTask($task);
+            $taskPendingBlockingAnswerCount = $this->ticketLogService->countPendingBlockingAnswersForTask($task);
+            $pendingAnswerCount += $taskPendingAnswerCount;
+            $pendingBlockingAnswerCount += $taskPendingBlockingAnswerCount;
+
+            if ($this->hasActiveExecution($task)) {
+                $hasActiveExecution = true;
+                continue;
+            }
+
+            if ($taskPendingBlockingAnswerCount > 0) {
+                continue;
+            }
+
+            if ($task->getStatus()->isDone()) {
+                continue;
+            }
+
+            $hasIncompleteTask = true;
+        }
+
+        if ($hasActiveExecution) {
+            return [
+                'canAdvance' => false,
+                'status' => 'blocked_active_execution',
+                'pendingAnswerCount' => $pendingAnswerCount,
+                'pendingBlockingAnswerCount' => $pendingBlockingAnswerCount,
+            ];
+        }
+
+        if ($pendingBlockingAnswerCount > 0) {
+            return [
+                'canAdvance' => false,
+                'status' => 'blocked_pending_blocking_answers',
+                'pendingAnswerCount' => $pendingAnswerCount,
+                'pendingBlockingAnswerCount' => $pendingBlockingAnswerCount,
+            ];
+        }
+
+        if ($hasIncompleteTask) {
+            return [
+                'canAdvance' => false,
+                'status' => 'blocked_incomplete_tasks',
+                'pendingAnswerCount' => $pendingAnswerCount,
+                'pendingBlockingAnswerCount' => $pendingBlockingAnswerCount,
+            ];
+        }
+
+        return [
+            'canAdvance' => true,
+            'status' => $pendingAnswerCount > 0 ? 'ready_with_warnings' : 'ready',
+            'pendingAnswerCount' => $pendingAnswerCount,
+            'pendingBlockingAnswerCount' => $pendingBlockingAnswerCount,
+        ];
     }
 
     private function buildCreateWithTicketTitle(WorkflowStep $workflowStep, AgentAction $action): string

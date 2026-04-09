@@ -91,7 +91,7 @@ A **Story** (user story) or **Bug** is a ticket that progresses through the step
 - the current progression state is stored on `Ticket.workflowStep`
 - a ticket may expose manual next steps depending on the current workflow step
 - agent execution depends on the current step and the tasks attached to that step
-- a manual workflow transition is allowed only when the current-step tasks are already terminal or explicitly waiting for human validation; approving the transition also closes those review tasks
+- a workflow transition is allowed only when every current-step task is terminal, no blocking clarification remains unanswered, and no agent execution is still active on the current step
 
 ### Product terminology
 

@@ -136,21 +136,6 @@ export const ticketTasksApi = {
     return data
   },
 
-  validate: async (id: string): Promise<TicketTask> => {
-    const { data } = await apiClient.post(`/ticket-tasks/${id}/validate`)
-    return data
-  },
-
-  reject: async (id: string, reason?: string): Promise<TicketTask> => {
-    const { data } = await apiClient.post(`/ticket-tasks/${id}/reject`, { reason })
-    return data
-  },
-
-  requestValidation: async (id: string, comment?: string): Promise<TicketTask> => {
-    const { data } = await apiClient.post(`/ticket-tasks/${id}/request-validation`, { comment })
-    return data
-  },
-
   execute: async (id: string, agentId?: string): Promise<{ ticketTask: TicketTask; agent: { id: string; name: string }; skill: string; executionId: string }> => {
     const { data } = await apiClient.post(`/ticket-tasks/${id}/execute`, agentId ? { agentId } : {})
     return data

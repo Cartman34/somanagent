@@ -81,8 +81,12 @@ const TASK_DRAWER_TRANSLATION_KEYS = [
   'ticket.detail.tasks_title',
   'ticket.detail.workflow.current_step',
   'ticket.detail.workflow.error',
+  'ticket.detail.workflow.ready_help',
+  'ticket.detail.workflow.ready_with_warnings_help',
+  'ticket.detail.workflow.blocked_pending_blocking_answers_help',
+  'ticket.detail.workflow.blocked_active_execution_help',
+  'ticket.detail.workflow.blocked_incomplete_tasks_help',
   'ticket.detail.workflow.no_transition',
-  'ticket.detail.workflow.pending_answers_help',
   'ticket.detail.workflow.none',
   'ticket.detail.workflow.section_title',
   'ticket.detail.workflow.transition_loading',
@@ -99,7 +103,7 @@ function StatusIcon({ status }: { status: TaskStatus }) {
   if (status === 'done') return <CheckCircle className="h-4 w-4 text-green-500" />
   if (status === 'cancelled') return <XCircle className="h-4 w-4 text-gray-400" />
   if (status === 'awaiting_dispatch') return <Clock className="h-4 w-4 text-amber-500" />
-  if (status === 'in_progress' || status === 'review') return <Clock className="h-4 w-4 text-blue-500" />
+  if (status === 'in_progress') return <Clock className="h-4 w-4 text-blue-500" />
   if (status === 'backlog') return <AlertTriangle className="h-4 w-4 text-gray-300" />
   return <ChevronRight className="h-4 w-4 text-gray-400" />
 }
@@ -474,7 +478,23 @@ export default function TaskDrawer({
   const renderPilotBlock = (ticketEntity: Ticket) => (
     <section className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--surface2)' }}>
       {(() => {
-        const transitionDisabled = !projectHasTeam || advanceMutation.isPending || ticketEntity.awaitingUserAnswer
+        const transitionDisabled = !projectHasTeam || advanceMutation.isPending
+        const workflowStatusKey = (() => {
+          switch (ticketEntity.workflowProgress.status) {
+            case 'ready':
+              return 'ticket.detail.workflow.ready_help'
+            case 'ready_with_warnings':
+              return 'ticket.detail.workflow.ready_with_warnings_help'
+            case 'blocked_pending_blocking_answers':
+              return 'ticket.detail.workflow.blocked_pending_blocking_answers_help'
+            case 'blocked_active_execution':
+              return 'ticket.detail.workflow.blocked_active_execution_help'
+            case 'blocked_incomplete_tasks':
+              return 'ticket.detail.workflow.blocked_incomplete_tasks_help'
+            default:
+              return null
+          }
+        })()
 
         return (
           <>
@@ -508,9 +528,14 @@ export default function TaskDrawer({
         </p>
       )}
 
-      {ticketEntity.awaitingUserAnswer && (
-        <p className="mt-3 text-sm" style={{ color: '#b45309' }}>
-          {t('ticket.detail.workflow.pending_answers_help')}
+      {workflowStatusKey && (
+        <p
+          className="mt-3 text-sm"
+          style={{
+            color: ticketEntity.workflowProgress.canAdvance ? '#0f766e' : '#b45309',
+          }}
+        >
+          {t(workflowStatusKey)}
         </p>
       )}
 

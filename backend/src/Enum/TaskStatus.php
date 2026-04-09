@@ -16,7 +16,6 @@ enum TaskStatus: string
     case Todo             = 'todo';
     case AwaitingDispatch = 'awaiting_dispatch';
     case InProgress       = 'in_progress';
-    case Review           = 'review';
     case Done             = 'done';
     case Cancelled        = 'cancelled';
 
