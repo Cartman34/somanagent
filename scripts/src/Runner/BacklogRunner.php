@@ -16,6 +16,10 @@ use SoManAgent\Script\Backlog\BoardEntry;
  */
 final class BacklogRunner extends AbstractScriptRunner
 {
+    private const REMOTE_BRANCH_WAIT_ATTEMPTS = 5;
+    private const REMOTE_BRANCH_WAIT_DELAY_MICROSECONDS = 1000000;
+    private const PR_CREATE_HEAD_INVALID_NEEDLE = 'resource=PullRequest, field=head, code=invalid';
+
     protected function getDescription(): string
     {
         return 'Backlog workflow helper for local developer and reviewer procedures';
@@ -270,7 +274,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $board->setEntries(BacklogBoard::SECTION_IN_PROGRESS, $entries);
         $board->save();
 
-        $this->runCommand(sprintf('git -C %s push -u origin %s', escapeshellarg($worktree), escapeshellarg($branch)));
+        $this->pushBranchAndWaitForRemoteVisibility($branch, $worktree);
         $this->createOrUpdatePr($branch, $this->buildPrTitle('WIP', $featureEntry), $bodyFile);
 
         $this->console->ok(sprintf('Started feature %s on %s', $feature, $branch));
@@ -681,7 +685,7 @@ final class BacklogRunner extends AbstractScriptRunner
             throw new \RuntimeException("Feature {$feature} has no branch metadata.");
         }
 
-        $this->runCommand(sprintf('git push -u origin %s', escapeshellarg($branch)));
+        $this->pushBranchAndWaitForRemoteVisibility($branch);
         $this->createOrUpdatePr($branch, $title, $bodyFile);
 
         $board->moveFeature($feature, BacklogBoard::SECTION_APPROVED);
@@ -1108,12 +1112,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $prNumber = $this->findPrNumberByBranch($branch);
 
         if ($prNumber === null) {
-            $this->runCommand(sprintf(
-                'php scripts/github.php pr create --title %s --head %s --base main --body-file %s',
-                escapeshellarg($title),
-                escapeshellarg($branch),
-                escapeshellarg($bodyFile),
-            ));
+            $this->createPrWithRetry($branch, $title, $bodyFile);
             return;
         }
 
@@ -1123,6 +1122,89 @@ final class BacklogRunner extends AbstractScriptRunner
             escapeshellarg($title),
             escapeshellarg($bodyFile),
         ));
+    }
+
+    private function createPrWithRetry(string $branch, string $title, string $bodyFile): void
+    {
+        $command = sprintf(
+            'php scripts/github.php pr create --title %s --head %s --base main --body-file %s',
+            escapeshellarg($title),
+            escapeshellarg($branch),
+            escapeshellarg($bodyFile),
+        );
+
+        for ($attempt = 1; $attempt <= self::REMOTE_BRANCH_WAIT_ATTEMPTS; $attempt++) {
+            [$code, $output] = $this->captureWithExitCode($command);
+            if ($code === 0) {
+                return;
+            }
+
+            if (!$this->isHeadInvalidCreateError($output) || $attempt === self::REMOTE_BRANCH_WAIT_ATTEMPTS) {
+                throw new \RuntimeException(sprintf(
+                    "Command failed with exit code %d: %s\n%s",
+                    $code,
+                    $command,
+                    $output,
+                ));
+            }
+
+            usleep(self::REMOTE_BRANCH_WAIT_DELAY_MICROSECONDS);
+            $this->waitForRemoteBranchVisibility($branch);
+        }
+    }
+
+    private function pushBranchAndWaitForRemoteVisibility(string $branch, ?string $worktree = null): void
+    {
+        $gitPrefix = $worktree !== null
+            ? sprintf('git -C %s', escapeshellarg($worktree))
+            : 'git';
+
+        $this->runCommand(sprintf(
+            '%s push -u origin %s',
+            $gitPrefix,
+            escapeshellarg($branch),
+        ));
+
+        $this->waitForRemoteBranchVisibility($branch);
+    }
+
+    private function waitForRemoteBranchVisibility(string $branch): void
+    {
+        for ($attempt = 1; $attempt <= self::REMOTE_BRANCH_WAIT_ATTEMPTS; $attempt++) {
+            if ($this->isRemoteBranchVisible($branch)) {
+                return;
+            }
+
+            if ($attempt < self::REMOTE_BRANCH_WAIT_ATTEMPTS) {
+                usleep(self::REMOTE_BRANCH_WAIT_DELAY_MICROSECONDS);
+            }
+        }
+
+        throw new \RuntimeException("Remote branch did not become visible in time: {$branch}");
+    }
+
+    private function isRemoteBranchVisible(string $branch): bool
+    {
+        [$code, $output] = $this->captureWithExitCode(sprintf(
+            'git ls-remote --heads origin %s',
+            escapeshellarg($branch),
+        ));
+
+        if ($code !== 0) {
+            throw new \RuntimeException(sprintf(
+                "Command failed with exit code %d while checking remote branch visibility: %s\n%s",
+                $code,
+                $branch,
+                $output,
+            ));
+        }
+
+        return trim($output) !== '';
+    }
+
+    private function isHeadInvalidCreateError(string $output): bool
+    {
+        return str_contains($output, self::PR_CREATE_HEAD_INVALID_NEEDLE);
     }
 
     private function updatePrBody(string $branch, string $bodyFile): void
@@ -1220,6 +1302,20 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         return implode("\n", $output);
+    }
+
+    /**
+     * Runs one shell command and returns both exit code and captured output.
+     *
+     * @return array{0: int, 1: string}
+     */
+    private function captureWithExitCode(string $command): array
+    {
+        $output = [];
+        $code = 0;
+        exec($command . ' 2>&1', $output, $code);
+
+        return [$code, implode("\n", $output)];
     }
 
     private function commandSucceeds(string $command): bool

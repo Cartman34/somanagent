@@ -134,7 +134,7 @@ Command behavior:
 
 1. Prepare the PR body file under `local/tmp/`.
 2. Run `php scripts/backlog.php feature-start --agent=<code> --branch-type=<feat|fix> --body-file=<path>`.
-3. The script creates the feature branch, creates the `[WIP]` PR, moves the feature to `## En développement`, and authorizes development.
+3. The script creates the feature branch, pushes it, waits until the remote branch is visible, creates the `[WIP]` PR, moves the feature to `## En développement`, and authorizes development.
 
 #### `feature-task-add`
 
@@ -276,7 +276,7 @@ Also check:
 
 1. Prepare the approved PR body file under `local/tmp/`.
 2. Run `php scripts/backlog.php feature-review-approve <feature> --body-file=<path>`.
-3. The script pushes the branch, updates the PR title and body, determines the main tag by priority `FEAT > FIX > TECH > DOC`, and moves the feature to `## Approuvées`.
+3. The script pushes the branch, waits until the remote branch is visible, retries PR creation when GitHub still reports a transient invalid head, updates the PR title and body, determines the main tag by priority `FEAT > FIX > TECH > DOC`, and moves the feature to `## Approuvées`.
 
 #### `feature-merge`
 
