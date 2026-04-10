@@ -899,12 +899,7 @@ export default function TaskDrawer({
                 )}
               </>
             ) : isTicket(entityData) && entityData.initialRequest ? (
-              <>
-                <p className={BLOCK_LABEL_CLASS + ' mb-1'}>
-                  {t('ticket.detail.initial_request_label')}
-                </p>
-                <Markdown content={entityData.initialRequest} density="compact" preserveLineBreaks />
-              </>
+              <Markdown content={entityData.initialRequest} density="compact" preserveLineBreaks />
             ) : (
               <p className="text-sm italic" style={{ color: 'var(--muted)' }}>
                 {t('ticket.detail.empty_description')}
