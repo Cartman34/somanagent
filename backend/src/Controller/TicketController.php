@@ -187,12 +187,15 @@ class TicketController extends AbstractController
         }
 
         $priority = TaskPriority::from($data['priority'] ?? TaskPriority::Medium->value);
+        $description = isset($data['description']) && $data['description'] !== '' ? (string) $data['description'] : null;
+        $initialRequest = $description ?? (string) $data['title'];
         $ticket = $this->ticketService->create(
             $project,
             TaskType::UserStory,
             (string) $data['title'],
-            $data['description'] ?? null,
+            $description,
             $priority,
+            initialRequest: $initialRequest,
         );
 
         $dispatchError = null;
@@ -766,6 +769,7 @@ class TicketController extends AbstractController
             'type' => $ticket->getType()->value,
             'title' => $ticket->getTitle(),
             'description' => $ticket->getDescription(),
+            'initialRequest' => $ticket->getInitialRequest(),
             'status' => $ticket->getStatus()->value,
             'priority' => $ticket->getPriority()->value,
             'progress' => $ticket->getProgress(),

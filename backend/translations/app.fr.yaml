@@ -528,6 +528,8 @@ ticket:
     loading: Chargement…
     description_label: Description
     empty_description: Aucune description pour l'instant.
+    initial_request_label: Demande initiale
+    initial_request_toggle: Voir la demande initiale
     expand: Étendre
     collapse: Réduire
     edit:
