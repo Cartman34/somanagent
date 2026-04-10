@@ -332,6 +332,15 @@ project:
   module:
     error:
       not_found: Module introuvable.
+  request_form:
+    title_label: "Demande *"
+    title_placeholder: "Ex: permettre l'export PDF des rapports"
+    context_label: "Contexte *"
+    context_placeholder: "Décrivez le besoin métier, le problème, les contraintes ou le résultat attendu."
+    hint: "Cette demande crée une user story et la transmet automatiquement à un agent Product Owner si le workflow ou l'équipe le permet."
+    cancel_button: Annuler
+    submit_button: Envoyer au PO
+    submitting_button: "Transmission…"
   validation:
     name_required: Le champ "name" est obligatoire.
     workflow_required: Le champ "workflowId" est obligatoire.
@@ -528,6 +537,8 @@ ticket:
     loading: Chargement…
     description_label: Description
     empty_description: Aucune description pour l'instant.
+    initial_request_label: Demande initiale
+    initial_request_toggle: Voir la demande initiale
     expand: Étendre
     collapse: Réduire
     edit:
@@ -650,6 +661,7 @@ ticket:
     priority_required: Le champ "priority" est obligatoire.
     status_required: Le champ "status" est obligatoire.
     title_required: Le champ "title" est obligatoire.
+    description_required: Le champ "description" est obligatoire.
 token:
   error:
     agent_not_found: Agent introuvable.

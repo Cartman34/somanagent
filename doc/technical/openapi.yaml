@@ -688,7 +688,11 @@ paths:
         $ref: '#/components/requestBodies/ArbitraryJsonBody'
       responses:
         201:
-          $ref: '#/components/responses/Created'
+          description: 'Ticket created'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
   '/api/tickets/{ticketId}/tasks':
     post:
       tags:
@@ -707,6 +711,7 @@ paths:
       tags:
         - Tickets
       summary: 'Create a business request and convert it into a ticket'
+      description: 'Both title and description are required. title feeds ticket.title and ticket.initialTitle; description feeds ticket.initialRequest only — ticket.description starts empty and is filled later by the PO agent.'
       operationId: createProjectRequest
       parameters:
         - $ref: '#/components/parameters/ProjectIdPath'
@@ -714,7 +719,11 @@ paths:
         $ref: '#/components/requestBodies/ArbitraryJsonBody'
       responses:
         201:
-          $ref: '#/components/responses/Created'
+          description: 'Ticket created from request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
   '/api/tickets/{id}':
     get:
       tags:
@@ -725,7 +734,11 @@ paths:
         - $ref: '#/components/parameters/IdPath'
       responses:
         200:
-          $ref: '#/components/responses/Ok'
+          description: 'Successful response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
     put:
       tags:
         - Tickets
@@ -737,7 +750,11 @@ paths:
         $ref: '#/components/requestBodies/ArbitraryJsonBody'
       responses:
         200:
-          $ref: '#/components/responses/Ok'
+          description: 'Successful response'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
     delete:
       tags:
         - Tickets
@@ -1181,3 +1198,50 @@ components:
     ArbitraryJsonObject:
       type: object
       additionalProperties: true
+    Ticket:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [user_story, bug]
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        initialRequest:
+          type: string
+          nullable: true
+          description: 'Original description entered by the user at ticket creation time, before any agent rewrites it.'
+        initialTitle:
+          type: string
+          nullable: true
+          description: 'Original title entered by the user at ticket creation time, before any agent rewrites it.'
+        status:
+          type: string
+        priority:
+          type: string
+        progress:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - type
+        - title
+        - status
+        - priority
+        - progress
+        - createdAt
+        - updatedAt

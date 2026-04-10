@@ -408,6 +408,8 @@ export interface Ticket {
   type: Exclude<TaskType, 'task'>
   title: string
   description: string | null
+  initialRequest: string | null
+  initialTitle: string | null
   status: TaskStatus
   priority: TaskPriority
   progress: number

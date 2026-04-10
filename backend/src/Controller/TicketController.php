@@ -103,13 +103,16 @@ class TicketController extends AbstractController
         }
 
         $priority = TaskPriority::from($data['priority'] ?? TaskPriority::Medium->value);
+        $ticketDescription = isset($data['description']) && $data['description'] !== '' ? (string) $data['description'] : null;
         $ticket = $this->ticketService->create(
             $project,
             $type,
             (string) $data['title'],
-            $data['description'] ?? null,
+            $ticketDescription,
             $priority,
             $data['featureId'] ?? null,
+            initialRequest: $ticketDescription,
+            initialTitle: (string) $data['title'],
         );
         $this->ticketTaskService->dispatchEligibleTasksForCurrentStep($ticket);
 
@@ -186,13 +189,19 @@ class TicketController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.title_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
+        if (empty($data['description'])) {
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.description_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
         $priority = TaskPriority::from($data['priority'] ?? TaskPriority::Medium->value);
         $ticket = $this->ticketService->create(
             $project,
             TaskType::UserStory,
             (string) $data['title'],
-            $data['description'] ?? null,
+            null,
             $priority,
+            initialRequest: (string) $data['description'],
+            initialTitle: (string) $data['title'],
         );
 
         $dispatchError = null;
@@ -766,6 +775,8 @@ class TicketController extends AbstractController
             'type' => $ticket->getType()->value,
             'title' => $ticket->getTitle(),
             'description' => $ticket->getDescription(),
+            'initialRequest' => $ticket->getInitialRequest(),
+            'initialTitle' => $ticket->getInitialTitle(),
             'status' => $ticket->getStatus()->value,
             'priority' => $ticket->getPriority()->value,
             'progress' => $ticket->getProgress(),

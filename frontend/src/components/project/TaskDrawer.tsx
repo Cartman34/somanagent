@@ -57,6 +57,8 @@ const TASK_DRAWER_TRANSLATION_KEYS = [
   'ticket.detail.expand',
   'ticket.detail.edit.error',
   'ticket.detail.empty_description',
+  'ticket.detail.initial_request_label',
+  'ticket.detail.initial_request_toggle',
   'ticket.detail.loading',
   'ticket.detail.metric.tokens_consumed',
   'ticket.detail.resume.button',
@@ -212,6 +214,7 @@ export default function TaskDrawer({
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [editError, setEditError] = useState<string | null>(null)
+  const [isInitialRequestOpen, setIsInitialRequestOpen] = useState(false)
   const backdropMouseDownRef = useRef(false)
 
   const { data: entity, isLoading } = useQuery<Ticket | TicketTask>({
@@ -249,6 +252,7 @@ export default function TaskDrawer({
     setEditTitle('')
     setEditDescription('')
     setEditError(null)
+    setIsInitialRequestOpen(false)
   }, [taskId])
 
   useEffect(() => {
@@ -870,7 +874,41 @@ export default function TaskDrawer({
               {t('ticket.detail.description_label')}
             </p>
             {entityData.description ? (
-              <Markdown content={entityData.description} density="compact" preserveLineBreaks />
+              <>
+                <Markdown content={entityData.description} density="compact" preserveLineBreaks />
+                {isTicket(entityData) && (entityData.initialRequest || entityData.initialTitle) && (
+                  <div className="mt-3 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
+                    <button
+                      className="flex items-center gap-1 text-xs font-medium"
+                      style={{ color: 'var(--muted)' }}
+                      onClick={() => setIsInitialRequestOpen((v) => !v)}
+                      type="button"
+                    >
+                      {isInitialRequestOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                      {t('ticket.detail.initial_request_toggle')}
+                    </button>
+                    {isInitialRequestOpen && (
+                      <div className="mt-2 space-y-2">
+                        {entityData.initialTitle && (
+                          <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>
+                            {entityData.initialTitle}
+                          </p>
+                        )}
+                        {entityData.initialRequest && (
+                          <>
+                            <p className={BLOCK_LABEL_CLASS + ' mb-1'}>
+                              {t('ticket.detail.initial_request_label')}
+                            </p>
+                            <Markdown content={entityData.initialRequest} density="compact" preserveLineBreaks />
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            ) : isTicket(entityData) && entityData.initialRequest ? (
+              <Markdown content={entityData.initialRequest} density="compact" preserveLineBreaks />
             ) : (
               <p className="text-sm italic" style={{ color: 'var(--muted)' }}>
                 {t('ticket.detail.empty_description')}
