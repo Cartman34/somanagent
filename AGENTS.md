@@ -11,6 +11,7 @@ Read only this file first. Read additional files only when the active command or
 - Use project scripts in `scripts/` first.
 - Prefer `php scripts/console.php`, `php scripts/node.php`, `php scripts/logs.php`, `php scripts/db.php`, `php scripts/dev.php`, `php scripts/health.php`, and similar wrappers over raw container commands.
 - Use relative paths in commands. Do not rely on `cd` into subfolders.
+- For network-dependent workflow commands, prefer idempotent script steps. On transient network failures, retry with exponential backoff when the script supports it; after the final retry, report the network issue clearly and resume later by rerunning the same command.
 - For temporary files needed by repo procedures (for example PR body files), write them under `local/tmp/` inside the repository, not `/tmp`.
 - Do not repeatedly probe for optional CLI tools across sessions.
 - If a tool is known to be unavailable in the current environment, stop trying to use it until the user explicitly asks to install it or confirms it is now available.

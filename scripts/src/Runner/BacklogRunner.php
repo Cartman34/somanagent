@@ -20,11 +20,21 @@ final class BacklogRunner extends AbstractScriptRunner
     private const REMOTE_BRANCH_WAIT_ATTEMPTS = 5;
     private const REMOTE_BRANCH_WAIT_DELAY_MICROSECONDS = 1000000;
     private const PR_CREATE_HEAD_INVALID_NEEDLE = 'resource=PullRequest, field=head, code=invalid';
+    private const GITHUB_NETWORK_RETRY_COUNT = 3;
+    private const GITHUB_NETWORK_INITIAL_DELAY_MICROSECONDS = 1000000;
     private const FEATURE_SLUG_MAX_WORDS = 8;
     private const FEATURE_SLUG_MAX_LENGTH = 64;
     private const TASK_CREATE_POSITION_START = 'start';
     private const TASK_CREATE_POSITION_INDEX = 'index';
     private const TASK_CREATE_POSITION_END = 'end';
+    private const GITHUB_NETWORK_ERROR_NEEDLES = [
+        'GitHub API transport error:',
+        'Could not resolve host:',
+        'Connection timed out',
+        'Failed to connect',
+        'Operation timed out',
+        'Temporary failure in name resolution',
+    ];
 
     protected function getDescription(): string
     {
@@ -535,7 +545,7 @@ final class BacklogRunner extends AbstractScriptRunner
         if ($prNumber !== null) {
             $type = $match['section'] === BacklogBoard::SECTION_APPROVED ? $this->determinePrType($match['entry']) : 'WIP';
             $title = $this->ensureBlockedTitle($this->buildPrTitle($type, $match['entry']));
-            $this->runCommand(sprintf(
+            $this->runGithubCommand(sprintf(
                 'php scripts/github.php pr edit %d --title %s',
                 $prNumber,
                 escapeshellarg($title),
@@ -575,7 +585,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $prNumber = $this->findPrNumberByBranch($branch);
         if ($prNumber !== null) {
             $title = $this->buildCurrentTitle($match['entry'], $match['section']);
-            $this->runCommand(sprintf(
+            $this->runGithubCommand(sprintf(
                 'php scripts/github.php pr edit %d --title %s',
                 $prNumber,
                 escapeshellarg($title),
@@ -652,8 +662,8 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->console->line('Branch: ' . ($match['entry']->getMeta('branch') ?? '-'));
         $this->console->line('Base: ' . ($match['entry']->getMeta('base') ?? '-'));
         $this->console->line('Stage: ' . $match['section']);
-        $prNumber = $this->findPrNumberByBranch($match['entry']->getMeta('branch') ?? '');
-        $this->console->line('PR: ' . ($prNumber === null ? 'none' : '#' . $prNumber));
+        $prStatus = $this->describePrStatus($match['entry']->getMeta('branch') ?? '');
+        $this->console->line('PR: ' . $prStatus);
         $this->console->line('Last: ' . $match['entry']->getText());
         $this->console->line('Next: ' . $this->nextStepForSection($match['section']));
         $this->console->line('Blocker: ' . ($match['entry']->hasMeta('blocked') ? 'blocked' : '-'));
@@ -808,7 +818,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $prNumber = $this->findPrNumberByBranch($branch);
         if ($prNumber !== null) {
-            $this->runCommand(sprintf('php scripts/github.php pr close %d', $prNumber));
+            $this->runGithubCommand(sprintf('php scripts/github.php pr close %d', $prNumber));
         }
 
         $board->removeFeature($feature);
@@ -849,7 +859,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $type = $this->determinePrType($match['entry']);
         $this->createOrUpdatePr($branch, $this->buildPrTitle($type, $match['entry']), $bodyFile);
-        $this->runCommand(sprintf('php scripts/github.php pr merge %d', $prNumber));
+        $this->runGithubCommand(sprintf('php scripts/github.php pr merge %d', $prNumber));
         $this->runCommand('git checkout main');
         $this->runCommand('git pull');
         $this->runCommand(sprintf('git push origin --delete %s', escapeshellarg($branch)));
@@ -1313,7 +1323,7 @@ final class BacklogRunner extends AbstractScriptRunner
             return;
         }
 
-        $this->runCommand(sprintf(
+        $this->runGithubCommand(sprintf(
             'php scripts/github.php pr edit %d --title %s --body-file %s',
             $prNumber,
             escapeshellarg($title),
@@ -1331,7 +1341,7 @@ final class BacklogRunner extends AbstractScriptRunner
         );
 
         for ($attempt = 1; $attempt <= self::REMOTE_BRANCH_WAIT_ATTEMPTS; $attempt++) {
-            [$code, $output] = $this->captureWithExitCode($command);
+            [$code, $output] = $this->captureGithubCommandWithRetry($command);
             if ($code === 0) {
                 return;
             }
@@ -1437,7 +1447,7 @@ final class BacklogRunner extends AbstractScriptRunner
             throw new \RuntimeException("No open PR found for branch {$branch}.");
         }
 
-        $this->runCommand(sprintf(
+        $this->runGithubCommand(sprintf(
             'php scripts/github.php pr edit %d --body-file %s',
             $prNumber,
             escapeshellarg($bodyFile),
@@ -1451,7 +1461,7 @@ final class BacklogRunner extends AbstractScriptRunner
             return;
         }
 
-        $this->runCommand(sprintf(
+        $this->runGithubCommand(sprintf(
             'php scripts/github.php pr edit %d --body-file %s',
             $prNumber,
             escapeshellarg($bodyFile),
@@ -1464,7 +1474,7 @@ final class BacklogRunner extends AbstractScriptRunner
             return null;
         }
 
-        $output = $this->capture('php scripts/github.php pr list');
+        $output = $this->captureGithubOutputWithRetry('php scripts/github.php pr list');
         foreach (explode("\n", trim($output)) as $line) {
             if (preg_match('/^\s*#(\d+)\s+.*\[(.+?) → (.+?)\]$/u', $line, $matches) === 1) {
                 if ($matches[2] === $branch) {
@@ -1562,5 +1572,97 @@ final class BacklogRunner extends AbstractScriptRunner
         exec($command . ' 2>&1', $output, $code);
 
         return $code === 0;
+    }
+
+    private function runGithubCommand(string $command): void
+    {
+        [$code, $output] = $this->captureGithubCommandWithRetry($command);
+        if ($code !== 0) {
+            throw new \RuntimeException(sprintf(
+                "Command failed with exit code %d: %s\n%s",
+                $code,
+                $command,
+                $output,
+            ));
+        }
+    }
+
+    private function captureGithubOutputWithRetry(string $command): string
+    {
+        [$code, $output] = $this->captureGithubCommandWithRetry($command);
+        if ($code !== 0) {
+            throw new \RuntimeException(sprintf(
+                "Command failed with exit code %d: %s\n%s",
+                $code,
+                $command,
+                $output,
+            ));
+        }
+
+        return $output;
+    }
+
+    /**
+     * Runs one GitHub command with retry on transient transport failures.
+     *
+     * @return array{0: int, 1: string}
+     */
+    private function captureGithubCommandWithRetry(string $command): array
+    {
+        $lastResult = [0, ''];
+
+        for ($attempt = 0; $attempt <= self::GITHUB_NETWORK_RETRY_COUNT; $attempt++) {
+            $lastResult = $this->captureWithExitCode($command);
+            if ($lastResult[0] === 0) {
+                return $lastResult;
+            }
+
+            if (!$this->isRetryableGithubNetworkError($lastResult[1])) {
+                return $lastResult;
+            }
+
+            if ($attempt === self::GITHUB_NETWORK_RETRY_COUNT) {
+                throw new \RuntimeException(sprintf(
+                    "GitHub network error after %d retries. Safe to rerun the same command.\nCommand: %s\n%s",
+                    self::GITHUB_NETWORK_RETRY_COUNT,
+                    $command,
+                    $lastResult[1],
+                ));
+            }
+
+            usleep(self::GITHUB_NETWORK_INITIAL_DELAY_MICROSECONDS * (2 ** $attempt));
+        }
+
+        return $lastResult;
+    }
+
+    private function isRetryableGithubNetworkError(string $output): bool
+    {
+        foreach (self::GITHUB_NETWORK_ERROR_NEEDLES as $needle) {
+            if (str_contains($output, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function describePrStatus(string $branch): string
+    {
+        if ($branch === '') {
+            return 'none';
+        }
+
+        try {
+            $prNumber = $this->findPrNumberByBranch($branch);
+        } catch (\RuntimeException $exception) {
+            if ($this->isRetryableGithubNetworkError($exception->getMessage())) {
+                return 'unavailable (network error)';
+            }
+
+            throw $exception;
+        }
+
+        return $prNumber === null ? 'none' : '#' . $prNumber;
     }
 }
