@@ -6,6 +6,17 @@ import { useState } from 'react'
 import type { ProjectRequestPayload } from '@/api/tickets'
 import { useTranslation } from '@/hooks/useTranslation'
 
+const REQUEST_FORM_TRANSLATION_KEYS = [
+  'project.request_form.title_label',
+  'project.request_form.title_placeholder',
+  'project.request_form.context_label',
+  'project.request_form.context_placeholder',
+  'project.request_form.hint',
+  'project.request_form.cancel_button',
+  'project.request_form.submit_button',
+  'project.request_form.submitting_button',
+] as const
+
 /**
  * Form for submitting a new project request (user story via Product Owner agent).
  * Sends title and optional business context to the API.
@@ -19,7 +30,7 @@ export default function RequestForm({ onSubmit, loading, onCancel }: {
 }) {
   const [title, setTitle]             = useState('')
   const [description, setDescription] = useState('')
-  const { t } = useTranslation()
+  const { t } = useTranslation(REQUEST_FORM_TRANSLATION_KEYS)
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit({ title, description }) }} className="space-y-4">
