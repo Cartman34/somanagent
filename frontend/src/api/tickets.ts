@@ -34,7 +34,7 @@ export interface TicketCommentPayload {
 /** Payload accepted by project request creation. */
 export interface ProjectRequestPayload {
   title: string
-  description?: string
+  description: string
   priority?: TaskPriority
 }
 

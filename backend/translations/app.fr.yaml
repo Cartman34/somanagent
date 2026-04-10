@@ -652,6 +652,7 @@ ticket:
     priority_required: Le champ "priority" est obligatoire.
     status_required: Le champ "status" est obligatoire.
     title_required: Le champ "title" est obligatoire.
+    description_required: Le champ "description" est obligatoire.
 token:
   error:
     agent_not_found: Agent introuvable.

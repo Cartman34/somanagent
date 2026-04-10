@@ -189,15 +189,18 @@ class TicketController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.title_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
+        if (empty($data['description'])) {
+            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.description_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
         $priority = TaskPriority::from($data['priority'] ?? TaskPriority::Medium->value);
-        $description = isset($data['description']) && $data['description'] !== '' ? (string) $data['description'] : null;
         $ticket = $this->ticketService->create(
             $project,
             TaskType::UserStory,
             (string) $data['title'],
-            $description,
+            null,
             $priority,
-            initialRequest: $description,
+            initialRequest: (string) $data['description'],
             initialTitle: (string) $data['title'],
         );
 

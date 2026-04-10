@@ -711,6 +711,7 @@ paths:
       tags:
         - Tickets
       summary: 'Create a business request and convert it into a ticket'
+      description: 'Both title and description are required. title feeds ticket.title and ticket.initialTitle; description feeds ticket.initialRequest only — ticket.description starts empty and is filled later by the PO agent.'
       operationId: createProjectRequest
       parameters:
         - $ref: '#/components/parameters/ProjectIdPath'
@@ -718,7 +719,7 @@ paths:
         $ref: '#/components/requestBodies/ArbitraryJsonBody'
       responses:
         201:
-          description: 'Ticket created from request — initialRequest is set to the submitted title'
+          description: 'Ticket created from request'
           content:
             application/json:
               schema:

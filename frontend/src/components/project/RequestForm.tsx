@@ -20,7 +20,7 @@ export default function RequestForm({ onSubmit, loading, onCancel }: {
   const [description, setDescription] = useState('')
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit({ title, description: description || undefined }) }} className="space-y-4">
+    <form onSubmit={(e) => { e.preventDefault(); onSubmit({ title, description }) }} className="space-y-4">
       <div>
         <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Demande *</label>
         <input
@@ -32,12 +32,13 @@ export default function RequestForm({ onSubmit, loading, onCancel }: {
         />
       </div>
       <div>
-        <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Contexte</label>
+        <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Contexte *</label>
         <textarea
           className="input resize-none"
           rows={4}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          required
           placeholder="Décrivez le besoin métier, le problème, les contraintes ou le résultat attendu."
         />
       </div>
