@@ -10,6 +10,7 @@ namespace SoManAgent\Script\Runner;
 use SoManAgent\Script\Backlog\BacklogBoard;
 use SoManAgent\Script\Backlog\BacklogReviewFile;
 use SoManAgent\Script\Backlog\BoardEntry;
+use SoManAgent\Script\TextSlugger;
 
 /**
  * Backlog workflow runner for the local developer/reviewer process.
@@ -19,6 +20,8 @@ final class BacklogRunner extends AbstractScriptRunner
     private const REMOTE_BRANCH_WAIT_ATTEMPTS = 5;
     private const REMOTE_BRANCH_WAIT_DELAY_MICROSECONDS = 1000000;
     private const PR_CREATE_HEAD_INVALID_NEEDLE = 'resource=PullRequest, field=head, code=invalid';
+    private const FEATURE_SLUG_MAX_WORDS = 8;
+    private const FEATURE_SLUG_MAX_LENGTH = 64;
 
     protected function getDescription(): string
     {
@@ -878,16 +881,15 @@ final class BacklogRunner extends AbstractScriptRunner
 
     private function normalizeFeatureSlug(string $text): string
     {
-        $text = trim(mb_strtolower($text));
-        $text = preg_replace('/[^a-z0-9]+/', '-', $text) ?? '';
-        $text = trim($text, '-');
-        $text = preg_replace('/-+/', '-', $text) ?? '';
+        return $this->featureSlugger()->slugify($text);
+    }
 
-        if ($text === '') {
-            throw new \RuntimeException('Unable to derive a valid feature slug.');
-        }
-
-        return $text;
+    private function featureSlugger(): TextSlugger
+    {
+        return new TextSlugger(
+            maxWords: self::FEATURE_SLUG_MAX_WORDS,
+            maxLength: self::FEATURE_SLUG_MAX_LENGTH,
+        );
     }
 
     /**
