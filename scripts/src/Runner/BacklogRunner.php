@@ -27,6 +27,8 @@ final class BacklogRunner extends AbstractScriptRunner
     private const TASK_CREATE_POSITION_START = 'start';
     private const TASK_CREATE_POSITION_INDEX = 'index';
     private const TASK_CREATE_POSITION_END = 'end';
+    private const DEPS_MODE_LINKED = 'linked';
+    private const DEPS_MODE_ISOLATED = 'isolated';
     private const GITHUB_NETWORK_ERROR_NEEDLES = [
         'GitHub API transport error:',
         'Could not resolve host:',
@@ -51,6 +53,7 @@ final class BacklogRunner extends AbstractScriptRunner
             ['name' => 'task-book-release', 'description' => 'Release one reserved backlog task'],
             ['name' => 'feature-start', 'description' => 'Start a feature branch and move the feature to development'],
             ['name' => 'feature-task-add', 'description' => 'Attach all reserved tasks of one agent to its current feature'],
+            ['name' => 'feature-deps-mode', 'description' => 'Switch one feature worktree between linked and isolated dependencies'],
             ['name' => 'feature-assign', 'description' => 'Assign an existing feature to one developer agent'],
             ['name' => 'feature-unassign', 'description' => 'Remove the current agent assignment from one feature'],
             ['name' => 'feature-rework', 'description' => 'Move a rejected feature back to development'],
@@ -89,6 +92,7 @@ final class BacklogRunner extends AbstractScriptRunner
             'php scripts/backlog.php task-remove 8',
             'php scripts/backlog.php task-book-next --agent agent-01 delete-question-reply',
             'php scripts/backlog.php feature-start --agent agent-01 --branch-type feat',
+            'php scripts/backlog.php feature-deps-mode --agent agent-01 linked',
             'php scripts/backlog.php feature-list',
             'php scripts/backlog.php feature-review-approve delete-question-reply --body-file local/tmp/pr_body.md',
         ];
@@ -112,6 +116,7 @@ final class BacklogRunner extends AbstractScriptRunner
             'task-book-release' => $this->taskBookRelease($commandArgs, $options),
             'feature-start' => $this->featureStart($commandArgs, $options),
             'feature-task-add' => $this->featureTaskAdd($commandArgs, $options),
+            'feature-deps-mode' => $this->featureDepsMode($commandArgs, $options),
             'feature-assign' => $this->featureAssign($commandArgs, $options),
             'feature-unassign' => $this->featureUnassign($commandArgs, $options),
             'feature-rework' => $this->featureRework($commandArgs, $options),
@@ -351,6 +356,8 @@ final class BacklogRunner extends AbstractScriptRunner
             'agent' => $agent,
             'branch' => $branch,
             'base' => $base,
+            'pr' => 'none',
+            'deps' => self::DEPS_MODE_LINKED,
         ]);
 
         foreach (array_slice($reserved, 1) as $task) {
@@ -367,6 +374,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $entries = $board->getEntries(BacklogBoard::SECTION_IN_PROGRESS);
         $entries[] = $featureEntry;
         $board->setEntries(BacklogBoard::SECTION_IN_PROGRESS, $entries);
+        $this->ensureWorktreeDependencyMode($worktree, self::DEPS_MODE_LINKED);
         $board->save();
 
         $this->console->ok(sprintf('Started feature %s on %s', $feature, $branch));
@@ -430,6 +438,47 @@ final class BacklogRunner extends AbstractScriptRunner
      * @param array<string> $commandArgs
      * @param array<string, string|bool> $options
      */
+    private function featureDepsMode(array $commandArgs, array $options): int
+    {
+        $agent = $this->requireAgent($options);
+        $board = $this->board();
+
+        if ($commandArgs === []) {
+            throw new \RuntimeException('feature-deps-mode requires <linked|isolated> or <feature> <linked|isolated>.');
+        }
+
+        $mode = $this->normalizeDepsMode((string) end($commandArgs));
+        if ($mode === null) {
+            throw new \RuntimeException('feature-deps-mode requires the final argument to be linked or isolated.');
+        }
+
+        $feature = count($commandArgs) > 1
+            ? $this->normalizeFeatureSlug((string) $commandArgs[0])
+            : $this->requireSingleFeatureForAgent($board, $agent)['entry']->getMeta('feature');
+        if ($feature === null) {
+            throw new \RuntimeException('No feature available for feature-deps-mode.');
+        }
+
+        $match = $this->requireFeature($board, $feature);
+        if (($match['entry']->getMeta('agent') ?? '') !== $agent) {
+            throw new \RuntimeException("Feature {$feature} is not assigned to agent {$agent}.");
+        }
+
+        $worktree = $this->prepareAgentWorktree($agent);
+        $this->checkoutBranchInWorktree($worktree, $match['entry']->getMeta('branch') ?? '', false);
+        $this->ensureWorktreeDependencyMode($worktree, $mode);
+        $match['entry']->setMeta('deps', $mode);
+        $board->save();
+
+        $this->console->ok(sprintf('Switched feature %s dependencies to %s', $feature, $mode));
+
+        return 0;
+    }
+
+    /**
+     * @param array<string> $commandArgs
+     * @param array<string, string|bool> $options
+     */
     private function featureAssign(array $commandArgs, array $options): int
     {
         $agent = $this->requireAgent($options);
@@ -442,13 +491,12 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $match = $this->requireFeature($board, $feature);
         $match['entry']->setMeta('agent', $agent);
+        $match['entry']->setMeta('deps', $this->entryDepsMode($match['entry']));
         $board->save();
 
-        $this->checkoutBranchInWorktree(
-            $this->prepareAgentWorktree($agent),
-            $match['entry']->getMeta('branch') ?? '',
-            false,
-        );
+        $worktree = $this->prepareAgentWorktree($agent);
+        $this->checkoutBranchInWorktree($worktree, $match['entry']->getMeta('branch') ?? '', false);
+        $this->ensureWorktreeDependencyMode($worktree, $this->entryDepsMode($match['entry']));
 
         $this->console->ok(sprintf('Assigned feature %s to %s', $feature, $agent));
 
@@ -506,14 +554,13 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $match['entry']->setMeta('agent', $agent);
+        $match['entry']->setMeta('deps', $this->entryDepsMode($match['entry']));
         $board->moveFeature($feature, BacklogBoard::SECTION_IN_PROGRESS);
         $board->save();
 
-        $this->checkoutBranchInWorktree(
-            $this->prepareAgentWorktree($agent),
-            $match['entry']->getMeta('branch') ?? '',
-            false,
-        );
+        $worktree = $this->prepareAgentWorktree($agent);
+        $this->checkoutBranchInWorktree($worktree, $match['entry']->getMeta('branch') ?? '', false);
+        $this->ensureWorktreeDependencyMode($worktree, $this->entryDepsMode($match['entry']));
 
         $this->console->ok(sprintf('Moved feature %s back to %s', $feature, BacklogBoard::SECTION_IN_PROGRESS));
 
@@ -662,6 +709,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->console->line('Stage: ' . $match['section']);
         $prStatus = $this->describePrStatus($match['entry']);
         $this->console->line('PR: ' . $prStatus);
+        $this->console->line('Deps: ' . $this->entryDepsMode($match['entry']));
         $this->console->line('Last: ' . $match['entry']->getText());
         $this->console->line('Next: ' . $this->nextStepForSection($match['section']));
         $this->console->line('Blocker: ' . ($match['entry']->hasMeta('blocked') ? 'blocked' : '-'));
@@ -692,6 +740,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $worktree = $this->prepareAgentWorktree($agent);
         $this->checkoutBranchInWorktree($worktree, $match['entry']->getMeta('branch') ?? '', false);
+        $this->ensureWorktreeDependencyMode($worktree, $this->entryDepsMode($match['entry']));
         $this->runReviewScript($worktree);
 
         $board->moveFeature($feature, BacklogBoard::SECTION_IN_REVIEW);
@@ -712,6 +761,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $match = $this->requireFeature($board, $feature);
 
         $reviewWorktree = $this->prepareReviewerWorktree();
+        $this->ensureWorktreeDependencyMode($reviewWorktree, self::DEPS_MODE_LINKED);
         $this->checkoutDetachedInWorktree($reviewWorktree, $match['entry']->getMeta('branch') ?? '');
 
         try {
@@ -979,6 +1029,20 @@ final class BacklogRunner extends AbstractScriptRunner
         return $this->featureSlugger()->slugify($text);
     }
 
+    private function normalizeDepsMode(string $text): ?string
+    {
+        $mode = trim($text);
+
+        return in_array($mode, [self::DEPS_MODE_LINKED, self::DEPS_MODE_ISOLATED], true)
+            ? $mode
+            : null;
+    }
+
+    private function entryDepsMode(BoardEntry $entry): string
+    {
+        return $this->normalizeDepsMode((string) $entry->getMeta('deps')) ?? self::DEPS_MODE_LINKED;
+    }
+
     private function featureSlugger(): TextSlugger
     {
         return new TextSlugger(
@@ -1084,6 +1148,144 @@ final class BacklogRunner extends AbstractScriptRunner
         return $path;
     }
 
+    private function ensureWorktreeDependencyMode(string $worktree, string $mode): void
+    {
+        foreach ($this->dependencyTargets() as $relativePath => $sourcePath) {
+            if (!file_exists($sourcePath) && !is_link($sourcePath)) {
+                throw new \RuntimeException("Missing dependency source in WP: {$sourcePath}");
+            }
+
+            $targetPath = $worktree . '/' . $relativePath;
+            $parent = dirname($targetPath);
+            if (!is_dir($parent)) {
+                mkdir($parent, 0777, true);
+            }
+
+            if ($mode === self::DEPS_MODE_LINKED) {
+                $this->replacePathWithSymlink($sourcePath, $targetPath);
+                continue;
+            }
+
+            $this->replacePathWithCopy($sourcePath, $targetPath);
+        }
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function dependencyTargets(): array
+    {
+        return [
+            'backend/vendor' => $this->projectRoot . '/backend/vendor',
+            'frontend/node_modules' => $this->projectRoot . '/frontend/node_modules',
+        ];
+    }
+
+    private function replacePathWithSymlink(string $sourcePath, string $targetPath): void
+    {
+        if (is_link($targetPath) && readlink($targetPath) === $this->relativeFilesystemPath(dirname($targetPath), $sourcePath)) {
+            return;
+        }
+
+        $this->removeFilesystemPath($targetPath);
+
+        $relativeTarget = $this->relativeFilesystemPath(dirname($targetPath), $sourcePath);
+        if (!symlink($relativeTarget, $targetPath)) {
+            throw new \RuntimeException("Unable to create symlink {$targetPath} -> {$relativeTarget}");
+        }
+    }
+
+    private function replacePathWithCopy(string $sourcePath, string $targetPath): void
+    {
+        if (is_dir($targetPath) && !is_link($targetPath)) {
+            return;
+        }
+
+        $this->removeFilesystemPath($targetPath);
+        $this->copyFilesystemPath($sourcePath, $targetPath);
+    }
+
+    private function removeFilesystemPath(string $path): void
+    {
+        if (!file_exists($path) && !is_link($path)) {
+            return;
+        }
+
+        if (is_file($path) || is_link($path)) {
+            if (!unlink($path)) {
+                throw new \RuntimeException("Unable to remove path: {$path}");
+            }
+
+            return;
+        }
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST,
+        );
+
+        foreach ($iterator as $item) {
+            if ($item->isDir() && !$item->isLink()) {
+                if (!rmdir($item->getPathname())) {
+                    throw new \RuntimeException("Unable to remove directory: {$item->getPathname()}");
+                }
+                continue;
+            }
+
+            if (!unlink($item->getPathname())) {
+                throw new \RuntimeException("Unable to remove path: {$item->getPathname()}");
+            }
+        }
+
+        if (!rmdir($path)) {
+            throw new \RuntimeException("Unable to remove directory: {$path}");
+        }
+    }
+
+    private function copyFilesystemPath(string $sourcePath, string $targetPath): void
+    {
+        if (is_link($sourcePath)) {
+            $linkTarget = readlink($sourcePath);
+            if ($linkTarget === false || !symlink($linkTarget, $targetPath)) {
+                throw new \RuntimeException("Unable to copy symlink: {$sourcePath}");
+            }
+
+            return;
+        }
+
+        if (is_file($sourcePath)) {
+            if (!copy($sourcePath, $targetPath)) {
+                throw new \RuntimeException("Unable to copy file: {$sourcePath}");
+            }
+
+            return;
+        }
+
+        if (!is_dir($targetPath) && !mkdir($targetPath, 0777, true) && !is_dir($targetPath)) {
+            throw new \RuntimeException("Unable to create directory: {$targetPath}");
+        }
+
+        $iterator = new \FilesystemIterator($sourcePath, \FilesystemIterator::SKIP_DOTS);
+        foreach ($iterator as $item) {
+            $this->copyFilesystemPath($item->getPathname(), $targetPath . '/' . $item->getBasename());
+        }
+    }
+
+    private function relativeFilesystemPath(string $fromDirectory, string $toPath): string
+    {
+        $fromParts = array_values(array_filter(explode('/', trim(str_replace('\\', '/', $fromDirectory), '/')), 'strlen'));
+        $toParts = array_values(array_filter(explode('/', trim(str_replace('\\', '/', $toPath), '/')), 'strlen'));
+
+        while ($fromParts !== [] && $toParts !== [] && $fromParts[0] === $toParts[0]) {
+            array_shift($fromParts);
+            array_shift($toParts);
+        }
+
+        $relativeParts = array_merge(array_fill(0, count($fromParts), '..'), $toParts);
+
+        return $relativeParts === [] ? '.' : implode('/', $relativeParts);
+    }
+
     private function checkoutBranchInWorktree(string $worktree, string $branch, bool $create): void
     {
         if ($branch === '') {
@@ -1091,6 +1293,15 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $this->releaseBranchFromOtherWorktrees($branch, $worktree);
+
+        $currentBranch = null;
+        if ($this->commandSucceeds($this->gitInPath($worktree, 'symbolic-ref --quiet --short HEAD'))) {
+            $currentBranch = trim($this->capture($this->gitInPath($worktree, 'symbolic-ref --quiet --short HEAD')));
+        }
+
+        if (!$create && $currentBranch === $branch) {
+            return;
+        }
 
         if ($create) {
             $this->runCommand($this->gitInPath(
@@ -1667,7 +1878,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private function storedPrNumber(BoardEntry $entry): ?int
     {
         $pr = $entry->getMeta('pr');
-        if ($pr === null || $pr === '') {
+        if ($pr === null || $pr === '' || $pr === 'none') {
             return null;
         }
 

@@ -12,6 +12,9 @@ namespace SoManAgent\Script\Backlog;
  */
 final class BoardEntry
 {
+    private const META_BLOCK_PREFIX = '  meta:';
+    private const META_LINE_PREFIX = '    ';
+
     /** @var array<string, string> */
     private array $metadata = [];
 
@@ -58,6 +61,11 @@ final class BoardEntry
             if (trim($metadataLine) !== '') {
                 array_unshift($lines, '  ' . $metadataLine);
             }
+        }
+
+        [$lines, $trailingMetadata] = self::extractTrailingMetaBlock($lines);
+        foreach ($trailingMetadata as $key => $value) {
+            $metadata[$key] = $value;
         }
 
         return new self(ltrim($body), $lines, $metadata);
@@ -144,17 +152,19 @@ final class BoardEntry
             }
         }
 
-        $metadata = '';
-        foreach ($ordered as $key => $value) {
-            $metadata .= sprintf('[%s:%s]', $key, $value);
-        }
-
         $lines = ['- ' . $this->text];
-        if ($metadata !== '') {
-            $lines[] = '  ' . $metadata;
+        foreach ($this->extraLines as $line) {
+            $lines[] = $line;
         }
 
-        return array_merge($lines, $this->extraLines);
+        if ($ordered !== []) {
+            $lines[] = self::META_BLOCK_PREFIX;
+            foreach ($ordered as $key => $value) {
+                $lines[] = sprintf('%s%s: %s', self::META_LINE_PREFIX, $key, $value);
+            }
+        }
+
+        return $lines;
     }
 
     /**
@@ -171,5 +181,40 @@ final class BoardEntry
         }
 
         return [$metadata, ltrim($text)];
+    }
+
+    /**
+     * Extracts one trailing `meta:` block placed at the end of one entry.
+     *
+     * @param array<string> $lines
+     * @return array{0: array<string>, 1: array<string, string>}
+     */
+    private static function extractTrailingMetaBlock(array $lines): array
+    {
+        $metaStartIndex = array_search(self::META_BLOCK_PREFIX, $lines, true);
+        if ($metaStartIndex === false) {
+            return [$lines, []];
+        }
+
+        $metadata = [];
+        $metaLines = array_slice($lines, $metaStartIndex + 1);
+        if ($metaLines === []) {
+            return [$lines, []];
+        }
+
+        foreach ($metaLines as $line) {
+            if (!str_starts_with($line, self::META_LINE_PREFIX)) {
+                return [$lines, []];
+            }
+
+            $body = substr($line, strlen(self::META_LINE_PREFIX));
+            if (preg_match('/^([a-z0-9_-]+):\s*(.+)$/', $body, $matches) !== 1) {
+                return [$lines, []];
+            }
+
+            $metadata[$matches[1]] = $matches[2];
+        }
+
+        return [array_slice($lines, 0, $metaStartIndex), $metadata];
     }
 }

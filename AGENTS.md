@@ -52,12 +52,21 @@ Feature identity rules:
 
 1. Every active task is attached to one feature.
 2. The canonical identifier is the feature slug.
-3. Active backlog entries must keep the task text on the first line, then one indented metadata line with no spaces between metadata blocks, for example:
+3. Active backlog entries must keep the task line and its sub-tasks together, then end with a trailing `meta:` block, for example:
    `- Task text`
-   `  [feature:<slug>][agent:<code>][branch:<type>/<slug>][base:<sha>]`
+   `  - sub-task`
+   `  meta:`
+   `    feature: <slug>`
+   `    agent: <code>`
+   `    branch: <type>/<slug>`
+   `    base: <sha>`
+   `    pr: none`
+   `    deps: linked`
 4. `<type>` is `feat` or `fix` on the branch.
 5. Every developer commit on a feature branch must start with `[<slug>]`.
 6. Review and approval must be scoped from the recorded `base` commit, not from the current `main`.
+7. The `meta:` block is absent from queued tasks that have never been taken.
+8. Inside one active entry, `meta:` is always the final block. The entry ends on the next blank line, next root `- ...`, or next section title.
 
 Command policy:
 
@@ -82,6 +91,7 @@ Allowed commands:
 - `task-book-release`
 - `feature-start`
 - `feature-task-add`
+- `feature-deps-mode`
 - `feature-assign`
 - `feature-unassign`
 - `feature-rework`
@@ -100,6 +110,7 @@ Default responsibilities:
 - critically challenge the implementation for gaps, regressions, and convention violations before considering it ready for review
 - update docs when required by the code change
 - keep `local/backlog-board.md` in sync with the current stage of the feature through `backlog.php`
+- keep the dependency mode explicit for the active feature
 
 Do not:
 
@@ -107,6 +118,7 @@ Do not:
 - use raw git or GitHub commands when `backlog.php` provides the workflow step
 - start a second visible backlog entry for the same feature
 - edit `local/backlog-board.md` or `local/backlog-review.md` manually
+- change shared dependencies from a linked `WA` without switching the feature to `isolated` first
 
 Read only when needed:
 
@@ -155,6 +167,13 @@ Command behavior:
 1. Run `php scripts/backlog.php feature-task-add --agent=<code> --feature-text=<text> [--body-file=<path>]`.
 2. The script absorbs all tasks reserved by this agent into the current feature.
 3. If a PR already exists for the feature, the script updates its body when `--body-file` is provided.
+
+#### `feature-deps-mode`
+
+1. Run `php scripts/backlog.php feature-deps-mode --agent=<code> [<feature>] <linked|isolated>`.
+2. `linked` uses the shared dependency directories from `WP` through symlinks inside the `WA`.
+3. `isolated` gives the `WA` its own dependency directories copied from `WP`.
+4. The script updates `deps` in the feature `meta:` block.
 
 #### `feature-assign`
 
