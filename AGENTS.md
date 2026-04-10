@@ -52,7 +52,9 @@ Feature identity rules:
 
 1. Every active task is attached to one feature.
 2. The canonical identifier is the feature slug.
-3. Active backlog entries must use this exact prefix format with no spaces between metadata blocks: `[feature:<slug>][agent:<code>][branch:<type>/<slug>][base:<sha>] ...`
+3. Active backlog entries must keep the task text on the first line, then one indented metadata line with no spaces between metadata blocks, for example:
+   `- Task text`
+   `  [feature:<slug>][agent:<code>][branch:<type>/<slug>][base:<sha>]`
 4. `<type>` is `feat` or `fix` on the branch.
 5. Every developer commit on a feature branch must start with `[<slug>]`.
 6. Review and approval must be scoped from the recorded `base` commit, not from the current `main`.

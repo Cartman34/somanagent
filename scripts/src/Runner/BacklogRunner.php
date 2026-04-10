@@ -540,8 +540,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $match['entry']->setMeta('blocked', 'yes');
         $board->save();
 
-        $branch = $match['entry']->getMeta('branch') ?? '';
-        $prNumber = $this->findPrNumberByBranch($branch);
+        $prNumber = $this->storedPrNumber($match['entry']);
         if ($prNumber !== null) {
             $type = $match['section'] === BacklogBoard::SECTION_APPROVED ? $this->determinePrType($match['entry']) : 'WIP';
             $title = $this->ensureBlockedTitle($this->buildPrTitle($type, $match['entry']));
@@ -581,8 +580,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $match['entry']->unsetMeta('blocked');
         $board->save();
 
-        $branch = $match['entry']->getMeta('branch') ?? '';
-        $prNumber = $this->findPrNumberByBranch($branch);
+        $prNumber = $this->storedPrNumber($match['entry']);
         if ($prNumber !== null) {
             $title = $this->buildCurrentTitle($match['entry'], $match['section']);
             $this->runGithubCommand(sprintf(

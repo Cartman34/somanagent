@@ -50,9 +50,14 @@ final class BoardEntry
         $body = substr($firstLine, 2);
         $metadata = [];
 
-        while (preg_match('/^\[([a-z0-9_-]+):([^\]]+)\]/', $body, $matches) === 1) {
-            $metadata[$matches[1]] = $matches[2];
-            $body = substr($body, strlen($matches[0]));
+        [$metadata, $body] = self::extractMetadataPrefix($metadata, $body);
+
+        if ($lines !== [] && preg_match('/^\s+\[([a-z0-9_-]+):([^\]]+)\]/', $lines[0]) === 1) {
+            $metadataLine = ltrim(array_shift($lines));
+            [$metadata, $metadataLine] = self::extractMetadataPrefix($metadata, $metadataLine);
+            if (trim($metadataLine) !== '') {
+                array_unshift($lines, '  ' . $metadataLine);
+            }
         }
 
         return new self(ltrim($body), $lines, $metadata);
@@ -125,7 +130,6 @@ final class BoardEntry
      */
     public function toLines(array $metadataOrder = []): array
     {
-        $metadata = '';
         $ordered = [];
 
         foreach ($metadataOrder as $key) {
@@ -140,13 +144,32 @@ final class BoardEntry
             }
         }
 
+        $metadata = '';
         foreach ($ordered as $key => $value) {
             $metadata .= sprintf('[%s:%s]', $key, $value);
         }
 
-        return array_merge(
-            ['- ' . $metadata . $this->text],
-            $this->extraLines,
-        );
+        $lines = ['- ' . $this->text];
+        if ($metadata !== '') {
+            $lines[] = '  ' . $metadata;
+        }
+
+        return array_merge($lines, $this->extraLines);
+    }
+
+    /**
+     * Extracts one metadata prefix chain from the start of the given text.
+     *
+     * @param array<string, string> $metadata
+     * @return array{0: array<string, string>, 1: string}
+     */
+    private static function extractMetadataPrefix(array $metadata, string $text): array
+    {
+        while (preg_match('/^\[([a-z0-9_-]+):([^\]]+)\]/', $text, $matches) === 1) {
+            $metadata[$matches[1]] = $matches[2];
+            $text = substr($text, strlen($matches[0]));
+        }
+
+        return [$metadata, ltrim($text)];
     }
 }
