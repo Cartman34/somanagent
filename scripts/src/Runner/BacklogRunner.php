@@ -1603,6 +1603,13 @@ final class BacklogRunner extends AbstractScriptRunner
             escapeshellarg($branch),
         ), 'Git');
 
+        $this->runNetworkCommand(sprintf(
+            '%s fetch origin %s:%s',
+            $gitPrefix,
+            escapeshellarg($branch),
+            escapeshellarg('refs/remotes/origin/' . $branch),
+        ), 'Git');
+
         $this->waitForRemoteBranchVisibility($branch);
     }
 

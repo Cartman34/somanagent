@@ -8,6 +8,15 @@ Read only this file first. Read additional files only when the active command or
 
 - Work from `~/projects/somanagent` in the WSL native filesystem.
 - Do not work from `/mnt/c/...`.
+- For Codex sessions in this repository, use this `~/.codex/config.toml` baseline:
+  ```toml
+  approval_policy = "on-request"
+  approvals_reviewer = "user"
+  sandbox_mode = "workspace-write"
+
+  [sandbox_workspace_write]
+  network_access = true
+  ```
 - Use project scripts in `scripts/` first.
 - Prefer `php scripts/console.php`, `php scripts/node.php`, `php scripts/logs.php`, `php scripts/db.php`, `php scripts/dev.php`, `php scripts/health.php`, and similar wrappers over raw container commands.
 - Use relative paths in commands. Do not rely on `cd` into subfolders.
