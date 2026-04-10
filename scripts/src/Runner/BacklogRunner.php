@@ -1039,13 +1039,13 @@ final class BacklogRunner extends AbstractScriptRunner
     private function prepareAgentWorktree(string $agent): string
     {
         $path = $this->projectRoot . '/.worktrees/' . $agent;
-        $relativePath = '.worktrees/' . $agent;
+        $relativePath = $this->toRelativeProjectPath($path);
 
         if (!is_dir($path . '/.git') && !is_file($path . '/.git')) {
             $this->runCommand(sprintf('git worktree add --detach %s HEAD', escapeshellarg($relativePath)));
         }
 
-        $status = trim($this->capture(sprintf('git -C %s status --short', escapeshellarg($path))));
+        $status = trim($this->capture($this->gitInPath($path, 'status --short')));
         if ($status !== '') {
             throw new \RuntimeException("Agent worktree is dirty: {$path}");
         }
@@ -1056,13 +1056,13 @@ final class BacklogRunner extends AbstractScriptRunner
     private function prepareReviewerWorktree(): string
     {
         $path = $this->projectRoot . '/.worktrees/reviewer';
-        $relativePath = '.worktrees/reviewer';
+        $relativePath = $this->toRelativeProjectPath($path);
 
         if (!is_dir($path . '/.git') && !is_file($path . '/.git')) {
             $this->runCommand(sprintf('git worktree add --detach %s HEAD', escapeshellarg($relativePath)));
         }
 
-        $status = trim($this->capture(sprintf('git -C %s status --short', escapeshellarg($path))));
+        $status = trim($this->capture($this->gitInPath($path, 'status --short')));
         if ($status !== '') {
             throw new \RuntimeException("Reviewer worktree is dirty: {$path}");
         }
@@ -1079,25 +1079,28 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->releaseBranchFromOtherWorktrees($branch, $worktree);
 
         if ($create) {
-            $this->runCommand(sprintf(
-                'git -C %s checkout -B %s main',
-                escapeshellarg($worktree),
-                escapeshellarg($branch),
+            $this->runCommand($this->gitInPath(
+                $worktree,
+                sprintf('checkout -B %s main', escapeshellarg($branch)),
             ));
             return;
         }
 
-        $hasLocal = $this->commandSucceeds(sprintf('git -C %s rev-parse --verify %s', escapeshellarg($worktree), escapeshellarg($branch)));
+        $hasLocal = $this->commandSucceeds($this->gitInPath(
+            $worktree,
+            sprintf('rev-parse --verify %s', escapeshellarg($branch)),
+        ));
         if ($hasLocal) {
-            $this->runCommand(sprintf('git -C %s checkout %s', escapeshellarg($worktree), escapeshellarg($branch)));
+            $this->runCommand($this->gitInPath(
+                $worktree,
+                sprintf('checkout %s', escapeshellarg($branch)),
+            ));
             return;
         }
 
-        $this->runCommand(sprintf(
-            'git -C %s checkout -B %s origin/%s',
-            escapeshellarg($worktree),
-            escapeshellarg($branch),
-            escapeshellarg($branch),
+        $this->runCommand($this->gitInPath(
+            $worktree,
+            sprintf('checkout -B %s origin/%s', escapeshellarg($branch), escapeshellarg($branch)),
         ));
     }
 
@@ -1107,10 +1110,9 @@ final class BacklogRunner extends AbstractScriptRunner
             throw new \RuntimeException('Missing branch name.');
         }
 
-        $this->runCommand(sprintf(
-            'git -C %s checkout --detach %s',
-            escapeshellarg($worktree),
-            escapeshellarg($branch),
+        $this->runCommand($this->gitInPath(
+            $worktree,
+            sprintf('checkout --detach %s', escapeshellarg($branch)),
         ));
     }
 
@@ -1136,7 +1138,7 @@ final class BacklogRunner extends AbstractScriptRunner
                 continue;
             }
 
-            $dirty = trim($this->capture(sprintf('git -C %s status --short', escapeshellarg($path))));
+            $dirty = trim($this->capture($this->gitInPath($path, 'status --short')));
             if ($dirty !== '') {
                 throw new \RuntimeException("Branch {$branch} is still active in a dirty worktree: {$path}");
             }
@@ -1145,7 +1147,7 @@ final class BacklogRunner extends AbstractScriptRunner
                 throw new \RuntimeException("Branch {$branch} is active in a non-managed worktree: {$path}");
             }
 
-            $this->runCommand(sprintf('git worktree remove %s --force', escapeshellarg($path)));
+            $this->runCommand(sprintf('git worktree remove %s --force', escapeshellarg($this->toRelativeProjectPath($path))));
         }
     }
 
@@ -1156,7 +1158,7 @@ final class BacklogRunner extends AbstractScriptRunner
                 continue;
             }
 
-            $dirty = trim($this->capture(sprintf('git -C %s status --short', escapeshellarg($binding['path']))));
+            $dirty = trim($this->capture($this->gitInPath($binding['path'], 'status --short')));
             if ($dirty !== '') {
                 throw new \RuntimeException(sprintf(
                     'Feature branch %s is still dirty in worktree %s. Commit or discard local changes before feature-close.',
@@ -1351,7 +1353,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private function pushBranchAndWaitForRemoteVisibility(string $branch, ?string $worktree = null): void
     {
         $gitPrefix = $worktree !== null
-            ? sprintf('git -C %s', escapeshellarg($worktree))
+            ? sprintf('git -C %s', escapeshellarg($this->toRelativeProjectPath($worktree)))
             : 'git';
 
         $this->runCommand(sprintf(
@@ -1361,6 +1363,32 @@ final class BacklogRunner extends AbstractScriptRunner
         ));
 
         $this->waitForRemoteBranchVisibility($branch);
+    }
+
+    private function gitInPath(string $path, string $subCommand): string
+    {
+        return sprintf(
+            'git -C %s %s',
+            escapeshellarg($this->toRelativeProjectPath($path)),
+            $subCommand,
+        );
+    }
+
+    private function toRelativeProjectPath(string $path): string
+    {
+        $normalizedRoot = rtrim(str_replace('\\', '/', $this->projectRoot), '/');
+        $normalizedPath = str_replace('\\', '/', $path);
+
+        if ($normalizedPath === $normalizedRoot) {
+            return '.';
+        }
+
+        $prefix = $normalizedRoot . '/';
+        if (!str_starts_with($normalizedPath, $prefix)) {
+            return $path;
+        }
+
+        return substr($normalizedPath, strlen($prefix));
     }
 
     private function waitForRemoteBranchVisibility(string $branch): void
