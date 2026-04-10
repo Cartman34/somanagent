@@ -214,7 +214,7 @@ Command behavior:
 #### `feature-review-request`
 
 1. Run `php scripts/backlog.php feature-review-request --agent=<code> [<feature>]`.
-2. The script requires a green mechanical review and moves the feature to `## À relire`.
+2. The script verifies that the feature is assigned to that agent, that the agent `WA` is the correct worktree for the feature branch, then requires a green mechanical review and moves the feature to `## À relire`.
 
 Rules:
 
@@ -289,7 +289,7 @@ Rules:
 #### `feature-review-check`
 
 1. Run `php scripts/backlog.php feature-review-check <feature>`.
-2. The script checks the mechanical review in reviewer context.
+2. The script checks the mechanical review in the assigned developer `WA` of that feature.
 3. If it fails, the script automatically rejects the feature with a standard message.
 4. If it passes, continue the technical and functional review manually.
 

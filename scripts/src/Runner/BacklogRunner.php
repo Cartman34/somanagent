@@ -737,10 +737,11 @@ final class BacklogRunner extends AbstractScriptRunner
         if ($match['section'] !== BacklogBoard::SECTION_IN_PROGRESS) {
             throw new \RuntimeException("Feature {$feature} must be in " . BacklogBoard::SECTION_IN_PROGRESS . '.');
         }
+        if (($match['entry']->getMeta('agent') ?? '') !== $agent) {
+            throw new \RuntimeException("Feature {$feature} is not assigned to agent {$agent}.");
+        }
 
-        $worktree = $this->prepareAgentWorktree($agent);
-        $this->checkoutBranchInWorktree($worktree, $match['entry']->getMeta('branch') ?? '', false);
-        $this->ensureWorktreeDependencyMode($worktree, $this->entryDepsMode($match['entry']));
+        $worktree = $this->prepareFeatureAgentWorktree($match['entry']);
         $this->runReviewScript($worktree);
 
         $board->moveFeature($feature, BacklogBoard::SECTION_IN_REVIEW);
@@ -759,10 +760,11 @@ final class BacklogRunner extends AbstractScriptRunner
         $feature = $this->requireFeatureArgument($commandArgs);
         $board = $this->board();
         $match = $this->requireFeature($board, $feature);
+        if ($match['section'] !== BacklogBoard::SECTION_IN_REVIEW) {
+            throw new \RuntimeException("Feature {$feature} must be in " . BacklogBoard::SECTION_IN_REVIEW . ' to be checked.');
+        }
 
-        $reviewWorktree = $this->prepareReviewerWorktree();
-        $this->ensureWorktreeDependencyMode($reviewWorktree, self::DEPS_MODE_LINKED);
-        $this->checkoutDetachedInWorktree($reviewWorktree, $match['entry']->getMeta('branch') ?? '');
+        $reviewWorktree = $this->prepareFeatureAgentWorktree($match['entry']);
 
         try {
             $this->runReviewScript($reviewWorktree);
@@ -1131,21 +1133,23 @@ final class BacklogRunner extends AbstractScriptRunner
         return $path;
     }
 
-    private function prepareReviewerWorktree(): string
+    private function prepareFeatureAgentWorktree(BoardEntry $entry): string
     {
-        $path = $this->projectRoot . '/.worktrees/reviewer';
-        $relativePath = $this->toRelativeProjectPath($path);
-
-        if (!is_dir($path . '/.git') && !is_file($path . '/.git')) {
-            $this->runCommand(sprintf('git worktree add --detach %s HEAD', escapeshellarg($relativePath)));
+        $agent = $entry->getMeta('agent') ?? '';
+        if ($agent === '') {
+            throw new \RuntimeException('Feature has no assigned agent worktree.');
         }
 
-        $status = trim($this->capture($this->gitInPath($path, 'status --short')));
-        if ($status !== '') {
-            throw new \RuntimeException("Reviewer worktree is dirty: {$path}");
+        $branch = $entry->getMeta('branch') ?? '';
+        if ($branch === '') {
+            throw new \RuntimeException('Feature has no branch metadata.');
         }
 
-        return $path;
+        $worktree = $this->prepareAgentWorktree($agent);
+        $this->checkoutBranchInWorktree($worktree, $branch, false);
+        $this->ensureWorktreeDependencyMode($worktree, $this->entryDepsMode($entry));
+
+        return $worktree;
     }
 
     private function ensureWorktreeDependencyMode(string $worktree, string $mode): void
@@ -1326,18 +1330,6 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->runCommand($this->gitInPath(
             $worktree,
             sprintf('checkout -B %s origin/%s', escapeshellarg($branch), escapeshellarg($branch)),
-        ));
-    }
-
-    private function checkoutDetachedInWorktree(string $worktree, string $branch): void
-    {
-        if ($branch === '') {
-            throw new \RuntimeException('Missing branch name.');
-        }
-
-        $this->runCommand($this->gitInPath(
-            $worktree,
-            sprintf('checkout --detach %s', escapeshellarg($branch)),
         ));
     }
 
