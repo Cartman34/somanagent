@@ -74,6 +74,7 @@ Allowed commands:
 
 - `task-create`
 - `task-todo-list`
+- `task-remove`
 - `task-book-next`
 - `task-book-release`
 - `feature-start`
@@ -120,6 +121,11 @@ Command behavior:
 
 1. Run `php scripts/backlog.php task-todo-list`.
 2. The script prints queued tasks and visible reservation metadata.
+
+#### `task-remove`
+
+1. Run `php scripts/backlog.php task-remove <number>`.
+2. The script removes the queued task at the given 1-based position from `## À faire`.
 
 #### `task-book-next`
 
@@ -205,6 +211,7 @@ Allowed commands:
 - `feature-merge`
 - `task-create`
 - `task-todo-list`
+- `task-remove`
 - `feature-list`
 
 Default responsibilities:
@@ -242,6 +249,11 @@ Rules:
 
 1. Run `php scripts/backlog.php task-todo-list`.
 2. The script prints queued tasks and visible reservation metadata.
+
+#### `task-remove`
+
+1. Run `php scripts/backlog.php task-remove <number>`.
+2. The script removes the queued task at the given 1-based position from `## À faire`.
 
 #### `feature-list`
 
