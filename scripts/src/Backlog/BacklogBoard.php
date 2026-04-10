@@ -213,7 +213,7 @@ final class BacklogBoard
                 if ($entries !== []) {
                     $order = match ($section) {
                         self::SECTION_TODO => ['agent', 'feature'],
-                        default => ['feature', 'agent', 'branch', 'base', 'blocked'],
+                        default => ['feature', 'agent', 'branch', 'base', 'pr', 'blocked'],
                     };
 
                     foreach ($entries as $entry) {

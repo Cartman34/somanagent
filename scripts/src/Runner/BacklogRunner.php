@@ -662,7 +662,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->console->line('Branch: ' . ($match['entry']->getMeta('branch') ?? '-'));
         $this->console->line('Base: ' . ($match['entry']->getMeta('base') ?? '-'));
         $this->console->line('Stage: ' . $match['section']);
-        $prStatus = $this->describePrStatus($match['entry']->getMeta('branch') ?? '');
+        $prStatus = $this->describePrStatus($match['entry']);
         $this->console->line('PR: ' . $prStatus);
         $this->console->line('Last: ' . $match['entry']->getText());
         $this->console->line('Next: ' . $this->nextStepForSection($match['section']));
@@ -785,6 +785,10 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $this->pushBranchAndWaitForRemoteVisibility($branch);
         $this->createOrUpdatePr($branch, $title, $bodyFile);
+        $prNumber = $this->findPrNumberByBranch($branch);
+        if ($prNumber !== null) {
+            $match['entry']->setMeta('pr', (string) $prNumber);
+        }
 
         $board->moveFeature($feature, BacklogBoard::SECTION_APPROVED);
         $review->clearFeatureReview($feature);
@@ -816,7 +820,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->ensureBranchHasNoDirtyManagedWorktree($branch);
         $this->pushBranchIfAhead($branch);
 
-        $prNumber = $this->findPrNumberByBranch($branch);
+        $prNumber = $this->storedPrNumber($match['entry']);
         if ($prNumber !== null) {
             $this->runGithubCommand(sprintf('php scripts/github.php pr close %d', $prNumber));
         }
@@ -1647,22 +1651,28 @@ final class BacklogRunner extends AbstractScriptRunner
         return false;
     }
 
-    private function describePrStatus(string $branch): string
+    private function describePrStatus(BoardEntry $entry): string
     {
+        $storedPrNumber = $this->storedPrNumber($entry);
+        if ($storedPrNumber !== null) {
+            return '#' . $storedPrNumber;
+        }
+
+        $branch = $entry->getMeta('branch') ?? '';
         if ($branch === '') {
             return 'none';
         }
 
-        try {
-            $prNumber = $this->findPrNumberByBranch($branch);
-        } catch (\RuntimeException $exception) {
-            if ($this->isRetryableGithubNetworkError($exception->getMessage())) {
-                return 'unavailable (network error)';
-            }
+        return 'none';
+    }
 
-            throw $exception;
+    private function storedPrNumber(BoardEntry $entry): ?int
+    {
+        $pr = $entry->getMeta('pr');
+        if ($pr === null || $pr === '') {
+            return null;
         }
 
-        return $prNumber === null ? 'none' : '#' . $prNumber;
+        return (int) $pr;
     }
 }
