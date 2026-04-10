@@ -73,7 +73,7 @@ Use one active role only.
 Allowed commands:
 
 - `task-create`
-- `task-list`
+- `task-todo-list`
 - `task-book-next`
 - `task-book-release`
 - `feature-start`
@@ -116,9 +116,9 @@ Command behavior:
 1. Run `php scripts/backlog.php task-create <description>`.
 2. The script appends the task to the end of `## À faire`.
 
-#### `task-list`
+#### `task-todo-list`
 
-1. Run `php scripts/backlog.php task-list`.
+1. Run `php scripts/backlog.php task-todo-list`.
 2. The script prints queued tasks and visible reservation metadata.
 
 #### `task-book-next`
@@ -204,7 +204,7 @@ Allowed commands:
 - `feature-close`
 - `feature-merge`
 - `task-create`
-- `task-list`
+- `task-todo-list`
 - `feature-list`
 
 Default responsibilities:
@@ -238,9 +238,9 @@ Rules:
 - Do not interrupt a developer command sequence unless the user explicitly redirects
 - Do not edit backlog files directly when `task-create` covers the change.
 
-#### `task-list`
+#### `task-todo-list`
 
-1. Run `php scripts/backlog.php task-list`.
+1. Run `php scripts/backlog.php task-todo-list`.
 2. The script prints queued tasks and visible reservation metadata.
 
 #### `feature-list`

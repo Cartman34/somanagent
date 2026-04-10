@@ -29,7 +29,7 @@ final class BacklogRunner extends AbstractScriptRunner
     {
         return [
             ['name' => 'task-create', 'description' => 'Append one new task at the end of the todo section'],
-            ['name' => 'task-list', 'description' => 'List queued tasks with optional reservation metadata'],
+            ['name' => 'task-todo-list', 'description' => 'List queued todo tasks with optional reservation metadata'],
             ['name' => 'task-book-next', 'description' => 'Reserve the next backlog task for one developer agent'],
             ['name' => 'task-book-release', 'description' => 'Release one reserved backlog task'],
             ['name' => 'feature-start', 'description' => 'Start a feature branch and create its WIP PR'],
@@ -66,7 +66,7 @@ final class BacklogRunner extends AbstractScriptRunner
         return [
             'php scripts/backlog.php task-book-next --agent agent-01',
             'php scripts/backlog.php task-create "Add toast notifications on success and error flows"',
-            'php scripts/backlog.php task-list',
+            'php scripts/backlog.php task-todo-list',
             'php scripts/backlog.php task-book-next --agent agent-01 delete-question-reply',
             'php scripts/backlog.php feature-start --agent agent-01 --branch-type feat --body-file local/tmp/pr_body.md',
             'php scripts/backlog.php feature-list',
@@ -86,7 +86,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
         return match ($command) {
             'task-create' => $this->createTask($commandArgs),
-            'task-list' => $this->taskList(),
+            'task-todo-list' => $this->taskTodoList(),
             'task-book-next' => $this->taskBookNext($commandArgs, $options),
             'task-book-release' => $this->taskBookRelease($commandArgs, $options),
             'feature-start' => $this->featureStart($commandArgs, $options),
@@ -129,7 +129,7 @@ final class BacklogRunner extends AbstractScriptRunner
         return 0;
     }
 
-    private function taskList(): int
+    private function taskTodoList(): int
     {
         $entries = $this->board()->getEntries(BacklogBoard::SECTION_TODO);
         if ($entries === []) {
