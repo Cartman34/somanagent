@@ -29,6 +29,7 @@ php scripts/help.php migrate.php
 | `console.php` | PHP | Run a Symfony command |
 | `node.php` | PHP | Run reusable commands inside the Node container |
 | `db.php` | PHP | Run database commands (PostgreSQL + Doctrine reset) |
+| `code-search.php` | PHP | Search a term across backend and frontend source files |
 | `github.php` | PHP | GitHub CLI helper for PR creation, listing, view and merge |
 | `logs.php` | PHP | Display Docker logs |
 | `health.php` | PHP | Check application status |
@@ -184,6 +185,22 @@ php scripts/db.php reset --fixtures --force
 ```
 
 Use this script in priority for repeated local database inspection instead of raw `docker exec ... psql ...`.
+
+---
+
+### `code-search.php`
+Searches a term across `backend/src/` PHP files and `frontend/src/` TS/TSX files.
+Uses `rg` by default when available, with the legacy PHP scanner kept as an explicit alternative via `--engine php`.
+
+```bash
+php scripts/code-search.php UserRepository
+php scripts/code-search.php UserRepository --engine rg
+php scripts/code-search.php UserRepository --engine php
+php scripts/code-search.php AgentController --backend
+php scripts/code-search.php useAgent --frontend --context 2
+```
+
+Use this script in priority for source lookup and usage discovery instead of ad hoc `grep` commands.
 
 ---
 
