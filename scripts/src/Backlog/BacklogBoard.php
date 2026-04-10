@@ -40,6 +40,9 @@ final class BacklogBoard
     /** @var array<string, array<BoardEntry>> */
     private array $taskSections = [];
 
+    /**
+     * Loads one local backlog board file and parses its managed sections.
+     */
     public function __construct(string $path)
     {
         $this->path = $path;
@@ -136,6 +139,9 @@ final class BacklogBoard
         return null;
     }
 
+    /**
+     * Moves one active feature entry from its current section to another managed section.
+     */
     public function moveFeature(string $feature, string $targetSection): void
     {
         $match = $this->findFeature($feature);
@@ -153,6 +159,9 @@ final class BacklogBoard
         $this->setEntries($targetSection, $targetEntries);
     }
 
+    /**
+     * Removes one active feature entry from the managed backlog sections.
+     */
     public function removeFeature(string $feature): void
     {
         $match = $this->findFeature($feature);
@@ -188,6 +197,9 @@ final class BacklogBoard
         $this->setEntries(self::SECTION_TODO, $entries);
     }
 
+    /**
+     * Rewrites the backlog board file with normalized managed section formatting.
+     */
     public function save(): void
     {
         $chunks = [$this->title, ''];
@@ -211,7 +223,7 @@ final class BacklogBoard
                     }
                 }
             } else {
-                foreach ($this->rawSections[$section] ?? [] as $line) {
+                foreach ($this->normalizeSectionLines($this->rawSections[$section] ?? []) as $line) {
                     $chunks[] = $line;
                 }
             }
@@ -245,6 +257,10 @@ final class BacklogBoard
             }
 
             $this->rawSections[$currentSection][] = $line;
+        }
+
+        foreach ($this->rawSections as $section => $lines) {
+            $this->rawSections[$section] = $this->normalizeSectionLines($lines);
         }
 
         foreach (self::TASK_SECTIONS as $section) {
@@ -284,5 +300,43 @@ final class BacklogBoard
         }
 
         return $entries;
+    }
+
+    /**
+     * Normalizes one raw section to a single blank line boundary with no repeated empty lines.
+     *
+     * @param array<string> $lines
+     * @return array<string>
+     */
+    private function normalizeSectionLines(array $lines): array
+    {
+        $normalized = [];
+        $previousBlank = false;
+
+        foreach ($lines as $line) {
+            $isBlank = trim($line) === '';
+            if ($isBlank) {
+                if ($previousBlank) {
+                    continue;
+                }
+                $normalized[] = '';
+                $previousBlank = true;
+
+                continue;
+            }
+
+            $normalized[] = $line;
+            $previousBlank = false;
+        }
+
+        while ($normalized !== [] && trim($normalized[0]) === '') {
+            array_shift($normalized);
+        }
+
+        while ($normalized !== [] && trim($normalized[array_key_last($normalized)]) === '') {
+            array_pop($normalized);
+        }
+
+        return array_values($normalized);
     }
 }
