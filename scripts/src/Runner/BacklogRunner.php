@@ -18,11 +18,10 @@ use SoManAgent\Script\TextSlugger;
  */
 final class BacklogRunner extends AbstractScriptRunner
 {
-    private const REMOTE_BRANCH_WAIT_ATTEMPTS = 5;
-    private const REMOTE_BRANCH_WAIT_DELAY_MICROSECONDS = 1000000;
     private const PR_CREATE_HEAD_INVALID_NEEDLE = 'resource=PullRequest, field=head, code=invalid';
-    private const NETWORK_RETRY_COUNT = 3;
-    private const NETWORK_INITIAL_DELAY_MICROSECONDS = 1000000;
+    private const RETRY_COUNT = 3;
+    private const RETRY_BASE_DELAY = 500000; // MICROSECONDS
+    private const RETRY_FACTOR = 4;
     private const FEATURE_SLUG_MAX_WORDS = 8;
     private const FEATURE_SLUG_MAX_LENGTH = 64;
     private const TASK_CREATE_POSITION_START = 'start';
@@ -1570,23 +1569,25 @@ final class BacklogRunner extends AbstractScriptRunner
             escapeshellarg($bodyFile),
         );
 
-        for ($attempt = 1; $attempt <= self::REMOTE_BRANCH_WAIT_ATTEMPTS; $attempt++) {
-            [$code, $output] = $this->captureNetworkCommandWithRetry($command, 'GitHub');
-            if ($code === 0) {
-                return;
-            }
+        [$code, $output] = $this->networkRetryHelper()->run(
+            function () use ($branch, $command): array {
+                [$code, $output] = $this->captureNetworkCommandWithRetry($command, 'GitHub');
+                if ($code !== 0 && $this->isHeadInvalidCreateError($output)) {
+                    $this->waitForRemoteBranchVisibility($branch);
+                }
 
-            if (!$this->isHeadInvalidCreateError($output) || $attempt === self::REMOTE_BRANCH_WAIT_ATTEMPTS) {
-                throw new \RuntimeException(sprintf(
-                    "Command failed with exit code %d: %s\n%s",
-                    $code,
-                    $command,
-                    $output,
-                ));
-            }
+                return [$code, $output];
+            },
+            fn(array $result): bool => $result[0] !== 0 && $this->isHeadInvalidCreateError($result[1]),
+        );
 
-            usleep(self::REMOTE_BRANCH_WAIT_DELAY_MICROSECONDS);
-            $this->waitForRemoteBranchVisibility($branch);
+        if ($code !== 0) {
+            throw new \RuntimeException(sprintf(
+                "Command failed with exit code %d: %s\n%s",
+                $code,
+                $command,
+                $output,
+            ));
         }
     }
 
@@ -1638,14 +1639,13 @@ final class BacklogRunner extends AbstractScriptRunner
             return;
         }
 
-        for ($attempt = 1; $attempt <= self::REMOTE_BRANCH_WAIT_ATTEMPTS; $attempt++) {
-            if ($this->isRemoteBranchVisible($branch)) {
-                return;
-            }
+        $isVisible = $this->networkRetryHelper()->run(
+            fn(): bool => $this->isRemoteBranchVisible($branch),
+            fn(bool $result): bool => !$result,
+        );
 
-            if ($attempt < self::REMOTE_BRANCH_WAIT_ATTEMPTS) {
-                usleep(self::REMOTE_BRANCH_WAIT_DELAY_MICROSECONDS);
-            }
+        if ($isVisible) {
+            return;
         }
 
         throw new \RuntimeException("Remote branch did not become visible in time: {$branch}");
@@ -1893,7 +1893,7 @@ final class BacklogRunner extends AbstractScriptRunner
             throw new \RuntimeException(sprintf(
                 "%s network error after %d retries. Safe to rerun the same command.\nCommand: %s\n%s",
                 $label,
-                self::NETWORK_RETRY_COUNT,
+                self::RETRY_COUNT,
                 $command,
                 $result[1],
             ));
@@ -1931,8 +1931,9 @@ final class BacklogRunner extends AbstractScriptRunner
     private function networkRetryHelper(): RetryHelper
     {
         return new RetryHelper(
-            self::NETWORK_RETRY_COUNT,
-            self::NETWORK_INITIAL_DELAY_MICROSECONDS,
+            self::RETRY_COUNT,
+            self::RETRY_BASE_DELAY,
+			self::RETRY_FACTOR,
         );
     }
 

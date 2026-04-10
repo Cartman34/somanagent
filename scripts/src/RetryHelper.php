@@ -13,11 +13,12 @@ namespace SoManAgent\Script;
 final class RetryHelper
 {
     /**
-     * Stores the retry count and the initial exponential backoff delay.
+     * Stores the retry count, the initial delay, and the exponential factor.
      */
     public function __construct(
         private readonly int $retryCount,
         private readonly int $initialDelayMicroseconds,
+        private readonly int $backoffFactor = 2,
     ) {
     }
 
@@ -39,7 +40,7 @@ final class RetryHelper
                 return $result;
             }
 
-            usleep($this->initialDelayMicroseconds * (2 ** $attempt));
+            usleep($this->initialDelayMicroseconds * ($this->backoffFactor ** $attempt));
         }
 
         return $result;
