@@ -1039,9 +1039,10 @@ final class BacklogRunner extends AbstractScriptRunner
     private function prepareAgentWorktree(string $agent): string
     {
         $path = $this->projectRoot . '/.worktrees/' . $agent;
+        $relativePath = '.worktrees/' . $agent;
 
         if (!is_dir($path . '/.git') && !is_file($path . '/.git')) {
-            $this->runCommand(sprintf('git worktree add --detach %s HEAD', escapeshellarg($path)));
+            $this->runCommand(sprintf('git worktree add --detach %s HEAD', escapeshellarg($relativePath)));
         }
 
         $status = trim($this->capture(sprintf('git -C %s status --short', escapeshellarg($path))));
@@ -1055,9 +1056,10 @@ final class BacklogRunner extends AbstractScriptRunner
     private function prepareReviewerWorktree(): string
     {
         $path = $this->projectRoot . '/.worktrees/reviewer';
+        $relativePath = '.worktrees/reviewer';
 
         if (!is_dir($path . '/.git') && !is_file($path . '/.git')) {
-            $this->runCommand(sprintf('git worktree add --detach %s HEAD', escapeshellarg($path)));
+            $this->runCommand(sprintf('git worktree add --detach %s HEAD', escapeshellarg($relativePath)));
         }
 
         $status = trim($this->capture(sprintf('git -C %s status --short', escapeshellarg($path))));
