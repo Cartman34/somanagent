@@ -114,8 +114,10 @@ Command behavior:
 
 #### `task-create`
 
-1. Run `php scripts/backlog.php task-create <description>`.
-2. The script appends the task to the end of `## À faire`.
+1. Run `php scripts/backlog.php task-create <description> [--position=<start|index|end>] [--index=<n>]`.
+2. By default the script appends the task to the end of `## À faire`.
+3. `--position=start` inserts at the start of `## À faire`.
+4. `--position=index --index=<n>` inserts at the requested 1-based position and clamps out-of-range values to the start or the end.
 
 #### `task-todo-list`
 
@@ -236,8 +238,10 @@ Command behavior:
 
 #### `task-create <description>`
 
-1. Run `php scripts/backlog.php task-create <description>`.
-2. The script appends the task to the end of the `## À faire` section in `local/backlog-board.md`.
+1. Run `php scripts/backlog.php task-create <description> [--position=<start|index|end>] [--index=<n>]`.
+2. By default the script appends the task to the end of the `## À faire` section in `local/backlog-board.md`.
+3. `--position=start` inserts at the start of `## À faire`.
+4. `--position=index --index=<n>` inserts at the requested 1-based position and clamps out-of-range values to the start or the end.
 
 Rules:
 

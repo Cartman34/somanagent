@@ -22,6 +22,9 @@ final class BacklogRunner extends AbstractScriptRunner
     private const PR_CREATE_HEAD_INVALID_NEEDLE = 'resource=PullRequest, field=head, code=invalid';
     private const FEATURE_SLUG_MAX_WORDS = 8;
     private const FEATURE_SLUG_MAX_LENGTH = 64;
+    private const TASK_CREATE_POSITION_START = 'start';
+    private const TASK_CREATE_POSITION_INDEX = 'index';
+    private const TASK_CREATE_POSITION_END = 'end';
 
     protected function getDescription(): string
     {
@@ -61,6 +64,8 @@ final class BacklogRunner extends AbstractScriptRunner
             ['name' => '--body-file', 'description' => 'Path to a local file used for PR or review body content'],
             ['name' => '--feature-text', 'description' => 'Replacement feature text for the active backlog entry'],
             ['name' => '--branch-type', 'description' => 'Developer branch type for feature-start: feat or fix'],
+            ['name' => '--position', 'description' => 'Insertion position for task-create: start, index, end (default: end)'],
+            ['name' => '--index', 'description' => '1-based target position used when --position=index'],
             ['name' => '--force', 'description' => 'Allow taking a task that is already reserved'],
         ];
     }
@@ -90,7 +95,7 @@ final class BacklogRunner extends AbstractScriptRunner
         [$commandArgs, $options] = $this->parseArgs($args);
 
         return match ($command) {
-            'task-create' => $this->createTask($commandArgs),
+            'task-create' => $this->createTask($commandArgs, $options),
             'task-todo-list' => $this->taskTodoList(),
             'task-remove' => $this->taskRemove($commandArgs),
             'task-book-next' => $this->taskBookNext($commandArgs, $options),
@@ -116,8 +121,9 @@ final class BacklogRunner extends AbstractScriptRunner
 
     /**
      * @param array<string> $commandArgs
+     * @param array<string, string|bool> $options
      */
-    private function createTask(array $commandArgs): int
+    private function createTask(array $commandArgs, array $options): int
     {
         $text = trim(implode(' ', $commandArgs));
         if ($text === '') {
@@ -126,13 +132,54 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $board = $this->board();
         $entries = $board->getEntries(BacklogBoard::SECTION_TODO);
-        $entries[] = new BoardEntry($text);
+        $position = $this->resolveTaskCreatePosition($options, count($entries));
+        array_splice($entries, $position, 0, [new BoardEntry($text)]);
         $board->setEntries(BacklogBoard::SECTION_TODO, $entries);
         $board->save();
 
-        $this->console->ok('Added task to the todo section');
+        $this->console->ok(sprintf('Added task to the todo section at position %d', $position + 1));
 
         return 0;
+    }
+
+    /**
+     * Resolves the 0-based insertion index for task-create from options.
+     *
+     * @param array<string, string|bool> $options
+     */
+    private function resolveTaskCreatePosition(array $options, int $entryCount): int
+    {
+        $position = (string) ($options['position'] ?? self::TASK_CREATE_POSITION_END);
+        if (!in_array($position, [
+            self::TASK_CREATE_POSITION_START,
+            self::TASK_CREATE_POSITION_INDEX,
+            self::TASK_CREATE_POSITION_END,
+        ], true)) {
+            throw new \RuntimeException('task-create --position must be start, index, or end.');
+        }
+
+        if ($position === self::TASK_CREATE_POSITION_START) {
+            return 0;
+        }
+
+        if ($position === self::TASK_CREATE_POSITION_END) {
+            return $entryCount;
+        }
+
+        $rawIndex = (int) ($options['index'] ?? 0);
+        if ($rawIndex <= 0) {
+            throw new \RuntimeException('task-create with --position=index requires --index=<positive-number>.');
+        }
+
+        $zeroBasedIndex = $rawIndex - 1;
+        if ($zeroBasedIndex < 0) {
+            return 0;
+        }
+        if ($zeroBasedIndex > $entryCount) {
+            return $entryCount;
+        }
+
+        return $zeroBasedIndex;
     }
 
     private function taskTodoList(): int
