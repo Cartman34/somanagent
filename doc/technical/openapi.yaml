@@ -1217,7 +1217,11 @@ components:
         initialRequest:
           type: string
           nullable: true
-          description: 'Original user request captured at ticket creation time, before any agent rewrites the title or description.'
+          description: 'Original description entered by the user at ticket creation time, before any agent rewrites it.'
+        initialTitle:
+          type: string
+          nullable: true
+          description: 'Original title entered by the user at ticket creation time, before any agent rewrites it.'
         status:
           type: string
         priority:

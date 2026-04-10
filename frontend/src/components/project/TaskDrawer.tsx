@@ -876,7 +876,7 @@ export default function TaskDrawer({
             {entityData.description ? (
               <>
                 <Markdown content={entityData.description} density="compact" preserveLineBreaks />
-                {isTicket(entityData) && entityData.initialRequest && (
+                {isTicket(entityData) && (entityData.initialRequest || entityData.initialTitle) && (
                   <div className="mt-3 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
                     <button
                       className="flex items-center gap-1 text-xs font-medium"
@@ -888,11 +888,20 @@ export default function TaskDrawer({
                       {t('ticket.detail.initial_request_toggle')}
                     </button>
                     {isInitialRequestOpen && (
-                      <div className="mt-2">
-                        <p className={BLOCK_LABEL_CLASS + ' mb-1'}>
-                          {t('ticket.detail.initial_request_label')}
-                        </p>
-                        <Markdown content={entityData.initialRequest} density="compact" preserveLineBreaks />
+                      <div className="mt-2 space-y-2">
+                        {entityData.initialTitle && (
+                          <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>
+                            {entityData.initialTitle}
+                          </p>
+                        )}
+                        {entityData.initialRequest && (
+                          <>
+                            <p className={BLOCK_LABEL_CLASS + ' mb-1'}>
+                              {t('ticket.detail.initial_request_label')}
+                            </p>
+                            <Markdown content={entityData.initialRequest} density="compact" preserveLineBreaks />
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

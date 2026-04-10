@@ -56,13 +56,18 @@ final class TicketService
         string        $title,
         ?string       $description = null,
         TaskPriority  $priority    = TaskPriority::Medium,
-        ?string       $featureId   = null,
+        ?string       $featureId      = null,
         ?string       $initialRequest = null,
+        ?string       $initialTitle   = null,
     ): Ticket {
         $ticket = new Ticket($project, $type, $title, $description, $priority);
 
         if ($initialRequest !== null) {
             $ticket->setInitialRequest($initialRequest);
+        }
+
+        if ($initialTitle !== null) {
+            $ticket->setInitialTitle($initialTitle);
         }
 
         if ($type === TaskType::UserStory || $type === TaskType::Bug) {

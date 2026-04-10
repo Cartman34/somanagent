@@ -22,14 +22,14 @@ final class Version20260410090000 extends AbstractMigration
      */
     public function up(Schema $schema): void
     {
-        $this->addSql('ALTER TABLE ticket ADD initial_request LONGTEXT DEFAULT NULL');
+        $this->addSql('ALTER TABLE ticket ADD initial_request LONGTEXT DEFAULT NULL, ADD initial_title VARCHAR(255) DEFAULT NULL');
     }
 
     /**
-     * Removes the initial_request column from the ticket table.
+     * Removes the initial_request and initial_title columns from the ticket table.
      */
     public function down(Schema $schema): void
     {
-        $this->addSql('ALTER TABLE ticket DROP initial_request');
+        $this->addSql('ALTER TABLE ticket DROP initial_request, DROP initial_title');
     }
 }

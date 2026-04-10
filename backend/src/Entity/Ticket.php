@@ -52,6 +52,9 @@ class Ticket
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $initialRequest = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $initialTitle = null;
+
     #[ORM\Column(enumType: TaskStatus::class)]
     private TaskStatus $status = TaskStatus::Backlog;
 
@@ -141,6 +144,8 @@ class Ticket
     public function getDescription(): ?string { return $this->description; }
     /** Returns the original user request submitted when the ticket was created, if any. */
     public function getInitialRequest(): ?string { return $this->initialRequest; }
+    /** Returns the original ticket title submitted when the ticket was created, if any. */
+    public function getInitialTitle(): ?string { return $this->initialTitle; }
     /** Returns the current ticket status. */
     public function getStatus(): TaskStatus { return $this->status; }
     /** Returns the current ticket priority. */
@@ -190,6 +195,8 @@ class Ticket
     public function setDescription(?string $description): static { $this->description = $description; return $this; }
     /** Stores the original user request submitted when the ticket was created. */
     public function setInitialRequest(?string $initialRequest): static { $this->initialRequest = $initialRequest; return $this; }
+    /** Stores the original ticket title submitted when the ticket was created. */
+    public function setInitialTitle(?string $initialTitle): static { $this->initialTitle = $initialTitle; return $this; }
     /** Updates the ticket status. */
     public function setStatus(TaskStatus $status): static { $this->status = $status; return $this; }
     /** Updates the ticket priority. */

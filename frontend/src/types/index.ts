@@ -409,6 +409,7 @@ export interface Ticket {
   title: string
   description: string | null
   initialRequest: string | null
+  initialTitle: string | null
   status: TaskStatus
   priority: TaskPriority
   progress: number
