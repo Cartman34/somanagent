@@ -143,15 +143,15 @@ Command behavior:
 
 #### `feature-start`
 
-1. Prepare the PR body file under `local/tmp/`.
-2. Run `php scripts/backlog.php feature-start --agent=<code> --branch-type=<feat|fix> --body-file=<path>`.
-3. The script creates the feature branch, pushes it, waits until the remote branch is visible, creates the `[WIP]` PR, moves the feature to `## En développement`, and authorizes development.
+1. Run `php scripts/backlog.php feature-start --agent=<code> --branch-type=<feat|fix>`.
+2. The script creates the feature branch in the agent worktree, moves the feature to `## En développement`, and authorizes development.
+3. `feature-start` is local-only: it does not push and it does not create a PR.
 
 #### `feature-task-add`
 
-1. Prepare the PR body file under `local/tmp/`.
-2. Run `php scripts/backlog.php feature-task-add --agent=<code> --body-file=<path> --feature-text=<text>`.
-3. The script absorbs all tasks reserved by this agent into the current feature and updates the PR body.
+1. Run `php scripts/backlog.php feature-task-add --agent=<code> --feature-text=<text> [--body-file=<path>]`.
+2. The script absorbs all tasks reserved by this agent into the current feature.
+3. If a PR already exists for the feature, the script updates its body when `--body-file` is provided.
 
 #### `feature-assign`
 
@@ -187,7 +187,7 @@ Command behavior:
 #### `feature-status`
 
 1. Run `php scripts/backlog.php feature-status [--agent=<code>] [<feature>]`.
-2. The script prints `Feature`, `Branch`, `Base`, `Stage`, `Last`, `Next`, and `Blocker`.
+2. The script prints `Feature`, `Branch`, `Base`, `Stage`, `PR`, `Last`, `Next`, and `Blocker`.
 
 #### `feature-review-request`
 
@@ -296,14 +296,15 @@ Also check:
 
 1. Prepare the approved PR body file under `local/tmp/`.
 2. Run `php scripts/backlog.php feature-review-approve <feature> --body-file=<path>`.
-3. The script pushes the branch, waits until the remote branch is visible, retries PR creation when GitHub still reports a transient invalid head, updates the PR title and body, determines the main tag by priority `FEAT > FIX > TECH > DOC`, and moves the feature to `## Approuvées`.
+3. The script pushes the branch, waits until the remote branch is visible, creates the PR if it does not exist yet, retries PR creation when GitHub still reports a transient invalid head, updates the PR title and body, determines the main tag by priority `FEAT > FIX > TECH > DOC`, and moves the feature to `## Approuvées`.
 
 #### `feature-close`
 
 1. Run `php scripts/backlog.php feature-close <feature>`.
 2. The script refuses to continue if the feature branch is still dirty in a managed worktree.
 3. If the feature branch has committed local commits ahead of `origin`, the script pushes them before closing the PR.
-4. The script closes the PR if it exists, keeps the remote branch, removes the feature from the local backlog, and clears the related review state.
+4. If no PR exists yet, the script simply removes the feature from the local backlog and clears the related review state.
+5. If a PR exists, the script closes it, keeps the remote branch, removes the feature from the local backlog, and clears the related review state.
 
 #### `feature-merge`
 

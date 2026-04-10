@@ -39,7 +39,7 @@ final class BacklogRunner extends AbstractScriptRunner
             ['name' => 'task-remove', 'description' => 'Remove one queued todo task by its displayed number'],
             ['name' => 'task-book-next', 'description' => 'Reserve the next backlog task for one developer agent'],
             ['name' => 'task-book-release', 'description' => 'Release one reserved backlog task'],
-            ['name' => 'feature-start', 'description' => 'Start a feature branch and create its WIP PR'],
+            ['name' => 'feature-start', 'description' => 'Start a feature branch and move the feature to development'],
             ['name' => 'feature-task-add', 'description' => 'Attach all reserved tasks of one agent to its current feature'],
             ['name' => 'feature-assign', 'description' => 'Assign an existing feature to one developer agent'],
             ['name' => 'feature-unassign', 'description' => 'Remove the current agent assignment from one feature'],
@@ -61,7 +61,7 @@ final class BacklogRunner extends AbstractScriptRunner
     {
         return [
             ['name' => '--agent', 'description' => 'Developer agent code (required on developer commands)'],
-            ['name' => '--body-file', 'description' => 'Path to a local file used for PR or review body content'],
+            ['name' => '--body-file', 'description' => 'Path to a local file used for PR or review body content when required'],
             ['name' => '--feature-text', 'description' => 'Replacement feature text for the active backlog entry'],
             ['name' => '--branch-type', 'description' => 'Developer branch type for feature-start: feat or fix'],
             ['name' => '--position', 'description' => 'Insertion position for task-create: start, index, end (default: end)'],
@@ -78,7 +78,7 @@ final class BacklogRunner extends AbstractScriptRunner
             'php scripts/backlog.php task-todo-list',
             'php scripts/backlog.php task-remove 8',
             'php scripts/backlog.php task-book-next --agent agent-01 delete-question-reply',
-            'php scripts/backlog.php feature-start --agent agent-01 --branch-type feat --body-file local/tmp/pr_body.md',
+            'php scripts/backlog.php feature-start --agent agent-01 --branch-type feat',
             'php scripts/backlog.php feature-list',
             'php scripts/backlog.php feature-review-approve delete-question-reply --body-file local/tmp/pr_body.md',
         ];
@@ -309,7 +309,6 @@ final class BacklogRunner extends AbstractScriptRunner
             throw new \RuntimeException('feature-start requires --branch-type=feat or --branch-type=fix.');
         }
 
-        $bodyFile = $this->requireBodyFile($options);
         $board = $this->board();
 
         if ($this->getSingleFeatureForAgent($board, $agent, false) !== null) {
@@ -360,9 +359,6 @@ final class BacklogRunner extends AbstractScriptRunner
         $board->setEntries(BacklogBoard::SECTION_IN_PROGRESS, $entries);
         $board->save();
 
-        $this->pushBranchAndWaitForRemoteVisibility($branch, $worktree);
-        $this->createOrUpdatePr($branch, $this->buildPrTitle('WIP', $featureEntry), $bodyFile);
-
         $this->console->ok(sprintf('Started feature %s on %s', $feature, $branch));
 
         return 0;
@@ -375,7 +371,6 @@ final class BacklogRunner extends AbstractScriptRunner
     private function featureTaskAdd(array $commandArgs, array $options): int
     {
         $agent = $this->requireAgent($options);
-        $bodyFile = $this->requireBodyFile($options);
         $featureText = trim((string) ($options['feature-text'] ?? ''));
         if ($featureText === '') {
             throw new \RuntimeException('feature-task-add requires --feature-text.');
@@ -409,7 +404,12 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $board->save();
-        $this->updatePrBody($entry->getMeta('branch') ?? '', $bodyFile);
+        $bodyFile = isset($options['body-file'])
+            ? $this->requireBodyFile($options)
+            : null;
+        if ($bodyFile !== null) {
+            $this->updatePrBodyIfExists($entry->getMeta('branch') ?? '', $bodyFile);
+        }
 
         $this->console->ok(sprintf('Added reserved tasks to feature %s', $feature));
 
@@ -652,6 +652,8 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->console->line('Branch: ' . ($match['entry']->getMeta('branch') ?? '-'));
         $this->console->line('Base: ' . ($match['entry']->getMeta('base') ?? '-'));
         $this->console->line('Stage: ' . $match['section']);
+        $prNumber = $this->findPrNumberByBranch($match['entry']->getMeta('branch') ?? '');
+        $this->console->line('PR: ' . ($prNumber === null ? 'none' : '#' . $prNumber));
         $this->console->line('Last: ' . $match['entry']->getText());
         $this->console->line('Next: ' . $this->nextStepForSection($match['section']));
         $this->console->line('Blocker: ' . ($match['entry']->hasMeta('blocked') ? 'blocked' : '-'));
@@ -1225,11 +1227,9 @@ final class BacklogRunner extends AbstractScriptRunner
 
     private function runReviewScript(string $worktree): void
     {
-        $script = $worktree . '/scripts/review.php';
         $this->runCommand(sprintf(
-            'cd %s && php %s',
-            escapeshellarg($worktree),
-            escapeshellarg($script),
+            'cd %s && php scripts/review.php',
+            escapeshellarg($this->toRelativeProjectPath($worktree)),
         ));
     }
 
@@ -1435,6 +1435,20 @@ final class BacklogRunner extends AbstractScriptRunner
         $prNumber = $this->findPrNumberByBranch($branch);
         if ($prNumber === null) {
             throw new \RuntimeException("No open PR found for branch {$branch}.");
+        }
+
+        $this->runCommand(sprintf(
+            'php scripts/github.php pr edit %d --body-file %s',
+            $prNumber,
+            escapeshellarg($bodyFile),
+        ));
+    }
+
+    private function updatePrBodyIfExists(string $branch, string $bodyFile): void
+    {
+        $prNumber = $this->findPrNumberByBranch($branch);
+        if ($prNumber === null) {
+            return;
         }
 
         $this->runCommand(sprintf(
