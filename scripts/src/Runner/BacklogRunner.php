@@ -45,6 +45,7 @@ final class BacklogRunner extends AbstractScriptRunner
             ['name' => 'feature-review-check', 'description' => 'Run reviewer mechanical checks on a feature'],
             ['name' => 'feature-review-reject', 'description' => 'Reject a feature and record reviewer blockers'],
             ['name' => 'feature-review-approve', 'description' => 'Approve a feature and update its PR'],
+            ['name' => 'feature-close', 'description' => 'Close one active feature without merging it'],
             ['name' => 'feature-merge', 'description' => 'Merge one approved feature and remove it from the backlog'],
         ];
     }
@@ -81,37 +82,38 @@ final class BacklogRunner extends AbstractScriptRunner
     public function run(array $args): int
     {
         $command = array_shift($args) ?? '';
-        [$positionals, $options] = $this->parseArgs($args);
+        [$commandArgs, $options] = $this->parseArgs($args);
 
         return match ($command) {
-            'task-create' => $this->createTask($positionals),
+            'task-create' => $this->createTask($commandArgs),
             'task-list' => $this->taskList(),
-            'task-book-next' => $this->taskBookNext($positionals, $options),
-            'task-book-release' => $this->taskBookRelease($positionals, $options),
-            'feature-start' => $this->featureStart($positionals, $options),
-            'feature-task-add' => $this->featureTaskAdd($positionals, $options),
-            'feature-assign' => $this->featureAssign($positionals, $options),
-            'feature-unassign' => $this->featureUnassign($positionals, $options),
-            'feature-rework' => $this->featureRework($positionals, $options),
-            'feature-block' => $this->featureBlock($positionals, $options),
-            'feature-unblock' => $this->featureUnblock($positionals, $options),
+            'task-book-next' => $this->taskBookNext($commandArgs, $options),
+            'task-book-release' => $this->taskBookRelease($commandArgs, $options),
+            'feature-start' => $this->featureStart($commandArgs, $options),
+            'feature-task-add' => $this->featureTaskAdd($commandArgs, $options),
+            'feature-assign' => $this->featureAssign($commandArgs, $options),
+            'feature-unassign' => $this->featureUnassign($commandArgs, $options),
+            'feature-rework' => $this->featureRework($commandArgs, $options),
+            'feature-block' => $this->featureBlock($commandArgs, $options),
+            'feature-unblock' => $this->featureUnblock($commandArgs, $options),
             'feature-list' => $this->featureList(),
-            'feature-status' => $this->featureStatus($positionals, $options),
-            'feature-review-request' => $this->featureReviewRequest($positionals, $options),
-            'feature-review-check' => $this->featureReviewCheck($positionals),
-            'feature-review-reject' => $this->featureReviewReject($positionals, $options),
-            'feature-review-approve' => $this->featureReviewApprove($positionals, $options),
-            'feature-merge' => $this->featureMerge($positionals, $options),
+            'feature-status' => $this->featureStatus($commandArgs, $options),
+            'feature-review-request' => $this->featureReviewRequest($commandArgs, $options),
+            'feature-review-check' => $this->featureReviewCheck($commandArgs),
+            'feature-review-reject' => $this->featureReviewReject($commandArgs, $options),
+            'feature-review-approve' => $this->featureReviewApprove($commandArgs, $options),
+            'feature-close' => $this->featureClose($commandArgs),
+            'feature-merge' => $this->featureMerge($commandArgs, $options),
             default => throw new \RuntimeException("Unknown backlog command: {$command}"),
         };
     }
 
     /**
-     * @param array<string> $positionals
+     * @param array<string> $commandArgs
      */
-    private function createTask(array $positionals): int
+    private function createTask(array $commandArgs): int
     {
-        $text = trim(implode(' ', $positionals));
+        $text = trim(implode(' ', $commandArgs));
         if ($text === '') {
             throw new \RuntimeException('This command requires a task description.');
         }
@@ -154,10 +156,10 @@ final class BacklogRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $positionals
+     * @param array<string> $commandArgs
      * @param array<string, string|bool> $options
      */
-    private function taskBookNext(array $positionals, array $options): int
+    private function taskBookNext(array $commandArgs, array $options): int
     {
         $agent = $this->requireAgent($options);
         $board = $this->board();
@@ -166,8 +168,8 @@ final class BacklogRunner extends AbstractScriptRunner
         $feature = $existingFeature?->getMeta('feature');
 
         if ($feature === null) {
-            $feature = isset($positionals[0])
-                ? $this->normalizeFeatureSlug($positionals[0])
+            $feature = isset($commandArgs[0])
+                ? $this->normalizeFeatureSlug($commandArgs[0])
                 : $this->normalizeFeatureSlug($this->nextTaskText($board));
         }
 
@@ -188,14 +190,14 @@ final class BacklogRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $positionals
+     * @param array<string> $commandArgs
      * @param array<string, string|bool> $options
      */
-    private function taskBookRelease(array $positionals, array $options): int
+    private function taskBookRelease(array $commandArgs, array $options): int
     {
         $agent = $this->requireAgent($options);
         $board = $this->board();
-        $feature = isset($positionals[0]) ? $this->normalizeFeatureSlug($positionals[0]) : null;
+        $feature = isset($commandArgs[0]) ? $this->normalizeFeatureSlug($commandArgs[0]) : null;
 
         if ($feature === null) {
             $currentFeature = $this->getSingleFeatureForAgent($board, $agent, false);
@@ -212,10 +214,10 @@ final class BacklogRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $positionals
+     * @param array<string> $commandArgs
      * @param array<string, string|bool> $options
      */
-    private function featureStart(array $positionals, array $options): int
+    private function featureStart(array $commandArgs, array $options): int
     {
         $agent = $this->requireAgent($options);
         $branchType = (string) ($options['branch-type'] ?? '');
@@ -283,10 +285,10 @@ final class BacklogRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $positionals
+     * @param array<string> $commandArgs
      * @param array<string, string|bool> $options
      */
-    private function featureTaskAdd(array $positionals, array $options): int
+    private function featureTaskAdd(array $commandArgs, array $options): int
     {
         $agent = $this->requireAgent($options);
         $bodyFile = $this->requireBodyFile($options);
@@ -331,13 +333,13 @@ final class BacklogRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $positionals
+     * @param array<string> $commandArgs
      * @param array<string, string|bool> $options
      */
-    private function featureAssign(array $positionals, array $options): int
+    private function featureAssign(array $commandArgs, array $options): int
     {
         $agent = $this->requireAgent($options);
-        $feature = $this->requireFeatureArgument($positionals);
+        $feature = $this->requireFeatureArgument($commandArgs);
         $board = $this->board();
 
         if ($this->getSingleFeatureForAgent($board, $agent, false) !== null) {
@@ -360,15 +362,15 @@ final class BacklogRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $positionals
+     * @param array<string> $commandArgs
      * @param array<string, string|bool> $options
      */
-    private function featureUnassign(array $positionals, array $options): int
+    private function featureUnassign(array $commandArgs, array $options): int
     {
         $agent = $this->requireAgent($options);
         $board = $this->board();
-        $feature = isset($positionals[0])
-            ? $this->normalizeFeatureSlug($positionals[0])
+        $feature = isset($commandArgs[0])
+            ? $this->normalizeFeatureSlug($commandArgs[0])
             : $this->requireSingleFeatureForAgent($board, $agent)['entry']->getMeta('feature');
 
         if ($feature === null) {
@@ -389,15 +391,15 @@ final class BacklogRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $positionals
+     * @param array<string> $commandArgs
      * @param array<string, string|bool> $options
      */
-    private function featureRework(array $positionals, array $options): int
+    private function featureRework(array $commandArgs, array $options): int
     {
         $agent = $this->requireAgent($options);
         $board = $this->board();
-        $feature = isset($positionals[0])
-            ? $this->normalizeFeatureSlug($positionals[0])
+        $feature = isset($commandArgs[0])
+            ? $this->normalizeFeatureSlug($commandArgs[0])
             : $this->requireSingleFeatureForAgent($board, $agent)['entry']->getMeta('feature');
 
         if ($feature === null) {
@@ -425,15 +427,15 @@ final class BacklogRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $positionals
+     * @param array<string> $commandArgs
      * @param array<string, string|bool> $options
      */
-    private function featureBlock(array $positionals, array $options): int
+    private function featureBlock(array $commandArgs, array $options): int
     {
         $agent = $this->requireAgent($options);
         $board = $this->board();
-        $feature = isset($positionals[0])
-            ? $this->normalizeFeatureSlug($positionals[0])
+        $feature = isset($commandArgs[0])
+            ? $this->normalizeFeatureSlug($commandArgs[0])
             : $this->requireSingleFeatureForAgent($board, $agent)['entry']->getMeta('feature');
 
         if ($feature === null) {
@@ -462,15 +464,15 @@ final class BacklogRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $positionals
+     * @param array<string> $commandArgs
      * @param array<string, string|bool> $options
      */
-    private function featureUnblock(array $positionals, array $options): int
+    private function featureUnblock(array $commandArgs, array $options): int
     {
         $agent = $this->requireAgent($options);
         $board = $this->board();
-        $feature = isset($positionals[0])
-            ? $this->normalizeFeatureSlug($positionals[0])
+        $feature = isset($commandArgs[0])
+            ? $this->normalizeFeatureSlug($commandArgs[0])
             : $this->requireSingleFeatureForAgent($board, $agent)['entry']->getMeta('feature');
 
         if ($feature === null) {
@@ -541,13 +543,13 @@ final class BacklogRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $positionals
+     * @param array<string> $commandArgs
      * @param array<string, string|bool> $options
      */
-    private function featureStatus(array $positionals, array $options): int
+    private function featureStatus(array $commandArgs, array $options): int
     {
         $board = $this->board();
-        $feature = isset($positionals[0]) ? $this->normalizeFeatureSlug($positionals[0]) : null;
+        $feature = isset($commandArgs[0]) ? $this->normalizeFeatureSlug($commandArgs[0]) : null;
 
         if ($feature === null) {
             $agent = (string) ($options['agent'] ?? '');
@@ -574,15 +576,15 @@ final class BacklogRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $positionals
+     * @param array<string> $commandArgs
      * @param array<string, string|bool> $options
      */
-    private function featureReviewRequest(array $positionals, array $options): int
+    private function featureReviewRequest(array $commandArgs, array $options): int
     {
         $agent = $this->requireAgent($options);
         $board = $this->board();
-        $feature = isset($positionals[0])
-            ? $this->normalizeFeatureSlug($positionals[0])
+        $feature = isset($commandArgs[0])
+            ? $this->normalizeFeatureSlug($commandArgs[0])
             : $this->requireSingleFeatureForAgent($board, $agent)['entry']->getMeta('feature');
 
         if ($feature === null) {
@@ -607,11 +609,11 @@ final class BacklogRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $positionals
+     * @param array<string> $commandArgs
      */
-    private function featureReviewCheck(array $positionals): int
+    private function featureReviewCheck(array $commandArgs): int
     {
-        $feature = $this->requireFeatureArgument($positionals);
+        $feature = $this->requireFeatureArgument($commandArgs);
         $board = $this->board();
         $match = $this->requireFeature($board, $feature);
 
@@ -632,12 +634,12 @@ final class BacklogRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $positionals
+     * @param array<string> $commandArgs
      * @param array<string, string|bool> $options
      */
-    private function featureReviewReject(array $positionals, array $options, bool $auto = false): int
+    private function featureReviewReject(array $commandArgs, array $options, bool $auto = false): int
     {
-        $feature = $this->requireFeatureArgument($positionals);
+        $feature = $this->requireFeatureArgument($commandArgs);
         $bodyFile = $this->requireBodyFile($options);
         $board = $this->board();
         $review = $this->reviewFile();
@@ -663,12 +665,12 @@ final class BacklogRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $positionals
+     * @param array<string> $commandArgs
      * @param array<string, string|bool> $options
      */
-    private function featureReviewApprove(array $positionals, array $options): int
+    private function featureReviewApprove(array $commandArgs, array $options): int
     {
-        $feature = $this->requireFeatureArgument($positionals);
+        $feature = $this->requireFeatureArgument($commandArgs);
         $bodyFile = $this->requireBodyFile($options);
         $board = $this->board();
         $review = $this->reviewFile();
@@ -699,12 +701,48 @@ final class BacklogRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $positionals
+     * Closes one active feature without merging it and removes its local backlog state.
+     *
+     * @param array<string> $commandArgs
+     */
+    private function featureClose(array $commandArgs): int
+    {
+        $feature = $this->requireFeatureArgument($commandArgs);
+        $board = $this->board();
+        $review = $this->reviewFile();
+        $match = $this->requireFeature($board, $feature);
+
+        $branch = $match['entry']->getMeta('branch') ?? '';
+        if ($branch === '') {
+            throw new \RuntimeException("Feature {$feature} has no branch metadata.");
+        }
+
+        $this->ensureBranchHasNoDirtyManagedWorktree($branch);
+        $this->pushBranchIfAhead($branch);
+
+        $prNumber = $this->findPrNumberByBranch($branch);
+        if ($prNumber !== null) {
+            $this->runCommand(sprintf('php scripts/github.php pr close %d', $prNumber));
+        }
+
+        $board->removeFeature($feature);
+        $board->clearReservations($match['entry']->getMeta('agent') ?? '', $feature);
+        $review->clearFeatureReview($feature);
+        $board->save();
+        $review->save();
+
+        $this->console->ok(sprintf('Closed feature %s without merge', $feature));
+
+        return 0;
+    }
+
+    /**
+     * @param array<string> $commandArgs
      * @param array<string, string|bool> $options
      */
-    private function featureMerge(array $positionals, array $options): int
+    private function featureMerge(array $commandArgs, array $options): int
     {
-        $feature = $this->requireFeatureArgument($positionals);
+        $feature = $this->requireFeatureArgument($commandArgs);
         $bodyFile = $this->requireBodyFile($options);
         $board = $this->board();
         $review = $this->reviewFile();
@@ -748,7 +786,7 @@ final class BacklogRunner extends AbstractScriptRunner
      */
     private function parseArgs(array $args): array
     {
-        $positionals = [];
+        $commandArgs = [];
         $options = [];
 
         while ($args !== []) {
@@ -771,10 +809,10 @@ final class BacklogRunner extends AbstractScriptRunner
                 continue;
             }
 
-            $positionals[] = $arg;
+            $commandArgs[] = $arg;
         }
 
-        return [$positionals, $options];
+        return [$commandArgs, $options];
     }
 
     /**
@@ -807,15 +845,15 @@ final class BacklogRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $positionals
+     * @param array<string> $commandArgs
      */
-    private function requireFeatureArgument(array $positionals): string
+    private function requireFeatureArgument(array $commandArgs): string
     {
-        if (!isset($positionals[0]) || trim($positionals[0]) === '') {
+        if (!isset($commandArgs[0]) || trim($commandArgs[0]) === '') {
             throw new \RuntimeException('This command requires <feature>.');
         }
 
-        return $this->normalizeFeatureSlug($positionals[0]);
+        return $this->normalizeFeatureSlug($commandArgs[0]);
     }
 
     private function board(): BacklogBoard
@@ -1024,6 +1062,78 @@ final class BacklogRunner extends AbstractScriptRunner
 
             $this->runCommand(sprintf('git worktree remove %s --force', escapeshellarg($path)));
         }
+    }
+
+    private function ensureBranchHasNoDirtyManagedWorktree(string $branch): void
+    {
+        foreach ($this->listWorktreeBranchBindings() as $binding) {
+            if ($binding['branch'] !== $branch) {
+                continue;
+            }
+
+            $dirty = trim($this->capture(sprintf('git -C %s status --short', escapeshellarg($binding['path']))));
+            if ($dirty !== '') {
+                throw new \RuntimeException(sprintf(
+                    'Feature branch %s is still dirty in worktree %s. Commit or discard local changes before feature-close.',
+                    $branch,
+                    $binding['path'],
+                ));
+            }
+        }
+    }
+
+    private function pushBranchIfAhead(string $branch): void
+    {
+        if (!$this->commandSucceeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/heads/' . $branch)))) {
+            return;
+        }
+
+        if (!$this->commandSucceeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/remotes/origin/' . $branch)))) {
+            $this->pushBranchAndWaitForRemoteVisibility($branch);
+
+            return;
+        }
+
+        $ahead = trim($this->capture(sprintf(
+            'git rev-list --count %s..%s',
+            escapeshellarg('origin/' . $branch),
+            escapeshellarg($branch),
+        )));
+
+        if ($ahead !== '0') {
+            $this->pushBranchAndWaitForRemoteVisibility($branch);
+        }
+    }
+
+    /**
+     * @return array<int, array{path: string, branch: string|null}>
+     */
+    private function listWorktreeBranchBindings(): array
+    {
+        $output = $this->capture('git worktree list --porcelain');
+        $blocks = preg_split('/\n\n/', trim($output)) ?: [];
+        $bindings = [];
+
+        foreach ($blocks as $block) {
+            $path = null;
+            $branch = null;
+
+            foreach (explode("\n", $block) as $line) {
+                if (str_starts_with($line, 'worktree ')) {
+                    $path = substr($line, 9);
+                    continue;
+                }
+                if (str_starts_with($line, 'branch refs/heads/')) {
+                    $branch = substr($line, strlen('branch refs/heads/'));
+                }
+            }
+
+            if ($path !== null) {
+                $bindings[] = ['path' => $path, 'branch' => $branch];
+            }
+        }
+
+        return $bindings;
     }
 
     private function runReviewScript(string $worktree): void

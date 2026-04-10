@@ -12,6 +12,9 @@ Read only this file first. Read additional files only when the active command or
 - Prefer `php scripts/console.php`, `php scripts/node.php`, `php scripts/logs.php`, `php scripts/db.php`, `php scripts/dev.php`, `php scripts/health.php`, and similar wrappers over raw container commands.
 - Use relative paths in commands. Do not rely on `cd` into subfolders.
 - For temporary files needed by repo procedures (for example PR body files), write them under `local/tmp/` inside the repository, not `/tmp`.
+- Do not repeatedly probe for optional CLI tools across sessions.
+- If a tool is known to be unavailable in the current environment, stop trying to use it until the user explicitly asks to install it or confirms it is now available.
+- In this repository, treat `rg` as unavailable by default unless the user explicitly asks to install it or confirms it is available again.
 - Keep chat updates concise.
 - Do not infer backlog or review state from chat alone.
 - UI text is French, but must go through translation keys.
@@ -198,6 +201,7 @@ Allowed commands:
 - `feature-review-check`
 - `feature-review-reject`
 - `feature-review-approve`
+- `feature-close`
 - `feature-merge`
 - `task-create`
 - `task-list`
@@ -277,6 +281,13 @@ Also check:
 1. Prepare the approved PR body file under `local/tmp/`.
 2. Run `php scripts/backlog.php feature-review-approve <feature> --body-file=<path>`.
 3. The script pushes the branch, waits until the remote branch is visible, retries PR creation when GitHub still reports a transient invalid head, updates the PR title and body, determines the main tag by priority `FEAT > FIX > TECH > DOC`, and moves the feature to `## Approuvées`.
+
+#### `feature-close`
+
+1. Run `php scripts/backlog.php feature-close <feature>`.
+2. The script refuses to continue if the feature branch is still dirty in a managed worktree.
+3. If the feature branch has committed local commits ahead of `origin`, the script pushes them before closing the PR.
+4. The script closes the PR if it exists, keeps the remote branch, removes the feature from the local backlog, and clears the related review state.
 
 #### `feature-merge`
 
