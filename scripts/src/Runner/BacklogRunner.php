@@ -10,6 +10,7 @@ namespace SoManAgent\Script\Runner;
 use SoManAgent\Script\Backlog\BacklogBoard;
 use SoManAgent\Script\Backlog\BacklogReviewFile;
 use SoManAgent\Script\Backlog\BoardEntry;
+use SoManAgent\Script\RetryHelper;
 use SoManAgent\Script\TextSlugger;
 
 /**
@@ -20,8 +21,8 @@ final class BacklogRunner extends AbstractScriptRunner
     private const REMOTE_BRANCH_WAIT_ATTEMPTS = 5;
     private const REMOTE_BRANCH_WAIT_DELAY_MICROSECONDS = 1000000;
     private const PR_CREATE_HEAD_INVALID_NEEDLE = 'resource=PullRequest, field=head, code=invalid';
-    private const GITHUB_NETWORK_RETRY_COUNT = 3;
-    private const GITHUB_NETWORK_INITIAL_DELAY_MICROSECONDS = 1000000;
+    private const NETWORK_RETRY_COUNT = 3;
+    private const NETWORK_INITIAL_DELAY_MICROSECONDS = 1000000;
     private const FEATURE_SLUG_MAX_WORDS = 8;
     private const FEATURE_SLUG_MAX_LENGTH = 64;
     private const TASK_CREATE_POSITION_START = 'start';
@@ -29,7 +30,8 @@ final class BacklogRunner extends AbstractScriptRunner
     private const TASK_CREATE_POSITION_END = 'end';
     private const DEPS_MODE_LINKED = 'linked';
     private const DEPS_MODE_ISOLATED = 'isolated';
-    private const GITHUB_NETWORK_ERROR_NEEDLES = [
+    private const NETWORK_ERROR_NEEDLES = [
+        'fatal: unable to access',
         'GitHub API transport error:',
         'Could not resolve host:',
         'Connection timed out',
@@ -72,7 +74,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
     protected function getOptions(): array
     {
-        return [
+        return array_merge([
             ['name' => '--agent', 'description' => 'Developer agent code (required on developer commands)'],
             ['name' => '--body-file', 'description' => 'Path to a local file used for PR or review body content when required'],
             ['name' => '--feature-text', 'description' => 'Replacement feature text for the active backlog entry'],
@@ -80,7 +82,7 @@ final class BacklogRunner extends AbstractScriptRunner
             ['name' => '--position', 'description' => 'Insertion position for task-create: start, index, end (default: end)'],
             ['name' => '--index', 'description' => '1-based target position used when --position=index'],
             ['name' => '--force', 'description' => 'Allow taking a task that is already reserved'],
-        ];
+        ], $this->getExecutionModeOptions());
     }
 
     protected function getUsageExamples(): array
@@ -107,6 +109,7 @@ final class BacklogRunner extends AbstractScriptRunner
     {
         $command = array_shift($args) ?? '';
         [$commandArgs, $options] = $this->parseArgs($args);
+        $this->configureExecutionModes($options);
 
         return match ($command) {
             'task-create' => $this->createTask($commandArgs, $options),
@@ -150,7 +153,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $position = $this->resolveTaskCreatePosition($options, count($entries));
         array_splice($entries, $position, 0, [new BoardEntry($text)]);
         $board->setEntries(BacklogBoard::SECTION_TODO, $entries);
-        $board->save();
+        $this->saveBoard($board, 'task-create');
 
         $this->console->ok(sprintf('Added task to the todo section at position %d', $position + 1));
 
@@ -246,7 +249,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $removed = $entries[$index];
         array_splice($entries, $index, 1);
         $board->setEntries(BacklogBoard::SECTION_TODO, array_values($entries));
-        $board->save();
+        $this->saveBoard($board, 'task-remove');
 
         $this->console->ok(sprintf('Removed queued task %d', $position));
         $this->console->info($removed->getText());
@@ -280,7 +283,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $entry = $target['entry'];
         $entry->setMeta('agent', $agent);
         $entry->setMeta('feature', $feature);
-        $board->save();
+        $this->saveBoard($board, 'task-book-next');
 
         $this->console->ok(sprintf('Reserved task for %s on feature %s', $agent, $feature));
         $this->console->info($entry->getText());
@@ -304,7 +307,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $board->clearReservations($agent, $feature);
-        $board->save();
+        $this->saveBoard($board, 'task-book-release');
         $this->console->ok($feature !== null
             ? sprintf('Released reserved tasks for %s on feature %s', $agent, $feature)
             : sprintf('Released all reserved tasks for %s', $agent));
@@ -375,7 +378,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $entries[] = $featureEntry;
         $board->setEntries(BacklogBoard::SECTION_IN_PROGRESS, $entries);
         $this->ensureWorktreeDependencyMode($worktree, self::DEPS_MODE_LINKED);
-        $board->save();
+        $this->saveBoard($board, 'feature-start');
 
         $this->console->ok(sprintf('Started feature %s on %s', $feature, $branch));
 
@@ -421,7 +424,7 @@ final class BacklogRunner extends AbstractScriptRunner
             $board->moveFeature($feature, BacklogBoard::SECTION_IN_PROGRESS);
         }
 
-        $board->save();
+        $this->saveBoard($board, 'feature-task-add');
         $bodyFile = isset($options['body-file'])
             ? $this->requireBodyFile($options)
             : null;
@@ -468,7 +471,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->checkoutBranchInWorktree($worktree, $match['entry']->getMeta('branch') ?? '', false);
         $this->ensureWorktreeDependencyMode($worktree, $mode);
         $match['entry']->setMeta('deps', $mode);
-        $board->save();
+        $this->saveBoard($board, 'feature-deps-mode');
 
         $this->console->ok(sprintf('Switched feature %s dependencies to %s', $feature, $mode));
 
@@ -492,7 +495,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $match = $this->requireFeature($board, $feature);
         $match['entry']->setMeta('agent', $agent);
         $match['entry']->setMeta('deps', $this->entryDepsMode($match['entry']));
-        $board->save();
+        $this->saveBoard($board, 'feature-assign');
 
         $worktree = $this->prepareAgentWorktree($agent);
         $this->checkoutBranchInWorktree($worktree, $match['entry']->getMeta('branch') ?? '', false);
@@ -525,7 +528,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $match['entry']->unsetMeta('agent');
-        $board->save();
+        $this->saveBoard($board, 'feature-unassign');
 
         $this->console->ok(sprintf('Unassigned feature %s from %s', $feature, $agent));
 
@@ -556,7 +559,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $match['entry']->setMeta('agent', $agent);
         $match['entry']->setMeta('deps', $this->entryDepsMode($match['entry']));
         $board->moveFeature($feature, BacklogBoard::SECTION_IN_PROGRESS);
-        $board->save();
+        $this->saveBoard($board, 'feature-rework');
 
         $worktree = $this->prepareAgentWorktree($agent);
         $this->checkoutBranchInWorktree($worktree, $match['entry']->getMeta('branch') ?? '', false);
@@ -585,7 +588,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $match = $this->requireFeature($board, $feature);
         $match['entry']->setMeta('blocked', 'yes');
-        $board->save();
+        $this->saveBoard($board, 'feature-block');
 
         $prNumber = $this->storedPrNumber($match['entry']);
         if ($prNumber !== null) {
@@ -625,7 +628,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $match['entry']->unsetMeta('blocked');
-        $board->save();
+        $this->saveBoard($board, 'feature-unblock');
 
         $prNumber = $this->storedPrNumber($match['entry']);
         if ($prNumber !== null) {
@@ -745,7 +748,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->runReviewScript($worktree);
 
         $board->moveFeature($feature, BacklogBoard::SECTION_IN_REVIEW);
-        $board->save();
+        $this->saveBoard($board, 'feature-review-request');
 
         $this->console->ok(sprintf('Feature %s moved to %s', $feature, BacklogBoard::SECTION_IN_REVIEW));
 
@@ -797,8 +800,8 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $board->moveFeature($feature, BacklogBoard::SECTION_REJECTED);
         $review->setFeatureReview($feature, $this->numberedReviewItems($bodyFile));
-        $board->save();
-        $review->save();
+        $this->saveBoard($board, 'feature-review-reject');
+        $this->saveReviewFile($review, 'feature-review-reject');
 
         $this->console->ok(sprintf(
             '%sfeature %s moved to %s',
@@ -842,8 +845,8 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $board->moveFeature($feature, BacklogBoard::SECTION_APPROVED);
         $review->clearFeatureReview($feature);
-        $board->save();
-        $review->save();
+        $this->saveBoard($board, 'feature-review-approve');
+        $this->saveReviewFile($review, 'feature-review-approve');
 
         $this->console->ok(sprintf('Approved feature %s with [%s] PR title', $feature, $type));
 
@@ -878,8 +881,8 @@ final class BacklogRunner extends AbstractScriptRunner
         $board->removeFeature($feature);
         $board->clearReservations($match['entry']->getMeta('agent') ?? '', $feature);
         $review->clearFeatureReview($feature);
-        $board->save();
-        $review->save();
+        $this->saveBoard($board, 'feature-close');
+        $this->saveReviewFile($review, 'feature-close');
 
         $this->console->ok(sprintf('Closed feature %s without merge', $feature));
 
@@ -922,8 +925,8 @@ final class BacklogRunner extends AbstractScriptRunner
         $board->removeFeature($feature);
         $board->clearReservations($match['entry']->getMeta('agent') ?? '', $feature);
         $review->clearFeatureReview($feature);
-        $board->save();
-        $review->save();
+        $this->saveBoard($board, 'feature-merge');
+        $this->saveReviewFile($review, 'feature-merge');
 
         $this->console->ok(sprintf('Merged feature %s', $feature));
 
@@ -1162,6 +1165,10 @@ final class BacklogRunner extends AbstractScriptRunner
             $targetPath = $worktree . '/' . $relativePath;
             $parent = dirname($targetPath);
             if (!is_dir($parent)) {
+                if ($this->dryRun) {
+                    $this->logVerbose('[dry-run] Would create directory: ' . $this->toRelativeProjectPath($parent));
+                    continue;
+                }
                 mkdir($parent, 0777, true);
             }
 
@@ -1194,6 +1201,10 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->removeFilesystemPath($targetPath);
 
         $relativeTarget = $this->relativeFilesystemPath(dirname($targetPath), $sourcePath);
+        if ($this->dryRun) {
+            $this->logVerbose('[dry-run] Would create symlink: ' . $this->toRelativeProjectPath($targetPath) . ' -> ' . $relativeTarget);
+            return;
+        }
         if (!symlink($relativeTarget, $targetPath)) {
             throw new \RuntimeException("Unable to create symlink {$targetPath} -> {$relativeTarget}");
         }
@@ -1206,12 +1217,21 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $this->removeFilesystemPath($targetPath);
+        if ($this->dryRun) {
+            $this->logVerbose('[dry-run] Would copy path: ' . $this->toRelativeProjectPath($sourcePath) . ' -> ' . $this->toRelativeProjectPath($targetPath));
+            return;
+        }
         $this->copyFilesystemPath($sourcePath, $targetPath);
     }
 
     private function removeFilesystemPath(string $path): void
     {
         if (!file_exists($path) && !is_link($path)) {
+            return;
+        }
+
+        if ($this->dryRun) {
+            $this->logVerbose('[dry-run] Would remove path: ' . $this->toRelativeProjectPath($path));
             return;
         }
 
@@ -1442,6 +1462,11 @@ final class BacklogRunner extends AbstractScriptRunner
 
     private function runReviewScript(string $worktree): void
     {
+        $this->logVerbose(($this->dryRun ? '[dry-run] Would run review in ' : 'Run review in ') . $this->toRelativeProjectPath($worktree));
+        if ($this->dryRun) {
+            return;
+        }
+
         $this->runCommand(sprintf(
             'cd %s && php scripts/review.php',
             escapeshellarg($this->toRelativeProjectPath($worktree)),
@@ -1546,7 +1571,7 @@ final class BacklogRunner extends AbstractScriptRunner
         );
 
         for ($attempt = 1; $attempt <= self::REMOTE_BRANCH_WAIT_ATTEMPTS; $attempt++) {
-            [$code, $output] = $this->captureGithubCommandWithRetry($command);
+            [$code, $output] = $this->captureNetworkCommandWithRetry($command, 'GitHub');
             if ($code === 0) {
                 return;
             }
@@ -1571,11 +1596,11 @@ final class BacklogRunner extends AbstractScriptRunner
             ? sprintf('git -C %s', escapeshellarg($this->toRelativeProjectPath($worktree)))
             : 'git';
 
-        $this->runCommand(sprintf(
+        $this->runNetworkCommand(sprintf(
             '%s push -u origin %s',
             $gitPrefix,
             escapeshellarg($branch),
-        ));
+        ), 'Git');
 
         $this->waitForRemoteBranchVisibility($branch);
     }
@@ -1608,6 +1633,11 @@ final class BacklogRunner extends AbstractScriptRunner
 
     private function waitForRemoteBranchVisibility(string $branch): void
     {
+        if ($this->dryRun) {
+            $this->logVerbose('[dry-run] Would wait for remote branch visibility: ' . $branch);
+            return;
+        }
+
         for ($attempt = 1; $attempt <= self::REMOTE_BRANCH_WAIT_ATTEMPTS; $attempt++) {
             if ($this->isRemoteBranchVisible($branch)) {
                 return;
@@ -1623,10 +1653,10 @@ final class BacklogRunner extends AbstractScriptRunner
 
     private function isRemoteBranchVisible(string $branch): bool
     {
-        [$code, $output] = $this->captureWithExitCode(sprintf(
+        [$code, $output] = $this->captureNetworkCommandWithRetry(sprintf(
             'git ls-remote --heads origin %s',
             escapeshellarg($branch),
-        ));
+        ), 'Git');
 
         if ($code !== 0) {
             throw new \RuntimeException(sprintf(
@@ -1679,7 +1709,7 @@ final class BacklogRunner extends AbstractScriptRunner
             return null;
         }
 
-        $output = $this->captureGithubOutputWithRetry('php scripts/github.php pr list');
+        $output = $this->captureNetworkOutputWithRetry('php scripts/github.php pr list', 'GitHub');
         foreach (explode("\n", trim($output)) as $line) {
             if (preg_match('/^\s*#(\d+)\s+.*\[(.+?) → (.+?)\]$/u', $line, $matches) === 1) {
                 if ($matches[2] === $branch) {
@@ -1720,6 +1750,11 @@ final class BacklogRunner extends AbstractScriptRunner
     private function writeTempContent(array $lines): string
     {
         $path = $this->projectRoot . '/local/tmp/backlog-auto-review.txt';
+        if ($this->dryRun) {
+            $this->logVerbose('[dry-run] Would write temp file: ' . $this->toRelativeProjectPath($path));
+            return $path;
+        }
+
         file_put_contents($path, implode("\n", $lines) . "\n");
 
         return $path;
@@ -1736,8 +1771,42 @@ final class BacklogRunner extends AbstractScriptRunner
         };
     }
 
+    private function logVerbose(string $message): void
+    {
+        if ($this->verbose) {
+            $this->console->info($message);
+        }
+    }
+
+    private function saveBoard(BacklogBoard $board, string $reason): void
+    {
+        if ($this->dryRun) {
+            $this->logVerbose('[dry-run] Would save backlog board: ' . $reason);
+            return;
+        }
+
+        $this->logVerbose('Saving backlog board: ' . $reason);
+        $board->save();
+    }
+
+    private function saveReviewFile(BacklogReviewFile $review, string $reason): void
+    {
+        if ($this->dryRun) {
+            $this->logVerbose('[dry-run] Would save backlog review: ' . $reason);
+            return;
+        }
+
+        $this->logVerbose('Saving backlog review: ' . $reason);
+        $review->save();
+    }
+
     private function runCommand(string $command): void
     {
+        $this->logVerbose(($this->dryRun ? '[dry-run] Would run: ' : 'Run: ') . $command);
+        if ($this->dryRun) {
+            return;
+        }
+
         $code = $this->app->runCommand($command);
         if ($code !== 0) {
             throw new \RuntimeException("Command failed with exit code {$code}: {$command}");
@@ -1781,7 +1850,17 @@ final class BacklogRunner extends AbstractScriptRunner
 
     private function runGithubCommand(string $command): void
     {
-        [$code, $output] = $this->captureGithubCommandWithRetry($command);
+        $this->runNetworkCommand($command, 'GitHub');
+    }
+
+    private function captureGithubOutputWithRetry(string $command): string
+    {
+        return $this->captureNetworkOutputWithRetry($command, 'GitHub');
+    }
+
+    private function runNetworkCommand(string $command, string $label): void
+    {
+        [$code, $output] = $this->captureNetworkCommandWithRetry($command, $label);
         if ($code !== 0) {
             throw new \RuntimeException(sprintf(
                 "Command failed with exit code %d: %s\n%s",
@@ -1790,11 +1869,42 @@ final class BacklogRunner extends AbstractScriptRunner
                 $output,
             ));
         }
+
     }
 
-    private function captureGithubOutputWithRetry(string $command): string
+    /**
+     * Runs one network command with retry on transient transport failures.
+     *
+     * @return array{0: int, 1: string}
+     */
+    private function captureNetworkCommandWithRetry(string $command, string $label): array
     {
-        [$code, $output] = $this->captureGithubCommandWithRetry($command);
+        if ($this->dryRun) {
+            $this->logVerbose(sprintf('[dry-run] Would run %s command: %s', strtolower($label), $command));
+            return [0, ''];
+        }
+
+        $result = $this->networkRetryHelper()->run(
+            fn(): array => $this->captureWithExitCode($command),
+            fn(array $result): bool => $result[0] !== 0 && $this->isRetryableNetworkError($result[1]),
+        );
+
+        if ($result[0] !== 0 && $this->isRetryableNetworkError($result[1])) {
+            throw new \RuntimeException(sprintf(
+                "%s network error after %d retries. Safe to rerun the same command.\nCommand: %s\n%s",
+                $label,
+                self::NETWORK_RETRY_COUNT,
+                $command,
+                $result[1],
+            ));
+        }
+
+        return $result;
+    }
+
+    private function captureNetworkOutputWithRetry(string $command, string $label): string
+    {
+        [$code, $output] = $this->captureNetworkCommandWithRetry($command, $label);
         if ($code !== 0) {
             throw new \RuntimeException(sprintf(
                 "Command failed with exit code %d: %s\n%s",
@@ -1807,49 +1917,23 @@ final class BacklogRunner extends AbstractScriptRunner
         return $output;
     }
 
-    /**
-     * Runs one GitHub command with retry on transient transport failures.
-     *
-     * @return array{0: int, 1: string}
-     */
-    private function captureGithubCommandWithRetry(string $command): array
+    private function isRetryableNetworkError(string $output): bool
     {
-        $lastResult = [0, ''];
-
-        for ($attempt = 0; $attempt <= self::GITHUB_NETWORK_RETRY_COUNT; $attempt++) {
-            $lastResult = $this->captureWithExitCode($command);
-            if ($lastResult[0] === 0) {
-                return $lastResult;
-            }
-
-            if (!$this->isRetryableGithubNetworkError($lastResult[1])) {
-                return $lastResult;
-            }
-
-            if ($attempt === self::GITHUB_NETWORK_RETRY_COUNT) {
-                throw new \RuntimeException(sprintf(
-                    "GitHub network error after %d retries. Safe to rerun the same command.\nCommand: %s\n%s",
-                    self::GITHUB_NETWORK_RETRY_COUNT,
-                    $command,
-                    $lastResult[1],
-                ));
-            }
-
-            usleep(self::GITHUB_NETWORK_INITIAL_DELAY_MICROSECONDS * (2 ** $attempt));
-        }
-
-        return $lastResult;
-    }
-
-    private function isRetryableGithubNetworkError(string $output): bool
-    {
-        foreach (self::GITHUB_NETWORK_ERROR_NEEDLES as $needle) {
+        foreach (self::NETWORK_ERROR_NEEDLES as $needle) {
             if (str_contains($output, $needle)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private function networkRetryHelper(): RetryHelper
+    {
+        return new RetryHelper(
+            self::NETWORK_RETRY_COUNT,
+            self::NETWORK_INITIAL_DELAY_MICROSECONDS,
+        );
     }
 
     private function describePrStatus(BoardEntry $entry): string

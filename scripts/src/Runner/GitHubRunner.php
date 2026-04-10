@@ -43,7 +43,7 @@ final class GitHubRunner extends AbstractScriptRunner
 
     protected function getOptions(): array
     {
-        return [
+        return array_merge([
             ['name' => '--title', 'description' => 'PR title (create, edit)'],
             ['name' => '--head', 'description' => 'Source branch (create)'],
             ['name' => '--base', 'description' => 'Target branch, defaults to main (create)'],
@@ -51,7 +51,7 @@ final class GitHubRunner extends AbstractScriptRunner
             ['name' => '--body-file', 'description' => 'Path to a file for PR body (create, edit)'],
             ['name' => '--squash', 'description' => 'Squash merge (merge)'],
             ['name' => '--rebase', 'description' => 'Rebase merge (merge)'],
-        ];
+        ], $this->getExecutionModeOptions());
     }
 
     protected function getUsageExamples(): array
@@ -74,10 +74,14 @@ final class GitHubRunner extends AbstractScriptRunner
      */
     public function run(array $args): int
     {
-        $this->ensureCredentials();
-
         $command = array_shift($args) ?? '';
         $sub     = array_shift($args) ?? '';
+        $flags   = $this->parseFlags($args);
+        $this->configureExecutionModes($flags);
+
+        if (!$this->dryRun) {
+            $this->ensureCredentials();
+        }
 
         try {
             if ($command !== 'pr') {
@@ -85,10 +89,10 @@ final class GitHubRunner extends AbstractScriptRunner
             }
 
             match ($sub) {
-                'create' => $this->handleCreate($args),
-                'merge'  => $this->handleMerge($args),
+                'create' => $this->handleCreate($args, $flags),
+                'merge'  => $this->handleMerge($args, $flags),
                 'close'  => $this->handleClose($args),
-                'edit'   => $this->handleEdit($args),
+                'edit'   => $this->handleEdit($args, $flags),
                 'list'   => $this->handleList(),
                 'view'   => $this->handleView($args),
                 default  => throw new \RuntimeException("Unknown subcommand: pr {$sub}. Available: create, merge, close, edit, list, view"),
@@ -103,9 +107,8 @@ final class GitHubRunner extends AbstractScriptRunner
     /**
      * @param array<string> $args
      */
-    private function handleCreate(array $args): void
+    private function handleCreate(array $args, array $flags): void
     {
-        $flags    = $this->parseFlags($args);
         $title    = $flags['title']     ?? null;
         $head     = $flags['head']      ?? null;
         $base     = $flags['base']      ?? 'main';
@@ -123,6 +126,12 @@ final class GitHubRunner extends AbstractScriptRunner
 
         if (!$head) {
             throw new \RuntimeException('--head is required.');
+        }
+
+        if ($this->dryRun) {
+            $this->console->ok(sprintf('Dry-run: would create PR from %s to %s.', $head, $base));
+
+            return;
         }
 
         $this->console->step("Creating PR: {$title}");
@@ -143,14 +152,19 @@ final class GitHubRunner extends AbstractScriptRunner
     /**
      * @param array<string> $args
      */
-    private function handleMerge(array $args): void
+    private function handleMerge(array $args, array $flags): void
     {
         $number = (int) array_shift($args);
-        $flags  = $this->parseFlags($args);
         $method = isset($flags['squash']) ? 'squash' : (isset($flags['rebase']) ? 'rebase' : 'merge');
 
         if (!$number) {
             throw new \RuntimeException('PR number is required.');
+        }
+
+        if ($this->dryRun) {
+            $this->console->ok(sprintf('Dry-run: would merge PR #%d with %s.', $number, $method));
+
+            return;
         }
 
         $this->console->step("Merging PR #{$number} ({$method})");
@@ -167,6 +181,11 @@ final class GitHubRunner extends AbstractScriptRunner
         if (!$number) {
             throw new \RuntimeException('PR number is required.');
         }
+        if ($this->dryRun) {
+            $this->console->ok(sprintf('Dry-run: would close PR #%d.', $number));
+
+            return;
+        }
         $this->console->step("Closing PR #{$number}");
         $this->api('PATCH', "/pulls/{$number}", ['state' => 'closed']);
         $this->console->ok("PR #{$number} closed.");
@@ -175,10 +194,9 @@ final class GitHubRunner extends AbstractScriptRunner
     /**
      * @param array<string> $args
      */
-    private function handleEdit(array $args): void
+    private function handleEdit(array $args, array $flags): void
     {
         $number = (int) array_shift($args);
-        $flags  = $this->parseFlags($args);
 
         if (!$number) {
             throw new \RuntimeException('PR number is required.');
@@ -200,6 +218,12 @@ final class GitHubRunner extends AbstractScriptRunner
             throw new \RuntimeException('At least one of --title, --body, --body-file is required.');
         }
 
+        if ($this->dryRun) {
+            $this->console->ok(sprintf('Dry-run: would update PR #%d.', $number));
+
+            return;
+        }
+
         $this->console->step("Editing PR #{$number}");
         $pr = $this->api('PATCH', "/pulls/{$number}", $patch);
 
@@ -212,6 +236,12 @@ final class GitHubRunner extends AbstractScriptRunner
 
     private function handleList(): void
     {
+        if ($this->dryRun) {
+            $this->console->ok('Dry-run: would list open PRs.');
+
+            return;
+        }
+
         $prs = $this->api('GET', '/pulls?state=open&per_page=20');
         if (empty($prs)) {
             $this->console->ok('No open PRs.');
@@ -230,6 +260,11 @@ final class GitHubRunner extends AbstractScriptRunner
         $number = (int) array_shift($args);
         if (!$number) {
             throw new \RuntimeException('PR number is required.');
+        }
+        if ($this->dryRun) {
+            $this->console->ok(sprintf('Dry-run: would view PR #%d.', $number));
+
+            return;
         }
         $pr = $this->api('GET', "/pulls/{$number}");
         $this->console->line("PR #{$pr['number']}: {$pr['title']}");
@@ -344,8 +379,20 @@ final class GitHubRunner extends AbstractScriptRunner
 
     private function deleteBodyFile(string $path): void
     {
+        if ($this->dryRun) {
+            $this->logVerbose('[dry-run] Would delete body file: ' . $path);
+            return;
+        }
+
         if (file_exists($path) && !unlink($path)) {
             throw new \RuntimeException("--body-file: unable to delete file after successful request: {$path}");
+        }
+    }
+
+    private function logVerbose(string $message): void
+    {
+        if ($this->verbose) {
+            $this->console->info($message);
         }
     }
 

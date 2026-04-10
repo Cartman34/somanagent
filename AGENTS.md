@@ -76,6 +76,8 @@ Command policy:
 4. The agent code must never leave local backlog files.
 5. Any backlog state change covered by `backlog.php` must go through `backlog.php`, never through a manual file edit.
 6. Manual edits to `local/backlog-board.md` or `local/backlog-review.md` are forbidden unless the user explicitly asks for a manual edit outside the scripted workflow.
+7. `--dry-run` simulates backlog, git, GitHub, and filesystem mutations without executing them.
+8. `--verbose` prints detailed execution steps and simulated commands.
 ## Role Selection
 
 Use one active role only.

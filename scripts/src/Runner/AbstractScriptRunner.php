@@ -48,6 +48,24 @@ abstract class AbstractScriptRunner
     protected string $projectRoot;
 
     /**
+     * Global dry-run flag shared by runners that opt into execution modes.
+     *
+     * When true, the runner must avoid every mutation it controls:
+     * file writes, git writes, GitHub writes, and similar side effects.
+     * Read-only inspection may still happen when it is useful and safe.
+     */
+    protected bool $dryRun = false;
+
+    /**
+     * Global verbose flag shared by runners that opt into execution modes.
+     *
+     * Use it for optional execution traces and simulated command details.
+     * Keep user-facing outcome messages independent from this flag so
+     * commands still remain understandable without verbose mode.
+     */
+    protected bool $verbose = false;
+
+    /**
      * Initializes the shared application and console singletons and resolves the project root.
      */
     public function __construct()
@@ -99,6 +117,31 @@ abstract class AbstractScriptRunner
     protected function getOptions(): array
     {
         return [];
+    }
+
+    /**
+     * Shared execution-mode options available to runners that opt into them.
+     *
+     * @return array<array{name: string, description: string}>
+     */
+    protected function getExecutionModeOptions(): array
+    {
+        return [
+            ['name' => '--dry-run', 'description' => 'Simulate mutations without executing them'],
+            ['name' => '--verbose', 'description' => 'Print detailed execution steps and simulated commands'],
+            ['name' => '--no-verbose', 'description' => 'Disable verbose output even when --dry-run is enabled'],
+        ];
+    }
+
+    /**
+     * Configures shared execution flags from parsed CLI options.
+     *
+     * @param array<string, mixed> $options
+     */
+    protected function configureExecutionModes(array $options): void
+    {
+        $this->dryRun = isset($options['dry-run']);
+        $this->verbose = !isset($options['no-verbose']) && ($this->dryRun || isset($options['verbose']));
     }
 
     /**
