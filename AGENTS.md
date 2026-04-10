@@ -24,51 +24,43 @@ Read only this file first. Read additional files only when the active command or
 ## Local Source Of Truth
 
 - Pending backlog: [`local/backlog-board.md`](/home/sowapps/projects/somanagent/local/backlog-board.md)
-- Completed work: [`local/backlog-changes.md`](/home/sowapps/projects/somanagent/local/backlog-changes.md)
 - Review state: [`local/backlog-review.md`](/home/sowapps/projects/somanagent/local/backlog-review.md)
 
 Rules:
 
 - Files under `local/` are local-only and must not be committed.
-- For `local/backlog-board.md`, `local/backlog-changes.md`, and `local/backlog-review.md`, always follow the rules written in each file's `## Règles d'usage` section.
-- Every modification to project files must be recorded in `local/backlog-changes.md`.
-- Do not add entries to `local/backlog-changes.md` for changes limited to local backlog files under `local/`.
-- Do not add entries to `local/backlog-changes.md` for corrections to an existing `local/backlog-changes.md` entry when those corrections only realign the local backlog bookkeeping with work already recorded.
-- Do not append a duplicate entry to `local/backlog-changes.md` for the same still-unapproved work item. When additional changes are part of the same work item, update the existing entry instead of adding a second top-level bullet.
+- For `local/backlog-board.md` and `local/backlog-review.md`, always follow the rules written in each file's `## Règles d'usage` section.
+- Local backlog vocabulary is strict: `À faire` = queued, `En développement` = active on a developer branch, `À relire` = ready for reviewer actions, `Rejetées` = review failed and needs rework, `Approuvées` = reviewer-approved and waiting for merge.
+- Local backlog files are not edited manually.
+- If a needed backlog transition or backlog mutation is not covered by an existing command, stop and ask the user before proceeding.
 
 ## Worktrees
 
-- Unless the user explicitly asks otherwise, work on the main workspace.
-- When the user asks for isolated parallel work, create and use a dedicated worktree per agent.
+- Developer work in a dedicated worktree is mandatory for every task.
 - Create agent worktrees under `.worktrees/` inside the main repository so they stay in the same WSL filesystem and remain easy to ignore.
-- Use one dedicated branch per agent worktree.
-- Name worktrees and branches with the agent identifier when one is provided, for example `agent-01`.
+- Use `WP` for the main workspace and `WA` for one developer agent worktree.
+- A `WA` belongs to the developer agent and is treated as ephemeral.
+- A branch belongs to the active feature.
+- A feature branch must never stay checked out in multiple worktrees at the same time.
 - Keep `.worktrees/` ignored in the root `.gitignore`.
 
-Backlog rules with worktrees:
+Feature identity rules:
 
-- `local/backlog-board.md`, `local/backlog-changes.md`, and `local/backlog-review.md` remain the source of truth in the main workspace.
-- Do not maintain a parallel backlog state inside a worktree.
-- Before taking a new task in a worktree, first resync that worktree with the current `main` branch state and make sure it is clean.
-- If the user asks to move a task into `local/backlog-changes.md` before repatriation, edit the file in the main workspace, not inside the worktree.
-- After a repatriation, continue on the main workspace until a new task is explicitly started in a worktree.
+1. Every active task is attached to one feature.
+2. The canonical identifier is the feature slug.
+3. Active backlog entries must use this exact prefix format with no spaces between metadata blocks: `[feature:<slug>][agent:<code>][branch:<type>/<slug>][base:<sha>] ...`
+4. `<type>` is `feat` or `fix` on the branch.
+5. Every developer commit on a feature branch must start with `[<slug>]`.
+6. Review and approval must be scoped from the recorded `base` commit, not from the current `main`.
 
-Implementation rules with worktrees:
+Command policy:
 
-- Code changes for the isolated task must be done in the dedicated worktree.
-- Avoid modifying the main workspace while the task is still isolated, except for shared coordination changes explicitly requested by the user, such as `.gitignore` or backlog updates in `local/`.
-- Before considering the isolated task done, run `php scripts/review.php` in the worktree and fix mechanical blockers within scope.
-
-Repatriation rules:
-
-- Repatriate changes with git-based workflows whenever possible.
-- Prefer reviewing the worktree diff, then using git tools such as commit plus `cherry-pick`, generated patch application, or a targeted merge strategy instead of copying files manually.
-- Resolve conflicts explicitly and verify the merged result in the main workspace.
-- After repatriation, keep the changes unstaged in the main workspace so they remain reviewable before any commit workflow.
-- After repatriation, run `php scripts/review.php` in the main workspace and fix mechanical blockers within scope.
-- Once repatriation is complete, update `local/backlog-changes.md` in the main workspace according to the relevant file rules.
-- Once repatriation is complete, clean the worktree so the task-specific code changes are gone and the worktree is ready to be resynced for the next task.
-- Worktree setup symlinks such as `backend/vendor`, `frontend/node_modules`, or similar local dependency links must stay in place when cleaning the worktree.
+1. Prefer `php scripts/backlog.php` for the full local workflow.
+2. Every developer command on `backlog.php` requires `--agent=<code>`.
+3. Reviewer commands on `backlog.php` never use `--agent`.
+4. The agent code must never leave local backlog files.
+5. Any backlog state change covered by `backlog.php` must go through `backlog.php`, never through a manual file edit.
+6. Manual edits to `local/backlog-board.md` or `local/backlog-review.md` are forbidden unless the user explicitly asks for a manual edit outside the scripted workflow.
 ## Role Selection
 
 Use one active role only.
@@ -77,107 +69,187 @@ Use one active role only.
 
 Allowed commands:
 
-- `next`
-- `rework`
+- `task-create`
+- `task-list`
+- `task-book-next`
+- `task-book-release`
+- `feature-start`
+- `feature-task-add`
+- `feature-assign`
+- `feature-unassign`
+- `feature-rework`
+- `feature-block`
+- `feature-unblock`
+- `feature-list`
+- `feature-status`
+- `feature-review-request`
 
 Default responsibilities:
 
-- implement tasks
+- manage one `WA` identified by the agent code
+- reserve tasks, start features, and continue development on the feature branch
+- commit on the feature branch with the feature slug prefix
 - run `php scripts/review.php` after every implementation and fix mechanical blockers within scope
-- critically challenge the implementation for gaps, regressions, and convention violations before considering it done
+- critically challenge the implementation for gaps, regressions, and convention violations before considering it ready for review
 - update docs when required by the code change
-- record completed work in `local/backlog-changes.md`
+- keep `local/backlog-board.md` in sync with the current stage of the feature through `backlog.php`
 
 Do not:
 
-- run `review`, `approve`, `merge`, or `new`
-- handle PR workflow unless the user explicitly changes role
+- run reviewer commands or `merge`
+- use raw git or GitHub commands when `backlog.php` provides the workflow step
+- start a second visible backlog entry for the same feature
+- edit `local/backlog-board.md` or `local/backlog-review.md` manually
 
 Read only when needed:
 
-- `local/backlog-board.md` for `next`
-- `local/backlog-review.md` for `rework`
-- `local/backlog-changes.md` before appending completed work
+- `local/backlog-board.md` for feature state
+- `local/backlog-review.md` for rework input
 
 Command behavior:
 
-#### `next`
+#### `task-create`
 
-1. Read the first task from `local/backlog-board.md`
-2. Execute it fully
-3. Run `php scripts/review.php` and fix mechanical blockers within scope
-4. Challenge the implementation critically for gaps, regressions, and convention violations
-5. Stop and ask the user before making out-of-scope corrections
-6. Remove the completed task from `local/backlog-board.md` according to that file's rules
-7. Append the result to `local/backlog-changes.md`
+1. Run `php scripts/backlog.php task-create <description>`.
+2. The script appends the task to the end of `## À faire`.
+
+#### `task-list`
+
+1. Run `php scripts/backlog.php task-list`.
+2. The script prints queued tasks and visible reservation metadata.
+
+#### `task-book-next`
+
+1. Run `php scripts/backlog.php task-book-next --agent=<code> [<feature>]`.
+2. Reserve the next task in `## À faire`.
+3. If `<feature>` is omitted, let the script derive the feature slug.
+4. If the agent already owns one active feature, the reservation reuses that feature slug.
+
+#### `task-book-release`
+
+1. Run `php scripts/backlog.php task-book-release --agent=<code> [<feature>]`.
+2. Release the reservation before the feature is started.
+
+#### `feature-start`
+
+1. Prepare the PR body file under `local/tmp/`.
+2. Run `php scripts/backlog.php feature-start --agent=<code> --branch-type=<feat|fix> --body-file=<path>`.
+3. The script creates the feature branch, creates the `[WIP]` PR, moves the feature to `## En développement`, and authorizes development.
+
+#### `feature-task-add`
+
+1. Prepare the PR body file under `local/tmp/`.
+2. Run `php scripts/backlog.php feature-task-add --agent=<code> --body-file=<path> --feature-text=<text>`.
+3. The script absorbs all tasks reserved by this agent into the current feature and updates the PR body.
+
+#### `feature-assign`
+
+1. Run `php scripts/backlog.php feature-assign --agent=<code> <feature>`.
+2. The script reassigns the feature to the agent and prepares the `WA`.
+
+#### `feature-unassign`
+
+1. Run `php scripts/backlog.php feature-unassign --agent=<code> [<feature>]`.
+2. The script removes the current agent assignment from the target feature and keeps the feature in its current backlog section.
+
+#### `feature-rework`
+
+1. Read `local/backlog-review.md`.
+2. Run `php scripts/backlog.php feature-rework --agent=<code> [<feature>]`.
+3. Resume development on the same feature branch from `## Rejetées`.
+
+#### `feature-block`
+
+1. Run `php scripts/backlog.php feature-block --agent=<code> [<feature>]`.
+2. The script marks the feature as blocked and keeps the current backlog section.
+
+#### `feature-unblock`
+
+1. Run `php scripts/backlog.php feature-unblock --agent=<code> [<feature>]`.
+2. The script removes the blocked flag from the feature and updates the PR title when one exists.
+
+#### `feature-list`
+
+1. Run `php scripts/backlog.php feature-list`.
+2. The script prints active features grouped by backlog section.
+
+#### `feature-status`
+
+1. Run `php scripts/backlog.php feature-status [--agent=<code>] [<feature>]`.
+2. The script prints `Feature`, `Branch`, `Base`, `Stage`, `Last`, `Next`, and `Blocker`.
+
+#### `feature-review-request`
+
+1. Run `php scripts/backlog.php feature-review-request --agent=<code> [<feature>]`.
+2. The script requires a green mechanical review and moves the feature to `## À relire`.
 
 Rules:
 
-- Do not start a second task in the same turn
-- Do not edit `local/backlog-review.md`
-- Keep bugfixes discovered within the task folded into the same completed entry unless they are explicit follow-up fixes
-
-#### `rework`
-
-1. Read `local/backlog-review.md`
-2. Apply the needed follow-up changes
-3. Run `php scripts/review.php` and fix mechanical blockers within scope
-4. Challenge the implementation critically for gaps, regressions, and convention violations
-5. Stop and ask the user before making out-of-scope corrections
-6. Append the result to `local/backlog-changes.md`
-
-Rules:
-
-- Do not apply feedback blindly; challenge weak, risky, or ambiguous review points
-- Additional user-requested follow-up changes during `rework` must also be recorded in `local/backlog-changes.md`
+- Do not start a second visible feature for the same agent.
+- Do not edit local backlog files directly.
+- A task is considered done for Developer only when it is committed, mechanically valid, and passed to `## À relire`.
+- If a new task is added to an existing feature, keep a single backlog line for that feature and preserve all useful scope details.
+- If a needed backlog action is missing from `backlog.php`, stop and ask the user instead of editing the backlog manually.
 
 ### Reviewer / CP
 
 Allowed commands:
 
-- `review`
-- `review async`
-- `approve`
-- `merge`
-- `new <description>`
+- `feature-review-check`
+- `feature-review-reject`
+- `feature-review-approve`
+- `feature-merge`
+- `task-create`
+- `task-list`
+- `feature-list`
 
 Default responsibilities:
 
 - validate completed work
 - manage backlog additions
-- handle commit / push / PR / merge workflow
+- handle PR updates, push, and merge workflow on existing feature branches
 
 Do not:
 
 - implement product changes unless the user explicitly changes role
+- commit code changes
+- create a new feature branch for a review flow
+- edit `local/backlog-board.md` or `local/backlog-review.md` manually when a `backlog.php` command exists for the change
 
 Read only when needed:
 
-- `local/backlog-changes.md` for `review` and `approve`
 - `local/backlog-review.md` for `review`, `approve`, and follow-up state
 - `local/backlog-board.md` for `new`
 
 Command behavior:
 
-#### `new <description>`
+#### `task-create <description>`
 
-1. Append the task to the end of the `## À faire` section in `local/backlog-board.md`
+1. Run `php scripts/backlog.php task-create <description>`.
+2. The script appends the task to the end of the `## À faire` section in `local/backlog-board.md`.
 
 Rules:
 
 - Do not execute the task now
-- Do not interrupt a `next` in progress unless the user explicitly redirects
+- Do not interrupt a developer command sequence unless the user explicitly redirects
+- Do not edit backlog files directly when `task-create` covers the change.
 
-#### `review` / `review async`
+#### `task-list`
 
-1. Read `local/backlog-changes.md`
-2. Run `php scripts/review.php`
-3. For each modified file, inspect the diff first; read the full file only when the diff is insufficient
-4. Manually scan new visible strings in the diff to catch French literals that `php scripts/review.php` can miss when they are not accented
-5. Verify declared scope vs actual file changes, conventions, and request alignment
-6. Write findings to `local/backlog-review.md`
-7. Return only `Review ✅` or a blocker list
-8. If there is no blocker, auto-proceed to `approve`
+1. Run `php scripts/backlog.php task-list`.
+2. The script prints queued tasks and visible reservation metadata.
+
+#### `feature-list`
+
+1. Run `php scripts/backlog.php feature-list`.
+2. The script prints active features grouped by backlog section.
+
+#### `feature-review-check`
+
+1. Run `php scripts/backlog.php feature-review-check <feature>`.
+2. The script checks the mechanical review in reviewer context.
+3. If it fails, the script automatically rejects the feature with a standard message.
+4. If it passes, continue the technical and functional review manually.
 
 Block on:
 
@@ -194,41 +266,36 @@ Also check:
 
 - it only detects accented French characters, so unaccented words such as `Valider`, `Annuler`, or `Titre` still require a manual diff scan
 
-#### `approve`
+#### `feature-review-reject`
 
-1. Keep `local/backlog-changes.md` untouched until the PR description contains the approved changes
-2. Reset `local/backlog-review.md` to `Aucune review en cours.`
-3. Create a feature or fix branch before the commit if needed
-4. Run `git add . && git commit`
-5. Run `git push -u origin <branch>`
-6. If no PR exists yet for the branch, create it with `php scripts/github.php pr create --title "..." --head <branch> --body-file /tmp/pr_body.md`
-7. If a PR already exists for the branch, update that PR so its description includes the approved changes
-8. Once the PR exists with the right description, clean the `Réalisé` section in `local/backlog-changes.md`
-9. Stay on the feature branch unless the command was `review async`
+1. Prepare the numbered review body file under `local/tmp/`.
+2. Run `php scripts/backlog.php feature-review-reject <feature> --body-file=<path>`.
+3. The script moves the feature to `## Rejetées` and overwrites the `### <feature>` section in `local/backlog-review.md`.
 
-Rules:
+#### `feature-review-approve`
 
-- Use `fix/…` branches and a bug title only when all approved items are `[FIX]`
-- `review async` inserts `git checkout main` after push and before PR creation
-- An explicit `approve` must execute even if review blockers are documented
-- If a PR already exists for the branch, do not create a second PR; edit the existing PR instead
+1. Prepare the approved PR body file under `local/tmp/`.
+2. Run `php scripts/backlog.php feature-review-approve <feature> --body-file=<path>`.
+3. The script pushes the branch, updates the PR title and body, determines the main tag by priority `FEAT > FIX > TECH > DOC`, and moves the feature to `## Approuvées`.
 
-#### `merge`
+#### `feature-merge`
 
-1. Merge the current open PR with `php scripts/github.php pr merge <number>`
-2. Run `git checkout main && git pull`
-3. Delete the merged branch on the remote: `git push origin --delete <branch>`
-4. Delete the merged branch locally: `git branch -d <branch>`
+1. Prepare the final PR body file under `local/tmp/`.
+2. Run `php scripts/backlog.php feature-merge <feature> --body-file=<path>`.
+3. The script requires the feature to be in `## Approuvées`, merges the PR, deletes the branches, removes the feature from the backlog, and frees the agent.
 
 Rules:
 
-- Never merge a PR whose title contains `[BLOCKED]`
-- A blocked PR requires an explicit user instruction to unblock first
+- Reviewer must not create commits during review, approval, or merge.
+- A blocked PR requires an explicit user instruction to unblock first.
+- If a needed backlog action is missing from `backlog.php`, stop and ask the user instead of editing the backlog manually.
 
 ## Git Rules
 
 - Always use `git add .` unless specific file staging is needed
-- Use `git push -u origin <branch>` with no force unless explicitly requested
+- Use `php scripts/backlog.php` before falling back to raw git or GitHub commands for workflow steps covered by that script.
+- Developers do not push manually.
+- Reviewers may push existing feature branches with `git push -u origin <branch>` when required by the workflow and no script wrapper exists yet.
 - Never amend a published commit
 - Use `php scripts/github.php` for GitHub operations instead of `gh`
 

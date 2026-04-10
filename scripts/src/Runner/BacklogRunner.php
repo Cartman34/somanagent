@@ -1,0 +1,1233 @@
+<?php
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
+declare(strict_types=1);
+
+namespace SoManAgent\Script\Runner;
+
+use SoManAgent\Script\Backlog\BacklogBoard;
+use SoManAgent\Script\Backlog\BacklogReviewFile;
+use SoManAgent\Script\Backlog\BoardEntry;
+
+/**
+ * Backlog workflow runner for the local developer/reviewer process.
+ */
+final class BacklogRunner extends AbstractScriptRunner
+{
+    protected function getDescription(): string
+    {
+        return 'Backlog workflow helper for local developer and reviewer procedures';
+    }
+
+    protected function getCommands(): array
+    {
+        return [
+            ['name' => 'task-create', 'description' => 'Append one new task at the end of the todo section'],
+            ['name' => 'task-list', 'description' => 'List queued tasks with optional reservation metadata'],
+            ['name' => 'task-book-next', 'description' => 'Reserve the next backlog task for one developer agent'],
+            ['name' => 'task-book-release', 'description' => 'Release one reserved backlog task'],
+            ['name' => 'feature-start', 'description' => 'Start a feature branch and create its WIP PR'],
+            ['name' => 'feature-task-add', 'description' => 'Attach all reserved tasks of one agent to its current feature'],
+            ['name' => 'feature-assign', 'description' => 'Assign an existing feature to one developer agent'],
+            ['name' => 'feature-unassign', 'description' => 'Remove the current agent assignment from one feature'],
+            ['name' => 'feature-rework', 'description' => 'Move a rejected feature back to development'],
+            ['name' => 'feature-block', 'description' => 'Mark a feature as blocked'],
+            ['name' => 'feature-unblock', 'description' => 'Remove the blocked flag from one feature'],
+            ['name' => 'feature-list', 'description' => 'List active features grouped by backlog section'],
+            ['name' => 'feature-status', 'description' => 'Print the current status of one feature'],
+            ['name' => 'feature-review-request', 'description' => 'Request reviewer action after a clean mechanical review'],
+            ['name' => 'feature-review-check', 'description' => 'Run reviewer mechanical checks on a feature'],
+            ['name' => 'feature-review-reject', 'description' => 'Reject a feature and record reviewer blockers'],
+            ['name' => 'feature-review-approve', 'description' => 'Approve a feature and update its PR'],
+            ['name' => 'feature-merge', 'description' => 'Merge one approved feature and remove it from the backlog'],
+        ];
+    }
+
+    protected function getOptions(): array
+    {
+        return [
+            ['name' => '--agent', 'description' => 'Developer agent code (required on developer commands)'],
+            ['name' => '--body-file', 'description' => 'Path to a local file used for PR or review body content'],
+            ['name' => '--feature-text', 'description' => 'Replacement feature text for the active backlog entry'],
+            ['name' => '--branch-type', 'description' => 'Developer branch type for feature-start: feat or fix'],
+            ['name' => '--force', 'description' => 'Allow taking a task that is already reserved'],
+        ];
+    }
+
+    protected function getUsageExamples(): array
+    {
+        return [
+            'php scripts/backlog.php task-book-next --agent agent-01',
+            'php scripts/backlog.php task-create "Add toast notifications on success and error flows"',
+            'php scripts/backlog.php task-list',
+            'php scripts/backlog.php task-book-next --agent agent-01 delete-question-reply',
+            'php scripts/backlog.php feature-start --agent agent-01 --branch-type feat --body-file local/tmp/pr_body.md',
+            'php scripts/backlog.php feature-list',
+            'php scripts/backlog.php feature-review-approve delete-question-reply --body-file local/tmp/pr_body.md',
+        ];
+    }
+
+    /**
+     * Executes one backlog workflow command.
+     *
+     * @param array<string> $args
+     */
+    public function run(array $args): int
+    {
+        $command = array_shift($args) ?? '';
+        [$positionals, $options] = $this->parseArgs($args);
+
+        return match ($command) {
+            'task-create' => $this->createTask($positionals),
+            'task-list' => $this->taskList(),
+            'task-book-next' => $this->taskBookNext($positionals, $options),
+            'task-book-release' => $this->taskBookRelease($positionals, $options),
+            'feature-start' => $this->featureStart($positionals, $options),
+            'feature-task-add' => $this->featureTaskAdd($positionals, $options),
+            'feature-assign' => $this->featureAssign($positionals, $options),
+            'feature-unassign' => $this->featureUnassign($positionals, $options),
+            'feature-rework' => $this->featureRework($positionals, $options),
+            'feature-block' => $this->featureBlock($positionals, $options),
+            'feature-unblock' => $this->featureUnblock($positionals, $options),
+            'feature-list' => $this->featureList(),
+            'feature-status' => $this->featureStatus($positionals, $options),
+            'feature-review-request' => $this->featureReviewRequest($positionals, $options),
+            'feature-review-check' => $this->featureReviewCheck($positionals),
+            'feature-review-reject' => $this->featureReviewReject($positionals, $options),
+            'feature-review-approve' => $this->featureReviewApprove($positionals, $options),
+            'feature-merge' => $this->featureMerge($positionals, $options),
+            default => throw new \RuntimeException("Unknown backlog command: {$command}"),
+        };
+    }
+
+    /**
+     * @param array<string> $positionals
+     */
+    private function createTask(array $positionals): int
+    {
+        $text = trim(implode(' ', $positionals));
+        if ($text === '') {
+            throw new \RuntimeException('This command requires a task description.');
+        }
+
+        $board = $this->board();
+        $entries = $board->getEntries(BacklogBoard::SECTION_TODO);
+        $entries[] = new BoardEntry($text);
+        $board->setEntries(BacklogBoard::SECTION_TODO, $entries);
+        $board->save();
+
+        $this->console->ok('Added task to the todo section');
+
+        return 0;
+    }
+
+    private function taskList(): int
+    {
+        $entries = $this->board()->getEntries(BacklogBoard::SECTION_TODO);
+        if ($entries === []) {
+            $this->console->line('No queued task.');
+
+            return 0;
+        }
+
+        foreach ($entries as $index => $entry) {
+            $prefix = sprintf('%d. ', $index + 1);
+            $reservation = [];
+            if ($entry->getMeta('agent') !== null) {
+                $reservation[] = 'agent=' . $entry->getMeta('agent');
+            }
+            if ($entry->getMeta('feature') !== null) {
+                $reservation[] = 'feature=' . $entry->getMeta('feature');
+            }
+
+            $suffix = $reservation === [] ? '' : ' [' . implode(', ', $reservation) . ']';
+            $this->console->line($prefix . $entry->getText() . $suffix);
+        }
+
+        return 0;
+    }
+
+    /**
+     * @param array<string> $positionals
+     * @param array<string, string|bool> $options
+     */
+    private function taskBookNext(array $positionals, array $options): int
+    {
+        $agent = $this->requireAgent($options);
+        $board = $this->board();
+
+        $existingFeature = $this->getSingleFeatureForAgent($board, $agent, false);
+        $feature = $existingFeature?->getMeta('feature');
+
+        if ($feature === null) {
+            $feature = isset($positionals[0])
+                ? $this->normalizeFeatureSlug($positionals[0])
+                : $this->normalizeFeatureSlug($this->nextTaskText($board));
+        }
+
+        $target = $board->findNextBookableTask(isset($options['force']));
+        if ($target === null) {
+            throw new \RuntimeException('No backlog task available to reserve.');
+        }
+
+        $entry = $target['entry'];
+        $entry->setMeta('agent', $agent);
+        $entry->setMeta('feature', $feature);
+        $board->save();
+
+        $this->console->ok(sprintf('Reserved task for %s on feature %s', $agent, $feature));
+        $this->console->info($entry->getText());
+
+        return 0;
+    }
+
+    /**
+     * @param array<string> $positionals
+     * @param array<string, string|bool> $options
+     */
+    private function taskBookRelease(array $positionals, array $options): int
+    {
+        $agent = $this->requireAgent($options);
+        $board = $this->board();
+        $feature = isset($positionals[0]) ? $this->normalizeFeatureSlug($positionals[0]) : null;
+
+        if ($feature === null) {
+            $currentFeature = $this->getSingleFeatureForAgent($board, $agent, false);
+            $feature = $currentFeature?->getMeta('feature');
+        }
+
+        $board->clearReservations($agent, $feature);
+        $board->save();
+        $this->console->ok($feature !== null
+            ? sprintf('Released reserved tasks for %s on feature %s', $agent, $feature)
+            : sprintf('Released all reserved tasks for %s', $agent));
+
+        return 0;
+    }
+
+    /**
+     * @param array<string> $positionals
+     * @param array<string, string|bool> $options
+     */
+    private function featureStart(array $positionals, array $options): int
+    {
+        $agent = $this->requireAgent($options);
+        $branchType = (string) ($options['branch-type'] ?? '');
+        if (!in_array($branchType, ['feat', 'fix'], true)) {
+            throw new \RuntimeException('feature-start requires --branch-type=feat or --branch-type=fix.');
+        }
+
+        $bodyFile = $this->requireBodyFile($options);
+        $board = $this->board();
+
+        if ($this->getSingleFeatureForAgent($board, $agent, false) !== null) {
+            throw new \RuntimeException("Agent {$agent} already owns an active feature.");
+        }
+
+        $reserved = $board->findReservedTasks($agent);
+        if ($reserved === []) {
+            throw new \RuntimeException("Agent {$agent} has no reserved tasks to start.");
+        }
+
+        $feature = $reserved[0]['entry']->getMeta('feature');
+        foreach ($reserved as $task) {
+            if ($task['entry']->getMeta('feature') !== $feature) {
+                throw new \RuntimeException("Reserved tasks for {$agent} do not share the same feature.");
+            }
+        }
+
+        $worktree = $this->prepareAgentWorktree($agent);
+        $branch = $branchType . '/' . $feature;
+        $base = trim($this->capture('git rev-parse main'));
+
+        $this->checkoutBranchInWorktree($worktree, $branch, true);
+
+        $first = $reserved[0]['entry'];
+        $first->unsetMeta('feature');
+        $first->unsetMeta('agent');
+        $featureEntry = new BoardEntry($first->getText(), $first->getExtraLines(), [
+            'feature' => $feature,
+            'agent' => $agent,
+            'branch' => $branch,
+            'base' => $base,
+        ]);
+
+        foreach (array_slice($reserved, 1) as $task) {
+            $reservedEntry = $task['entry'];
+            $reservedEntry->unsetMeta('feature');
+            $reservedEntry->unsetMeta('agent');
+            $featureEntry->appendExtraLines(['  - ' . $reservedEntry->getText()]);
+            foreach ($reservedEntry->getExtraLines() as $line) {
+                $featureEntry->appendExtraLines(['  ' . ltrim($line)]);
+            }
+        }
+
+        $this->removeReservedTasks($board, $reserved);
+        $entries = $board->getEntries(BacklogBoard::SECTION_IN_PROGRESS);
+        $entries[] = $featureEntry;
+        $board->setEntries(BacklogBoard::SECTION_IN_PROGRESS, $entries);
+        $board->save();
+
+        $this->runCommand(sprintf('git -C %s push -u origin %s', escapeshellarg($worktree), escapeshellarg($branch)));
+        $this->createOrUpdatePr($branch, $this->buildPrTitle('WIP', $featureEntry), $bodyFile);
+
+        $this->console->ok(sprintf('Started feature %s on %s', $feature, $branch));
+
+        return 0;
+    }
+
+    /**
+     * @param array<string> $positionals
+     * @param array<string, string|bool> $options
+     */
+    private function featureTaskAdd(array $positionals, array $options): int
+    {
+        $agent = $this->requireAgent($options);
+        $bodyFile = $this->requireBodyFile($options);
+        $featureText = trim((string) ($options['feature-text'] ?? ''));
+        if ($featureText === '') {
+            throw new \RuntimeException('feature-task-add requires --feature-text.');
+        }
+
+        $board = $this->board();
+        $current = $this->requireSingleFeatureForAgent($board, $agent);
+        $feature = $current['entry']->getMeta('feature');
+        $reserved = $board->findReservedTasks($agent, $feature);
+        if ($reserved === []) {
+            throw new \RuntimeException("Agent {$agent} has no reserved tasks for feature {$feature}.");
+        }
+
+        $entry = $current['entry'];
+        $entry->setText($featureText);
+
+        foreach ($reserved as $task) {
+            $reservedEntry = $task['entry'];
+            $reservedEntry->unsetMeta('feature');
+            $reservedEntry->unsetMeta('agent');
+            $entry->appendExtraLines(['  - ' . $reservedEntry->getText()]);
+            foreach ($reservedEntry->getExtraLines() as $line) {
+                $entry->appendExtraLines(['  ' . ltrim($line)]);
+            }
+        }
+
+        $this->removeReservedTasks($board, $reserved);
+
+        if ($current['section'] !== BacklogBoard::SECTION_IN_PROGRESS) {
+            $board->moveFeature($feature, BacklogBoard::SECTION_IN_PROGRESS);
+        }
+
+        $board->save();
+        $this->updatePrBody($entry->getMeta('branch') ?? '', $bodyFile);
+
+        $this->console->ok(sprintf('Added reserved tasks to feature %s', $feature));
+
+        return 0;
+    }
+
+    /**
+     * @param array<string> $positionals
+     * @param array<string, string|bool> $options
+     */
+    private function featureAssign(array $positionals, array $options): int
+    {
+        $agent = $this->requireAgent($options);
+        $feature = $this->requireFeatureArgument($positionals);
+        $board = $this->board();
+
+        if ($this->getSingleFeatureForAgent($board, $agent, false) !== null) {
+            throw new \RuntimeException("Agent {$agent} already owns an active feature.");
+        }
+
+        $match = $this->requireFeature($board, $feature);
+        $match['entry']->setMeta('agent', $agent);
+        $board->save();
+
+        $this->checkoutBranchInWorktree(
+            $this->prepareAgentWorktree($agent),
+            $match['entry']->getMeta('branch') ?? '',
+            false,
+        );
+
+        $this->console->ok(sprintf('Assigned feature %s to %s', $feature, $agent));
+
+        return 0;
+    }
+
+    /**
+     * @param array<string> $positionals
+     * @param array<string, string|bool> $options
+     */
+    private function featureUnassign(array $positionals, array $options): int
+    {
+        $agent = $this->requireAgent($options);
+        $board = $this->board();
+        $feature = isset($positionals[0])
+            ? $this->normalizeFeatureSlug($positionals[0])
+            : $this->requireSingleFeatureForAgent($board, $agent)['entry']->getMeta('feature');
+
+        if ($feature === null) {
+            throw new \RuntimeException('No feature available for feature-unassign.');
+        }
+
+        $match = $this->requireFeature($board, $feature);
+        if (($match['entry']->getMeta('agent') ?? '') !== $agent) {
+            throw new \RuntimeException("Feature {$feature} is not assigned to agent {$agent}.");
+        }
+
+        $match['entry']->unsetMeta('agent');
+        $board->save();
+
+        $this->console->ok(sprintf('Unassigned feature %s from %s', $feature, $agent));
+
+        return 0;
+    }
+
+    /**
+     * @param array<string> $positionals
+     * @param array<string, string|bool> $options
+     */
+    private function featureRework(array $positionals, array $options): int
+    {
+        $agent = $this->requireAgent($options);
+        $board = $this->board();
+        $feature = isset($positionals[0])
+            ? $this->normalizeFeatureSlug($positionals[0])
+            : $this->requireSingleFeatureForAgent($board, $agent)['entry']->getMeta('feature');
+
+        if ($feature === null) {
+            throw new \RuntimeException('No feature available for feature-rework.');
+        }
+
+        $match = $this->requireFeature($board, $feature);
+        if ($match['section'] !== BacklogBoard::SECTION_REJECTED) {
+            throw new \RuntimeException("Feature {$feature} is not in the rejected section.");
+        }
+
+        $match['entry']->setMeta('agent', $agent);
+        $board->moveFeature($feature, BacklogBoard::SECTION_IN_PROGRESS);
+        $board->save();
+
+        $this->checkoutBranchInWorktree(
+            $this->prepareAgentWorktree($agent),
+            $match['entry']->getMeta('branch') ?? '',
+            false,
+        );
+
+        $this->console->ok(sprintf('Moved feature %s back to %s', $feature, BacklogBoard::SECTION_IN_PROGRESS));
+
+        return 0;
+    }
+
+    /**
+     * @param array<string> $positionals
+     * @param array<string, string|bool> $options
+     */
+    private function featureBlock(array $positionals, array $options): int
+    {
+        $agent = $this->requireAgent($options);
+        $board = $this->board();
+        $feature = isset($positionals[0])
+            ? $this->normalizeFeatureSlug($positionals[0])
+            : $this->requireSingleFeatureForAgent($board, $agent)['entry']->getMeta('feature');
+
+        if ($feature === null) {
+            throw new \RuntimeException('No feature available for feature-block.');
+        }
+
+        $match = $this->requireFeature($board, $feature);
+        $match['entry']->setMeta('blocked', 'yes');
+        $board->save();
+
+        $branch = $match['entry']->getMeta('branch') ?? '';
+        $prNumber = $this->findPrNumberByBranch($branch);
+        if ($prNumber !== null) {
+            $type = $match['section'] === BacklogBoard::SECTION_APPROVED ? $this->determinePrType($match['entry']) : 'WIP';
+            $title = $this->ensureBlockedTitle($this->buildPrTitle($type, $match['entry']));
+            $this->runCommand(sprintf(
+                'php scripts/github.php pr edit %d --title %s',
+                $prNumber,
+                escapeshellarg($title),
+            ));
+        }
+
+        $this->console->ok(sprintf('Marked feature %s as blocked', $feature));
+
+        return 0;
+    }
+
+    /**
+     * @param array<string> $positionals
+     * @param array<string, string|bool> $options
+     */
+    private function featureUnblock(array $positionals, array $options): int
+    {
+        $agent = $this->requireAgent($options);
+        $board = $this->board();
+        $feature = isset($positionals[0])
+            ? $this->normalizeFeatureSlug($positionals[0])
+            : $this->requireSingleFeatureForAgent($board, $agent)['entry']->getMeta('feature');
+
+        if ($feature === null) {
+            throw new \RuntimeException('No feature available for feature-unblock.');
+        }
+
+        $match = $this->requireFeature($board, $feature);
+        if (($match['entry']->getMeta('agent') ?? '') !== $agent) {
+            throw new \RuntimeException("Feature {$feature} is not assigned to agent {$agent}.");
+        }
+
+        $match['entry']->unsetMeta('blocked');
+        $board->save();
+
+        $branch = $match['entry']->getMeta('branch') ?? '';
+        $prNumber = $this->findPrNumberByBranch($branch);
+        if ($prNumber !== null) {
+            $title = $this->buildCurrentTitle($match['entry'], $match['section']);
+            $this->runCommand(sprintf(
+                'php scripts/github.php pr edit %d --title %s',
+                $prNumber,
+                escapeshellarg($title),
+            ));
+        }
+
+        $this->console->ok(sprintf('Removed blocked flag from feature %s', $feature));
+
+        return 0;
+    }
+
+    private function featureList(): int
+    {
+        $board = $this->board();
+        $sections = [
+            BacklogBoard::SECTION_IN_PROGRESS,
+            BacklogBoard::SECTION_IN_REVIEW,
+            BacklogBoard::SECTION_REJECTED,
+            BacklogBoard::SECTION_APPROVED,
+        ];
+
+        $printed = false;
+        foreach ($sections as $section) {
+            $entries = $board->getEntries($section);
+            if ($entries === []) {
+                continue;
+            }
+
+            $printed = true;
+            $this->console->line('[' . $section . ']');
+            foreach ($entries as $entry) {
+                $parts = [
+                    $entry->getMeta('feature') ?? '-',
+                    'branch=' . ($entry->getMeta('branch') ?? '-'),
+                    'agent=' . ($entry->getMeta('agent') ?? '-'),
+                ];
+                if ($entry->hasMeta('blocked')) {
+                    $parts[] = 'blocked=yes';
+                }
+                $this->console->line('- ' . implode(' ', $parts));
+            }
+        }
+
+        if (!$printed) {
+            $this->console->line('No active feature.');
+        }
+
+        return 0;
+    }
+
+    /**
+     * @param array<string> $positionals
+     * @param array<string, string|bool> $options
+     */
+    private function featureStatus(array $positionals, array $options): int
+    {
+        $board = $this->board();
+        $feature = isset($positionals[0]) ? $this->normalizeFeatureSlug($positionals[0]) : null;
+
+        if ($feature === null) {
+            $agent = (string) ($options['agent'] ?? '');
+            if ($agent === '') {
+                throw new \RuntimeException('feature-status requires either <feature> or --agent.');
+            }
+            $feature = $this->requireSingleFeatureForAgent($board, $agent)['entry']->getMeta('feature');
+        }
+
+        if ($feature === null) {
+            throw new \RuntimeException('Unable to resolve target feature for feature-status.');
+        }
+
+        $match = $this->requireFeature($board, $feature);
+        $this->console->line('Feature: ' . $feature);
+        $this->console->line('Branch: ' . ($match['entry']->getMeta('branch') ?? '-'));
+        $this->console->line('Base: ' . ($match['entry']->getMeta('base') ?? '-'));
+        $this->console->line('Stage: ' . $match['section']);
+        $this->console->line('Last: ' . $match['entry']->getText());
+        $this->console->line('Next: ' . $this->nextStepForSection($match['section']));
+        $this->console->line('Blocker: ' . ($match['entry']->hasMeta('blocked') ? 'blocked' : '-'));
+
+        return 0;
+    }
+
+    /**
+     * @param array<string> $positionals
+     * @param array<string, string|bool> $options
+     */
+    private function featureReviewRequest(array $positionals, array $options): int
+    {
+        $agent = $this->requireAgent($options);
+        $board = $this->board();
+        $feature = isset($positionals[0])
+            ? $this->normalizeFeatureSlug($positionals[0])
+            : $this->requireSingleFeatureForAgent($board, $agent)['entry']->getMeta('feature');
+
+        if ($feature === null) {
+            throw new \RuntimeException('No feature available for feature-review-request.');
+        }
+
+        $match = $this->requireFeature($board, $feature);
+        if ($match['section'] !== BacklogBoard::SECTION_IN_PROGRESS) {
+            throw new \RuntimeException("Feature {$feature} must be in " . BacklogBoard::SECTION_IN_PROGRESS . '.');
+        }
+
+        $worktree = $this->prepareAgentWorktree($agent);
+        $this->checkoutBranchInWorktree($worktree, $match['entry']->getMeta('branch') ?? '', false);
+        $this->runReviewScript($worktree);
+
+        $board->moveFeature($feature, BacklogBoard::SECTION_IN_REVIEW);
+        $board->save();
+
+        $this->console->ok(sprintf('Feature %s moved to %s', $feature, BacklogBoard::SECTION_IN_REVIEW));
+
+        return 0;
+    }
+
+    /**
+     * @param array<string> $positionals
+     */
+    private function featureReviewCheck(array $positionals): int
+    {
+        $feature = $this->requireFeatureArgument($positionals);
+        $board = $this->board();
+        $match = $this->requireFeature($board, $feature);
+
+        $reviewWorktree = $this->prepareReviewerWorktree();
+        $this->checkoutDetachedInWorktree($reviewWorktree, $match['entry']->getMeta('branch') ?? '');
+
+        try {
+            $this->runReviewScript($reviewWorktree);
+        } catch (\RuntimeException $exception) {
+            $message = 'Mechanical review `php scripts/review.php` failed. Fix mechanical issues before requesting review again.';
+            $this->featureReviewReject([$feature], ['body-file' => $this->writeTempContent([$message])], true);
+            throw $exception;
+        }
+
+        $this->console->ok(sprintf('Mechanical review passed for feature %s', $feature));
+
+        return 0;
+    }
+
+    /**
+     * @param array<string> $positionals
+     * @param array<string, string|bool> $options
+     */
+    private function featureReviewReject(array $positionals, array $options, bool $auto = false): int
+    {
+        $feature = $this->requireFeatureArgument($positionals);
+        $bodyFile = $this->requireBodyFile($options);
+        $board = $this->board();
+        $review = $this->reviewFile();
+        $match = $this->requireFeature($board, $feature);
+
+        if ($match['section'] !== BacklogBoard::SECTION_IN_REVIEW) {
+            throw new \RuntimeException("Feature {$feature} must be in " . BacklogBoard::SECTION_IN_REVIEW . ' to be rejected.');
+        }
+
+        $board->moveFeature($feature, BacklogBoard::SECTION_REJECTED);
+        $review->setFeatureReview($feature, $this->numberedReviewItems($bodyFile));
+        $board->save();
+        $review->save();
+
+        $this->console->ok(sprintf(
+            '%sfeature %s moved to %s',
+            $auto ? 'Automatically rejected ' : 'Rejected ',
+            $feature,
+            BacklogBoard::SECTION_REJECTED,
+        ));
+
+        return 0;
+    }
+
+    /**
+     * @param array<string> $positionals
+     * @param array<string, string|bool> $options
+     */
+    private function featureReviewApprove(array $positionals, array $options): int
+    {
+        $feature = $this->requireFeatureArgument($positionals);
+        $bodyFile = $this->requireBodyFile($options);
+        $board = $this->board();
+        $review = $this->reviewFile();
+        $match = $this->requireFeature($board, $feature);
+
+        if ($match['section'] !== BacklogBoard::SECTION_IN_REVIEW) {
+            throw new \RuntimeException("Feature {$feature} must be in " . BacklogBoard::SECTION_IN_REVIEW . ' to be approved.');
+        }
+
+        $type = $this->determinePrType($match['entry']);
+        $title = $this->buildPrTitle($type, $match['entry']);
+        $branch = $match['entry']->getMeta('branch') ?? '';
+        if ($branch === '') {
+            throw new \RuntimeException("Feature {$feature} has no branch metadata.");
+        }
+
+        $this->runCommand(sprintf('git push -u origin %s', escapeshellarg($branch)));
+        $this->createOrUpdatePr($branch, $title, $bodyFile);
+
+        $board->moveFeature($feature, BacklogBoard::SECTION_APPROVED);
+        $review->clearFeatureReview($feature);
+        $board->save();
+        $review->save();
+
+        $this->console->ok(sprintf('Approved feature %s with [%s] PR title', $feature, $type));
+
+        return 0;
+    }
+
+    /**
+     * @param array<string> $positionals
+     * @param array<string, string|bool> $options
+     */
+    private function featureMerge(array $positionals, array $options): int
+    {
+        $feature = $this->requireFeatureArgument($positionals);
+        $bodyFile = $this->requireBodyFile($options);
+        $board = $this->board();
+        $review = $this->reviewFile();
+        $match = $this->requireFeature($board, $feature);
+
+        if ($match['section'] !== BacklogBoard::SECTION_APPROVED) {
+            throw new \RuntimeException("Feature {$feature} must be in " . BacklogBoard::SECTION_APPROVED . ' before merge.');
+        }
+        if ($match['entry']->hasMeta('blocked')) {
+            throw new \RuntimeException("Feature {$feature} is blocked and cannot be merged.");
+        }
+
+        $branch = $match['entry']->getMeta('branch') ?? '';
+        $prNumber = $this->findPrNumberByBranch($branch);
+        if ($prNumber === null) {
+            throw new \RuntimeException("No open PR found for branch {$branch}.");
+        }
+
+        $type = $this->determinePrType($match['entry']);
+        $this->createOrUpdatePr($branch, $this->buildPrTitle($type, $match['entry']), $bodyFile);
+        $this->runCommand(sprintf('php scripts/github.php pr merge %d', $prNumber));
+        $this->runCommand('git checkout main');
+        $this->runCommand('git pull');
+        $this->runCommand(sprintf('git push origin --delete %s', escapeshellarg($branch)));
+        $this->runCommand(sprintf('git branch -d %s', escapeshellarg($branch)));
+
+        $board->removeFeature($feature);
+        $board->clearReservations($match['entry']->getMeta('agent') ?? '', $feature);
+        $review->clearFeatureReview($feature);
+        $board->save();
+        $review->save();
+
+        $this->console->ok(sprintf('Merged feature %s', $feature));
+
+        return 0;
+    }
+
+    /**
+     * @param array<string> $args
+     * @return array{0: array<string>, 1: array<string, string|bool>}
+     */
+    private function parseArgs(array $args): array
+    {
+        $positionals = [];
+        $options = [];
+
+        while ($args !== []) {
+            $arg = array_shift($args);
+
+            if (str_starts_with($arg, '--')) {
+                $option = substr($arg, 2);
+                if (str_contains($option, '=')) {
+                    [$key, $value] = explode('=', $option, 2);
+                    $options[$key] = $value;
+                    continue;
+                }
+
+                $next = $args[0] ?? null;
+                if ($next !== null && !str_starts_with($next, '--')) {
+                    $options[$option] = array_shift($args);
+                } else {
+                    $options[$option] = true;
+                }
+                continue;
+            }
+
+            $positionals[] = $arg;
+        }
+
+        return [$positionals, $options];
+    }
+
+    /**
+     * @param array<string, string|bool> $options
+     */
+    private function requireAgent(array $options): string
+    {
+        $agent = trim((string) ($options['agent'] ?? ''));
+        if ($agent === '') {
+            throw new \RuntimeException('This command requires --agent=<code>.');
+        }
+
+        return $agent;
+    }
+
+    /**
+     * @param array<string, string|bool> $options
+     */
+    private function requireBodyFile(array $options): string
+    {
+        $bodyFile = trim((string) ($options['body-file'] ?? ''));
+        if ($bodyFile === '') {
+            throw new \RuntimeException('This command requires --body-file=<path>.');
+        }
+        if (!is_file($bodyFile)) {
+            throw new \RuntimeException("Body file not found: {$bodyFile}");
+        }
+
+        return $bodyFile;
+    }
+
+    /**
+     * @param array<string> $positionals
+     */
+    private function requireFeatureArgument(array $positionals): string
+    {
+        if (!isset($positionals[0]) || trim($positionals[0]) === '') {
+            throw new \RuntimeException('This command requires <feature>.');
+        }
+
+        return $this->normalizeFeatureSlug($positionals[0]);
+    }
+
+    private function board(): BacklogBoard
+    {
+        return new BacklogBoard($this->projectRoot . '/local/backlog-board.md');
+    }
+
+    private function reviewFile(): BacklogReviewFile
+    {
+        return new BacklogReviewFile($this->projectRoot . '/local/backlog-review.md');
+    }
+
+    private function nextTaskText(BacklogBoard $board): string
+    {
+        $target = $board->findNextBookableTask(false);
+        if ($target === null) {
+            throw new \RuntimeException('No non-reserved task available in the todo section.');
+        }
+
+        return $target['entry']->getText();
+    }
+
+    private function normalizeFeatureSlug(string $text): string
+    {
+        $text = trim(mb_strtolower($text));
+        $text = preg_replace('/[^a-z0-9]+/', '-', $text) ?? '';
+        $text = trim($text, '-');
+        $text = preg_replace('/-+/', '-', $text) ?? '';
+
+        if ($text === '') {
+            throw new \RuntimeException('Unable to derive a valid feature slug.');
+        }
+
+        return $text;
+    }
+
+    /**
+     * @return array{section: string, index: int, entry: BoardEntry}
+     */
+    private function requireFeature(BacklogBoard $board, string $feature): array
+    {
+        $match = $board->findFeature($feature);
+        if ($match === null) {
+            throw new \RuntimeException("Feature not found: {$feature}");
+        }
+
+        return $match;
+    }
+
+    private function getSingleFeatureForAgent(BacklogBoard $board, string $agent, bool $required): ?BoardEntry
+    {
+        $matches = $board->findFeaturesByAgent($agent);
+        if ($matches === []) {
+            if ($required) {
+                throw new \RuntimeException("Agent {$agent} has no active feature.");
+            }
+            return null;
+        }
+
+        if (count($matches) > 1) {
+            throw new \RuntimeException("Agent {$agent} has multiple active features. Resolve the backlog before continuing.");
+        }
+
+        return $matches[0]['entry'];
+    }
+
+    /**
+     * @return array{section: string, index: int, entry: BoardEntry}
+     */
+    private function requireSingleFeatureForAgent(BacklogBoard $board, string $agent): array
+    {
+        $matches = $board->findFeaturesByAgent($agent);
+        if ($matches === []) {
+            throw new \RuntimeException("Agent {$agent} has no active feature.");
+        }
+
+        if (count($matches) > 1) {
+            throw new \RuntimeException("Agent {$agent} has multiple active features.");
+        }
+
+        return $matches[0];
+    }
+
+    /**
+     * @param array<int, array{index: int, entry: BoardEntry}> $reserved
+     */
+    private function removeReservedTasks(BacklogBoard $board, array $reserved): void
+    {
+        $entries = $board->getEntries(BacklogBoard::SECTION_TODO);
+        $indexes = array_map(static fn(array $item): int => $item['index'], $reserved);
+        rsort($indexes);
+
+        foreach ($indexes as $index) {
+            array_splice($entries, $index, 1);
+        }
+
+        $board->setEntries(BacklogBoard::SECTION_TODO, array_values($entries));
+    }
+
+    private function prepareAgentWorktree(string $agent): string
+    {
+        $path = $this->projectRoot . '/.worktrees/' . $agent;
+
+        if (!is_dir($path . '/.git') && !is_file($path . '/.git')) {
+            $this->runCommand(sprintf('git worktree add --detach %s HEAD', escapeshellarg($path)));
+        }
+
+        $status = trim($this->capture(sprintf('git -C %s status --short', escapeshellarg($path))));
+        if ($status !== '') {
+            throw new \RuntimeException("Agent worktree is dirty: {$path}");
+        }
+
+        return $path;
+    }
+
+    private function prepareReviewerWorktree(): string
+    {
+        $path = $this->projectRoot . '/.worktrees/reviewer';
+
+        if (!is_dir($path . '/.git') && !is_file($path . '/.git')) {
+            $this->runCommand(sprintf('git worktree add --detach %s HEAD', escapeshellarg($path)));
+        }
+
+        $status = trim($this->capture(sprintf('git -C %s status --short', escapeshellarg($path))));
+        if ($status !== '') {
+            throw new \RuntimeException("Reviewer worktree is dirty: {$path}");
+        }
+
+        return $path;
+    }
+
+    private function checkoutBranchInWorktree(string $worktree, string $branch, bool $create): void
+    {
+        if ($branch === '') {
+            throw new \RuntimeException('Missing branch name.');
+        }
+
+        $this->releaseBranchFromOtherWorktrees($branch, $worktree);
+
+        if ($create) {
+            $this->runCommand(sprintf(
+                'git -C %s checkout -B %s main',
+                escapeshellarg($worktree),
+                escapeshellarg($branch),
+            ));
+            return;
+        }
+
+        $hasLocal = $this->commandSucceeds(sprintf('git -C %s rev-parse --verify %s', escapeshellarg($worktree), escapeshellarg($branch)));
+        if ($hasLocal) {
+            $this->runCommand(sprintf('git -C %s checkout %s', escapeshellarg($worktree), escapeshellarg($branch)));
+            return;
+        }
+
+        $this->runCommand(sprintf(
+            'git -C %s checkout -B %s origin/%s',
+            escapeshellarg($worktree),
+            escapeshellarg($branch),
+            escapeshellarg($branch),
+        ));
+    }
+
+    private function checkoutDetachedInWorktree(string $worktree, string $branch): void
+    {
+        if ($branch === '') {
+            throw new \RuntimeException('Missing branch name.');
+        }
+
+        $this->runCommand(sprintf(
+            'git -C %s checkout --detach %s',
+            escapeshellarg($worktree),
+            escapeshellarg($branch),
+        ));
+    }
+
+    private function releaseBranchFromOtherWorktrees(string $branch, string $keepWorktree): void
+    {
+        $output = $this->capture('git worktree list --porcelain');
+        $blocks = preg_split('/\n\n/', trim($output)) ?: [];
+
+        foreach ($blocks as $block) {
+            $path = null;
+            $ref = null;
+
+            foreach (explode("\n", $block) as $line) {
+                if (str_starts_with($line, 'worktree ')) {
+                    $path = substr($line, 9);
+                }
+                if (str_starts_with($line, 'branch refs/heads/')) {
+                    $ref = substr($line, strlen('branch refs/heads/'));
+                }
+            }
+
+            if ($path === null || $ref !== $branch || realpath($path) === realpath($keepWorktree)) {
+                continue;
+            }
+
+            $dirty = trim($this->capture(sprintf('git -C %s status --short', escapeshellarg($path))));
+            if ($dirty !== '') {
+                throw new \RuntimeException("Branch {$branch} is still active in a dirty worktree: {$path}");
+            }
+
+            if (!str_starts_with($path, $this->projectRoot . '/.worktrees/')) {
+                throw new \RuntimeException("Branch {$branch} is active in a non-managed worktree: {$path}");
+            }
+
+            $this->runCommand(sprintf('git worktree remove %s --force', escapeshellarg($path)));
+        }
+    }
+
+    private function runReviewScript(string $worktree): void
+    {
+        $script = $worktree . '/scripts/review.php';
+        $this->runCommand(sprintf(
+            'cd %s && php %s',
+            escapeshellarg($worktree),
+            escapeshellarg($script),
+        ));
+    }
+
+    private function determinePrType(BoardEntry $entry): string
+    {
+        $base = $entry->getMeta('base') ?? '';
+        $branch = $entry->getMeta('branch') ?? '';
+        if ($base === '' || $branch === '') {
+            throw new \RuntimeException('Cannot determine PR type without base and branch metadata.');
+        }
+
+        $files = array_values(array_filter(explode("\n", trim($this->capture(sprintf(
+            'git diff --name-only %s..%s',
+            escapeshellarg($base),
+            escapeshellarg($branch),
+        ))))));
+
+        if ($files === []) {
+            return str_starts_with($branch, 'fix/') ? 'FIX' : 'FEAT';
+        }
+
+        $docOnly = true;
+        $techOnly = true;
+
+        foreach ($files as $file) {
+            if (!str_starts_with($file, 'doc/') && $file !== 'AGENTS.md') {
+                $docOnly = false;
+            }
+
+            if (
+                !str_starts_with($file, 'scripts/')
+                && !str_starts_with($file, '.github/')
+                && !in_array($file, ['AGENTS.md', 'composer.json', 'composer.lock', 'package.json', 'package-lock.json', 'pnpm-lock.yaml'], true)
+            ) {
+                $techOnly = false;
+            }
+        }
+
+        if ($docOnly) {
+            return 'DOC';
+        }
+
+        if ($techOnly) {
+            return 'TECH';
+        }
+
+        return str_starts_with($branch, 'fix/') ? 'FIX' : 'FEAT';
+    }
+
+    private function buildPrTitle(string $type, BoardEntry $entry): string
+    {
+        $title = sprintf('[%s] %s', $type, $entry->getText());
+
+        return $entry->hasMeta('blocked')
+            ? $this->ensureBlockedTitle($title)
+            : $title;
+    }
+
+    private function buildCurrentTitle(BoardEntry $entry, string $section): string
+    {
+        $type = $section === BacklogBoard::SECTION_APPROVED
+            ? $this->determinePrType($entry)
+            : 'WIP';
+
+        return $this->buildPrTitle($type, $entry);
+    }
+
+    private function ensureBlockedTitle(string $title): string
+    {
+        return str_contains($title, '[BLOCKED]')
+            ? $title
+            : '[BLOCKED] ' . $title;
+    }
+
+    private function createOrUpdatePr(string $branch, string $title, string $bodyFile): void
+    {
+        $prNumber = $this->findPrNumberByBranch($branch);
+
+        if ($prNumber === null) {
+            $this->runCommand(sprintf(
+                'php scripts/github.php pr create --title %s --head %s --base main --body-file %s',
+                escapeshellarg($title),
+                escapeshellarg($branch),
+                escapeshellarg($bodyFile),
+            ));
+            return;
+        }
+
+        $this->runCommand(sprintf(
+            'php scripts/github.php pr edit %d --title %s --body-file %s',
+            $prNumber,
+            escapeshellarg($title),
+            escapeshellarg($bodyFile),
+        ));
+    }
+
+    private function updatePrBody(string $branch, string $bodyFile): void
+    {
+        $prNumber = $this->findPrNumberByBranch($branch);
+        if ($prNumber === null) {
+            throw new \RuntimeException("No open PR found for branch {$branch}.");
+        }
+
+        $this->runCommand(sprintf(
+            'php scripts/github.php pr edit %d --body-file %s',
+            $prNumber,
+            escapeshellarg($bodyFile),
+        ));
+    }
+
+    private function findPrNumberByBranch(string $branch): ?int
+    {
+        if ($branch === '') {
+            return null;
+        }
+
+        $output = $this->capture('php scripts/github.php pr list');
+        foreach (explode("\n", trim($output)) as $line) {
+            if (preg_match('/^\s*#(\d+)\s+.*\[(.+?) → (.+?)\]$/u', $line, $matches) === 1) {
+                if ($matches[2] === $branch) {
+                    return (int) $matches[1];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<string>
+     */
+    private function numberedReviewItems(string $bodyFile): array
+    {
+        $contents = trim((string) file_get_contents($bodyFile));
+        if ($contents === '') {
+            return ['1. No details provided.'];
+        }
+
+        $lines = array_values(array_filter(array_map('trim', preg_split('/\R/', $contents) ?: [])));
+        $items = [];
+
+        foreach ($lines as $index => $line) {
+            $normalized = preg_match('/^\d+\.\s+/', $line) === 1
+                ? $line
+                : sprintf('%d. %s', $index + 1, $line);
+            $items[] = $normalized;
+        }
+
+        return $items;
+    }
+
+    /**
+     * @param array<string> $lines
+     */
+    private function writeTempContent(array $lines): string
+    {
+        $path = $this->projectRoot . '/local/tmp/backlog-auto-review.txt';
+        file_put_contents($path, implode("\n", $lines) . "\n");
+
+        return $path;
+    }
+
+    private function nextStepForSection(string $section): string
+    {
+        return match ($section) {
+            BacklogBoard::SECTION_IN_PROGRESS => 'feature-review-request',
+            BacklogBoard::SECTION_IN_REVIEW => 'feature-review-check or feature-review-approve',
+            BacklogBoard::SECTION_REJECTED => 'feature-rework',
+            BacklogBoard::SECTION_APPROVED => 'feature-merge',
+            default => '-',
+        };
+    }
+
+    private function runCommand(string $command): void
+    {
+        $code = $this->app->runCommand($command);
+        if ($code !== 0) {
+            throw new \RuntimeException("Command failed with exit code {$code}: {$command}");
+        }
+    }
+
+    private function capture(string $command): string
+    {
+        $output = [];
+        $code = 0;
+        exec($command . ' 2>&1', $output, $code);
+        if ($code !== 0) {
+            throw new \RuntimeException(sprintf("Command failed with exit code %d: %s\n%s", $code, $command, implode("\n", $output)));
+        }
+
+        return implode("\n", $output);
+    }
+
+    private function commandSucceeds(string $command): bool
+    {
+        $output = [];
+        $code = 0;
+        exec($command . ' 2>&1', $output, $code);
+
+        return $code === 0;
+    }
+}

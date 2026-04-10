@@ -53,6 +53,61 @@ This applies to `::class` references in constants and arrays as well.
 
 ---
 
+## Constants And Static Configuration
+
+Do not scatter repeated domain strings, mode names, state names, or configuration selectors as inline literals across the code.
+
+When a value is not modeled as an enum, promote it to an explicit constant or a static configuration map.
+
+Prefer:
+- class constants for repeated identifiers such as modes, scopes, states, engines, channels, or metadata keys
+- static arrays or `match` mappings for declarative configuration
+- one source of truth for allowed values and their related configuration
+
+Avoid:
+- duplicated string literals such as `'frontend'`, `'backend'`, `'review'`, `'blocked'` repeated in multiple conditions
+- imperative selection code built from many small `if` branches when the behavior is configuration-driven
+- ad hoc inline lists of allowed values repeated in validation and execution paths
+
+Example:
+- prefer a constant like `self::SCOPE_FRONTEND` over a hardcoded `'frontend'`
+- prefer a static map of scope-to-directories over multiple `if ($scope !== ...)` branches
+
+The goal is to keep behavior declarative, reduce drift between validation and execution, and make future changes local and auditable.
+
+---
+
+## Control Flow Blocks
+
+Control flow blocks must always use braces, even for a single statement.
+
+This applies to:
+- `if`
+- `elseif`
+- `else`
+- `for`
+- `foreach`
+- `while`
+- `do ... while`
+
+Do not use compact one-line control flow such as:
+
+```php
+if (!$file->isFile()) continue;
+```
+
+Write it as:
+
+```php
+if (!$file->isFile()) {
+    continue;
+}
+```
+
+The block body must be placed on its own indented line.
+
+---
+
 ## Abstract Classes
 
 An abstract class name must be prefixed with `Abstract`.

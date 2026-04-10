@@ -26,6 +26,11 @@ These files are part of the project codebase and must follow explicit convention
 - Prefer object-oriented code for stateful or multi-step workflows.
 - Avoid passing long lists of repeated parameters through procedural helper functions when those values can be object properties.
 - Avoid large clusters of global functions for anything more than trivial bootstrapping.
+- Replace repeated script modes, scopes, engines, states, and metadata keys with constants unless a real enum is available.
+- Prefer static configuration maps or equivalent declarative structures over chains of `if` statements when the behavior is configuration-driven.
+- Keep validation values and execution routing derived from the same constants/configuration source when possible.
+- Always use braces for control-flow blocks, even for one-line branches or loops.
+- Put the block body on its own indented line; do not keep `if (...) continue;` or similar compact forms.
 
 ## Reusable Runtime
 
