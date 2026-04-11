@@ -417,6 +417,7 @@ Rules:
 - Reviewers may push existing feature branches with `git push -u origin <branch>` when required by the workflow and no script wrapper exists yet.
 - Never amend a published commit
 - Use `php scripts/github.php` for GitHub operations instead of `gh`
+- Always use `git -C <path>` to target a specific directory instead of `cd <path> && git ...`
 
 ## Conventions Snapshot
 

@@ -187,7 +187,7 @@ final class AgentExecutionService
                 'complete_current_task',
                 'complete_ticket',
             ]);
-            $this->handleProductOwnerTicketTaskResponse($task, $response->content);
+            $this->handleProductOwnerTicketTaskResponse($task, $agent, $response->content);
         } else {
             $this->assertAllowedEffects($task, ['complete_current_task']);
             $task->setStatus(TaskStatus::Done)->setProgress(100);
@@ -543,16 +543,40 @@ final class AgentExecutionService
 
         return $removed;
     }
-    private function handleProductOwnerTicketTaskResponse(TicketTask $task, string $rawContent): void
+    private function handleProductOwnerTicketTaskResponse(TicketTask $task, Agent $agent, string $rawContent): void
     {
         $ticket = $task->getTicket();
         $content = trim($rawContent);
-        if ($content !== '') {
-            $ticket->setDescription($content);
-        }
 
         if (preg_match('/^##\s+(.+)$/m', $content, $matches) === 1) {
             $ticket->setTitle(trim($matches[1]));
+
+            $description = $this->buildPoDescription($content);
+            if ($description !== '') {
+                $ticket->setDescription($description);
+            }
+
+            $validationPoints = $this->extractPoValidationPoints($content);
+            foreach ($validationPoints as $point) {
+                $this->ticketLogService->log(
+                    ticket: $ticket,
+                    action: 'agent_question',
+                    content: $point,
+                    ticketTask: $task,
+                    kind: 'comment',
+                    authorType: 'agent',
+                    authorName: $agent->getName(),
+                    requiresAnswer: true,
+                    metadata: [
+                        'context' => 'po_validation_point',
+                        'necessityLevel' => ClarificationQuestionNecessity::Useful->value,
+                        'necessityReason' => 'Validation point from product owner specification',
+                        'skillSlug' => 'product-owner',
+                        'agentId' => (string) $agent->getId(),
+                        'actionKey' => $task->getAgentAction()->getKey(),
+                    ],
+                );
+            }
         }
 
         $ticket->setStatus(TaskStatus::Done)->setProgress(100);
@@ -564,5 +588,42 @@ final class AgentExecutionService
             'The request was reframed into a user story ready for validation.',
             $task,
         );
+    }
+
+    /**
+     * Builds the ticket description from a PO response by stripping the title heading
+     * and the validation-points section so only descriptive content is stored.
+     */
+    private function buildPoDescription(string $content): string
+    {
+        // Remove the ## Title line
+        $result = (string) preg_replace('/^##\s+.+\R?/m', '', $content);
+
+        // Remove the "Points a confirmer" section (up to the next ### heading or end of string)
+        $result = (string) preg_replace('/###\s+Points\s+[\x{00e0}a]\s+confirmer\s*\R.*?(?=###|\z)/su', '', $result);
+
+        return trim($result);
+    }
+
+    /**
+     * Extracts individual validation points from the skill validation-points section of a PO response.
+     *
+     * @return string[]
+     */
+    private function extractPoValidationPoints(string $content): array
+    {
+        if (preg_match('/###\s+Points\s+[\x{00e0}a]\s+confirmer\s*\R(.*?)(?=###|\z)/su', $content, $matches) !== 1) {
+            return [];
+        }
+
+        $points = [];
+        foreach (preg_split('/\R+/', $matches[1]) ?: [] as $line) {
+            $point = trim((string) preg_replace('/^[-*]\s+/', '', trim($line)));
+            if ($point !== '' && mb_strlen($point) > 5) {
+                $points[] = $point;
+            }
+        }
+
+        return $points;
     }
 }
