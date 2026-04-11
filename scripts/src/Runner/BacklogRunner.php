@@ -61,6 +61,8 @@ final class BacklogRunner extends AbstractScriptRunner
             ['name' => 'feature-block', 'description' => 'Mark a feature as blocked'],
             ['name' => 'feature-unblock', 'description' => 'Remove the blocked flag from one feature'],
             ['name' => 'feature-list', 'description' => 'List active features grouped by backlog section'],
+            ['name' => 'worktree-list', 'description' => 'List managed and external git worktrees with cleanup guidance'],
+            ['name' => 'worktree-clean', 'description' => 'Remove abandoned managed worktrees under .worktrees/ when safe'],
             ['name' => 'feature-status', 'description' => 'Print the current status of one feature'],
             ['name' => 'feature-review-next', 'description' => 'Print the next feature currently waiting in review'],
             ['name' => 'feature-review-request', 'description' => 'Request reviewer action after a clean mechanical review'],
@@ -96,6 +98,8 @@ final class BacklogRunner extends AbstractScriptRunner
             'php scripts/backlog.php feature-start --agent agent-01 --branch-type feat',
             'php scripts/backlog.php feature-deps-mode --agent agent-01 linked',
             'php scripts/backlog.php feature-list',
+            'php scripts/backlog.php worktree-list',
+            'php scripts/backlog.php worktree-clean --dry-run',
             'php scripts/backlog.php feature-review-next',
             'php scripts/backlog.php feature-review-approve delete-question-reply --body-file local/tmp/pr_body.md',
         ];
@@ -127,6 +131,8 @@ final class BacklogRunner extends AbstractScriptRunner
             'feature-block' => $this->featureBlock($commandArgs, $options),
             'feature-unblock' => $this->featureUnblock($commandArgs, $options),
             'feature-list' => $this->featureList(),
+            'worktree-list' => $this->worktreeList(),
+            'worktree-clean' => $this->worktreeClean(),
             'feature-status' => $this->featureStatus($commandArgs, $options),
             'feature-review-next' => $this->featureReviewNext(),
             'feature-review-request' => $this->featureReviewRequest($commandArgs, $options),
@@ -531,8 +537,12 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $match['entry']->unsetMeta('agent');
         $this->saveBoard($board, 'feature-unassign');
+        $cleaned = $this->cleanupAbandonedManagedWorktrees($board);
 
         $this->console->ok(sprintf('Unassigned feature %s from %s', $feature, $agent));
+        if ($cleaned > 0) {
+            $this->console->line(sprintf('Cleaned %d abandoned managed worktree%s.', $cleaned, $cleaned > 1 ? 's' : ''));
+        }
 
         return 0;
     }
@@ -681,6 +691,75 @@ final class BacklogRunner extends AbstractScriptRunner
 
         if (!$printed) {
             $this->console->line('No active feature.');
+        }
+
+        return 0;
+    }
+
+    private function worktreeList(): int
+    {
+        $board = $this->board();
+        ['managed' => $managed, 'external' => $external] = $this->classifyWorktrees($board);
+
+        if ($managed === [] && $external === []) {
+            $this->console->line('No worktree to report.');
+
+            return 0;
+        }
+
+        if ($managed !== []) {
+            $this->console->line('[Managed worktrees]');
+            foreach ($managed as $item) {
+                $parts = [
+                    $this->toRelativeProjectPath($item['path']),
+                    'state=' . $item['state'],
+                    'branch=' . ($item['branch'] ?? '-'),
+                    'feature=' . ($item['feature'] ?? '-'),
+                    'agent=' . ($item['agent'] ?? '-'),
+                    'action=' . $item['action'],
+                ];
+                $this->console->line('- ' . implode(' ', $parts));
+            }
+        }
+
+        if ($external !== []) {
+            $this->console->line('[External worktrees]');
+            foreach ($external as $item) {
+                $parts = [
+                    $item['path'],
+                    'branch=' . ($item['branch'] ?? '-'),
+                    'action=' . $item['action'],
+                ];
+                $this->console->line('- ' . implode(' ', $parts));
+            }
+            $this->console->line('Manual cleanup: verify each external worktree is disposable, then use `git worktree remove <path>` or `git worktree prune` when only metadata remains.');
+        }
+
+        return 0;
+    }
+
+    private function worktreeClean(): int
+    {
+        $board = $this->board();
+        $cleaned = $this->cleanupAbandonedManagedWorktrees($board);
+
+        if ($cleaned === 0) {
+            $this->console->line('No abandoned managed worktree to clean.');
+
+            return 0;
+        }
+
+        $this->console->ok(sprintf(
+            '%s %d abandoned managed worktree%s',
+            $this->dryRun ? 'Would clean' : 'Cleaned',
+            $cleaned,
+            $cleaned > 1 ? 's' : '',
+        ));
+
+        ['managed' => $managed] = $this->classifyWorktrees($board);
+        $skipped = count($managed);
+        if ($skipped > 0) {
+            $this->console->line(sprintf('Skipped %d managed worktree%s that require manual attention.', $skipped, $skipped > 1 ? 's' : ''));
         }
 
         return 0;
@@ -908,8 +987,12 @@ final class BacklogRunner extends AbstractScriptRunner
         $review->clearFeatureReview($feature);
         $this->saveBoard($board, 'feature-close');
         $this->saveReviewFile($review, 'feature-close');
+        $cleaned = $this->cleanupAbandonedManagedWorktrees($board);
 
         $this->console->ok(sprintf('Closed feature %s without merge', $feature));
+        if ($cleaned > 0) {
+            $this->console->line(sprintf('Cleaned %d abandoned managed worktree%s.', $cleaned, $cleaned > 1 ? 's' : ''));
+        }
 
         return 0;
     }
@@ -944,16 +1027,22 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->runGithubCommand(sprintf('php scripts/github.php pr merge %d', $prNumber));
         $this->runCommand('git checkout main');
         $this->runCommand('git pull');
-        $this->runCommand(sprintf('git push origin --delete %s', escapeshellarg($branch)));
-        $this->runCommand(sprintf('git branch -d %s', escapeshellarg($branch)));
 
         $board->removeFeature($feature);
         $board->clearReservations($match['entry']->getMeta('agent') ?? '', $feature);
         $review->clearFeatureReview($feature);
         $this->saveBoard($board, 'feature-merge');
         $this->saveReviewFile($review, 'feature-merge');
+        $cleaned = $this->cleanupManagedWorktreesForBranch($branch, $board);
+        $cleaned += $this->cleanupAbandonedManagedWorktrees($board);
+
+        $this->runCommand(sprintf('git push origin --delete %s', escapeshellarg($branch)));
+        $this->runCommand(sprintf('git branch -d %s', escapeshellarg($branch)));
 
         $this->console->ok(sprintf('Merged feature %s', $feature));
+        if ($cleaned > 0) {
+            $this->console->line(sprintf('Cleaned %d abandoned managed worktree%s.', $cleaned, $cleaned > 1 ? 's' : ''));
+        }
 
         return 0;
     }
@@ -1459,13 +1548,141 @@ final class BacklogRunner extends AbstractScriptRunner
      */
     private function listWorktreeBranchBindings(): array
     {
-        $output = $this->capture('git worktree list --porcelain');
-        $blocks = preg_split('/\n\n/', trim($output)) ?: [];
+        $blocks = $this->gitWorktreeBlocks();
         $bindings = [];
+
+        foreach ($blocks as $block) {
+            $path = $block['path'];
+            $branch = $block['branch'];
+
+            if ($path !== null) {
+                $bindings[] = ['path' => $path, 'branch' => $branch];
+            }
+        }
+
+        return $bindings;
+    }
+
+    /**
+     * @return array{managed: array<int, array{path: string, branch: string|null, feature: string|null, agent: string|null, state: string, action: string}>, external: array<int, array{path: string, branch: string|null, action: string}>}
+     */
+    private function classifyWorktrees(BacklogBoard $board): array
+    {
+        $managed = [];
+        $external = [];
+        $activeFeatures = $this->activeFeaturesByBranch($board);
+
+        foreach ($this->gitWorktreeBlocks() as $worktree) {
+            $path = $worktree['path'];
+            if ($path === $this->projectRoot) {
+                continue;
+            }
+
+            if (!$this->isManagedAgentWorktree($path)) {
+                $external[] = [
+                    'path' => $path,
+                    'branch' => $worktree['branch'],
+                    'action' => $worktree['prunable'] ? 'manual-prune' : 'manual-remove',
+                ];
+                continue;
+            }
+
+            $feature = null;
+            $agent = null;
+            $state = 'orphan';
+            $action = 'clean';
+            $branch = $worktree['branch'];
+
+            if ($worktree['prunable']) {
+                $state = 'prunable';
+                $action = 'manual-prune';
+            } elseif ($branch !== null && isset($activeFeatures[$branch])) {
+                $feature = $activeFeatures[$branch]['feature'];
+                $agent = $activeFeatures[$branch]['agent'];
+                $expectedPath = $this->projectRoot . '/.worktrees/' . $agent;
+                $dirty = $this->worktreeIsDirty($path);
+
+                if ($path !== $expectedPath) {
+                    $state = 'blocked';
+                    $action = 'manual-review';
+                } elseif ($dirty) {
+                    $state = 'dirty';
+                    $action = 'manual-review';
+                } else {
+                    $state = 'active';
+                    $action = 'keep';
+                }
+            } else {
+                $agent = basename($path);
+                if ($this->worktreeIsDirty($path)) {
+                    $state = 'dirty';
+                    $action = 'manual-review';
+                } elseif ($branch === null) {
+                    $state = 'detached-managed';
+                    $action = 'clean';
+                }
+            }
+
+            $managed[] = [
+                'path' => $path,
+                'branch' => $branch,
+                'feature' => $feature,
+                'agent' => $agent,
+                'state' => $state,
+                'action' => $action,
+            ];
+        }
+
+        return ['managed' => $managed, 'external' => $external];
+    }
+
+    /**
+     * @return array<string, array{feature: string, agent: string}>
+     */
+    private function activeFeaturesByBranch(BacklogBoard $board): array
+    {
+        $features = [];
+        foreach ([
+            BacklogBoard::SECTION_IN_PROGRESS,
+            BacklogBoard::SECTION_IN_REVIEW,
+            BacklogBoard::SECTION_REJECTED,
+            BacklogBoard::SECTION_APPROVED,
+        ] as $section) {
+            foreach ($board->getEntries($section) as $entry) {
+                $branch = $entry->getMeta('branch') ?? '';
+                $feature = $entry->getMeta('feature') ?? '';
+                $agent = $entry->getMeta('agent') ?? '';
+                if ($branch === '' || $feature === '' || $agent === '') {
+                    continue;
+                }
+
+                $features[$branch] = [
+                    'feature' => $feature,
+                    'agent' => $agent,
+                ];
+            }
+        }
+
+        return $features;
+    }
+
+    /**
+     * @return array<int, array{path: string, branch: string|null, prunable: bool}>
+     */
+    private function gitWorktreeBlocks(): array
+    {
+        $output = trim($this->capture('git worktree list --porcelain'));
+        if ($output === '') {
+            return [];
+        }
+
+        $blocks = preg_split('/\n\n/', $output) ?: [];
+        $worktrees = [];
 
         foreach ($blocks as $block) {
             $path = null;
             $branch = null;
+            $prunable = false;
 
             foreach (explode("\n", $block) as $line) {
                 if (str_starts_with($line, 'worktree ')) {
@@ -1474,15 +1691,81 @@ final class BacklogRunner extends AbstractScriptRunner
                 }
                 if (str_starts_with($line, 'branch refs/heads/')) {
                     $branch = substr($line, strlen('branch refs/heads/'));
+                    continue;
+                }
+                if (str_starts_with($line, 'prunable ')) {
+                    $prunable = true;
                 }
             }
 
             if ($path !== null) {
-                $bindings[] = ['path' => $path, 'branch' => $branch];
+                $worktrees[] = [
+                    'path' => $path,
+                    'branch' => $branch,
+                    'prunable' => $prunable,
+                ];
             }
         }
 
-        return $bindings;
+        return $worktrees;
+    }
+
+    private function isManagedAgentWorktree(string $path): bool
+    {
+        return str_starts_with($path, $this->projectRoot . '/.worktrees/');
+    }
+
+    private function worktreeIsDirty(string $path): bool
+    {
+        if (!is_dir($path) && !is_file($path)) {
+            return false;
+        }
+
+        return trim($this->capture($this->gitInPath($path, 'status --short'))) !== '';
+    }
+
+    private function cleanupAbandonedManagedWorktrees(BacklogBoard $board): int
+    {
+        ['managed' => $managed] = $this->classifyWorktrees($board);
+
+        $cleanable = array_values(array_filter(
+            $managed,
+            static fn(array $item): bool => in_array($item['state'], ['orphan', 'detached-managed'], true)
+        ));
+
+        foreach ($cleanable as $item) {
+            $this->runCommand(sprintf(
+                'git worktree remove %s --force',
+                escapeshellarg($this->toRelativeProjectPath($item['path'])),
+            ));
+        }
+
+        return count($cleanable);
+    }
+
+    private function cleanupManagedWorktreesForBranch(string $branch, BacklogBoard $board): int
+    {
+        if ($branch === '') {
+            return 0;
+        }
+
+        $count = 0;
+        foreach ($this->classifyWorktrees($board)['managed'] as $item) {
+            if (($item['branch'] ?? null) !== $branch) {
+                continue;
+            }
+            if (!in_array($item['state'], ['orphan', 'detached-managed'], true)) {
+                continue;
+            }
+
+            $this->runCommand(sprintf(
+                'git worktree remove %s --force',
+                escapeshellarg($this->toRelativeProjectPath($item['path'])),
+            ));
+            $count++;
+        }
+
+        return $count;
     }
 
     private function runReviewScript(string $worktree): void
