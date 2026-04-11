@@ -56,6 +56,10 @@ Rules:
 - A branch belongs to the active feature.
 - A feature branch must never stay checked out in multiple worktrees at the same time.
 - Keep `.worktrees/` ignored in the root `.gitignore`.
+- Run every `php scripts/backlog.php ...` command from `WP` only, never from a `WA`.
+- Use `php scripts/backlog.php worktree-list` to inspect managed worktrees under `.worktrees/`.
+- Use `php scripts/backlog.php worktree-clean` to remove only abandoned managed worktrees that are safe to delete.
+- Worktrees outside `.worktrees/` are never auto-removed by backlog commands; inspect them manually, then use `git worktree remove <path>` or `git worktree prune`.
 
 Feature identity rules:
 
@@ -116,6 +120,8 @@ Allowed commands:
 - `feature-block`
 - `feature-unblock`
 - `feature-list`
+- `worktree-list`
+- `worktree-clean`
 - `feature-review-next`
 - `feature-status`
 - `feature-review-request`
@@ -204,6 +210,7 @@ Command behavior:
 
 1. Run `php scripts/backlog.php feature-unassign --agent=<code> [<feature>]`.
 2. The script removes the current agent assignment from the target feature and keeps the feature in its current backlog section.
+3. If this leaves behind an abandoned managed worktree under `.worktrees/`, the script runs `worktree-clean` automatically.
 
 #### `feature-rework`
 
@@ -225,6 +232,19 @@ Command behavior:
 
 1. Run `php scripts/backlog.php feature-list`.
 2. The script prints active features grouped by backlog section.
+
+#### `worktree-list`
+
+1. Run `php scripts/backlog.php worktree-list`.
+2. The script lists worktrees under `.worktrees/` with their cleanup state and recommended action.
+3. Worktrees outside `.worktrees/` are reported separately for manual cleanup only.
+4. Use this command only when there is a cleanup need outside the normal workflow procedure.
+
+#### `worktree-clean`
+
+1. Run `php scripts/backlog.php worktree-clean`.
+2. The script removes only abandoned managed worktrees under `.worktrees/` when they are safe to delete.
+3. Dirty, blocked, or external worktrees are left untouched and must be handled manually.
 
 #### `feature-status`
 
@@ -261,6 +281,11 @@ Rules:
 1. Read `local/backlog-review.md`.
 2. Run `php scripts/backlog.php feature-rework --agent=<code> [<feature>]`.
 
+##### `cleanup`
+
+1. Run `php scripts/backlog.php worktree-clean`.
+2. Use `php scripts/backlog.php worktree-list` only when you need a cleanup diagnostic outside the standard workflow.
+
 ### Reviewer / CP
 
 Allowed commands:
@@ -274,6 +299,8 @@ Allowed commands:
 - `task-todo-list`
 - `task-remove`
 - `feature-list`
+- `worktree-list`
+- `worktree-clean`
 
 Default responsibilities:
 
@@ -323,6 +350,19 @@ Rules:
 1. Run `php scripts/backlog.php feature-list`.
 2. The script prints active features grouped by backlog section.
 
+#### `worktree-list`
+
+1. Run `php scripts/backlog.php worktree-list`.
+2. The script lists worktrees under `.worktrees/` with their cleanup state and recommended action.
+3. Worktrees outside `.worktrees/` are reported separately for manual cleanup only.
+
+#### `worktree-clean`
+
+1. Run `php scripts/backlog.php worktree-clean`.
+2. The script removes only abandoned managed worktrees under `.worktrees/` when they are safe to delete.
+3. Dirty, blocked, or external worktrees are left untouched and must be handled manually.
+4. In the normal workflow, this command is mainly triggered automatically after `feature-close` and `feature-merge`, or manually through `cleanup`.
+
 #### `feature-review-next`
 
 1. Run `php scripts/backlog.php feature-review-next`.
@@ -370,12 +410,13 @@ Also check:
 3. If the feature branch has committed local commits ahead of `origin`, the script pushes them before closing the PR.
 4. If no PR exists yet, the script simply removes the feature from the local backlog and clears the related review state.
 5. If a PR exists, the script closes it, keeps the remote branch, removes the feature from the local backlog, and clears the related review state.
+6. The script runs `worktree-clean` automatically at the end.
 
 #### `feature-merge`
 
 1. Prepare the final PR body file under `local/tmp/`.
 2. Run `php scripts/backlog.php feature-merge <feature> --body-file=<path>`.
-3. The script requires the feature to be in `## Approuvées`, merges the PR, deletes the branches, removes the feature from the backlog, and frees the agent.
+3. The script requires the feature to be in `## Approuvées`, merges the PR, removes the feature from the backlog, runs `worktree-clean`, deletes the branches, and frees the agent.
 
 Rules:
 
@@ -408,6 +449,11 @@ Rules:
 
 1. Prepare the final PR body file under `local/tmp/`.
 2. Run `php scripts/backlog.php feature-merge <feature> --body-file=<path>`.
+
+##### `cleanup`
+
+1. Run `php scripts/backlog.php worktree-clean`.
+2. Use `php scripts/backlog.php worktree-list` only when you need a cleanup diagnostic outside the standard workflow.
 
 ## Git Rules
 
