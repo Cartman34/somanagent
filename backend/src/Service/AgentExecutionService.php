@@ -172,6 +172,9 @@ final class AgentExecutionService
             return;
         }
 
+        // TODO: le dispatch par slug de skill doit être remplacé par une stratégie de traitement de réponse
+        //       stockée sur AgentAction en base de données, afin qu'ajouter un nouveau type d'action
+        //       ne nécessite aucune modification ici.
         if ($skillSlug === 'tech-planning') {
             $this->assertAllowedEffects($task, [
                 'complete_current_task',
@@ -572,6 +575,7 @@ final class AgentExecutionService
                         'context' => 'clarification_request',
                         'necessityLevel' => $question['necessityLevel']->value,
                         'necessityReason' => $question['necessityReason'],
+                        // TODO: remplacer par le slug de skill lu depuis AgentAction en base de données.
                         'skillSlug' => 'product-owner',
                         'agentId' => (string) $agent->getId(),
                         'actionKey' => $task->getAgentAction()->getKey(),
