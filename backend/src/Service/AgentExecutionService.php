@@ -547,14 +547,11 @@ final class AgentExecutionService
     {
         $ticket = $task->getTicket();
         $content = trim($rawContent);
+        $hasBlockingQuestions = false;
 
         if (preg_match('/^##\s+(.+)$/m', $content, $matches) === 1) {
             $ticket->setTitle(trim($matches[1]));
-
-            $description = $this->buildPoDescription($content);
-            if ($description !== '') {
-                $ticket->setDescription($description);
-            }
+            $ticket->setDescription($this->buildPoDescription($content));
 
             $sectionContent = $this->extractPoValidationSection($content);
             $questions = $this->filterDuplicateQuestions(
@@ -580,7 +577,16 @@ final class AgentExecutionService
                         'actionKey' => $task->getAgentAction()->getKey(),
                     ],
                 );
+                if ($question['necessityLevel']->isBlocking()) {
+                    $hasBlockingQuestions = true;
+                }
             }
+        }
+
+        if ($hasBlockingQuestions) {
+            $task->setStatus(TaskStatus::InProgress);
+            $this->em->flush();
+            return;
         }
 
         $ticket->setStatus(TaskStatus::Done)->setProgress(100);
