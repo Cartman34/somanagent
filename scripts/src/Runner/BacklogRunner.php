@@ -62,6 +62,7 @@ final class BacklogRunner extends AbstractScriptRunner
             ['name' => 'feature-unblock', 'description' => 'Remove the blocked flag from one feature'],
             ['name' => 'feature-list', 'description' => 'List active features grouped by backlog section'],
             ['name' => 'feature-status', 'description' => 'Print the current status of one feature'],
+            ['name' => 'feature-review-next', 'description' => 'Print the next feature currently waiting in review'],
             ['name' => 'feature-review-request', 'description' => 'Request reviewer action after a clean mechanical review'],
             ['name' => 'feature-review-check', 'description' => 'Run reviewer mechanical checks on a feature'],
             ['name' => 'feature-review-reject', 'description' => 'Reject a feature and record reviewer blockers'],
@@ -95,6 +96,7 @@ final class BacklogRunner extends AbstractScriptRunner
             'php scripts/backlog.php feature-start --agent agent-01 --branch-type feat',
             'php scripts/backlog.php feature-deps-mode --agent agent-01 linked',
             'php scripts/backlog.php feature-list',
+            'php scripts/backlog.php feature-review-next',
             'php scripts/backlog.php feature-review-approve delete-question-reply --body-file local/tmp/pr_body.md',
         ];
     }
@@ -126,6 +128,7 @@ final class BacklogRunner extends AbstractScriptRunner
             'feature-unblock' => $this->featureUnblock($commandArgs, $options),
             'feature-list' => $this->featureList(),
             'feature-status' => $this->featureStatus($commandArgs, $options),
+            'feature-review-next' => $this->featureReviewNext(),
             'feature-review-request' => $this->featureReviewRequest($commandArgs, $options),
             'feature-review-check' => $this->featureReviewCheck($commandArgs),
             'feature-review-reject' => $this->featureReviewReject($commandArgs, $options),
@@ -705,18 +708,41 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $match = $this->requireFeature($board, $feature);
-        $this->console->line('Feature: ' . $feature);
-        $this->console->line('Branch: ' . ($match['entry']->getMeta('branch') ?? '-'));
-        $this->console->line('Base: ' . ($match['entry']->getMeta('base') ?? '-'));
-        $this->console->line('Stage: ' . $match['section']);
-        $prStatus = $this->describePrStatus($match['entry']);
-        $this->console->line('PR: ' . $prStatus);
-        $this->console->line('Deps: ' . $this->entryDepsMode($match['entry']));
-        $this->console->line('Last: ' . $match['entry']->getText());
-        $this->console->line('Next: ' . $this->nextStepForSection($match['section']));
-        $this->console->line('Blocker: ' . ($match['entry']->hasMeta('blocked') ? 'blocked' : '-'));
+        $this->printFeatureStatus($feature, $match['entry'], $match['section']);
 
         return 0;
+    }
+
+    private function featureReviewNext(): int
+    {
+        $board = $this->board();
+        $entries = $board->getEntries(BacklogBoard::SECTION_IN_REVIEW);
+        if ($entries === []) {
+            throw new \RuntimeException('No feature available in ' . BacklogBoard::SECTION_IN_REVIEW . '.');
+        }
+
+        $entry = $entries[0];
+        $feature = $entry->getMeta('feature') ?? null;
+        if ($feature === null || $feature === '') {
+            throw new \RuntimeException('Next review feature has no feature metadata.');
+        }
+
+        $this->printFeatureStatus($feature, $entry, BacklogBoard::SECTION_IN_REVIEW);
+
+        return 0;
+    }
+
+    private function printFeatureStatus(string $feature, BoardEntry $entry, string $section): void
+    {
+        $this->console->line('Feature: ' . $feature);
+        $this->console->line('Branch: ' . ($entry->getMeta('branch') ?? '-'));
+        $this->console->line('Base: ' . ($entry->getMeta('base') ?? '-'));
+        $this->console->line('Stage: ' . $section);
+        $this->console->line('PR: ' . $this->describePrStatus($entry));
+        $this->console->line('Deps: ' . $this->entryDepsMode($entry));
+        $this->console->line('Last: ' . $entry->getText());
+        $this->console->line('Next: ' . $this->nextStepForSection($section));
+        $this->console->line('Blocker: ' . ($entry->hasMeta('blocked') ? 'blocked' : '-'));
     }
 
     /**
