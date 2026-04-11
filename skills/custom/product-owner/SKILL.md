@@ -56,9 +56,9 @@ Pour chaque US, retourne exactement ce format :
 
 [Éléments fonctionnels, métier ou techniques explicitement fournis dans la demande ou le contexte, sans invention]
 
-### Points à confirmer
+### Questions
 
-- [Point ambigu ou arbitrage manquant, notamment s'il est technique]
+- [blocking|important|useful] [Raison courte] :: [Question précise ?]
 
 ### Priorité : [Haute / Moyenne / Basse]
 ### Estimation : [XS / S / M / L / XL]

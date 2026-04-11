@@ -359,9 +359,13 @@ final class TicketTaskService
             'complete_current_task',
         ];
 
+        // TODO: allowed effects per action should be stored on AgentAction in the database,
+        //       so that adding or changing an action type requires no code change here.
         return match ($task->getAgentAction()->getKey()) {
             'product.specify' => [
-                ...$effects,
+                'log_agent_response',
+                'ask_clarification',
+                'complete_current_task',
                 'rewrite_ticket',
                 'complete_ticket',
             ],

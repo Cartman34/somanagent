@@ -119,59 +119,63 @@ final class AgentExecutionService
 
         $allowedEffects = $this->ticketTaskService->describeExecutionScope($task)['allowed_effects'];
         $canAskClarification = in_array('ask_clarification', $allowedEffects, true);
-        $pendingBlockingAnswersCount = $canAskClarification
-            ? $this->ticketLogService->countPendingBlockingAnswersForTask($task)
-            : 0;
-        $questions = $canAskClarification
-            ? $this->extractClarificationQuestions($response->content)
-            : [];
-        $questions = $this->filterDuplicateQuestions($questions, $task->getTicket());
-        $normalizedContent = mb_strtolower($response->content);
-        $isClarificationRequest = count($questions) >= 1
-            || str_contains($normalizedContent, 'questions')
-            || str_contains($normalizedContent, 'precis')
-            || str_contains($normalizedContent, 'clarification');
 
-        if ($questions !== [] && $isClarificationRequest) {
-            $this->assertAllowedEffects($task, ['ask_clarification']);
+        if ($canAskClarification) {
+            $questions = $this->filterDuplicateQuestions(
+                $this->extractClarificationQuestions($response->content),
+                $task->getTicket(),
+            );
 
-            foreach ($questions as $question) {
-                $this->ticketLogService->log(
-                    ticket: $task->getTicket(),
-                    action: 'agent_question',
-                    content: $question['content'],
-                    ticketTask: $task,
-                    kind: 'comment',
-                    authorType: 'agent',
-                    authorName: $agent->getName(),
-                    requiresAnswer: true,
-                    metadata: [
-                        'context' => 'clarification_request',
-                        'necessityLevel' => $question['necessityLevel']->value,
-                        'necessityReason' => $question['necessityReason'],
-                        'skillSlug' => $skillSlug,
-                        'agentId' => (string) $agent->getId(),
-                        'actionKey' => $task->getAgentAction()->getKey(),
-                    ],
-                );
+            if ($questions !== []) {
+                $this->assertAllowedEffects($task, ['ask_clarification']);
+                $hasBlockingQuestions = false;
+
+                foreach ($questions as $question) {
+                    $this->ticketLogService->log(
+                        ticket: $task->getTicket(),
+                        action: 'agent_question',
+                        content: $question['content'],
+                        ticketTask: $task,
+                        kind: 'comment',
+                        authorType: 'agent',
+                        authorName: $agent->getName(),
+                        requiresAnswer: true,
+                        metadata: [
+                            'context' => 'clarification_request',
+                            'necessityLevel' => $question['necessityLevel']->value,
+                            'necessityReason' => $question['necessityReason'],
+                            'skillSlug' => $skillSlug,
+                            'agentId' => (string) $agent->getId(),
+                            'actionKey' => $task->getAgentAction()->getKey(),
+                        ],
+                    );
+                    if ($question['necessityLevel']->isBlocking()) {
+                        $hasBlockingQuestions = true;
+                    }
+                }
+
+                if ($hasBlockingQuestions) {
+                    $task->setStatus(TaskStatus::InProgress);
+                    $this->em->flush();
+                    return;
+                }
             }
 
-            $task->setStatus(TaskStatus::InProgress);
-            $this->em->flush();
-            return;
+            $pendingBlockingAnswersCount = $this->ticketLogService->countPendingBlockingAnswersForTask($task);
+            if ($pendingBlockingAnswersCount > 0) {
+                $this->logger->info('AgentExecution: kept task open because blocking clarification questions are still pending', [
+                    'ticket' => (string) $task->getTicket()->getId(),
+                    'pending_answers' => $pendingBlockingAnswersCount,
+                    'action' => $task->getAgentAction()->getKey(),
+                ]);
+                $task->setStatus(TaskStatus::InProgress);
+                $this->em->flush();
+                return;
+            }
         }
 
-        if ($canAskClarification && $pendingBlockingAnswersCount > 0) {
-            $this->logger->info('AgentExecution: kept task open because blocking clarification questions are still pending', [
-                'ticket' => (string) $task->getTicket()->getId(),
-                'pending_answers' => $pendingBlockingAnswersCount,
-                'action' => $task->getAgentAction()->getKey(),
-            ]);
-            $task->setStatus(TaskStatus::InProgress);
-            $this->em->flush();
-            return;
-        }
-
+        // TODO: replace skill-slug-based dispatch with a response-handler strategy stored on AgentAction
+        //       in the database, so that adding a new action type requires no code change here.
         if ($skillSlug === 'tech-planning') {
             $this->assertAllowedEffects($task, [
                 'complete_current_task',
@@ -547,12 +551,10 @@ final class AgentExecutionService
     {
         $ticket = $task->getTicket();
         $content = trim($rawContent);
-        if ($content !== '') {
-            $ticket->setDescription($content);
-        }
 
         if (preg_match('/^##\s+(.+)$/m', $content, $matches) === 1) {
             $ticket->setTitle(trim($matches[1]));
+            $ticket->setDescription($this->buildPoDescription($content));
         }
 
         $ticket->setStatus(TaskStatus::Done)->setProgress(100);
@@ -564,5 +566,20 @@ final class AgentExecutionService
             'The request was reframed into a user story ready for validation.',
             $task,
         );
+    }
+
+    /**
+     * Builds the ticket description from a PO response by stripping the title heading
+     * and the Questions section so only descriptive content is stored.
+     */
+    private function buildPoDescription(string $content): string
+    {
+        // Remove the ## Title line
+        $result = (string) preg_replace('/^##\s+.+\R?/m', '', $content);
+
+        // Remove the ### Questions section (up to the next ### heading or end of string)
+        $result = (string) preg_replace('/###\s+Questions\s*\R.*?(?=###|\z)/su', '', $result);
+
+        return trim($result);
     }
 }
