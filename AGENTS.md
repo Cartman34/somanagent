@@ -235,6 +235,23 @@ Rules:
 - If a new task is added to an existing feature, keep a single backlog line for that feature and preserve all useful scope details.
 - If a needed backlog action is missing from `backlog.php`, stop and ask the user instead of editing the backlog manually.
 
+#### User Keywords
+
+##### `next`
+
+1. Run `php scripts/backlog.php task-book-next --agent=<code>`.
+2. Run `php scripts/backlog.php feature-start --agent=<code> --branch-type=<feat|fix>`.
+
+##### `submit`
+
+1. Verify the mechanical review is green with `php scripts/review.php`.
+2. Run `php scripts/backlog.php feature-review-request --agent=<code> [<feature>]`.
+
+##### `rework`
+
+1. Read `local/backlog-review.md`.
+2. Run `php scripts/backlog.php feature-rework --agent=<code> [<feature>]`.
+
 ### Reviewer / CP
 
 Allowed commands:
@@ -350,6 +367,30 @@ Rules:
 - Reviewer must not create commits during review, approval, or merge.
 - A blocked PR requires an explicit user instruction to unblock first.
 - If a needed backlog action is missing from `backlog.php`, stop and ask the user instead of editing the backlog manually.
+
+#### User Keywords
+
+##### `new <description>`
+
+1. Run `php scripts/backlog.php task-create <description>`.
+2. Do not execute the task now.
+
+##### `review`
+
+1. Run `php scripts/backlog.php feature-list`.
+2. Identify the feature in `## À relire`.
+3. Run `php scripts/backlog.php feature-review-check <feature>`.
+4. If the mechanical review passes, continue the technical and functional review manually.
+
+##### `approve`
+
+1. Prepare the approved PR body file under `local/tmp/`.
+2. Run `php scripts/backlog.php feature-review-approve <feature> --body-file=<path>`.
+
+##### `merge`
+
+1. Prepare the final PR body file under `local/tmp/`.
+2. Run `php scripts/backlog.php feature-merge <feature> --body-file=<path>`.
 
 ## Git Rules
 
