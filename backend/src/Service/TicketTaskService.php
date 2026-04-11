@@ -359,8 +359,8 @@ final class TicketTaskService
             'complete_current_task',
         ];
 
-        // TODO: les effets autorisés par action doivent être stockés en base de données sur AgentAction,
-        //       afin qu'ajouter ou modifier un type d'action ne nécessite aucune modification ici.
+        // TODO: allowed effects per action should be stored on AgentAction in the database,
+        //       so that adding or changing an action type requires no code change here.
         return match ($task->getAgentAction()->getKey()) {
             'product.specify' => [
                 'log_agent_response',
