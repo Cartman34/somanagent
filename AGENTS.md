@@ -77,6 +77,12 @@ Feature identity rules:
 7. The `meta:` block is absent from queued tasks that have never been taken.
 8. Inside one active entry, `meta:` is always the final block. The entry ends on the next blank line, next root `- ...`, or next section title.
 
+Agent code rules:
+
+1. An agent code is a local workflow identifier.
+2. It must be used exactly as assigned, without truncation, normalization, inference, or nickname conversion.
+3. Example: if the assigned code is `agent-03`, use `agent-03` everywhere, not `03`.
+
 Command policy:
 
 1. Prefer `php scripts/backlog.php` for the full local workflow.
@@ -87,6 +93,7 @@ Command policy:
 6. Manual edits to `local/backlog-board.md` or `local/backlog-review.md` are forbidden unless the user explicitly asks for a manual edit outside the scripted workflow.
 7. `--dry-run` simulates backlog, git, GitHub, and filesystem mutations without executing them.
 8. `--verbose` prints detailed execution steps and simulated commands.
+
 ## Role Selection
 
 Use one active role only.
@@ -126,6 +133,7 @@ Default responsibilities:
 
 Do not:
 
+- start implementing, editing, or committing for a feature before it is reserved or assigned to that exact agent code and started in that agent's dedicated `WA`
 - run reviewer commands or `merge`
 - use raw git or GitHub commands when `backlog.php` provides the workflow step
 - start a second visible backlog entry for the same feature
