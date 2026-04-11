@@ -58,7 +58,7 @@ Pour chaque US, retourne exactement ce format :
 
 ### Points à confirmer
 
-- [Point ambigu ou arbitrage manquant, notamment s'il est technique]
+- [blocking|important|useful] [Raison courte] :: [Question précise ?]
 
 ### Priorité : [Haute / Moyenne / Basse]
 ### Estimation : [XS / S / M / L / XL]

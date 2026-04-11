@@ -556,21 +556,25 @@ final class AgentExecutionService
                 $ticket->setDescription($description);
             }
 
-            $validationPoints = $this->extractPoValidationPoints($content);
-            foreach ($validationPoints as $point) {
+            $sectionContent = $this->extractPoValidationSection($content);
+            $questions = $this->filterDuplicateQuestions(
+                $this->extractClarificationQuestions($sectionContent),
+                $ticket,
+            );
+            foreach ($questions as $question) {
                 $this->ticketLogService->log(
                     ticket: $ticket,
                     action: 'agent_question',
-                    content: $point,
+                    content: $question['content'],
                     ticketTask: $task,
                     kind: 'comment',
                     authorType: 'agent',
                     authorName: $agent->getName(),
                     requiresAnswer: true,
                     metadata: [
-                        'context' => 'po_validation_point',
-                        'necessityLevel' => ClarificationQuestionNecessity::Useful->value,
-                        'necessityReason' => 'Validation point from product owner specification',
+                        'context' => 'clarification_request',
+                        'necessityLevel' => $question['necessityLevel']->value,
+                        'necessityReason' => $question['necessityReason'],
                         'skillSlug' => 'product-owner',
                         'agentId' => (string) $agent->getId(),
                         'actionKey' => $task->getAgentAction()->getKey(),
@@ -606,24 +610,14 @@ final class AgentExecutionService
     }
 
     /**
-     * Extracts individual validation points from the skill validation-points section of a PO response.
-     *
-     * @return string[]
+     * Extracts the raw content of the validation-points section from a PO response.
      */
-    private function extractPoValidationPoints(string $content): array
+    private function extractPoValidationSection(string $content): string
     {
         if (preg_match('/###\s+Points\s+[\x{00e0}a]\s+confirmer\s*\R(.*?)(?=###|\z)/su', $content, $matches) !== 1) {
-            return [];
+            return '';
         }
 
-        $points = [];
-        foreach (preg_split('/\R+/', $matches[1]) ?: [] as $line) {
-            $point = trim((string) preg_replace('/^[-*]\s+/', '', trim($line)));
-            if ($point !== '' && mb_strlen($point) > 5) {
-                $points[] = $point;
-            }
-        }
-
-        return $points;
+        return $matches[1];
     }
 }

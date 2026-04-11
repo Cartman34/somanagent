@@ -361,7 +361,8 @@ final class TicketTaskService
 
         return match ($task->getAgentAction()->getKey()) {
             'product.specify' => [
-                ...$effects,
+                'log_agent_response',
+                'complete_current_task',
                 'rewrite_ticket',
                 'complete_ticket',
             ],
