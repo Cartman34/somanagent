@@ -109,6 +109,7 @@ Allowed commands:
 - `feature-block`
 - `feature-unblock`
 - `feature-list`
+- `feature-review-next`
 - `feature-status`
 - `feature-review-request`
 
@@ -314,6 +315,12 @@ Rules:
 1. Run `php scripts/backlog.php feature-list`.
 2. The script prints active features grouped by backlog section.
 
+#### `feature-review-next`
+
+1. Run `php scripts/backlog.php feature-review-next`.
+2. The script prints the first visible feature in `## À relire` without changing its backlog state.
+3. The output includes `Feature`, `Branch`, `Base`, `Stage`, `PR`, `Deps`, `Last`, `Next`, and `Blocker`.
+
 #### `feature-review-check`
 
 1. Run `php scripts/backlog.php feature-review-check <feature>`.
@@ -377,10 +384,12 @@ Rules:
 
 ##### `review`
 
-1. Run `php scripts/backlog.php feature-list`.
-2. Identify the feature in `## À relire`.
+1. Run `php scripts/backlog.php feature-review-next`.
+2. Use the returned feature slug.
 3. Run `php scripts/backlog.php feature-review-check <feature>`.
-4. If the mechanical review passes, continue the technical and functional review manually.
+4. If the mechanical review fails, stop: the command rejects the feature automatically.
+5. If the mechanical review passes, continue the technical and functional review manually.
+6. End the review by running either `feature-review-approve` or `feature-review-reject` for that feature.
 
 ##### `approve`
 
