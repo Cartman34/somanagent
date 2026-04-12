@@ -9,6 +9,7 @@ namespace App\Service;
 
 use App\Entity\Module;
 use App\Entity\Project;
+use App\Entity\Role;
 use App\Enum\AuditAction;
 use App\Enum\DispatchMode;
 use App\Repository\ModuleRepository;
@@ -81,7 +82,7 @@ class ProjectService
             ->setTeam($team);
 
         $project->setWorkflow($this->resolveAssignableWorkflow(null, $workflowId));
-        $project->setDefaultTicketRole($defaultTicketRoleId !== null ? $this->roleRepository->find(Uuid::fromString($defaultTicketRoleId)) : null);
+        $project->setDefaultTicketRole($this->resolveDefaultTicketRole($defaultTicketRoleId));
 
         $this->entityService->create($project, AuditAction::ProjectCreated, ['name' => $name]);
         $this->realtimeUpdateService->publishProjectChanged($project, 'created');
@@ -127,7 +128,7 @@ class ProjectService
         $project->setTeam($team);
 
         $project->setWorkflow($this->resolveAssignableWorkflow($project, $workflowId));
-        $project->setDefaultTicketRole($defaultTicketRoleId !== null ? $this->roleRepository->find(Uuid::fromString($defaultTicketRoleId)) : null);
+        $project->setDefaultTicketRole($this->resolveDefaultTicketRole($defaultTicketRoleId));
 
         $this->entityService->update($project, AuditAction::ProjectUpdated, ['name' => $name]);
         $this->realtimeUpdateService->publishProjectChanged($project, 'updated');
@@ -210,6 +211,24 @@ class ProjectService
     public function findModuleById(string $id): ?Module
     {
         return $this->moduleRepository->find(Uuid::fromString($id));
+    }
+
+    /**
+     * Resolves a role by its UUID string, or returns null when no ID is provided.
+     * Throws a LogicException when the ID is provided but no matching role is found.
+     */
+    private function resolveDefaultTicketRole(?string $roleId): ?Role
+    {
+        if ($roleId === null) {
+            return null;
+        }
+
+        $role = $this->roleRepository->find(Uuid::fromString($roleId));
+        if ($role === null) {
+            throw new \LogicException($this->translator->trans('project.validation.default_ticket_role_invalid', [], 'app'));
+        }
+
+        return $role;
     }
 
     private function resolveAssignableWorkflow(?Project $project, string $workflowId): ?\App\Entity\Workflow

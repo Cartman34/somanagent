@@ -349,6 +349,7 @@ project:
     workflow_required: Le champ "workflowId" est obligatoire.
     team_required: Le champ "teamId" est obligatoire.
     team_invalid: L'équipe sélectionnée est introuvable.
+    default_ticket_role_invalid: Le rôle par défaut sélectionné est introuvable.
   page:
     title: Projets
     description: Gérez vos projets et suivez leur avancement.

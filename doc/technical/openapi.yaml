@@ -346,18 +346,27 @@ paths:
       operationId: listProjects
       responses:
         200:
-          $ref: '#/components/responses/Ok'
+          description: 'List of projects'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
     post:
       tags:
         - Projects
       summary: 'Create a project'
-      description: 'Accepts: name (required), description, repositoryUrl, teamId, workflowId, dispatchMode, defaultTicketRoleId (nullable UUID — role assigned automatically to new UserStory/Bug tickets).'
       operationId: createProject
       requestBody:
-        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+        $ref: '#/components/requestBodies/ProjectPayload'
       responses:
         201:
-          $ref: '#/components/responses/Created'
+          description: 'Project created'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
   '/api/projects/{id}':
     get:
       tags:
@@ -368,20 +377,28 @@ paths:
         - $ref: '#/components/parameters/IdPath'
       responses:
         200:
-          $ref: '#/components/responses/Ok'
+          description: 'Project detail'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
     put:
       tags:
         - Projects
       summary: 'Update a project'
-      description: 'Accepts: name, description, repositoryUrl, teamId, workflowId, dispatchMode, defaultTicketRoleId (nullable UUID — omit to keep current value, pass null to clear).'
+      description: 'Omit a field to keep its current value; pass null to clear a nullable field.'
       operationId: updateProject
       parameters:
         - $ref: '#/components/parameters/IdPath'
       requestBody:
-        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+        $ref: '#/components/requestBodies/ProjectPayload'
       responses:
         200:
-          $ref: '#/components/responses/Ok'
+          description: 'Project updated'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
     delete:
       tags:
         - Projects
@@ -1187,6 +1204,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ArbitraryJsonObject'
+    ProjectPayload:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProjectPayload'
   responses:
     Ok:
       description: 'Successful response'
@@ -1197,6 +1220,98 @@ components:
     NoContent:
       description: 'Resource deleted successfully'
   schemas:
+    RoleRef:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+        - id
+        - name
+    ProjectPayload:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        repositoryUrl:
+          type: string
+          nullable: true
+        teamId:
+          type: string
+          format: uuid
+          nullable: true
+        workflowId:
+          type: string
+          format: uuid
+          nullable: true
+        dispatchMode:
+          type: string
+          enum: [auto, manual]
+        defaultTicketRoleId:
+          type: string
+          format: uuid
+          nullable: true
+          description: 'Role assigned automatically to new UserStory/Bug tickets. Pass null to clear.'
+      required:
+        - name
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        repositoryUrl:
+          type: string
+          nullable: true
+        team:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+        workflow:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+        dispatchMode:
+          type: string
+          enum: [auto, manual]
+        defaultTicketRole:
+          nullable: true
+          description: 'Role assigned automatically to new UserStory/Bug tickets, or null if not configured.'
+          allOf:
+            - $ref: '#/components/schemas/RoleRef'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - dispatchMode
+        - createdAt
+        - updatedAt
     ArbitraryJsonObject:
       type: object
       additionalProperties: true
