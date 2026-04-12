@@ -44,11 +44,12 @@ class ProjectService
     /**
      * Creates a new project and optionally assigns a team.
      *
-     * @param string      $name          Project name
-     * @param string|null $description   Optional description
-     * @param string|null $repositoryUrl Optional repository URL
-     * @param string|null $teamId        Optional team UUID to assign
-     * @param string|null $workflowId    Optional workflow UUID to assign
+     * @param string      $name                 Project name
+     * @param string|null $description          Optional description
+     * @param string|null $repositoryUrl        Optional repository URL
+     * @param string|null $teamId               Optional team UUID to assign
+     * @param string|null $workflowId           Optional workflow UUID to assign
+     * @param string|null $defaultTicketRoleId  Optional role UUID assigned automatically to new UserStory/Bug tickets
      */
     public function create(
         string $name,
@@ -90,12 +91,13 @@ class ProjectService
     /**
      * Updates an existing project's fields and optionally reassigns its team.
      *
-     * @param Project     $project       Project to update
-     * @param string      $name          New name
-     * @param string|null $description   New description (null clears it)
-     * @param string|null $repositoryUrl New repository URL (null clears it)
-     * @param string|null $teamId        Team UUID to assign, or null to detach current team
-     * @param string|null $workflowId    Workflow UUID to assign, or null to detach current workflow
+     * @param Project     $project              Project to update
+     * @param string      $name                 New name
+     * @param string|null $description          New description (null clears it)
+     * @param string|null $repositoryUrl        New repository URL (null clears it)
+     * @param string|null $teamId               Team UUID to assign, or null to detach current team
+     * @param string|null $workflowId           Workflow UUID to assign, or null to detach current workflow
+     * @param string|null $defaultTicketRoleId  Role UUID to assign to new UserStory/Bug tickets, or null to clear
      */
     public function update(
         Project $project,

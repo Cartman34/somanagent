@@ -9,7 +9,6 @@ namespace App\Entity;
 
 use App\Enum\DispatchMode;
 use App\Repository\ProjectRepository;
-use App\Entity\Role;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
