@@ -56,6 +56,10 @@ It lets you assemble generic AI agent teams, assign them roles and skills, then 
 | [Scripts](development/scripts.md) | Available scripts in `scripts/` |
 | [Symfony commands](development/commands.md) | Available `bin/console` commands |
 | [Fixtures](development/fixtures.md) | Reference seed data and sample workflows |
+| [Troubleshooting](development/troubleshooting.md) | Quick local recovery notes and useful checks |
+| [Agent workflow](development/agent-workflow.md) | Shared backlog, feature, and worktree rules for AI agents |
+| [Agent developer workflow](development/agent-developer.md) | Detailed workflow for the `Developer` role |
+| [Agent reviewer workflow](development/agent-reviewer.md) | Detailed workflow for the `Reviewer / CP` role |
 
 ---
 

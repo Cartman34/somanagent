@@ -77,7 +77,7 @@ final class BacklogReviewFile
                     }
                 }
             } else {
-                foreach ($this->sections[$section] ?? [] as $line) {
+                foreach ($this->normalizeSectionLines($this->sections[$section] ?? []) as $line) {
                     $chunks[] = $line;
                 }
             }
@@ -131,5 +131,46 @@ final class BacklogReviewFile
         if (($this->featureReviews[self::EMPTY_REVIEW_TEXT] ?? null) !== null) {
             unset($this->featureReviews[self::EMPTY_REVIEW_TEXT]);
         }
+
+        foreach ($this->sections as $section => $lines) {
+            $this->sections[$section] = $this->normalizeSectionLines($lines);
+        }
+    }
+
+    /**
+     * @param array<string> $lines
+     * @return array<string>
+     */
+    private function normalizeSectionLines(array $lines): array
+    {
+        $normalized = [];
+        $previousWasBlank = false;
+
+        foreach ($lines as $line) {
+            $isBlank = trim($line) === '';
+            if ($isBlank) {
+                if ($previousWasBlank) {
+                    continue;
+                }
+
+                $normalized[] = '';
+                $previousWasBlank = true;
+
+                continue;
+            }
+
+            $normalized[] = $line;
+            $previousWasBlank = false;
+        }
+
+        while ($normalized !== [] && $normalized[0] === '') {
+            array_shift($normalized);
+        }
+
+        while ($normalized !== [] && end($normalized) === '') {
+            array_pop($normalized);
+        }
+
+        return $normalized;
     }
 }

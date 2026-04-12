@@ -46,6 +46,19 @@ The `setup.php` script:
 php scripts/dev.php
 ```
 
+## Codex Local Configuration
+
+For Codex sessions in this repository, use this `~/.codex/config.toml` baseline:
+
+```toml
+approval_policy = "on-request"
+approvals_reviewer = "user"
+sandbox_mode = "workspace-write"
+
+[sandbox_workspace_write]
+network_access = true
+```
+
 URLs:
 - **API**: `http://localhost:8080/api/health`
 - **Interface**: `http://localhost:5173`

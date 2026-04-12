@@ -1,0 +1,74 @@
+# Agent Workflow
+
+Detailed workflow reference for AI agents working on this repository.
+
+Read this file only when a task needs backlog, worktree, feature, or command behavior details beyond the summary in `AGENTS.md`.
+
+## Local Source Of Truth
+
+- Pending backlog: `local/backlog-board.md`
+- Review state: `local/backlog-review.md`
+
+Rules:
+
+- Files under `local/` are local-only and must not be committed.
+- For `local/backlog-board.md` and `local/backlog-review.md`, always follow the `## Règles d'usage` section in each file.
+- Local backlog vocabulary is strict:
+  `À faire` = queued,
+  `En développement` = active on a developer branch,
+  `À relire` = ready for reviewer actions,
+  `Rejetées` = review failed and needs rework,
+  `Approuvées` = reviewer-approved and waiting for merge.
+- Local backlog files are not edited manually.
+- If a needed backlog transition or backlog mutation is not covered by an existing command, stop and ask the user before proceeding.
+
+## Worktrees
+
+- Developer work in a dedicated worktree is mandatory for every task.
+- Create agent worktrees under `.worktrees/` inside the main repository so they stay in the same WSL filesystem and remain easy to ignore.
+- Use `WP` for the main workspace and `WA` for one developer agent worktree.
+- A `WA` belongs to the developer agent and is treated as ephemeral.
+- A branch belongs to the active feature.
+- A feature branch must never stay checked out in multiple worktrees at the same time.
+- Keep `.worktrees/` ignored in the root `.gitignore`.
+- Run every `php scripts/backlog.php ...` command from `WP` only, never from a `WA`.
+- Use `php scripts/backlog.php worktree-list` to inspect managed worktrees under `.worktrees/`.
+- Use `php scripts/backlog.php worktree-clean` to remove only abandoned managed worktrees that are safe to delete.
+- Worktrees outside `.worktrees/` are never auto-removed by backlog commands; inspect them manually, then use `git worktree remove <path>` or `git worktree prune`.
+
+## Feature Identity Rules
+
+1. Every active task is attached to one feature.
+2. The canonical identifier is the feature slug.
+3. Active backlog entries must keep the task line and its sub-tasks together, then end with a trailing `meta:` block, for example:
+   `- Task text`
+   `  - sub-task`
+   `  meta:`
+   `    feature: <slug>`
+   `    agent: <code>`
+   `    branch: <type>/<slug>`
+   `    base: <sha>`
+   `    pr: none`
+   `    deps: linked`
+4. `<type>` is `feat` or `fix` on the branch.
+5. Every developer commit on a feature branch must start with `[<slug>]`.
+6. Review and approval must be scoped from the recorded `base` commit, not from the current `main`.
+7. The `meta:` block is absent from queued tasks that have never been taken.
+8. Inside one active entry, `meta:` is always the final block. The entry ends on the next blank line, next root `- ...`, or next section title.
+
+## Agent Code Rules
+
+1. An agent code is a local workflow identifier.
+2. It must be used exactly as assigned, without truncation, normalization, inference, or nickname conversion.
+3. Example: if the assigned code is `agent-03`, use `agent-03` everywhere, not `03`.
+
+## Command Policy
+
+1. Prefer `php scripts/backlog.php` for the full local workflow.
+2. Every developer command on `backlog.php` requires `--agent=<code>`.
+3. Reviewer commands on `backlog.php` never use `--agent`.
+4. The agent code must never leave local backlog files.
+5. Any backlog state change covered by `backlog.php` must go through `backlog.php`, never through a manual file edit.
+6. Manual edits to `local/backlog-board.md` or `local/backlog-review.md` are forbidden unless the user explicitly asks for a manual edit outside the scripted workflow.
+7. `--dry-run` simulates backlog, git, GitHub, and filesystem mutations without executing them.
+8. `--verbose` prints detailed execution steps and simulated commands.
