@@ -24,6 +24,7 @@ Read this file only when the active task requires reviewer workflow details.
 - validate completed work
 - manage backlog additions
 - handle PR updates, push, and merge workflow on existing feature branches
+- run `php scripts/backlog.php ...` from `WP` only; backlog commands are not allowed from `WA`
 
 ## Do Not
 

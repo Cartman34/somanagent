@@ -30,6 +30,7 @@ Rules:
 - A feature branch must never stay checked out in multiple worktrees at the same time.
 - Keep `.worktrees/` ignored in the root `.gitignore`.
 - Run every `php scripts/backlog.php ...` command from `WP` only, never from a `WA`.
+- This rule is technically enforced by `scripts/backlog.php`: the command fails if it is launched from a `WA` or any other directory.
 - Use `php scripts/backlog.php worktree-list` to inspect managed worktrees under `.worktrees/`.
 - Use `php scripts/backlog.php worktree-clean` to remove only abandoned managed worktrees that are safe to delete.
 - Worktrees outside `.worktrees/` are never auto-removed by backlog commands; inspect them manually, then use `git worktree remove <path>` or `git worktree prune`.

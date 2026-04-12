@@ -10,6 +10,7 @@ Read this file only when the active task requires backlog management or workflow
 - edit documentation under `doc/`
 - edit workflow and tooling scripts under `scripts/`
 - perform backlog, review, and merge workflow actions when needed
+- run `php scripts/backlog.php ...` from `WP` only; backlog commands are not allowed from `WA`
 
 ## Do Not
 

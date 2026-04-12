@@ -31,6 +31,7 @@ Read this file only when the active task requires developer workflow details.
 - manage one `WA` identified by the agent code
 - reserve tasks, start features, and continue development on the feature branch
 - commit on the feature branch with the feature slug prefix
+- run `php scripts/backlog.php ...` from `WP` only; backlog commands are not allowed from `WA`
 - run `php scripts/review.php` after every implementation and fix mechanical blockers within scope
 - critically challenge the implementation for gaps, regressions, and convention violations before considering it ready for review
 - update docs when required by the code change
