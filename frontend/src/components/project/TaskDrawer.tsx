@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { ticketsApi, ticketTasksApi } from '@/api/tickets'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useToast } from '@/hooks/useToast'
 import type {
   Ticket,
   TicketTask,
@@ -94,6 +95,10 @@ const TASK_DRAWER_TRANSLATION_KEYS = [
   'ticket.detail.workflow.transition_loading',
   'ticket.detail.workflow.transition_to',
   'ticket.validation.title_required',
+  'toast.comment_added',
+  'toast.task_executed',
+  'toast.task_resumed',
+  'toast.saved',
 ] as const
 
 const TASK_DRAWER_CATALOG_KEYS = [
@@ -232,6 +237,7 @@ export default function TaskDrawer({
     TASK_DRAWER_TRANSLATION_KEYS,
     TASK_ACTIVITY_FEED_DOMAIN,
   )
+  const { toast } = useToast()
 
   const { t: tc } = useTranslation(
     TASK_DRAWER_CATALOG_KEYS,
@@ -283,6 +289,7 @@ export default function TaskDrawer({
       setReplyToLogId(null)
       setEditingLogId(null)
       setEditingCommentText('')
+      toast.success(t('toast.comment_added'), 'task-comment')
       await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
       await qc.invalidateQueries({ queryKey: ['tickets'] })
     },
@@ -344,6 +351,7 @@ export default function TaskDrawer({
     mutationFn: (linkedId: string) => ticketTasksApi.resume(linkedId),
     onSuccess: async (_, linkedId) => {
       setTaskDispatchError(null)
+      toast.success(t('toast.task_resumed'), 'task-dispatch')
       await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
       await qc.invalidateQueries({ queryKey: ['task-detail', linkedId] })
       await qc.invalidateQueries({ queryKey: ['tickets'] })
@@ -359,6 +367,7 @@ export default function TaskDrawer({
     onSuccess: async (_, linkedId) => {
       setTaskDispatchError(null)
       setPendingTaskActionId(null)
+      toast.success(t('toast.task_executed'), 'task-dispatch')
       await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
       await qc.invalidateQueries({ queryKey: ['task-detail', linkedId] })
       await qc.invalidateQueries({ queryKey: ['tickets'] })
@@ -408,6 +417,7 @@ export default function TaskDrawer({
     onSuccess: async () => {
       setIsEditingDetails(false)
       setEditError(null)
+      toast.success(t('toast.saved'), 'task-detail-update')
       await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
       await qc.invalidateQueries({ queryKey: ['tickets'] })
     },

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { workflowsApi } from '@/api/workflows'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useToast } from '@/hooks/useToast'
 import type { WorkflowPayload } from '@/api/workflows'
 import type { WorkflowStep } from '@/types'
 import { PageSpinner } from '@/components/ui/Spinner'
@@ -78,6 +79,8 @@ const WORKFLOWS_PAGE_TRANSLATION_KEYS = [
   'workflow.detail.empty_steps_description',
   'workflow.count.step_one',
   'workflow.count.step_other',
+  'toast.created',
+  'toast.saved',
 ] as const
 
 const TRIGGER_LABEL_KEYS: Record<string, string> = {
@@ -248,6 +251,7 @@ function WorkflowsList() {
   const qc = useQueryClient()
   const [createOpen,   setCreateOpen]   = useState(false)
   const { t } = useTranslation(WORKFLOWS_PAGE_TRANSLATION_KEYS)
+  const { toast } = useToast()
 
   const { data: workflows, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['workflows'],
@@ -256,19 +260,19 @@ function WorkflowsList() {
 
   const createMutation = useMutation({
     mutationFn: workflowsApi.create,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workflows'] }); setCreateOpen(false) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workflows'] }); setCreateOpen(false); toast.success(t('toast.created'), 'workflow-create') },
   })
   const duplicateMutation = useMutation({
     mutationFn: (id: string) => workflowsApi.duplicate(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workflows'] }) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workflows'] }); toast.success(t('toast.created'), 'workflow-duplicate') },
   })
   const activateMutation = useMutation({
     mutationFn: (id: string) => workflowsApi.activate(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workflows'] }) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workflows'] }); toast.success(t('toast.saved'), 'workflow-status') },
   })
   const deactivateMutation = useMutation({
     mutationFn: (id: string) => workflowsApi.deactivate(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workflows'] }) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workflows'] }); toast.success(t('toast.saved'), 'workflow-status') },
   })
 
   if (isLoading) return <PageSpinner />
@@ -403,6 +407,7 @@ function WorkflowDetail() {
   const qc = useQueryClient()
   const [editOpen, setEditOpen] = useState(false)
   const { t } = useTranslation(WORKFLOWS_PAGE_TRANSLATION_KEYS)
+  const { toast } = useToast()
 
   const { data: workflow, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['workflows', id],
@@ -412,7 +417,7 @@ function WorkflowDetail() {
 
   const duplicateMutation = useMutation({
     mutationFn: () => workflowsApi.duplicate(id!),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workflows'] }); qc.invalidateQueries({ queryKey: ['workflows', id] }) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workflows'] }); qc.invalidateQueries({ queryKey: ['workflows', id] }); toast.success(t('toast.created'), 'workflow-duplicate') },
   })
   const updateMutation = useMutation({
     mutationFn: (data: WorkflowPayload) => workflowsApi.update(id!, data),
@@ -420,15 +425,16 @@ function WorkflowDetail() {
       qc.invalidateQueries({ queryKey: ['workflows'] })
       qc.invalidateQueries({ queryKey: ['workflows', id] })
       setEditOpen(false)
+      toast.success(t('toast.saved'), 'workflow-update')
     },
   })
   const activateMutation = useMutation({
     mutationFn: () => workflowsApi.activate(id!),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workflows'] }); qc.invalidateQueries({ queryKey: ['workflows', id] }) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workflows'] }); qc.invalidateQueries({ queryKey: ['workflows', id] }); toast.success(t('toast.saved'), 'workflow-status') },
   })
   const deactivateMutation = useMutation({
     mutationFn: () => workflowsApi.deactivate(id!),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workflows'] }); qc.invalidateQueries({ queryKey: ['workflows', id] }) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workflows'] }); qc.invalidateQueries({ queryKey: ['workflows', id] }); toast.success(t('toast.saved'), 'workflow-status') },
   })
 
   if (isLoading) return <PageSpinner />

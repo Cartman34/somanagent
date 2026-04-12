@@ -805,3 +805,15 @@ audit:
     task_status_changed: Statut de la tâche modifié
     task_progress_updated: Progression de la tâche modifiée
     task_reprioritized: Priorité de la tâche modifiée
+
+toast:
+  request_submitted: Demande soumise avec succès
+  ticket_created: Ticket créé
+  ticket_deleted: Ticket supprimé
+  task_executed: Tâche lancée
+  task_resumed: Tâche reprise
+  comment_added: Commentaire ajouté
+  dismiss: Fermer
+  saved: Modifications enregistrées
+  created: Élément créé
+  deleted: Élément supprimé

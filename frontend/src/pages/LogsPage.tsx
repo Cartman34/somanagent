@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom'
 import { AlertOctagon, ExternalLink } from 'lucide-react'
 import { logsApi, type LogFilters } from '@/api/logs'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useToast } from '@/hooks/useToast'
 import type { LogOccurrence, LogEvent } from '@/types'
 import { PageSpinner } from '@/components/ui/Spinner'
 import ErrorMessage from '@/components/ui/ErrorMessage'
@@ -70,6 +71,7 @@ const LOGS_PAGE_TRANSLATION_KEYS = [
   'log.entity.agent',
   'log.attempt_label',
   'log.retry_label',
+  'toast.saved',
 ] as const
 
 function badgeStyle(tone: 'red' | 'orange' | 'blue' | 'gray') {
@@ -254,6 +256,7 @@ function EventCard({ event, t, formatDateTime }: { event: LogEvent; t: (key: str
 
 function OccurrenceDetail({ occurrenceId, t, formatDateTime }: { occurrenceId: string; t: (key: string) => string; formatDateTime: (v: string) => string }) {
   const qc = useQueryClient()
+  const { toast } = useToast()
   const { data, isLoading, error } = useQuery({
     queryKey: ['log-occurrence', occurrenceId],
     queryFn: () => logsApi.getOccurrence(occurrenceId),
@@ -264,6 +267,7 @@ function OccurrenceDetail({ occurrenceId, t, formatDateTime }: { occurrenceId: s
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['logs'] })
       await qc.invalidateQueries({ queryKey: ['log-occurrence', occurrenceId] })
+      toast.success(t('toast.saved'), 'log-status')
     },
   })
 

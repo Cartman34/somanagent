@@ -5,6 +5,7 @@
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
+import { ToastContainer } from '@/components/ui/Toast'
 
 export default function Layout() {
   return (
@@ -16,6 +17,7 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+      <ToastContainer />
     </div>
   )
 }

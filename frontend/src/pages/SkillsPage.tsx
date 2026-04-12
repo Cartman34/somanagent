@@ -10,6 +10,7 @@ import { skillsApi } from '@/api/skills'
 import type { SkillCreatePayload } from '@/api/skills'
 import type { Skill } from '@/types'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useToast } from '@/hooks/useToast'
 import { PageSpinner } from '@/components/ui/Spinner'
 import ErrorMessage from '@/components/ui/ErrorMessage'
 import EmptyState from '@/components/ui/EmptyState'
@@ -52,6 +53,8 @@ const SKILLS_PAGE_TRANSLATION_KEYS = [
   'skill.editor.saving',
   'skill.editor.save',
   'skill.editor.back_link',
+  'toast.created',
+  'toast.deleted',
 ] as const
 
 // ─── Import Form ──────────────────────────────────────────────────────────────
@@ -179,6 +182,7 @@ function SkillsList() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const { t } = useTranslation(SKILLS_PAGE_TRANSLATION_KEYS)
+  const { toast } = useToast()
 
   const [importOpen, setImportOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
@@ -196,18 +200,19 @@ function SkillsList() {
       qc.invalidateQueries({ queryKey: ['skills'] })
       setImportOpen(false)
       setImportError(null)
+      toast.success(t('toast.created'), 'skill-import')
     },
     onError: (e: Error) => setImportError(e.message),
   })
 
   const createMutation = useMutation({
     mutationFn: skillsApi.create,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['skills'] }); setCreateOpen(false) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['skills'] }); setCreateOpen(false); toast.success(t('toast.created'), 'skill-create') },
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => skillsApi.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['skills'] }); setDeleteTarget(null) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['skills'] }); setDeleteTarget(null); toast.success(t('toast.deleted'), 'skill-delete') },
   })
 
   if (isLoading) return <PageSpinner />
