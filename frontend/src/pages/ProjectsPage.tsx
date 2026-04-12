@@ -12,6 +12,7 @@ import { workflowsApi } from '@/api/workflows'
 import type { ProjectPayload } from '@/api/projects'
 import type { ProjectDispatchMode } from '@/types'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useToast } from '@/hooks/useToast'
 import { PageSpinner } from '@/components/ui/Spinner'
 import ErrorMessage from '@/components/ui/ErrorMessage'
 import EmptyState from '@/components/ui/EmptyState'
@@ -49,6 +50,9 @@ const PROJECTS_PAGE_TRANSLATION_KEYS = [
   'project.list.delete_confirm',
   'project.list.modal_create_title',
   'project.list.modal_edit_title',
+  'toast.created',
+  'toast.saved',
+  'toast.deleted',
 ] as const
 
 // ─── Project Form ─────────────────────────────────────────────────────────────
@@ -151,6 +155,7 @@ function ProjectsList() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const { t, formatDate } = useTranslation(PROJECTS_PAGE_TRANSLATION_KEYS)
+  const { toast } = useToast()
 
   const [createOpen, setCreateOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<{ id: string; name: string; description: string | null; teamId?: string | null; workflowId?: string | null; dispatchMode?: ProjectDispatchMode } | null>(null)
@@ -166,17 +171,18 @@ function ProjectsList() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['projects'] })
       setCreateOpen(false)
+      toast.success(t('toast.created'), 'project-create')
     },
   })
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: ProjectPayload }) => projectsApi.update(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['projects'] }); setEditTarget(null) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['projects'] }); setEditTarget(null); toast.success(t('toast.saved'), 'project-update') },
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => projectsApi.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['projects'] }); setDeleteTarget(null) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['projects'] }); setDeleteTarget(null); toast.success(t('toast.deleted'), 'project-delete') },
   })
 
   if (isLoading) return <PageSpinner />

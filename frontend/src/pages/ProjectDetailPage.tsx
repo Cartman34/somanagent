@@ -29,6 +29,7 @@ import ProjectAuditTab from '@/components/project/ProjectAuditTab'
 import ProjectTokensTab from '@/components/project/ProjectTokensTab'
 import { useProjectRealtime } from '@/hooks/useProjectRealtime'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useToast } from '@/hooks/useToast'
 import {
   isTicket,
   Tab,
@@ -65,6 +66,9 @@ const PROJECT_DETAIL_TRANSLATION_KEYS = [
   'project.progress.banner',
   'project.progress.blocked_reason',
   'project.progress.rework_title',
+  'toast.request_submitted',
+  'toast.ticket_created',
+  'toast.ticket_deleted',
 ] as const
 
 const PROJECT_TAB_LABEL_KEYS: Record<Tab, string> = {
@@ -93,6 +97,7 @@ export default function ProjectDetailPage() {
   const qc = useQueryClient()
 
   const { t } = useTranslation(PROJECT_DETAIL_TRANSLATION_KEYS)
+  const { toast } = useToast()
 
   const [tab, setTab]                         = useState<Tab>(() => {
     const requestedTab = searchParams.get('tab')
@@ -222,6 +227,7 @@ export default function ProjectDetailPage() {
       invalidateTickets()
       setCreateOpen(false)
       setRequestDispatchError(result.dispatchError ?? null)
+      toast.success(t('toast.request_submitted'), 'project-request')
     },
     onError: (err: unknown) => {
       const msg = (err as { message?: string })?.message
@@ -244,7 +250,7 @@ export default function ProjectDetailPage() {
         parentTaskId: d.parentTaskId,
       })
     },
-    onSuccess:  () => { invalidateTickets(); setCreateOpen(false) },
+    onSuccess:  () => { invalidateTickets(); setCreateOpen(false); toast.success(t('toast.ticket_created'), 'ticket-create') },
   })
 
   const transitionMutation = useMutation({
@@ -265,7 +271,7 @@ export default function ProjectDetailPage() {
     mutationFn: (entity: Ticket | TicketTask) => (
       isTicket(entity) ? ticketsApi.delete(entity.id) : ticketTasksApi.delete(entity.id)
     ),
-    onSuccess:  () => { invalidateTickets(); setDeleteTask(null) },
+    onSuccess:  () => { invalidateTickets(); setDeleteTask(null); toast.success(t('toast.ticket_deleted'), 'ticket-delete') },
   })
 
   const projectNeedsTeamAssignment = project?.team === null

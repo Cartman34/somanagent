@@ -11,6 +11,7 @@ import { agentsApi } from '@/api/agents'
 import type { TeamPayload } from '@/api/teams'
 import type { AgentSummary } from '@/types'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useToast } from '@/hooks/useToast'
 import { PageSpinner } from '@/components/ui/Spinner'
 import ErrorMessage from '@/components/ui/ErrorMessage'
 import EmptyState from '@/components/ui/EmptyState'
@@ -53,6 +54,9 @@ const TEAMS_PAGE_TRANSLATION_KEYS = [
   'team.modal.edit.title',
   'team.page.description',
   'team.page.title',
+  'toast.created',
+  'toast.saved',
+  'toast.deleted',
 ] as const
 
 function TeamForm({ initial, onSubmit, loading, onCancel }: {
@@ -85,6 +89,7 @@ function TeamForm({ initial, onSubmit, loading, onCancel }: {
 
 function TeamsList() {
   const { t, formatDate } = useTranslation(TEAMS_PAGE_TRANSLATION_KEYS)
+  const { toast } = useToast()
   const navigate = useNavigate()
   const qc = useQueryClient()
 
@@ -96,15 +101,15 @@ function TeamsList() {
 
   const createMutation = useMutation({
     mutationFn: teamsApi.create,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['teams'] }); setCreateOpen(false) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['teams'] }); setCreateOpen(false); toast.success(t('toast.created'), 'team-create') },
   })
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: TeamPayload }) => teamsApi.update(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['teams'] }); setEditTarget(null) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['teams'] }); setEditTarget(null); toast.success(t('toast.saved'), 'team-update') },
   })
   const deleteMutation = useMutation({
     mutationFn: (id: string) => teamsApi.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['teams'] }); setDeleteTarget(null) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['teams'] }); setDeleteTarget(null); toast.success(t('toast.deleted'), 'team-delete') },
   })
 
   if (isLoading) return <PageSpinner />
@@ -179,6 +184,7 @@ function TeamsList() {
 
 function TeamDetail() {
   const { t } = useTranslation(TEAMS_PAGE_TRANSLATION_KEYS)
+  const { toast } = useToast()
   const { id } = useParams<{ id: string }>()
   const qc = useQueryClient()
   const [addOpen, setAddOpen] = useState(false)
@@ -190,11 +196,11 @@ function TeamDetail() {
 
   const addMutation = useMutation({
     mutationFn: (agentId: string) => teamsApi.addAgent(id!, agentId),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['teams', id] }); setAddOpen(false); setSelectedAgentId('') },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['teams', id] }); setAddOpen(false); setSelectedAgentId(''); toast.success(t('toast.saved'), 'team-member') },
   })
   const removeMutation = useMutation({
     mutationFn: (agentId: string) => teamsApi.removeAgent(id!, agentId),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['teams', id] }); setRemoveTarget(null) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['teams', id] }); setRemoveTarget(null); toast.success(t('toast.deleted'), 'team-member') },
   })
 
   if (isLoading) return <PageSpinner />

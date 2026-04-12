@@ -9,6 +9,7 @@ import { projectsApi } from '@/api/projects'
 import { teamsApi } from '@/api/teams'
 import type { Project } from '@/types'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useToast } from '@/hooks/useToast'
 
 const PROJECT_GENERAL_TAB_TRANSLATION_KEYS = [
   'common.action.save',
@@ -28,6 +29,7 @@ const PROJECT_GENERAL_TAB_TRANSLATION_KEYS = [
   'project.form.no_team_option',
   'project.form.team_hint',
   'project.form.team_label',
+  'toast.saved',
 ] as const
 
 /**
@@ -42,6 +44,7 @@ export default function ProjectGeneralTab({ project, projectId }: {
 }) {
   const qc = useQueryClient()
   const { t } = useTranslation(PROJECT_GENERAL_TAB_TRANSLATION_KEYS)
+  const { toast } = useToast()
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null)
   const [teamSaveError, setTeamSaveError]   = useState<string | null>(null)
   const [selectedDispatchMode, setSelectedDispatchMode] = useState(project.dispatchMode)
@@ -67,6 +70,7 @@ export default function ProjectGeneralTab({ project, projectId }: {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['projects', projectId] })
       setTeamSaveError(null)
+      toast.success(t('toast.saved'), 'project-team')
     },
     onError: () => setTeamSaveError(t('project.detail.general.save_team_error')),
   })
@@ -83,6 +87,7 @@ export default function ProjectGeneralTab({ project, projectId }: {
       qc.invalidateQueries({ queryKey: ['projects', projectId] })
       qc.invalidateQueries({ queryKey: ['tickets', projectId] })
       setDispatchModeSaveError(null)
+      toast.success(t('toast.saved'), 'project-dispatch')
     },
     onError: () => setDispatchModeSaveError(t('project.detail.general.save_dispatch_mode_error')),
   })

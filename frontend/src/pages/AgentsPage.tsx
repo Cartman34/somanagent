@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, Bot, Pencil, Trash2, CheckCircle, RotateCcw, XCircle } from 'lucide-react'
 import { agentsApi } from '@/api/agents'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useToast } from '@/hooks/useToast'
 import { rolesApi } from '@/api/roles'
 import type { AgentPayload } from '@/api/agents'
 import type { Agent, AgentConnector, AgentConnectorDescriptor, ConnectorConfig } from '@/types'
@@ -73,6 +74,9 @@ const AGENTS_PAGE_TRANSLATION_KEYS = [
   'agent.create.title',
   'agent.list.loading',
   'common.action.refresh',
+  'toast.created',
+  'toast.saved',
+  'toast.deleted',
 ] as const
 
 
@@ -283,15 +287,16 @@ function AgentForm({ initial, onSubmit, loading, onCancel }: {
 export default function AgentsPage() {
   const qc = useQueryClient()
   const { t } = useTranslation(AGENTS_PAGE_TRANSLATION_KEYS)
+  const { toast } = useToast()
   const [createOpen, setCreateOpen]   = useState(false)
   const [editAgent, setEditAgent]     = useState<Agent | null>(null)
   const [deleteAgent, setDeleteAgent] = useState<Agent | null>(null)
 
   const { data: agents, isLoading, isFetching, error, refetch } = useQuery<Awaited<ReturnType<typeof agentsApi.list>>>({ queryKey: ['agents'], queryFn: agentsApi.list })
 
-  const createMutation = useMutation({ mutationFn: agentsApi.create, onSuccess: () => { qc.invalidateQueries({ queryKey: ['agents'] }); setCreateOpen(false) } })
-  const updateMutation = useMutation({ mutationFn: ({ id, data }: { id: string; data: AgentPayload }) => agentsApi.update(id, data), onSuccess: () => { qc.invalidateQueries({ queryKey: ['agents'] }); setEditAgent(null) } })
-  const deleteMutation = useMutation({ mutationFn: (id: string) => agentsApi.delete(id), onSuccess: () => { qc.invalidateQueries({ queryKey: ['agents'] }); setDeleteAgent(null) } })
+  const createMutation = useMutation({ mutationFn: agentsApi.create, onSuccess: () => { qc.invalidateQueries({ queryKey: ['agents'] }); setCreateOpen(false); toast.success(t('toast.created'), 'agent-create') } })
+  const updateMutation = useMutation({ mutationFn: ({ id, data }: { id: string; data: AgentPayload }) => agentsApi.update(id, data), onSuccess: () => { qc.invalidateQueries({ queryKey: ['agents'] }); setEditAgent(null); toast.success(t('toast.saved'), 'agent-update') } })
+  const deleteMutation = useMutation({ mutationFn: (id: string) => agentsApi.delete(id), onSuccess: () => { qc.invalidateQueries({ queryKey: ['agents'] }); setDeleteAgent(null); toast.success(t('toast.deleted'), 'agent-delete') } })
 
   if (isLoading) return <PageSpinner />
   if (error) return <ErrorMessage message={(error as Error).message} onRetry={() => refetch()} />

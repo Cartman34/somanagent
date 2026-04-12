@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, UserCog, Pencil, Trash2 } from 'lucide-react'
 import { rolesApi } from '@/api/roles'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useToast } from '@/hooks/useToast'
 import type { RolePayload } from '@/api/roles'
 import type { Role } from '@/types'
 import { PageSpinner } from '@/components/ui/Spinner'
@@ -38,6 +39,9 @@ const ROLES_PAGE_TRANSLATION_KEYS = [
   'role.action.cancel',
   'role.action.saving',
   'role.action.save',
+  'toast.created',
+  'toast.saved',
+  'toast.deleted',
 ] as const
 
 function RoleForm({ initial, onSubmit, loading, onCancel }: {
@@ -81,6 +85,7 @@ function RoleForm({ initial, onSubmit, loading, onCancel }: {
  */
 export default function RolesPage() {
   const { t } = useTranslation(ROLES_PAGE_TRANSLATION_KEYS)
+  const { toast } = useToast()
   const qc = useQueryClient()
   const [createOpen, setCreateOpen]   = useState(false)
   const [editRole, setEditRole]       = useState<Role | null>(null)
@@ -88,9 +93,9 @@ export default function RolesPage() {
 
   const { data: roles, isLoading, isFetching, error, refetch } = useQuery({ queryKey: ['roles'], queryFn: rolesApi.list })
 
-  const createMutation = useMutation({ mutationFn: rolesApi.create, onSuccess: () => { qc.invalidateQueries({ queryKey: ['roles'] }); setCreateOpen(false) } })
-  const updateMutation = useMutation({ mutationFn: ({ id, data }: { id: string; data: RolePayload }) => rolesApi.update(id, data), onSuccess: () => { qc.invalidateQueries({ queryKey: ['roles'] }); setEditRole(null) } })
-  const deleteMutation = useMutation({ mutationFn: (id: string) => rolesApi.delete(id), onSuccess: () => { qc.invalidateQueries({ queryKey: ['roles'] }); setDeleteRole(null) } })
+  const createMutation = useMutation({ mutationFn: rolesApi.create, onSuccess: () => { qc.invalidateQueries({ queryKey: ['roles'] }); setCreateOpen(false); toast.success(t('toast.created'), 'role-create') } })
+  const updateMutation = useMutation({ mutationFn: ({ id, data }: { id: string; data: RolePayload }) => rolesApi.update(id, data), onSuccess: () => { qc.invalidateQueries({ queryKey: ['roles'] }); setEditRole(null); toast.success(t('toast.saved'), 'role-update') } })
+  const deleteMutation = useMutation({ mutationFn: (id: string) => rolesApi.delete(id), onSuccess: () => { qc.invalidateQueries({ queryKey: ['roles'] }); setDeleteRole(null); toast.success(t('toast.deleted'), 'role-delete') } })
 
   if (isLoading) return <PageSpinner />
   if (error) return <ErrorMessage message={(error as Error).message} onRetry={() => refetch()} />

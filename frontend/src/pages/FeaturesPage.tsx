@@ -8,6 +8,7 @@ import { Plus, Layers, Pencil, Trash2 } from 'lucide-react'
 import { featuresApi } from '@/api/features'
 import { projectsApi } from '@/api/projects'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useToast } from '@/hooks/useToast'
 import type { FeaturePayload } from '@/api/features'
 import type { Feature } from '@/types'
 import { PageSpinner } from '@/components/ui/Spinner'
@@ -42,6 +43,9 @@ const FEATURES_PAGE_TRANSLATION_KEYS = [
   'feature.modal.edit',
   'feature.confirm.delete',
   'feature.action.delete',
+  'toast.created',
+  'toast.saved',
+  'toast.deleted',
 ] as const
 
 const STATUS_BADGE: Record<string, string>  = { open: 'badge-blue', in_progress: 'badge-orange', closed: 'badge-green' }
@@ -101,12 +105,13 @@ export default function FeaturesPage() {
   })
 
   const { t } = useTranslation(FEATURES_PAGE_TRANSLATION_KEYS)
+  const { toast } = useToast()
 
   const statusLabels: Record<string, string> = { open: t('feature.status.open'), in_progress: t('feature.status.in_progress'), closed: t('feature.status.closed') }
 
-  const createMutation = useMutation({ mutationFn: (d: FeaturePayload) => featuresApi.create(projectId, d), onSuccess: () => { qc.invalidateQueries({ queryKey: ['features', projectId] }); setCreateOpen(false) } })
-  const updateMutation = useMutation({ mutationFn: ({ id, data }: { id: string; data: FeaturePayload }) => featuresApi.update(id, data), onSuccess: () => { qc.invalidateQueries({ queryKey: ['features', projectId] }); setEditFeature(null) } })
-  const deleteMutation = useMutation({ mutationFn: (id: string) => featuresApi.delete(id), onSuccess: () => { qc.invalidateQueries({ queryKey: ['features', projectId] }); setDeleteFeature(null) } })
+  const createMutation = useMutation({ mutationFn: (d: FeaturePayload) => featuresApi.create(projectId, d), onSuccess: () => { qc.invalidateQueries({ queryKey: ['features', projectId] }); setCreateOpen(false); toast.success(t('toast.created'), 'feature-create') } })
+  const updateMutation = useMutation({ mutationFn: ({ id, data }: { id: string; data: FeaturePayload }) => featuresApi.update(id, data), onSuccess: () => { qc.invalidateQueries({ queryKey: ['features', projectId] }); setEditFeature(null); toast.success(t('toast.saved'), 'feature-update') } })
+  const deleteMutation = useMutation({ mutationFn: (id: string) => featuresApi.delete(id), onSuccess: () => { qc.invalidateQueries({ queryKey: ['features', projectId] }); setDeleteFeature(null); toast.success(t('toast.deleted'), 'feature-delete') } })
 
   return (
     <>

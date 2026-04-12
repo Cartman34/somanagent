@@ -4,6 +4,7 @@
 
 import axios from 'axios'
 import { reportApiFailure } from '@/lib/observability'
+import { useToastStore } from '@/lib/toast'
 
 const apiClient = axios.create({
   baseURL: '/api',
@@ -38,6 +39,7 @@ apiClient.interceptors.response.use(
         responseMessage: message,
         requestId: typeof error.response?.headers?.['x-request-id'] === 'string' ? error.response.headers['x-request-id'] : undefined,
       })
+      useToastStore.getState().addToast(message, 'error')
     }
 
     return Promise.reject(new Error(message))
