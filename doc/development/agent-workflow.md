@@ -6,19 +6,17 @@ Read this file only when a task needs backlog, worktree, feature, or command beh
 
 ## Local Source Of Truth
 
-- Pending backlog: `local/backlog-board.md`
+- Backlog board: `local/backlog-board.md`
 - Review state: `local/backlog-review.md`
 
 Rules:
 
 - Files under `local/` are local-only and must not be committed.
 - For `local/backlog-board.md` and `local/backlog-review.md`, always follow the `## Règles d'usage` section in each file.
-- Local backlog vocabulary is strict:
-  `À faire` = queued,
-  `En développement` = active on a developer branch,
-  `À relire` = ready for reviewer actions,
-  `Rejetées` = review failed and needs rework,
-  `Approuvées` = reviewer-approved and waiting for merge.
+- The backlog board uses these working sections:
+  `À faire` = queued priorities,
+  `Traitement en cours` = active features with workflow state in `meta.stage`,
+  `Suggestions` = non-committed ideas and future directions.
 - Local backlog files are not edited manually.
 - If a needed backlog transition or backlog mutation is not covered by an existing command, stop and ask the user before proceeding.
 
@@ -40,10 +38,11 @@ Rules:
 
 1. Every active task is attached to one feature.
 2. The canonical identifier is the feature slug.
-3. Active backlog entries must keep the task line and its sub-tasks together, then end with a trailing `meta:` block, for example:
+3. Active entries in `Traitement en cours` must keep the task line and its sub-tasks together, then end with a trailing `meta:` block, for example:
    `- Task text`
    `  - sub-task`
    `  meta:`
+   `    stage: development`
    `    feature: <slug>`
    `    agent: <code>`
    `    branch: <type>/<slug>`
@@ -53,8 +52,10 @@ Rules:
 4. `<type>` is `feat` or `fix` on the branch.
 5. Every developer commit on a feature branch must start with `[<slug>]`.
 6. Review and approval must be scoped from the recorded `base` commit, not from the current `main`.
-7. The `meta:` block is absent from queued tasks that have never been taken.
-8. Inside one active entry, `meta:` is always the final block. The entry ends on the next blank line, next root `- ...`, or next section title.
+7. Active workflow state is stored in `meta.stage` with one of:
+   `development`, `review`, `rejected`, `approved`.
+8. The `meta:` block is absent from queued tasks that have never been taken.
+9. Inside one active entry, `meta:` is always the final block. The entry ends on the next blank line, next root `- ...`, or next section title.
 
 ## Agent Code Rules
 

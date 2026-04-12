@@ -363,6 +363,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $first->unsetMeta('feature');
         $first->unsetMeta('agent');
         $featureEntry = new BoardEntry($first->getText(), $first->getExtraLines(), [
+            'stage' => BacklogBoard::STAGE_IN_PROGRESS,
             'feature' => $feature,
             'agent' => $agent,
             'branch' => $branch,
@@ -382,9 +383,9 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $this->removeReservedTasks($board, $reserved);
-        $entries = $board->getEntries(BacklogBoard::SECTION_IN_PROGRESS);
+        $entries = $board->getEntries(BacklogBoard::SECTION_ACTIVE);
         $entries[] = $featureEntry;
-        $board->setEntries(BacklogBoard::SECTION_IN_PROGRESS, $entries);
+        $board->setEntries(BacklogBoard::SECTION_ACTIVE, $entries);
         $this->ensureWorktreeDependencyMode($worktree, self::DEPS_MODE_LINKED);
         $this->saveBoard($board, 'feature-start');
 
@@ -428,8 +429,8 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $this->removeReservedTasks($board, $reserved);
 
-        if ($current['section'] !== BacklogBoard::SECTION_IN_PROGRESS) {
-            $board->moveFeature($feature, BacklogBoard::SECTION_IN_PROGRESS);
+        if ($this->featureStage($entry) !== BacklogBoard::STAGE_IN_PROGRESS) {
+            $entry->setMeta('stage', BacklogBoard::STAGE_IN_PROGRESS);
         }
 
         $this->saveBoard($board, 'feature-task-add');
@@ -564,20 +565,20 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $match = $this->requireFeature($board, $feature);
-        if ($match['section'] !== BacklogBoard::SECTION_REJECTED) {
-            throw new \RuntimeException("Feature {$feature} is not in the rejected section.");
+        if ($this->featureStage($match['entry']) !== BacklogBoard::STAGE_REJECTED) {
+            throw new \RuntimeException("Feature {$feature} is not in the rejected stage.");
         }
 
         $match['entry']->setMeta('agent', $agent);
         $match['entry']->setMeta('deps', $this->entryDepsMode($match['entry']));
-        $board->moveFeature($feature, BacklogBoard::SECTION_IN_PROGRESS);
+        $match['entry']->setMeta('stage', BacklogBoard::STAGE_IN_PROGRESS);
         $this->saveBoard($board, 'feature-rework');
 
         $worktree = $this->prepareAgentWorktree($agent);
         $this->checkoutBranchInWorktree($worktree, $match['entry']->getMeta('branch') ?? '', false);
         $this->ensureWorktreeDependencyMode($worktree, $this->entryDepsMode($match['entry']));
 
-        $this->console->ok(sprintf('Moved feature %s back to %s', $feature, BacklogBoard::SECTION_IN_PROGRESS));
+        $this->console->ok(sprintf('Moved feature %s back to %s', $feature, BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_PROGRESS)));
 
         return 0;
     }
@@ -604,7 +605,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $prNumber = $this->storedPrNumber($match['entry']);
         if ($prNumber !== null) {
-            $type = $match['section'] === BacklogBoard::SECTION_APPROVED ? $this->determinePrType($match['entry']) : 'WIP';
+            $type = $this->featureStage($match['entry']) === BacklogBoard::STAGE_APPROVED ? $this->determinePrType($match['entry']) : 'WIP';
             $title = $this->ensureBlockedTitle($this->buildPrTitle($type, $match['entry']));
             $this->runGithubCommand(sprintf(
                 'php scripts/github.php pr edit %d --title %s',
@@ -644,7 +645,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $prNumber = $this->storedPrNumber($match['entry']);
         if ($prNumber !== null) {
-            $title = $this->buildCurrentTitle($match['entry'], $match['section']);
+            $title = $this->buildCurrentTitle($match['entry']);
             $this->runGithubCommand(sprintf(
                 'php scripts/github.php pr edit %d --title %s',
                 $prNumber,
@@ -660,22 +661,18 @@ final class BacklogRunner extends AbstractScriptRunner
     private function featureList(): int
     {
         $board = $this->board();
-        $sections = [
-            BacklogBoard::SECTION_IN_PROGRESS,
-            BacklogBoard::SECTION_IN_REVIEW,
-            BacklogBoard::SECTION_REJECTED,
-            BacklogBoard::SECTION_APPROVED,
-        ];
-
         $printed = false;
-        foreach ($sections as $section) {
-            $entries = $board->getEntries($section);
+        foreach (BacklogBoard::activeStages() as $stage) {
+            $entries = array_values(array_filter(
+                $board->getEntries(BacklogBoard::SECTION_ACTIVE),
+                fn(BoardEntry $entry): bool => $this->featureStage($entry) === $stage
+            ));
             if ($entries === []) {
                 continue;
             }
 
             $printed = true;
-            $this->console->line('[' . $section . ']');
+            $this->console->line('[' . BacklogBoard::stageLabel($stage) . ']');
             foreach ($entries as $entry) {
                 $parts = [
                     $entry->getMeta('feature') ?? '-',
@@ -787,7 +784,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $match = $this->requireFeature($board, $feature);
-        $this->printFeatureStatus($feature, $match['entry'], $match['section']);
+        $this->printFeatureStatus($feature, $match['entry']);
 
         return 0;
     }
@@ -795,9 +792,12 @@ final class BacklogRunner extends AbstractScriptRunner
     private function featureReviewNext(): int
     {
         $board = $this->board();
-        $entries = $board->getEntries(BacklogBoard::SECTION_IN_REVIEW);
+        $entries = array_map(
+            static fn(array $match): BoardEntry => $match['entry'],
+            $board->findFeaturesByStage(BacklogBoard::STAGE_IN_REVIEW),
+        );
         if ($entries === []) {
-            throw new \RuntimeException('No feature available in ' . BacklogBoard::SECTION_IN_REVIEW . '.');
+            throw new \RuntimeException('No feature available in ' . BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_REVIEW) . '.');
         }
 
         $entry = $entries[0];
@@ -806,21 +806,22 @@ final class BacklogRunner extends AbstractScriptRunner
             throw new \RuntimeException('Next review feature has no feature metadata.');
         }
 
-        $this->printFeatureStatus($feature, $entry, BacklogBoard::SECTION_IN_REVIEW);
+        $this->printFeatureStatus($feature, $entry);
 
         return 0;
     }
 
-    private function printFeatureStatus(string $feature, BoardEntry $entry, string $section): void
+    private function printFeatureStatus(string $feature, BoardEntry $entry): void
     {
+        $stage = $this->featureStage($entry);
         $this->console->line('Feature: ' . $feature);
         $this->console->line('Branch: ' . ($entry->getMeta('branch') ?? '-'));
         $this->console->line('Base: ' . ($entry->getMeta('base') ?? '-'));
-        $this->console->line('Stage: ' . $section);
+        $this->console->line('Stage: ' . BacklogBoard::stageLabel($stage));
         $this->console->line('PR: ' . $this->describePrStatus($entry));
         $this->console->line('Deps: ' . $this->entryDepsMode($entry));
         $this->console->line('Last: ' . $entry->getText());
-        $this->console->line('Next: ' . $this->nextStepForSection($section));
+        $this->console->line('Next: ' . $this->nextStepForStage($stage));
         $this->console->line('Blocker: ' . ($entry->hasMeta('blocked') ? 'blocked' : '-'));
     }
 
@@ -841,8 +842,8 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $match = $this->requireFeature($board, $feature);
-        if ($match['section'] !== BacklogBoard::SECTION_IN_PROGRESS) {
-            throw new \RuntimeException("Feature {$feature} must be in " . BacklogBoard::SECTION_IN_PROGRESS . '.');
+        if ($this->featureStage($match['entry']) !== BacklogBoard::STAGE_IN_PROGRESS) {
+            throw new \RuntimeException("Feature {$feature} must be in " . BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_PROGRESS) . '.');
         }
         if (($match['entry']->getMeta('agent') ?? '') !== $agent) {
             throw new \RuntimeException("Feature {$feature} is not assigned to agent {$agent}.");
@@ -851,10 +852,10 @@ final class BacklogRunner extends AbstractScriptRunner
         $worktree = $this->prepareFeatureAgentWorktree($match['entry']);
         $this->runReviewScript($worktree);
 
-        $board->moveFeature($feature, BacklogBoard::SECTION_IN_REVIEW);
+        $match['entry']->setMeta('stage', BacklogBoard::STAGE_IN_REVIEW);
         $this->saveBoard($board, 'feature-review-request');
 
-        $this->console->ok(sprintf('Feature %s moved to %s', $feature, BacklogBoard::SECTION_IN_REVIEW));
+        $this->console->ok(sprintf('Feature %s moved to %s', $feature, BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_REVIEW)));
 
         return 0;
     }
@@ -867,8 +868,8 @@ final class BacklogRunner extends AbstractScriptRunner
         $feature = $this->requireFeatureArgument($commandArgs);
         $board = $this->board();
         $match = $this->requireFeature($board, $feature);
-        if ($match['section'] !== BacklogBoard::SECTION_IN_REVIEW) {
-            throw new \RuntimeException("Feature {$feature} must be in " . BacklogBoard::SECTION_IN_REVIEW . ' to be checked.');
+        if ($this->featureStage($match['entry']) !== BacklogBoard::STAGE_IN_REVIEW) {
+            throw new \RuntimeException("Feature {$feature} must be in " . BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_REVIEW) . ' to be checked.');
         }
 
         $reviewWorktree = $this->prepareFeatureAgentWorktree($match['entry']);
@@ -898,11 +899,11 @@ final class BacklogRunner extends AbstractScriptRunner
         $review = $this->reviewFile();
         $match = $this->requireFeature($board, $feature);
 
-        if ($match['section'] !== BacklogBoard::SECTION_IN_REVIEW) {
-            throw new \RuntimeException("Feature {$feature} must be in " . BacklogBoard::SECTION_IN_REVIEW . ' to be rejected.');
+        if ($this->featureStage($match['entry']) !== BacklogBoard::STAGE_IN_REVIEW) {
+            throw new \RuntimeException("Feature {$feature} must be in " . BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_REVIEW) . ' to be rejected.');
         }
 
-        $board->moveFeature($feature, BacklogBoard::SECTION_REJECTED);
+        $match['entry']->setMeta('stage', BacklogBoard::STAGE_REJECTED);
         $review->setFeatureReview($feature, $this->numberedReviewItems($bodyFile));
         $this->saveBoard($board, 'feature-review-reject');
         $this->saveReviewFile($review, 'feature-review-reject');
@@ -911,7 +912,7 @@ final class BacklogRunner extends AbstractScriptRunner
             '%sfeature %s moved to %s',
             $auto ? 'Automatically rejected ' : 'Rejected ',
             $feature,
-            BacklogBoard::SECTION_REJECTED,
+            BacklogBoard::stageLabel(BacklogBoard::STAGE_REJECTED),
         ));
 
         return 0;
@@ -929,8 +930,8 @@ final class BacklogRunner extends AbstractScriptRunner
         $review = $this->reviewFile();
         $match = $this->requireFeature($board, $feature);
 
-        if ($match['section'] !== BacklogBoard::SECTION_IN_REVIEW) {
-            throw new \RuntimeException("Feature {$feature} must be in " . BacklogBoard::SECTION_IN_REVIEW . ' to be approved.');
+        if ($this->featureStage($match['entry']) !== BacklogBoard::STAGE_IN_REVIEW) {
+            throw new \RuntimeException("Feature {$feature} must be in " . BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_REVIEW) . ' to be approved.');
         }
 
         $type = $this->determinePrType($match['entry']);
@@ -947,7 +948,7 @@ final class BacklogRunner extends AbstractScriptRunner
             $match['entry']->setMeta('pr', (string) $prNumber);
         }
 
-        $board->moveFeature($feature, BacklogBoard::SECTION_APPROVED);
+        $match['entry']->setMeta('stage', BacklogBoard::STAGE_APPROVED);
         $review->clearFeatureReview($feature);
         $this->saveBoard($board, 'feature-review-approve');
         $this->saveReviewFile($review, 'feature-review-approve');
@@ -1009,8 +1010,8 @@ final class BacklogRunner extends AbstractScriptRunner
         $review = $this->reviewFile();
         $match = $this->requireFeature($board, $feature);
 
-        if ($match['section'] !== BacklogBoard::SECTION_APPROVED) {
-            throw new \RuntimeException("Feature {$feature} must be in " . BacklogBoard::SECTION_APPROVED . ' before merge.');
+        if ($this->featureStage($match['entry']) !== BacklogBoard::STAGE_APPROVED) {
+            throw new \RuntimeException("Feature {$feature} must be in " . BacklogBoard::stageLabel(BacklogBoard::STAGE_APPROVED) . ' before merge.');
         }
         if ($match['entry']->hasMeta('blocked')) {
             throw new \RuntimeException("Feature {$feature} is blocked and cannot be merged.");
@@ -1160,6 +1161,11 @@ final class BacklogRunner extends AbstractScriptRunner
     private function entryDepsMode(BoardEntry $entry): string
     {
         return $this->normalizeDepsMode((string) $entry->getMeta('deps')) ?? self::DEPS_MODE_LINKED;
+    }
+
+    private function featureStage(BoardEntry $entry): string
+    {
+        return BacklogBoard::entryStage($entry) ?? BacklogBoard::STAGE_IN_PROGRESS;
     }
 
     private function featureSlugger(): TextSlugger
@@ -1642,25 +1648,18 @@ final class BacklogRunner extends AbstractScriptRunner
     private function activeFeaturesByBranch(BacklogBoard $board): array
     {
         $features = [];
-        foreach ([
-            BacklogBoard::SECTION_IN_PROGRESS,
-            BacklogBoard::SECTION_IN_REVIEW,
-            BacklogBoard::SECTION_REJECTED,
-            BacklogBoard::SECTION_APPROVED,
-        ] as $section) {
-            foreach ($board->getEntries($section) as $entry) {
-                $branch = $entry->getMeta('branch') ?? '';
-                $feature = $entry->getMeta('feature') ?? '';
-                $agent = $entry->getMeta('agent') ?? '';
-                if ($branch === '' || $feature === '' || $agent === '') {
-                    continue;
-                }
-
-                $features[$branch] = [
-                    'feature' => $feature,
-                    'agent' => $agent,
-                ];
+        foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
+            $branch = $entry->getMeta('branch') ?? '';
+            $feature = $entry->getMeta('feature') ?? '';
+            $agent = $entry->getMeta('agent') ?? '';
+            if ($branch === '' || $feature === '' || $agent === '') {
+                continue;
             }
+
+            $features[$branch] = [
+                'feature' => $feature,
+                'agent' => $agent,
+            ];
         }
 
         return $features;
@@ -1836,9 +1835,9 @@ final class BacklogRunner extends AbstractScriptRunner
             : $title;
     }
 
-    private function buildCurrentTitle(BoardEntry $entry, string $section): string
+    private function buildCurrentTitle(BoardEntry $entry): string
     {
-        $type = $section === BacklogBoard::SECTION_APPROVED
+        $type = $this->featureStage($entry) === BacklogBoard::STAGE_APPROVED
             ? $this->determinePrType($entry)
             : 'WIP';
 
@@ -2076,13 +2075,13 @@ final class BacklogRunner extends AbstractScriptRunner
         return $path;
     }
 
-    private function nextStepForSection(string $section): string
+    private function nextStepForStage(string $stage): string
     {
-        return match ($section) {
-            BacklogBoard::SECTION_IN_PROGRESS => 'feature-review-request',
-            BacklogBoard::SECTION_IN_REVIEW => 'feature-review-check or feature-review-approve',
-            BacklogBoard::SECTION_REJECTED => 'feature-rework',
-            BacklogBoard::SECTION_APPROVED => 'feature-merge',
+        return match ($stage) {
+            BacklogBoard::STAGE_IN_PROGRESS => 'feature-review-request',
+            BacklogBoard::STAGE_IN_REVIEW => 'feature-review-check or feature-review-approve',
+            BacklogBoard::STAGE_REJECTED => 'feature-rework',
+            BacklogBoard::STAGE_APPROVED => 'feature-merge',
             default => '-',
         };
     }

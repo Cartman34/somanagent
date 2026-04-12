@@ -37,6 +37,7 @@ Use one active role only.
 - Do not infer or mix roles from chat context alone.
 - Read the detailed instructions only for the active role:
   - `Developer`: `doc/development/agent-developer.md`
+  - `Manager`: `doc/development/agent-manager.md`
   - `Reviewer / CP`: `doc/development/agent-reviewer.md`
 - Shared backlog and workflow rules are documented in `doc/development/agent-workflow.md`.
 

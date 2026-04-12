@@ -85,7 +85,7 @@ Read this file only when the active task requires developer workflow details.
 ### `feature-start`
 
 1. Run `php scripts/backlog.php feature-start --agent=<code> --branch-type=<feat|fix>`.
-2. The script creates the feature branch in the agent worktree, moves the feature to `## En développement`, and authorizes development.
+2. The script creates the feature branch in the agent worktree, moves the feature to `## Traitement en cours`, sets `meta.stage=development`, and authorizes development.
 3. `feature-start` is local-only: it does not push and it does not create a PR.
 
 ### `feature-task-add`
@@ -116,7 +116,7 @@ Read this file only when the active task requires developer workflow details.
 
 1. Read `local/backlog-review.md`.
 2. Run `php scripts/backlog.php feature-rework --agent=<code> [<feature>]`.
-3. Resume development on the same feature branch from `## Rejetées`.
+3. Resume development on the same feature branch from `meta.stage=rejected` back to `meta.stage=development`.
 
 ### `feature-block`
 
@@ -131,7 +131,7 @@ Read this file only when the active task requires developer workflow details.
 ### `feature-list`
 
 1. Run `php scripts/backlog.php feature-list`.
-2. The script prints active features grouped by backlog section.
+2. The script prints active features grouped by workflow stage.
 
 ### `worktree-list`
 
@@ -154,13 +154,13 @@ Read this file only when the active task requires developer workflow details.
 ### `feature-review-request`
 
 1. Run `php scripts/backlog.php feature-review-request --agent=<code> [<feature>]`.
-2. The script verifies that the feature is assigned to that agent, that the agent `WA` is the correct worktree for the feature branch, then requires a green mechanical review and moves the feature to `## À relire`.
+2. The script verifies that the feature is assigned to that agent, that the agent `WA` is the correct worktree for the feature branch, then requires a green mechanical review and sets `meta.stage=review`.
 
 ## Rules
 
 - Do not start a second visible feature for the same agent.
 - Do not edit local backlog files directly.
-- A task is considered done for Developer only when it is committed, mechanically valid, and passed to `## À relire`.
+- A task is considered done for Developer only when it is committed, mechanically valid, and passed to `meta.stage=review`.
 - If a new task is added to an existing feature, keep a single backlog line for that feature and preserve all useful scope details.
 - If a needed backlog action is missing from `backlog.php`, stop and ask the user instead of editing the backlog manually.
 

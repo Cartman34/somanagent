@@ -65,7 +65,7 @@ Rules:
 ### `feature-list`
 
 1. Run `php scripts/backlog.php feature-list`.
-2. The script prints active features grouped by backlog section.
+2. The script prints active features grouped by workflow stage.
 
 ### `worktree-list`
 
@@ -83,7 +83,7 @@ Rules:
 ### `feature-review-next`
 
 1. Run `php scripts/backlog.php feature-review-next`.
-2. The script prints the first visible feature in `## À relire` without changing its backlog state.
+2. The script prints the first visible feature with `meta.stage=review` without changing its backlog state.
 3. The output includes `Feature`, `Branch`, `Base`, `Stage`, `PR`, `Deps`, `Last`, `Next`, and `Blocker`.
 
 ### `feature-review-check`
@@ -112,13 +112,13 @@ Also check:
 
 1. Prepare the numbered review body file under `local/tmp/`.
 2. Run `php scripts/backlog.php feature-review-reject <feature> --body-file=<path>`.
-3. The script moves the feature to `## Rejetées` and overwrites the `### <feature>` section in `local/backlog-review.md`.
+3. The script sets `meta.stage=rejected` and overwrites the `### <feature>` section in `local/backlog-review.md`.
 
 ### `feature-review-approve`
 
 1. Prepare the approved PR body file under `local/tmp/`.
 2. Run `php scripts/backlog.php feature-review-approve <feature> --body-file=<path>`.
-3. The script pushes the branch, waits until the remote branch is visible, creates the PR if it does not exist yet, retries PR creation when GitHub still reports a transient invalid head, updates the PR title and body, determines the main tag by priority `FEAT > FIX > TECH > DOC`, and moves the feature to `## Approuvées`.
+3. The script pushes the branch, waits until the remote branch is visible, creates the PR if it does not exist yet, retries PR creation when GitHub still reports a transient invalid head, updates the PR title and body, determines the main tag by priority `FEAT > FIX > TECH > DOC`, and sets `meta.stage=approved`.
 
 ### `feature-close`
 
@@ -133,7 +133,7 @@ Also check:
 
 1. Prepare the final PR body file under `local/tmp/`.
 2. Run `php scripts/backlog.php feature-merge <feature> --body-file=<path>`.
-3. The script requires the feature to be in `## Approuvées`, merges the PR, removes the feature from the backlog, runs `worktree-clean`, deletes the branches, and frees the agent.
+3. The script requires the feature to be in `meta.stage=approved`, merges the PR, removes the feature from the backlog, runs `worktree-clean`, deletes the branches, and frees the agent.
 
 ## Rules
 
