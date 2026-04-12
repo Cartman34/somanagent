@@ -11,7 +11,6 @@ use App\Entity\Feature;
 use App\Entity\Project;
 use App\Entity\Ticket;
 use App\Entity\TicketTask;
-use App\Entity\Role;
 use App\Entity\WorkflowStep;
 use App\Entity\WorkflowStepAction;
 use App\Enum\AuditAction;
@@ -19,7 +18,6 @@ use App\Enum\TaskPriority;
 use App\Enum\TaskStatus;
 use App\Enum\TaskType;
 use App\Repository\FeatureRepository;
-use App\Repository\RoleRepository;
 use App\Repository\TicketRepository;
 use App\Repository\WorkflowStepActionRepository;
 use App\Repository\WorkflowStepRepository;
@@ -38,7 +36,6 @@ final class TicketService
         private readonly EntityService                $entityService,
         private readonly TicketRepository             $ticketRepository,
         private readonly FeatureRepository            $featureRepository,
-        private readonly RoleRepository               $roleRepository,
         private readonly WorkflowStepRepository       $workflowStepRepository,
         private readonly WorkflowStepActionRepository $workflowStepActionRepository,
         private readonly TicketTaskService            $ticketTaskService,
@@ -71,10 +68,9 @@ final class TicketService
         }
 
         if ($type === TaskType::UserStory || $type === TaskType::Bug) {
-            /** @var Role|null $productOwnerRole */
-            $productOwnerRole = $this->roleRepository->findOneBy(['slug' => 'product-owner']);
-            if ($productOwnerRole !== null) {
-                $ticket->setAssignedRole($productOwnerRole);
+            $defaultRole = $project->getDefaultTicketRole();
+            if ($defaultRole !== null) {
+                $ticket->setAssignedRole($defaultRole);
             }
         }
 

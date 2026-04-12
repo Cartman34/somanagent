@@ -9,10 +9,12 @@ namespace App\Service;
 
 use App\Entity\Module;
 use App\Entity\Project;
+use App\Entity\Role;
 use App\Enum\AuditAction;
 use App\Enum\DispatchMode;
 use App\Repository\ModuleRepository;
 use App\Repository\ProjectRepository;
+use App\Repository\RoleRepository;
 use App\Repository\TeamRepository;
 use App\Repository\TicketRepository;
 use App\Repository\WorkflowRepository;
@@ -31,6 +33,7 @@ class ProjectService
         private readonly EntityService      $entityService,
         private readonly ProjectRepository  $projectRepository,
         private readonly ModuleRepository   $moduleRepository,
+        private readonly RoleRepository     $roleRepository,
         private readonly TeamRepository     $teamRepository,
         private readonly TicketRepository   $ticketRepository,
         private readonly WorkflowRepository $workflowRepository,
@@ -42,11 +45,12 @@ class ProjectService
     /**
      * Creates a new project and optionally assigns a team.
      *
-     * @param string      $name          Project name
-     * @param string|null $description   Optional description
-     * @param string|null $repositoryUrl Optional repository URL
-     * @param string|null $teamId        Optional team UUID to assign
-     * @param string|null $workflowId    Optional workflow UUID to assign
+     * @param string      $name                 Project name
+     * @param string|null $description          Optional description
+     * @param string|null $repositoryUrl        Optional repository URL
+     * @param string|null $teamId               Optional team UUID to assign
+     * @param string|null $workflowId           Optional workflow UUID to assign
+     * @param string|null $defaultTicketRoleId  Optional role UUID assigned automatically to new UserStory/Bug tickets
      */
     public function create(
         string $name,
@@ -55,6 +59,7 @@ class ProjectService
         ?string $teamId = null,
         ?string $workflowId = null,
         DispatchMode $dispatchMode = DispatchMode::Auto,
+        ?string $defaultTicketRoleId = null,
     ): Project
     {
         if ($workflowId === null || $workflowId === '') {
@@ -77,6 +82,7 @@ class ProjectService
             ->setTeam($team);
 
         $project->setWorkflow($this->resolveAssignableWorkflow(null, $workflowId));
+        $project->setDefaultTicketRole($this->resolveDefaultTicketRole($defaultTicketRoleId));
 
         $this->entityService->create($project, AuditAction::ProjectCreated, ['name' => $name]);
         $this->realtimeUpdateService->publishProjectChanged($project, 'created');
@@ -86,12 +92,13 @@ class ProjectService
     /**
      * Updates an existing project's fields and optionally reassigns its team.
      *
-     * @param Project     $project       Project to update
-     * @param string      $name          New name
-     * @param string|null $description   New description (null clears it)
-     * @param string|null $repositoryUrl New repository URL (null clears it)
-     * @param string|null $teamId        Team UUID to assign, or null to detach current team
-     * @param string|null $workflowId    Workflow UUID to assign, or null to detach current workflow
+     * @param Project     $project              Project to update
+     * @param string      $name                 New name
+     * @param string|null $description          New description (null clears it)
+     * @param string|null $repositoryUrl        New repository URL (null clears it)
+     * @param string|null $teamId               Team UUID to assign, or null to detach current team
+     * @param string|null $workflowId           Workflow UUID to assign, or null to detach current workflow
+     * @param string|null $defaultTicketRoleId  Role UUID to assign to new UserStory/Bug tickets, or null to clear
      */
     public function update(
         Project $project,
@@ -101,6 +108,7 @@ class ProjectService
         ?string $teamId = null,
         ?string $workflowId = null,
         ?DispatchMode $dispatchMode = null,
+        ?string $defaultTicketRoleId = null,
     ): Project
     {
         if ($workflowId === null || $workflowId === '') {
@@ -120,6 +128,7 @@ class ProjectService
         $project->setTeam($team);
 
         $project->setWorkflow($this->resolveAssignableWorkflow($project, $workflowId));
+        $project->setDefaultTicketRole($this->resolveDefaultTicketRole($defaultTicketRoleId));
 
         $this->entityService->update($project, AuditAction::ProjectUpdated, ['name' => $name]);
         $this->realtimeUpdateService->publishProjectChanged($project, 'updated');
@@ -202,6 +211,24 @@ class ProjectService
     public function findModuleById(string $id): ?Module
     {
         return $this->moduleRepository->find(Uuid::fromString($id));
+    }
+
+    /**
+     * Resolves a role by its UUID string, or returns null when no ID is provided.
+     * Throws a LogicException when the ID is provided but no matching role is found.
+     */
+    private function resolveDefaultTicketRole(?string $roleId): ?Role
+    {
+        if ($roleId === null) {
+            return null;
+        }
+
+        $role = $this->roleRepository->find(Uuid::fromString($roleId));
+        if ($role === null) {
+            throw new \LogicException($this->translator->trans('project.validation.default_ticket_role_invalid', [], 'app'));
+        }
+
+        return $role;
     }
 
     private function resolveAssignableWorkflow(?Project $project, string $workflowId): ?\App\Entity\Workflow

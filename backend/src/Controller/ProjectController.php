@@ -41,16 +41,17 @@ class ProjectController extends AbstractController
     public function list(): JsonResponse
     {
         return $this->json(array_map(fn($p) => [
-            'id'            => (string) $p->getId(),
-            'name'          => $p->getName(),
-            'description'   => $p->getDescription(),
-            'repositoryUrl' => $p->getRepositoryUrl(),
-            'team'          => $p->getTeam() ? ['id' => (string) $p->getTeam()->getId(), 'name' => $p->getTeam()->getName()] : null,
-            'workflow'      => $p->getWorkflow() ? ['id' => (string) $p->getWorkflow()->getId(), 'name' => $p->getWorkflow()->getName()] : null,
-            'dispatchMode'  => $p->getDispatchMode()->value,
-            'modules'       => $p->getModules()->count(),
-            'createdAt'     => $p->getCreatedAt()->format(\DateTimeInterface::ATOM),
-            'updatedAt'     => $p->getUpdatedAt()->format(\DateTimeInterface::ATOM),
+            'id'                => (string) $p->getId(),
+            'name'              => $p->getName(),
+            'description'       => $p->getDescription(),
+            'repositoryUrl'     => $p->getRepositoryUrl(),
+            'team'              => $p->getTeam() ? ['id' => (string) $p->getTeam()->getId(), 'name' => $p->getTeam()->getName()] : null,
+            'workflow'          => $p->getWorkflow() ? ['id' => (string) $p->getWorkflow()->getId(), 'name' => $p->getWorkflow()->getName()] : null,
+            'dispatchMode'      => $p->getDispatchMode()->value,
+            'defaultTicketRole' => $p->getDefaultTicketRole() ? ['id' => (string) $p->getDefaultTicketRole()->getId(), 'name' => $p->getDefaultTicketRole()->getName()] : null,
+            'modules'           => $p->getModules()->count(),
+            'createdAt'         => $p->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            'updatedAt'         => $p->getUpdatedAt()->format(\DateTimeInterface::ATOM),
         ], $this->projectService->findAll()));
     }
 
@@ -78,20 +79,22 @@ class ProjectController extends AbstractController
                 $data['teamId'] ?? null,
                 $data['workflowId'] ?? null,
                 DispatchMode::from($data['dispatchMode'] ?? DispatchMode::Auto->value),
+                $data['defaultTicketRoleId'] ?? null,
             );
         } catch (\LogicException $exception) {
             return $this->json($this->apiErrorPayloadFactory->fromMessage($exception->getMessage()), Response::HTTP_CONFLICT);
         }
 
         return $this->json([
-            'id'            => (string) $project->getId(),
-            'name'          => $project->getName(),
-            'description'   => $project->getDescription(),
-            'repositoryUrl' => $project->getRepositoryUrl(),
-            'team'          => $project->getTeam() ? ['id' => (string) $project->getTeam()->getId(), 'name' => $project->getTeam()->getName()] : null,
-            'workflow'      => $project->getWorkflow() ? ['id' => (string) $project->getWorkflow()->getId(), 'name' => $project->getWorkflow()->getName()] : null,
-            'dispatchMode'  => $project->getDispatchMode()->value,
-            'createdAt'     => $project->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            'id'                => (string) $project->getId(),
+            'name'              => $project->getName(),
+            'description'       => $project->getDescription(),
+            'repositoryUrl'     => $project->getRepositoryUrl(),
+            'team'              => $project->getTeam() ? ['id' => (string) $project->getTeam()->getId(), 'name' => $project->getTeam()->getName()] : null,
+            'workflow'          => $project->getWorkflow() ? ['id' => (string) $project->getWorkflow()->getId(), 'name' => $project->getWorkflow()->getName()] : null,
+            'dispatchMode'      => $project->getDispatchMode()->value,
+            'defaultTicketRole' => $project->getDefaultTicketRole() ? ['id' => (string) $project->getDefaultTicketRole()->getId(), 'name' => $project->getDefaultTicketRole()->getName()] : null,
+            'createdAt'         => $project->getCreatedAt()->format(\DateTimeInterface::ATOM),
         ], Response::HTTP_CREATED);
     }
 
@@ -107,14 +110,15 @@ class ProjectController extends AbstractController
         }
 
         return $this->json([
-            'id'            => (string) $project->getId(),
-            'name'          => $project->getName(),
-            'description'   => $project->getDescription(),
-            'repositoryUrl' => $project->getRepositoryUrl(),
-            'team'          => $project->getTeam() ? ['id' => (string) $project->getTeam()->getId(), 'name' => $project->getTeam()->getName()] : null,
-            'workflow'      => $project->getWorkflow() ? ['id' => (string) $project->getWorkflow()->getId(), 'name' => $project->getWorkflow()->getName()] : null,
-            'dispatchMode'  => $project->getDispatchMode()->value,
-            'modules'       => array_map(fn($m) => [
+            'id'                => (string) $project->getId(),
+            'name'              => $project->getName(),
+            'description'       => $project->getDescription(),
+            'repositoryUrl'     => $project->getRepositoryUrl(),
+            'team'              => $project->getTeam() ? ['id' => (string) $project->getTeam()->getId(), 'name' => $project->getTeam()->getName()] : null,
+            'workflow'          => $project->getWorkflow() ? ['id' => (string) $project->getWorkflow()->getId(), 'name' => $project->getWorkflow()->getName()] : null,
+            'dispatchMode'      => $project->getDispatchMode()->value,
+            'defaultTicketRole' => $project->getDefaultTicketRole() ? ['id' => (string) $project->getDefaultTicketRole()->getId(), 'name' => $project->getDefaultTicketRole()->getName()] : null,
+            'modules'           => array_map(fn($m) => [
                 'id'            => (string) $m->getId(),
                 'name'          => $m->getName(),
                 'description'   => $m->getDescription(),
@@ -150,16 +154,18 @@ class ProjectController extends AbstractController
                 array_key_exists('teamId', $data) ? ($data['teamId'] ?: null) : ($project->getTeam() ? (string) $project->getTeam()->getId() : null),
                 array_key_exists('workflowId', $data) ? ($data['workflowId'] ?: null) : ($project->getWorkflow() ? (string) $project->getWorkflow()->getId() : null),
                 array_key_exists('dispatchMode', $data) ? DispatchMode::from($data['dispatchMode']) : $project->getDispatchMode(),
+                array_key_exists('defaultTicketRoleId', $data) ? ($data['defaultTicketRoleId'] ?: null) : ($project->getDefaultTicketRole() ? (string) $project->getDefaultTicketRole()->getId() : null),
             );
         } catch (\LogicException $exception) {
             return $this->json($this->apiErrorPayloadFactory->fromMessage($exception->getMessage()), Response::HTTP_CONFLICT);
         }
         return $this->json([
-            'id'           => (string) $project->getId(),
-            'name'         => $project->getName(),
-            'team'         => $project->getTeam() ? ['id' => (string) $project->getTeam()->getId(), 'name' => $project->getTeam()->getName()] : null,
-            'workflow'     => $project->getWorkflow() ? ['id' => (string) $project->getWorkflow()->getId(), 'name' => $project->getWorkflow()->getName()] : null,
-            'dispatchMode' => $project->getDispatchMode()->value,
+            'id'                => (string) $project->getId(),
+            'name'              => $project->getName(),
+            'team'              => $project->getTeam() ? ['id' => (string) $project->getTeam()->getId(), 'name' => $project->getTeam()->getName()] : null,
+            'workflow'          => $project->getWorkflow() ? ['id' => (string) $project->getWorkflow()->getId(), 'name' => $project->getWorkflow()->getName()] : null,
+            'dispatchMode'      => $project->getDispatchMode()->value,
+            'defaultTicketRole' => $project->getDefaultTicketRole() ? ['id' => (string) $project->getDefaultTicketRole()->getId(), 'name' => $project->getDefaultTicketRole()->getName()] : null,
         ]);
     }
 

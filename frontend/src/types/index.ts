@@ -15,6 +15,7 @@ export interface Project {
   team: { id: string; name: string } | null
   workflow: { id: string; name: string } | null
   dispatchMode: ProjectDispatchMode
+  defaultTicketRole: { id: string; name: string } | null
   modules: number | Module[]
   createdAt: string
   updatedAt: string

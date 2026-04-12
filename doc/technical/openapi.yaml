@@ -346,17 +346,27 @@ paths:
       operationId: listProjects
       responses:
         200:
-          $ref: '#/components/responses/Ok'
+          description: 'List of projects'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectSummary'
     post:
       tags:
         - Projects
       summary: 'Create a project'
       operationId: createProject
       requestBody:
-        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+        $ref: '#/components/requestBodies/ProjectCreatePayload'
       responses:
         201:
-          $ref: '#/components/responses/Created'
+          description: 'Project created'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectCreated'
   '/api/projects/{id}':
     get:
       tags:
@@ -367,19 +377,28 @@ paths:
         - $ref: '#/components/parameters/IdPath'
       responses:
         200:
-          $ref: '#/components/responses/Ok'
+          description: 'Project detail'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDetail'
     put:
       tags:
         - Projects
       summary: 'Update a project'
+      description: 'All fields are optional. Omit a field to keep its current value; pass null to clear a nullable field.'
       operationId: updateProject
       parameters:
         - $ref: '#/components/parameters/IdPath'
       requestBody:
-        $ref: '#/components/requestBodies/ArbitraryJsonBody'
+        $ref: '#/components/requestBodies/ProjectUpdatePayload'
       responses:
         200:
-          $ref: '#/components/responses/Ok'
+          description: 'Project updated'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectRef'
     delete:
       tags:
         - Projects
@@ -1185,6 +1204,18 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ArbitraryJsonObject'
+    ProjectCreatePayload:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProjectCreatePayload'
+    ProjectUpdatePayload:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProjectUpdatePayload'
   responses:
     Ok:
       description: 'Successful response'
@@ -1195,6 +1226,179 @@ components:
     NoContent:
       description: 'Resource deleted successfully'
   schemas:
+    RoleRef:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+        - id
+        - name
+    ProjectFields:
+      description: 'Common writable fields shared by project create and update payloads.'
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        repositoryUrl:
+          type: string
+          nullable: true
+        teamId:
+          type: string
+          format: uuid
+          nullable: true
+        workflowId:
+          type: string
+          format: uuid
+          nullable: true
+        dispatchMode:
+          type: string
+          enum: [auto, manual]
+        defaultTicketRoleId:
+          type: string
+          format: uuid
+          nullable: true
+          description: 'Role assigned automatically to new UserStory/Bug tickets. Pass null to clear.'
+    ProjectCreatePayload:
+      description: 'Payload for POST /api/projects. name, teamId, and workflowId are required.'
+      allOf:
+        - $ref: '#/components/schemas/ProjectFields'
+        - required: [name, teamId, workflowId]
+    ProjectUpdatePayload:
+      description: 'Payload for PUT /api/projects/{id}. All fields are optional; omitted fields keep their current value.'
+      allOf:
+        - $ref: '#/components/schemas/ProjectFields'
+    ProjectRef:
+      description: 'Lightweight project reference embedded in list and update responses.'
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        team:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+        workflow:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+        dispatchMode:
+          type: string
+          enum: [auto, manual]
+        defaultTicketRole:
+          nullable: true
+          description: 'Role assigned automatically to new UserStory/Bug tickets, or null if not configured.'
+          allOf:
+            - $ref: '#/components/schemas/RoleRef'
+      required:
+        - id
+        - name
+        - dispatchMode
+    ProjectSummary:
+      description: 'Project row as returned by GET /api/projects. modules is a count.'
+      allOf:
+        - $ref: '#/components/schemas/ProjectRef'
+        - type: object
+          properties:
+            description:
+              type: string
+              nullable: true
+            repositoryUrl:
+              type: string
+              nullable: true
+            modules:
+              type: integer
+              description: 'Number of modules attached to the project.'
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+          required:
+            - modules
+            - createdAt
+            - updatedAt
+    ProjectCreated:
+      description: 'Project as returned by POST /api/projects. No modules or updatedAt.'
+      allOf:
+        - $ref: '#/components/schemas/ProjectRef'
+        - type: object
+          properties:
+            description:
+              type: string
+              nullable: true
+            repositoryUrl:
+              type: string
+              nullable: true
+            createdAt:
+              type: string
+              format: date-time
+          required:
+            - createdAt
+    ProjectDetail:
+      description: 'Project as returned by GET /api/projects/{id}. modules is an array of module objects.'
+      allOf:
+        - $ref: '#/components/schemas/ProjectRef'
+        - type: object
+          properties:
+            description:
+              type: string
+              nullable: true
+            repositoryUrl:
+              type: string
+              nullable: true
+            modules:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  description:
+                    type: string
+                    nullable: true
+                  repositoryUrl:
+                    type: string
+                    nullable: true
+                  stack:
+                    type: string
+                    nullable: true
+                  status:
+                    type: string
+                    enum: [active, archived]
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+          required:
+            - modules
+            - createdAt
+            - updatedAt
     ArbitraryJsonObject:
       type: object
       additionalProperties: true

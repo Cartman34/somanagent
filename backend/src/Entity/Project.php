@@ -57,6 +57,14 @@ class Project
     #[ORM\Column(enumType: DispatchMode::class, options: ['default' => DispatchMode::Auto->value])]
     private DispatchMode $dispatchMode = DispatchMode::Auto;
 
+    /**
+     * Default role automatically assigned to new UserStory and Bug tickets.
+     * When null, no role is assigned at ticket creation.
+     */
+    #[ORM\ManyToOne(targetEntity: Role::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?Role $defaultTicketRole = null;
+
     #[ORM\OneToMany(targetEntity: Module::class, mappedBy: 'project', cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[ORM\OrderBy(['name' => 'ASC'])]
     private Collection $modules;
@@ -97,6 +105,8 @@ class Project
     public function getWorkflow(): ?Workflow           { return $this->workflow; }
     /** Returns the task dispatch mode configured for this project. */
     public function getDispatchMode(): DispatchMode    { return $this->dispatchMode; }
+    /** Returns the default role assigned to new UserStory/Bug tickets, if any. */
+    public function getDefaultTicketRole(): ?Role      { return $this->defaultTicketRole; }
     /** Returns the project creation timestamp. */
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
     /** Returns the latest update timestamp. */
@@ -117,6 +127,8 @@ class Project
     public function setWorkflow(?Workflow $workflow): static    { $this->workflow = $workflow; return $this; }
     /** Updates the task dispatch policy. */
     public function setDispatchMode(DispatchMode $dispatchMode): static { $this->dispatchMode = $dispatchMode; return $this; }
+    /** Sets the default role assigned to new UserStory/Bug tickets. */
+    public function setDefaultTicketRole(?Role $role): static           { $this->defaultTicketRole = $role; return $this; }
 
     /**
      * Adds one module to this project and synchronizes the owning side.
