@@ -4,6 +4,7 @@
 
 import { useMemo, useState } from 'react'
 import {
+  AlertTriangle,
   Calendar,
   ChevronDown,
   Link2,
@@ -180,19 +181,21 @@ function isEdited(metadata: Record<string, unknown> | null): boolean {
 function readNecessityBadge(
   log: TicketLog,
   tt: (key: TaskActivityFeedTranslationKey) => string,
-): { tone: 'blocking' | 'important' | 'useful'; label: string } | null {
+): { tone: 'blocking' | 'important' | 'useful'; label: string; unresolved: boolean } | null {
   if (log.action !== 'agent_question') {
     return null
   }
 
+  const unresolved = log.requiresAnswer
+
   const necessity = readMetadataString(log.metadata, 'necessityLevel')
   switch (necessity) {
     case 'blocking':
-      return { tone: 'blocking', label: tt('ticket.discussion.necessity_blocking') }
+      return { tone: 'blocking', label: tt('ticket.discussion.necessity_blocking'), unresolved }
     case 'important':
-      return { tone: 'important', label: tt('ticket.discussion.necessity_important') }
+      return { tone: 'important', label: tt('ticket.discussion.necessity_important'), unresolved }
     case 'useful':
-      return { tone: 'useful', label: tt('ticket.discussion.necessity_useful') }
+      return { tone: 'useful', label: tt('ticket.discussion.necessity_useful'), unresolved }
     default:
       return null
   }
@@ -631,7 +634,12 @@ function CommentThreadCard({
             </span>
           )}
           {necessityBadge && (
-            <span className={`badge-necessity ${necessityBadge.tone}`}>
+            <span
+              className={`badge-necessity ${necessityBadge.tone}${necessityBadge.unresolved ? ' unresolved' : ''}`}
+            >
+              {necessityBadge.tone === 'blocking' && necessityBadge.unresolved && (
+                <AlertTriangle className="h-3 w-3" aria-hidden="true" />
+              )}
               {necessityBadge.label}
             </span>
           )}
