@@ -6,6 +6,9 @@ import { useEffect, useRef } from 'react'
 import { X, CheckCircle, AlertCircle, Info } from 'lucide-react'
 import { useToastStore } from '@/lib/toast'
 import type { ToastItem } from '@/lib/toast'
+import { useTranslation } from '@/hooks/useTranslation'
+
+const TOAST_TRANSLATION_KEYS = ['toast.dismiss'] as const
 
 const AUTO_DISMISS_MS = 4000
 
@@ -37,6 +40,7 @@ const TYPE_ICONS = {
  * Individual toast notification with icon, dismiss button and auto-dismiss for success type.
  */
 function ToastItemComponent({ toast, onDismiss }: { toast: ToastItem; onDismiss: () => void }) {
+  const { t } = useTranslation(TOAST_TRANSLATION_KEYS)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -61,7 +65,7 @@ function ToastItemComponent({ toast, onDismiss }: { toast: ToastItem; onDismiss:
       <button
         onClick={onDismiss}
         className="shrink-0 opacity-60 hover:opacity-100 transition-opacity"
-        aria-label="Fermer"
+        aria-label={t('toast.dismiss')}
       >
         <X className="w-4 h-4" />
       </button>

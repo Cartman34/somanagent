@@ -813,6 +813,7 @@ toast:
   task_executed: Tâche lancée
   task_resumed: Tâche reprise
   comment_added: Commentaire ajouté
+  dismiss: Fermer
   saved: Modifications enregistrées
   created: Élément créé
   deleted: Élément supprimé
