@@ -351,6 +351,7 @@ paths:
       tags:
         - Projects
       summary: 'Create a project'
+      description: 'Accepts: name (required), description, repositoryUrl, teamId, workflowId, dispatchMode, defaultTicketRoleId (nullable UUID — role assigned automatically to new UserStory/Bug tickets).'
       operationId: createProject
       requestBody:
         $ref: '#/components/requestBodies/ArbitraryJsonBody'
@@ -372,6 +373,7 @@ paths:
       tags:
         - Projects
       summary: 'Update a project'
+      description: 'Accepts: name, description, repositoryUrl, teamId, workflowId, dispatchMode, defaultTicketRoleId (nullable UUID — omit to keep current value, pass null to clear).'
       operationId: updateProject
       parameters:
         - $ref: '#/components/parameters/IdPath'

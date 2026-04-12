@@ -13,6 +13,7 @@ use App\Enum\AuditAction;
 use App\Enum\DispatchMode;
 use App\Repository\ModuleRepository;
 use App\Repository\ProjectRepository;
+use App\Repository\RoleRepository;
 use App\Repository\TeamRepository;
 use App\Repository\TicketRepository;
 use App\Repository\WorkflowRepository;
@@ -31,6 +32,7 @@ class ProjectService
         private readonly EntityService      $entityService,
         private readonly ProjectRepository  $projectRepository,
         private readonly ModuleRepository   $moduleRepository,
+        private readonly RoleRepository     $roleRepository,
         private readonly TeamRepository     $teamRepository,
         private readonly TicketRepository   $ticketRepository,
         private readonly WorkflowRepository $workflowRepository,
@@ -55,6 +57,7 @@ class ProjectService
         ?string $teamId = null,
         ?string $workflowId = null,
         DispatchMode $dispatchMode = DispatchMode::Auto,
+        ?string $defaultTicketRoleId = null,
     ): Project
     {
         if ($workflowId === null || $workflowId === '') {
@@ -77,6 +80,7 @@ class ProjectService
             ->setTeam($team);
 
         $project->setWorkflow($this->resolveAssignableWorkflow(null, $workflowId));
+        $project->setDefaultTicketRole($defaultTicketRoleId !== null ? $this->roleRepository->find(Uuid::fromString($defaultTicketRoleId)) : null);
 
         $this->entityService->create($project, AuditAction::ProjectCreated, ['name' => $name]);
         $this->realtimeUpdateService->publishProjectChanged($project, 'created');
@@ -101,6 +105,7 @@ class ProjectService
         ?string $teamId = null,
         ?string $workflowId = null,
         ?DispatchMode $dispatchMode = null,
+        ?string $defaultTicketRoleId = null,
     ): Project
     {
         if ($workflowId === null || $workflowId === '') {
@@ -120,6 +125,7 @@ class ProjectService
         $project->setTeam($team);
 
         $project->setWorkflow($this->resolveAssignableWorkflow($project, $workflowId));
+        $project->setDefaultTicketRole($defaultTicketRoleId !== null ? $this->roleRepository->find(Uuid::fromString($defaultTicketRoleId)) : null);
 
         $this->entityService->update($project, AuditAction::ProjectUpdated, ['name' => $name]);
         $this->realtimeUpdateService->publishProjectChanged($project, 'updated');

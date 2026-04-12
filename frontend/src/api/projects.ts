@@ -12,6 +12,7 @@ export interface ProjectPayload {
   teamId?: string | null
   workflowId?: string | null
   dispatchMode?: ProjectDispatchMode
+  defaultTicketRoleId?: string | null
 }
 
 /** Payload accepted by project module creation and update endpoints. */

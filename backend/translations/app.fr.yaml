@@ -313,6 +313,9 @@ project:
     dispatch_mode_hint: En mode auto, les tâches éligibles partent immédiatement. En mode manuel, elles attendent un lancement explicite depuis l'interface.
     dispatch_mode_auto: Automatique
     dispatch_mode_manual: Manuel
+    default_ticket_role_label: Rôle par défaut à la création
+    default_ticket_role_hint: "Rôle assigné automatiquement aux nouveaux tickets (user story, bug). Laisser vide pour ne rien assigner."
+    no_role_option: "— Aucun rôle —"
     name_label: Nom
     name_placeholder: Mon projet
     description_label: Description
@@ -391,6 +394,8 @@ project:
       save_team_error: Impossible de sauvegarder l'équipe.
       save_dispatch_mode_error: Impossible de sauvegarder le mode de dispatch.
       dispatch_mode_saved_help: Ce réglage contrôle le départ automatique ou manuel des tâches éligibles.
+      default_ticket_role_title: Rôle par défaut ticket
+      save_default_ticket_role_error: Impossible de sauvegarder le rôle par défaut.
   executionHistory:
     entries_label: entrées
     prev: Précédent
