@@ -13,18 +13,22 @@ namespace SoManAgent\Script\Backlog;
 final class BacklogBoard
 {
     public const SECTION_TODO = "\u{00C0} faire";
-    public const SECTION_IN_PROGRESS = "En d\u{00E9}veloppement";
-    public const SECTION_IN_REVIEW = "\u{00C0} relire";
-    public const SECTION_REJECTED = "Rejet\u{00E9}es";
-    public const SECTION_APPROVED = "Approuv\u{00E9}es";
+    public const SECTION_ACTIVE = 'Traitement en cours';
+
+    public const STAGE_IN_PROGRESS = 'development';
+    public const STAGE_IN_REVIEW = 'review';
+    public const STAGE_REJECTED = 'rejected';
+    public const STAGE_APPROVED = 'approved';
+
+    private const LEGACY_SECTION_IN_PROGRESS = "En d\u{00E9}veloppement";
+    private const LEGACY_SECTION_IN_REVIEW = "\u{00C0} relire";
+    private const LEGACY_SECTION_REJECTED = "Rejet\u{00E9}es";
+    private const LEGACY_SECTION_APPROVED = "Approuv\u{00E9}es";
 
     /** @var array<int, string> */
     private const TASK_SECTIONS = [
         self::SECTION_TODO,
-        self::SECTION_IN_PROGRESS,
-        self::SECTION_IN_REVIEW,
-        self::SECTION_REJECTED,
-        self::SECTION_APPROVED,
+        self::SECTION_ACTIVE,
     ];
 
     private string $path;
@@ -66,15 +70,36 @@ final class BacklogBoard
     }
 
     /**
+     * @return array<int, array{section: string, index: int, entry: BoardEntry}>
+     */
+    public function findFeaturesByStage(string $stage): array
+    {
+        $normalizedStage = self::normalizeStage($stage);
+        if ($normalizedStage === null) {
+            return [];
+        }
+
+        $matches = [];
+
+        foreach ($this->getEntries(self::SECTION_ACTIVE) as $index => $entry) {
+            if (self::entryStage($entry) !== $normalizedStage) {
+                continue;
+            }
+
+            $matches[] = ['section' => self::SECTION_ACTIVE, 'index' => $index, 'entry' => $entry];
+        }
+
+        return $matches;
+    }
+
+    /**
      * @return array{section: string, index: int, entry: BoardEntry}|null
      */
     public function findFeature(string $feature): ?array
     {
-        foreach ([self::SECTION_IN_PROGRESS, self::SECTION_IN_REVIEW, self::SECTION_REJECTED, self::SECTION_APPROVED] as $section) {
-            foreach ($this->getEntries($section) as $index => $entry) {
-                if ($entry->getMeta('feature') === $feature) {
-                    return ['section' => $section, 'index' => $index, 'entry' => $entry];
-                }
+        foreach ($this->getEntries(self::SECTION_ACTIVE) as $index => $entry) {
+            if ($entry->getMeta('feature') === $feature) {
+                return ['section' => self::SECTION_ACTIVE, 'index' => $index, 'entry' => $entry];
             }
         }
 
@@ -88,11 +113,9 @@ final class BacklogBoard
     {
         $matches = [];
 
-        foreach ([self::SECTION_IN_PROGRESS, self::SECTION_IN_REVIEW, self::SECTION_REJECTED, self::SECTION_APPROVED] as $section) {
-            foreach ($this->getEntries($section) as $index => $entry) {
-                if ($entry->getMeta('agent') === $agent) {
-                    $matches[] = ['section' => $section, 'index' => $index, 'entry' => $entry];
-                }
+        foreach ($this->getEntries(self::SECTION_ACTIVE) as $index => $entry) {
+            if ($entry->getMeta('agent') === $agent) {
+                $matches[] = ['section' => self::SECTION_ACTIVE, 'index' => $index, 'entry' => $entry];
             }
         }
 
@@ -139,24 +162,19 @@ final class BacklogBoard
         return null;
     }
 
-    /**
-     * Moves one active feature entry from its current section to another managed section.
-     */
-    public function moveFeature(string $feature, string $targetSection): void
+    public function setFeatureStage(string $feature, string $stage): void
     {
         $match = $this->findFeature($feature);
         if ($match === null) {
             throw new \RuntimeException("Feature not found in backlog: $feature");
         }
 
-        $entries = $this->getEntries($match['section']);
-        $entry = $entries[$match['index']];
-        array_splice($entries, $match['index'], 1);
-        $this->setEntries($match['section'], array_values($entries));
+        $normalizedStage = self::normalizeStage($stage);
+        if ($normalizedStage === null) {
+            throw new \RuntimeException("Unknown feature stage: {$stage}");
+        }
 
-        $targetEntries = $this->getEntries($targetSection);
-        $targetEntries[] = $entry;
-        $this->setEntries($targetSection, $targetEntries);
+        $match['entry']->setMeta('stage', $normalizedStage);
     }
 
     /**
@@ -213,7 +231,7 @@ final class BacklogBoard
                 if ($entries !== []) {
                     $order = match ($section) {
                         self::SECTION_TODO => ['agent', 'feature'],
-                        default => ['feature', 'agent', 'branch', 'base', 'pr', 'deps', 'blocked'],
+                        default => ['stage', 'feature', 'agent', 'branch', 'base', 'pr', 'deps', 'blocked'],
                     };
 
                     foreach ($entries as $entry) {
@@ -263,9 +281,50 @@ final class BacklogBoard
             $this->rawSections[$section] = $this->normalizeSectionLines($lines);
         }
 
-        foreach (self::TASK_SECTIONS as $section) {
-            $this->taskSections[$section] = $this->parseEntries($this->rawSections[$section] ?? []);
-        }
+        $this->migrateManagedSectionOrder();
+
+        $this->taskSections[self::SECTION_TODO] = $this->parseEntries($this->rawSections[self::SECTION_TODO] ?? []);
+        $this->taskSections[self::SECTION_ACTIVE] = $this->loadActiveEntries();
+    }
+
+    public static function normalizeStage(?string $stage): ?string
+    {
+        return match (trim((string) $stage)) {
+            self::STAGE_IN_PROGRESS, self::LEGACY_SECTION_IN_PROGRESS => self::STAGE_IN_PROGRESS,
+            self::STAGE_IN_REVIEW, self::LEGACY_SECTION_IN_REVIEW => self::STAGE_IN_REVIEW,
+            self::STAGE_REJECTED, self::LEGACY_SECTION_REJECTED => self::STAGE_REJECTED,
+            self::STAGE_APPROVED, self::LEGACY_SECTION_APPROVED => self::STAGE_APPROVED,
+            default => null,
+        };
+    }
+
+    public static function stageLabel(string $stage): string
+    {
+        return match (self::normalizeStage($stage)) {
+            self::STAGE_IN_PROGRESS => self::LEGACY_SECTION_IN_PROGRESS,
+            self::STAGE_IN_REVIEW => self::LEGACY_SECTION_IN_REVIEW,
+            self::STAGE_REJECTED => self::LEGACY_SECTION_REJECTED,
+            self::STAGE_APPROVED => self::LEGACY_SECTION_APPROVED,
+            default => $stage,
+        };
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function activeStages(): array
+    {
+        return [
+            self::STAGE_IN_PROGRESS,
+            self::STAGE_IN_REVIEW,
+            self::STAGE_REJECTED,
+            self::STAGE_APPROVED,
+        ];
+    }
+
+    public static function entryStage(BoardEntry $entry): ?string
+    {
+        return self::normalizeStage($entry->getMeta('stage'));
     }
 
     /**
@@ -300,6 +359,76 @@ final class BacklogBoard
         }
 
         return $entries;
+    }
+
+    /**
+     * @return array<BoardEntry>
+     */
+    private function loadActiveEntries(): array
+    {
+        $entries = [];
+
+        foreach ($this->parseEntries($this->rawSections[self::SECTION_ACTIVE] ?? []) as $entry) {
+            $entry->setMeta('stage', self::entryStage($entry) ?? self::STAGE_IN_PROGRESS);
+            $entries[] = $entry;
+        }
+
+        foreach ($this->legacyStageSections() as $section => $stage) {
+            foreach ($this->parseEntries($this->rawSections[$section] ?? []) as $entry) {
+                $entry->setMeta('stage', self::entryStage($entry) ?? $stage);
+                $entries[] = $entry;
+            }
+        }
+
+        return $entries;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function legacyStageSections(): array
+    {
+        return [
+            self::LEGACY_SECTION_IN_PROGRESS => self::STAGE_IN_PROGRESS,
+            self::LEGACY_SECTION_IN_REVIEW => self::STAGE_IN_REVIEW,
+            self::LEGACY_SECTION_REJECTED => self::STAGE_REJECTED,
+            self::LEGACY_SECTION_APPROVED => self::STAGE_APPROVED,
+        ];
+    }
+
+    private function migrateManagedSectionOrder(): void
+    {
+        $legacySections = array_keys($this->legacyStageSections());
+        $newOrder = [];
+        $activeInserted = false;
+
+        foreach ($this->sectionOrder as $section) {
+            if (in_array($section, $legacySections, true)) {
+                if (!$activeInserted) {
+                    $newOrder[] = self::SECTION_ACTIVE;
+                    $activeInserted = true;
+                }
+
+                continue;
+            }
+
+            $newOrder[] = $section;
+            if ($section === self::SECTION_ACTIVE) {
+                $activeInserted = true;
+            }
+        }
+
+        if (!$activeInserted) {
+            $todoIndex = array_search(self::SECTION_TODO, $newOrder, true);
+            if ($todoIndex === false) {
+                $newOrder[] = self::SECTION_ACTIVE;
+            } else {
+                array_splice($newOrder, $todoIndex + 1, 0, [self::SECTION_ACTIVE]);
+            }
+        }
+
+        $this->sectionOrder = array_values(array_unique($newOrder));
+        $this->rawSections[self::SECTION_ACTIVE] ??= [];
     }
 
     /**

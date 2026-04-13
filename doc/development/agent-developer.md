@@ -9,9 +9,8 @@ Read this file only when the active task requires developer workflow details.
 - `task-create`
 - `task-todo-list`
 - `task-remove`
-- `task-book-next`
-- `task-book-release`
 - `feature-start`
+- `feature-release`
 - `feature-task-add`
 - `feature-deps-mode`
 - `feature-assign`
@@ -29,8 +28,9 @@ Read this file only when the active task requires developer workflow details.
 ## Responsibilities
 
 - manage one `WA` identified by the agent code
-- reserve tasks, start features, and continue development on the feature branch
+- start features, optionally release untouched features, and continue development on the feature branch
 - commit on the feature branch with the feature slug prefix
+- run `php scripts/backlog.php ...` from `WP` only; backlog commands are not allowed from `WA`
 - run `php scripts/review.php` after every implementation and fix mechanical blockers within scope
 - critically challenge the implementation for gaps, regressions, and convention violations before considering it ready for review
 - update docs when required by the code change
@@ -39,7 +39,7 @@ Read this file only when the active task requires developer workflow details.
 
 ## Do Not
 
-- start implementing, editing, or committing for a feature before it is reserved or assigned to that exact agent code and started in that agent's dedicated `WA`
+- start implementing, editing, or committing for a feature before it is assigned to that exact agent code and started in that agent's dedicated `WA`
 - run reviewer commands or `merge`
 - use raw git or GitHub commands when `backlog.php` provides the workflow step
 - start a second visible backlog entry for the same feature
@@ -63,35 +63,29 @@ Read this file only when the active task requires developer workflow details.
 ### `task-todo-list`
 
 1. Run `php scripts/backlog.php task-todo-list`.
-2. The script prints queued tasks and visible reservation metadata.
+2. The script prints queued tasks in priority order.
 
 ### `task-remove`
 
 1. Run `php scripts/backlog.php task-remove <number>`.
 2. The script removes the queued task at the given 1-based position from `## À faire`.
 
-### `task-book-next`
-
-1. Run `php scripts/backlog.php task-book-next --agent=<code> [<feature>]`.
-2. Reserve the next task in `## À faire`.
-3. If `<feature>` is omitted, let the script derive the feature slug.
-4. If the agent already owns one active feature, the reservation reuses that feature slug.
-
-### `task-book-release`
-
-1. Run `php scripts/backlog.php task-book-release --agent=<code> [<feature>]`.
-2. Release the reservation before the feature is started.
-
 ### `feature-start`
 
 1. Run `php scripts/backlog.php feature-start --agent=<code> --branch-type=<feat|fix>`.
-2. The script creates the feature branch in the agent worktree, moves the feature to `## En développement`, and authorizes development.
+2. The script takes the next task from `## À faire`, creates the feature branch in the agent worktree, moves the feature to `## Traitement en cours`, sets `meta.stage=development`, and authorizes development.
 3. `feature-start` is local-only: it does not push and it does not create a PR.
+
+### `feature-release`
+
+1. Run `php scripts/backlog.php feature-release --agent=<code> [<feature>]`.
+2. The script returns the active feature to the start of `## À faire` only when the branch is still clean and has no commit ahead of its recorded `base`.
+3. The script then removes the managed worktree and deletes the untouched local branch.
 
 ### `feature-task-add`
 
 1. Run `php scripts/backlog.php feature-task-add --agent=<code> --feature-text=<text> [--body-file=<path>]`.
-2. The script absorbs all tasks reserved by this agent into the current feature.
+2. The script absorbs the next task from `## À faire` into the current feature.
 3. If a PR already exists for the feature, the script updates its body when `--body-file` is provided.
 
 ### `feature-deps-mode`
@@ -116,7 +110,7 @@ Read this file only when the active task requires developer workflow details.
 
 1. Read `local/backlog-review.md`.
 2. Run `php scripts/backlog.php feature-rework --agent=<code> [<feature>]`.
-3. Resume development on the same feature branch from `## Rejetées`.
+3. Resume development on the same feature branch from `meta.stage=rejected` back to `meta.stage=development`.
 
 ### `feature-block`
 
@@ -131,7 +125,7 @@ Read this file only when the active task requires developer workflow details.
 ### `feature-list`
 
 1. Run `php scripts/backlog.php feature-list`.
-2. The script prints active features grouped by backlog section.
+2. The script prints active features grouped by workflow stage.
 
 ### `worktree-list`
 
@@ -154,13 +148,13 @@ Read this file only when the active task requires developer workflow details.
 ### `feature-review-request`
 
 1. Run `php scripts/backlog.php feature-review-request --agent=<code> [<feature>]`.
-2. The script verifies that the feature is assigned to that agent, that the agent `WA` is the correct worktree for the feature branch, then requires a green mechanical review and moves the feature to `## À relire`.
+2. The script verifies that the feature is assigned to that agent, that the agent `WA` is the correct worktree for the feature branch, then requires a green mechanical review and sets `meta.stage=review`.
 
 ## Rules
 
 - Do not start a second visible feature for the same agent.
 - Do not edit local backlog files directly.
-- A task is considered done for Developer only when it is committed, mechanically valid, and passed to `## À relire`.
+- A task is considered done for Developer only when it is committed, mechanically valid, and passed to `meta.stage=review`.
 - If a new task is added to an existing feature, keep a single backlog line for that feature and preserve all useful scope details.
 - If a needed backlog action is missing from `backlog.php`, stop and ask the user instead of editing the backlog manually.
 
@@ -168,12 +162,11 @@ Read this file only when the active task requires developer workflow details.
 
 ### `next`
 
-1. Run `php scripts/backlog.php task-book-next --agent=<code>`.
-2. Run `php scripts/backlog.php feature-start --agent=<code> --branch-type=<feat|fix>`.
-3. Implement the feature scope in the assigned developer worktree `WA`, not in `WP`.
-4. Work on the feature branch checked out by `feature-start` for that task.
-5. Run `php scripts/review.php` and fix every blocker in scope before moving on. It cannot be replaced by running `php -l`.
-6. Commit the work on that feature branch with a message starting with `[<feature-slug>]`, where `<feature-slug>` is the canonical feature identifier recorded in the backlog metadata and used in the branch name.
+1. Run `php scripts/backlog.php feature-start --agent=<code> --branch-type=<feat|fix>`.
+2. Implement the feature scope in the assigned developer worktree `WA`, not in `WP`.
+3. Work on the feature branch checked out by `feature-start` for that task.
+4. Run `php scripts/review.php` and fix every blocker in scope before moving on. It cannot be replaced by running `php -l`.
+5. Commit the work on that feature branch with a message starting with `[<feature-slug>]`, where `<feature-slug>` is the canonical feature identifier recorded in the backlog metadata and used in the branch name.
 
 ### `submit`
 
