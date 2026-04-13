@@ -56,7 +56,7 @@ Rules:
 ### `task-todo-list`
 
 1. Run `php scripts/backlog.php task-todo-list`.
-2. The script prints queued tasks and visible reservation metadata.
+2. The script prints queued tasks in priority order.
 
 ### `task-remove`
 

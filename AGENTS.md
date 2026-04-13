@@ -11,6 +11,7 @@ Read this file first. Open additional files only when the active task requires t
 - Use relative paths in commands. Do not rely on `cd` into subfolders.
 - For temporary workflow files such as PR bodies, write under `local/tmp/`, not `/tmp`.
 - Keep chat updates concise.
+- Never run dependent commands in parallel. Any command sequence where one step relies on the previous step having completed, especially Git flows such as `add` then `commit`, must be executed strictly sequentially.
 - Do not infer backlog or review state from chat alone.
 - If a tool is known to be unavailable, stop probing for it until the user explicitly asks to install it or confirms it is available again.
 - In this repository, treat `rg` as unavailable by default unless the user explicitly says otherwise.
@@ -18,6 +19,8 @@ Read this file first. Open additional files only when the active task requires t
 - `doc/README.md` is the documentation index. It tells agents where to find the relevant project information. Read it when documentation is needed instead of repeating documentation rules in this file.
 - Product, architecture, workflow, exposure, and library-choice changes with meaningful tradeoffs require explicit user agreement before implementation.
 - For network-dependent workflow commands, prefer idempotent script steps. On transient failures, retry when the script supports it, then report the network issue clearly.
+- Never improvise outside the documented process. If a needed action, cleanup, exception path, or recovery step is not explicitly covered, stop and escalate to the user instead of deciding unilaterally.
+- In case of command error, workflow inconsistency, or behavioral failure, report it to the user immediately. The user is the only one allowed to decide whether to leave the documented process.
 
 ## Local Source Of Truth
 

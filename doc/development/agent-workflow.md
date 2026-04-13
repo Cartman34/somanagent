@@ -25,6 +25,7 @@ Rules:
 - Developer work in a dedicated worktree is mandatory for every task.
 - Create agent worktrees under `.worktrees/` inside the main repository so they stay in the same WSL filesystem and remain easy to ignore.
 - Use `WP` for the main workspace and `WA` for one developer agent worktree.
+- From `WP`, never launch dependent workflow commands in parallel. Any sequence where one command depends on the previous result, especially Git operations such as `add` then `commit`, must be run strictly one after another.
 - A `WA` belongs to the developer agent and is treated as ephemeral.
 - A branch belongs to the active feature.
 - A feature branch must never stay checked out in multiple worktrees at the same time.
@@ -70,7 +71,9 @@ Rules:
 2. Every developer command on `backlog.php` requires `--agent=<code>`.
 3. Reviewer commands on `backlog.php` never use `--agent`.
 4. The agent code must never leave local backlog files.
-5. Any backlog state change covered by `backlog.php` must go through `backlog.php`, never through a manual file edit.
-6. Manual edits to `local/backlog-board.md` or `local/backlog-review.md` are forbidden unless the user explicitly asks for a manual edit outside the scripted workflow.
-7. `--dry-run` simulates backlog, git, GitHub, and filesystem mutations without executing them.
-8. `--verbose` prints detailed execution steps and simulated commands.
+5. `feature-start` takes the next queued task directly from `## À faire`; no separate reservation step is part of the standard workflow.
+6. `feature-release` returns the active feature to `## À faire` only when no development was done on its branch.
+7. Any backlog state change covered by `backlog.php` must go through `backlog.php`, never through a manual file edit.
+8. Manual edits to `local/backlog-board.md` or `local/backlog-review.md` are forbidden unless the user explicitly asks for a manual edit outside the scripted workflow.
+9. `--dry-run` simulates backlog, git, GitHub, and filesystem mutations without executing them.
+10. `--verbose` prints detailed execution steps and simulated commands.
