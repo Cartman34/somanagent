@@ -69,6 +69,7 @@ const TASK_DRAWER_TRANSLATION_KEYS = [
   'ticket.detail.resume.title',
   'ticket.detail.subtasks_title',
   'ticket.detail.action_label',
+  'ticket.detail.effects_label',
   'ticket.detail.agent_label',
   'ticket.detail.execute.button',
   'ticket.detail.execute.error',
@@ -150,15 +151,17 @@ function badgeAppearance(tone: 'primary' | 'accent' | 'neutral' | 'warning') {
 function Badge({
   children,
   tone,
+  className,
 }: {
   children: ReactNode
   tone: 'primary' | 'accent' | 'neutral' | 'warning'
+  className?: string
 }) {
   const style = badgeAppearance(tone)
 
   return (
     <span
-      className="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold tracking-[0.04em]"
+      className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold tracking-[0.04em] ${className ?? ''}`}
       style={style}
     >
       {children}
@@ -261,50 +264,19 @@ export default function TaskDrawer({
     setIsInitialRequestOpen(false)
   }, [taskId])
 
-  useEffect(() => {
-    if (!entity || isEditingDetails) {
-      return
-    }
-
-    setEditTitle(entity.title ?? '')
-    setEditDescription(entity.description ?? '')
-  }, [entity, isEditingDetails])
-
   const commentMutation = useMutation({
-    mutationFn: () => (
-      entity && isTicket(entity)
-        ? ticketsApi.comment(taskId, {
-          content: commentText.trim(),
-          replyToLogId: replyToLogId ?? undefined,
-          context: replyToLogId ? 'ticket_reply' : 'ticket_comment',
-        })
-        : ticketTasksApi.comment(taskId, {
-          content: commentText.trim(),
-          replyToLogId: replyToLogId ?? undefined,
-          context: replyToLogId ? 'ticket_reply' : 'ticket_comment',
-        })
-    ),
+    mutationFn: () => ticketsApi.addComment(taskId, commentText, replyToLogId),
     onSuccess: async () => {
       setCommentText('')
       setReplyToLogId(null)
-      setEditingLogId(null)
-      setEditingCommentText('')
-      toast.success(t('toast.comment_added'), 'task-comment')
+      toast.success(t('toast.comment_added'), 'comment-added')
       await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
       await qc.invalidateQueries({ queryKey: ['tickets'] })
     },
   })
 
   const editCommentMutation = useMutation({
-    mutationFn: () => {
-      if (!editingLogId) {
-        throw new Error('No comment selected for edition.')
-      }
-
-      return entity && isTicket(entity)
-        ? ticketsApi.updateComment(taskId, editingLogId, { content: editingCommentText.trim() })
-        : ticketTasksApi.updateComment(taskId, editingLogId, { content: editingCommentText.trim() })
-    },
+    mutationFn: () => ticketsApi.updateLog(taskId, editingLogId!, editingCommentText),
     onSuccess: async () => {
       setEditingLogId(null)
       setEditingCommentText('')
@@ -314,28 +286,15 @@ export default function TaskDrawer({
   })
 
   const deleteCommentMutation = useMutation({
-    mutationFn: (logId: string) => (
-      entity && isTicket(entity)
-        ? ticketsApi.deleteComment(taskId, logId)
-        : ticketTasksApi.deleteComment(taskId, logId)
-    ),
-    onSuccess: async (_, logId) => {
-      if (editingLogId === logId) {
-        setEditingLogId(null)
-        setEditingCommentText('')
-      }
-
-      if (replyToLogId === logId) {
-        setReplyToLogId(null)
-      }
-
+    mutationFn: (logId: string) => ticketsApi.deleteLog(taskId, logId),
+    onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
       await qc.invalidateQueries({ queryKey: ['tickets'] })
     },
   })
 
   const advanceMutation = useMutation({
-    mutationFn: (ticketEntityId: string) => ticketsApi.advance(ticketEntityId),
+    mutationFn: (ticketId: string) => ticketsApi.advanceWorkflowStep(ticketId),
     onSuccess: async () => {
       setAdvanceError(null)
       await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
@@ -673,6 +632,16 @@ export default function TaskDrawer({
                         {task.workflowStep && <Badge tone="accent">{t('ticket.detail.step_label')}: {task.workflowStep.name}</Badge>}
                         {task.assignedAgent && <Badge tone="primary">{t('ticket.detail.agent_label')}: {task.assignedAgent.name}</Badge>}
                         <Badge tone="warning">{t('ticket.detail.action_label')}: {resolveTaskActionLabel(task, tc)}</Badge>
+                        {task.agentAction.allowedEffects?.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1 w-full">
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground mr-1">{t('ticket.detail.effects_label')}:</span>
+                            {task.agentAction.allowedEffects.map(effect => (
+                              <Badge key={effect} tone="neutral" className="text-[10px] py-0 h-4">
+                                {effect.replace(/_/g, ' ')}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
                       {task.dependsOn.length > 0 && (

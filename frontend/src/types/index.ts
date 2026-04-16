@@ -235,6 +235,7 @@ export interface AgentActionRef {
   label: string
   role: RoleRef | null
   skill: SkillRef | null
+  allowedEffects: string[]
 }
 
 /** One execution attempt for an async agent run. */
