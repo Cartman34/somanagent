@@ -86,3 +86,4 @@ Rules:
 8. Manual edits to `local/backlog-board.md` or `local/backlog-review.md` are forbidden unless the user explicitly asks for a manual edit outside the scripted workflow.
 9. `--dry-run` simulates backlog, git, GitHub, and filesystem mutations without executing them.
 10. `--verbose` prints detailed execution steps and simulated commands.
+11. When the user invokes a documented workflow keyword or command sequence, agents must rerun that documented procedure each time unless the user cancels it. Repetition is not a reason to switch to advisory mode or rely on remembered state instead of the workflow result.

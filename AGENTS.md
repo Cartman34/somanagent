@@ -22,6 +22,7 @@ Read this file first. Open additional files only when the active task requires t
 - Never improvise outside the documented process. If a needed action, cleanup, exception path, or recovery step is not explicitly covered, stop and escalate to the user instead of deciding unilaterally.
 - In case of command error, workflow inconsistency, or behavioral failure, report it to the user immediately. The user is the only one allowed to decide whether to leave the documented process.
 - Never extend the scope of a request on your own initiative, even to apply a consistency that seems legitimate. Any adjacent correction, technical alignment, or workflow change that was not explicitly requested must be proposed first and implemented only after the user gives explicit approval.
+- For any explicit workflow keyword from the documented process, execute the documented procedure exactly as defined. Do not substitute your own interpretation of the task state, do not short-circuit the procedure based on memory, and do not refuse the action unless the documented procedure itself fails.
 
 ## Local Source Of Truth
 

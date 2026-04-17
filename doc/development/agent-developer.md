@@ -160,6 +160,7 @@ Read this file only when the active task requires developer workflow details.
 - Do not edit local backlog files directly.
 - A task is considered done for Developer only when it is committed, mechanically valid, and passed to `meta.stage=review`.
 - For `feature-assign` and `feature-unassign`, `SOMANAGER_ROLE` must be `developer` and `SOMANAGER_AGENT` must match `--agent`.
+- User workflow keywords are procedural orders. For `next`, `submit`, `rework`, and `cleanup`, execute the documented command sequence exactly as written, even if memory suggests the feature state is inconsistent or unchanged.
 - If a new task is added to an existing feature, keep a single backlog line for that feature and preserve all useful scope details.
 - If a needed backlog action is missing from `backlog.php`, stop and ask the user instead of editing the backlog manually.
 

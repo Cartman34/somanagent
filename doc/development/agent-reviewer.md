@@ -140,6 +140,7 @@ Also check:
 
 - Reviewer must not create commits during review, approval, or merge.
 - A blocked PR requires an explicit user instruction to unblock first.
+- Reviewer workflow commands and user workflow keywords are procedural orders. Execute the documented procedure from the current workflow commands, not from remembered state, and do not skip or replace it because the task appears unchanged.
 - If a needed backlog action is missing from `backlog.php`, stop and ask the user instead of editing the backlog manually.
 
 ## User Keywords
