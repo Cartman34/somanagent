@@ -261,6 +261,8 @@ Informational (no exit code impact):
 
 Limitations: only detects accented characters as French strings — complement with a manual diff review for unaccented French words (`Valider`, `Commenter`, etc.). JSDoc check covers export declarations only, not re-exports.
 
+The review flow intentionally skips container-backed validations that depend on local uncommitted environment files such as `.env`. Those checks are outside the commit diff scope and must not block review from a developer worktree.
+
 ```bash
 php scripts/review.php
 ```
@@ -269,10 +271,12 @@ php scripts/review.php
 
 ### `validate-files.php`
 Runs targeted backend/frontend validations (PHP syntax, Symfony container lint, Doctrine schema, ESLint) for an explicit list of files.
+Use `--review-scope` when the command is executed from the mechanical review flow. In that mode, container-backed checks are skipped because they depend on local runtime state and uncommitted files such as `.env`, which are outside the review diff scope.
 
 ```bash
 php scripts/validate-files.php backend/src/Controller/TaskController.php frontend/src/api/tickets.ts
 php scripts/validate-files.php --with-types backend/src/Service/StoryExecutionService.php
+php scripts/validate-files.php --with-types --review-scope backend/src/Service/StoryExecutionService.php
 ```
 
 ---

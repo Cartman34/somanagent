@@ -32,6 +32,7 @@ Rules:
 - Keep `.worktrees/` ignored in the root `.gitignore`.
 - Run every `php scripts/backlog.php ...` command from `WP` only, never from a `WA`.
 - This rule is technically enforced by `scripts/backlog.php`: the command fails if it is launched from a `WA` or any other directory.
+- `WA` runtime dependencies use local copies for `backend/vendor` and `frontend/node_modules`, created from `WP` when the `WA` is created or when those paths are missing. Root `.env` and `backend/.env.local` are refreshed by the workflow.
 - Use `php scripts/backlog.php worktree-list` to inspect managed worktrees under `.worktrees/`.
 - Use `php scripts/backlog.php worktree-clean` to remove only abandoned managed worktrees that are safe to delete.
 - Worktrees outside `.worktrees/` are never auto-removed by backlog commands; inspect them manually, then use `git worktree remove <path>` or `git worktree prune`.
@@ -50,7 +51,6 @@ Rules:
    `    branch: <type>/<slug>`
    `    base: <sha>`
    `    pr: none`
-   `    deps: linked`
 4. `<type>` is `feat` or `fix` on the branch.
 5. Every developer commit on a feature branch must start with `[<slug>]`.
 6. Review and approval must be scoped from the recorded `base` commit, not from the current `main`.
@@ -65,6 +65,15 @@ Rules:
 2. It must be used exactly as assigned, without truncation, normalization, inference, or nickname conversion.
 3. Example: if the assigned code is `agent-03`, use `agent-03` everywhere, not `03`.
 
+## Assignment Permission Rules
+
+1. `feature-assign` and `feature-unassign` read the active caller role from `SOMANAGER_ROLE`.
+2. Allowed values are `manager` and `developer`.
+3. When `SOMANAGER_ROLE=developer`, `SOMANAGER_AGENT` is mandatory and must match the `--agent` value passed to the command.
+4. `Manager` may assign or unassign any feature for any developer agent.
+5. `Developer` may only assign itself to an unassigned feature or keep the same self-assignment.
+6. `Developer` may only unassign itself from its own feature.
+
 ## Command Policy
 
 1. Prefer `php scripts/backlog.php` for the full local workflow.
@@ -77,3 +86,4 @@ Rules:
 8. Manual edits to `local/backlog-board.md` or `local/backlog-review.md` are forbidden unless the user explicitly asks for a manual edit outside the scripted workflow.
 9. `--dry-run` simulates backlog, git, GitHub, and filesystem mutations without executing them.
 10. `--verbose` prints detailed execution steps and simulated commands.
+11. When the user invokes a documented workflow keyword or command sequence, agents must rerun that documented procedure each time unless the user cancels it. Repetition is not a reason to switch to advisory mode or rely on remembered state instead of the workflow result.

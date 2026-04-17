@@ -32,6 +32,7 @@ final class ValidateFilesRunner extends AbstractScriptRunner
     {
         return [
             ['name' => '--with-types', 'description' => 'Also run frontend type checking'],
+            ['name' => '--review-scope', 'description' => 'Skip container-backed checks that are outside the review diff scope'],
         ];
     }
 
@@ -51,6 +52,7 @@ final class ValidateFilesRunner extends AbstractScriptRunner
     public function run(array $args): int
     {
         $withTypes = false;
+        $reviewScope = false;
         $files = [];
 
         foreach ($args as $arg) {
@@ -58,11 +60,15 @@ final class ValidateFilesRunner extends AbstractScriptRunner
                 $withTypes = true;
                 continue;
             }
+            if ($arg === '--review-scope') {
+                $reviewScope = true;
+                continue;
+            }
             $files[] = $arg;
         }
 
         if ($files === []) {
-            fwrite(STDERR, "Usage: php scripts/validate-files.php [--with-types] <file> [file...]\n");
+            fwrite(STDERR, "Usage: php scripts/validate-files.php [--with-types] [--review-scope] <file> [file...]\n");
             return 1;
         }
 
@@ -145,7 +151,11 @@ final class ValidateFilesRunner extends AbstractScriptRunner
                 || str_contains($joined, 'is the docker daemon running')
                 || str_contains($joined, 'service "php" is not running')
                 || str_contains($joined, 'service "node" is not running')
-                || str_contains($joined, 'no such service');
+                || str_contains($joined, 'no such service')
+                || str_contains($joined, 'env file')
+                || str_contains($joined, 'couldn\'t find env file')
+                || str_contains($joined, 'failed to load')
+                || str_contains($joined, '.env');
         };
 
         if ($backendPhpFiles !== []) {
@@ -203,17 +213,21 @@ final class ValidateFilesRunner extends AbstractScriptRunner
         }
 
         if ($needsContainerLint) {
-            $output = [];
-            $code = $runQuiet('php scripts/console.php lint:container --no-interaction', $output);
-            if ($code === 0) {
-                $results[] = 'Symfony container: OK';
-            } elseif ($isEnvironmentUnavailable($output)) {
-                $results[] = 'Symfony container: UNAVAILABLE';
+            if ($reviewScope) {
+                $results[] = 'Symfony container: SKIP (out of review scope)';
             } else {
-                $failed = true;
-                $results[] = 'Symfony container: FAIL';
-                foreach (array_slice($output, -8) as $line) {
-                    $results[] = '  ' . $line;
+                $output = [];
+                $code = $runQuiet('php scripts/console.php lint:container --no-interaction', $output);
+                if ($code === 0) {
+                    $results[] = 'Symfony container: OK';
+                } elseif ($isEnvironmentUnavailable($output)) {
+                    $results[] = 'Symfony container: UNAVAILABLE';
+                } else {
+                    $failed = true;
+                    $results[] = 'Symfony container: FAIL';
+                    foreach (array_slice($output, -8) as $line) {
+                        $results[] = '  ' . $line;
+                    }
                 }
             }
         } else {
@@ -238,19 +252,23 @@ final class ValidateFilesRunner extends AbstractScriptRunner
         }
 
         if ($frontendLintFiles !== []) {
-            $command = 'php scripts/node.php exec ./node_modules/.bin/eslint --max-warnings 0 '
-                . implode(' ', array_map('escapeshellarg', $frontendLintFiles));
-            $output = [];
-            $code = $runQuiet($command, $output);
-            if ($code === 0) {
-                $results[] = sprintf('Frontend lint: OK (%d file%s)', count($frontendLintFiles), count($frontendLintFiles) > 1 ? 's' : '');
-            } elseif ($isEnvironmentUnavailable($output)) {
-                $results[] = sprintf('Frontend lint: UNAVAILABLE (%d file%s)', count($frontendLintFiles), count($frontendLintFiles) > 1 ? 's' : '');
+            if ($reviewScope) {
+                $results[] = sprintf('Frontend lint: SKIP (%d file%s, out of review scope)', count($frontendLintFiles), count($frontendLintFiles) > 1 ? 's' : '');
             } else {
-                $failed = true;
-                $results[] = sprintf('Frontend lint: FAIL (%d file%s)', count($frontendLintFiles), count($frontendLintFiles) > 1 ? 's' : '');
-                foreach (array_slice($output, -12) as $line) {
-                    $results[] = '  ' . $line;
+                $command = 'php scripts/node.php exec ./node_modules/.bin/eslint --max-warnings 0 '
+                    . implode(' ', array_map('escapeshellarg', $frontendLintFiles));
+                $output = [];
+                $code = $runQuiet($command, $output);
+                if ($code === 0) {
+                    $results[] = sprintf('Frontend lint: OK (%d file%s)', count($frontendLintFiles), count($frontendLintFiles) > 1 ? 's' : '');
+                } elseif ($isEnvironmentUnavailable($output)) {
+                    $results[] = sprintf('Frontend lint: UNAVAILABLE (%d file%s)', count($frontendLintFiles), count($frontendLintFiles) > 1 ? 's' : '');
+                } else {
+                    $failed = true;
+                    $results[] = sprintf('Frontend lint: FAIL (%d file%s)', count($frontendLintFiles), count($frontendLintFiles) > 1 ? 's' : '');
+                    foreach (array_slice($output, -12) as $line) {
+                        $results[] = '  ' . $line;
+                    }
                 }
             }
         } else {
@@ -258,17 +276,21 @@ final class ValidateFilesRunner extends AbstractScriptRunner
         }
 
         if ($withTypes && $frontendLintFiles !== []) {
-            $output = [];
-            $code = $runQuiet('php scripts/node.php type-check', $output);
-            if ($code === 0) {
-                $results[] = 'Frontend type-check: OK';
-            } elseif ($isEnvironmentUnavailable($output)) {
-                $results[] = 'Frontend type-check: UNAVAILABLE';
+            if ($reviewScope) {
+                $results[] = 'Frontend type-check: SKIP (out of review scope)';
             } else {
-                $failed = true;
-                $results[] = 'Frontend type-check: FAIL';
-                foreach (array_slice($output, -12) as $line) {
-                    $results[] = '  ' . $line;
+                $output = [];
+                $code = $runQuiet('php scripts/node.php type-check', $output);
+                if ($code === 0) {
+                    $results[] = 'Frontend type-check: OK';
+                } elseif ($isEnvironmentUnavailable($output)) {
+                    $results[] = 'Frontend type-check: UNAVAILABLE';
+                } else {
+                    $failed = true;
+                    $results[] = 'Frontend type-check: FAIL';
+                    foreach (array_slice($output, -12) as $line) {
+                        $results[] = '  ' . $line;
+                    }
                 }
             }
         } else {

@@ -24,6 +24,12 @@ Read this file only when the active task requires backlog management or workflow
 - reviewer flow commands documented in `doc/development/agent-reviewer.md`
 - developer backlog-management commands documented in `doc/development/agent-developer.md`
 
+## Assignment Authority
+
+- `Manager` can assign any feature to any developer agent.
+- `Manager` can unassign any feature from any developer agent.
+- For `feature-assign` and `feature-unassign`, export `SOMANAGER_ROLE=manager` before running `php scripts/backlog.php ...`.
+
 ## Guidance
 
 - use `doc/development/agent-workflow.md` for the shared backlog model and state transitions

@@ -231,7 +231,7 @@ final class BacklogBoard
                 if ($entries !== []) {
                     $order = match ($section) {
                         self::SECTION_TODO => ['agent', 'feature'],
-                        default => ['stage', 'feature', 'agent', 'branch', 'base', 'pr', 'deps', 'blocked'],
+                        default => ['stage', 'feature', 'agent', 'branch', 'base', 'pr', 'blocked'],
                     };
 
                     foreach ($entries as $entry) {
@@ -370,12 +370,14 @@ final class BacklogBoard
 
         foreach ($this->parseEntries($this->rawSections[self::SECTION_ACTIVE] ?? []) as $entry) {
             $entry->setMeta('stage', self::entryStage($entry) ?? self::STAGE_IN_PROGRESS);
+            $entry->unsetMeta('deps');
             $entries[] = $entry;
         }
 
         foreach ($this->legacyStageSections() as $section => $stage) {
             foreach ($this->parseEntries($this->rawSections[$section] ?? []) as $entry) {
                 $entry->setMeta('stage', self::entryStage($entry) ?? $stage);
+                $entry->unsetMeta('deps');
                 $entries[] = $entry;
             }
         }
