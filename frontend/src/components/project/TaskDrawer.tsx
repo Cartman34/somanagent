@@ -265,7 +265,7 @@ export default function TaskDrawer({
   }, [taskId])
 
   const commentMutation = useMutation({
-    mutationFn: () => ticketsApi.addComment(taskId, commentText, replyToLogId),
+    mutationFn: () => ticketsApi.comment(taskId, { content: commentText, replyToLogId }),
     onSuccess: async () => {
       setCommentText('')
       setReplyToLogId(null)
@@ -276,7 +276,7 @@ export default function TaskDrawer({
   })
 
   const editCommentMutation = useMutation({
-    mutationFn: () => ticketsApi.updateLog(taskId, editingLogId!, editingCommentText),
+    mutationFn: () => ticketsApi.updateComment(taskId, editingLogId!, { content: editingCommentText }),
     onSuccess: async () => {
       setEditingLogId(null)
       setEditingCommentText('')
@@ -286,7 +286,7 @@ export default function TaskDrawer({
   })
 
   const deleteCommentMutation = useMutation({
-    mutationFn: (logId: string) => ticketsApi.deleteLog(taskId, logId),
+    mutationFn: (logId: string) => ticketsApi.deleteComment(taskId, logId),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
       await qc.invalidateQueries({ queryKey: ['tickets'] })
@@ -294,7 +294,7 @@ export default function TaskDrawer({
   })
 
   const advanceMutation = useMutation({
-    mutationFn: (ticketId: string) => ticketsApi.advanceWorkflowStep(ticketId),
+    mutationFn: (ticketId: string) => ticketsApi.advance(ticketId),
     onSuccess: async () => {
       setAdvanceError(null)
       await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
