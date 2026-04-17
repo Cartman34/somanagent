@@ -65,6 +65,15 @@ Rules:
 2. It must be used exactly as assigned, without truncation, normalization, inference, or nickname conversion.
 3. Example: if the assigned code is `agent-03`, use `agent-03` everywhere, not `03`.
 
+## Assignment Permission Rules
+
+1. `feature-assign` and `feature-unassign` read the active caller role from `SOMANAGER_ROLE`.
+2. Allowed values are `manager` and `developer`.
+3. When `SOMANAGER_ROLE=developer`, `SOMANAGER_AGENT` is mandatory and must match the `--agent` value passed to the command.
+4. `Manager` may assign or unassign any feature for any developer agent.
+5. `Developer` may only assign itself to an unassigned feature or keep the same self-assignment.
+6. `Developer` may only unassign itself from its own feature.
+
 ## Command Policy
 
 1. Prefer `php scripts/backlog.php` for the full local workflow.

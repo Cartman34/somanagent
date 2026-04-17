@@ -98,13 +98,17 @@ Read this file only when the active task requires developer workflow details.
 ### `feature-assign`
 
 1. Run `php scripts/backlog.php feature-assign --agent=<code> <feature>`.
-2. The script reassigns the feature to the agent and prepares the `WA`.
+2. Export `SOMANAGER_ROLE=developer` and `SOMANAGER_AGENT=<code>` before running the command.
+3. Developer can only assign a feature to itself, and only when the feature is not assigned to another agent.
+4. The script assigns the feature to that same agent and prepares the `WA`.
 
 ### `feature-unassign`
 
 1. Run `php scripts/backlog.php feature-unassign --agent=<code> [<feature>]`.
-2. The script removes the current agent assignment from the target feature and keeps the feature in its current backlog section.
-3. If this leaves behind an abandoned managed worktree under `.worktrees/`, the script runs `worktree-clean` automatically.
+2. Export `SOMANAGER_ROLE=developer` and `SOMANAGER_AGENT=<code>` before running the command.
+3. Developer can only remove its own assignment from its own feature.
+4. The script removes the current agent assignment from the target feature and keeps the feature in its current backlog section.
+5. If this leaves behind an abandoned managed worktree under `.worktrees/`, the script runs `worktree-clean` automatically.
 
 ### `feature-rework`
 
@@ -155,6 +159,7 @@ Read this file only when the active task requires developer workflow details.
 - Do not start a second visible feature for the same agent.
 - Do not edit local backlog files directly.
 - A task is considered done for Developer only when it is committed, mechanically valid, and passed to `meta.stage=review`.
+- For `feature-assign` and `feature-unassign`, `SOMANAGER_ROLE` must be `developer` and `SOMANAGER_AGENT` must match `--agent`.
 - If a new task is added to an existing feature, keep a single backlog line for that feature and preserve all useful scope details.
 - If a needed backlog action is missing from `backlog.php`, stop and ask the user instead of editing the backlog manually.
 

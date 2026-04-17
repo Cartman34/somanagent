@@ -18,6 +18,10 @@ use SoManAgent\Script\TextSlugger;
  */
 final class BacklogRunner extends AbstractScriptRunner
 {
+    private const ROLE_MANAGER = 'manager';
+    private const ROLE_DEVELOPER = 'developer';
+    private const ENV_ACTIVE_ROLE = 'SOMANAGER_ROLE';
+    private const ENV_ACTIVE_AGENT = 'SOMANAGER_AGENT';
     private const PR_CREATE_HEAD_INVALID_NEEDLE = 'resource=PullRequest, field=head, code=invalid';
     private const RETRY_COUNT = 3;
     private const RETRY_BASE_DELAY = 500000; // MICROSECONDS
@@ -480,15 +484,20 @@ final class BacklogRunner extends AbstractScriptRunner
      */
     private function featureAssign(array $commandArgs, array $options): int
     {
+        $actorRole = $this->requireWorkflowRole();
         $agent = $this->requireAgent($options);
         $feature = $this->requireFeatureArgument($commandArgs);
         $board = $this->board();
+        $actorAgent = $actorRole === self::ROLE_DEVELOPER ? $this->requireWorkflowAgent() : null;
+
+        $this->assertCanAssignFeature($actorRole, $actorAgent, $agent, $feature, $board);
 
         if ($this->getSingleFeatureForAgent($board, $agent, false) !== null) {
             throw new \RuntimeException("Agent {$agent} already owns an active feature.");
         }
 
         $match = $this->requireFeature($board, $feature);
+        $previousAgent = trim((string) ($match['entry']->getMeta('agent') ?? ''));
         $match['entry']->setMeta('agent', $agent);
         $match['entry']->setMeta('deps', $this->entryDepsMode($match['entry']));
         $this->saveBoard($board, 'feature-assign');
@@ -496,8 +505,14 @@ final class BacklogRunner extends AbstractScriptRunner
         $worktree = $this->prepareAgentWorktree($agent);
         $this->checkoutBranchInWorktree($worktree, $match['entry']->getMeta('branch') ?? '', false);
         $this->ensureWorktreeDependencyMode($worktree, $this->entryDepsMode($match['entry']));
+        $cleaned = $previousAgent !== '' && $previousAgent !== $agent
+            ? $this->cleanupAbandonedManagedWorktrees($board)
+            : 0;
 
         $this->console->ok(sprintf('Assigned feature %s to %s', $feature, $agent));
+        if ($cleaned > 0) {
+            $this->console->line(sprintf('Cleaned %d abandoned managed worktree%s.', $cleaned, $cleaned > 1 ? 's' : ''));
+        }
 
         return 0;
     }
@@ -508,17 +523,20 @@ final class BacklogRunner extends AbstractScriptRunner
      */
     private function featureUnassign(array $commandArgs, array $options): int
     {
+        $actorRole = $this->requireWorkflowRole();
         $agent = $this->requireAgent($options);
         $board = $this->board();
         $feature = isset($commandArgs[0])
             ? $this->normalizeFeatureSlug($commandArgs[0])
             : $this->requireSingleFeatureForAgent($board, $agent)['entry']->getMeta('feature');
+        $actorAgent = $actorRole === self::ROLE_DEVELOPER ? $this->requireWorkflowAgent() : null;
 
         if ($feature === null) {
             throw new \RuntimeException('No feature available for feature-unassign.');
         }
 
         $match = $this->requireFeature($board, $feature);
+        $this->assertCanUnassignFeature($actorRole, $actorAgent, $agent, $feature, $match['entry']);
         if (($match['entry']->getMeta('agent') ?? '') !== $agent) {
             throw new \RuntimeException("Feature {$feature} is not assigned to agent {$agent}.");
         }
@@ -533,6 +551,90 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         return 0;
+    }
+
+    private function requireWorkflowRole(): string
+    {
+        $role = strtolower(trim((string) getenv(self::ENV_ACTIVE_ROLE)));
+        if (!in_array($role, [self::ROLE_MANAGER, self::ROLE_DEVELOPER], true)) {
+            throw new \RuntimeException(sprintf(
+                'Assignment commands require %s=manager or %s=developer.',
+                self::ENV_ACTIVE_ROLE,
+                self::ENV_ACTIVE_ROLE,
+            ));
+        }
+
+        return $role;
+    }
+
+    private function requireWorkflowAgent(): string
+    {
+        $agent = trim((string) getenv(self::ENV_ACTIVE_AGENT));
+        if ($agent === '') {
+            throw new \RuntimeException(sprintf(
+                'Developer assignment commands require %s=<code>.',
+                self::ENV_ACTIVE_AGENT,
+            ));
+        }
+
+        return $agent;
+    }
+
+    private function assertCanAssignFeature(
+        string $actorRole,
+        ?string $actorAgent,
+        string $targetAgent,
+        string $feature,
+        BacklogBoard $board,
+    ): void {
+        if ($actorRole === self::ROLE_MANAGER) {
+            return;
+        }
+
+        if ($actorAgent !== $targetAgent) {
+            throw new \RuntimeException(sprintf(
+                'Developer role can only assign itself. %s must match --agent.',
+                self::ENV_ACTIVE_AGENT,
+            ));
+        }
+
+        $match = $this->requireFeature($board, $feature);
+        $assignedAgent = trim((string) ($match['entry']->getMeta('agent') ?? ''));
+        if ($assignedAgent !== '' && $assignedAgent !== $actorAgent) {
+            throw new \RuntimeException(sprintf(
+                'Feature %s is already assigned to %s. Only manager can reassign it.',
+                $feature,
+                $assignedAgent,
+            ));
+        }
+    }
+
+    private function assertCanUnassignFeature(
+        string $actorRole,
+        ?string $actorAgent,
+        string $targetAgent,
+        string $feature,
+        BoardEntry $entry,
+    ): void {
+        if ($actorRole === self::ROLE_MANAGER) {
+            return;
+        }
+
+        if ($actorAgent !== $targetAgent) {
+            throw new \RuntimeException(sprintf(
+                'Developer role can only unassign itself. %s must match --agent.',
+                self::ENV_ACTIVE_AGENT,
+            ));
+        }
+
+        $assignedAgent = trim((string) ($entry->getMeta('agent') ?? ''));
+        if ($assignedAgent !== $actorAgent) {
+            throw new \RuntimeException(sprintf(
+                'Feature %s is assigned to %s. Developer role can only unassign its own feature.',
+                $feature,
+                $assignedAgent === '' ? 'no agent' : $assignedAgent,
+            ));
+        }
     }
 
     /**
