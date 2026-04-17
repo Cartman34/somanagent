@@ -6,7 +6,7 @@
 
 | File | Committed | Purpose |
 |---|---|---|
-| `.env.example` | Yes | Template — copy to `.env` and fill in local values |
+| `.env.dist` | Yes | Template — copy to `.env` and fill in local values |
 | `.env` | No (gitignored) | Local values for docker-compose and Docker containers |
 | `backend/.env` | Yes | Symfony generic defaults, loaded by the Dotenv component |
 | `backend/.env.dev` | Yes | Dev-environment Symfony overrides |
@@ -22,7 +22,7 @@ docker-compose reads the root `.env` for two purposes:
 To get started, copy the template:
 
 ```bash
-cp .env.example .env
+cp .env.dist .env
 # Edit .env and fill in real values (APP_SECRET, API keys, tokens…)
 ```
 

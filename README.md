@@ -74,7 +74,7 @@ You define **Workflows** — sequences of steps that route tasks to the right ag
 
 ```bash
 # 1. Clone and configure
-cp .env.example .env
+cp .env.dist .env
 # Edit .env: set CLAUDE_API_KEY, GITHUB_TOKEN, and any other required values
 
 # 2. Full installation (containers, database, frontend)

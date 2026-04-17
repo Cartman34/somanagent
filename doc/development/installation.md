@@ -26,7 +26,7 @@ git clone https://github.com/Cartman34/somanagent.git
 cd somanagent
 
 # 2. Configure the environment
-cp .env.example .env
+cp .env.dist .env
 # Edit .env and set at minimum CLAUDE_API_KEY
 
 # 3. Run the automatic setup
