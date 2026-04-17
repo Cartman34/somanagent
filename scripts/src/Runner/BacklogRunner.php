@@ -2626,11 +2626,23 @@ final class BacklogRunner extends AbstractScriptRunner
 
     private function workspaceHasLocalChanges(): bool
     {
+        if ($this->dryRun) {
+            $this->logVerbose('[dry-run] Inspect workspace changes: git status --short');
+
+            return trim($this->capture('git status --short')) !== '';
+        }
+
         return trim($this->captureGitOutput('git status --short')) !== '';
     }
 
     private function workspaceCurrentBranch(): string
     {
+        if ($this->dryRun) {
+            $this->logVerbose('[dry-run] Inspect workspace branch: git branch --show-current');
+
+            return trim($this->capture('git branch --show-current'));
+        }
+
         return trim($this->captureGitOutput('git branch --show-current'));
     }
 
