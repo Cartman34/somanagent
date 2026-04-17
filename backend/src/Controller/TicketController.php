@@ -882,6 +882,7 @@ class TicketController extends AbstractController
                 'id' => (string) $task->getAgentAction()->getId(),
                 'key' => $task->getAgentAction()->getKey(),
                 'label' => $task->getAgentAction()->getLabel(),
+                'allowedEffects' => $task->getAgentAction()->getAllowedEffects(),
                 'role' => $task->getAgentAction()->getRole() ? [
                     'id' => (string) $task->getAgentAction()->getRole()->getId(),
                     'slug' => $task->getAgentAction()->getRole()->getSlug(),

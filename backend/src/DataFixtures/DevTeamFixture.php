@@ -161,16 +161,22 @@ class DevTeamFixture extends Fixture
      */
     private function createAgentActions(ObjectManager $manager, array $roles, array $skills): array
     {
+        $baseEffects = [
+            'log_agent_response',
+            'ask_clarification',
+            'complete_current_task',
+        ];
+
         $definitions = [
-            ['key' => 'product.specify', 'label' => 'Product specification', 'role' => 'product-owner', 'skill' => 'product-owner'],
-            ['key' => 'tech.plan', 'label' => 'Technical planning', 'role' => 'lead-tech', 'skill' => 'tech-planning'],
-            ['key' => 'design.ui_mockup', 'label' => 'UI mockup', 'role' => 'ui-ux-designer', 'skill' => 'ui-design'],
-            ['key' => 'dev.backend.implement', 'label' => 'Backend implementation', 'role' => 'php-dev', 'skill' => 'php-backend-dev'],
-            ['key' => 'dev.frontend.implement', 'label' => 'Frontend implementation', 'role' => 'frontend-dev', 'skill' => 'js-frontend-dev'],
-            ['key' => 'review.code', 'label' => 'Code review', 'role' => 'lead-tech', 'skill' => 'code-reviewer'],
-            ['key' => 'qa.validate', 'label' => 'QA validation', 'role' => 'tester', 'skill' => 'test-writing'],
-            ['key' => 'docs.write', 'label' => 'Documentation writing', 'role' => 'tech-writer', 'skill' => 'documentation-writing'],
-            ['key' => 'ops.configure', 'label' => 'Infrastructure configuration', 'role' => 'devops', 'skill' => 'ci-cd-setup'],
+            ['key' => 'product.specify',        'label' => 'Product specification',         'role' => 'product-owner',  'skill' => 'product-owner', 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task', 'rewrite_ticket', 'complete_ticket']],
+            ['key' => 'tech.plan',             'label' => 'Technical planning',           'role' => 'lead-tech',      'skill' => 'tech-planning',  'effects' => [...$baseEffects, 'replace_planning_tasks', 'create_subtasks', 'prepare_branch', 'update_ticket_progress']],
+            ['key' => 'design.ui_mockup',       'label' => 'UI mockup',                    'role' => 'ui-ux-designer', 'skill' => 'ui-design',      'effects' => $baseEffects],
+            ['key' => 'dev.backend.implement',  'label' => 'Backend implementation',       'role' => 'php-dev',        'skill' => 'php-backend-dev', 'effects' => $baseEffects],
+            ['key' => 'dev.frontend.implement', 'label' => 'Frontend implementation',      'role' => 'frontend-dev',   'skill' => 'js-frontend-dev', 'effects' => $baseEffects],
+            ['key' => 'review.code',           'label' => 'Code review',                  'role' => 'lead-tech',      'skill' => 'code-reviewer',  'effects' => $baseEffects],
+            ['key' => 'qa.validate',           'label' => 'QA validation',                'role' => 'tester',         'skill' => 'test-writing',   'effects' => $baseEffects],
+            ['key' => 'docs.write',            'label' => 'Documentation writing',        'role' => 'tech-writer',    'skill' => 'documentation-writing', 'effects' => $baseEffects],
+            ['key' => 'ops.configure',         'label' => 'Infrastructure configuration', 'role' => 'devops',         'skill' => 'ci-cd-setup',    'effects' => $baseEffects],
         ];
 
         $actions = [];
@@ -178,6 +184,7 @@ class DevTeamFixture extends Fixture
             $action = new AgentAction($definition['key'], $definition['label']);
             $action->setRole($roles[$definition['role']] ?? null);
             $action->setSkill($skills[$definition['skill']] ?? null);
+            $action->setAllowedEffects($definition['effects']);
             $manager->persist($action);
             $actions[$definition['key']] = $action;
         }

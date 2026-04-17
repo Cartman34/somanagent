@@ -353,31 +353,7 @@ final class TicketTaskService
      */
     private function buildAllowedEffectsForTask(TicketTask $task): array
     {
-        $effects = [
-            'log_agent_response',
-            'ask_clarification',
-            'complete_current_task',
-        ];
-
-        // TODO: allowed effects per action should be stored on AgentAction in the database,
-        //       so that adding or changing an action type requires no code change here.
-        return match ($task->getAgentAction()->getKey()) {
-            'product.specify' => [
-                'log_agent_response',
-                'ask_clarification',
-                'complete_current_task',
-                'rewrite_ticket',
-                'complete_ticket',
-            ],
-            'tech.plan' => [
-                ...$effects,
-                'replace_planning_tasks',
-                'create_subtasks',
-                'prepare_branch',
-                'update_ticket_progress',
-            ],
-            default => $effects,
-        };
+        return $task->getAgentAction()->getAllowedEffects();
     }
 
     /**

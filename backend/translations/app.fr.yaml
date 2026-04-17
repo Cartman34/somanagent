@@ -552,6 +552,7 @@ ticket:
     status_label: État
     step_label: Étape
     agent_label: Agent
+    effects_label: Effets autorisés
     action_label: Action agent
     latest_run_label: Dernière exécution
     subtasks_title: Sous-tâches

@@ -156,6 +156,15 @@ function LifecyclePipeline({ steps, t }: { steps: WorkflowStep[]; t: (key: strin
                     <span key={id} className="flex items-center gap-0.5 text-xs" style={{ color: 'var(--text)' }}>
                       <User className="w-3 h-3 flex-shrink-0" style={{ color: 'var(--muted)' }} />
                       {agentAction.label}
+                        {agentAction.allowedEffects?.length > 0 && (
+                          <span className="flex gap-0.5 ml-1">
+                            {agentAction.allowedEffects.map(effect => (
+                              <span key={effect} className="bg-blue-100 text-blue-800 px-1 rounded-[4px] text-[9px] uppercase tracking-wider">
+                                {effect.replace(/_/g, " ")}
+                              </span>
+                            ))}
+                          </span>
+                        )}
                     </span>
                   ))}
                   <span className="text-[11px]" style={{ color: 'var(--muted)' }}>
@@ -566,6 +575,15 @@ function WorkflowDetail() {
                     {step.actions.map(({ id, agentAction, createWithTicket }) => (
                       <span key={id} className="badge-blue flex items-center gap-1">
                         {agentAction.label}
+                        {agentAction.allowedEffects?.length > 0 && (
+                          <span className="flex gap-0.5 ml-1">
+                            {agentAction.allowedEffects.map(effect => (
+                              <span key={effect} className="bg-blue-100 text-blue-800 px-1 rounded-[4px] text-[9px] uppercase tracking-wider">
+                                {effect.replace(/_/g, " ")}
+                              </span>
+                            ))}
+                          </span>
+                        )}
                         {createWithTicket && (
                           <span className="badge-gray text-[10px]">{t('workflow.detail.create_with_ticket')}</span>
                         )}
