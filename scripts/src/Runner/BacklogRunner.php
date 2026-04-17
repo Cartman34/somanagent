@@ -29,7 +29,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private const RETRY_FACTOR = 4;
     private const FEATURE_SLUG_MAX_WORDS = 8;
     private const FEATURE_SLUG_MAX_LENGTH = 64;
-    private const TASK_SCOPE_PREFIX_PATTERN = '/^\[([a-z0-9_-]+)\]\[([a-z0-9_-]+)\]\s*(.+)$/';
+    private const TASK_SCOPE_PREFIX_PATTERN = '/^\[([A-Za-z0-9_-]+)\]\[([A-Za-z0-9_-]+)\]\s*(.+)$/';
     private const TASK_CONTRIBUTION_PREFIX_PATTERN = '/^\s*-\s*\[task:([a-z0-9-]+)\]\s*(.+)$/';
     private const TASK_CREATE_POSITION_START = 'start';
     private const TASK_CREATE_POSITION_INDEX = 'index';
@@ -2095,6 +2095,16 @@ final class BacklogRunner extends AbstractScriptRunner
 
     private function requireLocalBranchExists(string $branch, string $context): void
     {
+        if ($this->dryRun) {
+            $this->logVerbose(sprintf(
+                '[dry-run] Assuming local branch %s exists for %s.',
+                $branch,
+                $context,
+            ));
+
+            return;
+        }
+
         if ($this->gitCommandSucceeds(sprintf(
             'git show-ref --verify --quiet %s',
             escapeshellarg('refs/heads/' . $branch),
