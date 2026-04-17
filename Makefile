@@ -18,7 +18,7 @@ help: ## Affiche cette aide
 # ============================================================
 
 install: ## Installation complète (première fois)
-	cp -n .env.local.dist .env.local || true
+	cp -n .env.example .env || true
 	docker compose build --no-cache
 	docker compose run --rm php composer install
 	docker compose run --rm php php bin/console doctrine:migrations:migrate --no-interaction

@@ -67,9 +67,9 @@ It lets you assemble generic AI agent teams, assign them roles and skills, then 
 ## Quick start
 
 ```bash
-# 1. Configure the environment
-cp .env.local.dist .env.local
-# Edit .env.local: APP_SECRET, CLAUDE_API_KEY, GITHUB_TOKEN, etc.
+# 1. Copy and configure the environment
+cp .env.example .env
+# Edit .env: CLAUDE_API_KEY, GITHUB_TOKEN, etc.
 
 # 2. Full installation
 php scripts/setup.php

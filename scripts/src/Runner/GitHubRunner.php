@@ -397,10 +397,7 @@ final class GitHubRunner extends AbstractScriptRunner
     }
 
     /**
-     * Load GITHUB_TOKEN from .env / .env.local and detect repo from git remote.
-     *
-     * .env.local takes priority over .env. Both files are read in order so that
-     * a value set in .env.local overrides the generic default in .env.
+     * Load GITHUB_TOKEN from .env and detect repo from git remote.
      *
      * Called at the start of run() so that -h/--help can exit before this.
      */
@@ -410,25 +407,20 @@ final class GitHubRunner extends AbstractScriptRunner
             return;
         }
 
-        $token = null;
+        $envFile = "{$this->projectRoot}/.env";
+        $token   = null;
 
-        foreach (["{$this->projectRoot}/.env", "{$this->projectRoot}/.env.local"] as $envFile) {
-            if (!file_exists($envFile)) {
-                continue;
-            }
+        if (file_exists($envFile)) {
             foreach (file($envFile) as $line) {
                 $line = trim($line);
                 if (str_starts_with($line, 'GITHUB_TOKEN=')) {
-                    $value = trim(substr($line, strlen('GITHUB_TOKEN=')));
-                    if ($value !== '') {
-                        $token = $value;
-                    }
+                    $token = trim(substr($line, strlen('GITHUB_TOKEN=')));
                 }
             }
         }
 
         if (empty($token)) {
-            $this->console->fail("GITHUB_TOKEN not found in .env or .env.local");
+            $this->console->fail("GITHUB_TOKEN not found in .env");
         }
         $this->token = $token;
 

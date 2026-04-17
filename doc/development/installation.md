@@ -26,15 +26,15 @@ git clone https://github.com/Cartman34/somanagent.git
 cd somanagent
 
 # 2. Configure the environment
-cp .env.local.dist .env.local
-# Edit .env.local: set at minimum APP_SECRET and CLAUDE_API_KEY
+cp .env.example .env
+# Edit .env and set at minimum CLAUDE_API_KEY
 
 # 3. Run the automatic setup
 php scripts/setup.php
 ```
 
 The `setup.php` script:
-1. Checks that `.env.local` is present
+1. Checks that `.env` is present
 2. Starts Docker containers (`docker compose up -d --build`)
 3. Waits for PostgreSQL to be ready
 4. Runs Doctrine migrations
@@ -136,5 +136,5 @@ php scripts/console.php doctrine:migrations:list
 ```
 
 ### API responds but Claude connectors are down
-- Check `CLAUDE_API_KEY` in `.env.local`
+- Check `CLAUDE_API_KEY` in `.env`
 - For `claude_cli`: check that the `claude` binary is accessible in the PHP container

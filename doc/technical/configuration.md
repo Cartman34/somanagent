@@ -4,13 +4,10 @@
 
 ## `.env` File
 
-The `.env` file at the project root contains all configuration variables with safe generic defaults for a local Docker-based environment. It is committed to the repository.
-
-Machine-specific overrides (API keys, tokens, custom secrets) go in `.env.local`, which is gitignored and takes priority over `.env`. Use `.env.local.dist` as a template:
+The `.env` file at the project root contains all configuration variables. It is ignored by git. Copy `.env.example` to get started:
 
 ```bash
-cp .env.local.dist .env.local
-# Edit .env.local and set your API keys and secrets
+cp .env.example .env
 ```
 
 ## Available Variables
@@ -155,26 +152,25 @@ APP_SECRET=changethis
 
 `APP_SECRET` must be a random string of at least 32 characters.
 
-## `.env.local` Variables to Override
-
-`.env.local.dist` lists the variables that typically need a local value. Copy it to `.env.local` and fill in your secrets. Variables not listed can be left as the defaults in `.env`.
+## `.env.example`
 
 ```ini
-# Required: generate with openssl rand -hex 32
-APP_SECRET=
+# Database
+DATABASE_URL=postgresql://somanagent:secret@db:5432/somanagent?serverVersion=16&charset=utf8
 
 # Claude API
 CLAUDE_API_KEY=
 
-# OpenAI / Codex API
-OPENAI_API_KEY=
-
 # GitHub
 GITHUB_TOKEN=
 
-# GitLab (optional)
+# GitLab
 GITLAB_TOKEN=
 GITLAB_URL=https://gitlab.com
+
+# Symfony
+APP_ENV=dev
+APP_SECRET=changethis
 ```
 
 ## Symfony Configuration
