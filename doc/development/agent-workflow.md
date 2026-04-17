@@ -87,7 +87,7 @@ Rules:
 4. The agent code must never leave local backlog files.
 5. `feature-start` takes the next queued task directly from `## À faire`; no separate reservation step is part of the standard workflow.
 6. `feature-release` returns the active feature to `## À faire` only when no development was done on its branch. A parent `kind=feature` cannot be released while child `kind=task` entries still exist for that feature.
-7. When `feature-start` consumes a queued task prefixed as `[feature-slug][task-slug]`, it creates or reuses the local parent feature branch, ensures one active `kind=feature` entry exists for that feature, and creates the active child `kind=task` entry from it.
+7. When `feature-start` consumes a queued task prefixed as `[feature-slug][task-slug]`, it creates or reuses the local parent feature branch from `origin/main`, ensures one active `kind=feature` entry exists for that feature, and creates the active child `kind=task` entry from that local parent branch.
 8. Starting a new child task or merging a child task locally invalidates any parent feature review state and moves the parent `kind=feature` back to `development`.
 9. `kind=task` entries are local-only delivery units: they are never pushed and never get GitHub PRs.
 10. `feature-task-add --agent=<code> --feature-text=<text>` may absorb the next queued task into the current feature. If that queued task is prefixed as `[feature-slug][task-slug]`, it must target the current feature, it creates a new local child task entry, and it follows the same child-branch rules as `feature-start`.

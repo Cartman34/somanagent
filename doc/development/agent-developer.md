@@ -72,8 +72,8 @@ Read this file only when the active task requires developer workflow details.
 ### `feature-start`
 
 1. Run `php scripts/backlog.php feature-start --agent=<code> --branch-type=<feat|fix>`.
-2. The script takes the next task from `## À faire`, creates the feature branch in the agent worktree, moves the feature to `## Traitement en cours`, sets `meta.stage=development`, and authorizes development.
-3. If the queued task starts with `[feature-slug][task-slug]`, the script creates or reuses the parent `kind=feature` entry for `<feature-slug>`, keeps the shared parent branch `<type>/<feature-slug>`, then creates the child `kind=task` entry and local child branch `<type>/<feature-slug>--<task-slug>` in the agent worktree.
+2. The script takes the next task from `## À faire`, updates local `main` when possible, creates the feature branch from `origin/main` in the agent worktree, moves the feature to `## Traitement en cours`, sets `meta.stage=development`, and authorizes development.
+3. If the queued task starts with `[feature-slug][task-slug]`, the script creates or reuses the parent `kind=feature` entry for `<feature-slug>`, keeps the shared parent branch `<type>/<feature-slug>`, then creates the child `kind=task` entry and local child branch `<type>/<feature-slug>--<task-slug>` from that local parent branch in the agent worktree.
 4. `feature-start` is local-only: it does not push and it does not create a PR.
 
 ### `feature-release`

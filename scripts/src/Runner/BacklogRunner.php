@@ -29,7 +29,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private const RETRY_FACTOR = 4;
     private const FEATURE_SLUG_MAX_WORDS = 8;
     private const FEATURE_SLUG_MAX_LENGTH = 64;
-    private const TASK_SCOPE_PREFIX_PATTERN = '/^\[([a-z0-9_-]+)\]\[([a-z0-9_-]+)\]\s*(.+)$/';
+    private const TASK_SCOPE_PREFIX_PATTERN = '/^\[([A-Za-z0-9_-]+)\]\[([A-Za-z0-9_-]+)\]\s*(.+)$/';
     private const TASK_CONTRIBUTION_PREFIX_PATTERN = '/^\s*-\s*\[task:([a-z0-9-]+)\]\s*(.+)$/';
     private const TASK_CREATE_POSITION_START = 'start';
     private const TASK_CREATE_POSITION_INDEX = 'index';
@@ -300,9 +300,9 @@ final class BacklogRunner extends AbstractScriptRunner
             $parent = $this->findParentFeatureEntry($board, $scopedTask['featureGroup']);
 
             if ($parent === null) {
-                $this->runNetworkCommand('git fetch origin main:main', 'Git');
-                $featureBase = trim($this->captureGitOutput('git rev-parse main'));
-                $this->ensureLocalBranchExists($featureBranch, 'main');
+                $this->updateLocalMainBeforeFeatureStart();
+                $featureBase = trim($this->captureGitOutput('git rev-parse origin/main'));
+                $this->ensureLocalBranchExists($featureBranch, 'origin/main');
 
                 $featureEntry = new BoardEntry($scopedTask['text'], [], [
                     'kind' => 'feature',
@@ -327,7 +327,7 @@ final class BacklogRunner extends AbstractScriptRunner
                 'git rev-parse %s',
                 escapeshellarg($featureBranch),
             )));
-            $this->ensureLocalBranchExists($featureBranch, $parent['entry']->getMeta('base') ?: 'main');
+            $this->requireLocalBranchExists($featureBranch, 'feature-start');
             $this->checkoutBranchInWorktree($worktree, $branch, true, $featureBranch);
 
             $taskEntry = new BoardEntry($scopedTask['text'], $first->getExtraLines(), [
@@ -345,8 +345,8 @@ final class BacklogRunner extends AbstractScriptRunner
             $featureEntry = $taskEntry;
         } else {
             $feature = $this->normalizeFeatureSlug($first->getText());
-            $this->runNetworkCommand('git fetch origin main:main', 'Git');
-            $base = trim($this->captureGitOutput('git rev-parse main'));
+            $this->updateLocalMainBeforeFeatureStart();
+            $base = trim($this->captureGitOutput('git rev-parse origin/main'));
             $branch = $branchType . '/' . $feature;
             $this->checkoutBranchInWorktree($worktree, $branch, true);
 
@@ -1332,7 +1332,10 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->createOrUpdatePr($branch, $this->buildPrTitle($type, $match['entry']), $bodyFile);
         $this->runGithubCommand(sprintf('php scripts/github.php pr merge %d', $prNumber));
         $skippedMainCheckout = false;
-        if ($this->workspaceHasLocalChanges()) {
+        if ($this->workspaceCurrentBranch() === 'main') {
+            $this->updateLocalMainInWorkspaceWithWarning('feature-merge');
+            $skippedMainCheckout = true;
+        } elseif ($this->workspaceHasLocalChanges()) {
             $this->runNetworkCommand('git fetch origin main:main', 'Git');
             $skippedMainCheckout = true;
         } else {
@@ -1353,7 +1356,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $this->console->ok(sprintf('Merged feature %s', $feature));
         if ($skippedMainCheckout) {
-            $this->console->line('Main was updated without checkout because WP has local changes.');
+            $this->console->line('Main was handled without checkout in WP.');
         }
         if ($cleaned > 0) {
             $this->console->line(sprintf('Cleaned %d abandoned managed worktree%s.', $cleaned, $cleaned > 1 ? 's' : ''));
@@ -2090,6 +2093,32 @@ final class BacklogRunner extends AbstractScriptRunner
         ));
     }
 
+    private function requireLocalBranchExists(string $branch, string $context): void
+    {
+        if ($this->dryRun) {
+            $this->logVerbose(sprintf(
+                '[dry-run] Assuming local branch %s exists for %s.',
+                $branch,
+                $context,
+            ));
+
+            return;
+        }
+
+        if ($this->gitCommandSucceeds(sprintf(
+            'git show-ref --verify --quiet %s',
+            escapeshellarg('refs/heads/' . $branch),
+        ))) {
+            return;
+        }
+
+        throw new \RuntimeException(sprintf(
+            '%s requires local branch %s to exist.',
+            $context,
+            $branch,
+        ));
+    }
+
     private function ensureWorktreeRuntimeState(string $worktree, bool $created): void
     {
         foreach ($this->copiedWorktreePaths() as $relativePath => $sourcePath) {
@@ -2255,7 +2284,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
     }
 
-    private function checkoutBranchInWorktree(string $worktree, string $branch, bool $create, string $startPoint = 'main'): void
+    private function checkoutBranchInWorktree(string $worktree, string $branch, bool $create, string $startPoint = 'origin/main'): void
     {
         if ($branch === '') {
             throw new \RuntimeException('Missing branch name.');
@@ -2597,7 +2626,48 @@ final class BacklogRunner extends AbstractScriptRunner
 
     private function workspaceHasLocalChanges(): bool
     {
+        if ($this->dryRun) {
+            $this->logVerbose('[dry-run] Inspect workspace changes: git status --short');
+
+            return trim($this->capture('git status --short')) !== '';
+        }
+
         return trim($this->captureGitOutput('git status --short')) !== '';
+    }
+
+    private function workspaceCurrentBranch(): string
+    {
+        if ($this->dryRun) {
+            $this->logVerbose('[dry-run] Inspect workspace branch: git branch --show-current');
+
+            return trim($this->capture('git branch --show-current'));
+        }
+
+        return trim($this->captureGitOutput('git branch --show-current'));
+    }
+
+    private function updateLocalMainBeforeFeatureStart(): void
+    {
+        if ($this->workspaceCurrentBranch() !== 'main') {
+            $this->runNetworkCommand('git fetch origin main:main', 'Git');
+
+            return;
+        }
+
+        $this->updateLocalMainInWorkspaceWithWarning('feature-start');
+    }
+
+    private function updateLocalMainInWorkspaceWithWarning(string $context): void
+    {
+        try {
+            $this->runNetworkCommand('git pull --ff-only', 'Git');
+        } catch (\RuntimeException $exception) {
+            $this->console->warn(sprintf(
+                'Unable to update local main in WP during %s; continuing with the current local main.',
+                $context,
+            ));
+            $this->logVerbose('Main update warning detail: ' . $exception->getMessage());
+        }
     }
 
     private function cleanupAbandonedManagedWorktrees(BacklogBoard $board): int
