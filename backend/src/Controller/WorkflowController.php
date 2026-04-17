@@ -217,6 +217,7 @@ class WorkflowController extends AbstractController
                             'id' => (string) $action->getAgentAction()->getId(),
                             'key' => $action->getAgentAction()->getKey(),
                             'label' => $action->getAgentAction()->getLabel(),
+                            'allowedEffects' => $action->getAgentAction()->getAllowedEffects(),
                             'role' => $action->getAgentAction()->getRole() ? [
                                 'id' => (string) $action->getAgentAction()->getRole()->getId(),
                                 'slug' => $action->getAgentAction()->getRole()->getSlug(),

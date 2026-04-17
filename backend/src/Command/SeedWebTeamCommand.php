@@ -56,15 +56,15 @@ class SeedWebTeamCommand extends Command
     ];
 
     private const ACTIONS = [
-        ['key' => 'product.specify', 'label' => 'Product specification', 'role' => 'product-owner', 'skill' => null],
-        ['key' => 'tech.plan', 'label' => 'Technical planning', 'role' => 'lead-tech', 'skill' => null],
-        ['key' => 'design.ui_mockup', 'label' => 'UI mockup', 'role' => 'ui-ux-designer', 'skill' => null],
-        ['key' => 'dev.backend.implement', 'label' => 'Backend implementation', 'role' => 'dev-php', 'skill' => null],
-        ['key' => 'dev.frontend.implement', 'label' => 'Frontend implementation', 'role' => 'dev-frontend', 'skill' => null],
-        ['key' => 'review.code', 'label' => 'Code review', 'role' => 'lead-tech', 'skill' => null],
-        ['key' => 'qa.validate', 'label' => 'QA validation', 'role' => 'qa-tester', 'skill' => null],
-        ['key' => 'docs.write', 'label' => 'Documentation writing', 'role' => 'tech-writer', 'skill' => null],
-        ['key' => 'ops.configure', 'label' => 'Infrastructure configuration', 'role' => 'devops', 'skill' => null],
+        ['key' => 'product.specify', 'label' => 'Product specification', 'role' => 'product-owner', 'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task', 'rewrite_ticket', 'complete_ticket']],
+        ['key' => 'tech.plan', 'label' => 'Technical planning', 'role' => 'lead-tech', 'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task', 'replace_planning_tasks', 'create_subtasks', 'prepare_branch', 'update_ticket_progress']],
+        ['key' => 'design.ui_mockup', 'label' => 'UI mockup', 'role' => 'ui-ux-designer', 'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task']],
+        ['key' => 'dev.backend.implement', 'label' => 'Backend implementation', 'role' => 'dev-php', 'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task']],
+        ['key' => 'dev.frontend.implement', 'label' => 'Frontend implementation', 'role' => 'dev-frontend', 'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task']],
+        ['key' => 'review.code', 'label' => 'Code review', 'role' => 'lead-tech', 'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task']],
+        ['key' => 'qa.validate', 'label' => 'QA validation', 'role' => 'qa-tester', 'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task']],
+        ['key' => 'docs.write', 'label' => 'Documentation writing', 'role' => 'tech-writer', 'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task']],
+        ['key' => 'ops.configure', 'label' => 'Infrastructure configuration', 'role' => 'devops', 'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task']],
     ];
 
     /**
@@ -132,6 +132,7 @@ class SeedWebTeamCommand extends Command
             $action = new AgentAction($def['key'], $def['label']);
             $action->setRole($roles[$def['role']] ?? null);
             $action->setSkill($def['skill'] !== null ? ($skills[$def['skill']] ?? null) : null);
+            $action->setAllowedEffects($def['effects']);
             $this->em->persist($action);
             $io->text("  Action: <fg=cyan>{$def['key']}</>");
         }

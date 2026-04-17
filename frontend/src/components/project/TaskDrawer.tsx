@@ -265,7 +265,19 @@ export default function TaskDrawer({
   }, [taskId])
 
   const commentMutation = useMutation({
-    mutationFn: () => ticketsApi.comment(taskId, { content: commentText, replyToLogId }),
+    mutationFn: () => (
+      entity && isTicket(entity)
+        ? ticketsApi.comment(taskId, {
+          content: commentText.trim(),
+          replyToLogId: replyToLogId ?? undefined,
+          context: replyToLogId ? 'ticket_reply' : 'ticket_comment',
+        })
+        : ticketTasksApi.comment(taskId, {
+          content: commentText.trim(),
+          replyToLogId: replyToLogId ?? undefined,
+          context: replyToLogId ? 'ticket_reply' : 'ticket_comment',
+        })
+    ),
     onSuccess: async () => {
       setCommentText('')
       setReplyToLogId(null)
@@ -276,7 +288,15 @@ export default function TaskDrawer({
   })
 
   const editCommentMutation = useMutation({
-    mutationFn: () => ticketsApi.updateComment(taskId, editingLogId!, { content: editingCommentText }),
+    mutationFn: () => {
+      if (!editingLogId) {
+        throw new Error('No comment selected for edition.')
+      }
+
+      return entity && isTicket(entity)
+        ? ticketsApi.updateComment(taskId, editingLogId, { content: editingCommentText.trim() })
+        : ticketTasksApi.updateComment(taskId, editingLogId, { content: editingCommentText.trim() })
+    },
     onSuccess: async () => {
       setEditingLogId(null)
       setEditingCommentText('')
@@ -286,8 +306,21 @@ export default function TaskDrawer({
   })
 
   const deleteCommentMutation = useMutation({
-    mutationFn: (logId: string) => ticketsApi.deleteComment(taskId, logId),
-    onSuccess: async () => {
+    mutationFn: (logId: string) => (
+      entity && isTicket(entity)
+        ? ticketsApi.deleteComment(taskId, logId)
+        : ticketTasksApi.deleteComment(taskId, logId)
+    ),
+    onSuccess: async (_, logId) => {
+      if (editingLogId === logId) {
+        setEditingLogId(null)
+        setEditingCommentText('')
+      }
+
+      if (replyToLogId === logId) {
+        setReplyToLogId(null)
+      }
+
       await qc.invalidateQueries({ queryKey: ['task-detail', taskId] })
       await qc.invalidateQueries({ queryKey: ['tickets'] })
     },
