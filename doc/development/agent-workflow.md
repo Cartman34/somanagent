@@ -32,6 +32,7 @@ Rules:
 - Keep `.worktrees/` ignored in the root `.gitignore`.
 - Run every `php scripts/backlog.php ...` command from `WP` only, never from a `WA`.
 - This rule is technically enforced by `scripts/backlog.php`: the command fails if it is launched from a `WA` or any other directory.
+- `WA` runtime dependencies are always copied locally from `WP`: `backend/vendor`, `backend/bin`, `frontend/node_modules`, root `.env`, and `backend/.env.local`.
 - Use `php scripts/backlog.php worktree-list` to inspect managed worktrees under `.worktrees/`.
 - Use `php scripts/backlog.php worktree-clean` to remove only abandoned managed worktrees that are safe to delete.
 - Worktrees outside `.worktrees/` are never auto-removed by backlog commands; inspect them manually, then use `git worktree remove <path>` or `git worktree prune`.
@@ -50,7 +51,6 @@ Rules:
    `    branch: <type>/<slug>`
    `    base: <sha>`
    `    pr: none`
-   `    deps: linked`
 4. `<type>` is `feat` or `fix` on the branch.
 5. Every developer commit on a feature branch must start with `[<slug>]`.
 6. Review and approval must be scoped from the recorded `base` commit, not from the current `main`.

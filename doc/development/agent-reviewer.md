@@ -85,7 +85,7 @@ Rules:
 
 1. Run `php scripts/backlog.php feature-review-next`.
 2. The script prints the first visible feature with `meta.stage=review` without changing its backlog state.
-3. The output includes `Feature`, `Branch`, `Base`, `Stage`, `PR`, `Deps`, `Last`, `Next`, and `Blocker`.
+3. The output includes `Feature`, `Branch`, `Base`, `Stage`, `PR`, `Last`, `Next`, and `Blocker`.
 
 ### `feature-review-check`
 

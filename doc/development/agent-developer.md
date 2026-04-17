@@ -12,7 +12,6 @@ Read this file only when the active task requires developer workflow details.
 - `feature-start`
 - `feature-release`
 - `feature-task-add`
-- `feature-deps-mode`
 - `feature-assign`
 - `feature-unassign`
 - `feature-rework`
@@ -35,7 +34,7 @@ Read this file only when the active task requires developer workflow details.
 - critically challenge the implementation for gaps, regressions, and convention violations before considering it ready for review
 - update docs when required by the code change
 - keep `local/backlog-board.md` in sync with the current stage of the feature through `backlog.php`
-- keep the dependency mode explicit for the active feature
+- rely on the prepared `WA` runtime state copied from `WP` for `backend/vendor`, `backend/bin`, `frontend/node_modules`, root `.env`, and `backend/.env.local`
 
 ## Do Not
 
@@ -44,7 +43,6 @@ Read this file only when the active task requires developer workflow details.
 - use raw git or GitHub commands when `backlog.php` provides the workflow step
 - start a second visible backlog entry for the same feature
 - edit `local/backlog-board.md` or `local/backlog-review.md` manually
-- change shared dependencies from a linked `WA` without switching the feature to `isolated` first
 
 ## Read Only When Needed
 
@@ -87,13 +85,6 @@ Read this file only when the active task requires developer workflow details.
 1. Run `php scripts/backlog.php feature-task-add --agent=<code> --feature-text=<text> [--body-file=<path>]`.
 2. The script absorbs the next task from `## À faire` into the current feature.
 3. If a PR already exists for the feature, the script updates its body when `--body-file` is provided.
-
-### `feature-deps-mode`
-
-1. Run `php scripts/backlog.php feature-deps-mode --agent=<code> [<feature>] <linked|isolated>`.
-2. `linked` uses the shared dependency directories from `WP` through symlinks inside the `WA`.
-3. `isolated` gives the `WA` its own dependency directories copied from `WP`.
-4. The script updates `deps` in the feature `meta:` block.
 
 ### `feature-assign`
 

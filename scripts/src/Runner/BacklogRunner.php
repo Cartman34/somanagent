@@ -22,6 +22,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private const ROLE_DEVELOPER = 'developer';
     private const ENV_ACTIVE_ROLE = 'SOMANAGER_ROLE';
     private const ENV_ACTIVE_AGENT = 'SOMANAGER_AGENT';
+    private const WA_BACKEND_ENV_LOCAL_FALLBACK = "DATABASE_URL=\"postgresql://somanagent:secret@127.0.0.1:5432/somanagent?serverVersion=16&charset=utf8\"\n";
     private const PR_CREATE_HEAD_INVALID_NEEDLE = 'resource=PullRequest, field=head, code=invalid';
     private const RETRY_COUNT = 3;
     private const RETRY_BASE_DELAY = 500000; // MICROSECONDS
@@ -31,8 +32,6 @@ final class BacklogRunner extends AbstractScriptRunner
     private const TASK_CREATE_POSITION_START = 'start';
     private const TASK_CREATE_POSITION_INDEX = 'index';
     private const TASK_CREATE_POSITION_END = 'end';
-    private const DEPS_MODE_LINKED = 'linked';
-    private const DEPS_MODE_ISOLATED = 'isolated';
     private const NETWORK_ERROR_NEEDLES = [
         'fatal: unable to access',
         'GitHub API transport error:',
@@ -57,7 +56,6 @@ final class BacklogRunner extends AbstractScriptRunner
             ['name' => 'feature-start', 'description' => 'Start a feature branch and move the feature to development'],
             ['name' => 'feature-release', 'description' => 'Return one untouched active feature back to the todo section'],
             ['name' => 'feature-task-add', 'description' => 'Attach the next queued task to the current feature'],
-            ['name' => 'feature-deps-mode', 'description' => 'Switch one feature worktree between linked and isolated dependencies'],
             ['name' => 'feature-assign', 'description' => 'Assign an existing feature to one developer agent'],
             ['name' => 'feature-unassign', 'description' => 'Remove the current agent assignment from one feature'],
             ['name' => 'feature-rework', 'description' => 'Move a rejected feature back to development'],
@@ -98,7 +96,6 @@ final class BacklogRunner extends AbstractScriptRunner
             'php scripts/backlog.php task-remove 8',
             'php scripts/backlog.php feature-start --agent agent-01 --branch-type feat',
             'php scripts/backlog.php feature-release --agent agent-01',
-            'php scripts/backlog.php feature-deps-mode --agent agent-01 linked',
             'php scripts/backlog.php feature-list',
             'php scripts/backlog.php worktree-list',
             'php scripts/backlog.php worktree-clean --dry-run',
@@ -125,7 +122,6 @@ final class BacklogRunner extends AbstractScriptRunner
             'feature-start' => $this->featureStart($commandArgs, $options),
             'feature-release' => $this->featureRelease($commandArgs, $options),
             'feature-task-add' => $this->featureTaskAdd($commandArgs, $options),
-            'feature-deps-mode' => $this->featureDepsMode($commandArgs, $options),
             'feature-assign' => $this->featureAssign($commandArgs, $options),
             'feature-unassign' => $this->featureUnassign($commandArgs, $options),
             'feature-rework' => $this->featureRework($commandArgs, $options),
@@ -306,7 +302,6 @@ final class BacklogRunner extends AbstractScriptRunner
             'branch' => $branch,
             'base' => $base,
             'pr' => 'none',
-            'deps' => self::DEPS_MODE_LINKED,
         ]);
 
         foreach (array_slice($reserved, 1) as $task) {
@@ -330,7 +325,6 @@ final class BacklogRunner extends AbstractScriptRunner
             count($board->getEntries(BacklogBoard::SECTION_ACTIVE)),
             (string) $featureEntry->getMeta('stage'),
         ));
-        $this->ensureWorktreeDependencyMode($worktree, self::DEPS_MODE_LINKED);
         $this->saveBoard($board, 'feature-start');
 
         $this->console->ok(sprintf('Started feature %s on %s', $feature, $branch));
@@ -441,47 +435,6 @@ final class BacklogRunner extends AbstractScriptRunner
      * @param array<string> $commandArgs
      * @param array<string, string|bool> $options
      */
-    private function featureDepsMode(array $commandArgs, array $options): int
-    {
-        $agent = $this->requireAgent($options);
-        $board = $this->board();
-
-        if ($commandArgs === []) {
-            throw new \RuntimeException('feature-deps-mode requires <linked|isolated> or <feature> <linked|isolated>.');
-        }
-
-        $mode = $this->normalizeDepsMode((string) end($commandArgs));
-        if ($mode === null) {
-            throw new \RuntimeException('feature-deps-mode requires the final argument to be linked or isolated.');
-        }
-
-        $feature = count($commandArgs) > 1
-            ? $this->normalizeFeatureSlug((string) $commandArgs[0])
-            : $this->requireSingleFeatureForAgent($board, $agent)['entry']->getMeta('feature');
-        if ($feature === null) {
-            throw new \RuntimeException('No feature available for feature-deps-mode.');
-        }
-
-        $match = $this->requireFeature($board, $feature);
-        if (($match['entry']->getMeta('agent') ?? '') !== $agent) {
-            throw new \RuntimeException("Feature {$feature} is not assigned to agent {$agent}.");
-        }
-
-        $worktree = $this->prepareAgentWorktree($agent);
-        $this->checkoutBranchInWorktree($worktree, $match['entry']->getMeta('branch') ?? '', false);
-        $this->ensureWorktreeDependencyMode($worktree, $mode);
-        $match['entry']->setMeta('deps', $mode);
-        $this->saveBoard($board, 'feature-deps-mode');
-
-        $this->console->ok(sprintf('Switched feature %s dependencies to %s', $feature, $mode));
-
-        return 0;
-    }
-
-    /**
-     * @param array<string> $commandArgs
-     * @param array<string, string|bool> $options
-     */
     private function featureAssign(array $commandArgs, array $options): int
     {
         $actorRole = $this->requireWorkflowRole();
@@ -499,12 +452,10 @@ final class BacklogRunner extends AbstractScriptRunner
         $match = $this->requireFeature($board, $feature);
         $previousAgent = trim((string) ($match['entry']->getMeta('agent') ?? ''));
         $match['entry']->setMeta('agent', $agent);
-        $match['entry']->setMeta('deps', $this->entryDepsMode($match['entry']));
         $this->saveBoard($board, 'feature-assign');
 
         $worktree = $this->prepareAgentWorktree($agent);
         $this->checkoutBranchInWorktree($worktree, $match['entry']->getMeta('branch') ?? '', false);
-        $this->ensureWorktreeDependencyMode($worktree, $this->entryDepsMode($match['entry']));
         $cleaned = $previousAgent !== '' && $previousAgent !== $agent
             ? $this->cleanupAbandonedManagedWorktrees($board)
             : 0;
@@ -659,13 +610,11 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $match['entry']->setMeta('agent', $agent);
-        $match['entry']->setMeta('deps', $this->entryDepsMode($match['entry']));
         $match['entry']->setMeta('stage', BacklogBoard::STAGE_IN_PROGRESS);
         $this->saveBoard($board, 'feature-rework');
 
         $worktree = $this->prepareAgentWorktree($agent);
         $this->checkoutBranchInWorktree($worktree, $match['entry']->getMeta('branch') ?? '', false);
-        $this->ensureWorktreeDependencyMode($worktree, $this->entryDepsMode($match['entry']));
 
         $this->console->ok(sprintf('Moved feature %s back to %s', $feature, BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_PROGRESS)));
 
@@ -908,7 +857,6 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->console->line('Base: ' . ($entry->getMeta('base') ?? '-'));
         $this->console->line('Stage: ' . BacklogBoard::stageLabel($stage));
         $this->console->line('PR: ' . $this->describePrStatus($entry));
-        $this->console->line('Deps: ' . $this->entryDepsMode($entry));
         $this->console->line('Last: ' . $entry->getText());
         $this->console->line('Next: ' . $this->nextStepForStage($stage));
         $this->console->line('Blocker: ' . ($entry->hasMeta('blocked') ? 'blocked' : '-'));
@@ -1247,20 +1195,6 @@ final class BacklogRunner extends AbstractScriptRunner
         return $this->featureSlugger()->slugify($text);
     }
 
-    private function normalizeDepsMode(string $text): ?string
-    {
-        $mode = trim($text);
-
-        return in_array($mode, [self::DEPS_MODE_LINKED, self::DEPS_MODE_ISOLATED], true)
-            ? $mode
-            : null;
-    }
-
-    private function entryDepsMode(BoardEntry $entry): string
-    {
-        return $this->normalizeDepsMode((string) $entry->getMeta('deps')) ?? self::DEPS_MODE_LINKED;
-    }
-
     private function featureStage(BoardEntry $entry): string
     {
         return BacklogBoard::entryStage($entry) ?? BacklogBoard::STAGE_IN_PROGRESS;
@@ -1389,6 +1323,8 @@ final class BacklogRunner extends AbstractScriptRunner
             throw new \RuntimeException("Agent worktree is dirty: {$path}");
         }
 
+        $this->ensureWorktreeRuntimeState($path);
+
         return $path;
     }
 
@@ -1406,14 +1342,13 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $worktree = $this->prepareAgentWorktree($agent);
         $this->checkoutBranchInWorktree($worktree, $branch, false);
-        $this->ensureWorktreeDependencyMode($worktree, $this->entryDepsMode($entry));
 
         return $worktree;
     }
 
-    private function ensureWorktreeDependencyMode(string $worktree, string $mode): void
+    private function ensureWorktreeRuntimeState(string $worktree): void
     {
-        foreach ($this->dependencyTargets() as $relativePath => $sourcePath) {
+        foreach ($this->copiedWorktreePaths() as $relativePath => $sourcePath) {
             if (!file_exists($sourcePath) && !is_link($sourcePath)) {
                 throw new \RuntimeException("Missing dependency source in WP: {$sourcePath}");
             }
@@ -1428,56 +1363,78 @@ final class BacklogRunner extends AbstractScriptRunner
                 mkdir($parent, 0777, true);
             }
 
-            if ($mode === self::DEPS_MODE_LINKED) {
-                $this->replacePathWithSymlink($sourcePath, $targetPath);
-                continue;
-            }
-
             $this->replacePathWithCopy($sourcePath, $targetPath);
         }
+
+        $this->syncWorktreeRootEnv($worktree);
+        $this->writeBackendWorktreeEnvLocal($worktree);
     }
 
     /**
      * @return array<string, string>
      */
-    private function dependencyTargets(): array
+    private function copiedWorktreePaths(): array
     {
         return [
             'backend/vendor' => $this->projectRoot . '/backend/vendor',
+            'backend/bin' => $this->projectRoot . '/backend/bin',
             'frontend/node_modules' => $this->projectRoot . '/frontend/node_modules',
         ];
     }
 
-    private function replacePathWithSymlink(string $sourcePath, string $targetPath): void
-    {
-        if (is_link($targetPath) && readlink($targetPath) === $this->relativeFilesystemPath(dirname($targetPath), $sourcePath)) {
-            return;
-        }
-
-        $this->removeFilesystemPath($targetPath);
-
-        $relativeTarget = $this->relativeFilesystemPath(dirname($targetPath), $sourcePath);
-        if ($this->dryRun) {
-            $this->logVerbose('[dry-run] Would create symlink: ' . $this->toRelativeProjectPath($targetPath) . ' -> ' . $relativeTarget);
-            return;
-        }
-        if (!symlink($relativeTarget, $targetPath)) {
-            throw new \RuntimeException("Unable to create symlink {$targetPath} -> {$relativeTarget}");
-        }
-    }
-
     private function replacePathWithCopy(string $sourcePath, string $targetPath): void
     {
-        if (is_dir($targetPath) && !is_link($targetPath)) {
-            return;
-        }
-
         $this->removeFilesystemPath($targetPath);
         if ($this->dryRun) {
             $this->logVerbose('[dry-run] Would copy path: ' . $this->toRelativeProjectPath($sourcePath) . ' -> ' . $this->toRelativeProjectPath($targetPath));
             return;
         }
         $this->copyFilesystemPath($sourcePath, $targetPath);
+    }
+
+    private function syncWorktreeRootEnv(string $worktree): void
+    {
+        $sourcePath = $this->projectRoot . '/.env';
+        if (!is_file($sourcePath)) {
+            throw new \RuntimeException('Missing root .env in WP.');
+        }
+
+        $this->replacePathWithCopy($sourcePath, $worktree . '/.env');
+    }
+
+    private function writeBackendWorktreeEnvLocal(string $worktree): void
+    {
+        $targetPath = $worktree . '/backend/.env.local';
+        $contents = $this->buildBackendWorktreeEnvLocalContents();
+        if ($this->dryRun) {
+            $this->logVerbose('[dry-run] Would write file: ' . $this->toRelativeProjectPath($targetPath));
+            return;
+        }
+
+        if (file_put_contents($targetPath, $contents) === false) {
+            throw new \RuntimeException("Unable to write file: {$targetPath}");
+        }
+    }
+
+    private function buildBackendWorktreeEnvLocalContents(): string
+    {
+        $envFile = $this->projectRoot . '/.env';
+        $content = @file_get_contents($envFile);
+        if ($content === false) {
+            return self::WA_BACKEND_ENV_LOCAL_FALLBACK;
+        }
+
+        if (preg_match('/^DATABASE_URL=(["\']?)(.+)\1$/m', $content, $matches) !== 1) {
+            return self::WA_BACKEND_ENV_LOCAL_FALLBACK;
+        }
+
+        $databaseUrl = trim($matches[2]);
+        $localUrl = preg_replace('/@db(?=[:\/])/', '@127.0.0.1', $databaseUrl, 1);
+        if (!is_string($localUrl) || $localUrl === $databaseUrl) {
+            return self::WA_BACKEND_ENV_LOCAL_FALLBACK;
+        }
+
+        return sprintf("DATABASE_URL=\"%s\"\n", $localUrl);
     }
 
     private function removeFilesystemPath(string $path): void
@@ -1549,21 +1506,6 @@ final class BacklogRunner extends AbstractScriptRunner
         foreach ($iterator as $item) {
             $this->copyFilesystemPath($item->getPathname(), $targetPath . '/' . $item->getBasename());
         }
-    }
-
-    private function relativeFilesystemPath(string $fromDirectory, string $toPath): string
-    {
-        $fromParts = array_values(array_filter(explode('/', trim(str_replace('\\', '/', $fromDirectory), '/')), 'strlen'));
-        $toParts = array_values(array_filter(explode('/', trim(str_replace('\\', '/', $toPath), '/')), 'strlen'));
-
-        while ($fromParts !== [] && $toParts !== [] && $fromParts[0] === $toParts[0]) {
-            array_shift($fromParts);
-            array_shift($toParts);
-        }
-
-        $relativeParts = array_merge(array_fill(0, count($fromParts), '..'), $toParts);
-
-        return $relativeParts === [] ? '.' : implode('/', $relativeParts);
     }
 
     private function checkoutBranchInWorktree(string $worktree, string $branch, bool $create): void
