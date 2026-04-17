@@ -2,12 +2,28 @@
 
 > See also: [Adapters](adapters.md) · [Installation](../development/installation.md)
 
-## `.env` File
+## Environment Files
 
-The `.env` file at the project root contains all configuration variables. It is ignored by git. Copy `.env.example` to get started:
+| File | Committed | Purpose |
+|---|---|---|
+| `.env.example` | Yes | Template — copy to `.env` and fill in local values |
+| `.env` | No (gitignored) | Local values for docker-compose and Docker containers |
+| `backend/.env` | Yes | Symfony generic defaults, loaded by the Dotenv component |
+| `backend/.env.dev` | Yes | Dev-environment Symfony overrides |
+| `backend/.env.local` | No (gitignored) | Local Symfony overrides (non-Docker use) |
+
+### How values reach the application
+
+docker-compose reads the root `.env` for two purposes:
+
+1. **Service configuration** — `${VAR}` substitution in `docker-compose.yml` configures services like `db` (`POSTGRES_*`) and `mercure` (`MERCURE_*` keys) directly.
+2. **Container injection** — `env_file: - .env` passes all root `.env` variables as OS environment variables into the `php` and `worker` containers, where they override `backend/.env` values (OS env vars have priority over Symfony Dotenv).
+
+To get started, copy the template:
 
 ```bash
 cp .env.example .env
+# Edit .env and fill in real values (APP_SECRET, API keys, tokens…)
 ```
 
 ## Available Variables
@@ -152,26 +168,9 @@ APP_SECRET=changethis
 
 `APP_SECRET` must be a random string of at least 32 characters.
 
-## `.env.example`
+## `backend/.env`
 
-```ini
-# Database
-DATABASE_URL=postgresql://somanagent:secret@db:5432/somanagent?serverVersion=16&charset=utf8
-
-# Claude API
-CLAUDE_API_KEY=
-
-# GitHub
-GITHUB_TOKEN=
-
-# GitLab
-GITLAB_TOKEN=
-GITLAB_URL=https://gitlab.com
-
-# Symfony
-APP_ENV=dev
-APP_SECRET=changethis
-```
+`backend/.env` is committed and documents the full set of variables expected by Symfony. Variables whose real values must come from the local environment are present but empty, with a comment pointing to the root `.env`.
 
 ## Symfony Configuration
 
