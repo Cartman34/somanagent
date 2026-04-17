@@ -64,8 +64,8 @@ final class SetupRunner extends AbstractScriptRunner
 
             $this->console->step('Checking .env file');
             if (!file_exists("{$this->projectRoot}/.env")) {
-                copy("{$this->projectRoot}/.env.example", "{$this->projectRoot}/.env");
-                $this->console->ok('.env created from .env.example');
+                copy("{$this->projectRoot}/.env.dist", "{$this->projectRoot}/.env");
+                $this->console->ok('.env created from .env.dist');
                 $this->console->warn('Fill in the values in .env then re-run this script.');
                 return 0;
             }

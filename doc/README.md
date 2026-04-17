@@ -68,7 +68,7 @@ It lets you assemble generic AI agent teams, assign them roles and skills, then 
 
 ```bash
 # 1. Copy and configure the environment
-cp .env.example .env
+cp .env.dist .env
 # Edit .env: CLAUDE_API_KEY, GITHUB_TOKEN, etc.
 
 # 2. Full installation

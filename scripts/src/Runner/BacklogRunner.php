@@ -22,7 +22,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private const ROLE_DEVELOPER = 'developer';
     private const ENV_ACTIVE_ROLE = 'SOMANAGER_ROLE';
     private const ENV_ACTIVE_AGENT = 'SOMANAGER_AGENT';
-    private const WA_BACKEND_ENV_LOCAL_FALLBACK = "DATABASE_URL=\"postgresql://somanagent:secret@127.0.0.1:5432/somanagent?serverVersion=16&charset=utf8\"\n";
+    private const WA_BACKEND_ENV_LOCAL_FALLBACK = "DATABASE_URL=\"postgresql://somanagent:secret@localhost:5432/somanagent?serverVersion=16&charset=utf8\"\n";
     private const PR_CREATE_HEAD_INVALID_NEEDLE = 'resource=PullRequest, field=head, code=invalid';
     private const RETRY_COUNT = 3;
     private const RETRY_BASE_DELAY = 500000; // MICROSECONDS
@@ -1434,7 +1434,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $databaseUrl = trim($matches[2]);
-        $localUrl = preg_replace('/@db(?=[:\/])/', '@127.0.0.1', $databaseUrl, 1);
+        $localUrl = preg_replace('/@db(?=[:\/])/', '@localhost', $databaseUrl, 1);
         if (!is_string($localUrl) || $localUrl === $databaseUrl) {
             return self::WA_BACKEND_ENV_LOCAL_FALLBACK;
         }

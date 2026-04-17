@@ -45,6 +45,6 @@ Suivi des instructions d'application :
 
 - Toujours tester les changements Docker localement avant de les proposer
 - Les secrets et tokens ne doivent jamais être commités — utiliser les variables d'environnement
-- Documenter toutes les nouvelles variables dans `.env.example`
+- Documenter toutes les nouvelles variables dans `.env.dist` et `backend/.env`
 - Préférer les images Docker officielles et les versions fixées (pas `latest`)
 - Les scripts doivent être idempotents (exécutables plusieurs fois sans effet de bord)
