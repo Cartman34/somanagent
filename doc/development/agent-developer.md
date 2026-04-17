@@ -34,7 +34,7 @@ Read this file only when the active task requires developer workflow details.
 - critically challenge the implementation for gaps, regressions, and convention violations before considering it ready for review
 - update docs when required by the code change
 - keep `local/backlog-board.md` in sync with the current stage of the feature through `backlog.php`
-- rely on the prepared `WA` runtime state copied from `WP` for `backend/vendor`, `backend/bin`, `frontend/node_modules`, root `.env`, and `backend/.env.local`
+- rely on the prepared `WA` runtime state: `backend/vendor` and `frontend/node_modules` are copied from `WP` when the `WA` is created or when they are missing, while root `.env` and `backend/.env.local` are refreshed by the workflow
 
 ## Do Not
 

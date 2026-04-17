@@ -32,7 +32,7 @@ Rules:
 - Keep `.worktrees/` ignored in the root `.gitignore`.
 - Run every `php scripts/backlog.php ...` command from `WP` only, never from a `WA`.
 - This rule is technically enforced by `scripts/backlog.php`: the command fails if it is launched from a `WA` or any other directory.
-- `WA` runtime dependencies are always copied locally from `WP`: `backend/vendor`, `backend/bin`, `frontend/node_modules`, root `.env`, and `backend/.env.local`.
+- `WA` runtime dependencies use local copies for `backend/vendor` and `frontend/node_modules`, created from `WP` when the `WA` is created or when those paths are missing. Root `.env` and `backend/.env.local` are refreshed by the workflow.
 - Use `php scripts/backlog.php worktree-list` to inspect managed worktrees under `.worktrees/`.
 - Use `php scripts/backlog.php worktree-clean` to remove only abandoned managed worktrees that are safe to delete.
 - Worktrees outside `.worktrees/` are never auto-removed by backlog commands; inspect them manually, then use `git worktree remove <path>` or `git worktree prune`.

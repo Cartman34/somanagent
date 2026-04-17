@@ -1308,9 +1308,11 @@ final class BacklogRunner extends AbstractScriptRunner
         $path = $this->projectRoot . '/.worktrees/' . $agent;
         $relativePath = $this->toRelativeProjectPath($path);
         $exists = is_dir($path . '/.git') || is_file($path . '/.git');
+        $created = false;
 
         if (!$exists) {
             $this->runGitCommand(sprintf('git worktree add --detach %s HEAD', escapeshellarg($relativePath)));
+            $created = true;
             if ($this->dryRun) {
                 $this->logVerbose('[dry-run] Skipping worktree status check for non-created path: ' . $relativePath);
 
@@ -1323,7 +1325,7 @@ final class BacklogRunner extends AbstractScriptRunner
             throw new \RuntimeException("Agent worktree is dirty: {$path}");
         }
 
-        $this->ensureWorktreeRuntimeState($path);
+        $this->ensureWorktreeRuntimeState($path, $created);
 
         return $path;
     }
@@ -1346,7 +1348,7 @@ final class BacklogRunner extends AbstractScriptRunner
         return $worktree;
     }
 
-    private function ensureWorktreeRuntimeState(string $worktree): void
+    private function ensureWorktreeRuntimeState(string $worktree, bool $created): void
     {
         foreach ($this->copiedWorktreePaths() as $relativePath => $sourcePath) {
             if (!file_exists($sourcePath) && !is_link($sourcePath)) {
@@ -1363,6 +1365,10 @@ final class BacklogRunner extends AbstractScriptRunner
                 mkdir($parent, 0777, true);
             }
 
+            if (!$created && (file_exists($targetPath) || is_link($targetPath))) {
+                continue;
+            }
+
             $this->replacePathWithCopy($sourcePath, $targetPath);
         }
 
@@ -1377,7 +1383,6 @@ final class BacklogRunner extends AbstractScriptRunner
     {
         return [
             'backend/vendor' => $this->projectRoot . '/backend/vendor',
-            'backend/bin' => $this->projectRoot . '/backend/bin',
             'frontend/node_modules' => $this->projectRoot . '/frontend/node_modules',
         ];
     }
