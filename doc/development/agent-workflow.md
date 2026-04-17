@@ -40,24 +40,29 @@ Rules:
 ## Feature Identity Rules
 
 1. Every active task is attached to one feature.
-2. The canonical identifier is the feature slug.
-3. Active entries in `Traitement en cours` must keep the task line and its sub-tasks together, then end with a trailing `meta:` block, for example:
+2. For a plain task, the canonical identifier is the feature slug.
+3. For a queued task prefixed as `[feature-slug][task-slug]`, the parent feature keeps `meta.kind=feature` and `meta.feature=<feature-slug>`, while the child task uses `meta.kind=task`, `meta.feature=<feature-slug>`, and `meta.task=<task-slug>`.
+4. Active entries in `Traitement en cours` must keep the task line and its sub-tasks together, then end with a trailing `meta:` block, for example:
    `- Task text`
    `  - sub-task`
    `  meta:`
-   `    stage: development`
-   `    feature: <slug>`
-   `    agent: <code>`
-   `    branch: <type>/<slug>`
-   `    base: <sha>`
-   `    pr: none`
-4. `<type>` is `feat` or `fix` on the branch.
-5. Every developer commit on a feature branch must start with `[<slug>]`.
-6. Review and approval must be scoped from the recorded `base` commit, not from the current `main`.
-7. Active workflow state is stored in `meta.stage` with one of:
+     `    kind: feature`
+     `    stage: development`
+     `    feature: <slug>`
+     `    agent: <code>`
+     `    branch: <type>/<slug>`
+     `    base: <sha>`
+     `    pr: none`
+5. For child task entries, `meta.feature-branch` stores the local parent feature branch, and `meta.branch` stores the local child task branch.
+6. Child task slugs must be unique inside one feature. One `[feature-slug][task-slug]` maps to one local child branch `<type>/<feature-slug>--<task-slug>` and one contribution block in the parent feature entry.
+7. Parent `kind=feature` entries keep their own summary text, while merged or active child task contributions are stored in machine-managed lines prefixed with `[task:<task-slug>]`.
+8. `<type>` is `feat` or `fix` on the branch.
+9. Every developer commit on a feature branch must start with `[<slug>]`.
+10. Review and approval must be scoped from the recorded `base` commit, not from the current `main`.
+11. Active workflow state is stored in `meta.stage` with one of:
    `development`, `review`, `rejected`, `approved`.
-8. The `meta:` block is absent from queued tasks that have never been taken.
-9. Inside one active entry, `meta:` is always the final block. The entry ends on the next blank line, next root `- ...`, or next section title.
+12. The `meta:` block is absent from queued tasks that have never been taken.
+13. Inside one active entry, `meta:` is always the final block. The entry ends on the next blank line, next root `- ...`, or next section title.
 
 ## Agent Code Rules
 
@@ -81,9 +86,16 @@ Rules:
 3. Reviewer commands on `backlog.php` never use `--agent`.
 4. The agent code must never leave local backlog files.
 5. `feature-start` takes the next queued task directly from `## À faire`; no separate reservation step is part of the standard workflow.
-6. `feature-release` returns the active feature to `## À faire` only when no development was done on its branch.
-7. Any backlog state change covered by `backlog.php` must go through `backlog.php`, never through a manual file edit.
-8. Manual edits to `local/backlog-board.md` or `local/backlog-review.md` are forbidden unless the user explicitly asks for a manual edit outside the scripted workflow.
-9. `--dry-run` simulates backlog, git, GitHub, and filesystem mutations without executing them.
-10. `--verbose` prints detailed execution steps and simulated commands.
-11. When the user invokes a documented workflow keyword or command sequence, agents must rerun that documented procedure each time unless the user cancels it. Repetition is not a reason to switch to advisory mode or rely on remembered state instead of the workflow result.
+6. `feature-release` returns the active feature to `## À faire` only when no development was done on its branch. A parent `kind=feature` cannot be released while child `kind=task` entries still exist for that feature.
+7. When `feature-start` consumes a queued task prefixed as `[feature-slug][task-slug]`, it creates or reuses the local parent feature branch, ensures one active `kind=feature` entry exists for that feature, and creates the active child `kind=task` entry from it.
+8. Starting a new child task or merging a child task locally invalidates any parent feature review state and moves the parent `kind=feature` back to `development`.
+9. `kind=task` entries are local-only delivery units: they are never pushed and never get GitHub PRs.
+10. `feature-task-add --agent=<code> --feature-text=<text>` may absorb the next queued task into the current feature. If that queued task is prefixed as `[feature-slug][task-slug]`, it must target the current feature, it creates a new local child task entry, and it follows the same child-branch rules as `feature-start`.
+11. `feature-task-add` must not mix a plain queued task into a feature that already uses local child tasks.
+12. `feature-task-merge --agent=<code> [<task>]` merges one child task branch into its parent feature branch locally, after a green mechanical review in the task worktree, using either the worktree already bound to the parent branch or a temporary merge worktree.
+13. The remote review, approval, and merge flow applies only to `kind=feature` entries and is blocked while child `kind=task` entries remain active for that feature.
+14. Any backlog state change covered by `backlog.php` must go through `backlog.php`, never through a manual file edit.
+15. Manual edits to `local/backlog-board.md` or `local/backlog-review.md` are forbidden unless the user explicitly asks for a manual edit outside the scripted workflow.
+16. `--dry-run` simulates backlog, git, GitHub, and filesystem mutations without executing them.
+17. `--verbose` prints detailed execution steps and simulated commands.
+18. When the user invokes a documented workflow keyword or command sequence, agents must rerun that documented procedure each time unless the user cancels it. Repetition is not a reason to switch to advisory mode or rely on remembered state instead of the workflow result.

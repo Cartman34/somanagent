@@ -36,3 +36,4 @@ Read this file only when the active task requires backlog management or workflow
 - use `doc/development/agent-developer.md` when the task is about developer-side backlog operations
 - use `doc/development/agent-reviewer.md` when the task is about review, approval, close, or merge flow
 - when a change touches the backlog model itself, update scripts and documentation together
+- prefixed backlog tasks of the form `[feature-slug][task-slug]` create one shared `kind=feature` parent plus one local-only `kind=task` child per task; manager-side workflow changes must preserve that distinction explicitly

@@ -220,6 +220,7 @@ Notes:
 - `--head <branch>` is required for `pr create`
 - `--body-file <file>` is preferred over `--body` to avoid shell quoting issues; the script reads and deletes the file automatically
 - Requires `GITHUB_TOKEN` in `.env` and a detectable `origin` remote pointing to GitHub.
+- For backlog tasks started from a `[feature-slug][task-slug]` prefix, the local merge between the child task branch and the parent feature branch happens before any GitHub PR flow; `github.php` is only relevant once work is promoted back to a branch meant for remote review.
 
 ---
 
