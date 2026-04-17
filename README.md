@@ -73,9 +73,9 @@ You define **Workflows** — sequences of steps that route tasks to the right ag
 **Prerequisites:** PHP 8.4+, Docker, Docker Compose.
 
 ```bash
-# 1. Clone and configure
-cp .env.example .env
-# Edit .env: set CLAUDE_API_KEY, GITHUB_TOKEN, and any other required values
+# 1. Configure the environment
+cp .env.local.dist .env.local
+# Edit .env.local: set APP_SECRET, CLAUDE_API_KEY, GITHUB_TOKEN, and any other required values
 
 # 2. Full installation (containers, database, frontend)
 php scripts/setup.php

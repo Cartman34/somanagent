@@ -62,14 +62,15 @@ final class SetupRunner extends AbstractScriptRunner
             $this->console->step('Checking PHP version');
             $run('bash scripts/check-php.sh');
 
-            $this->console->step('Checking .env file');
-            if (!file_exists("{$this->projectRoot}/.env")) {
-                copy("{$this->projectRoot}/.env.example", "{$this->projectRoot}/.env");
-                $this->console->ok('.env created from .env.example');
-                $this->console->warn('Fill in the values in .env then re-run this script.');
+            $this->console->step('Checking .env.local file');
+            if (!file_exists("{$this->projectRoot}/.env.local")) {
+                $this->console->warn('.env.local not found.');
+                $this->console->warn('Copy .env.local.dist to .env.local and fill in your API keys and secrets:');
+                $this->console->warn('  cp .env.local.dist .env.local');
+                $this->console->warn('Re-run this script once .env.local is configured.');
                 return 0;
             }
-            $this->console->ok('.env present');
+            $this->console->ok('.env.local present');
 
             $this->console->step('Preparing Docker shared auth directories');
             $this->ensureDockerAuthDirectories();
