@@ -29,6 +29,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private const RETRY_FACTOR = 4;
     private const FEATURE_SLUG_MAX_WORDS = 8;
     private const FEATURE_SLUG_MAX_LENGTH = 64;
+    private const TASK_CREATE_TYPE_SHORT_PREFIX_PATTERN = '/^\[(feat|fix)\](.*)$/i';
     private const TASK_SCOPE_PREFIX_PATTERN = '/^\[([A-Za-z0-9_-]+)\]\[([A-Za-z0-9_-]+)\]\s*(.+)$/';
     private const TASK_CONTRIBUTION_PREFIX_PATTERN = '/^\s*-\s*\[task:([a-z0-9-]+)\]\s*(.+)$/';
     private const TASK_CREATE_POSITION_START = 'start';
@@ -89,7 +90,6 @@ final class BacklogRunner extends AbstractScriptRunner
             ['name' => '--agent', 'description' => 'Developer agent code (required on developer commands)'],
             ['name' => '--body-file', 'description' => 'Path to a local file used for PR or review body content when required'],
             ['name' => '--feature-text', 'description' => 'Replacement feature text for the active backlog entry'],
-            ['name' => '--branch-type', 'description' => 'Developer branch type for feature-start: feat or fix (default: feat)'],
             ['name' => '--position', 'description' => 'Insertion position for task-create: start, index, end (default: end)'],
             ['name' => '--index', 'description' => '1-based target position used when --position=index'],
             ['name' => '--force', 'description' => 'Allow taking a task that is already reserved'],
@@ -173,7 +173,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $board = $this->board();
         $entries = $board->getEntries(BacklogBoard::SECTION_TODO);
         $position = $this->resolveTaskCreatePosition($options, count($entries));
-        array_splice($entries, $position, 0, [new BoardEntry($text)]);
+        array_splice($entries, $position, 0, [$this->createTaskEntryFromInput($text)]);
         $board->setEntries(BacklogBoard::SECTION_TODO, $entries);
         $this->saveBoard($board, 'task-create');
 
@@ -277,10 +277,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private function featureStart(array $commandArgs, array $options): int
     {
         $agent = $this->requireAgent($options);
-        $branchType = (string) ($options['branch-type'] ?? 'feat');
-        if (!in_array($branchType, ['feat', 'fix'], true)) {
-            throw new \RuntimeException('feature-start --branch-type must be feat or fix.');
-        }
+        $branchTypeOverride = $this->readBranchTypeOverride($options);
 
         $board = $this->board();
 
@@ -306,12 +303,13 @@ final class BacklogRunner extends AbstractScriptRunner
         $first->unsetMeta('agent');
         $scopedTask = $this->extractScopedTaskMetadata($first->getText());
         if ($scopedTask !== null) {
-            $featureBranch = $branchType . '/' . $scopedTask['featureGroup'];
             $task = $scopedTask['task'];
-            $branch = $branchType . '/' . $scopedTask['featureGroup'] . '--' . $task;
             $parent = $this->findParentFeatureEntry($board, $scopedTask['featureGroup']);
 
             if ($parent === null) {
+                $branchType = $this->resolveFeatureStartBranchType($first, null, $branchTypeOverride);
+                $featureBranch = $branchType . '/' . $scopedTask['featureGroup'];
+                $branch = $branchType . '/' . $scopedTask['featureGroup'] . '--' . $task;
                 $this->updateLocalMainBeforeFeatureStart();
                 $featureBase = trim($this->captureGitOutput('git rev-parse origin/main'));
                 $this->ensureLocalBranchExists($featureBranch, 'origin/main');
@@ -330,7 +328,9 @@ final class BacklogRunner extends AbstractScriptRunner
                 $board->setEntries(BacklogBoard::SECTION_ACTIVE, $activeEntries);
                 $parent = $this->requireParentFeature($board, $scopedTask['featureGroup']);
             } else {
-                $featureBranch = $parent['entry']->getMeta('branch') ?: $featureBranch;
+                $branchType = $this->resolveFeatureStartBranchType($first, $parent['entry'], $branchTypeOverride);
+                $featureBranch = $parent['entry']->getMeta('branch') ?: ($branchType . '/' . $scopedTask['featureGroup']);
+                $branch = $branchType . '/' . $scopedTask['featureGroup'] . '--' . $task;
                 $this->invalidateFeatureReviewState($parent['entry']);
             }
             $this->assertTaskSlugAvailableForFeature($board, $parent['entry'], $scopedTask['featureGroup'], $task, 'feature-start');
@@ -356,6 +356,7 @@ final class BacklogRunner extends AbstractScriptRunner
             $this->appendTaskContribution($parent['entry'], $taskEntry);
             $featureEntry = $taskEntry;
         } else {
+            $branchType = $this->resolveFeatureStartBranchType($first, null, $branchTypeOverride);
             $feature = $this->normalizeFeatureSlug($first->getText());
             $this->updateLocalMainBeforeFeatureStart();
             $base = trim($this->captureGitOutput('git rev-parse origin/main'));
@@ -404,6 +405,19 @@ final class BacklogRunner extends AbstractScriptRunner
         ));
 
         return 0;
+    }
+
+    private function createTaskEntryFromInput(string $text): BoardEntry
+    {
+        $normalizedText = trim($text);
+        if (preg_match(self::TASK_CREATE_TYPE_SHORT_PREFIX_PATTERN, $normalizedText, $matches) === 1) {
+            $normalizedText = sprintf('[type:%s]%s', strtolower($matches[1]), $matches[2]);
+        }
+
+        $entry = BoardEntry::fromLines(['- ' . $normalizedText]);
+        $this->validateTaskEntryTypeMetadata($entry, 'task-create');
+
+        return $entry;
     }
 
     /**
@@ -1590,6 +1604,22 @@ final class BacklogRunner extends AbstractScriptRunner
     /**
      * @param array<string, string|bool> $options
      */
+    private function readBranchTypeOverride(array $options): string
+    {
+        $branchType = trim((string) ($options['branch-type'] ?? ''));
+        if ($branchType === '') {
+            return '';
+        }
+        if (!in_array($branchType, ['feat', 'fix'], true)) {
+            throw new \RuntimeException('feature-start --branch-type must be feat or fix.');
+        }
+
+        return $branchType;
+    }
+
+    /**
+     * @param array<string, string|bool> $options
+     */
     private function requireBodyFile(array $options): string
     {
         $bodyFile = trim((string) ($options['body-file'] ?? ''));
@@ -1679,6 +1709,73 @@ final class BacklogRunner extends AbstractScriptRunner
     private function featureStage(BoardEntry $entry): string
     {
         return BacklogBoard::entryStage($entry) ?? BacklogBoard::STAGE_IN_PROGRESS;
+    }
+
+    private function taskDeclaredBranchType(BoardEntry $entry, string $command): string
+    {
+        $type = trim((string) $entry->getMeta('type'));
+        if ($type === '') {
+            return '';
+        }
+        if (!in_array($type, ['feat', 'fix'], true)) {
+            throw new \RuntimeException(sprintf(
+                '%s only accepts [type:feat] or [type:fix] task prefixes.',
+                $command,
+            ));
+        }
+
+        return $type;
+    }
+
+    private function validateTaskEntryTypeMetadata(BoardEntry $entry, string $command): void
+    {
+        $this->taskDeclaredBranchType($entry, $command);
+    }
+
+    private function resolveFeatureStartBranchType(BoardEntry $entry, ?BoardEntry $parentFeatureEntry, string $override): string
+    {
+        $declaredType = $this->taskDeclaredBranchType($entry, 'feature-start');
+
+        if ($parentFeatureEntry !== null) {
+            $parentBranch = $parentFeatureEntry->getMeta('branch') ?? '';
+            $parentBranchType = $this->detectBranchType($parentBranch);
+            if ($parentBranchType === '') {
+                throw new \RuntimeException('Parent feature metadata is incomplete: missing branch type.');
+            }
+            if ($override !== '' && $override !== $parentBranchType) {
+                throw new \RuntimeException(sprintf(
+                    'feature-start cannot use branch type %s because parent feature branch already uses %s.',
+                    $override,
+                    $parentBranchType,
+                ));
+            }
+            if ($declaredType !== '' && $declaredType !== $parentBranchType) {
+                throw new \RuntimeException(sprintf(
+                    'feature-start cannot start task type %s in feature branch type %s.',
+                    $declaredType,
+                    $parentBranchType,
+                ));
+            }
+
+            return $parentBranchType;
+        }
+
+        if ($override !== '' && $declaredType !== '' && $override !== $declaredType) {
+            throw new \RuntimeException(sprintf(
+                'feature-start cannot use branch type %s because the queued task declares type %s.',
+                $override,
+                $declaredType,
+            ));
+        }
+
+        if ($declaredType !== '') {
+            return $declaredType;
+        }
+        if ($override !== '') {
+            return $override;
+        }
+
+        return 'feat';
     }
 
     private function assertFeatureEntry(BoardEntry $entry, string $command): void
