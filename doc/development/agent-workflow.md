@@ -84,7 +84,7 @@ Rules:
 
 ## Command Policy
 
-1. Prefer `php scripts/backlog.php` for the full local workflow.
+1. Use `php scripts/backlog.php` for the full local workflow.
 2. Every developer command on `backlog.php` requires `--agent=<code>`.
 3. Reviewer commands on `backlog.php` never use `--agent`.
 4. The agent code must never leave local backlog files.
