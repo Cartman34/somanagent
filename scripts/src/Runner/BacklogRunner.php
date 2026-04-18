@@ -89,7 +89,7 @@ final class BacklogRunner extends AbstractScriptRunner
             ['name' => '--agent', 'description' => 'Developer agent code (required on developer commands)'],
             ['name' => '--body-file', 'description' => 'Path to a local file used for PR or review body content when required'],
             ['name' => '--feature-text', 'description' => 'Replacement feature text for the active backlog entry'],
-            ['name' => '--branch-type', 'description' => 'Developer branch type for feature-start: feat or fix'],
+            ['name' => '--branch-type', 'description' => 'Developer branch type for feature-start: feat or fix (default: feat)'],
             ['name' => '--position', 'description' => 'Insertion position for task-create: start, index, end (default: end)'],
             ['name' => '--index', 'description' => '1-based target position used when --position=index'],
             ['name' => '--force', 'description' => 'Allow taking a task that is already reserved'],
@@ -104,7 +104,7 @@ final class BacklogRunner extends AbstractScriptRunner
             'php scripts/backlog.php task-remove 8',
             'php scripts/backlog.php task-review-request --agent agent-01',
             'php scripts/backlog.php task-review-approve onboarding/task-copy-review',
-            'php scripts/backlog.php feature-start --agent agent-01 --branch-type feat',
+            'php scripts/backlog.php feature-start --agent agent-01',
             'php scripts/backlog.php feature-release --agent agent-01',
             'php scripts/backlog.php feature-task-merge --agent agent-01',
             'php scripts/backlog.php feature-list',
@@ -277,9 +277,9 @@ final class BacklogRunner extends AbstractScriptRunner
     private function featureStart(array $commandArgs, array $options): int
     {
         $agent = $this->requireAgent($options);
-        $branchType = (string) ($options['branch-type'] ?? '');
+        $branchType = (string) ($options['branch-type'] ?? 'feat');
         if (!in_array($branchType, ['feat', 'fix'], true)) {
-            throw new \RuntimeException('feature-start requires --branch-type=feat or --branch-type=fix.');
+            throw new \RuntimeException('feature-start --branch-type must be feat or fix.');
         }
 
         $board = $this->board();

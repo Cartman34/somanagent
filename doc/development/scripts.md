@@ -69,7 +69,7 @@ php scripts/help.php migrate.php  # detail for one script
 Runs the documented local backlog workflow from `WP` only, including feature start/review/merge and local child task submit/review/merge flows.
 
 ```bash
-php scripts/backlog.php feature-start --agent agent-01 --branch-type feat
+php scripts/backlog.php feature-start --agent agent-01
 php scripts/backlog.php task-review-request --agent agent-01
 php scripts/backlog.php task-review-approve my-feature/my-task
 php scripts/backlog.php feature-task-merge my-feature/my-task

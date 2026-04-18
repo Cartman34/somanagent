@@ -85,10 +85,11 @@ Read this file only when the active task requires developer workflow details.
 
 ### `feature-start`
 
-1. Run `php scripts/backlog.php feature-start --agent=<code> --branch-type=<feat|fix>`.
-2. The script takes the next task from `## À faire`, updates local `main` when possible, creates the feature branch from `origin/main` in the agent worktree, moves the feature to `## Traitement en cours`, sets `meta.stage=development`, and authorizes development.
-3. If the queued task starts with `[feature-slug][task-slug]`, the script creates or reuses the parent `kind=feature` entry for `<feature-slug>`, keeps the shared parent branch `<type>/<feature-slug>`, then creates the child `kind=task` entry and local child branch `<type>/<feature-slug>--<task-slug>` from that local parent branch in the agent worktree.
-4. `feature-start` is local-only: it does not push and it does not create a PR.
+1. Run `php scripts/backlog.php feature-start --agent=<code> [--branch-type=<feat|fix>]`.
+2. The script defaults to `feat` when `--branch-type` is omitted.
+3. The script takes the next task from `## À faire`, updates local `main` when possible, creates the feature branch from `origin/main` in the agent worktree, moves the feature to `## Traitement en cours`, sets `meta.stage=development`, and authorizes development.
+4. If the queued task starts with `[feature-slug][task-slug]`, the script creates or reuses the parent `kind=feature` entry for `<feature-slug>`, keeps the shared parent branch `<type>/<feature-slug>`, then creates the child `kind=task` entry and local child branch `<type>/<feature-slug>--<task-slug>` from that local parent branch in the agent worktree.
+5. `feature-start` is local-only: it does not push and it does not create a PR.
 
 ### `feature-release`
 
@@ -189,7 +190,7 @@ Read this file only when the active task requires developer workflow details.
 
 ### `next`
 
-1. `WP`: run `php scripts/backlog.php feature-start --agent=<code> --branch-type=<feat|fix>`.
+1. `WP`: run `php scripts/backlog.php feature-start --agent=<code>`.
 2. `WA`: implement the feature scope on the branch checked out for that task.
 3. `WA`: inspect the local diff and fix issues in scope before moving on.
 4. `WA`: run `git add .`.
