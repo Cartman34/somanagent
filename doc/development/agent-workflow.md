@@ -25,6 +25,9 @@ Rules:
 - Developer work in a dedicated worktree is mandatory for every task.
 - Create agent worktrees under `.worktrees/` inside the main repository so they stay in the same WSL filesystem and remain easy to ignore.
 - Use `WP` for the main workspace and `WA` for one developer agent worktree.
+- `WP` is the only workflow workspace.
+- `WA` is a development copy for one developer agent, not a runtime workspace.
+- If a command touches backlog state, review state, containers, runtime, networked services, or GitHub, do not run it from `WA`.
 - From `WP`, never launch dependent workflow commands in parallel. Any sequence where one command depends on the previous result, especially Git operations such as `add` then `commit`, must be run strictly one after another.
 - A `WA` belongs to the developer agent and is treated as ephemeral.
 - A branch belongs to the active feature.

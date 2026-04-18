@@ -31,12 +31,19 @@ Read this file only when the active task requires developer workflow details.
 - manage one `WA` identified by the agent code
 - start features, optionally release untouched features, and continue development on the feature branch
 - commit on the feature branch with the feature slug prefix
-- run `php scripts/backlog.php ...` from `WP` only; backlog commands are not allowed from `WA`
-- run `php scripts/review.php` after every implementation and fix mechanical blockers within scope
 - critically challenge the implementation for gaps, regressions, and convention violations before considering it ready for review
 - update docs when required by the code change
 - keep `local/backlog-board.md` in sync with the current stage of the feature through `backlog.php`
 - rely on the prepared `WA` runtime state: `backend/vendor` and `frontend/node_modules` are copied from `WP` when the `WA` is created or when they are missing, while root `.env` and `backend/.env.local` are refreshed by the workflow
+
+## Workspace Rules
+
+- `WA`: edit code, inspect files, run local git on the active branch, and commit.
+- `WP`: run `php scripts/backlog.php ...` and read local workflow state when needed.
+- When one step is prefixed with `WP:`, the working directory must be `WP`.
+- When one step is prefixed with `WA:`, the working directory must be the active agent `WA`.
+- Forbidden for `Developer`: `php scripts/console.php`, `php scripts/node.php`, `php scripts/db.php`, `php scripts/dev.php`, `php scripts/health.php`, `php scripts/github.php`, and any script that talks to containers, runtime, database, network, or GitHub.
+- If a command is not explicitly allowed for `Developer`, do not run it.
 
 ## Do Not
 
@@ -183,29 +190,30 @@ Read this file only when the active task requires developer workflow details.
 
 ### `next`
 
-1. Run `php scripts/backlog.php feature-start --agent=<code> --branch-type=<feat|fix>`.
-2. Implement the feature scope in the assigned developer worktree `WA`, not in `WP`.
-3. Work on the feature branch checked out by `feature-start` for that task.
-4. Run `php scripts/review.php` and fix every blocker in scope before moving on. It cannot be replaced by running `php -l`.
-5. Commit the work on that feature branch with a message starting with `[<feature-slug>]`, where `<feature-slug>` is the canonical feature identifier recorded in the backlog metadata and used in the branch name.
+1. `WP`: run `php scripts/backlog.php feature-start --agent=<code> --branch-type=<feat|fix>`.
+2. `WA`: implement the feature scope on the branch checked out for that task.
+3. `WA`: inspect the local diff and fix issues in scope before moving on.
+4. `WA`: run `git add .`.
+5. `WA`: run `git commit -m "[<feature-slug>] ..."` using the canonical feature identifier recorded in the backlog metadata and branch name.
 
 ### `submit`
 
-1. If the active entry is `kind=task`, run `php scripts/backlog.php task-review-request --agent=<code> [<task>|<feature/task>]`.
-2. If the active entry is `kind=feature`, verify the mechanical review is green with `php scripts/review.php`, then run `php scripts/backlog.php feature-review-request --agent=<code> [<feature>]`.
+1. `WP`: if the active entry is `kind=task`, run `php scripts/backlog.php task-review-request --agent=<code> [<task>|<feature/task>]`.
+2. `WP`: if the active entry is `kind=feature`, run `php scripts/backlog.php feature-review-request --agent=<code> [<feature>]`.
 3. For `kind=feature`, this keyword still applies only after all child `kind=task` entries have already been merged locally.
 
 ### `merge`
 
-1. If the active entry is `kind=task`, run `php scripts/backlog.php feature-task-merge --agent=<code> [<task>]`.
+1. `WP`: if the active entry is `kind=task`, run `php scripts/backlog.php feature-task-merge --agent=<code> [<task>|<feature/task>]`.
 2. This keyword merges the local task only on explicit user instruction; it is not implied by `submit`.
 
 ### `rework`
 
-1. Read `local/backlog-review.md`.
-2. Run `php scripts/backlog.php feature-rework --agent=<code> [<feature>]`.
+1. `WP`: read `local/backlog-review.md`.
+2. `WP`: run `php scripts/backlog.php feature-rework --agent=<code> [<feature>]`.
+3. `WA`: resume development on the same feature branch and address the recorded review feedback.
 
 ### `cleanup`
 
-1. Run `php scripts/backlog.php worktree-clean`.
-2. Use `php scripts/backlog.php worktree-list` only when you need a cleanup diagnostic outside the standard workflow.
+1. `WP`: run `php scripts/backlog.php worktree-clean`.
+2. `WP`: use `php scripts/backlog.php worktree-list` only when you need a cleanup diagnostic outside the standard workflow.
