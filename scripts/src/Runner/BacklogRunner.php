@@ -547,6 +547,7 @@ final class BacklogRunner extends AbstractScriptRunner
         if ($agent !== '' && ($entry->getMeta('agent') ?? '') !== $agent) {
             throw new \RuntimeException('feature-task-merge requires the task to be assigned to the provided agent.');
         }
+        $taskAgent = $entry->getMeta('agent') ?? '';
 
         $feature = $entry->getMeta('feature') ?? '';
         $task = $entry->getMeta('task') ?? '';
@@ -577,7 +578,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $this->removeActiveEntryAt($board, $match['index']);
         if (($parent['entry']->getMeta('agent') ?? '') === '') {
-            $parent['entry']->setMeta('agent', $entry->getMeta('agent') ?? '');
+            $parent['entry']->setMeta('agent', $taskAgent);
         }
         $this->invalidateFeatureReviewState($parent['entry']);
         $review->clearReview($this->taskReviewKey($entry));
@@ -588,7 +589,7 @@ final class BacklogRunner extends AbstractScriptRunner
             $this->removeTemporaryMergeWorktree($mergeContext['path']);
         }
 
-        $this->cleanupMergedTaskWorktree($agent, $taskBranch, $board);
+        $this->cleanupMergedTaskWorktree($taskAgent, $taskBranch, $board);
 
         if ($this->gitCommandSucceeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/heads/' . $taskBranch)))) {
             $this->runGitCommand(sprintf('git branch -D %s', escapeshellarg($taskBranch)));
