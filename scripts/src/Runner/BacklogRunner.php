@@ -411,7 +411,10 @@ final class BacklogRunner extends AbstractScriptRunner
     {
         $normalizedText = trim($text);
         if (preg_match(self::TASK_CREATE_TYPE_SHORT_PREFIX_PATTERN, $normalizedText, $matches) === 1) {
-            $normalizedText = sprintf('[type:%s]%s', strtolower($matches[1]), $matches[2]);
+            $entry = new BoardEntry(trim($matches[2]), [], ['type' => strtolower($matches[1])]);
+            $this->validateTaskEntryTypeMetadata($entry, 'task-create');
+
+            return $entry;
         }
 
         $entry = BoardEntry::fromLines(['- ' . $normalizedText]);
@@ -1719,7 +1722,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
         if (!in_array($type, ['feat', 'fix'], true)) {
             throw new \RuntimeException(sprintf(
-                '%s only accepts [type:feat] or [type:fix] task prefixes.',
+                '%s only accepts [feat] or [fix] task prefixes.',
                 $command,
             ));
         }

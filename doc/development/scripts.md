@@ -78,7 +78,7 @@ php scripts/backlog.php feature-task-merge my-feature/my-task
 Notes:
 - developer commands require `--agent=<code>`
 - reviewer commands never use `--agent`
-- `feature-start` reads branch type from queued task prefixes such as `[type:feat]` or `[type:fix]`
+- `feature-start` reads branch type from queued task prefixes such as `[feat]` or `[fix]`
 - child task review stays local; only the parent feature uses the remote PR flow
 
 ---

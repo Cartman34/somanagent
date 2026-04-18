@@ -66,7 +66,7 @@ Read this file only when the active task requires developer workflow details.
 2. By default the script appends the task to the end of `## À faire`.
 3. `--position=start` inserts at the start of `## À faire`.
 4. `--position=index --index=<n>` inserts at the requested 1-based position and clamps out-of-range values to the start or the end.
-5. When you create a queued task, prefix the description with `[type:feat]` or `[type:fix]` so `feature-start` can derive the branch type from the backlog entry.
+5. When you create a queued task, prefix the description with `[feat]` or `[fix]` so `feature-start` can derive the branch type from the backlog entry.
 
 ### `task-todo-list`
 
@@ -87,7 +87,7 @@ Read this file only when the active task requires developer workflow details.
 ### `feature-start`
 
 1. Run `php scripts/backlog.php feature-start --agent=<code>`.
-2. The script reads the branch type from the queued task metadata prefix `[type:feat]` or `[type:fix]`.
+2. The script reads the branch type from the queued task prefix `[feat]` or `[fix]`.
 3. If no type prefix is present, the script falls back to `feat`.
 4. The script takes the next task from `## À faire`, updates local `main` when possible, creates the feature branch from `origin/main` in the agent worktree, moves the feature to `## Traitement en cours`, sets `meta.stage=development`, and authorizes development.
 5. If the queued task starts with `[feature-slug][task-slug]`, the script creates or reuses the parent `kind=feature` entry for `<feature-slug>`, keeps the shared parent branch `<type>/<feature-slug>`, then creates the child `kind=task` entry and local child branch `<type>/<feature-slug>--<task-slug>` from that local parent branch in the agent worktree.
