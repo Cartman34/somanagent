@@ -82,6 +82,9 @@ final class BacklogBoard
         $matches = [];
 
         foreach ($this->getEntries(self::SECTION_ACTIVE) as $index => $entry) {
+            if (!$this->isFeatureEntry($entry)) {
+                continue;
+            }
             if (self::entryStage($entry) !== $normalizedStage) {
                 continue;
             }
@@ -98,6 +101,9 @@ final class BacklogBoard
     public function findFeature(string $feature): ?array
     {
         foreach ($this->getEntries(self::SECTION_ACTIVE) as $index => $entry) {
+            if (!$this->isFeatureEntry($entry)) {
+                continue;
+            }
             if ($entry->getMeta('feature') === $feature) {
                 return ['section' => self::SECTION_ACTIVE, 'index' => $index, 'entry' => $entry];
             }
@@ -114,6 +120,9 @@ final class BacklogBoard
         $matches = [];
 
         foreach ($this->getEntries(self::SECTION_ACTIVE) as $index => $entry) {
+            if (!$this->isFeatureEntry($entry)) {
+                continue;
+            }
             if ($entry->getMeta('agent') === $agent) {
                 $matches[] = ['section' => self::SECTION_ACTIVE, 'index' => $index, 'entry' => $entry];
             }
@@ -162,6 +171,9 @@ final class BacklogBoard
         return null;
     }
 
+    /**
+     * Updates the normalized workflow stage of one active feature entry.
+     */
     public function setFeatureStage(string $feature, string $stage): void
     {
         $match = $this->findFeature($feature);
@@ -287,6 +299,9 @@ final class BacklogBoard
         $this->taskSections[self::SECTION_ACTIVE] = $this->loadActiveEntries();
     }
 
+    /**
+     * Normalizes one workflow stage value from current or legacy labels.
+     */
     public static function normalizeStage(?string $stage): ?string
     {
         return match (trim((string) $stage)) {
@@ -298,6 +313,9 @@ final class BacklogBoard
         };
     }
 
+    /**
+     * Returns the human-readable label used in the backlog for one workflow stage.
+     */
     public static function stageLabel(string $stage): string
     {
         return match (self::normalizeStage($stage)) {
@@ -322,6 +340,9 @@ final class BacklogBoard
         ];
     }
 
+    /**
+     * Resolves the normalized workflow stage stored on one backlog entry.
+     */
     public static function entryStage(BoardEntry $entry): ?string
     {
         return self::normalizeStage($entry->getMeta('stage'));
@@ -469,5 +490,15 @@ final class BacklogBoard
         }
 
         return array_values($normalized);
+    }
+
+    private function isFeatureEntry(BoardEntry $entry): bool
+    {
+        $kind = trim((string) $entry->getMeta('kind'));
+        if ($kind !== '') {
+            return $kind === 'feature';
+        }
+
+        return !$entry->hasMeta('task');
     }
 }

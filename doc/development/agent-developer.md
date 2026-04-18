@@ -9,6 +9,7 @@ Read this file only when the active task requires developer workflow details.
 - `task-create`
 - `task-todo-list`
 - `task-remove`
+- `task-review-request`
 - `feature-start`
 - `feature-release`
 - `feature-task-add`
@@ -30,17 +31,25 @@ Read this file only when the active task requires developer workflow details.
 - manage one `WA` identified by the agent code
 - start features, optionally release untouched features, and continue development on the feature branch
 - commit on the feature branch with the feature slug prefix
-- run `php scripts/backlog.php ...` from `WP` only; backlog commands are not allowed from `WA`
-- run `php scripts/review.php` after every implementation and fix mechanical blockers within scope
 - critically challenge the implementation for gaps, regressions, and convention violations before considering it ready for review
 - update docs when required by the code change
 - keep `local/backlog-board.md` in sync with the current stage of the feature through `backlog.php`
 - rely on the prepared `WA` runtime state: `backend/vendor` and `frontend/node_modules` are copied from `WP` when the `WA` is created or when they are missing, while root `.env` and `backend/.env.local` are refreshed by the workflow
 
+## Workspace Rules
+
+- `WA`: edit code, inspect files, run local git on the active branch, and commit.
+- `WP`: run `php scripts/backlog.php ...` and read local workflow state when needed.
+- When one step is prefixed with `WP:`, the working directory must be `WP`.
+- When one step is prefixed with `WA:`, the working directory must be the active agent `WA`.
+- Forbidden for `Developer`: `php scripts/console.php`, `php scripts/node.php`, `php scripts/db.php`, `php scripts/dev.php`, `php scripts/health.php`, `php scripts/github.php`, and any script that talks to containers, runtime, database, network, or GitHub.
+- If a command is not explicitly allowed for `Developer`, do not run it.
+
 ## Do Not
 
 - start implementing, editing, or committing for a feature before it is assigned to that exact agent code and started in that agent's dedicated `WA`
-- run reviewer commands or `merge`
+- run reviewer commands
+- merge a task or feature without an explicit user instruction
 - use raw git or GitHub commands when `backlog.php` provides the workflow step
 - start a second visible backlog entry for the same feature
 - edit `local/backlog-board.md` or `local/backlog-review.md` manually
@@ -48,7 +57,6 @@ Read this file only when the active task requires developer workflow details.
 ## Read Only When Needed
 
 - `local/backlog-board.md` for feature state
-- `local/backlog-review.md` for rework input
 
 ## Command Behavior
 
@@ -58,6 +66,7 @@ Read this file only when the active task requires developer workflow details.
 2. By default the script appends the task to the end of `## À faire`.
 3. `--position=start` inserts at the start of `## À faire`.
 4. `--position=index --index=<n>` inserts at the requested 1-based position and clamps out-of-range values to the start or the end.
+5. When you create a queued task, prefix the description with `[feat]` or `[fix]` so `feature-start` can derive the branch type from the backlog entry.
 
 ### `task-todo-list`
 
@@ -69,12 +78,20 @@ Read this file only when the active task requires developer workflow details.
 1. Run `php scripts/backlog.php task-remove <number>`.
 2. The script removes the queued task at the given 1-based position from `## À faire`.
 
+### `task-review-request`
+
+1. Run `php scripts/backlog.php task-review-request --agent=<code> [<task>|<feature/task>]`.
+2. The script targets the agent's active `kind=task` entry, or the explicit task reference when provided.
+3. The script requires a green mechanical review in the task worktree, moves the task to `meta.stage=review`, and clears any stale local task review notes for that task.
+
 ### `feature-start`
 
-1. Run `php scripts/backlog.php feature-start --agent=<code> --branch-type=<feat|fix>`.
-2. The script takes the next task from `## À faire`, updates local `main` when possible, creates the feature branch from `origin/main` in the agent worktree, moves the feature to `## Traitement en cours`, sets `meta.stage=development`, and authorizes development.
-3. If the queued task starts with `[feature-slug][task-slug]`, the script creates or reuses the parent `kind=feature` entry for `<feature-slug>`, keeps the shared parent branch `<type>/<feature-slug>`, then creates the child `kind=task` entry and local child branch `<type>/<feature-slug>--<task-slug>` from that local parent branch in the agent worktree.
-4. `feature-start` is local-only: it does not push and it does not create a PR.
+1. Run `php scripts/backlog.php feature-start --agent=<code>`.
+2. The script reads the branch type from the queued task prefix `[feat]` or `[fix]`.
+3. If no type prefix is present, the script falls back to `feat`.
+4. The script takes the next task from `## À faire`, updates local `main` when possible, creates the feature branch from `origin/main` in the agent worktree, moves the feature to `## Traitement en cours`, sets `meta.stage=development`, and authorizes development.
+5. If the queued task starts with `[feature-slug][task-slug]`, the script creates or reuses the parent `kind=feature` entry for `<feature-slug>`, keeps the shared parent branch `<type>/<feature-slug>`, then creates the child `kind=task` entry and local child branch `<type>/<feature-slug>--<task-slug>` from that local parent branch in the agent worktree.
+6. `feature-start` is local-only: it does not push and it does not create a PR.
 
 ### `feature-release`
 
@@ -94,11 +111,12 @@ Read this file only when the active task requires developer workflow details.
 
 ### `feature-task-merge`
 
-1. Run `php scripts/backlog.php feature-task-merge --agent=<code> [<task>]`.
-2. The script targets the agent's active `kind=task` entry, or the explicit task slug when provided.
+1. Run `php scripts/backlog.php feature-task-merge --agent=<code> [<task>|<feature/task>]`.
+2. The script targets the agent's active `kind=task` entry, or the explicit task reference when provided.
 3. The script requires a green mechanical review in the task worktree, then merges the child branch into the parent feature branch locally from the parent feature worktree or from a temporary merge worktree.
-4. The child task entry is removed from `## Traitement en cours` after the local merge. The child task worktree is removed when that agent no longer owns any active task.
-5. The parent `kind=feature` entry remains, keeps the merged task content in its aggregated lines, and is moved back to `development` so the remote review flow must be requested again on the parent branch.
+4. The current task review stage does not gate this merge. `development`, `review`, `rejected`, and `approved` are all mergeable when the user explicitly asks for `merge`.
+5. The child task entry is removed from `## Traitement en cours` after the local merge. The child task worktree is removed when that agent no longer owns any active task.
+6. The parent `kind=feature` entry remains, keeps the merged task content in its aggregated lines, and is moved back to `development` so the remote review flow must be requested again on the parent branch.
 
 ### `feature-assign`
 
@@ -117,7 +135,7 @@ Read this file only when the active task requires developer workflow details.
 
 ### `feature-rework`
 
-1. Read `local/backlog-review.md`.
+1. Read the review feedback provided with the `rework` instruction.
 2. Run `php scripts/backlog.php feature-rework --agent=<code> [<feature>]`.
 3. Resume development on the same feature branch from `meta.stage=rejected` back to `meta.stage=development`.
 
@@ -164,7 +182,7 @@ Read this file only when the active task requires developer workflow details.
 - Do not start a second visible feature for the same agent.
 - Do not edit local backlog files directly.
 - A plain feature is considered done for Developer only when it is committed, mechanically valid, and passed to `meta.stage=review`.
-- A `kind=task` entry is considered done for Developer when it is committed, mechanically valid, and merged locally into its parent feature branch with `feature-task-merge`.
+- A `kind=task` entry may be submitted for review with `task-review-request`, but it is considered done for Developer only when it is committed, mechanically valid, and merged locally into its parent feature branch with `feature-task-merge`.
 - For `feature-assign` and `feature-unassign`, `SOMANAGER_ROLE` must be `developer` and `SOMANAGER_AGENT` must match `--agent`.
 - User workflow keywords are procedural orders. For `next`, `submit`, `rework`, and `cleanup`, execute the documented command sequence exactly as written, even if memory suggests the feature state is inconsistent or unchanged.
 - If a new task is added to an existing feature, keep a single backlog line for that feature and preserve all useful scope details.
@@ -174,24 +192,30 @@ Read this file only when the active task requires developer workflow details.
 
 ### `next`
 
-1. Run `php scripts/backlog.php feature-start --agent=<code> --branch-type=<feat|fix>`.
-2. Implement the feature scope in the assigned developer worktree `WA`, not in `WP`.
-3. Work on the feature branch checked out by `feature-start` for that task.
-4. Run `php scripts/review.php` and fix every blocker in scope before moving on. It cannot be replaced by running `php -l`.
-5. Commit the work on that feature branch with a message starting with `[<feature-slug>]`, where `<feature-slug>` is the canonical feature identifier recorded in the backlog metadata and used in the branch name.
+1. `WP`: run `php scripts/backlog.php feature-start --agent=<code>`.
+2. `WA`: implement the feature scope on the branch checked out for that task.
+3. `WA`: inspect the local diff and fix issues in scope before moving on.
+4. `WA`: run `git add .`.
+5. `WA`: run `git commit -m "[<feature-slug>] ..."` using the canonical feature identifier recorded in the backlog metadata and branch name.
 
 ### `submit`
 
-1. Verify the mechanical review is green with `php scripts/review.php`.
-2. Run `php scripts/backlog.php feature-review-request --agent=<code> [<feature>]`.
-3. This keyword applies to `kind=feature` entries only, after all child `kind=task` entries have already been merged locally.
+1. `WP`: if the active entry is `kind=task`, run `php scripts/backlog.php task-review-request --agent=<code> [<task>|<feature/task>]`.
+2. `WP`: if the active entry is `kind=feature`, run `php scripts/backlog.php feature-review-request --agent=<code> [<feature>]`.
+3. For `kind=feature`, this keyword still applies only after all child `kind=task` entries have already been merged locally.
+
+### `merge`
+
+1. `WP`: if the active entry is `kind=task`, run `php scripts/backlog.php feature-task-merge --agent=<code> [<task>|<feature/task>]`.
+2. This keyword merges the local task only on explicit user instruction; it is not implied by `submit`.
 
 ### `rework`
 
-1. Read `local/backlog-review.md`.
-2. Run `php scripts/backlog.php feature-rework --agent=<code> [<feature>]`.
+1. Read the review feedback provided with the `rework` instruction.
+2. `WP`: run `php scripts/backlog.php feature-rework --agent=<code> [<feature>]`.
+3. `WA`: resume development on the same feature branch and address the recorded review feedback.
 
 ### `cleanup`
 
-1. Run `php scripts/backlog.php worktree-clean`.
-2. Use `php scripts/backlog.php worktree-list` only when you need a cleanup diagnostic outside the standard workflow.
+1. `WP`: run `php scripts/backlog.php worktree-clean`.
+2. `WP`: use `php scripts/backlog.php worktree-list` only when you need a cleanup diagnostic outside the standard workflow.
