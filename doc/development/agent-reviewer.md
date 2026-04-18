@@ -10,8 +10,13 @@ Read this file only when the active task requires reviewer workflow details.
 - `feature-review-next`
 - `feature-review-reject`
 - `feature-review-approve`
+- `task-review-next`
+- `task-review-check`
+- `task-review-reject`
+- `task-review-approve`
 - `feature-close`
 - `feature-merge`
+- `feature-task-merge`
 - `task-create`
 - `task-todo-list`
 - `task-remove`
@@ -62,6 +67,30 @@ Rules:
 
 1. Run `php scripts/backlog.php task-remove <number>`.
 2. The script removes the queued task at the given 1-based position from `## À faire`.
+
+### `task-review-next`
+
+1. Run `php scripts/backlog.php task-review-next`.
+2. The script prints the first visible child task with `meta.stage=review` without changing its backlog state.
+
+### `task-review-check`
+
+1. Run `php scripts/backlog.php task-review-check <feature/task>`.
+2. The script checks the mechanical review in the assigned developer `WA` of that task.
+3. If it fails, the script automatically rejects the task with a standard message.
+4. If it passes, continue the technical and functional review manually.
+
+### `task-review-reject`
+
+1. Prepare the numbered review body file under `local/tmp/`.
+2. Run `php scripts/backlog.php task-review-reject <feature/task> --body-file=<path>`.
+3. The script sets `meta.stage=rejected` and overwrites the `### <feature>/<task>` section in `local/backlog-review.md`.
+
+### `task-review-approve`
+
+1. Run `php scripts/backlog.php task-review-approve <feature/task>`.
+2. The script sets `meta.stage=approved` and clears any existing `### <feature>/<task>` section in `local/backlog-review.md`.
+3. This approval does not unlock any additional merge permission compared with `development` or `review`.
 
 ### `feature-list`
 
@@ -136,6 +165,12 @@ Also check:
 2. Run `php scripts/backlog.php feature-merge <feature> --body-file=<path>`.
 3. The script requires the feature to be in `meta.stage=approved`, merges the PR, removes the feature from the backlog, runs `worktree-clean`, deletes the branches, and frees the agent.
 
+### `feature-task-merge`
+
+1. Run `php scripts/backlog.php feature-task-merge <feature/task>`.
+2. The script requires a green mechanical review in the task worktree, then merges that child branch into its parent feature branch locally.
+3. The current task review stage does not gate this merge. Reviewer may merge a task on explicit user instruction whether it is in `development`, `review`, `rejected`, or `approved`.
+
 ## Rules
 
 - Reviewer must not create commits during review, approval, or merge.
@@ -152,12 +187,11 @@ Also check:
 
 ### `review`
 
-1. Run `php scripts/backlog.php feature-review-next`.
-2. Use the returned feature slug.
-3. Run `php scripts/backlog.php feature-review-check <feature>`.
-4. If the mechanical review fails, stop: the command rejects the feature automatically.
-5. If the mechanical review passes, continue the technical and functional review manually.
-6. End the review by running either `feature-review-approve` or `feature-review-reject` for that feature.
+1. For a feature review, run `php scripts/backlog.php feature-review-next`, then `php scripts/backlog.php feature-review-check <feature>`.
+2. For a task review, run `php scripts/backlog.php task-review-next`, then `php scripts/backlog.php task-review-check <feature/task>`.
+3. If the mechanical review fails, stop: the command rejects the current target automatically.
+4. If the mechanical review passes, continue the technical and functional review manually.
+5. End the review by running either the matching `approve` or `reject` command for that target.
 
 ### `approve`
 
@@ -166,8 +200,8 @@ Also check:
 
 ### `merge`
 
-1. Prepare the final PR body file under `local/tmp/`.
-2. Run `php scripts/backlog.php feature-merge <feature> --body-file=<path>`.
+1. For a feature merge, prepare the final PR body file under `local/tmp/`, then run `php scripts/backlog.php feature-merge <feature> --body-file=<path>`.
+2. For a task merge, run `php scripts/backlog.php feature-task-merge <feature/task>`.
 
 ### `cleanup`
 

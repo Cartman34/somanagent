@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog;
 
 /**
- * Maintains reviewer findings keyed by feature in the local review file.
+ * Maintains reviewer findings keyed by one local review target in the local review file.
  */
 final class BacklogReviewFile
 {
@@ -24,8 +24,11 @@ final class BacklogReviewFile
     private array $sections = [];
 
     /** @var array<string, array<string>> */
-    private array $featureReviews = [];
+    private array $reviews = [];
 
+    /**
+     * Loads one local backlog review file and parses its managed review sections.
+     */
     public function __construct(string $path)
     {
         $this->path = $path;
@@ -35,21 +38,30 @@ final class BacklogReviewFile
     /**
      * @param array<string> $items
      */
-    public function setFeatureReview(string $feature, array $items): void
+    public function setReview(string $key, array $items): void
     {
-        $this->featureReviews[$feature] = $items;
+        $this->reviews[$key] = $items;
     }
 
-    public function clearFeatureReview(string $feature): void
+    /**
+     * Removes one stored review section by its local review target key.
+     */
+    public function clearReview(string $key): void
     {
-        unset($this->featureReviews[$feature]);
+        unset($this->reviews[$key]);
     }
 
+    /**
+     * Clears every managed review section from the local review file model.
+     */
     public function reset(): void
     {
-        $this->featureReviews = [];
+        $this->reviews = [];
     }
 
+    /**
+     * Rewrites the local review file with normalized managed review sections.
+     */
     public function save(): void
     {
         $chunks = [$this->header, ''];
@@ -59,17 +71,17 @@ final class BacklogReviewFile
             $chunks[] = '';
 
             if ($section === self::SECTION_CURRENT_REVIEW) {
-                if ($this->featureReviews === []) {
+                if ($this->reviews === []) {
                     $chunks[] = self::EMPTY_REVIEW_TEXT;
                 } else {
-                    ksort($this->featureReviews);
+                    ksort($this->reviews);
                     $first = true;
-                    foreach ($this->featureReviews as $feature => $items) {
+                    foreach ($this->reviews as $key => $items) {
                         if (!$first) {
                             $chunks[] = '';
                         }
                         $first = false;
-                        $chunks[] = '### ' . $feature;
+                        $chunks[] = '### ' . $key;
                         $chunks[] = '';
                         foreach ($items as $item) {
                             $chunks[] = $item;
@@ -114,13 +126,13 @@ final class BacklogReviewFile
 
             if ($currentSection === self::SECTION_CURRENT_REVIEW && preg_match('/^### (.+)$/', $line, $matches) === 1) {
                 $currentFeature = $matches[1];
-                $this->featureReviews[$currentFeature] = [];
+                $this->reviews[$currentFeature] = [];
                 continue;
             }
 
             if ($currentSection === self::SECTION_CURRENT_REVIEW && $currentFeature !== null) {
                 if ($line !== '') {
-                    $this->featureReviews[$currentFeature][] = $line;
+                    $this->reviews[$currentFeature][] = $line;
                 }
                 continue;
             }
@@ -128,8 +140,8 @@ final class BacklogReviewFile
             $this->sections[$currentSection][] = $line;
         }
 
-        if (($this->featureReviews[self::EMPTY_REVIEW_TEXT] ?? null) !== null) {
-            unset($this->featureReviews[self::EMPTY_REVIEW_TEXT]);
+        if (($this->reviews[self::EMPTY_REVIEW_TEXT] ?? null) !== null) {
+            unset($this->reviews[self::EMPTY_REVIEW_TEXT]);
         }
 
         foreach ($this->sections as $section => $lines) {

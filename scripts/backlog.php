@@ -7,6 +7,8 @@
 // Usage: php scripts/backlog.php task-book-next --agent agent-01
 // Usage: php scripts/backlog.php feature-start --agent agent-01 --branch-type feat --body-file local/tmp/pr_body.md
 // Usage: php scripts/backlog.php feature-review-approve my-feature --body-file local/tmp/pr_body.md
+// Usage: php scripts/backlog.php task-review-request --agent agent-01
+// Usage: php scripts/backlog.php task-review-approve my-feature/my-task
 
 require_once __DIR__ . '/src/bootstrap.php';
 

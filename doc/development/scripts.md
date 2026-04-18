@@ -23,6 +23,7 @@ php scripts/help.php migrate.php
 |---|---|---|
 | `check-php.sh` | Bash | Check that PHP 8.4+ is installed |
 | `help.php` | PHP | Display help for all scripts |
+| `backlog.php` | PHP | Run the local backlog workflow for features, child tasks, reviews, and merges |
 | `setup.php` | PHP | Full installation (first time) |
 | `dev.php` | PHP | Start / stop the environment |
 | `migrate.php` | PHP | Run Doctrine migrations |
@@ -61,6 +62,23 @@ Displays the list of all scripts with their description and usage examples. Auto
 php scripts/help.php              # list all scripts
 php scripts/help.php migrate.php  # detail for one script
 ```
+
+---
+
+### `backlog.php`
+Runs the documented local backlog workflow from `WP` only, including feature start/review/merge and local child task submit/review/merge flows.
+
+```bash
+php scripts/backlog.php feature-start --agent agent-01 --branch-type feat
+php scripts/backlog.php task-review-request --agent agent-01
+php scripts/backlog.php task-review-approve my-feature/my-task
+php scripts/backlog.php feature-task-merge my-feature/my-task
+```
+
+Notes:
+- developer commands require `--agent=<code>`
+- reviewer commands never use `--agent`
+- child task review stays local; only the parent feature uses the remote PR flow
 
 ---
 
