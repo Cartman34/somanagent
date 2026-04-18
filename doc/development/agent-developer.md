@@ -57,7 +57,6 @@ Read this file only when the active task requires developer workflow details.
 ## Read Only When Needed
 
 - `local/backlog-board.md` for feature state
-- `local/backlog-review.md` for rework input
 
 ## Command Behavior
 
@@ -133,7 +132,7 @@ Read this file only when the active task requires developer workflow details.
 
 ### `feature-rework`
 
-1. Read `local/backlog-review.md`.
+1. Read the review feedback provided with the `rework` instruction.
 2. Run `php scripts/backlog.php feature-rework --agent=<code> [<feature>]`.
 3. Resume development on the same feature branch from `meta.stage=rejected` back to `meta.stage=development`.
 
@@ -209,7 +208,7 @@ Read this file only when the active task requires developer workflow details.
 
 ### `rework`
 
-1. `WP`: read `local/backlog-review.md`.
+1. Read the review feedback provided with the `rework` instruction.
 2. `WP`: run `php scripts/backlog.php feature-rework --agent=<code> [<feature>]`.
 3. `WA`: resume development on the same feature branch and address the recorded review feedback.
 
