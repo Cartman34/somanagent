@@ -74,9 +74,14 @@ final class ReviewRunner extends AbstractScriptRunner
         $translationExitCode = $this->printTranslationValidation();
         echo "\n";
 
+        echo "=== Backend service PHPUnit validation ===\n";
+        $backendTestsExitCode = $this->printBackendTestsValidation($allFiles);
+        echo "\n";
+
         $hasBlockers = $frenchHits !== [] || $missingPhpdoc !== [] || $missingJsdoc !== []
             || $validateExitCode !== 0
-            || $translationExitCode !== 0;
+            || $translationExitCode !== 0
+            || $backendTestsExitCode !== 0;
 
         return $hasBlockers ? 1 : 0;
     }
@@ -288,6 +293,26 @@ final class ReviewRunner extends AbstractScriptRunner
     private function printTranslationValidation(): int
     {
         [$exitCode, $lines] = $this->runCommand('php scripts/validate-translations.php');
+
+        foreach ($lines as $line) {
+            echo $line . "\n";
+        }
+
+        return $exitCode;
+    }
+
+    /**
+     * @param string[] $files
+     */
+    private function printBackendTestsValidation(array $files): int
+    {
+        if ($files === []) {
+            echo "(no files to validate)\n";
+            return 0;
+        }
+
+        $fileArgs = implode(' ', array_map('escapeshellarg', $files));
+        [$exitCode, $lines] = $this->runCommand('php scripts/validate-backend-tests.php ' . $fileArgs);
 
         foreach ($lines as $line) {
             echo $line . "\n";
