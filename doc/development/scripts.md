@@ -36,6 +36,7 @@ php scripts/help.php migrate.php
 | `health.php` | PHP | Check application status |
 | `review.php` | PHP | Run mechanical review checks (French strings, PHPDoc, JSDoc) |
 | `validate-files.php` | PHP | Run targeted backend/frontend validations for an explicit file list |
+| `validate-backend-tests.php` | PHP | Run isolated local PHPUnit checks for backend unit tests from WSL without Docker services |
 | `claude-auth.php` | PHP | Sync Claude CLI auth from WSL to the Docker runtime |
 | `codex-auth.php` | PHP | Sync Codex CLI ChatGPT auth from WSL to the Docker runtime |
 | `opencode-auth.php` | PHP | Sync OpenCode provider credentials from WSL to the Docker runtime |
@@ -275,10 +276,12 @@ Blockers (exit code 1):
 - French strings (accented characters) in `backend/src/` `.php` and `frontend/src/` `.ts/.tsx`
 - Missing PHPDoc on `public function` declarations in `backend/src/` (migrations excluded)
 - Missing JSDoc on export declarations in `frontend/src/` `.ts/.tsx`
+- Failing dedicated PHPUnit tests mapped from modified `backend/src/Service/...` files
 
 Informational (no exit code impact):
 - List of modified files
 - List of untracked files
+- Modified backend services without a dedicated mapped PHPUnit test
 
 Limitations: only detects accented characters as French strings — complement with a manual diff review for unaccented French words (`Valider`, `Commenter`, etc.). JSDoc check covers export declarations only, not re-exports.
 
@@ -287,6 +290,29 @@ The review flow intentionally skips container-backed validations that depend on 
 ```bash
 php scripts/review.php
 ```
+
+---
+
+### `validate-backend-tests.php`
+Runs isolated local PHPUnit from WSL for backend unit tests that must stay independent from Docker services, databases, Redis, and real external APIs.
+
+For service-driven validation, the dedicated test mapping is `backend/src/Service/...` -> `backend/tests/Unit/Service/...Test.php`.
+
+```bash
+php scripts/validate-backend-tests.php backend/src/Service/AgentModelRecommendationPolicyResolver.php
+php scripts/validate-backend-tests.php backend/src/Service/VcsRepositoryUrlService.php scripts/review.php
+php scripts/validate-backend-tests.php --all
+```
+
+Rules:
+- modified service files are detected only from the explicit file list passed to the script
+- `--all` runs the `local-unit` testsuite only
+- the dedicated mapping preserves subdirectories under `Service/`
+- local unit tests must live under `backend/tests/Unit/`
+- local unit tests must extend `App\Tests\Support\LocalUnitTestCase`
+- local unit tests must not boot the Symfony kernel, access DB/Redis, or instantiate real external HTTP/API clients
+- a missing dedicated test is reported but does not fail validation
+- an existing dedicated test must pass with no PHPUnit warning, notice, or deprecation
 
 ---
 
