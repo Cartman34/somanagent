@@ -61,6 +61,7 @@ final class BacklogRunner extends AbstractScriptRunner
             ['name' => 'task-review-check', 'description' => 'Run reviewer mechanical checks on a local task'],
             ['name' => 'task-review-reject', 'description' => 'Reject a local task and record reviewer blockers'],
             ['name' => 'task-review-approve', 'description' => 'Approve a local task without changing merge permissions'],
+            ['name' => 'task-rework', 'description' => 'Move a rejected local task back to development'],
             ['name' => 'feature-start', 'description' => 'Start a feature branch and move the feature to development'],
             ['name' => 'feature-release', 'description' => 'Return one untouched active feature back to the todo section'],
             ['name' => 'feature-task-add', 'description' => 'Attach the next queued task to the current feature'],
@@ -104,6 +105,7 @@ final class BacklogRunner extends AbstractScriptRunner
             'php scripts/backlog.php task-remove 8',
             'php scripts/backlog.php task-review-request --agent agent-01',
             'php scripts/backlog.php task-review-approve onboarding/task-copy-review',
+            'php scripts/backlog.php task-rework --agent agent-01 onboarding/task-copy-review',
             'php scripts/backlog.php feature-start --agent agent-01',
             'php scripts/backlog.php feature-release --agent agent-01',
             'php scripts/backlog.php feature-task-merge --agent agent-01',
@@ -135,6 +137,7 @@ final class BacklogRunner extends AbstractScriptRunner
             'task-review-check' => $this->taskReviewCheck($commandArgs),
             'task-review-reject' => $this->taskReviewReject($commandArgs, $options),
             'task-review-approve' => $this->taskReviewApprove($commandArgs),
+            'task-rework' => $this->taskRework($commandArgs, $options),
             'feature-start' => $this->featureStart($commandArgs, $options),
             'feature-release' => $this->featureRelease($commandArgs, $options),
             'feature-task-add' => $this->featureTaskAdd($commandArgs, $options),
@@ -745,6 +748,46 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->saveReviewFile($review, 'task-review-approve');
 
         $this->console->ok(sprintf('Approved task %s', $this->taskReviewKey($entry)));
+
+        return 0;
+    }
+
+    /**
+     * @param array<string> $commandArgs
+     * @param array<string, string|bool> $options
+     */
+    private function taskRework(array $commandArgs, array $options): int
+    {
+        $agent = $this->requireAgent($options);
+        $board = $this->board();
+        $match = isset($commandArgs[0])
+            ? $this->requireTaskByReference($board, $commandArgs[0], 'task-rework')
+            : $this->requireSingleTaskForAgent($board, $agent);
+        $entry = $match['entry'];
+        $this->assertTaskEntry($entry, 'task-rework');
+
+        if (($entry->getMeta('agent') ?? '') !== $agent) {
+            throw new \RuntimeException('task-rework requires the task to be assigned to the provided agent.');
+        }
+
+        if ($this->featureStage($entry) !== BacklogBoard::STAGE_REJECTED) {
+            throw new \RuntimeException(sprintf(
+                'Task %s is not in the rejected stage.',
+                $this->taskReviewKey($entry),
+            ));
+        }
+
+        $entry->setMeta('stage', BacklogBoard::STAGE_IN_PROGRESS);
+        $this->saveBoard($board, 'task-rework');
+
+        $taskWorktree = $this->prepareFeatureAgentWorktree($entry);
+        $this->checkoutBranchInWorktree($taskWorktree, $entry->getMeta('branch') ?? '', false);
+
+        $this->console->ok(sprintf(
+            'Moved task %s back to %s',
+            $this->taskReviewKey($entry),
+            BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_PROGRESS),
+        ));
 
         return 0;
     }
@@ -3391,7 +3434,7 @@ final class BacklogRunner extends AbstractScriptRunner
             return match ($stage) {
                 BacklogBoard::STAGE_IN_PROGRESS => 'task-review-request or feature-task-merge',
                 BacklogBoard::STAGE_IN_REVIEW => 'task-review-check, task-review-approve, task-review-reject, or feature-task-merge',
-                BacklogBoard::STAGE_REJECTED => 'task-review-request or feature-task-merge',
+                BacklogBoard::STAGE_REJECTED => 'task-rework or feature-task-merge',
                 BacklogBoard::STAGE_APPROVED => 'feature-task-merge',
                 default => 'feature-task-merge',
             };
