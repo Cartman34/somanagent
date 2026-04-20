@@ -170,7 +170,8 @@ Read this file only when the active task requires developer workflow details.
 ### `feature-status`
 
 1. Run `php scripts/backlog.php feature-status [--agent=<code>] [<feature>]`.
-2. The script prints `Feature`, `Branch`, `Base`, `Stage`, `PR`, `Last`, `Next`, and `Blocker`.
+2. The script prints `Feature`, `Branch`, `Base`, `Stage`, `PR`, `Summary`, `Next`, and `Blocker`.
+3. When the active entry contains nested backlog bullets, the script also prints them under `Details:` for both `kind=feature` and `kind=task`.
 
 ### `feature-review-request`
 
