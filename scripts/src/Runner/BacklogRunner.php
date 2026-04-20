@@ -1306,9 +1306,23 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->console->line('Base: ' . ($entry->getMeta('base') ?? '-'));
         $this->console->line('Stage: ' . BacklogBoard::stageLabel($stage));
         $this->console->line('PR: ' . $this->describePrStatus($entry));
-        $this->console->line('Last: ' . $entry->getText());
+        $this->console->line('Summary: ' . $entry->getText());
+        $this->printEntryStatusDetails($entry);
         $this->console->line('Next: ' . $this->nextStepForEntry($entry, $stage));
         $this->console->line('Blocker: ' . ($entry->hasMeta('blocked') ? 'blocked' : '-'));
+    }
+
+    private function printEntryStatusDetails(BoardEntry $entry): void
+    {
+        $extraLines = $entry->getExtraLines();
+        if ($extraLines === []) {
+            return;
+        }
+
+        $this->console->line('Details:');
+        foreach ($extraLines as $line) {
+            $this->console->line($line);
+        }
     }
 
     /**
