@@ -72,6 +72,7 @@ Runs the documented local backlog workflow from `WP` only, including feature sta
 php scripts/backlog.php feature-start --agent agent-01
 php scripts/backlog.php task-review-request --agent agent-01
 php scripts/backlog.php task-review-approve my-feature/my-task
+php scripts/backlog.php task-rework --agent agent-01 my-feature/my-task
 php scripts/backlog.php feature-task-merge my-feature/my-task
 ```
 

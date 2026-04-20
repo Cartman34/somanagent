@@ -86,6 +86,7 @@ Rules:
 1. Prepare the numbered review body file under `local/tmp/`.
 2. Run `php scripts/backlog.php task-review-reject <feature/task> --body-file=<path>`.
 3. The script sets `meta.stage=rejected` and overwrites the `### <feature>/<task>` section in `local/backlog-review.md`.
+4. Developers resume corrections on that task through `php scripts/backlog.php task-rework --agent=<code> [<task>|<feature/task>]`.
 
 ### `task-review-approve`
 

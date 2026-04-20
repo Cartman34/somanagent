@@ -10,6 +10,7 @@ Read this file only when the active task requires developer workflow details.
 - `task-todo-list`
 - `task-remove`
 - `task-review-request`
+- `task-rework`
 - `feature-start`
 - `feature-release`
 - `feature-task-add`
@@ -83,6 +84,14 @@ Read this file only when the active task requires developer workflow details.
 1. Run `php scripts/backlog.php task-review-request --agent=<code> [<task>|<feature/task>]`.
 2. The script targets the agent's active `kind=task` entry, or the explicit task reference when provided.
 3. The script requires a green mechanical review in the task worktree, moves the task to `meta.stage=review`, and clears any stale local task review notes for that task.
+
+### `task-rework`
+
+1. Read the review feedback recorded for the rejected task.
+2. Run `php scripts/backlog.php task-rework --agent=<code> [<task>|<feature/task>]`.
+3. The script targets the agent's active `kind=task` entry, or the explicit task reference when provided.
+4. The script requires the task to be in `meta.stage=rejected`, moves it back to `meta.stage=development`, and reopens the task branch in the agent `WA`.
+5. The task review notes stay in `local/backlog-review.md` until the next `task-review-request` clears them.
 
 ### `feature-start`
 
@@ -213,8 +222,9 @@ Read this file only when the active task requires developer workflow details.
 ### `rework`
 
 1. Read the review feedback provided with the `rework` instruction.
-2. `WP`: run `php scripts/backlog.php feature-rework --agent=<code> [<feature>]`.
-3. `WA`: resume development on the same feature branch and address the recorded review feedback.
+2. `WP`: if the active entry is `kind=task`, run `php scripts/backlog.php task-rework --agent=<code> [<task>|<feature/task>]`.
+3. `WP`: if the active entry is `kind=feature`, run `php scripts/backlog.php feature-rework --agent=<code> [<feature>]`.
+4. `WA`: resume development on the same branch and address the recorded review feedback.
 
 ### `cleanup`
 
