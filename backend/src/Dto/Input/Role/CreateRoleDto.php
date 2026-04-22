@@ -12,6 +12,11 @@ namespace App\Dto\Input\Role;
  */
 final class CreateRoleDto
 {
+    /**
+     * @param string  $slug        Role unique identifier
+     * @param string  $name        Role display name
+     * @param ?string $description Optional description
+     */
     public function __construct(
         public readonly string $slug,
         public readonly string $name,
@@ -19,12 +24,12 @@ final class CreateRoleDto
     ) {}
 
     /**
-     * @throws \InvalidArgumentException with the validation error key
+     * @throws \InvalidArgumentException with a short domain code on validation failure
      */
     public static function fromArray(array $data): self
     {
         if (empty($data['slug']) || empty($data['name'])) {
-            throw new \InvalidArgumentException('role.validation.slug_name_required');
+            throw new \InvalidArgumentException('slug_name_required');
         }
 
         return new self(

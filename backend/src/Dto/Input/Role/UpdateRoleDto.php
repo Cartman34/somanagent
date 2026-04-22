@@ -12,6 +12,11 @@ namespace App\Dto\Input\Role;
  */
 final class UpdateRoleDto
 {
+    /**
+     * @param ?string $slug        Updated slug or null to keep current
+     * @param ?string $name        Updated name or null to keep current
+     * @param ?string $description Updated description or null to keep current
+     */
     public function __construct(
         public readonly ?string $slug,
         public readonly ?string $name,

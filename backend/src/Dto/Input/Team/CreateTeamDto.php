@@ -12,18 +12,22 @@ namespace App\Dto\Input\Team;
  */
 final class CreateTeamDto
 {
+    /**
+     * @param string  $name        Team display name
+     * @param ?string $description Optional description
+     */
     public function __construct(
         public readonly string $name,
         public readonly ?string $description,
     ) {}
 
     /**
-     * @throws \InvalidArgumentException with the validation error key
+     * @throws \InvalidArgumentException with a short domain code on validation failure
      */
     public static function fromArray(array $data): self
     {
         if (empty($data['name'])) {
-            throw new \InvalidArgumentException('team.validation.name_required');
+            throw new \InvalidArgumentException('name_required');
         }
 
         return new self(

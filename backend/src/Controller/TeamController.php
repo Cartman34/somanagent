@@ -55,8 +55,8 @@ class TeamController extends AbstractController
     {
         try {
             $dto = CreateTeamDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException $e) {
-            return $this->json($this->apiErrorPayloadFactory->create($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (\InvalidArgumentException) {
+            return $this->json($this->apiErrorPayloadFactory->create('team.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $team = $this->teamService->create($dto->name, $dto->description);
@@ -135,8 +135,8 @@ class TeamController extends AbstractController
 
         try {
             $dto = AddTeamAgentDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException $e) {
-            return $this->json($this->apiErrorPayloadFactory->create($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (\InvalidArgumentException) {
+            return $this->json($this->apiErrorPayloadFactory->create('team.validation.agent_id_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $agent = $this->teamService->findAgentById($dto->agentId);

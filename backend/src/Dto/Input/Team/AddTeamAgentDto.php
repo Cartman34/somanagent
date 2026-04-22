@@ -12,17 +12,20 @@ namespace App\Dto\Input\Team;
  */
 final class AddTeamAgentDto
 {
+    /**
+     * @param string $agentId UUID of the agent to add
+     */
     public function __construct(
         public readonly string $agentId,
     ) {}
 
     /**
-     * @throws \InvalidArgumentException with the validation error key
+     * @throws \InvalidArgumentException with a short domain code on validation failure
      */
     public static function fromArray(array $data): self
     {
         if (empty($data['agentId'])) {
-            throw new \InvalidArgumentException('team.validation.agent_id_required');
+            throw new \InvalidArgumentException('agent_id_required');
         }
 
         return new self(

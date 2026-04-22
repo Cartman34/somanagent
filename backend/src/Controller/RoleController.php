@@ -60,8 +60,8 @@ class RoleController extends AbstractController
     {
         try {
             $dto = CreateRoleDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException $e) {
-            return $this->json($this->apiErrorPayloadFactory->create($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (\InvalidArgumentException) {
+            return $this->json($this->apiErrorPayloadFactory->create('role.validation.slug_name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $role = $this->roleService->create($dto->slug, $dto->name, $dto->description);
@@ -156,8 +156,8 @@ class RoleController extends AbstractController
 
         try {
             $dto = AddRoleSkillDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException $e) {
-            return $this->json($this->apiErrorPayloadFactory->create($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (\InvalidArgumentException) {
+            return $this->json($this->apiErrorPayloadFactory->create('role.validation.skill_id_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         try {

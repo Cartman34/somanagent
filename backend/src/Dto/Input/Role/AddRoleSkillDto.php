@@ -12,17 +12,20 @@ namespace App\Dto\Input\Role;
  */
 final class AddRoleSkillDto
 {
+    /**
+     * @param string $skillId UUID of the skill to add
+     */
     public function __construct(
         public readonly string $skillId,
     ) {}
 
     /**
-     * @throws \InvalidArgumentException with the validation error key
+     * @throws \InvalidArgumentException with a short domain code on validation failure
      */
     public static function fromArray(array $data): self
     {
         if (empty($data['skillId'])) {
-            throw new \InvalidArgumentException('role.validation.skill_id_required');
+            throw new \InvalidArgumentException('skill_id_required');
         }
 
         return new self(
