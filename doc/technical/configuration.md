@@ -163,9 +163,11 @@ MERCURE_SUBSCRIBER_JWT_KEY=!ChangeThisMercureHubJWTSecretKey!
 ```ini
 APP_ENV=dev
 APP_SECRET=changethis
+DEFAULT_URI=http://localhost
 ```
 
 `APP_SECRET` must be a random string of at least 32 characters.
+`DEFAULT_URI` is the local base URI used by Symfony when generating absolute URLs from CLI contexts.
 
 ## `backend/.env`
 
