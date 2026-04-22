@@ -7,6 +7,9 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Dto\Input\Skill\CreateSkillDto;
+use App\Dto\Input\Skill\ImportSkillDto;
+use App\Dto\Input\Skill\UpdateSkillContentDto;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\SkillService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -76,45 +79,41 @@ class SkillController extends AbstractController
     /**
      * Imports a skill from the registry using a source identifier.
      *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
-     *
      * @param Request $request JSON body containing the "source" field
      */
     #[Route('/import', name: 'skill_import', methods: ['POST'])]
     public function import(Request $request): JsonResponse
     {
-        $data = $request->toArray();
-        if (empty($data['source'])) {
+        try {
+            $dto = ImportSkillDto::fromArray($request->toArray());
+        } catch (\InvalidArgumentException) {
             return $this->json($this->apiErrorPayloadFactory->create('skill.validation.source_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $skill = $this->skillService->importFromRegistry($data['source']);
+        $skill = $this->skillService->importFromRegistry($dto->source);
         return $this->json(['id' => (string) $skill->getId(), 'slug' => $skill->getSlug()], Response::HTTP_CREATED);
     }
 
     /**
      * Creates a new custom skill.
      *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
-     *
      * @param Request $request JSON body containing "slug", "name", "content", and optional "description"
      */
     #[Route('', name: 'skill_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        $data = $request->toArray();
-        if (empty($data['slug']) || empty($data['name']) || empty($data['content'])) {
+        try {
+            $dto = CreateSkillDto::fromArray($request->toArray());
+        } catch (\InvalidArgumentException) {
             return $this->json($this->apiErrorPayloadFactory->create('skill.validation.create_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $skill = $this->skillService->createCustom($data['slug'], $data['name'], $data['content'], $data['description'] ?? null);
+        $skill = $this->skillService->createCustom($dto->slug, $dto->name, $dto->content, $dto->description);
         return $this->json(['id' => (string) $skill->getId(), 'slug' => $skill->getSlug()], Response::HTTP_CREATED);
     }
 
     /**
      * Updates the content of an existing skill.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      *
      * @param string  $id      The skill UUID
      * @param Request $request JSON body containing the "content" field
@@ -127,12 +126,13 @@ class SkillController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('skill.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $data = $request->toArray();
-        if (empty($data['content'])) {
+        try {
+            $dto = UpdateSkillContentDto::fromArray($request->toArray());
+        } catch (\InvalidArgumentException) {
             return $this->json($this->apiErrorPayloadFactory->create('skill.validation.content_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $this->skillService->updateContent($skill, $data['content']);
+        $this->skillService->updateContent($skill, $dto->content);
         return $this->json(['id' => (string) $skill->getId(), 'slug' => $skill->getSlug()]);
     }
 
