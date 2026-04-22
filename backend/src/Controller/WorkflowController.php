@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Dto\Input\Workflow\CreateWorkflowDto;
+use App\Dto\Input\Workflow\UpdateWorkflowDto;
 use App\Enum\WorkflowTrigger;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\WorkflowService;
@@ -41,22 +43,20 @@ class WorkflowController extends AbstractController
 
     /**
      * Creates a new immutable workflow definition.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('', name: 'workflow_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        $data = $request->toArray();
-        if (empty($data['name'])) {
+        try {
+            $dto = CreateWorkflowDto::fromArray($request->toArray());
+        } catch (\InvalidArgumentException) {
             return $this->json($this->apiErrorPayloadFactory->create('workflow.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $trigger  = WorkflowTrigger::tryFrom($data['trigger'] ?? 'manual') ?? WorkflowTrigger::Manual;
         $workflow = $this->workflowService->create(
-            $data['name'],
-            $trigger,
-            $data['description'] ?? null,
+            $dto->name,
+            $dto->trigger,
+            $dto->description,
         );
 
         return $this->json(['id' => (string) $workflow->getId(), 'name' => $workflow->getName()], Response::HTTP_CREATED);
@@ -78,8 +78,6 @@ class WorkflowController extends AbstractController
 
     /**
      * Updates an inactive workflow definition.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/{id}', name: 'workflow_update', methods: ['PUT'])]
     public function update(string $id, Request $request): JsonResponse
@@ -93,13 +91,13 @@ class WorkflowController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('workflow.error.immutable'), Response::HTTP_CONFLICT);
         }
 
-        $data = $request->toArray();
-        $trigger = WorkflowTrigger::tryFrom($data['trigger'] ?? $workflow->getTrigger()->value) ?? $workflow->getTrigger();
+        $dto = UpdateWorkflowDto::fromArray($request->toArray());
+        $trigger = $dto->trigger ?? $workflow->getTrigger();
         $workflow = $this->workflowService->update(
             $workflow,
-            $data['name'] ?? $workflow->getName(),
+            $dto->name ?? $workflow->getName(),
             $trigger,
-            $data['description'] ?? null,
+            $dto->description,
         );
 
         return $this->json($this->buildWorkflowPayload($workflow, true));

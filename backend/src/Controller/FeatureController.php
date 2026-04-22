@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Dto\Input\Feature\CreateFeatureDto;
+use App\Dto\Input\Feature\UpdateFeatureDto;
 use App\Enum\FeatureStatus;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\FeatureService;
@@ -55,8 +57,6 @@ class FeatureController extends AbstractController
 
     /**
      * Creates a new feature for a given project.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/projects/{projectId}/features', name: 'feature_create', methods: ['POST'])]
     public function create(string $projectId, Request $request): JsonResponse
@@ -66,12 +66,13 @@ class FeatureController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('feature.error.project_not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $data = $request->toArray();
-        if (empty($data['name'])) {
+        try {
+            $dto = CreateFeatureDto::fromArray($request->toArray());
+        } catch (\InvalidArgumentException) {
             return $this->json($this->apiErrorPayloadFactory->create('feature.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $feature = $this->featureService->create($project, $data['name'], $data['description'] ?? null);
+        $feature = $this->featureService->create($project, $dto->name, $dto->description);
         return $this->json(['id' => (string) $feature->getId(), 'name' => $feature->getName()], Response::HTTP_CREATED);
     }
 
@@ -99,8 +100,6 @@ class FeatureController extends AbstractController
 
     /**
      * Updates an existing feature.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/features/{id}', name: 'feature_update', methods: ['PUT'])]
     public function update(string $id, Request $request): JsonResponse
@@ -110,9 +109,8 @@ class FeatureController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('feature.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $data   = $request->toArray();
-        $status = isset($data['status']) ? FeatureStatus::from($data['status']) : $feature->getStatus();
-        $this->featureService->update($feature, $data['name'] ?? $feature->getName(), $data['description'] ?? null, $status);
+        $dto = UpdateFeatureDto::fromArray($request->toArray());
+        $this->featureService->update($feature, $dto->name ?? $feature->getName(), $dto->description, $dto->status ?? $feature->getStatus());
         return $this->json(['id' => (string) $feature->getId(), 'name' => $feature->getName()]);
     }
 

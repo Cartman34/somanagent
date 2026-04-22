@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Dto\Input\Agent\CreateAgentDto;
+use App\Dto\Input\Agent\UpdateAgentDto;
 use App\Entity\AgentTaskExecution;
 use App\Entity\AgentTaskExecutionAttempt;
 use App\Enum\ConnectorType;
@@ -64,27 +66,23 @@ class AgentController extends AbstractController
     /**
      * Creates a new agent.
      *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
-     *
      * @param Request $request JSON payload containing name, connector, config, description, and roleId
      * @return JsonResponse Created agent id and name with HTTP 201
      */
     #[Route('', name: 'agent_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        $data = $request->toArray();
-        if (empty($data['name'])) {
+        try {
+            $dto = CreateAgentDto::fromArray($request->toArray());
+        } catch (\InvalidArgumentException $e) {
+            if ($e->getMessage() === 'model_required') {
+                return $this->json($this->apiErrorPayloadFactory->create('agent.validation.model_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
             return $this->json($this->apiErrorPayloadFactory->create('agent.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        if (!is_array($data['config'] ?? null) || !is_string($data['config']['model'] ?? null) || trim($data['config']['model']) === '') {
-            return $this->json($this->apiErrorPayloadFactory->create('agent.validation.model_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        $connector = ConnectorType::from($data['connector'] ?? ConnectorType::ClaudeApi->value);
-        $config    = ConnectorConfig::fromArray($data['config']);
-
-        $agent = $this->agentService->create($data['name'], $connector, $config, $data['description'] ?? null, $data['roleId'] ?? null);
+        $agent = $this->agentService->create($dto->name, $dto->connector, $dto->config, $dto->description, $dto->roleId);
 
         return $this->json(['id' => (string) $agent->getId(), 'name' => $agent->getName()], Response::HTTP_CREATED);
     }
@@ -119,8 +117,6 @@ class AgentController extends AbstractController
     /**
      * Updates an existing agent.
      *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
-     *
      * @param string  $id      Agent UUID
      * @param Request $request JSON payload with fields to update
      * @return JsonResponse Updated agent id and name or 404 if not found
@@ -133,9 +129,9 @@ class AgentController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('agent.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $data      = $request->toArray();
-        $connector = ConnectorType::from($data['connector'] ?? $agent->getConnector()->value);
-        $configData = $data['config'] ?? $agent->getConnectorConfig()->toArray();
+        $dto = UpdateAgentDto::fromArray($request->toArray());
+        $connector = ConnectorType::from($dto->connectorValue ?? $agent->getConnector()->value);
+        $configData = $dto->configData ?? $agent->getConnectorConfig()->toArray();
 
         if (!is_array($configData) || !is_string($configData['model'] ?? null) || trim($configData['model']) === '') {
             return $this->json($this->apiErrorPayloadFactory->create('agent.validation.model_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -143,7 +139,7 @@ class AgentController extends AbstractController
 
         $config = ConnectorConfig::fromArray($configData);
 
-        $this->agentService->update($agent, $data['name'] ?? $agent->getName(), $data['description'] ?? null, $connector, $config, $data['roleId'] ?? null);
+        $this->agentService->update($agent, $dto->name ?? $agent->getName(), $dto->description, $connector, $config, $dto->roleId);
         return $this->json(['id' => (string) $agent->getId(), 'name' => $agent->getName()]);
     }
 
