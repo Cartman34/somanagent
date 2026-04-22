@@ -7,6 +7,9 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Dto\Input\Role\AddRoleSkillDto;
+use App\Dto\Input\Role\CreateRoleDto;
+use App\Dto\Input\Role\UpdateRoleDto;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\RoleService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -50,19 +53,18 @@ class RoleController extends AbstractController
     /**
      * Creates a new role.
      *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
-     *
      * @param Request $request JSON body containing slug, name, and optional description
      */
     #[Route('', name: 'role_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        $data = $request->toArray();
-        if (empty($data['slug']) || empty($data['name'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('role.validation.slug_name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        try {
+            $dto = CreateRoleDto::fromArray($request->toArray());
+        } catch (\InvalidArgumentException $e) {
+            return $this->json($this->apiErrorPayloadFactory->create($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $role = $this->roleService->create($data['slug'], $data['name'], $data['description'] ?? null);
+        $role = $this->roleService->create($dto->slug, $dto->name, $dto->description);
         return $this->json(['id' => (string) $role->getId(), 'slug' => $role->getSlug(), 'name' => $role->getName()], Response::HTTP_CREATED);
     }
 
@@ -98,8 +100,6 @@ class RoleController extends AbstractController
     /**
      * Updates an existing role.
      *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
-     *
      * @param string  $id      the role identifier
      * @param Request $request JSON body containing optional slug, name, and description fields
      */
@@ -111,12 +111,12 @@ class RoleController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('role.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $data = $request->toArray();
+        $dto = UpdateRoleDto::fromArray($request->toArray());
         $this->roleService->update(
             $role,
-            $data['slug'] ?? $role->getSlug(),
-            $data['name'] ?? $role->getName(),
-            $data['description'] ?? null,
+            $dto->slug ?? $role->getSlug(),
+            $dto->name ?? $role->getName(),
+            $dto->description,
         );
         return $this->json(['id' => (string) $role->getId(), 'slug' => $role->getSlug(), 'name' => $role->getName()]);
     }
@@ -143,8 +143,6 @@ class RoleController extends AbstractController
     /**
      * Adds a skill to a role.
      *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
-     *
      * @param string  $id      the role identifier
      * @param Request $request JSON body containing the skillId to add
      */
@@ -156,13 +154,14 @@ class RoleController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('role.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $data = $request->toArray();
-        if (empty($data['skillId'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('role.validation.skill_id_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        try {
+            $dto = AddRoleSkillDto::fromArray($request->toArray());
+        } catch (\InvalidArgumentException $e) {
+            return $this->json($this->apiErrorPayloadFactory->create($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         try {
-            $this->roleService->addSkill($role, $data['skillId']);
+            $this->roleService->addSkill($role, $dto->skillId);
         } catch (\InvalidArgumentException $e) {
             return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_NOT_FOUND);
         }

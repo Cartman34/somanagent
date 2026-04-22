@@ -7,6 +7,9 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Dto\Input\Team\AddTeamAgentDto;
+use App\Dto\Input\Team\CreateTeamDto;
+use App\Dto\Input\Team\UpdateTeamDto;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\TeamService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -46,18 +49,17 @@ class TeamController extends AbstractController
 
     /**
      * Creates a new team.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('', name: 'team_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        $data = $request->toArray();
-        if (empty($data['name'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('team.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        try {
+            $dto = CreateTeamDto::fromArray($request->toArray());
+        } catch (\InvalidArgumentException $e) {
+            return $this->json($this->apiErrorPayloadFactory->create($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $team = $this->teamService->create($data['name'], $data['description'] ?? null);
+        $team = $this->teamService->create($dto->name, $dto->description);
         return $this->json(['id' => (string) $team->getId(), 'name' => $team->getName()], Response::HTTP_CREATED);
     }
 
@@ -89,8 +91,6 @@ class TeamController extends AbstractController
 
     /**
      * Updates an existing team.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/{id}', name: 'team_update', methods: ['PUT'])]
     public function update(string $id, Request $request): JsonResponse
@@ -100,8 +100,8 @@ class TeamController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('team.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $data = $request->toArray();
-        $this->teamService->update($team, $data['name'] ?? $team->getName(), $data['description'] ?? null);
+        $dto = UpdateTeamDto::fromArray($request->toArray());
+        $this->teamService->update($team, $dto->name ?? $team->getName(), $dto->description);
         return $this->json(['id' => (string) $team->getId(), 'name' => $team->getName()]);
     }
 
@@ -124,8 +124,6 @@ class TeamController extends AbstractController
 
     /**
      * Adds an agent to a team.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/{id}/agents', name: 'team_add_agent', methods: ['POST'])]
     public function addAgent(string $id, Request $request): JsonResponse
@@ -135,12 +133,13 @@ class TeamController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('team.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $data = $request->toArray();
-        if (empty($data['agentId'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('team.validation.agent_id_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        try {
+            $dto = AddTeamAgentDto::fromArray($request->toArray());
+        } catch (\InvalidArgumentException $e) {
+            return $this->json($this->apiErrorPayloadFactory->create($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $agent = $this->teamService->findAgentById($data['agentId']);
+        $agent = $this->teamService->findAgentById($dto->agentId);
         if ($agent === null) {
             return $this->json($this->apiErrorPayloadFactory->create('agent.error.not_found'), Response::HTTP_NOT_FOUND);
         }
