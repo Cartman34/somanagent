@@ -36,7 +36,7 @@ export const skillsApi = {
   },
 
   updateContent: async (id: string, content: string): Promise<Skill> => {
-    const { data } = await apiClient.put(`/skills/${id}/content`, { content })
+    const { data } = await apiClient.patch(`/skills/${id}/content`, { content })
     return data
   },
 

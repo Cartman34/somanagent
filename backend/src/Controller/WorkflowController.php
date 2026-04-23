@@ -9,7 +9,7 @@ namespace App\Controller;
 
 use App\Dto\Input\Workflow\CreateWorkflowDto;
 use App\Dto\Input\Workflow\UpdateWorkflowDto;
-use App\Enum\WorkflowTrigger;
+use App\Exception\ValidationException;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\WorkflowService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -49,15 +49,11 @@ class WorkflowController extends AbstractController
     {
         try {
             $dto = CreateWorkflowDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException) {
-            return $this->json($this->apiErrorPayloadFactory->create('workflow.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ValidationException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $workflow = $this->workflowService->create(
-            $dto->name,
-            $dto->trigger,
-            $dto->description,
-        );
+        $workflow = $this->workflowService->create($dto);
 
         return $this->json(['id' => (string) $workflow->getId(), 'name' => $workflow->getName()], Response::HTTP_CREATED);
     }
@@ -79,7 +75,7 @@ class WorkflowController extends AbstractController
     /**
      * Updates an inactive workflow definition.
      */
-    #[Route('/{id}', name: 'workflow_update', methods: ['PUT'])]
+    #[Route('/{id}', name: 'workflow_update', methods: ['PATCH'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $workflow = $this->workflowService->findById($id);
@@ -92,13 +88,7 @@ class WorkflowController extends AbstractController
         }
 
         $dto = UpdateWorkflowDto::fromArray($request->toArray());
-        $trigger = $dto->trigger ?? $workflow->getTrigger();
-        $workflow = $this->workflowService->update(
-            $workflow,
-            $dto->name ?? $workflow->getName(),
-            $trigger,
-            $dto->description,
-        );
+        $workflow = $this->workflowService->update($workflow, $dto);
 
         return $this->json($this->buildWorkflowPayload($workflow, true));
     }

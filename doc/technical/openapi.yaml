@@ -52,7 +52,7 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/Ok'
-    put:
+    patch:
       tags:
         - Agents
       summary: 'Update an agent'
@@ -213,7 +213,7 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/Ok'
-    put:
+    patch:
       tags:
         - Features
       summary: 'Update a feature'
@@ -382,7 +382,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProjectDetail'
-    put:
+    patch:
       tags:
         - Projects
       summary: 'Update a project'
@@ -445,7 +445,7 @@ paths:
         201:
           $ref: '#/components/responses/Created'
   '/api/projects/modules/{id}':
-    put:
+    patch:
       tags:
         - Projects
       summary: 'Update a project module'
@@ -497,7 +497,7 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/Ok'
-    put:
+    patch:
       tags:
         - Roles
       summary: 'Update a role'
@@ -596,7 +596,7 @@ paths:
         201:
           $ref: '#/components/responses/Created'
   '/api/skills/{id}/content':
-    put:
+    patch:
       tags:
         - Skills
       summary: 'Update skill content'
@@ -638,7 +638,7 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/Ok'
-    put:
+    patch:
       tags:
         - Teams
       summary: 'Update a team'
@@ -758,7 +758,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Ticket'
-    put:
+    patch:
       tags:
         - Tickets
       summary: 'Update a ticket'
@@ -795,7 +795,7 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/Ok'
-    put:
+    patch:
       tags:
         - 'Ticket Tasks'
       summary: 'Update a ticket task'
@@ -1085,7 +1085,7 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/Ok'
-    put:
+    patch:
       tags:
         - Workflows
       summary: 'Update a workflow'

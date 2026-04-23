@@ -10,6 +10,7 @@ namespace App\Controller;
 use App\Dto\Input\Team\AddTeamAgentDto;
 use App\Dto\Input\Team\CreateTeamDto;
 use App\Dto\Input\Team\UpdateTeamDto;
+use App\Exception\ValidationException;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\TeamService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -55,11 +56,11 @@ class TeamController extends AbstractController
     {
         try {
             $dto = CreateTeamDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException) {
-            return $this->json($this->apiErrorPayloadFactory->create('team.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ValidationException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $team = $this->teamService->create($dto->name, $dto->description);
+        $team = $this->teamService->create($dto);
         return $this->json(['id' => (string) $team->getId(), 'name' => $team->getName()], Response::HTTP_CREATED);
     }
 
@@ -92,7 +93,7 @@ class TeamController extends AbstractController
     /**
      * Updates an existing team.
      */
-    #[Route('/{id}', name: 'team_update', methods: ['PUT'])]
+    #[Route('/{id}', name: 'team_update', methods: ['PATCH'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $team = $this->teamService->findById($id);
@@ -101,7 +102,7 @@ class TeamController extends AbstractController
         }
 
         $dto = UpdateTeamDto::fromArray($request->toArray());
-        $this->teamService->update($team, $dto->name ?? $team->getName(), $dto->description);
+        $this->teamService->update($team, $dto);
         return $this->json(['id' => (string) $team->getId(), 'name' => $team->getName()]);
     }
 
@@ -135,8 +136,8 @@ class TeamController extends AbstractController
 
         try {
             $dto = AddTeamAgentDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException) {
-            return $this->json($this->apiErrorPayloadFactory->create('team.validation.agent_id_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ValidationException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $agent = $this->teamService->findAgentById($dto->agentId);

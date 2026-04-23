@@ -58,7 +58,7 @@ export const workflowsApi = {
   },
 
   update: async (id: string, payload: WorkflowPayload): Promise<Workflow> => {
-    const { data } = await apiClient.put(`/workflows/${id}`, payload)
+    const { data } = await apiClient.patch(`/workflows/${id}`, payload)
     return data
   },
 

@@ -10,6 +10,7 @@ namespace App\Controller;
 use App\Dto\Input\Skill\CreateSkillDto;
 use App\Dto\Input\Skill\ImportSkillDto;
 use App\Dto\Input\Skill\UpdateSkillContentDto;
+use App\Exception\ValidationException;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\SkillService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -86,11 +87,11 @@ class SkillController extends AbstractController
     {
         try {
             $dto = ImportSkillDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException) {
-            return $this->json($this->apiErrorPayloadFactory->create('skill.validation.source_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ValidationException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $skill = $this->skillService->importFromRegistry($dto->source);
+        $skill = $this->skillService->importFromRegistry($dto);
         return $this->json(['id' => (string) $skill->getId(), 'slug' => $skill->getSlug()], Response::HTTP_CREATED);
     }
 
@@ -104,11 +105,11 @@ class SkillController extends AbstractController
     {
         try {
             $dto = CreateSkillDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException) {
-            return $this->json($this->apiErrorPayloadFactory->create('skill.validation.create_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ValidationException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $skill = $this->skillService->createCustom($dto->slug, $dto->name, $dto->content, $dto->description);
+        $skill = $this->skillService->createCustom($dto);
         return $this->json(['id' => (string) $skill->getId(), 'slug' => $skill->getSlug()], Response::HTTP_CREATED);
     }
 
@@ -118,7 +119,7 @@ class SkillController extends AbstractController
      * @param string  $id      The skill UUID
      * @param Request $request JSON body containing the "content" field
      */
-    #[Route('/{id}/content', name: 'skill_update_content', methods: ['PUT'])]
+    #[Route('/{id}/content', name: 'skill_update_content', methods: ['PATCH'])]
     public function updateContent(string $id, Request $request): JsonResponse
     {
         $skill = $this->skillService->findById($id);
@@ -128,11 +129,11 @@ class SkillController extends AbstractController
 
         try {
             $dto = UpdateSkillContentDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException) {
-            return $this->json($this->apiErrorPayloadFactory->create('skill.validation.content_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ValidationException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $this->skillService->updateContent($skill, $dto->content);
+        $this->skillService->updateContent($skill, $dto);
         return $this->json(['id' => (string) $skill->getId(), 'slug' => $skill->getSlug()]);
     }
 

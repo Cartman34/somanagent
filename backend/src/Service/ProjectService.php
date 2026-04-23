@@ -7,6 +7,10 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Dto\Input\Project\CreateModuleDto;
+use App\Dto\Input\Project\CreateProjectDto;
+use App\Dto\Input\Project\UpdateModuleDto;
+use App\Dto\Input\Project\UpdateProjectDto;
 use App\Entity\Module;
 use App\Entity\Project;
 use App\Entity\Role;
@@ -44,79 +48,55 @@ class ProjectService
 
     /**
      * Creates a new project and optionally assigns a team.
-     *
-     * @param string      $name                 Project name
-     * @param string|null $description          Optional description
-     * @param string|null $repositoryUrl        Optional repository URL
-     * @param string|null $teamId               Optional team UUID to assign
-     * @param string|null $workflowId           Optional workflow UUID to assign
-     * @param string|null $defaultTicketRoleId  Optional role UUID assigned automatically to new UserStory/Bug tickets
      */
-    public function create(
-        string $name,
-        ?string $description = null,
-        ?string $repositoryUrl = null,
-        ?string $teamId = null,
-        ?string $workflowId = null,
-        DispatchMode $dispatchMode = DispatchMode::Auto,
-        ?string $defaultTicketRoleId = null,
-    ): Project
+    public function create(CreateProjectDto $dto): Project
     {
-        if ($workflowId === null || $workflowId === '') {
+        if ($dto->workflowId === null || $dto->workflowId === '') {
             throw new \LogicException($this->translator->trans('project.validation.workflow_required', [], 'app'));
         }
 
-        if ($teamId === null || $teamId === '') {
+        if ($dto->teamId === null || $dto->teamId === '') {
             throw new \LogicException($this->translator->trans('project.validation.team_required', [], 'app'));
         }
 
-        $team = $this->teamRepository->find(Uuid::fromString($teamId));
+        $team = $this->teamRepository->find(Uuid::fromString($dto->teamId));
         if ($team === null) {
             throw new \LogicException($this->translator->trans('project.validation.team_invalid', [], 'app'));
         }
 
-        $project = new Project($name, $description);
+        $project = new Project($dto->name, $dto->description);
         $project
-            ->setRepositoryUrl($repositoryUrl)
-            ->setDispatchMode($dispatchMode)
+            ->setRepositoryUrl($dto->repositoryUrl)
+            ->setDispatchMode($dto->dispatchMode)
             ->setTeam($team);
 
-        $project->setWorkflow($this->resolveAssignableWorkflow(null, $workflowId));
-        $project->setDefaultTicketRole($this->resolveDefaultTicketRole($defaultTicketRoleId));
+        $project->setWorkflow($this->resolveAssignableWorkflow(null, $dto->workflowId));
+        $project->setDefaultTicketRole($this->resolveDefaultTicketRole($dto->defaultTicketRoleId));
 
-        $this->entityService->create($project, AuditAction::ProjectCreated, ['name' => $name]);
+        $this->entityService->create($project, AuditAction::ProjectCreated, ['name' => $dto->name]);
         $this->realtimeUpdateService->publishProjectChanged($project, 'created');
         return $project;
     }
 
     /**
      * Updates an existing project's fields and optionally reassigns its team.
-     *
-     * @param Project     $project              Project to update
-     * @param string      $name                 New name
-     * @param string|null $description          New description (null clears it)
-     * @param string|null $repositoryUrl        New repository URL (null clears it)
-     * @param string|null $teamId               Team UUID to assign, or null to detach current team
-     * @param string|null $workflowId           Workflow UUID to assign, or null to detach current workflow
-     * @param string|null $defaultTicketRoleId  Role UUID to assign to new UserStory/Bug tickets, or null to clear
      */
-    public function update(
-        Project $project,
-        string $name,
-        ?string $description,
-        ?string $repositoryUrl = null,
-        ?string $teamId = null,
-        ?string $workflowId = null,
-        ?DispatchMode $dispatchMode = null,
-        ?string $defaultTicketRoleId = null,
-    ): Project
+    public function update(Project $project, UpdateProjectDto $dto): Project
     {
+        $name = $dto->name ?? $project->getName();
+        $description = $dto->description ?? $project->getDescription();
+        $repositoryUrl = $dto->repositoryUrl ?? $project->getRepositoryUrl();
+        $teamId = $dto->teamId ?? ($project->getTeam() ? (string) $project->getTeam()->getId() : null);
+        $workflowId = $dto->workflowId ?? ($project->getWorkflow() ? (string) $project->getWorkflow()->getId() : null);
+        $dispatchMode = $dto->dispatchModeValue !== null ? (DispatchMode::tryFrom($dto->dispatchModeValue) ?? $project->getDispatchMode()) : $project->getDispatchMode();
+        $defaultTicketRoleId = $dto->defaultTicketRoleId ?? ($project->getDefaultTicketRole() ? (string) $project->getDefaultTicketRole()->getId() : null);
+
         if ($workflowId === null || $workflowId === '') {
             throw new \LogicException($this->translator->trans('project.validation.workflow_required', [], 'app'));
         }
 
         $previousDispatchMode = $project->getDispatchMode();
-        $nextDispatchMode = $dispatchMode ?? $previousDispatchMode;
+        $nextDispatchMode = $dispatchMode;
 
         $project
             ->setName($name)
@@ -153,13 +133,13 @@ class ProjectService
     /**
      * Creates a new module, attaches it to the project, and persists it.
      */
-    public function addModule(Project $project, string $name, ?string $description = null, ?string $repositoryUrl = null, ?string $stack = null): Module
+    public function addModule(Project $project, CreateModuleDto $dto): Module
     {
-        $module = new Module($project, $name, $description);
-        $module->setRepositoryUrl($repositoryUrl)->setStack($stack);
+        $module = new Module($project, $dto->name, $dto->description);
+        $module->setRepositoryUrl($dto->repositoryUrl)->setStack($dto->stack);
         $project->addModule($module);
         $this->entityService->create($module, AuditAction::ModuleCreated, [
-            'name'    => $name,
+            'name'    => $dto->name,
             'project' => (string) $project->getId(),
         ]);
         $this->realtimeUpdateService->publishProjectChanged($project, 'module_created');
@@ -169,9 +149,13 @@ class ProjectService
     /**
      * Updates a module's fields and persists the changes.
      */
-    public function updateModule(Module $module, string $name, ?string $description, ?string $repositoryUrl, ?string $stack): Module
+    public function updateModule(Module $module, UpdateModuleDto $dto): Module
     {
-        $module->setName($name)->setDescription($description)->setRepositoryUrl($repositoryUrl)->setStack($stack);
+        $module
+            ->setName($dto->name ?? $module->getName())
+            ->setDescription($dto->description ?? $module->getDescription())
+            ->setRepositoryUrl($dto->repositoryUrl ?? $module->getRepositoryUrl())
+            ->setStack($dto->stack ?? $module->getStack());
         $this->entityService->update($module, AuditAction::ModuleUpdated);
         $this->realtimeUpdateService->publishProjectChanged($module->getProject(), 'module_updated');
         return $module;

@@ -7,11 +7,12 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Dto\Input\Workflow\CreateWorkflowDto;
+use App\Dto\Input\Workflow\UpdateWorkflowDto;
 use App\Entity\Workflow;
 use App\Entity\WorkflowStep;
 use App\Entity\WorkflowStepAction;
 use App\Enum\AuditAction;
-use App\Enum\WorkflowTrigger;
 use App\Repository\WorkflowRepository;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -33,14 +34,11 @@ class WorkflowService
     /**
      * Creates a new active immutable workflow definition.
      */
-    public function create(
-        string          $name,
-        WorkflowTrigger $trigger     = WorkflowTrigger::Manual,
-        ?string         $description = null,
-    ): Workflow {
-        $workflow = new Workflow($name, $trigger, $description);
+    public function create(CreateWorkflowDto $dto): Workflow
+    {
+        $workflow = new Workflow($dto->name, $dto->trigger, $dto->description);
         $workflow->validate();
-        $this->entityService->create($workflow, AuditAction::WorkflowCreated, ['name' => $name]);
+        $this->entityService->create($workflow, AuditAction::WorkflowCreated, ['name' => $dto->name]);
 
         return $workflow;
     }
@@ -121,15 +119,11 @@ class WorkflowService
     /**
      * Updates a workflow's name, trigger, and description.
      */
-    public function update(
-        Workflow        $workflow,
-        string          $name,
-        WorkflowTrigger $trigger,
-        ?string         $description = null,
-    ): Workflow {
-        $workflow->setName($name)
-            ->setTrigger($trigger)
-            ->setDescription($description);
+    public function update(Workflow $workflow, UpdateWorkflowDto $dto): Workflow
+    {
+        $workflow->setName($dto->name ?? $workflow->getName())
+            ->setTrigger($dto->trigger ?? $workflow->getTrigger())
+            ->setDescription($dto->description ?? $workflow->getDescription());
 
         $this->entityService->update($workflow, AuditAction::WorkflowUpdated);
 

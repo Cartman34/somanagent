@@ -11,7 +11,7 @@ use App\Dto\Input\Project\CreateModuleDto;
 use App\Dto\Input\Project\CreateProjectDto;
 use App\Dto\Input\Project\UpdateModuleDto;
 use App\Dto\Input\Project\UpdateProjectDto;
-use App\Enum\DispatchMode;
+use App\Exception\ValidationException;
 use App\Repository\AuditLogRepository;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\ProjectService;
@@ -67,24 +67,12 @@ class ProjectController extends AbstractController
     {
         try {
             $dto = CreateProjectDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException $e) {
-            if ($e->getMessage() === 'team_required') {
-                return $this->json($this->apiErrorPayloadFactory->create('project.validation.team_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            return $this->json($this->apiErrorPayloadFactory->create('project.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ValidationException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         try {
-            $project = $this->projectService->create(
-                $dto->name,
-                $dto->description,
-                $dto->repositoryUrl,
-                $dto->teamId,
-                $dto->workflowId,
-                $dto->dispatchMode,
-                $dto->defaultTicketRoleId,
-            );
+            $project = $this->projectService->create($dto);
         } catch (\LogicException $exception) {
             return $this->json($this->apiErrorPayloadFactory->fromMessage($exception->getMessage()), Response::HTTP_CONFLICT);
         }
@@ -138,7 +126,7 @@ class ProjectController extends AbstractController
     /**
      * Updates an existing project.
      */
-    #[Route('/{id}', name: 'project_update', methods: ['PUT'])]
+    #[Route('/{id}', name: 'project_update', methods: ['PATCH'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $project = $this->projectService->findById($id);
@@ -146,19 +134,14 @@ class ProjectController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('project.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $dto = UpdateProjectDto::fromArray($request->toArray());
+        try {
+            $dto = UpdateProjectDto::fromArray($request->toArray());
+        } catch (ValidationException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
 
         try {
-            $this->projectService->update(
-                $project,
-                $dto->name ?? $project->getName(),
-                $dto->description,
-                $dto->repositoryUrl,
-                $dto->hasTeamId ? $dto->teamId : ($project->getTeam() ? (string) $project->getTeam()->getId() : null),
-                $dto->hasWorkflowId ? $dto->workflowId : ($project->getWorkflow() ? (string) $project->getWorkflow()->getId() : null),
-                $dto->dispatchModeValue !== null ? DispatchMode::from($dto->dispatchModeValue) : $project->getDispatchMode(),
-                $dto->hasDefaultTicketRoleId ? $dto->defaultTicketRoleId : ($project->getDefaultTicketRole() ? (string) $project->getDefaultTicketRole()->getId() : null),
-            );
+            $this->projectService->update($project, $dto);
         } catch (\LogicException $exception) {
             return $this->json($this->apiErrorPayloadFactory->fromMessage($exception->getMessage()), Response::HTTP_CONFLICT);
         }
@@ -248,11 +231,11 @@ class ProjectController extends AbstractController
 
         try {
             $dto = CreateModuleDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException) {
-            return $this->json($this->apiErrorPayloadFactory->create('project.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ValidationException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $module = $this->projectService->addModule($project, $dto->name, $dto->description, $dto->repositoryUrl, $dto->stack);
+        $module = $this->projectService->addModule($project, $dto);
         return $this->json([
             'id'            => (string) $module->getId(),
             'name'          => $module->getName(),
@@ -264,7 +247,7 @@ class ProjectController extends AbstractController
     /**
      * Updates an existing module.
      */
-    #[Route('/modules/{id}', name: 'module_update', methods: ['PUT'])]
+    #[Route('/modules/{id}', name: 'module_update', methods: ['PATCH'])]
     public function updateModule(string $id, Request $request): JsonResponse
     {
         $module = $this->projectService->findModuleById($id);
@@ -273,7 +256,7 @@ class ProjectController extends AbstractController
         }
 
         $dto = UpdateModuleDto::fromArray($request->toArray());
-        $module = $this->projectService->updateModule($module, $dto->name ?? $module->getName(), $dto->description, $dto->repositoryUrl, $dto->stack);
+        $module = $this->projectService->updateModule($module, $dto);
         return $this->json(['id' => (string) $module->getId(), 'name' => $module->getName()]);
     }
 

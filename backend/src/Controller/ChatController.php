@@ -11,6 +11,7 @@ use App\Dto\Input\Chat\ReplyChatMessageDto;
 use App\Dto\Input\Chat\SendChatMessageDto;
 use App\Dto\Input\Chat\UpdateChatMessageDto;
 use App\Entity\ChatMessage;
+use App\Exception\ValidationException;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\AgentService;
 use App\Service\ChatService;
@@ -70,11 +71,11 @@ class ChatController extends AbstractController
 
         try {
             $dto = SendChatMessageDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException) {
-            return $this->json($this->apiErrorPayloadFactory->create('chat.validation.content_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ValidationException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $exchange = $this->chatService->sendAndReceive($project, $agent, $dto->content);
+        $exchange = $this->chatService->sendAndReceive($project, $agent, $dto);
 
         return $this->json([
             'humanMessage' => $this->serializeMessage($exchange['human']),
@@ -100,15 +101,11 @@ class ChatController extends AbstractController
 
         try {
             $dto = ReplyChatMessageDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException $e) {
-            if ($e->getMessage() === 'reply_to_required') {
-                return $this->json($this->apiErrorPayloadFactory->create('chat.validation.reply_to_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            return $this->json($this->apiErrorPayloadFactory->create('chat.validation.content_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ValidationException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $message = $this->chatService->reply($project, $agent, $dto->content, $dto->replyToMessageId);
+        $message = $this->chatService->reply($project, $agent, $dto);
 
         return $this->json($this->serializeMessage($message), Response::HTTP_CREATED);
     }
@@ -128,12 +125,12 @@ class ChatController extends AbstractController
 
         try {
             $dto = UpdateChatMessageDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException) {
-            return $this->json($this->apiErrorPayloadFactory->create('chat.validation.content_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ValidationException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         try {
-            $message = $this->chatService->editHumanMessage($project, $agent, $messageId, $dto->content);
+            $message = $this->chatService->editHumanMessage($project, $agent, $messageId, $dto);
         } catch (\InvalidArgumentException $e) {
             $key = $e->getMessage();
             if ($key === 'chat.error.message_not_found') {

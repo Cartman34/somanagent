@@ -48,6 +48,9 @@ final class ValidateTranslationsRunner extends AbstractScriptRunner
         ];
     }
 
+    /**
+     * @param array<string> $args
+     */
     public function run(array $args): int
     {
         require_once $this->projectRoot . '/backend/vendor/autoload.php';
@@ -276,6 +279,12 @@ final class ValidateTranslationsRunner extends AbstractScriptRunner
             }
 
             foreach ($this->extractPhpStaticArrayValueKeys($content) as $key => $lines) {
+                foreach ($lines as $line) {
+                    $usedByKey[$key][] = "{$path}:{$line}";
+                }
+            }
+
+            foreach ($this->extractPhpValidationCodeKeys($content) as $key => $lines) {
                 foreach ($lines as $line) {
                     $usedByKey[$key][] = "{$path}:{$line}";
                 }
@@ -557,6 +566,24 @@ final class ValidateTranslationsRunner extends AbstractScriptRunner
         sort($report);
 
         return $report;
+    }
+
+    /**
+     * Detects validation error codes used as `'code' => 'some.key'` in PHP arrays.
+     *
+     * @return array<string, array<int>>
+     */
+    private function extractPhpValidationCodeKeys(string $content): array
+    {
+        preg_match_all('/[\'"]code[\'"]\s*=>\s*[\'"](?<key>' . self::KEY_PATTERN . ')[\'"]/', $content, $matches, PREG_OFFSET_CAPTURE);
+
+        $result = [];
+        foreach ($matches['key'] ?? [] as $match) {
+            [$key, $offset] = $match;
+            $result[$key][] = $this->lineNumberForOffset($content, $offset);
+        }
+
+        return $result;
     }
 
     /**

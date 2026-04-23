@@ -7,10 +7,11 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Dto\Input\Feature\CreateFeatureDto;
+use App\Dto\Input\Feature\UpdateFeatureDto;
 use App\Entity\Feature;
 use App\Entity\Project;
 use App\Enum\AuditAction;
-use App\Enum\FeatureStatus;
 use App\Repository\FeatureRepository;
 use Symfony\Component\Uid\Uuid;
 
@@ -30,11 +31,11 @@ class FeatureService
     /**
      * Create a new feature for the given project and persist it with an audit trail.
      */
-    public function create(Project $project, string $name, ?string $description = null): Feature
+    public function create(Project $project, CreateFeatureDto $dto): Feature
     {
-        $feature = new Feature($project, $name, $description);
+        $feature = new Feature($project, $dto->name, $dto->description);
         $this->entityService->create($feature, AuditAction::FeatureCreated, [
-            'name'    => $name,
+            'name'    => $dto->name,
             'project' => (string) $project->getId(),
         ]);
         return $feature;
@@ -43,9 +44,11 @@ class FeatureService
     /**
      * Update a feature's name, description, and status, then persist the changes.
      */
-    public function update(Feature $feature, string $name, ?string $description, FeatureStatus $status): Feature
+    public function update(Feature $feature, UpdateFeatureDto $dto): Feature
     {
-        $feature->setName($name)->setDescription($description)->setStatus($status);
+        $feature->setName($dto->name ?? $feature->getName())
+                ->setDescription($dto->description ?? $feature->getDescription())
+                ->setStatus($dto->status ?? $feature->getStatus());
         $this->entityService->update($feature, AuditAction::FeatureUpdated);
         return $feature;
     }

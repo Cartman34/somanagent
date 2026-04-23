@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Dto\Input\Role\CreateRoleDto;
+use App\Dto\Input\Role\UpdateRoleDto;
 use App\Entity\Role;
 use App\Enum\AuditAction;
 use App\Repository\RoleRepository;
@@ -30,19 +32,19 @@ class RoleService
     /**
      * Create a new role and persist it with an audit trail.
      */
-    public function create(string $slug, string $name, ?string $description = null): Role
+    public function create(CreateRoleDto $dto): Role
     {
-        $role = new Role($slug, $name, $description);
-        $this->entityService->create($role, AuditAction::RoleCreated, ['slug' => $slug, 'name' => $name]);
+        $role = new Role($dto->slug, $dto->name, $dto->description);
+        $this->entityService->create($role, AuditAction::RoleCreated, ['slug' => $dto->slug, 'name' => $dto->name]);
         return $role;
     }
 
     /**
      * Update a role's slug, name, and description, then persist the changes.
      */
-    public function update(Role $role, string $slug, string $name, ?string $description): Role
+    public function update(Role $role, UpdateRoleDto $dto): Role
     {
-        $role->setSlug($slug)->setName($name)->setDescription($description);
+        $role->setSlug($dto->slug ?? $role->getSlug())->setName($dto->name ?? $role->getName())->setDescription($dto->description ?? $role->getDescription());
         $this->entityService->update($role, AuditAction::RoleUpdated);
         return $role;
     }

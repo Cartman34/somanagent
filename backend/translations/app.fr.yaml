@@ -39,6 +39,7 @@ agent:
   validation:
     name_required: Le champ "name" est obligatoire.
     model_required: Le champ "config.model" est obligatoire.
+    connector_invalid: Le connecteur fourni est invalide.
   sheet:
     modal_title: Fiche agent
     load_error: Impossible de charger la fiche agent.
@@ -206,6 +207,7 @@ feature:
     project_not_found: Projet introuvable.
   validation:
     name_required: Le champ "name" est obligatoire.
+    status_invalid: Le statut fourni est invalide.
   list:
     loading: Chargement des features…
   page:
@@ -350,6 +352,8 @@ project:
     team_required: Le champ "teamId" est obligatoire.
     team_invalid: L'équipe sélectionnée est introuvable.
     default_ticket_role_invalid: Le rôle par défaut sélectionné est introuvable.
+    dispatch_mode_invalid: Le mode de dispatch fourni est invalide.
+    module_name_required: Le champ "name" du module est obligatoire.
   page:
     title: Projets
     description: Gérez vos projets et suivez leur avancement.
@@ -406,7 +410,8 @@ role:
     not_found: Rôle introuvable.
   validation:
     skill_id_required: Le champ "skillId" est obligatoire.
-    slug_name_required: Les champs "slug" et "name" sont obligatoires.
+    slug_required: Le champ "slug" est obligatoire.
+    name_required: Le champ "name" est obligatoire.
   page:
     title: Rôles
     description: Définissez les rôles et associez-y des compétences.
@@ -666,9 +671,13 @@ ticket:
   validation:
     content_required: Le champ "content" est obligatoire.
     priority_required: Le champ "priority" est obligatoire.
+    priority_invalid: La priorité fournie est invalide.
     status_required: Le champ "status" est obligatoire.
+    status_invalid: Le statut fourni est invalide.
     title_required: Le champ "title" est obligatoire.
+    type_invalid: Le type de tâche fourni est invalide.
     description_required: Le champ "description" est obligatoire.
+    action_key_required: Le champ "actionKey" est obligatoire.
 token:
   error:
     agent_not_found: Agent introuvable.

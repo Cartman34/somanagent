@@ -12,12 +12,12 @@ use App\Dto\Input\Agent\UpdateAgentDto;
 use App\Entity\AgentTaskExecution;
 use App\Entity\AgentTaskExecutionAttempt;
 use App\Enum\ConnectorType;
+use App\Exception\ValidationException;
 use App\Repository\AgentRepository;
 use App\Repository\AgentTaskExecutionRepository;
 use App\Service\AgentModelCatalogService;
 use App\Service\AgentService;
 use App\Service\ApiErrorPayloadFactory;
-use App\ValueObject\ConnectorConfig;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -74,15 +74,11 @@ class AgentController extends AbstractController
     {
         try {
             $dto = CreateAgentDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException $e) {
-            if ($e->getMessage() === 'model_required') {
-                return $this->json($this->apiErrorPayloadFactory->create('agent.validation.model_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            return $this->json($this->apiErrorPayloadFactory->create('agent.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ValidationException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $agent = $this->agentService->create($dto->name, $dto->connector, $dto->config, $dto->description, $dto->roleId);
+        $agent = $this->agentService->create($dto);
 
         return $this->json(['id' => (string) $agent->getId(), 'name' => $agent->getName()], Response::HTTP_CREATED);
     }
@@ -121,7 +117,7 @@ class AgentController extends AbstractController
      * @param Request $request JSON payload with fields to update
      * @return JsonResponse Updated agent id and name or 404 if not found
      */
-    #[Route('/{id}', name: 'agent_update', requirements: ['id' => '[0-9a-fA-F-]{36}'], methods: ['PUT'])]
+    #[Route('/{id}', name: 'agent_update', requirements: ['id' => '[0-9a-fA-F-]{36}'], methods: ['PATCH'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $agent = $this->agentService->findById($id);
@@ -129,17 +125,13 @@ class AgentController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('agent.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $dto = UpdateAgentDto::fromArray($request->toArray());
-        $connector = ConnectorType::from($dto->connectorValue ?? $agent->getConnector()->value);
-        $configData = $dto->configData ?? $agent->getConnectorConfig()->toArray();
-
-        if (!is_array($configData) || !is_string($configData['model'] ?? null) || trim($configData['model']) === '') {
-            return $this->json($this->apiErrorPayloadFactory->create('agent.validation.model_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        try {
+            $dto = UpdateAgentDto::fromArray($request->toArray());
+            $this->agentService->update($agent, $dto);
+        } catch (ValidationException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $config = ConnectorConfig::fromArray($configData);
-
-        $this->agentService->update($agent, $dto->name ?? $agent->getName(), $dto->description, $connector, $config, $dto->roleId);
         return $this->json(['id' => (string) $agent->getId(), 'name' => $agent->getName()]);
     }
 

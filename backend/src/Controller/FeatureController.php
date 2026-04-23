@@ -9,7 +9,7 @@ namespace App\Controller;
 
 use App\Dto\Input\Feature\CreateFeatureDto;
 use App\Dto\Input\Feature\UpdateFeatureDto;
-use App\Enum\FeatureStatus;
+use App\Exception\ValidationException;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\FeatureService;
 use App\Service\ProjectService;
@@ -68,11 +68,11 @@ class FeatureController extends AbstractController
 
         try {
             $dto = CreateFeatureDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException) {
-            return $this->json($this->apiErrorPayloadFactory->create('feature.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ValidationException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $feature = $this->featureService->create($project, $dto->name, $dto->description);
+        $feature = $this->featureService->create($project, $dto);
         return $this->json(['id' => (string) $feature->getId(), 'name' => $feature->getName()], Response::HTTP_CREATED);
     }
 
@@ -101,7 +101,7 @@ class FeatureController extends AbstractController
     /**
      * Updates an existing feature.
      */
-    #[Route('/features/{id}', name: 'feature_update', methods: ['PUT'])]
+    #[Route('/features/{id}', name: 'feature_update', methods: ['PATCH'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $feature = $this->featureService->findById($id);
@@ -110,7 +110,7 @@ class FeatureController extends AbstractController
         }
 
         $dto = UpdateFeatureDto::fromArray($request->toArray());
-        $this->featureService->update($feature, $dto->name ?? $feature->getName(), $dto->description, $dto->status ?? $feature->getStatus());
+        $this->featureService->update($feature, $dto);
         return $this->json(['id' => (string) $feature->getId(), 'name' => $feature->getName()]);
     }
 

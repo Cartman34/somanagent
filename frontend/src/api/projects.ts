@@ -42,7 +42,7 @@ export const projectsApi = {
   },
 
   update: async (id: string, payload: ProjectPayload): Promise<Project> => {
-    const { data } = await apiClient.put(`/projects/${id}`, payload)
+    const { data } = await apiClient.patch(`/projects/${id}`, payload)
     return data
   },
 
@@ -56,7 +56,7 @@ export const projectsApi = {
   },
 
   updateModule: async (moduleId: string, payload: ModulePayload): Promise<Module> => {
-    const { data } = await apiClient.put(`/projects/modules/${moduleId}`, payload)
+    const { data } = await apiClient.patch(`/projects/modules/${moduleId}`, payload)
     return data
   },
 

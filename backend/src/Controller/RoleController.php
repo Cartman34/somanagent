@@ -10,6 +10,7 @@ namespace App\Controller;
 use App\Dto\Input\Role\AddRoleSkillDto;
 use App\Dto\Input\Role\CreateRoleDto;
 use App\Dto\Input\Role\UpdateRoleDto;
+use App\Exception\ValidationException;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\RoleService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -60,11 +61,11 @@ class RoleController extends AbstractController
     {
         try {
             $dto = CreateRoleDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException) {
-            return $this->json($this->apiErrorPayloadFactory->create('role.validation.slug_name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ValidationException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $role = $this->roleService->create($dto->slug, $dto->name, $dto->description);
+        $role = $this->roleService->create($dto);
         return $this->json(['id' => (string) $role->getId(), 'slug' => $role->getSlug(), 'name' => $role->getName()], Response::HTTP_CREATED);
     }
 
@@ -103,7 +104,7 @@ class RoleController extends AbstractController
      * @param string  $id      the role identifier
      * @param Request $request JSON body containing optional slug, name, and description fields
      */
-    #[Route('/{id}', name: 'role_update', methods: ['PUT'])]
+    #[Route('/{id}', name: 'role_update', methods: ['PATCH'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $role = $this->roleService->findById($id);
@@ -112,12 +113,7 @@ class RoleController extends AbstractController
         }
 
         $dto = UpdateRoleDto::fromArray($request->toArray());
-        $this->roleService->update(
-            $role,
-            $dto->slug ?? $role->getSlug(),
-            $dto->name ?? $role->getName(),
-            $dto->description,
-        );
+        $this->roleService->update($role, $dto);
         return $this->json(['id' => (string) $role->getId(), 'slug' => $role->getSlug(), 'name' => $role->getName()]);
     }
 
@@ -156,8 +152,8 @@ class RoleController extends AbstractController
 
         try {
             $dto = AddRoleSkillDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException) {
-            return $this->json($this->apiErrorPayloadFactory->create('role.validation.skill_id_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ValidationException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         try {

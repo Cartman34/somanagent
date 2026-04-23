@@ -8,6 +8,9 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Adapter\Skill\SkillsShAdapter;
+use App\Dto\Input\Skill\CreateSkillDto;
+use App\Dto\Input\Skill\ImportSkillDto;
+use App\Dto\Input\Skill\UpdateSkillContentDto;
 use App\Entity\Skill;
 use App\Enum\AuditAction;
 use App\Enum\SkillSource;
@@ -35,9 +38,9 @@ class SkillService
     /**
      * Importe un skill depuis skills.sh et le sauvegarde en base + sur disque.
      */
-    public function importFromRegistry(string $ownerAndName): Skill
+    public function importFromRegistry(ImportSkillDto $dto): Skill
     {
-        $data = $this->skillsShAdapter->import($ownerAndName);
+        $data = $this->skillsShAdapter->import($dto->source);
 
         $existing = $this->skillRepository->findOneBy(['slug' => $data['slug']]);
         if ($existing !== null) {
@@ -58,7 +61,7 @@ class SkillService
 
         $this->entityService->create($skill, AuditAction::SkillImported, [
             'slug'   => $data['slug'],
-            'source' => $ownerAndName,
+            'source' => $dto->source,
         ]);
 
         return $skill;
@@ -67,28 +70,28 @@ class SkillService
     /**
      * Creates a custom skill and writes its SKILL.md file on disk.
      */
-    public function createCustom(string $slug, string $name, string $content, ?string $description = null): Skill
+    public function createCustom(CreateSkillDto $dto): Skill
     {
-        $dir      = $this->skillsDir . '/custom/' . $slug;
-        $filePath = 'custom/' . $slug . '/SKILL.md';
+        $dir      = $this->skillsDir . '/custom/' . $dto->slug;
+        $filePath = 'custom/' . $dto->slug . '/SKILL.md';
 
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
 
-        $mdContent = "---\nname: {$name}\ndescription: " . ($description ?? '') . "\n---\n\n{$content}";
+        $mdContent = "---\nname: {$dto->name}\ndescription: " . ($dto->description ?? '') . "\n---\n\n{$dto->content}";
         file_put_contents($this->skillsDir . '/' . $filePath, $mdContent);
 
         $skill = new Skill(
-            slug:        $slug,
-            name:        $name,
+            slug:        $dto->slug,
+            name:        $dto->name,
             content:     $mdContent,
             filePath:    $filePath,
             source:      SkillSource::Custom,
-            description: $description,
+            description: $dto->description,
         );
 
-        $this->entityService->create($skill, AuditAction::SkillCreated, ['slug' => $slug]);
+        $this->entityService->create($skill, AuditAction::SkillCreated, ['slug' => $dto->slug]);
 
         return $skill;
     }
@@ -96,10 +99,10 @@ class SkillService
     /**
      * Updates the skill content and syncs the SKILL.md file on disk.
      */
-    public function updateContent(Skill $skill, string $content): Skill
+    public function updateContent(Skill $skill, UpdateSkillContentDto $dto): Skill
     {
-        $skill->setContent($content);
-        file_put_contents($this->skillsDir . '/' . $skill->getFilePath(), $content);
+        $skill->setContent($dto->content);
+        file_put_contents($this->skillsDir . '/' . $skill->getFilePath(), $dto->content);
         $this->entityService->update($skill, AuditAction::SkillUpdated);
 
         return $skill;

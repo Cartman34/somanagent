@@ -30,7 +30,7 @@ export const featuresApi = {
   },
 
   update: async (id: string, payload: FeaturePayload): Promise<Feature> => {
-    const { data } = await apiClient.put(`/features/${id}`, payload)
+    const { data } = await apiClient.patch(`/features/${id}`, payload)
     return data
   },
 

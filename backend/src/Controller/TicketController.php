@@ -14,6 +14,7 @@ use App\Dto\Input\Ticket\CreateTicketRequestDto;
 use App\Dto\Input\Ticket\CreateTicketTaskDto;
 use App\Dto\Input\Ticket\ExecuteTicketTaskDto;
 use App\Dto\Input\Ticket\ReprioritizeDto;
+use App\Dto\Input\Ticket\ResumeTicketTaskDto;
 use App\Dto\Input\Ticket\UpdateCommentDto;
 use App\Dto\Input\Ticket\UpdateProgressDto;
 use App\Dto\Input\Ticket\UpdateTicketDto;
@@ -27,6 +28,7 @@ use App\Enum\TaskExecutionTrigger;
 use App\Enum\TaskPriority;
 use App\Enum\TaskStatus;
 use App\Enum\TaskType;
+use App\Exception\ValidationException;
 use App\Repository\AgentRepository;
 use App\Repository\AgentTaskExecutionRepository;
 use App\Repository\TicketLogRepository;
@@ -103,8 +105,8 @@ class TicketController extends AbstractController
 
         try {
             $dto = CreateTicketDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException) {
-            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.title_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ValidationException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         if ($dto->type === TaskType::Task) {
@@ -113,11 +115,7 @@ class TicketController extends AbstractController
 
         $ticket = $this->ticketService->create(
             $project,
-            $dto->type,
-            $dto->title,
-            $dto->description,
-            $dto->priority,
-            $dto->featureId,
+            $dto,
             initialRequest: $dto->description,
             initialTitle: $dto->title,
         );
@@ -139,30 +137,17 @@ class TicketController extends AbstractController
 
         try {
             $dto = CreateTicketTaskDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException $e) {
-            if ($e->getMessage() === 'action_key_required') {
-                return $this->json($this->apiErrorPayloadFactory->fromMessage('An actionKey is required to create a task.'), Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.title_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ValidationException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $priority = $dto->priority;
         $parent = $dto->parentTaskId !== null ? $this->ticketTaskService->findById($dto->parentTaskId) : null;
         if ($parent !== null && (string) $parent->getTicket()->getId() !== (string) $ticket->getId()) {
             return $this->json($this->apiErrorPayloadFactory->fromMessage('The parent task must belong to the same ticket.'), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         try {
-            $task = $this->ticketTaskService->create(
-                ticket: $ticket,
-                actionKey: $dto->actionKey,
-                title: $dto->title,
-                description: $dto->description,
-                priority: $priority,
-                parentId: $parent ? (string) $parent->getId() : null,
-                assignedAgentId: $dto->assignedAgentId,
-            );
+            $task = $this->ticketTaskService->create($ticket, $dto);
         } catch (\InvalidArgumentException $e) {
             return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
@@ -191,23 +176,11 @@ class TicketController extends AbstractController
 
         try {
             $dto = CreateTicketRequestDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException $e) {
-            if ($e->getMessage() === 'description_required') {
-                return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.description_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.title_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (ValidationException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $ticket = $this->ticketService->create(
-            $project,
-            TaskType::UserStory,
-            $dto->title,
-            null,
-            $dto->priority,
-            initialRequest: $dto->description,
-            initialTitle: $dto->title,
-        );
+        $ticket = $this->ticketService->createRequest($project, $dto);
 
         $dispatchError = null;
         try {
@@ -266,7 +239,7 @@ class TicketController extends AbstractController
     /**
      * Updates an existing ticket.
      */
-    #[Route('/tickets/{id}', name: 'ticket_update_api', methods: ['PUT'])]
+    #[Route('/tickets/{id}', name: 'ticket_update_api', methods: ['PATCH'])]
     public function updateTicket(string $id, Request $request): JsonResponse
     {
         $ticket = $this->ticketService->findById($id);
@@ -275,13 +248,7 @@ class TicketController extends AbstractController
         }
 
         $dto = UpdateTicketDto::fromArray($request->toArray());
-        $this->ticketService->update(
-            $ticket,
-            $dto->title ?? $ticket->getTitle(),
-            $dto->description,
-            $dto->priority ?? $ticket->getPriority(),
-            $dto->featureId,
-        );
+        $this->ticketService->update($ticket, $dto);
 
         return $this->json($this->serializeApiTicket($ticket));
     }
@@ -289,7 +256,7 @@ class TicketController extends AbstractController
     /**
      * Updates an existing ticket task.
      */
-    #[Route('/ticket-tasks/{id}', name: 'ticket_task_update_api', methods: ['PUT'])]
+    #[Route('/ticket-tasks/{id}', name: 'ticket_task_update_api', methods: ['PATCH'])]
     public function updateTicketTask(string $id, Request $request): JsonResponse
     {
         $task = $this->ticketTaskService->findById($id);
@@ -299,14 +266,7 @@ class TicketController extends AbstractController
 
         $dto = UpdateTicketTaskDto::fromArray($request->toArray());
         try {
-            $this->ticketTaskService->update(
-                $task,
-                $dto->title ?? $task->getTitle(),
-                $dto->description,
-                $dto->priority ?? $task->getPriority(),
-                $dto->actionKey,
-                $dto->assignedAgentId,
-            );
+            $this->ticketTaskService->update($task, $dto);
         } catch (\InvalidArgumentException $e) {
             return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
@@ -541,8 +501,6 @@ class TicketController extends AbstractController
 
     /**
      * Resumes an agent step from a ticket task.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/ticket-tasks/{id}/resume', name: 'ticket_task_resume_api', methods: ['POST'])]
     public function resume(string $id, Request $request): JsonResponse
@@ -555,6 +513,8 @@ class TicketController extends AbstractController
         if (($response = $this->requireProjectTeamForProgress($task->getTicket()->getProject())) !== null) {
             return $response;
         }
+
+        ResumeTicketTaskDto::fromArray($request->toArray());
 
         try {
             $result = $this->ticketTaskService->resume($task, $task->getAssignedAgent());
