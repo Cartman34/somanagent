@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace App\Dto\Input\Feature;
 
+use App\Exception\ValidationException;
+
 /**
  * Input DTO for creating a feature.
  */
@@ -22,12 +24,18 @@ final class CreateFeatureDto
     ) {}
 
     /**
-     * @throws \InvalidArgumentException with a short domain code on validation failure
+     * @throws ValidationException with collected validation errors
      */
     public static function fromArray(array $data): self
     {
+        $errors = [];
+
         if (empty($data['name'])) {
-            throw new \InvalidArgumentException('name_required');
+            $errors[] = ['field' => 'name', 'code' => 'feature.validation.name_required'];
+        }
+
+        if ($errors) {
+            throw new ValidationException($errors);
         }
 
         return new self(

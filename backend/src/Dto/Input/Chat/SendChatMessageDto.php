@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace App\Dto\Input\Chat;
 
+use App\Exception\ValidationException;
+
 /**
  * Input DTO for sending a chat message.
  */
@@ -20,12 +22,18 @@ final class SendChatMessageDto
     ) {}
 
     /**
-     * @throws \InvalidArgumentException with a short domain code on validation failure
+     * @throws ValidationException with validation errors
      */
     public static function fromArray(array $data): self
     {
+        $errors = [];
+
         if (empty($data['content'])) {
-            throw new \InvalidArgumentException('content_required');
+            $errors[] = ['field' => 'content', 'code' => 'chat.validation.content_required'];
+        }
+
+        if ($errors) {
+            throw new ValidationException($errors);
         }
 
         return new self(

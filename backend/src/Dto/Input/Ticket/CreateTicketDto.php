@@ -9,6 +9,7 @@ namespace App\Dto\Input\Ticket;
 
 use App\Enum\TaskPriority;
 use App\Enum\TaskType;
+use App\Exception\ValidationException;
 
 /**
  * Input DTO for creating a ticket.
@@ -31,18 +32,44 @@ final class CreateTicketDto
     ) {}
 
     /**
-     * @throws \InvalidArgumentException with a short domain code on validation failure
+     * @throws ValidationException with accumulated validation errors
      */
     public static function fromArray(array $data): self
     {
+        $errors = [];
+
         if (empty($data['title'])) {
-            throw new \InvalidArgumentException('title_required');
+            $errors[] = ['field' => 'title', 'code' => 'ticket.validation.title_required'];
+        }
+
+        $type = TaskType::UserStory;
+        if (isset($data['type']) && $data['type'] !== '') {
+            $t = TaskType::tryFrom((string) $data['type']);
+            if ($t === null) {
+                $errors[] = ['field' => 'type', 'code' => 'ticket.validation.type_invalid'];
+            } else {
+                $type = $t;
+            }
+        }
+
+        $priority = TaskPriority::Medium;
+        if (isset($data['priority']) && $data['priority'] !== '') {
+            $p = TaskPriority::tryFrom((string) $data['priority']);
+            if ($p === null) {
+                $errors[] = ['field' => 'priority', 'code' => 'ticket.validation.priority_invalid'];
+            } else {
+                $priority = $p;
+            }
+        }
+
+        if ($errors !== []) {
+            throw new ValidationException($errors);
         }
 
         return new self(
             title: (string) $data['title'],
-            type: TaskType::from($data['type'] ?? TaskType::UserStory->value),
-            priority: TaskPriority::from($data['priority'] ?? TaskPriority::Medium->value),
+            type: $type,
+            priority: $priority,
             description: isset($data['description']) && $data['description'] !== '' ? (string) $data['description'] : null,
             featureId: isset($data['featureId']) && $data['featureId'] !== '' ? (string) $data['featureId'] : null,
         );

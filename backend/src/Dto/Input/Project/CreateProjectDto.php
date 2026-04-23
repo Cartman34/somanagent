@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace App\Dto\Input\Project;
 
 use App\Enum\DispatchMode;
+use App\Exception\ValidationException;
 
 /**
  * Input DTO for creating a project.
@@ -34,16 +35,32 @@ final class CreateProjectDto
     ) {}
 
     /**
-     * @throws \InvalidArgumentException with a short domain code on validation failure
+     * @throws ValidationException with accumulated validation errors
      */
     public static function fromArray(array $data): self
     {
+        $errors = [];
+
         if (empty($data['name'])) {
-            throw new \InvalidArgumentException('name_required');
+            $errors[] = ['field' => 'name', 'code' => 'project.validation.name_required'];
         }
 
         if (empty($data['teamId'])) {
-            throw new \InvalidArgumentException('team_required');
+            $errors[] = ['field' => 'teamId', 'code' => 'project.validation.team_required'];
+        }
+
+        $dispatchMode = DispatchMode::Auto;
+        if (isset($data['dispatchMode']) && $data['dispatchMode'] !== '') {
+            $dm = DispatchMode::tryFrom((string) $data['dispatchMode']);
+            if ($dm === null) {
+                $errors[] = ['field' => 'dispatchMode', 'code' => 'project.validation.dispatch_mode_invalid'];
+            } else {
+                $dispatchMode = $dm;
+            }
+        }
+
+        if ($errors !== []) {
+            throw new ValidationException($errors);
         }
 
         return new self(
@@ -52,7 +69,7 @@ final class CreateProjectDto
             description: isset($data['description']) && $data['description'] !== '' ? (string) $data['description'] : null,
             repositoryUrl: isset($data['repositoryUrl']) && $data['repositoryUrl'] !== '' ? (string) $data['repositoryUrl'] : null,
             workflowId: isset($data['workflowId']) && $data['workflowId'] !== '' ? (string) $data['workflowId'] : null,
-            dispatchMode: DispatchMode::from($data['dispatchMode'] ?? DispatchMode::Auto->value),
+            dispatchMode: $dispatchMode,
             defaultTicketRoleId: isset($data['defaultTicketRoleId']) && $data['defaultTicketRoleId'] !== '' ? (string) $data['defaultTicketRoleId'] : null,
         );
     }

@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace App\Dto\Input\Agent;
 
 use App\Enum\ConnectorType;
+use App\Exception\ValidationException;
 use App\ValueObject\ConnectorConfig;
 
 /**
@@ -31,21 +32,37 @@ final class CreateAgentDto
     ) {}
 
     /**
-     * @throws \InvalidArgumentException with a short domain code on validation failure
+     * @throws ValidationException with collected validation errors
      */
     public static function fromArray(array $data): self
     {
+        $errors = [];
+
         if (empty($data['name'])) {
-            throw new \InvalidArgumentException('name_required');
+            $errors[] = ['field' => 'name', 'code' => 'agent.validation.name_required'];
         }
 
         if (!is_array($data['config'] ?? null) || !is_string($data['config']['model'] ?? null) || trim($data['config']['model']) === '') {
-            throw new \InvalidArgumentException('model_required');
+            $errors[] = ['field' => 'config.model', 'code' => 'agent.validation.model_required'];
+        }
+
+        $connector = ConnectorType::ClaudeApi;
+        if (isset($data['connector']) && $data['connector'] !== '') {
+            $connectorEnum = ConnectorType::tryFrom((string) $data['connector']);
+            if ($connectorEnum === null) {
+                $errors[] = ['field' => 'connector', 'code' => 'agent.validation.connector_invalid'];
+            } else {
+                $connector = $connectorEnum;
+            }
+        }
+
+        if ($errors) {
+            throw new ValidationException($errors);
         }
 
         return new self(
             name: (string) $data['name'],
-            connector: ConnectorType::from($data['connector'] ?? ConnectorType::ClaudeApi->value),
+            connector: $connector,
             config: ConnectorConfig::fromArray($data['config']),
             description: isset($data['description']) && $data['description'] !== '' ? (string) $data['description'] : null,
             roleId: isset($data['roleId']) && $data['roleId'] !== '' ? (string) $data['roleId'] : null,

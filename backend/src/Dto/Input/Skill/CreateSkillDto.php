@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace App\Dto\Input\Skill;
 
+use App\Exception\ValidationException;
+
 /**
  * Input DTO for creating a custom skill.
  */
@@ -26,12 +28,26 @@ final class CreateSkillDto
     ) {}
 
     /**
-     * @throws \InvalidArgumentException with a short domain code on validation failure
+     * @throws ValidationException with validation errors
      */
     public static function fromArray(array $data): self
     {
-        if (empty($data['slug']) || empty($data['name']) || empty($data['content'])) {
-            throw new \InvalidArgumentException('create_required');
+        $errors = [];
+
+        if (empty($data['slug'])) {
+            $errors[] = ['field' => 'slug', 'code' => 'skill.validation.create_required'];
+        }
+
+        if (empty($data['name'])) {
+            $errors[] = ['field' => 'name', 'code' => 'skill.validation.create_required'];
+        }
+
+        if (empty($data['content'])) {
+            $errors[] = ['field' => 'content', 'code' => 'skill.validation.create_required'];
+        }
+
+        if ($errors) {
+            throw new ValidationException($errors);
         }
 
         return new self(

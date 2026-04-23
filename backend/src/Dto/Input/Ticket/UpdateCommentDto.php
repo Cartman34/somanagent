@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace App\Dto\Input\Ticket;
 
+use App\Exception\ValidationException;
+
 /**
  * Input DTO for editing an existing comment.
  */
@@ -20,13 +22,19 @@ final class UpdateCommentDto
     ) {}
 
     /**
-     * @throws \InvalidArgumentException with a short domain code on validation failure
+     * @throws ValidationException with accumulated validation errors
      */
     public static function fromArray(array $data): self
     {
+        $errors = [];
         $content = trim((string) ($data['content'] ?? ''));
+
         if ($content === '') {
-            throw new \InvalidArgumentException('content_required');
+            $errors[] = ['field' => 'content', 'code' => 'ticket.validation.content_required'];
+        }
+
+        if ($errors !== []) {
+            throw new ValidationException($errors);
         }
 
         return new self(

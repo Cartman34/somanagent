@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace App\Dto\Input\Team;
 
+use App\Exception\ValidationException;
+
 /**
  * Input DTO for adding an agent to a team.
  */
@@ -20,12 +22,20 @@ final class AddTeamAgentDto
     ) {}
 
     /**
-     * @throws \InvalidArgumentException with a short domain code on validation failure
+     * Creates an instance from raw request data.
+     *
+     * @throws ValidationException if validation errors occur
      */
     public static function fromArray(array $data): self
     {
+        $errors = [];
+
         if (empty($data['agentId'])) {
-            throw new \InvalidArgumentException('agent_id_required');
+            $errors[] = ['field' => 'agentId', 'code' => 'team.validation.agent_id_required'];
+        }
+
+        if ($errors) {
+            throw new ValidationException($errors);
         }
 
         return new self(

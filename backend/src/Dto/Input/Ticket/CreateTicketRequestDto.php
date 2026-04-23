@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace App\Dto\Input\Ticket;
 
 use App\Enum\TaskPriority;
+use App\Exception\ValidationException;
 
 /**
  * Input DTO for creating a project request (user story via the request flow).
@@ -26,22 +27,36 @@ final class CreateTicketRequestDto
     ) {}
 
     /**
-     * @throws \InvalidArgumentException with a short domain code on validation failure
+     * @throws ValidationException with accumulated validation errors
      */
     public static function fromArray(array $data): self
     {
+        $errors = [];
+
         if (empty($data['title'])) {
-            throw new \InvalidArgumentException('title_required');
+            $errors[] = ['field' => 'title', 'code' => 'ticket.validation.title_required'];
         }
 
         if (empty($data['description'])) {
-            throw new \InvalidArgumentException('description_required');
+            $errors[] = ['field' => 'description', 'code' => 'ticket.validation.description_required'];
+        }
+
+        $priority = TaskPriority::Medium;
+        if (isset($data['priority']) && $data['priority'] !== '') {
+            $p = TaskPriority::tryFrom((string) $data['priority']);
+            if ($p !== null) {
+                $priority = $p;
+            }
+        }
+
+        if ($errors !== []) {
+            throw new ValidationException($errors);
         }
 
         return new self(
             title: (string) $data['title'],
             description: (string) $data['description'],
-            priority: TaskPriority::from($data['priority'] ?? TaskPriority::Medium->value),
+            priority: $priority,
         );
     }
 }

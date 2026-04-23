@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace App\Dto\Input\Ticket;
 
 use App\Enum\TaskPriority;
+use App\Exception\ValidationException;
 
 /**
  * Input DTO for creating a ticket task.
@@ -32,22 +33,36 @@ final class CreateTicketTaskDto
     ) {}
 
     /**
-     * @throws \InvalidArgumentException with a short domain code on validation failure
+     * @throws ValidationException with accumulated validation errors
      */
     public static function fromArray(array $data): self
     {
+        $errors = [];
+
         if (empty($data['title'])) {
-            throw new \InvalidArgumentException('title_required');
+            $errors[] = ['field' => 'title', 'code' => 'ticket.validation.title_required'];
         }
 
         if (empty($data['actionKey'])) {
-            throw new \InvalidArgumentException('action_key_required');
+            $errors[] = ['field' => 'actionKey', 'code' => 'ticket.validation.action_key_required'];
+        }
+
+        $priority = TaskPriority::Medium;
+        if (isset($data['priority']) && $data['priority'] !== '') {
+            $p = TaskPriority::tryFrom((string) $data['priority']);
+            if ($p !== null) {
+                $priority = $p;
+            }
+        }
+
+        if ($errors !== []) {
+            throw new ValidationException($errors);
         }
 
         return new self(
             title: (string) $data['title'],
             actionKey: (string) $data['actionKey'],
-            priority: TaskPriority::from($data['priority'] ?? TaskPriority::Medium->value),
+            priority: $priority,
             description: isset($data['description']) && $data['description'] !== '' ? (string) $data['description'] : null,
             parentTaskId: isset($data['parentTaskId']) && $data['parentTaskId'] !== '' ? (string) $data['parentTaskId'] : null,
             assignedAgentId: isset($data['assignedAgentId']) && $data['assignedAgentId'] !== '' ? (string) $data['assignedAgentId'] : null,

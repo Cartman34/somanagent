@@ -9,6 +9,7 @@ namespace App\Dto\Input\Agent;
 
 /**
  * Input DTO for updating an agent (all fields optional).
+ * All fields are optional and no validation errors are thrown.
  */
 final class UpdateAgentDto
 {

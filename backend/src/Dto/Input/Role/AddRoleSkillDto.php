@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace App\Dto\Input\Role;
 
+use App\Exception\ValidationException;
+
 /**
  * Input DTO for adding a skill to a role.
  */
@@ -20,12 +22,20 @@ final class AddRoleSkillDto
     ) {}
 
     /**
-     * @throws \InvalidArgumentException with a short domain code on validation failure
+     * Creates an instance from raw request data.
+     *
+     * @throws ValidationException if validation errors occur
      */
     public static function fromArray(array $data): self
     {
+        $errors = [];
+
         if (empty($data['skillId'])) {
-            throw new \InvalidArgumentException('skill_id_required');
+            $errors[] = ['field' => 'skillId', 'code' => 'role.validation.skill_id_required'];
+        }
+
+        if ($errors) {
+            throw new ValidationException($errors);
         }
 
         return new self(

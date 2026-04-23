@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace App\Dto\Input\Chat;
 
+use App\Exception\ValidationException;
+
 /**
  * Input DTO for replying to a chat message.
  */
@@ -22,16 +24,22 @@ final class ReplyChatMessageDto
     ) {}
 
     /**
-     * @throws \InvalidArgumentException with a short domain code on validation failure
+     * @throws ValidationException with validation errors
      */
     public static function fromArray(array $data): self
     {
+        $errors = [];
+
         if (empty($data['content'])) {
-            throw new \InvalidArgumentException('content_required');
+            $errors[] = ['field' => 'content', 'code' => 'chat.validation.content_required'];
         }
 
         if (empty($data['replyToMessageId'])) {
-            throw new \InvalidArgumentException('reply_to_required');
+            $errors[] = ['field' => 'replyToMessageId', 'code' => 'chat.validation.reply_to_required'];
+        }
+
+        if ($errors) {
+            throw new ValidationException($errors);
         }
 
         return new self(

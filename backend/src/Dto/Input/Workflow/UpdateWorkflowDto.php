@@ -27,6 +27,7 @@ final class UpdateWorkflowDto
 
     /**
      * Creates an instance from raw request data. No required fields.
+     * Invalid trigger values are silently ignored (fallback to null).
      */
     public static function fromArray(array $data): self
     {

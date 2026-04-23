@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace App\Dto\Input\Ticket;
 
 use App\Enum\TaskPriority;
+use App\Exception\ValidationException;
 
 /**
  * Input DTO for reprioritizing a ticket or ticket task.
@@ -22,16 +23,27 @@ final class ReprioritizeDto
     ) {}
 
     /**
-     * @throws \InvalidArgumentException with a short domain code on validation failure
+     * @throws ValidationException with accumulated validation errors
      */
     public static function fromArray(array $data): self
     {
+        $errors = [];
+
         if (empty($data['priority'])) {
-            throw new \InvalidArgumentException('priority_required');
+            $errors[] = ['field' => 'priority', 'code' => 'ticket.validation.priority_required'];
+        } else {
+            $priority = TaskPriority::tryFrom((string) $data['priority']);
+            if ($priority === null) {
+                $errors[] = ['field' => 'priority', 'code' => 'ticket.validation.priority_invalid'];
+            }
+        }
+
+        if ($errors !== []) {
+            throw new ValidationException($errors);
         }
 
         return new self(
-            priority: TaskPriority::from((string) $data['priority']),
+            priority: $priority,
         );
     }
 }

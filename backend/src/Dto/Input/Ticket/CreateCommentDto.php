@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace App\Dto\Input\Ticket;
 
+use App\Exception\ValidationException;
+
 /**
  * Input DTO for creating a comment on a ticket or ticket task.
  */
@@ -24,13 +26,19 @@ final class CreateCommentDto
     ) {}
 
     /**
-     * @throws \InvalidArgumentException with a short domain code on validation failure
+     * @throws ValidationException with accumulated validation errors
      */
     public static function fromArray(array $data): self
     {
+        $errors = [];
         $content = trim((string) ($data['content'] ?? ''));
+
         if ($content === '') {
-            throw new \InvalidArgumentException('content_required');
+            $errors[] = ['field' => 'content', 'code' => 'ticket.validation.content_required'];
+        }
+
+        if ($errors !== []) {
+            throw new ValidationException($errors);
         }
 
         return new self(

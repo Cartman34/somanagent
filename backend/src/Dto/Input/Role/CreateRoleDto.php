@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace App\Dto\Input\Role;
 
+use App\Exception\ValidationException;
+
 /**
  * Input DTO for creating a role.
  */
@@ -24,12 +26,24 @@ final class CreateRoleDto
     ) {}
 
     /**
-     * @throws \InvalidArgumentException with a short domain code on validation failure
+     * Creates an instance from raw request data.
+     *
+     * @throws ValidationException if validation errors occur
      */
     public static function fromArray(array $data): self
     {
-        if (empty($data['slug']) || empty($data['name'])) {
-            throw new \InvalidArgumentException('slug_name_required');
+        $errors = [];
+
+        if (empty($data['slug'])) {
+            $errors[] = ['field' => 'slug', 'code' => 'role.validation.slug_required'];
+        }
+
+        if (empty($data['name'])) {
+            $errors[] = ['field' => 'name', 'code' => 'role.validation.name_required'];
+        }
+
+        if ($errors) {
+            throw new ValidationException($errors);
         }
 
         return new self(

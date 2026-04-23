@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace App\Dto\Input\Skill;
 
+use App\Exception\ValidationException;
+
 /**
  * Input DTO for importing a skill from the registry.
  */
@@ -20,12 +22,18 @@ final class ImportSkillDto
     ) {}
 
     /**
-     * @throws \InvalidArgumentException with a short domain code on validation failure
+     * @throws ValidationException with validation errors
      */
     public static function fromArray(array $data): self
     {
+        $errors = [];
+
         if (empty($data['source'])) {
-            throw new \InvalidArgumentException('source_required');
+            $errors[] = ['field' => 'source', 'code' => 'skill.validation.source_required'];
+        }
+
+        if ($errors) {
+            throw new ValidationException($errors);
         }
 
         return new self(
