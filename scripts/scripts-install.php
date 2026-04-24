@@ -14,6 +14,7 @@
  */
 // Description: Install the local Composer dependencies required by scripts/
 // Usage: php scripts/scripts-install.php
+// Usage: php scripts/scripts-install.php --update
 
 declare(strict_types=1);
 
@@ -25,8 +26,9 @@ if ($projectRoot === false) {
 
 $scriptsDir = $projectRoot . '/scripts';
 $vendorAutoload = $scriptsDir . '/vendor/autoload.php';
+$updateMode = in_array('--update', array_slice($argv ?? [], 1), true);
 
-if (is_file($vendorAutoload)) {
+if (!$updateMode && is_file($vendorAutoload)) {
     fwrite(STDOUT, "scripts dependencies are already installed.\n");
     exit(0);
 }
@@ -58,11 +60,12 @@ if ($composerBinary === null) {
     exit(1);
 }
 
-$command = sprintf('%s install --working-dir=%s 2>&1', $composerBinary, escapeshellarg($scriptsDir));
+$composerAction = $updateMode ? 'update' : 'install';
+$command = sprintf('%s %s --working-dir=%s 2>&1', $composerBinary, $composerAction, escapeshellarg($scriptsDir));
 passthru($command, $exitCode);
 
 if ($exitCode !== 0) {
-    fwrite(STDERR, "Failed to install scripts dependencies.\n");
+    fwrite(STDERR, sprintf("Failed to %s scripts dependencies.\n", $composerAction));
     fwrite(STDERR, "Retry manually with: php scripts/scripts-install.php\n");
     exit($exitCode);
 }
@@ -73,5 +76,9 @@ if (!is_file($vendorAutoload)) {
     exit(1);
 }
 
-fwrite(STDOUT, "scripts dependencies installed.\n");
+if ($updateMode) {
+    fwrite(STDOUT, "scripts dependencies updated.\n");
+} else {
+    fwrite(STDOUT, "scripts dependencies installed.\n");
+}
 exit(0);
