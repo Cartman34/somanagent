@@ -10,7 +10,6 @@ namespace App\Controller;
 use App\Dto\Input\Role\AddRoleSkillDto;
 use App\Dto\Input\Role\CreateRoleDto;
 use App\Dto\Input\Role\UpdateRoleDto;
-use App\Exception\ValidationException;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\RoleService;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -60,10 +59,9 @@ class RoleController extends AbstractApiController
     #[Route('', name: 'role_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        try {
-            $dto = CreateRoleDto::fromArray($request->toArray());
-        } catch (ValidationException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => CreateRoleDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         $role = $this->roleService->create($dto);
@@ -151,10 +149,9 @@ class RoleController extends AbstractApiController
             return $this->json($this->apiErrorPayloadFactory->create('role.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        try {
-            $dto = AddRoleSkillDto::fromArray($request->toArray());
-        } catch (ValidationException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => AddRoleSkillDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         try {

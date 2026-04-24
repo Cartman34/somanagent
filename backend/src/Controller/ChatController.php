@@ -11,7 +11,6 @@ use App\Dto\Input\Chat\ReplyChatMessageDto;
 use App\Dto\Input\Chat\SendChatMessageDto;
 use App\Dto\Input\Chat\UpdateChatMessageDto;
 use App\Entity\ChatMessage;
-use App\Exception\ValidationException;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\AgentService;
 use App\Service\ChatService;
@@ -70,10 +69,9 @@ class ChatController extends AbstractApiController
             return $this->json($this->apiErrorPayloadFactory->create('chat.error.project_or_agent_not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        try {
-            $dto = SendChatMessageDto::fromArray($request->toArray());
-        } catch (ValidationException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => SendChatMessageDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         $exchange = $this->chatService->sendAndReceive($project, $agent, $dto);
@@ -100,10 +98,9 @@ class ChatController extends AbstractApiController
             return $this->json($this->apiErrorPayloadFactory->create('chat.error.project_or_agent_not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        try {
-            $dto = ReplyChatMessageDto::fromArray($request->toArray());
-        } catch (ValidationException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => ReplyChatMessageDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         $message = $this->chatService->reply($project, $agent, $dto);
@@ -124,10 +121,9 @@ class ChatController extends AbstractApiController
             return $this->json($this->apiErrorPayloadFactory->create('chat.error.project_or_agent_not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        try {
-            $dto = UpdateChatMessageDto::fromArray($request->toArray());
-        } catch (ValidationException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => UpdateChatMessageDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         try {

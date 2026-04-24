@@ -9,7 +9,6 @@ namespace App\Controller;
 
 use App\Dto\Input\Feature\CreateFeatureDto;
 use App\Dto\Input\Feature\UpdateFeatureDto;
-use App\Exception\ValidationException;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\FeatureService;
 use App\Service\ProjectService;
@@ -67,10 +66,9 @@ class FeatureController extends AbstractApiController
             return $this->json($this->apiErrorPayloadFactory->create('feature.error.project_not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        try {
-            $dto = CreateFeatureDto::fromArray($request->toArray());
-        } catch (ValidationException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => CreateFeatureDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         $feature = $this->featureService->create($project, $dto);

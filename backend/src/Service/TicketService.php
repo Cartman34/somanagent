@@ -137,6 +137,24 @@ final class TicketService
     }
 
     /**
+     * Reprioritize a ticket and record the change in the audit log.
+     */
+    public function reprioritize(Ticket $ticket, TaskPriority $priority): Ticket
+    {
+        $previous = $ticket->getPriority();
+        $ticket->setPriority($priority);
+        $this->entityService->update($ticket, AuditAction::TaskReprioritized, [
+            'from' => $previous->value,
+            'to'   => $priority->value,
+        ]);
+        $this->realtimeUpdateService->publishTicketChanged($ticket, 'priority_changed', [
+            'priority' => $priority->value,
+        ]);
+
+        return $ticket;
+    }
+
+    /**
      * Change the status of a ticket and record the transition.
      */
     public function changeStatus(Ticket $ticket, TaskStatus $status): Ticket

@@ -11,7 +11,6 @@ use App\Dto\Input\Project\CreateModuleDto;
 use App\Dto\Input\Project\CreateProjectDto;
 use App\Dto\Input\Project\UpdateModuleDto;
 use App\Dto\Input\Project\UpdateProjectDto;
-use App\Exception\ValidationException;
 use App\Repository\AuditLogRepository;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\ProjectService;
@@ -66,10 +65,9 @@ class ProjectController extends AbstractApiController
     #[Route('', name: 'project_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        try {
-            $dto = CreateProjectDto::fromArray($request->toArray());
-        } catch (ValidationException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => CreateProjectDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         try {
@@ -135,10 +133,9 @@ class ProjectController extends AbstractApiController
             return $this->json($this->apiErrorPayloadFactory->create('project.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        try {
-            $dto = UpdateProjectDto::fromArray($request->toArray());
-        } catch (ValidationException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => UpdateProjectDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         try {
@@ -230,10 +227,9 @@ class ProjectController extends AbstractApiController
             return $this->json($this->apiErrorPayloadFactory->create('project.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        try {
-            $dto = CreateModuleDto::fromArray($request->toArray());
-        } catch (ValidationException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => CreateModuleDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         $module = $this->projectService->addModule($project, $dto);

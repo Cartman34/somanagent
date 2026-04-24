@@ -10,7 +10,6 @@ namespace App\Controller;
 use App\Dto\Input\Skill\CreateSkillDto;
 use App\Dto\Input\Skill\ImportSkillDto;
 use App\Dto\Input\Skill\UpdateSkillContentDto;
-use App\Exception\ValidationException;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\SkillService;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -86,10 +85,9 @@ class SkillController extends AbstractApiController
     #[Route('/import', name: 'skill_import', methods: ['POST'])]
     public function import(Request $request): JsonResponse
     {
-        try {
-            $dto = ImportSkillDto::fromArray($request->toArray());
-        } catch (ValidationException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => ImportSkillDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         $skill = $this->skillService->importFromRegistry($dto);
@@ -104,10 +102,9 @@ class SkillController extends AbstractApiController
     #[Route('', name: 'skill_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        try {
-            $dto = CreateSkillDto::fromArray($request->toArray());
-        } catch (ValidationException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => CreateSkillDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         $skill = $this->skillService->createCustom($dto);
@@ -128,10 +125,9 @@ class SkillController extends AbstractApiController
             return $this->json($this->apiErrorPayloadFactory->create('skill.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        try {
-            $dto = UpdateSkillContentDto::fromArray($request->toArray());
-        } catch (ValidationException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => UpdateSkillContentDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         $this->skillService->updateContent($skill, $dto);

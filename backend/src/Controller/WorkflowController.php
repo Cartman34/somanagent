@@ -9,7 +9,6 @@ namespace App\Controller;
 
 use App\Dto\Input\Workflow\CreateWorkflowDto;
 use App\Dto\Input\Workflow\UpdateWorkflowDto;
-use App\Exception\ValidationException;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\WorkflowService;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -48,10 +47,9 @@ class WorkflowController extends AbstractApiController
     #[Route('', name: 'workflow_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        try {
-            $dto = CreateWorkflowDto::fromArray($request->toArray());
-        } catch (ValidationException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => CreateWorkflowDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         $workflow = $this->workflowService->create($dto);
@@ -88,7 +86,10 @@ class WorkflowController extends AbstractApiController
             return $this->json($this->apiErrorPayloadFactory->create('workflow.error.immutable'), Response::HTTP_CONFLICT);
         }
 
-        $dto = UpdateWorkflowDto::fromArray($request->toArray());
+        $dto = $this->tryParseDto(fn() => UpdateWorkflowDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
+        }
         $workflow = $this->workflowService->update($workflow, $dto);
 
         return $this->json($this->buildWorkflowPayload($workflow, true));

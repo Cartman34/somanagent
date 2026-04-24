@@ -28,7 +28,6 @@ use App\Enum\TaskExecutionTrigger;
 use App\Enum\TaskPriority;
 use App\Enum\TaskStatus;
 use App\Enum\TaskType;
-use App\Exception\ValidationException;
 use App\Repository\AgentRepository;
 use App\Repository\AgentTaskExecutionRepository;
 use App\Repository\TicketLogRepository;
@@ -104,10 +103,9 @@ class TicketController extends AbstractApiController
             return $this->json($this->apiErrorPayloadFactory->create('project.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        try {
-            $dto = CreateTicketDto::fromArray($request->toArray());
-        } catch (ValidationException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => CreateTicketDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         if ($dto->type === TaskType::Task) {
@@ -136,10 +134,9 @@ class TicketController extends AbstractApiController
             return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        try {
-            $dto = CreateTicketTaskDto::fromArray($request->toArray());
-        } catch (ValidationException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => CreateTicketTaskDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         $parent = $dto->parentTaskId !== null ? $this->ticketTaskService->findById($dto->parentTaskId) : null;
@@ -175,10 +172,9 @@ class TicketController extends AbstractApiController
             return $response;
         }
 
-        try {
-            $dto = CreateTicketRequestDto::fromArray($request->toArray());
-        } catch (ValidationException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => CreateTicketRequestDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         $ticket = $this->ticketService->createRequest($project, $dto);
@@ -342,7 +338,7 @@ class TicketController extends AbstractApiController
         $priority = $dto->priority;
         $ticket = $this->ticketService->findById($id);
         if ($ticket !== null) {
-            $this->ticketService->update($ticket, new UpdateTicketDto(null, null, $priority, null));
+            $this->ticketService->reprioritize($ticket, $priority);
             return $this->json($this->serializeApiTicket($ticket));
         }
 

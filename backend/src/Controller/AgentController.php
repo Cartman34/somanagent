@@ -73,10 +73,9 @@ class AgentController extends AbstractApiController
     #[Route('', name: 'agent_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        try {
-            $dto = CreateAgentDto::fromArray($request->toArray());
-        } catch (ValidationException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => CreateAgentDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         $agent = $this->agentService->create($dto);
@@ -126,8 +125,8 @@ class AgentController extends AbstractApiController
             return $this->json($this->apiErrorPayloadFactory->create('agent.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
+        $dto = UpdateAgentDto::fromArray($request->toArray());
         try {
-            $dto = UpdateAgentDto::fromArray($request->toArray());
             $this->agentService->update($agent, $dto);
         } catch (ValidationException $e) {
             return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);

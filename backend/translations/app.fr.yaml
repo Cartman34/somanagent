@@ -767,6 +767,7 @@ workflow:
     not_found: Workflow introuvable.
   validation:
     name_required: Le champ "name" est obligatoire.
+    trigger_invalid: La valeur du champ "trigger" est invalide.
   list:
     loading: Chargement des workflows…
   item:

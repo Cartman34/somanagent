@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace App\Dto\Input\Workflow;
 
 use App\Enum\WorkflowTrigger;
+use App\Exception\ValidationException;
 
 /**
  * Input DTO for updating a workflow (all fields optional).
@@ -27,13 +28,28 @@ final class UpdateWorkflowDto
 
     /**
      * Creates an instance from raw request data. No required fields.
-     * Invalid trigger values are silently ignored (fallback to null).
+     *
+     * @throws ValidationException with accumulated validation errors
      */
     public static function fromArray(array $data): self
     {
+        $errors = [];
+        $trigger = null;
+
+        if (isset($data['trigger']) && $data['trigger'] !== '') {
+            $trigger = WorkflowTrigger::tryFrom((string) $data['trigger']);
+            if ($trigger === null) {
+                $errors[] = ['field' => 'trigger', 'code' => 'workflow.validation.trigger_invalid'];
+            }
+        }
+
+        if ($errors !== []) {
+            throw new ValidationException($errors);
+        }
+
         return new self(
             name: isset($data['name']) && $data['name'] !== '' ? (string) $data['name'] : null,
-            trigger: isset($data['trigger']) ? (WorkflowTrigger::tryFrom((string) $data['trigger']) ?? null) : null,
+            trigger: $trigger,
             description: isset($data['description']) && $data['description'] !== '' ? (string) $data['description'] : null,
         );
     }

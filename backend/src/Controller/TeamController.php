@@ -10,7 +10,6 @@ namespace App\Controller;
 use App\Dto\Input\Team\AddTeamAgentDto;
 use App\Dto\Input\Team\CreateTeamDto;
 use App\Dto\Input\Team\UpdateTeamDto;
-use App\Exception\ValidationException;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\TeamService;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -55,10 +54,9 @@ class TeamController extends AbstractApiController
     #[Route('', name: 'team_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        try {
-            $dto = CreateTeamDto::fromArray($request->toArray());
-        } catch (ValidationException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => CreateTeamDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         $team = $this->teamService->create($dto);
@@ -135,10 +133,9 @@ class TeamController extends AbstractApiController
             return $this->json($this->apiErrorPayloadFactory->create('team.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        try {
-            $dto = AddTeamAgentDto::fromArray($request->toArray());
-        } catch (ValidationException $e) {
-            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => AddTeamAgentDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         $agent = $this->teamService->findAgentById($dto->agentId);
