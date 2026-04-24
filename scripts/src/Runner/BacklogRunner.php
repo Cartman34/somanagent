@@ -11,6 +11,7 @@ use SoManAgent\Script\Backlog\BacklogCommandHelp;
 use SoManAgent\Script\Backlog\BacklogBoard;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
 use SoManAgent\Script\Backlog\BacklogReviewFile;
+use SoManAgent\Script\Backlog\BacklogWorktreeManager;
 use SoManAgent\Script\Backlog\BoardEntry;
 use SoManAgent\Script\RetryHelper;
 use SoManAgent\Script\TextSlugger;
@@ -55,6 +56,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
     private ?BacklogCommandHelp $commandHelp = null;
     private ?BacklogEntryResolver $entryResolver = null;
+    private ?BacklogWorktreeManager $worktreeManager = null;
 
     protected function getDescription(): string
     {
@@ -167,6 +169,28 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         return $this->entryResolver;
+    }
+
+    private function worktreeManager(): BacklogWorktreeManager
+    {
+        if ($this->worktreeManager === null) {
+            $this->worktreeManager = new BacklogWorktreeManager(
+                $this->projectRoot,
+                $this->dryRun,
+                self::WA_BACKEND_ENV_LOCAL_FALLBACK,
+                $this->entryResolver(),
+                function (string $message): void {
+                    $this->logVerbose($message);
+                },
+                function (string $command): void {
+                    $this->runCommand($command);
+                },
+                fn(string $command): string => $this->capture($command),
+                fn(string $command): bool => $this->commandSucceeds($command),
+            );
+        }
+
+        return $this->worktreeManager;
     }
 
     /**
@@ -307,7 +331,7 @@ final class BacklogRunner extends AbstractScriptRunner
             count($board->getEntries(BacklogBoard::SECTION_ACTIVE)),
         ));
 
-        $worktree = $this->prepareAgentWorktree($agent);
+        $worktree = $this->worktreeManager()->prepareAgentWorktree($agent);
         $first = $reserved[0]['entry'];
         $first->unsetMeta('feature');
         $first->unsetMeta('agent');
@@ -322,7 +346,7 @@ final class BacklogRunner extends AbstractScriptRunner
                 $branch = $branchType . '/' . $scopedTask['featureGroup'] . '--' . $task;
                 $this->updateLocalMainBeforeFeatureStart();
                 $featureBase = trim($this->captureGitOutput('git rev-parse origin/main'));
-                $this->ensureLocalBranchExists($featureBranch, 'origin/main');
+                $this->worktreeManager()->ensureLocalBranchExists($featureBranch, 'origin/main');
 
                 $featureEntry = new BoardEntry($scopedTask['text'], [], [
                     'kind' => 'feature',
@@ -349,8 +373,8 @@ final class BacklogRunner extends AbstractScriptRunner
                 'git rev-parse %s',
                 escapeshellarg($featureBranch),
             )));
-            $this->requireLocalBranchExists($featureBranch, 'feature-start');
-            $this->checkoutBranchInWorktree($worktree, $branch, true, $featureBranch);
+            $this->worktreeManager()->requireLocalBranchExists($featureBranch, 'feature-start');
+            $this->worktreeManager()->checkoutBranchInWorktree($worktree, $branch, true, $featureBranch);
 
             $taskEntry = new BoardEntry($scopedTask['text'], $first->getExtraLines(), [
                 'kind' => 'task',
@@ -371,7 +395,7 @@ final class BacklogRunner extends AbstractScriptRunner
             $this->updateLocalMainBeforeFeatureStart();
             $base = trim($this->captureGitOutput('git rev-parse origin/main'));
             $branch = $branchType . '/' . $feature;
-            $this->checkoutBranchInWorktree($worktree, $branch, true);
+            $this->worktreeManager()->checkoutBranchInWorktree($worktree, $branch, true);
 
             $featureEntry = new BoardEntry($first->getText(), $first->getExtraLines(), [
                 'kind' => 'feature',
@@ -494,7 +518,7 @@ final class BacklogRunner extends AbstractScriptRunner
                 }
             }
             $this->saveBoard($board, 'feature-release');
-            $cleaned = $this->cleanupManagedWorktreesForBranch($branch, $board);
+            $cleaned = $this->worktreeManager()->cleanupManagedWorktreesForBranch($branch, $board);
             if ($this->gitCommandSucceeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/heads/' . $branch)))) {
                 $this->runGitCommand(sprintf('git branch -D %s', escapeshellarg($branch)));
             }
@@ -515,7 +539,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $board->removeFeature($feature);
         $this->saveBoard($board, 'feature-release');
 
-        $cleaned = $this->cleanupManagedWorktreesForBranch($branch, $board);
+        $cleaned = $this->worktreeManager()->cleanupManagedWorktreesForBranch($branch, $board);
         if ($this->gitCommandSucceeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/heads/' . $branch)))) {
             $this->runGitCommand(sprintf('git branch -D %s', escapeshellarg($branch)));
         }
@@ -564,10 +588,10 @@ final class BacklogRunner extends AbstractScriptRunner
         $featureBranch = $entry->getMeta('feature-branch') ?? '';
         $taskBranch = $entry->getMeta('branch') ?? '';
         $parent = $this->entryResolver()->requireParentFeature($board, $feature);
-        $taskWorktree = $this->prepareFeatureAgentWorktree($entry);
-        $this->runReviewScript($taskWorktree);
-        $this->ensureBranchHasNoDirtyManagedWorktree($taskBranch);
-        $mergeContext = $this->prepareFeatureMergeWorktree($featureBranch, $feature);
+        $taskWorktree = $this->worktreeManager()->prepareFeatureAgentWorktree($entry);
+        $this->worktreeManager()->runReviewScript($taskWorktree);
+        $this->worktreeManager()->ensureBranchHasNoDirtyManagedWorktree($taskBranch);
+        $mergeContext = $this->worktreeManager()->prepareFeatureMergeWorktree($featureBranch, $feature);
 
         try {
             $this->runGitCommand($this->gitInPath(
@@ -580,7 +604,7 @@ final class BacklogRunner extends AbstractScriptRunner
             ));
         } catch (\Throwable $exception) {
             if ($mergeContext['temporary']) {
-                $this->removeTemporaryMergeWorktree($mergeContext['path']);
+                $this->worktreeManager()->removeTemporaryMergeWorktree($mergeContext['path']);
             }
 
             throw $exception;
@@ -596,10 +620,10 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->saveReviewFile($review, 'feature-task-merge');
 
         if ($mergeContext['temporary']) {
-            $this->removeTemporaryMergeWorktree($mergeContext['path']);
+            $this->worktreeManager()->removeTemporaryMergeWorktree($mergeContext['path']);
         }
 
-        $this->cleanupMergedTaskWorktree($taskAgent, $taskBranch, $board);
+        $this->worktreeManager()->cleanupMergedTaskWorktree($taskAgent, $taskBranch, $board);
 
         if ($this->gitCommandSucceeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/heads/' . $taskBranch)))) {
             $this->runGitCommand(sprintf('git branch -D %s', escapeshellarg($taskBranch)));
@@ -628,8 +652,8 @@ final class BacklogRunner extends AbstractScriptRunner
             throw new \RuntimeException('task-review-request requires the task to be assigned to the provided agent.');
         }
 
-        $taskWorktree = $this->prepareFeatureAgentWorktree($entry);
-        $this->runReviewScript($taskWorktree);
+        $taskWorktree = $this->worktreeManager()->prepareFeatureAgentWorktree($entry);
+        $this->worktreeManager()->runReviewScript($taskWorktree);
 
         $entry->setMeta('stage', BacklogBoard::STAGE_IN_REVIEW);
         $review->clearReview($this->taskReviewKey($entry));
@@ -679,10 +703,10 @@ final class BacklogRunner extends AbstractScriptRunner
             ));
         }
 
-        $reviewWorktree = $this->prepareFeatureAgentWorktree($entry);
+        $reviewWorktree = $this->worktreeManager()->prepareFeatureAgentWorktree($entry);
 
         try {
-            $this->runReviewScript($reviewWorktree);
+            $this->worktreeManager()->runReviewScript($reviewWorktree);
         } catch (\RuntimeException $exception) {
             $message = 'Mechanical review `php scripts/review.php` failed. Fix mechanical issues before submitting the task again.';
             $this->taskReviewReject([$this->taskReviewKey($entry)], ['body-file' => $this->writeTempContent([$message])], true);
@@ -787,8 +811,8 @@ final class BacklogRunner extends AbstractScriptRunner
         $entry->setMeta('stage', BacklogBoard::STAGE_IN_PROGRESS);
         $this->saveBoard($board, 'task-rework');
 
-        $taskWorktree = $this->prepareFeatureAgentWorktree($entry);
-        $this->checkoutBranchInWorktree($taskWorktree, $entry->getMeta('branch') ?? '', false);
+        $taskWorktree = $this->worktreeManager()->prepareFeatureAgentWorktree($entry);
+        $this->worktreeManager()->checkoutBranchInWorktree($taskWorktree, $entry->getMeta('branch') ?? '', false);
 
         $this->console->ok(sprintf(
             'Moved task %s back to %s',
@@ -859,8 +883,8 @@ final class BacklogRunner extends AbstractScriptRunner
                     escapeshellarg($featureBranch),
                 )));
 
-                $worktree = $this->prepareAgentWorktree($agent);
-                $this->checkoutBranchInWorktree($worktree, $taskBranch, true, $featureBranch);
+                $worktree = $this->worktreeManager()->prepareAgentWorktree($agent);
+                $this->worktreeManager()->checkoutBranchInWorktree($worktree, $taskBranch, true, $featureBranch);
 
                 $taskEntry = new BoardEntry($scopedTask['text'], $reservedEntry->getExtraLines(), [
                     'kind' => 'task',
@@ -934,10 +958,10 @@ final class BacklogRunner extends AbstractScriptRunner
         $match['entry']->setMeta('agent', $agent);
         $this->saveBoard($board, 'feature-assign');
 
-        $worktree = $this->prepareAgentWorktree($agent);
-        $this->checkoutBranchInWorktree($worktree, $match['entry']->getMeta('branch') ?? '', false);
+        $worktree = $this->worktreeManager()->prepareAgentWorktree($agent);
+        $this->worktreeManager()->checkoutBranchInWorktree($worktree, $match['entry']->getMeta('branch') ?? '', false);
         $cleaned = $previousAgent !== '' && $previousAgent !== $agent
-            ? $this->cleanupAbandonedManagedWorktrees($board)
+            ? $this->worktreeManager()->cleanupAbandonedManagedWorktrees($board)
             : 0;
 
         $this->console->ok(sprintf('Assigned feature %s to %s', $feature, $agent));
@@ -974,7 +998,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $match['entry']->unsetMeta('agent');
         $this->saveBoard($board, 'feature-unassign');
-        $cleaned = $this->cleanupAbandonedManagedWorktrees($board);
+        $cleaned = $this->worktreeManager()->cleanupAbandonedManagedWorktrees($board);
 
         $this->console->ok(sprintf('Unassigned feature %s from %s', $feature, $agent));
         if ($cleaned > 0) {
@@ -1093,8 +1117,8 @@ final class BacklogRunner extends AbstractScriptRunner
         $match['entry']->setMeta('stage', BacklogBoard::STAGE_IN_PROGRESS);
         $this->saveBoard($board, 'feature-rework');
 
-        $worktree = $this->prepareAgentWorktree($agent);
-        $this->checkoutBranchInWorktree($worktree, $match['entry']->getMeta('branch') ?? '', false);
+        $worktree = $this->worktreeManager()->prepareAgentWorktree($agent);
+        $this->worktreeManager()->checkoutBranchInWorktree($worktree, $match['entry']->getMeta('branch') ?? '', false);
 
         $this->console->ok(sprintf('Moved feature %s back to %s', $feature, BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_PROGRESS)));
 
@@ -1219,7 +1243,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private function worktreeList(): int
     {
         $board = $this->board();
-        ['managed' => $managed, 'external' => $external] = $this->classifyWorktrees($board);
+        ['managed' => $managed, 'external' => $external] = $this->worktreeManager()->classifyWorktrees($board);
 
         if ($managed === [] && $external === []) {
             $this->console->line('No worktree to report.');
@@ -1261,7 +1285,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private function worktreeClean(): int
     {
         $board = $this->board();
-        $cleaned = $this->cleanupAbandonedManagedWorktrees($board);
+        $cleaned = $this->worktreeManager()->cleanupAbandonedManagedWorktrees($board);
 
         if ($cleaned === 0) {
             $this->console->line('No abandoned managed worktree to clean.');
@@ -1276,7 +1300,7 @@ final class BacklogRunner extends AbstractScriptRunner
             $cleaned > 1 ? 's' : '',
         ));
 
-        ['managed' => $managed] = $this->classifyWorktrees($board);
+        ['managed' => $managed] = $this->worktreeManager()->classifyWorktrees($board);
         $skipped = count($managed);
         if ($skipped > 0) {
             $this->console->line(sprintf('Skipped %d managed worktree%s that require manual attention.', $skipped, $skipped > 1 ? 's' : ''));
@@ -1401,8 +1425,8 @@ final class BacklogRunner extends AbstractScriptRunner
             throw new \RuntimeException("Feature {$feature} is not assigned to agent {$agent}.");
         }
 
-        $worktree = $this->prepareFeatureAgentWorktree($match['entry']);
-        $this->runReviewScript($worktree);
+        $worktree = $this->worktreeManager()->prepareFeatureAgentWorktree($match['entry']);
+        $this->worktreeManager()->runReviewScript($worktree);
 
         $match['entry']->setMeta('stage', BacklogBoard::STAGE_IN_REVIEW);
         $this->saveBoard($board, 'feature-review-request');
@@ -1426,10 +1450,10 @@ final class BacklogRunner extends AbstractScriptRunner
             throw new \RuntimeException("Feature {$feature} must be in " . BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_REVIEW) . ' to be checked.');
         }
 
-        $reviewWorktree = $this->prepareFeatureAgentWorktree($match['entry']);
+        $reviewWorktree = $this->worktreeManager()->prepareFeatureAgentWorktree($match['entry']);
 
         try {
-            $this->runReviewScript($reviewWorktree);
+            $this->worktreeManager()->runReviewScript($reviewWorktree);
         } catch (\RuntimeException $exception) {
             $message = 'Mechanical review `php scripts/review.php` failed. Fix mechanical issues before requesting review again.';
             $this->featureReviewReject([$feature], ['body-file' => $this->writeTempContent([$message])], true);
@@ -1534,7 +1558,7 @@ final class BacklogRunner extends AbstractScriptRunner
             throw new \RuntimeException("Feature {$feature} has no branch metadata.");
         }
 
-        $this->ensureBranchHasNoDirtyManagedWorktree($branch);
+        $this->worktreeManager()->ensureBranchHasNoDirtyManagedWorktree($branch);
         $this->pushBranchIfAhead($branch);
 
         $prNumber = $this->storedPrNumber($match['entry']);
@@ -1547,7 +1571,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $review->clearReview($feature);
         $this->saveBoard($board, 'feature-close');
         $this->saveReviewFile($review, 'feature-close');
-        $cleaned = $this->cleanupAbandonedManagedWorktrees($board);
+        $cleaned = $this->worktreeManager()->cleanupAbandonedManagedWorktrees($board);
 
         $this->console->ok(sprintf('Closed feature %s without merge', $feature));
         if ($cleaned > 0) {
@@ -1604,8 +1628,8 @@ final class BacklogRunner extends AbstractScriptRunner
         $review->clearReview($feature);
         $this->saveBoard($board, 'feature-merge');
         $this->saveReviewFile($review, 'feature-merge');
-        $cleaned = $this->cleanupManagedWorktreesForBranch($branch, $board);
-        $cleaned += $this->cleanupAbandonedManagedWorktrees($board);
+        $cleaned = $this->worktreeManager()->cleanupManagedWorktreesForBranch($branch, $board);
+        $cleaned += $this->worktreeManager()->cleanupAbandonedManagedWorktrees($board);
 
         $this->runGitCommand(sprintf('git push origin --delete %s', escapeshellarg($branch)));
         $this->runGitCommand(sprintf('git branch -D %s', escapeshellarg($branch)));
@@ -1908,7 +1932,7 @@ final class BacklogRunner extends AbstractScriptRunner
             throw new \RuntimeException('Feature metadata is incomplete: missing branch or base.');
         }
 
-        $this->ensureBranchHasNoDirtyManagedWorktree($branch);
+        $this->worktreeManager()->ensureBranchHasNoDirtyManagedWorktree($branch);
 
         $ahead = trim($this->captureGitOutput(sprintf(
             'git rev-list --count %s..%s',
@@ -2068,462 +2092,6 @@ final class BacklogRunner extends AbstractScriptRunner
         }
     }
 
-    private function prepareAgentWorktree(string $agent): string
-    {
-        $path = $this->projectRoot . '/.worktrees/' . $agent;
-        $relativePath = $this->toRelativeProjectPath($path);
-        $exists = is_dir($path . '/.git') || is_file($path . '/.git');
-        $created = false;
-
-        if (!$exists) {
-            $this->runGitCommand(sprintf('git worktree add --detach %s HEAD', escapeshellarg($relativePath)));
-            $created = true;
-            if ($this->dryRun) {
-                $this->logVerbose('[dry-run] Skipping worktree status check for non-created path: ' . $relativePath);
-
-                return $path;
-            }
-        }
-
-        $status = trim($this->captureGitOutput($this->gitInPath($path, 'status --short')));
-        if ($status !== '') {
-            throw new \RuntimeException("Agent worktree is dirty: {$path}");
-        }
-
-        $this->ensureWorktreeRuntimeState($path, $created);
-
-        return $path;
-    }
-
-    private function prepareFeatureAgentWorktree(BoardEntry $entry): string
-    {
-        $agent = $entry->getMeta('agent') ?? '';
-        if ($agent === '') {
-            throw new \RuntimeException('Feature has no assigned agent worktree.');
-        }
-
-        $branch = $entry->getMeta('branch') ?? '';
-        if ($branch === '') {
-            throw new \RuntimeException('Feature has no branch metadata.');
-        }
-
-        $worktree = $this->prepareAgentWorktree($agent);
-        $this->checkoutBranchInWorktree($worktree, $branch, false);
-
-        return $worktree;
-    }
-
-    /**
-     * @return array{path: string, temporary: bool}
-     */
-    private function prepareFeatureMergeWorktree(string $featureBranch, string $feature): array
-    {
-        $existingPath = $this->findWorktreePathForBranch($featureBranch);
-        if ($existingPath !== null) {
-            $dirty = trim($this->captureGitOutput($this->gitInPath($existingPath, 'status --short')));
-            if ($dirty !== '') {
-                throw new \RuntimeException(sprintf(
-                    'Feature branch %s is still dirty in worktree %s. Clean it before feature-task-merge.',
-                    $featureBranch,
-                    $existingPath,
-                ));
-            }
-
-            return ['path' => $existingPath, 'temporary' => false];
-        }
-
-        $path = $this->projectRoot . '/.worktrees/merge-' . $feature;
-        $relativePath = $this->toRelativeProjectPath($path);
-        if (is_dir($path) || is_file($path)) {
-            throw new \RuntimeException(sprintf(
-                'Temporary merge worktree path already exists: %s',
-                $path,
-            ));
-        }
-
-        $this->runGitCommand(sprintf(
-            'git worktree add %s %s',
-            escapeshellarg($relativePath),
-            escapeshellarg($featureBranch),
-        ));
-        $this->ensureWorktreeRuntimeState($path, true);
-
-        return ['path' => $path, 'temporary' => true];
-    }
-
-    private function removeTemporaryMergeWorktree(string $path): void
-    {
-        if (!is_dir($path) && !is_file($path)) {
-            return;
-        }
-
-        $dirty = trim($this->captureGitOutput($this->gitInPath($path, 'status --short')));
-        if ($dirty !== '') {
-            throw new \RuntimeException(sprintf(
-                'Temporary merge worktree is dirty and cannot be removed automatically: %s',
-                $path,
-            ));
-        }
-
-        $this->runGitCommand(sprintf(
-            'git worktree remove %s --force',
-            escapeshellarg($this->toRelativeProjectPath($path)),
-        ));
-    }
-
-    private function cleanupMergedTaskWorktree(string $agent, string $taskBranch, BacklogBoard $board): void
-    {
-        if ($this->entryResolver()->findTaskEntriesByAgent($board, $agent) !== []) {
-            return;
-        }
-
-        $path = $this->projectRoot . '/.worktrees/' . $agent;
-        if (!is_dir($path) && !is_file($path)) {
-            return;
-        }
-
-        $boundBranch = $this->findBranchForWorktreePath($path);
-        if ($boundBranch !== $taskBranch) {
-            return;
-        }
-
-        $dirty = trim($this->captureGitOutput($this->gitInPath($path, 'status --short')));
-        if ($dirty !== '') {
-            throw new \RuntimeException(sprintf(
-                'Task worktree for %s is dirty after merge and must be cleaned manually: %s',
-                $agent,
-                $path,
-            ));
-        }
-
-        $this->runGitCommand(sprintf(
-            'git worktree remove %s --force',
-            escapeshellarg($this->toRelativeProjectPath($path)),
-        ));
-    }
-
-    private function ensureLocalBranchExists(string $branch, string $startPoint): void
-    {
-        if ($this->gitCommandSucceeds(sprintf(
-            'git show-ref --verify --quiet %s',
-            escapeshellarg('refs/heads/' . $branch),
-        ))) {
-            return;
-        }
-
-        $this->runGitCommand(sprintf(
-            'git branch %s %s',
-            escapeshellarg($branch),
-            escapeshellarg($startPoint),
-        ));
-    }
-
-    private function requireLocalBranchExists(string $branch, string $context): void
-    {
-        if ($this->dryRun) {
-            $this->logVerbose(sprintf(
-                '[dry-run] Assuming local branch %s exists for %s.',
-                $branch,
-                $context,
-            ));
-
-            return;
-        }
-
-        if ($this->gitCommandSucceeds(sprintf(
-            'git show-ref --verify --quiet %s',
-            escapeshellarg('refs/heads/' . $branch),
-        ))) {
-            return;
-        }
-
-        throw new \RuntimeException(sprintf(
-            '%s requires local branch %s to exist.',
-            $context,
-            $branch,
-        ));
-    }
-
-    private function ensureWorktreeRuntimeState(string $worktree, bool $created): void
-    {
-        foreach ($this->copiedWorktreePaths() as $relativePath => $sourcePath) {
-            if (!file_exists($sourcePath) && !is_link($sourcePath)) {
-                throw new \RuntimeException("Missing dependency source in WP: {$sourcePath}");
-            }
-
-            $targetPath = $worktree . '/' . $relativePath;
-            $parent = dirname($targetPath);
-            if (!is_dir($parent)) {
-                if ($this->dryRun) {
-                    $this->logVerbose('[dry-run] Would create directory: ' . $this->toRelativeProjectPath($parent));
-                    continue;
-                }
-                mkdir($parent, 0777, true);
-            }
-
-            if (!$created && (file_exists($targetPath) || is_link($targetPath))) {
-                continue;
-            }
-
-            $this->replacePathWithCopy($sourcePath, $targetPath);
-        }
-
-        $this->syncWorktreeRootEnv($worktree);
-        $this->writeBackendWorktreeEnvLocal($worktree);
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private function copiedWorktreePaths(): array
-    {
-        return [
-            'backend/vendor' => $this->projectRoot . '/backend/vendor',
-            'frontend/node_modules' => $this->projectRoot . '/frontend/node_modules',
-        ];
-    }
-
-    private function replacePathWithCopy(string $sourcePath, string $targetPath): void
-    {
-        $this->removeFilesystemPath($targetPath);
-        if ($this->dryRun) {
-            $this->logVerbose('[dry-run] Would copy path: ' . $this->toRelativeProjectPath($sourcePath) . ' -> ' . $this->toRelativeProjectPath($targetPath));
-            return;
-        }
-        $this->copyFilesystemPath($sourcePath, $targetPath);
-    }
-
-    private function syncWorktreeRootEnv(string $worktree): void
-    {
-        $sourcePath = $this->projectRoot . '/.env';
-        if (!is_file($sourcePath)) {
-            throw new \RuntimeException('Missing root .env in WP.');
-        }
-
-        $this->replacePathWithCopy($sourcePath, $worktree . '/.env');
-    }
-
-    private function writeBackendWorktreeEnvLocal(string $worktree): void
-    {
-        $targetPath = $worktree . '/backend/.env.local';
-        $contents = $this->buildBackendWorktreeEnvLocalContents();
-        if ($this->dryRun) {
-            $this->logVerbose('[dry-run] Would write file: ' . $this->toRelativeProjectPath($targetPath));
-            return;
-        }
-
-        if (file_put_contents($targetPath, $contents) === false) {
-            throw new \RuntimeException("Unable to write file: {$targetPath}");
-        }
-    }
-
-    private function buildBackendWorktreeEnvLocalContents(): string
-    {
-        $envFile = $this->projectRoot . '/.env';
-        $content = @file_get_contents($envFile);
-        if ($content === false) {
-            return self::WA_BACKEND_ENV_LOCAL_FALLBACK;
-        }
-
-        if (preg_match('/^DATABASE_URL=(["\']?)(.+)\1$/m', $content, $matches) !== 1) {
-            return self::WA_BACKEND_ENV_LOCAL_FALLBACK;
-        }
-
-        $databaseUrl = trim($matches[2]);
-        $localUrl = preg_replace('/@db(?=[:\/])/', '@localhost', $databaseUrl, 1);
-        if (!is_string($localUrl) || $localUrl === $databaseUrl) {
-            return self::WA_BACKEND_ENV_LOCAL_FALLBACK;
-        }
-
-        return sprintf("DATABASE_URL=\"%s\"\n", $localUrl);
-    }
-
-    private function removeFilesystemPath(string $path): void
-    {
-        if (!file_exists($path) && !is_link($path)) {
-            return;
-        }
-
-        if ($this->dryRun) {
-            $this->logVerbose('[dry-run] Would remove path: ' . $this->toRelativeProjectPath($path));
-            return;
-        }
-
-        if (is_file($path) || is_link($path)) {
-            if (!unlink($path)) {
-                throw new \RuntimeException("Unable to remove path: {$path}");
-            }
-
-            return;
-        }
-
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST,
-        );
-
-        foreach ($iterator as $item) {
-            if ($item->isDir() && !$item->isLink()) {
-                if (!rmdir($item->getPathname())) {
-                    throw new \RuntimeException("Unable to remove directory: {$item->getPathname()}");
-                }
-                continue;
-            }
-
-            if (!unlink($item->getPathname())) {
-                throw new \RuntimeException("Unable to remove path: {$item->getPathname()}");
-            }
-        }
-
-        if (!rmdir($path)) {
-            throw new \RuntimeException("Unable to remove directory: {$path}");
-        }
-    }
-
-    private function copyFilesystemPath(string $sourcePath, string $targetPath): void
-    {
-        if (is_link($sourcePath)) {
-            $linkTarget = readlink($sourcePath);
-            if ($linkTarget === false || !symlink($linkTarget, $targetPath)) {
-                throw new \RuntimeException("Unable to copy symlink: {$sourcePath}");
-            }
-
-            return;
-        }
-
-        if (is_file($sourcePath)) {
-            if (!copy($sourcePath, $targetPath)) {
-                throw new \RuntimeException("Unable to copy file: {$sourcePath}");
-            }
-
-            return;
-        }
-
-        if (!is_dir($targetPath) && !mkdir($targetPath, 0777, true) && !is_dir($targetPath)) {
-            throw new \RuntimeException("Unable to create directory: {$targetPath}");
-        }
-
-        $iterator = new \FilesystemIterator($sourcePath, \FilesystemIterator::SKIP_DOTS);
-        foreach ($iterator as $item) {
-            $this->copyFilesystemPath($item->getPathname(), $targetPath . '/' . $item->getBasename());
-        }
-    }
-
-    private function checkoutBranchInWorktree(string $worktree, string $branch, bool $create, string $startPoint = 'origin/main'): void
-    {
-        if ($branch === '') {
-            throw new \RuntimeException('Missing branch name.');
-        }
-
-        $this->releaseBranchFromOtherWorktrees($branch, $worktree);
-
-        if ($this->dryRun && !is_dir($worktree . '/.git') && !is_file($worktree . '/.git')) {
-            $this->logVerbose('[dry-run] Skipping worktree-local git inspection for non-created path: ' . $this->toRelativeProjectPath($worktree));
-            if ($create) {
-                $this->runGitCommand($this->gitInPath(
-                    $worktree,
-                    sprintf('checkout -B %s %s', escapeshellarg($branch), escapeshellarg($startPoint)),
-                ));
-
-                return;
-            }
-
-            $this->runGitCommand($this->gitInPath(
-                $worktree,
-                sprintf('checkout %s', escapeshellarg($branch)),
-            ));
-
-            return;
-        }
-
-        $currentBranch = null;
-        if ($this->gitCommandSucceeds($this->gitInPath($worktree, 'symbolic-ref --quiet --short HEAD'))) {
-            $currentBranch = trim($this->captureGitOutput($this->gitInPath($worktree, 'symbolic-ref --quiet --short HEAD')));
-        }
-
-        if (!$create && $currentBranch === $branch) {
-            return;
-        }
-
-        if ($create) {
-            $this->runGitCommand($this->gitInPath(
-                $worktree,
-                sprintf('checkout -B %s %s', escapeshellarg($branch), escapeshellarg($startPoint)),
-            ));
-            return;
-        }
-
-        $hasLocal = $this->gitCommandSucceeds($this->gitInPath(
-            $worktree,
-            sprintf('rev-parse --verify %s', escapeshellarg($branch)),
-        ));
-        if ($hasLocal) {
-            $this->runGitCommand($this->gitInPath(
-                $worktree,
-                sprintf('checkout %s', escapeshellarg($branch)),
-            ));
-            return;
-        }
-
-        $this->runGitCommand($this->gitInPath(
-            $worktree,
-            sprintf('checkout -B %s origin/%s', escapeshellarg($branch), escapeshellarg($branch)),
-        ));
-    }
-
-    private function releaseBranchFromOtherWorktrees(string $branch, string $keepWorktree): void
-    {
-        $output = $this->captureGitOutput('git worktree list --porcelain');
-        $blocks = preg_split('/\n\n/', trim($output)) ?: [];
-
-        foreach ($blocks as $block) {
-            $path = null;
-            $ref = null;
-
-            foreach (explode("\n", $block) as $line) {
-                if (str_starts_with($line, 'worktree ')) {
-                    $path = substr($line, 9);
-                }
-                if (str_starts_with($line, 'branch refs/heads/')) {
-                    $ref = substr($line, strlen('branch refs/heads/'));
-                }
-            }
-
-            if ($path === null || $ref !== $branch || realpath($path) === realpath($keepWorktree)) {
-                continue;
-            }
-
-            $dirty = trim($this->captureGitOutput($this->gitInPath($path, 'status --short')));
-            if ($dirty !== '') {
-                throw new \RuntimeException("Branch {$branch} is still active in a dirty worktree: {$path}");
-            }
-
-            if (!str_starts_with($path, $this->projectRoot . '/.worktrees/')) {
-                throw new \RuntimeException("Branch {$branch} is active in a non-managed worktree: {$path}");
-            }
-
-            $this->runGitCommand(sprintf('git worktree remove %s --force', escapeshellarg($this->toRelativeProjectPath($path))));
-        }
-    }
-
-    private function ensureBranchHasNoDirtyManagedWorktree(string $branch): void
-    {
-        foreach ($this->listWorktreeBranchBindings() as $binding) {
-            if ($binding['branch'] !== $branch) {
-                continue;
-            }
-
-            $dirty = trim($this->captureGitOutput($this->gitInPath($binding['path'], 'status --short')));
-            if ($dirty !== '') {
-                throw new \RuntimeException(sprintf(
-                    'Feature branch %s is still dirty in worktree %s. Commit or discard local changes before feature-close.',
-                    $branch,
-                    $binding['path'],
-                ));
-            }
-        }
-    }
-
     private function pushBranchIfAhead(string $branch): void
     {
         if (!$this->gitCommandSucceeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/heads/' . $branch)))) {
@@ -2545,208 +2113,6 @@ final class BacklogRunner extends AbstractScriptRunner
         if ($ahead !== '0') {
             $this->pushBranchAndWaitForRemoteVisibility($branch);
         }
-    }
-
-    /**
-     * @return array<int, array{path: string, branch: string|null}>
-     */
-    private function listWorktreeBranchBindings(): array
-    {
-        $blocks = $this->gitWorktreeBlocks();
-        $bindings = [];
-
-        foreach ($blocks as $block) {
-            $path = $block['path'];
-            $branch = $block['branch'];
-
-            if ($path !== null) {
-                $bindings[] = ['path' => $path, 'branch' => $branch];
-            }
-        }
-
-        return $bindings;
-    }
-
-    private function findWorktreePathForBranch(string $branch): ?string
-    {
-        foreach ($this->listWorktreeBranchBindings() as $binding) {
-            if (($binding['branch'] ?? null) !== $branch) {
-                continue;
-            }
-
-            return $binding['path'];
-        }
-
-        return null;
-    }
-
-    private function findBranchForWorktreePath(string $path): ?string
-    {
-        $realPath = realpath($path);
-        foreach ($this->listWorktreeBranchBindings() as $binding) {
-            $bindingPath = realpath($binding['path']);
-            if ($bindingPath === false || $realPath === false || $bindingPath !== $realPath) {
-                continue;
-            }
-
-            return $binding['branch'];
-        }
-
-        return null;
-    }
-
-    /**
-     * @return array{managed: array<int, array{path: string, branch: string|null, feature: string|null, agent: string|null, state: string, action: string}>, external: array<int, array{path: string, branch: string|null, action: string}>}
-     */
-    private function classifyWorktrees(BacklogBoard $board): array
-    {
-        $managed = [];
-        $external = [];
-        $activeFeatures = $this->activeFeaturesByBranch($board);
-
-        foreach ($this->gitWorktreeBlocks() as $worktree) {
-            $path = $worktree['path'];
-            if ($path === $this->projectRoot) {
-                continue;
-            }
-
-            if (!$this->isManagedAgentWorktree($path)) {
-                $external[] = [
-                    'path' => $path,
-                    'branch' => $worktree['branch'],
-                    'action' => $worktree['prunable'] ? 'manual-prune' : 'manual-remove',
-                ];
-                continue;
-            }
-
-            $feature = null;
-            $agent = null;
-            $state = 'orphan';
-            $action = 'clean';
-            $branch = $worktree['branch'];
-
-            if ($worktree['prunable']) {
-                $state = 'prunable';
-                $action = 'manual-prune';
-            } elseif ($branch !== null && isset($activeFeatures[$branch])) {
-                $feature = $activeFeatures[$branch]['feature'];
-                $agent = $activeFeatures[$branch]['agent'];
-                $expectedPath = $this->projectRoot . '/.worktrees/' . $agent;
-                $dirty = $this->worktreeIsDirty($path);
-
-                if ($path !== $expectedPath) {
-                    $state = 'blocked';
-                    $action = 'manual-review';
-                } elseif ($dirty) {
-                    $state = 'dirty';
-                    $action = 'manual-review';
-                } else {
-                    $state = 'active';
-                    $action = 'keep';
-                }
-            } else {
-                $agent = basename($path);
-                if ($this->worktreeIsDirty($path)) {
-                    $state = 'dirty';
-                    $action = 'manual-review';
-                } elseif ($branch === null) {
-                    $state = 'detached-managed';
-                    $action = 'clean';
-                }
-            }
-
-            $managed[] = [
-                'path' => $path,
-                'branch' => $branch,
-                'feature' => $feature,
-                'agent' => $agent,
-                'state' => $state,
-                'action' => $action,
-            ];
-        }
-
-        return ['managed' => $managed, 'external' => $external];
-    }
-
-    /**
-     * @return array<string, array{feature: string, agent: string}>
-     */
-    private function activeFeaturesByBranch(BacklogBoard $board): array
-    {
-        $features = [];
-        foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-            $branch = $entry->getMeta('branch') ?? '';
-            $feature = $entry->getMeta('feature') ?? '';
-            $agent = $entry->getMeta('agent') ?? '';
-            if ($branch === '' || $feature === '' || $agent === '') {
-                continue;
-            }
-
-            $features[$branch] = [
-                'feature' => $feature,
-                'agent' => $agent,
-            ];
-        }
-
-        return $features;
-    }
-
-    /**
-     * @return array<int, array{path: string, branch: string|null, prunable: bool}>
-     */
-    private function gitWorktreeBlocks(): array
-    {
-        $output = trim($this->captureGitOutput('git worktree list --porcelain'));
-        if ($output === '') {
-            return [];
-        }
-
-        $blocks = preg_split('/\n\n/', $output) ?: [];
-        $worktrees = [];
-
-        foreach ($blocks as $block) {
-            $path = null;
-            $branch = null;
-            $prunable = false;
-
-            foreach (explode("\n", $block) as $line) {
-                if (str_starts_with($line, 'worktree ')) {
-                    $path = substr($line, 9);
-                    continue;
-                }
-                if (str_starts_with($line, 'branch refs/heads/')) {
-                    $branch = substr($line, strlen('branch refs/heads/'));
-                    continue;
-                }
-                if (str_starts_with($line, 'prunable ')) {
-                    $prunable = true;
-                }
-            }
-
-            if ($path !== null) {
-                $worktrees[] = [
-                    'path' => $path,
-                    'branch' => $branch,
-                    'prunable' => $prunable,
-                ];
-            }
-        }
-
-        return $worktrees;
-    }
-
-    private function isManagedAgentWorktree(string $path): bool
-    {
-        return str_starts_with($path, $this->projectRoot . '/.worktrees/');
-    }
-
-    private function worktreeIsDirty(string $path): bool
-    {
-        if (!is_dir($path) && !is_file($path)) {
-            return false;
-        }
-
-        return trim($this->captureGitOutput($this->gitInPath($path, 'status --short'))) !== '';
     }
 
     private function workspaceHasLocalChanges(): bool
@@ -2793,63 +2159,6 @@ final class BacklogRunner extends AbstractScriptRunner
             ));
             $this->logVerbose('Main update warning detail: ' . $exception->getMessage());
         }
-    }
-
-    private function cleanupAbandonedManagedWorktrees(BacklogBoard $board): int
-    {
-        ['managed' => $managed] = $this->classifyWorktrees($board);
-
-        $cleanable = array_values(array_filter(
-            $managed,
-            static fn(array $item): bool => in_array($item['state'], ['orphan', 'detached-managed'], true)
-        ));
-
-        foreach ($cleanable as $item) {
-            $this->runGitCommand(sprintf(
-                'git worktree remove %s --force',
-                escapeshellarg($this->toRelativeProjectPath($item['path'])),
-            ));
-        }
-
-        return count($cleanable);
-    }
-
-    private function cleanupManagedWorktreesForBranch(string $branch, BacklogBoard $board): int
-    {
-        if ($branch === '') {
-            return 0;
-        }
-
-        $count = 0;
-        foreach ($this->classifyWorktrees($board)['managed'] as $item) {
-            if (($item['branch'] ?? null) !== $branch) {
-                continue;
-            }
-            if (!in_array($item['state'], ['orphan', 'detached-managed'], true)) {
-                continue;
-            }
-
-            $this->runGitCommand(sprintf(
-                'git worktree remove %s --force',
-                escapeshellarg($this->toRelativeProjectPath($item['path'])),
-            ));
-            $count++;
-        }
-
-        return $count;
-    }
-
-    private function runReviewScript(string $worktree): void
-    {
-        $this->logVerbose(($this->dryRun ? '[dry-run] Would run review in ' : 'Run review in ') . $this->toRelativeProjectPath($worktree));
-        if ($this->dryRun) {
-            return;
-        }
-
-        $this->runCommand(sprintf(
-            'cd %s && php scripts/review.php',
-            escapeshellarg($this->toRelativeProjectPath($worktree)),
-        ));
     }
 
     private function determinePrType(BoardEntry $entry): string
