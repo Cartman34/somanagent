@@ -1,0 +1,11 @@
+description: 'Assign an existing feature to one developer agent'
+arguments:
+  -
+    name: '<feature>'
+    description: 'Feature slug to assign'
+options:
+  -
+    name: '--agent'
+    description: 'Developer agent code to assign'
+examples:
+  - 'php scripts/backlog.php feature-assign delete-question-reply --agent agent-01'

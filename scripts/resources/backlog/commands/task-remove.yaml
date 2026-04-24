@@ -1,0 +1,7 @@
+description: 'Remove one queued todo task by its displayed number'
+arguments:
+  -
+    name: '<number>'
+    description: '1-based number shown by task-todo-list'
+examples:
+  - 'php scripts/backlog.php task-remove 8'

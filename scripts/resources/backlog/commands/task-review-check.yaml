@@ -1,0 +1,10 @@
+description: 'Run reviewer mechanical checks on a local task'
+arguments:
+  -
+    name: '<feature/task>'
+    description: 'Child task identifier to inspect'
+examples:
+  - 'php scripts/backlog.php task-review-check onboarding/task-copy-review'
+notes:
+  - 'The task must already be in the review stage.'
+  - 'On mechanical review failure, the task is automatically rejected with generated review notes.'

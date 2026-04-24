@@ -1,0 +1,21 @@
+description: 'Attach the next queued task to the current feature'
+options:
+  -
+    name: '--agent'
+    description: 'Developer agent code owning the feature'
+  -
+    name: '--feature-text'
+    description: 'Feature text used to resolve the target feature'
+  -
+    name: '--body-file'
+    description: 'Optional local file used to refresh the PR body when a PR already exists'
+  -
+    name: '--force'
+    description: 'Allow taking a task that is already reserved'
+examples:
+  - 'php scripts/backlog.php feature-task-add --agent agent-01 --feature-text "Workspace worktree"'
+  - 'php scripts/backlog.php feature-task-add --agent agent-01 --feature-text "Workspace worktree" --body-file local/tmp/pr_body.md'
+notes:
+  - 'Consumes the next queued entry from the board `À faire` section.'
+  - 'A plain queued task is appended to the current feature details only when that feature does not already use local child tasks.'
+  - 'A scoped queued task `[feature-slug][task-slug] Task text` creates a dedicated local child task branch for the current feature.'

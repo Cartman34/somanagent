@@ -1,0 +1,14 @@
+description: 'Move a rejected local task back to development'
+arguments:
+  -
+    name: '[<task>|<feature/task>]'
+    description: 'Optional explicit child task identifier'
+options:
+  -
+    name: '--agent'
+    description: 'Developer agent code owning the task'
+examples:
+  - 'php scripts/backlog.php task-rework --agent agent-01 onboarding/task-copy-review'
+notes:
+  - 'Without an explicit task reference, resolves the single rejected child task assigned to the provided agent.'
+  - 'Reopens the task branch in the agent worktree and preserves the stored review notes.'

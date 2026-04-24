@@ -1,0 +1,16 @@
+description: 'Start a feature branch and move the feature to development'
+options:
+  -
+    name: '--agent'
+    description: 'Developer agent code that takes the next task'
+  -
+    name: '--branch-type'
+    description: 'Override branch type with feat or fix'
+examples:
+  - 'php scripts/backlog.php feature-start --agent agent-01'
+  - 'php scripts/backlog.php feature-start --agent agent-01 --branch-type=fix'
+notes:
+  - 'Reads the next queued entry from the board `À faire` section.'
+  - 'Accepts plain task text and derives the feature slug from that text.'
+  - 'Accepts optional task type prefixes such as [feat] or [fix] to choose the branch type.'
+  - 'Accepts scoped task entries in the form [feature-slug][task-slug] Task text to start or attach a local child task under an existing parent feature.'

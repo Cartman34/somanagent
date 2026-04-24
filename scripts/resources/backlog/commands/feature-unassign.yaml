@@ -1,0 +1,15 @@
+description: 'Remove the current agent assignment from one feature'
+arguments:
+  -
+    name: '[<feature>]'
+    description: 'Optional explicit feature slug'
+options:
+  -
+    name: '--agent'
+    description: 'Agent code currently assigned to the feature'
+examples:
+  - 'php scripts/backlog.php feature-unassign --agent agent-01'
+  - 'php scripts/backlog.php feature-unassign delete-question-reply --agent agent-01'
+notes:
+  - 'The caller role is controlled by `SOMANAGER_ROLE`.'
+  - 'With `SOMANAGER_ROLE=developer`, `SOMANAGER_AGENT` must match `--agent` and the developer may only unassign itself.'

@@ -1,0 +1,14 @@
+description: 'Reject a local task and record reviewer blockers'
+arguments:
+  -
+    name: '<feature/task>'
+    description: 'Child task identifier to reject'
+options:
+  -
+    name: '--body-file'
+    description: 'Local file containing the rejection notes'
+examples:
+  - 'php scripts/backlog.php task-review-reject onboarding/task-copy-review --body-file local/tmp/review.md'
+notes:
+  - 'The task must already be in the review stage.'
+  - 'Review notes are stored under `local/backlog-review.md` with the `<feature>/<task>` key.'

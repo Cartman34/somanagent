@@ -1,0 +1,5 @@
+description: 'Print the next feature currently waiting in review'
+examples:
+  - 'php scripts/backlog.php feature-review-next'
+notes:
+  - 'Prints the first feature entry currently in the review stage.'
