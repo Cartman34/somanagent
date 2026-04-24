@@ -35,15 +35,15 @@ final class CreateSkillDto
         $errors = [];
 
         if (empty($data['slug'])) {
-            $errors[] = ['field' => 'slug', 'code' => 'skill.validation.create_required'];
+            $errors[] = ['field' => 'slug', 'code' => 'skill.validation.slug_required'];
         }
 
         if (empty($data['name'])) {
-            $errors[] = ['field' => 'name', 'code' => 'skill.validation.create_required'];
+            $errors[] = ['field' => 'name', 'code' => 'skill.validation.name_required'];
         }
 
         if (empty($data['content'])) {
-            $errors[] = ['field' => 'content', 'code' => 'skill.validation.create_required'];
+            $errors[] = ['field' => 'content', 'code' => 'skill.validation.content_required'];
         }
 
         if ($errors !== []) {

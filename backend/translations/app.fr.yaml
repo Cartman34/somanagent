@@ -448,8 +448,9 @@ skill:
   error:
     not_found: Skill introuvable.
   validation:
+    slug_required: Le champ "slug" est obligatoire.
+    name_required: Le champ "name" est obligatoire.
     content_required: Le champ "content" est obligatoire.
-    create_required: Les champs "slug", "name" et "content" sont obligatoires.
     source_required: 'Le champ "source" (ex: owner/skill-name) est obligatoire.'
   list:
     loading: Chargement des compétences…

@@ -51,10 +51,6 @@ class ProjectService
      */
     public function create(CreateProjectDto $dto): Project
     {
-        if ($dto->workflowId === null || $dto->workflowId === '') {
-            throw new \LogicException($this->translator->trans('project.validation.workflow_required', [], 'app'));
-        }
-
         if ($dto->teamId === null || $dto->teamId === '') {
             throw new \LogicException($this->translator->trans('project.validation.team_required', [], 'app'));
         }

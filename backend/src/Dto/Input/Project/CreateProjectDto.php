@@ -18,18 +18,18 @@ final class CreateProjectDto
     /**
      * @param string       $name                 Project name
      * @param string       $teamId               Team UUID
+     * @param string       $workflowId           Workflow UUID
      * @param ?string      $description          Optional description
      * @param ?string      $repositoryUrl        Optional repository URL
-     * @param ?string      $workflowId           Optional workflow UUID
      * @param DispatchMode $dispatchMode         Task dispatch mode
      * @param ?string      $defaultTicketRoleId  Optional default role UUID for tickets
      */
     public function __construct(
         public readonly string $name,
         public readonly string $teamId,
+        public readonly string $workflowId,
         public readonly ?string $description,
         public readonly ?string $repositoryUrl,
-        public readonly ?string $workflowId,
         public readonly DispatchMode $dispatchMode,
         public readonly ?string $defaultTicketRoleId,
     ) {}
@@ -49,6 +49,10 @@ final class CreateProjectDto
             $errors[] = ['field' => 'teamId', 'code' => 'project.validation.team_required'];
         }
 
+        if (empty($data['workflowId'])) {
+            $errors[] = ['field' => 'workflowId', 'code' => 'project.validation.workflow_required'];
+        }
+
         $dispatchMode = DispatchMode::Auto;
         if (isset($data['dispatchMode']) && $data['dispatchMode'] !== '') {
             $dm = DispatchMode::tryFrom((string) $data['dispatchMode']);
@@ -66,9 +70,9 @@ final class CreateProjectDto
         return new self(
             name: (string) $data['name'],
             teamId: (string) $data['teamId'],
+            workflowId: (string) $data['workflowId'],
             description: isset($data['description']) && $data['description'] !== '' ? (string) $data['description'] : null,
             repositoryUrl: isset($data['repositoryUrl']) && $data['repositoryUrl'] !== '' ? (string) $data['repositoryUrl'] : null,
-            workflowId: isset($data['workflowId']) && $data['workflowId'] !== '' ? (string) $data['workflowId'] : null,
             dispatchMode: $dispatchMode,
             defaultTicketRoleId: isset($data['defaultTicketRoleId']) && $data['defaultTicketRoleId'] !== '' ? (string) $data['defaultTicketRoleId'] : null,
         );
