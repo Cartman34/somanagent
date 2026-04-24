@@ -13,7 +13,6 @@ use App\Exception\ValidationException;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\FeatureService;
 use App\Service\ProjectService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,7 +22,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * REST controller managing features (epics) within projects.
  */
 #[Route('/api')]
-class FeatureController extends AbstractController
+class FeatureController extends AbstractApiController
 {
     /**
      * Initializes the controller with its dependencies.
@@ -31,8 +30,10 @@ class FeatureController extends AbstractController
     public function __construct(
         private readonly FeatureService $featureService,
         private readonly ProjectService $projectService,
-        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
-    ) {}
+        ApiErrorPayloadFactory $apiErrorPayloadFactory,
+    ) {
+        parent::__construct($apiErrorPayloadFactory);
+    }
 
     /**
      * Lists all features for a given project.
@@ -109,7 +110,10 @@ class FeatureController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('feature.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $dto = UpdateFeatureDto::fromArray($request->toArray());
+        $dto = $this->tryParseDto(fn() => UpdateFeatureDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
+        }
         $this->featureService->update($feature, $dto);
         return $this->json(['id' => (string) $feature->getId(), 'name' => $feature->getName()]);
     }

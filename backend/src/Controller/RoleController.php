@@ -13,7 +13,6 @@ use App\Dto\Input\Role\UpdateRoleDto;
 use App\Exception\ValidationException;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\RoleService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,15 +22,17 @@ use Symfony\Component\Routing\Attribute\Route;
  * REST controller managing specialization roles.
  */
 #[Route('/api/roles')]
-class RoleController extends AbstractController
+class RoleController extends AbstractApiController
 {
     /**
      * Initializes the controller with its dependencies.
      */
     public function __construct(
         private readonly RoleService $roleService,
-        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
-    ) {}
+        ApiErrorPayloadFactory $apiErrorPayloadFactory,
+    ) {
+        parent::__construct($apiErrorPayloadFactory);
+    }
 
     /**
      * Returns the list of all roles with their associated skills.

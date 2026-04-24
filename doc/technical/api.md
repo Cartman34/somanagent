@@ -62,10 +62,10 @@ Crée un projet.
 
 Le body peut inclure `teamId` pour affecter une équipe dès la création.
 
-### `GET /api/projects/{id}` · `PUT /api/projects/{id}` · `DELETE /api/projects/{id}`
+### `GET /api/projects/{id}` · `PATCH /api/projects/{id}` · `DELETE /api/projects/{id}`
 CRUD projet.
 
-`PUT /api/projects/{id}` permet aussi :
+`PATCH /api/projects/{id}` permet aussi :
 - d’affecter ou retirer l’équipe via `teamId`
 - de modifier `dispatchMode`
 
@@ -123,7 +123,7 @@ Retourne le détail complet d’un ticket avec :
 - `tokenUsage`
 - `awaitingUserAnswer` / `pendingUserAnswerCount` pour signaler explicitement qu’une réponse utilisateur reste attendue
 
-### `PUT /api/tickets/{id}`
+### `PATCH /api/tickets/{id}`
 Met à jour le ticket.
 
 ### `PATCH /api/tickets/{id}/status`
@@ -195,7 +195,7 @@ Retourne le détail complet d’une tâche opérationnelle avec :
 - `canResume` pour indiquer si la tâche a déjà un historique d’exécution ou de complétion lui permettant d’être rejouée
 - `canAuthorize` pour indiquer si la tâche attend encore une autorisation explicite de dispatch
 
-### `PUT /api/ticket-tasks/{id}`
+### `PATCH /api/ticket-tasks/{id}`
 Met à jour la tâche.
 
 ### `PATCH /api/ticket-tasks/{id}/status`
@@ -339,7 +339,7 @@ Réponse :
 - `cached`
 - `cacheTtlSeconds`
 
-### `GET /api/agents/{id}` · `PUT /api/agents/{id}` · `DELETE /api/agents/{id}`
+### `GET /api/agents/{id}` · `PATCH /api/agents/{id}` · `DELETE /api/agents/{id}`
 CRUD agent.
 
 ### `GET /api/agents/{id}/status`

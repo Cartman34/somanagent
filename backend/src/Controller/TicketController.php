@@ -40,7 +40,6 @@ use App\Service\TicketService;
 use App\Service\TicketTaskService;
 use App\Service\TokenUsageService;
 use App\Service\VcsRepositoryUrlService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -50,7 +49,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * REST controller managing tickets, tasks, execution history, and workflow transitions.
  */
 #[Route('/api')]
-class TicketController extends AbstractController
+class TicketController extends AbstractApiController
 {
     /**
      * Initializes the controller with its dependencies.
@@ -66,8 +65,10 @@ class TicketController extends AbstractController
         private readonly TicketTaskDependencyRepository $ticketTaskDependencyRepository,
         private readonly TokenUsageService $tokenUsageService,
         private readonly VcsRepositoryUrlService $vcsRepositoryUrl,
-        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
-    ) {}
+        ApiErrorPayloadFactory $apiErrorPayloadFactory,
+    ) {
+        parent::__construct($apiErrorPayloadFactory);
+    }
 
     /**
      * Lists all tickets for a given project.
@@ -247,7 +248,10 @@ class TicketController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $dto = UpdateTicketDto::fromArray($request->toArray());
+        $dto = $this->tryParseDto(fn() => UpdateTicketDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
+        }
         $this->ticketService->update($ticket, $dto);
 
         return $this->json($this->serializeApiTicket($ticket));
@@ -264,7 +268,10 @@ class TicketController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('ticket.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $dto = UpdateTicketTaskDto::fromArray($request->toArray());
+        $dto = $this->tryParseDto(fn() => UpdateTicketTaskDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
+        }
         try {
             $this->ticketTaskService->update($task, $dto);
         } catch (\InvalidArgumentException $e) {
@@ -337,7 +344,7 @@ class TicketController extends AbstractController
         $priority = $dto->priority;
         $ticket = $this->ticketService->findById($id);
         if ($ticket !== null) {
-            $this->ticketService->update($ticket, $ticket->getTitle(), $ticket->getDescription(), $priority, $ticket->getFeature()?->getId()->toRfc4122());
+            $this->ticketService->update($ticket, new UpdateTicketDto(null, null, $priority, null));
             return $this->json($this->serializeApiTicket($ticket));
         }
 

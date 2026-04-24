@@ -1271,7 +1271,7 @@ components:
         - $ref: '#/components/schemas/ProjectFields'
         - required: [name, teamId, workflowId]
     ProjectUpdatePayload:
-      description: 'Payload for PUT /api/projects/{id}. All fields are optional; omitted fields keep their current value.'
+      description: 'Payload for PATCH /api/projects/{id}. All fields are optional; omitted fields keep their current value.'
       allOf:
         - $ref: '#/components/schemas/ProjectFields'
     ProjectRef:

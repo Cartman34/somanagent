@@ -13,7 +13,6 @@ use App\Dto\Input\Skill\UpdateSkillContentDto;
 use App\Exception\ValidationException;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\SkillService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,15 +22,17 @@ use Symfony\Component\Routing\Attribute\Route;
  * REST controller managing skills: CRUD, import from skills.sh, and metadata.
  */
 #[Route('/api/skills')]
-class SkillController extends AbstractController
+class SkillController extends AbstractApiController
 {
     /**
      * Initializes the controller with its dependencies.
      */
     public function __construct(
         private readonly SkillService $skillService,
-        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
-    ) {}
+        ApiErrorPayloadFactory $apiErrorPayloadFactory,
+    ) {
+        parent::__construct($apiErrorPayloadFactory);
+    }
 
     /**
      * Returns the list of all skills with their basic information.

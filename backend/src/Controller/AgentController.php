@@ -18,7 +18,6 @@ use App\Repository\AgentTaskExecutionRepository;
 use App\Service\AgentModelCatalogService;
 use App\Service\AgentService;
 use App\Service\ApiErrorPayloadFactory;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -28,7 +27,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * REST controller managing agents: CRUD, connector configuration, and execution history.
  */
 #[Route('/api/agents')]
-class AgentController extends AbstractController
+class AgentController extends AbstractApiController
 {
     /**
      * Initializes the controller with its dependencies.
@@ -38,8 +37,10 @@ class AgentController extends AbstractController
         private readonly AgentRepository $agentRepository,
         private readonly AgentTaskExecutionRepository $agentTaskExecutionRepository,
         private readonly AgentModelCatalogService $agentModelCatalogService,
-        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
-    ) {}
+        ApiErrorPayloadFactory $apiErrorPayloadFactory,
+    ) {
+        parent::__construct($apiErrorPayloadFactory);
+    }
 
     /**
      * Lists all agents.

@@ -10,7 +10,6 @@ namespace App\Controller;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\AgentService;
 use App\Service\TokenUsageService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,7 +19,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * REST controller exposing token usage statistics for agents and projects.
  */
 #[Route('/api/tokens')]
-class TokenController extends AbstractController
+class TokenController extends AbstractApiController
 {
     /**
      * Initializes the controller with its dependencies.
@@ -28,8 +27,10 @@ class TokenController extends AbstractController
     public function __construct(
         private readonly TokenUsageService $tokenUsageService,
         private readonly AgentService      $agentService,
-        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
-    ) {}
+        ApiErrorPayloadFactory $apiErrorPayloadFactory,
+    ) {
+        parent::__construct($apiErrorPayloadFactory);
+    }
 
     /**
      * Returns token consumption summary, optionally filtered by date range.

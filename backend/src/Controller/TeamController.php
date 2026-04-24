@@ -13,7 +13,6 @@ use App\Dto\Input\Team\UpdateTeamDto;
 use App\Exception\ValidationException;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\TeamService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,15 +22,17 @@ use Symfony\Component\Routing\Attribute\Route;
  * REST controller managing teams and their agent membership.
  */
 #[Route('/api/teams')]
-class TeamController extends AbstractController
+class TeamController extends AbstractApiController
 {
     /**
      * Initializes the controller with its dependencies.
      */
     public function __construct(
         private readonly TeamService $teamService,
-        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
-    ) {}
+        ApiErrorPayloadFactory $apiErrorPayloadFactory,
+    ) {
+        parent::__construct($apiErrorPayloadFactory);
+    }
 
     /**
      * Lists all teams.

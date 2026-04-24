@@ -13,7 +13,6 @@ use App\Repository\LogEventRepository;
 use App\Repository\LogOccurrenceRepository;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\LogMessageRenderer;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
@@ -22,7 +21,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * REST controller exposing structured log events and occurrences with filtering and rendering.
  */
 #[Route('/api/logs')]
-final class LogController extends AbstractController
+final class LogController extends AbstractApiController
 {
     /**
      * Wires log repositories and rendering services used by the logs API.
@@ -31,9 +30,11 @@ final class LogController extends AbstractController
         private readonly LogOccurrenceRepository $occurrenceRepository,
         private readonly LogEventRepository $eventRepository,
         private readonly \App\Service\LogService $logService,
-        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
+        ApiErrorPayloadFactory $apiErrorPayloadFactory,
         private readonly LogMessageRenderer $logMessageRenderer,
-    ) {}
+    ) {
+        parent::__construct($apiErrorPayloadFactory);
+    }
 
     /**
      * Lists log occurrences with optional filters and pagination.

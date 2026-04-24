@@ -12,7 +12,6 @@ use App\Dto\Input\Workflow\UpdateWorkflowDto;
 use App\Exception\ValidationException;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\WorkflowService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,15 +21,17 @@ use Symfony\Component\Routing\Attribute\Route;
  * REST controller managing workflows, their steps, and activation lifecycle.
  */
 #[Route('/api/workflows')]
-class WorkflowController extends AbstractController
+class WorkflowController extends AbstractApiController
 {
     /**
      * Initializes the controller with its dependencies.
      */
     public function __construct(
         private readonly WorkflowService $workflowService,
-        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
-    ) {}
+        ApiErrorPayloadFactory $apiErrorPayloadFactory,
+    ) {
+        parent::__construct($apiErrorPayloadFactory);
+    }
 
     /**
      * Returns the workflow catalogue with activation metadata.

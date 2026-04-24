@@ -16,7 +16,6 @@ use App\Service\ApiErrorPayloadFactory;
 use App\Service\AgentService;
 use App\Service\ChatService;
 use App\Service\ProjectService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,7 +25,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * REST controller managing chat conversations within a project.
  */
 #[Route('/api/projects/{projectId}/chat')]
-class ChatController extends AbstractController
+class ChatController extends AbstractApiController
 {
     /**
      * Initializes the controller with the services required for project chat endpoints.
@@ -35,8 +34,10 @@ class ChatController extends AbstractController
         private readonly ChatService    $chatService,
         private readonly ProjectService $projectService,
         private readonly AgentService   $agentService,
-        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
-    ) {}
+        ApiErrorPayloadFactory $apiErrorPayloadFactory,
+    ) {
+        parent::__construct($apiErrorPayloadFactory);
+    }
 
     /**
      * Returns the chat history for a given project and agent.

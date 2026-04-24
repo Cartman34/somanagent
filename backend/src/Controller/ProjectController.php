@@ -16,7 +16,6 @@ use App\Repository\AuditLogRepository;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\ProjectService;
 use App\Service\TokenUsageService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,7 +25,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * REST controller managing projects, their modules, audit logs, and token usage.
  */
 #[Route('/api/projects')]
-class ProjectController extends AbstractController
+class ProjectController extends AbstractApiController
 {
     /**
      * Initializes the controller with its dependencies.
@@ -35,8 +34,10 @@ class ProjectController extends AbstractController
         private readonly ProjectService    $projectService,
         private readonly AuditLogRepository $auditLogRepository,
         private readonly TokenUsageService  $tokenUsageService,
-        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
-    ) {}
+        ApiErrorPayloadFactory $apiErrorPayloadFactory,
+    ) {
+        parent::__construct($apiErrorPayloadFactory);
+    }
 
     /**
      * Lists all projects.
