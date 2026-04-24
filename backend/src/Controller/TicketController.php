@@ -288,10 +288,9 @@ class TicketController extends AbstractApiController
     #[Route('/ticket-tasks/{id}/status', name: 'ticket_task_status_api', methods: ['PATCH'])]
     public function changeStatus(string $id, Request $request): JsonResponse
     {
-        try {
-            $dto = ChangeStatusDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException) {
-            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.status_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => ChangeStatusDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         $status = $dto->status;
@@ -335,10 +334,9 @@ class TicketController extends AbstractApiController
     #[Route('/ticket-tasks/{id}/priority', name: 'ticket_task_reprioritize_api', methods: ['PATCH'])]
     public function reprioritize(string $id, Request $request): JsonResponse
     {
-        try {
-            $dto = ReprioritizeDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException) {
-            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.priority_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => ReprioritizeDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         $priority = $dto->priority;
@@ -365,10 +363,9 @@ class TicketController extends AbstractApiController
     #[Route('/ticket-tasks/{id}/comments', name: 'ticket_task_comment_create_api', methods: ['POST'])]
     public function createComment(string $id, Request $request): JsonResponse
     {
-        try {
-            $dto = CreateCommentDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException) {
-            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.content_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => CreateCommentDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         $ticket = $this->ticketService->findById($id);
@@ -410,10 +407,9 @@ class TicketController extends AbstractApiController
     #[Route('/ticket-tasks/{id}/comments/{logId}', name: 'ticket_task_comment_update_api', methods: ['PATCH'])]
     public function updateComment(string $id, string $logId, Request $request): JsonResponse
     {
-        try {
-            $dto = UpdateCommentDto::fromArray($request->toArray());
-        } catch (\InvalidArgumentException) {
-            return $this->json($this->apiErrorPayloadFactory->create('ticket.validation.content_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => UpdateCommentDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         $ticket = $this->ticketService->findById($id);

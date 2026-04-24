@@ -167,7 +167,7 @@ export default function ProjectGeneralTab({ project, projectId }: {
             disabled={updateTeamMutation.isPending}
             onClick={() => {
               const effectiveId = selectedTeamId ?? (project.team?.id ?? '')
-              updateTeamMutation.mutate(effectiveId || null)
+              updateTeamMutation.mutate(effectiveId || '0')
             }}
           >
             {updateTeamMutation.isPending ? t('common.action.saving') : t('common.action.save')}
@@ -202,7 +202,7 @@ export default function ProjectGeneralTab({ project, projectId }: {
             disabled={updateDefaultTicketRoleMutation.isPending}
             onClick={() => {
               const effectiveId = selectedDefaultTicketRoleId ?? (project.defaultTicketRole?.id ?? '')
-              updateDefaultTicketRoleMutation.mutate(effectiveId || null)
+              updateDefaultTicketRoleMutation.mutate(effectiveId || '0')
             }}
           >
             {updateDefaultTicketRoleMutation.isPending ? t('common.action.saving') : t('common.action.save')}

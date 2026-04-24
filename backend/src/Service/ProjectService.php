@@ -86,10 +86,18 @@ class ProjectService
         $name = $dto->name ?? $project->getName();
         $description = $dto->description ?? $project->getDescription();
         $repositoryUrl = $dto->repositoryUrl ?? $project->getRepositoryUrl();
-        $teamId = $dto->teamId ?? ($project->getTeam() ? (string) $project->getTeam()->getId() : null);
+        $teamId = match(true) {
+            $dto->teamId === '0' => null,
+            $dto->teamId !== null => $dto->teamId,
+            default => $project->getTeam() ? (string) $project->getTeam()->getId() : null,
+        };
         $workflowId = $dto->workflowId ?? ($project->getWorkflow() ? (string) $project->getWorkflow()->getId() : null);
         $dispatchMode = $dto->dispatchModeValue !== null ? (DispatchMode::tryFrom($dto->dispatchModeValue) ?? $project->getDispatchMode()) : $project->getDispatchMode();
-        $defaultTicketRoleId = $dto->defaultTicketRoleId ?? ($project->getDefaultTicketRole() ? (string) $project->getDefaultTicketRole()->getId() : null);
+        $defaultTicketRoleId = match(true) {
+            $dto->defaultTicketRoleId === '0' => null,
+            $dto->defaultTicketRoleId !== null => $dto->defaultTicketRoleId,
+            default => $project->getDefaultTicketRole() ? (string) $project->getDefaultTicketRole()->getId() : null,
+        };
 
         if ($workflowId === null || $workflowId === '') {
             throw new \LogicException($this->translator->trans('project.validation.workflow_required', [], 'app'));

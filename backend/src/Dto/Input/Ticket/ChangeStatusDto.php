@@ -28,6 +28,7 @@ final class ChangeStatusDto
     public static function fromArray(array $data): self
     {
         $errors = [];
+        $status = null;
 
         if (empty($data['status'])) {
             $errors[] = ['field' => 'status', 'code' => 'ticket.validation.status_required'];

@@ -22,10 +22,10 @@ final class UpdateProjectDto
      * @param ?string      $name                 Updated name or null to keep current
      * @param ?string      $description          Updated description or null to keep current
      * @param ?string      $repositoryUrl        Updated repository URL or null to keep current
-     * @param ?string      $teamId               Team UUID or null to keep current
+     * @param ?string      $teamId               Team UUID, '0' to explicitly remove, or null to keep current
      * @param ?string      $workflowId           Workflow UUID or null to keep current
      * @param ?string      $dispatchModeValue    Raw dispatch mode string or null to keep current
-     * @param ?string      $defaultTicketRoleId  Default role UUID or null to keep current
+     * @param ?string      $defaultTicketRoleId  Role UUID, '0' to explicitly remove, or null to keep current
      */
     public function __construct(
         public readonly ?string $name,

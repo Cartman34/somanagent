@@ -28,6 +28,7 @@ final class ReprioritizeDto
     public static function fromArray(array $data): self
     {
         $errors = [];
+        $priority = null;
 
         if (empty($data['priority'])) {
             $errors[] = ['field' => 'priority', 'code' => 'ticket.validation.priority_required'];
