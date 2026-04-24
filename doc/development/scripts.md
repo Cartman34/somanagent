@@ -276,6 +276,7 @@ Blockers (exit code 1):
 - French strings (accented characters) in `backend/src/` `.php` and `frontend/src/` `.ts/.tsx`
 - Missing PHPDoc on `public function` declarations in `backend/src/` (migrations excluded)
 - Missing JSDoc on export declarations in `frontend/src/` `.ts/.tsx`
+- Failing frontend TypeScript type-check when modified files include `frontend/src/` `.ts/.tsx`
 - Failing dedicated PHPUnit tests mapped from modified `backend/src/Service/...` files
 
 Informational (no exit code impact):
@@ -285,7 +286,7 @@ Informational (no exit code impact):
 
 Limitations: only detects accented characters as French strings — complement with a manual diff review for unaccented French words (`Valider`, `Commenter`, etc.). JSDoc check covers export declarations only, not re-exports.
 
-The review flow intentionally skips container-backed validations that depend on local uncommitted environment files such as `.env`. Those checks are outside the commit diff scope and must not block review from a developer worktree.
+The review flow skips container-backed validations that depend on local uncommitted environment files such as `.env`. Frontend TypeScript checking remains part of review through `php scripts/validate-files.php --with-types --review-scope ...`, which runs the local `frontend` package script instead of raw `npx tsc`.
 
 ```bash
 php scripts/review.php
@@ -317,8 +318,9 @@ Rules:
 ---
 
 ### `validate-files.php`
-Runs targeted backend/frontend validations (PHP syntax, Symfony container lint, Doctrine schema, ESLint) for an explicit list of files.
-Use `--review-scope` when the command is executed from the mechanical review flow. In that mode, container-backed checks are skipped because they depend on local runtime state and uncommitted files such as `.env`, which are outside the review diff scope.
+Runs targeted backend/frontend validations (PHP syntax, Symfony container lint, OpenAPI consistency, ESLint, and optional TypeScript type-checking) for an explicit list of files.
+Use `--with-types` for frontend changes instead of raw `npx tsc`; it runs the project type-check wrapper.
+Use `--review-scope` when the command is executed from the mechanical review flow. In that mode, container-backed checks are skipped because they depend on local runtime state and uncommitted files such as `.env`, which are outside the review diff scope, but frontend TypeScript type-checking still runs through the local `frontend` package script.
 
 ```bash
 php scripts/validate-files.php backend/src/Controller/TaskController.php frontend/src/api/tickets.ts

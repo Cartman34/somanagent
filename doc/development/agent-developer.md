@@ -44,6 +44,7 @@ Read this file only when the active task requires developer workflow details.
 - When one step is prefixed with `WP:`, the working directory must be `WP`.
 - When one step is prefixed with `WA:`, the working directory must be the active agent `WA`.
 - Forbidden for `Developer`: `php scripts/console.php`, `php scripts/node.php`, `php scripts/db.php`, `php scripts/dev.php`, `php scripts/health.php`, `php scripts/github.php`, and any script that talks to containers, runtime, database, network, or GitHub.
+- For frontend TypeScript validation, do not run raw `npx tsc`; use `php scripts/validate-files.php --with-types <changed-frontend-files>` so the same check is available to mechanical review.
 - If a command is not explicitly allowed for `Developer`, do not run it.
 
 ## Do Not
