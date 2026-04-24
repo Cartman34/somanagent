@@ -56,7 +56,7 @@ final class CreateAgentDto
             }
         }
 
-        if ($errors) {
+        if ($errors !== []) {
             throw new ValidationException($errors);
         }
 

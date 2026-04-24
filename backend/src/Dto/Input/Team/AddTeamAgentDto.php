@@ -34,7 +34,7 @@ final class AddTeamAgentDto
             $errors[] = ['field' => 'agentId', 'code' => 'team.validation.agent_id_required'];
         }
 
-        if ($errors) {
+        if ($errors !== []) {
             throw new ValidationException($errors);
         }
 

@@ -32,7 +32,7 @@ final class SendChatMessageDto
             $errors[] = ['field' => 'content', 'code' => 'chat.validation.content_required'];
         }
 
-        if ($errors) {
+        if ($errors !== []) {
             throw new ValidationException($errors);
         }
 

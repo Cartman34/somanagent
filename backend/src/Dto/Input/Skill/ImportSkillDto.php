@@ -32,7 +32,7 @@ final class ImportSkillDto
             $errors[] = ['field' => 'source', 'code' => 'skill.validation.source_required'];
         }
 
-        if ($errors) {
+        if ($errors !== []) {
             throw new ValidationException($errors);
         }
 

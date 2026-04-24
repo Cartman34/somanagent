@@ -34,7 +34,7 @@ final class CreateFeatureDto
             $errors[] = ['field' => 'name', 'code' => 'feature.validation.name_required'];
         }
 
-        if ($errors) {
+        if ($errors !== []) {
             throw new ValidationException($errors);
         }
 

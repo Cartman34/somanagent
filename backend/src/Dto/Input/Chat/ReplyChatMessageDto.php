@@ -38,7 +38,7 @@ final class ReplyChatMessageDto
             $errors[] = ['field' => 'replyToMessageId', 'code' => 'chat.validation.reply_to_required'];
         }
 
-        if ($errors) {
+        if ($errors !== []) {
             throw new ValidationException($errors);
         }
 

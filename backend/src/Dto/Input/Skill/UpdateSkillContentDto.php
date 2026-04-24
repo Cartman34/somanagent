@@ -32,7 +32,7 @@ final class UpdateSkillContentDto
             $errors[] = ['field' => 'content', 'code' => 'skill.validation.content_required'];
         }
 
-        if ($errors) {
+        if ($errors !== []) {
             throw new ValidationException($errors);
         }
 

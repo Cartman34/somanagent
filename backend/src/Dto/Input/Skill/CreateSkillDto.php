@@ -46,7 +46,7 @@ final class CreateSkillDto
             $errors[] = ['field' => 'content', 'code' => 'skill.validation.create_required'];
         }
 
-        if ($errors) {
+        if ($errors !== []) {
             throw new ValidationException($errors);
         }
 

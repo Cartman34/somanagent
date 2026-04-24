@@ -32,18 +32,28 @@ final class CreateWorkflowDto
     public static function fromArray(array $data): self
     {
         $errors = [];
+        $trigger = WorkflowTrigger::Manual;
 
         if (empty($data['name'])) {
             $errors[] = ['field' => 'name', 'code' => 'workflow.validation.name_required'];
         }
 
-        if ($errors) {
+        if (isset($data['trigger']) && $data['trigger'] !== '') {
+            $t = WorkflowTrigger::tryFrom((string) $data['trigger']);
+            if ($t === null) {
+                $errors[] = ['field' => 'trigger', 'code' => 'workflow.validation.trigger_invalid'];
+            } else {
+                $trigger = $t;
+            }
+        }
+
+        if ($errors !== []) {
             throw new ValidationException($errors);
         }
 
         return new self(
             name: (string) $data['name'],
-            trigger: WorkflowTrigger::tryFrom((string) ($data['trigger'] ?? 'manual')) ?? WorkflowTrigger::Manual,
+            trigger: $trigger,
             description: isset($data['description']) && $data['description'] !== '' ? (string) $data['description'] : null,
         );
     }

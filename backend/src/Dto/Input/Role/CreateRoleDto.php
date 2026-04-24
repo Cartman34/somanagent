@@ -42,7 +42,7 @@ final class CreateRoleDto
             $errors[] = ['field' => 'name', 'code' => 'role.validation.name_required'];
         }
 
-        if ($errors) {
+        if ($errors !== []) {
             throw new ValidationException($errors);
         }
 

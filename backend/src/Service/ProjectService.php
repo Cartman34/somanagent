@@ -92,7 +92,7 @@ class ProjectService
             default => $project->getTeam() ? (string) $project->getTeam()->getId() : null,
         };
         $workflowId = $dto->workflowId ?? ($project->getWorkflow() ? (string) $project->getWorkflow()->getId() : null);
-        $dispatchMode = $dto->dispatchModeValue !== null ? (DispatchMode::tryFrom($dto->dispatchModeValue) ?? $project->getDispatchMode()) : $project->getDispatchMode();
+        $dispatchMode = $dto->dispatchModeValue !== null ? DispatchMode::from($dto->dispatchModeValue) : $project->getDispatchMode();
         $defaultTicketRoleId = match(true) {
             $dto->defaultTicketRoleId === '0' => null,
             $dto->defaultTicketRoleId !== null => $dto->defaultTicketRoleId,

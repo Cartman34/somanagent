@@ -59,13 +59,22 @@ class AgentService
     /**
      * Update an existing agent's properties and persist the changes.
      * Implements PATCH semantics: only provided fields are updated.
+     *
+     * @throws ValidationException when connector or config.model is invalid
      */
     public function update(Agent $agent, UpdateAgentDto $dto): Agent
     {
         // Resolve connector: use dto value if provided, otherwise keep existing
-        $connector = $dto->connectorValue !== null
-            ? ConnectorType::tryFrom($dto->connectorValue) ?? $agent->getConnector()
-            : $agent->getConnector();
+        $connector = $agent->getConnector();
+        if ($dto->connectorValue !== null) {
+            $parsed = ConnectorType::tryFrom($dto->connectorValue);
+            if ($parsed === null) {
+                throw new ValidationException([
+                    ['field' => 'connector', 'code' => 'agent.validation.connector_invalid'],
+                ]);
+            }
+            $connector = $parsed;
+        }
 
         // Resolve config: construct from dto if provided, otherwise keep existing
         $configData = $dto->configData ?? $agent->getConnectorConfig()->toArray();

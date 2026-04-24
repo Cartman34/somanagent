@@ -36,7 +36,7 @@ final class CreateTeamDto
             $errors[] = ['field' => 'name', 'code' => 'team.validation.name_required'];
         }
 
-        if ($errors) {
+        if ($errors !== []) {
             throw new ValidationException($errors);
         }
 

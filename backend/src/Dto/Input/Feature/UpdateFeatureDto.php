@@ -43,7 +43,7 @@ final class UpdateFeatureDto
             }
         }
 
-        if ($errors) {
+        if ($errors !== []) {
             throw new ValidationException($errors);
         }
 

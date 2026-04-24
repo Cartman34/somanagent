@@ -34,7 +34,7 @@ final class AddRoleSkillDto
             $errors[] = ['field' => 'skillId', 'code' => 'role.validation.skill_id_required'];
         }
 
-        if ($errors) {
+        if ($errors !== []) {
             throw new ValidationException($errors);
         }
 
