@@ -18,12 +18,6 @@ use SoManAgent\Script\TextSlugger;
 
 /**
  * Backlog workflow runner for the local developer/reviewer process.
- *
- * TODO(backlog-runner-refactor): keep this runner focused on command dispatch.
- * Planned follow-ups after the help extraction:
- * - extract backlog entry/agent/feature resolvers
- * - extract worktree and local git orchestration
- * - extract PR/GitHub orchestration
  */
 final class BacklogRunner extends AbstractScriptRunner
 {
