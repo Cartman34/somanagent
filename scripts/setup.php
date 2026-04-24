@@ -7,6 +7,7 @@
 // Usage: php scripts/setup.php
 // Usage: php scripts/setup.php --skip-frontend
 
+$GLOBALS['somanagent_scripts_allow_autoinstall'] = true;
 require_once __DIR__ . '/src/bootstrap.php';
 
 use SoManAgent\Script\Runner\SetupRunner;
