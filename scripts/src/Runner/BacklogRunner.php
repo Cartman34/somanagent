@@ -11,9 +11,9 @@ use SoManAgent\Script\Backlog\BacklogCommandHelp;
 use SoManAgent\Script\Backlog\BacklogBoard;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
 use SoManAgent\Script\Backlog\BacklogReviewFile;
+use SoManAgent\Script\Backlog\BacklogPullRequestManager;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
 use SoManAgent\Script\Backlog\BoardEntry;
-use SoManAgent\Script\RetryHelper;
 use SoManAgent\Script\TextSlugger;
 
 /**
@@ -57,6 +57,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private ?BacklogCommandHelp $commandHelp = null;
     private ?BacklogEntryResolver $entryResolver = null;
     private ?BacklogWorktreeManager $worktreeManager = null;
+    private ?BacklogPullRequestManager $pullRequestManager = null;
 
     protected function getDescription(): string
     {
@@ -191,6 +192,27 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         return $this->worktreeManager;
+    }
+
+    private function pullRequestManager(): BacklogPullRequestManager
+    {
+        if ($this->pullRequestManager === null) {
+            $this->pullRequestManager = new BacklogPullRequestManager(
+                $this->dryRun,
+                self::PR_CREATE_HEAD_INVALID_NEEDLE,
+                self::NETWORK_ERROR_NEEDLES,
+                self::RETRY_COUNT,
+                self::RETRY_BASE_DELAY,
+                self::RETRY_FACTOR,
+                function (string $message): void {
+                    $this->logVerbose($message);
+                },
+                fn(string $path): string => $this->toRelativeProjectPath($path),
+                fn(string $command): array => $this->captureWithExitCode($command),
+            );
+        }
+
+        return $this->pullRequestManager;
     }
 
     /**
@@ -927,7 +949,7 @@ final class BacklogRunner extends AbstractScriptRunner
             ? $this->requireBodyFile($options)
             : null;
         if ($bodyFile !== null) {
-            $this->updatePrBodyIfExists($entry->getMeta('branch') ?? '', $bodyFile);
+            $this->pullRequestManager()->updatePrBodyIfExists($entry->getMeta('branch') ?? '', $bodyFile);
         }
 
         $this->console->ok(sprintf('Added queued task to feature %s', $feature));
@@ -1149,7 +1171,7 @@ final class BacklogRunner extends AbstractScriptRunner
         if ($prNumber !== null) {
             $type = $this->featureStage($match['entry']) === BacklogBoard::STAGE_APPROVED ? $this->determinePrType($match['entry']) : 'WIP';
             $title = $this->ensureBlockedTitle($this->buildPrTitle($type, $match['entry']));
-            $this->runGithubCommand(sprintf(
+            $this->pullRequestManager()->runGithubCommand(sprintf(
                 'php scripts/github.php pr edit %d --title %s',
                 $prNumber,
                 escapeshellarg($title),
@@ -1188,7 +1210,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $prNumber = $this->storedPrNumber($match['entry']);
         if ($prNumber !== null) {
             $title = $this->buildCurrentTitle($match['entry']);
-            $this->runGithubCommand(sprintf(
+            $this->pullRequestManager()->runGithubCommand(sprintf(
                 'php scripts/github.php pr edit %d --title %s',
                 $prNumber,
                 escapeshellarg($title),
@@ -1522,9 +1544,9 @@ final class BacklogRunner extends AbstractScriptRunner
             throw new \RuntimeException("Feature {$feature} has no branch metadata.");
         }
 
-        $this->pushBranchAndWaitForRemoteVisibility($branch);
-        $this->createOrUpdatePr($branch, $title, $bodyFile);
-        $prNumber = $this->findPrNumberByBranch($branch);
+        $this->pullRequestManager()->pushBranchAndWaitForRemoteVisibility($branch);
+        $this->pullRequestManager()->createOrUpdatePr($branch, $title, $bodyFile);
+        $prNumber = $this->pullRequestManager()->findPrNumberByBranch($branch);
         if ($prNumber !== null) {
             $match['entry']->setMeta('pr', (string) $prNumber);
         }
@@ -1563,7 +1585,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $prNumber = $this->storedPrNumber($match['entry']);
         if ($prNumber !== null) {
-            $this->runGithubCommand(sprintf('php scripts/github.php pr close %d', $prNumber));
+            $this->pullRequestManager()->runGithubCommand(sprintf('php scripts/github.php pr close %d', $prNumber));
         }
 
         $board->removeFeature($feature);
@@ -1603,20 +1625,20 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $branch = $match['entry']->getMeta('branch') ?? '';
-        $prNumber = $this->findPrNumberByBranch($branch);
+        $prNumber = $this->pullRequestManager()->findPrNumberByBranch($branch);
         if ($prNumber === null) {
             throw new \RuntimeException("No open PR found for branch {$branch}.");
         }
 
         $type = $this->determinePrType($match['entry']);
-        $this->createOrUpdatePr($branch, $this->buildPrTitle($type, $match['entry']), $bodyFile);
-        $this->runGithubCommand(sprintf('php scripts/github.php pr merge %d', $prNumber));
+        $this->pullRequestManager()->createOrUpdatePr($branch, $this->buildPrTitle($type, $match['entry']), $bodyFile);
+        $this->pullRequestManager()->runGithubCommand(sprintf('php scripts/github.php pr merge %d', $prNumber));
         $skippedMainCheckout = false;
         if ($this->workspaceCurrentBranch() === 'main') {
             $this->updateLocalMainInWorkspaceWithWarning('feature-merge');
             $skippedMainCheckout = true;
         } elseif ($this->workspaceHasLocalChanges()) {
-            $this->runNetworkCommand('git fetch origin main:main', 'Git');
+            $this->pullRequestManager()->runNetworkCommand('git fetch origin main:main', 'Git');
             $skippedMainCheckout = true;
         } else {
             $this->runGitCommand('git checkout main');
@@ -2099,7 +2121,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         if (!$this->gitCommandSucceeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/remotes/origin/' . $branch)))) {
-            $this->pushBranchAndWaitForRemoteVisibility($branch);
+            $this->pullRequestManager()->pushBranchAndWaitForRemoteVisibility($branch);
 
             return;
         }
@@ -2111,7 +2133,7 @@ final class BacklogRunner extends AbstractScriptRunner
         )));
 
         if ($ahead !== '0') {
-            $this->pushBranchAndWaitForRemoteVisibility($branch);
+            $this->pullRequestManager()->pushBranchAndWaitForRemoteVisibility($branch);
         }
     }
 
@@ -2140,7 +2162,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private function updateLocalMainBeforeFeatureStart(): void
     {
         if ($this->workspaceCurrentBranch() !== 'main') {
-            $this->runNetworkCommand('git fetch origin main:main', 'Git');
+            $this->pullRequestManager()->runNetworkCommand('git fetch origin main:main', 'Git');
 
             return;
         }
@@ -2151,7 +2173,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private function updateLocalMainInWorkspaceWithWarning(string $context): void
     {
         try {
-            $this->runNetworkCommand('git pull --ff-only', 'Git');
+            $this->pullRequestManager()->runNetworkCommand('git pull --ff-only', 'Git');
         } catch (\RuntimeException $exception) {
             $this->console->warn(sprintf(
                 'Unable to update local main in WP during %s; continuing with the current local main.',
@@ -2232,76 +2254,6 @@ final class BacklogRunner extends AbstractScriptRunner
             : '[BLOCKED] ' . $title;
     }
 
-    private function createOrUpdatePr(string $branch, string $title, string $bodyFile): void
-    {
-        $prNumber = $this->findPrNumberByBranch($branch);
-
-        if ($prNumber === null) {
-            $this->createPrWithRetry($branch, $title, $bodyFile);
-            return;
-        }
-
-        $this->runGithubCommand(sprintf(
-            'php scripts/github.php pr edit %d --title %s --body-file %s',
-            $prNumber,
-            escapeshellarg($title),
-            escapeshellarg($bodyFile),
-        ));
-    }
-
-    private function createPrWithRetry(string $branch, string $title, string $bodyFile): void
-    {
-        $command = sprintf(
-            'php scripts/github.php pr create --title %s --head %s --base main --body-file %s',
-            escapeshellarg($title),
-            escapeshellarg($branch),
-            escapeshellarg($bodyFile),
-        );
-
-        [$code, $output] = $this->networkRetryHelper()->run(
-            function () use ($branch, $command): array {
-                [$code, $output] = $this->captureNetworkCommandWithRetry($command, 'GitHub');
-                if ($code !== 0 && $this->isHeadInvalidCreateError($output)) {
-                    $this->waitForRemoteBranchVisibility($branch);
-                }
-
-                return [$code, $output];
-            },
-            fn(array $result): bool => $result[0] !== 0 && $this->isHeadInvalidCreateError($result[1]),
-        );
-
-        if ($code !== 0) {
-            throw new \RuntimeException(sprintf(
-                "Command failed with exit code %d: %s\n%s",
-                $code,
-                $command,
-                $output,
-            ));
-        }
-    }
-
-    private function pushBranchAndWaitForRemoteVisibility(string $branch, ?string $worktree = null): void
-    {
-        $gitPrefix = $worktree !== null
-            ? sprintf('git -C %s', escapeshellarg($this->toRelativeProjectPath($worktree)))
-            : 'git';
-
-        $this->runNetworkCommand(sprintf(
-            '%s push -u origin %s',
-            $gitPrefix,
-            escapeshellarg($branch),
-        ), 'Git');
-
-        $this->runNetworkCommand(sprintf(
-            '%s fetch origin %s:%s',
-            $gitPrefix,
-            escapeshellarg($branch),
-            escapeshellarg('refs/remotes/origin/' . $branch),
-        ), 'Git');
-
-        $this->waitForRemoteBranchVisibility($branch);
-    }
-
     private function gitInPath(string $path, string $subCommand): string
     {
         return sprintf(
@@ -2326,95 +2278,6 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         return substr($normalizedPath, strlen($prefix));
-    }
-
-    private function waitForRemoteBranchVisibility(string $branch): void
-    {
-        if ($this->dryRun) {
-            $this->logVerbose('[dry-run] Would wait for remote branch visibility: ' . $branch);
-            return;
-        }
-
-        $isVisible = $this->networkRetryHelper()->run(
-            fn(): bool => $this->isRemoteBranchVisible($branch),
-            fn(bool $result): bool => !$result,
-        );
-
-        if ($isVisible) {
-            return;
-        }
-
-        throw new \RuntimeException("Remote branch did not become visible in time: {$branch}");
-    }
-
-    private function isRemoteBranchVisible(string $branch): bool
-    {
-        [$code, $output] = $this->captureNetworkCommandWithRetry(sprintf(
-            'git ls-remote --heads origin %s',
-            escapeshellarg($branch),
-        ), 'Git');
-
-        if ($code !== 0) {
-            throw new \RuntimeException(sprintf(
-                "Command failed with exit code %d while checking remote branch visibility: %s\n%s",
-                $code,
-                $branch,
-                $output,
-            ));
-        }
-
-        return trim($output) !== '';
-    }
-
-    private function isHeadInvalidCreateError(string $output): bool
-    {
-        return str_contains($output, self::PR_CREATE_HEAD_INVALID_NEEDLE);
-    }
-
-    private function updatePrBody(string $branch, string $bodyFile): void
-    {
-        $prNumber = $this->findPrNumberByBranch($branch);
-        if ($prNumber === null) {
-            throw new \RuntimeException("No open PR found for branch {$branch}.");
-        }
-
-        $this->runGithubCommand(sprintf(
-            'php scripts/github.php pr edit %d --body-file %s',
-            $prNumber,
-            escapeshellarg($bodyFile),
-        ));
-    }
-
-    private function updatePrBodyIfExists(string $branch, string $bodyFile): void
-    {
-        $prNumber = $this->findPrNumberByBranch($branch);
-        if ($prNumber === null) {
-            return;
-        }
-
-        $this->runGithubCommand(sprintf(
-            'php scripts/github.php pr edit %d --body-file %s',
-            $prNumber,
-            escapeshellarg($bodyFile),
-        ));
-    }
-
-    private function findPrNumberByBranch(string $branch): ?int
-    {
-        if ($branch === '') {
-            return null;
-        }
-
-        $output = $this->captureNetworkOutputWithRetry('php scripts/github.php pr list', 'GitHub');
-        foreach (explode("\n", trim($output)) as $line) {
-            if (preg_match('/^\s*#(\d+)\s+.*\[(.+?) → (.+?)\]$/u', $line, $matches) === 1) {
-                if ($matches[2] === $branch) {
-                    return (int) $matches[1];
-                }
-            }
-        }
-
-        return null;
     }
 
     /**
@@ -2602,95 +2465,6 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         return $this->commandSucceeds($command);
-    }
-
-    private function runGithubCommand(string $command): void
-    {
-        $this->runNetworkCommand($command, 'GitHub');
-    }
-
-    private function captureGithubOutputWithRetry(string $command): string
-    {
-        return $this->captureNetworkOutputWithRetry($command, 'GitHub');
-    }
-
-    private function runNetworkCommand(string $command, string $label): void
-    {
-        [$code, $output] = $this->captureNetworkCommandWithRetry($command, $label);
-        if ($code !== 0) {
-            throw new \RuntimeException(sprintf(
-                "Command failed with exit code %d: %s\n%s",
-                $code,
-                $command,
-                $output,
-            ));
-        }
-
-    }
-
-    /**
-     * Runs one network command with retry on transient transport failures.
-     *
-     * @return array{0: int, 1: string}
-     */
-    private function captureNetworkCommandWithRetry(string $command, string $label): array
-    {
-        if ($this->dryRun) {
-            $this->logVerbose(sprintf('[dry-run] Would run %s command: %s', strtolower($label), $command));
-            return [0, ''];
-        }
-
-        $result = $this->networkRetryHelper()->run(
-            fn(): array => $this->captureWithExitCode($command),
-            fn(array $result): bool => $result[0] !== 0 && $this->isRetryableNetworkError($result[1]),
-        );
-
-        if ($result[0] !== 0 && $this->isRetryableNetworkError($result[1])) {
-            throw new \RuntimeException(sprintf(
-                "%s network error after %d retries. Safe to rerun the same command.\nCommand: %s\n%s",
-                $label,
-                self::RETRY_COUNT,
-                $command,
-                $result[1],
-            ));
-        }
-
-        return $result;
-    }
-
-    private function captureNetworkOutputWithRetry(string $command, string $label): string
-    {
-        [$code, $output] = $this->captureNetworkCommandWithRetry($command, $label);
-        if ($code !== 0) {
-            throw new \RuntimeException(sprintf(
-                "Command failed with exit code %d: %s\n%s",
-                $code,
-                $command,
-                $output,
-            ));
-        }
-
-        return $output;
-    }
-
-    private function isRetryableNetworkError(string $output): bool
-    {
-        foreach (self::NETWORK_ERROR_NEEDLES as $needle) {
-            if (str_contains($output, $needle)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function networkRetryHelper(): RetryHelper
-    {
-        return new RetryHelper(
-            self::RETRY_COUNT,
-            self::RETRY_BASE_DELAY,
-			self::RETRY_FACTOR,
-        );
     }
 
     private function describePrStatus(BoardEntry $entry): string
