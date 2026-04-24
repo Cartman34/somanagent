@@ -70,6 +70,10 @@ php scripts/help.php migrate.php  # detail for one script
 Runs the documented local backlog workflow from `WP` only, including feature start/review/merge and local child task submit/review/merge flows.
 
 ```bash
+php scripts/backlog.php
+php scripts/backlog.php help
+php scripts/backlog.php help feature-start
+php scripts/backlog.php feature-start --help
 php scripts/backlog.php feature-start --agent agent-01
 php scripts/backlog.php task-review-request --agent agent-01
 php scripts/backlog.php task-review-approve my-feature/my-task
@@ -78,9 +82,11 @@ php scripts/backlog.php feature-task-merge my-feature/my-task
 ```
 
 Notes:
+- run `php scripts/backlog.php` for the global backlog help
+- use `php scripts/backlog.php help <command>` or `php scripts/backlog.php <command> --help` for one command
 - developer commands require `--agent=<code>`
 - reviewer commands never use `--agent`
-- `feature-start` reads branch type from queued task prefixes such as `[feat]` or `[fix]`
+- `feature-start` reads the next queued board entry and accepts plain text, optional `[feat]` / `[fix]` prefixes, and scoped entries like `[feature-slug][task-slug] Task text`
 - child task review stays local; only the parent feature uses the remote PR flow
 
 ---

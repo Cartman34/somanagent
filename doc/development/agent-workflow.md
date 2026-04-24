@@ -85,27 +85,29 @@ Rules:
 ## Command Policy
 
 1. Use `php scripts/backlog.php` for the full local workflow.
-2. Every developer command on `backlog.php` requires `--agent=<code>`.
-3. Reviewer commands on `backlog.php` never use `--agent`.
-4. The agent code must never leave local backlog files.
-5. `feature-start` takes the next queued task directly from `## À faire`; no separate reservation step is part of the standard workflow.
-6. Queued tasks may declare their branch type with a prefix `[feat]` or `[fix]`.
-7. `feature-release` returns the active feature to `## À faire` only when no development was done on its branch. A parent `kind=feature` cannot be released while child `kind=task` entries still exist for that feature.
-8. When `feature-start` consumes a queued task prefixed as `[feature-slug][task-slug]`, it creates or reuses the local parent feature branch from `origin/main`, ensures one active `kind=feature` entry exists for that feature, and creates the active child `kind=task` entry from that local parent branch.
-9. Starting a new child task or merging a child task locally invalidates any parent feature review state and moves the parent `kind=feature` back to `development`.
-10. `kind=task` entries are local-only delivery units: they are never pushed and never get GitHub PRs.
-11. `feature-task-add --agent=<code> --feature-text=<text>` may absorb the next queued task into the current feature. If that queued task is prefixed as `[feature-slug][task-slug]`, it must target the current feature, it creates a new local child task entry, and it follows the same child-branch rules as `feature-start`.
-12. `feature-task-add` must not mix a plain queued task into a feature that already uses local child tasks.
-13. `task-review-request --agent=<code> [<task>|<feature/task>]` moves one child task to `review` after a green mechanical review in the task worktree.
-14. `task-review-check`, `task-review-reject`, and `task-review-approve` apply only to `kind=task` entries and store local review notes under `local/backlog-review.md` with keys shaped as `<feature>/<task>`.
-15. `task-rework --agent=<code> [<task>|<feature/task>]` moves one rejected child task back to `development`, preserves its local review notes, and reopens the task branch in that agent worktree.
-16. For `kind=task` entries, `meta.stage=approved` means the reviewer review is OK, but it does not grant any additional merge permission beyond `development` or `review`.
-17. `feature-task-merge` merges one child task branch into its parent feature branch locally, after a green mechanical review in the task worktree, using either the worktree already bound to the parent branch or a temporary merge worktree.
-18. `feature-task-merge --agent=<code> [<task>]` is the developer form for merging the current agent task after an explicit user merge instruction.
-19. `feature-task-merge <feature>/<task>` is the reviewer form for merging one explicit child task locally.
-20. The remote review, approval, and merge flow applies only to `kind=feature` entries and is blocked while child `kind=task` entries remain active for that feature.
-21. Any backlog state change covered by `backlog.php` must go through `backlog.php`, never through a manual file edit.
-22. Manual edits to `local/backlog-board.md` or `local/backlog-review.md` are forbidden unless the user explicitly asks for a manual edit outside the scripted workflow.
-23. `--dry-run` simulates backlog, git, GitHub, and filesystem mutations without executing them.
-24. `--verbose` prints detailed execution steps and simulated commands.
-25. When the user invokes a documented workflow keyword or command sequence, agents must rerun that documented procedure each time unless the user cancels it. Repetition is not a reason to switch to advisory mode or rely on remembered state instead of the workflow result.
+2. Use `php scripts/backlog.php` for the global backlog help.
+3. Use `php scripts/backlog.php help <command>` or `php scripts/backlog.php <command> --help` for one command.
+4. Every developer command on `backlog.php` requires `--agent=<code>`.
+5. Reviewer commands on `backlog.php` never use `--agent`.
+6. The agent code must never leave local backlog files.
+7. `feature-start` takes the next queued task directly from `## À faire`; no separate reservation step is part of the standard workflow.
+8. Queued tasks may declare their branch type with a prefix `[feat]` or `[fix]`.
+9. `feature-release` returns the active feature to `## À faire` only when no development was done on its branch. A parent `kind=feature` cannot be released while child `kind=task` entries still exist for that feature.
+10. When `feature-start` consumes a queued task prefixed as `[feature-slug][task-slug]`, it creates or reuses the local parent feature branch from `origin/main`, ensures one active `kind=feature` entry exists for that feature, and creates the active child `kind=task` entry from that local parent branch.
+11. Starting a new child task or merging a child task locally invalidates any parent feature review state and moves the parent `kind=feature` back to `development`.
+12. `kind=task` entries are local-only delivery units: they are never pushed and never get GitHub PRs.
+13. `feature-task-add --agent=<code> --feature-text=<text>` may absorb the next queued task into the current feature. If that queued task is prefixed as `[feature-slug][task-slug]`, it must target the current feature, it creates a new local child task entry, and it follows the same child-branch rules as `feature-start`.
+14. `feature-task-add` must not mix a plain queued task into a feature that already uses local child tasks.
+15. `task-review-request --agent=<code> [<task>|<feature/task>]` moves one child task to `review` after a green mechanical review in the task worktree.
+16. `task-review-check`, `task-review-reject`, and `task-review-approve` apply only to `kind=task` entries and store local review notes under `local/backlog-review.md` with keys shaped as `<feature>/<task>`.
+17. `task-rework --agent=<code> [<task>|<feature/task>]` moves one rejected child task back to `development`, preserves its local review notes, and reopens the task branch in that agent worktree.
+18. For `kind=task` entries, `meta.stage=approved` means the reviewer review is OK, but it does not grant any additional merge permission beyond `development` or `review`.
+19. `feature-task-merge` merges one child task branch into its parent feature branch locally, after a green mechanical review in the task worktree, using either the worktree already bound to the parent branch or a temporary merge worktree.
+20. `feature-task-merge --agent=<code> [<task>]` is the developer form for merging the current agent task after an explicit user merge instruction.
+21. `feature-task-merge <feature>/<task>` is the reviewer form for merging one explicit child task locally.
+22. The remote review, approval, and merge flow applies only to `kind=feature` entries and is blocked while child `kind=task` entries remain active for that feature.
+23. Any backlog state change covered by `backlog.php` must go through `backlog.php`, never through a manual file edit.
+24. Manual edits to `local/backlog-board.md` or `local/backlog-review.md` are forbidden unless the user explicitly asks for a manual edit outside the scripted workflow.
+25. `--dry-run` simulates backlog, git, GitHub, and filesystem mutations without executing them.
+26. `--verbose` prints detailed execution steps and simulated commands.
+27. When the user invokes a documented workflow keyword or command sequence, agents must rerun that documented procedure each time unless the user cancels it. Repetition is not a reason to switch to advisory mode or rely on remembered state instead of the workflow result.
