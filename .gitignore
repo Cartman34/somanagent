@@ -13,6 +13,9 @@ backend/config/jwt/
 backend/.env.local
 backend/.env.*.local
 
+# === SCRIPTS ===
+scripts/vendor/
+
 # === FRONTEND REACT ===
 frontend/node_modules/
 frontend/dist/
