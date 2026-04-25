@@ -35,6 +35,14 @@ final class ProjectScriptClient
         return $this->console->capture($this->command($script, $arguments, $projectRoot));
     }
 
+    /**
+     * @return array{0: int, 1: string}
+     */
+    public function captureWithExitCode(AppScript $script, string $arguments = '', ?string $projectRoot = null): array
+    {
+        return $this->console->captureWithExitCode($this->command($script, $arguments, $projectRoot));
+    }
+
     public function command(AppScript $script, string $arguments = '', ?string $projectRoot = null): string
     {
         $scriptPath = $projectRoot === null

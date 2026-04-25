@@ -15,7 +15,6 @@ use SoManAgent\Script\RetryHelper;
 final class GitHubClient
 {
     private bool $dryRun;
-    private ConsoleClient $console;
     private ProjectScriptClient $scripts;
 
     /** @var array<string> */
@@ -30,7 +29,6 @@ final class GitHubClient
      */
     public function __construct(
         bool $dryRun,
-        ConsoleClient $console,
         ProjectScriptClient $scripts,
         array $networkErrorNeedles,
         int $retryCount,
@@ -38,7 +36,6 @@ final class GitHubClient
         int $retryFactor,
     ) {
         $this->dryRun = $dryRun;
-        $this->console = $console;
         $this->scripts = $scripts;
         $this->networkErrorNeedles = $networkErrorNeedles;
         $this->retryCount = $retryCount;
@@ -49,7 +46,7 @@ final class GitHubClient
     public function run(string $arguments): void
     {
         $command = $this->scripts->command(AppScript::GITHUB, $arguments);
-        [$code, $output] = $this->captureWithExitCode($command);
+        [$code, $output] = $this->captureArgumentsWithExitCode($arguments);
         if ($code !== 0) {
             throw new \RuntimeException(sprintf(
                 "Command failed with exit code %d: %s\n%s",
@@ -63,7 +60,7 @@ final class GitHubClient
     public function capture(string $arguments): string
     {
         $command = $this->scripts->command(AppScript::GITHUB, $arguments);
-        [$code, $output] = $this->captureWithExitCode($command);
+        [$code, $output] = $this->captureArgumentsWithExitCode($arguments);
         if ($code !== 0) {
             throw new \RuntimeException(sprintf(
                 "Command failed with exit code %d: %s\n%s",
@@ -79,14 +76,16 @@ final class GitHubClient
     /**
      * @return array{0: int, 1: string}
      */
-    public function captureWithExitCode(string $command): array
+    public function captureArgumentsWithExitCode(string $arguments): array
     {
+        $command = $this->scripts->command(AppScript::GITHUB, $arguments);
+
         if ($this->dryRun) {
             return [0, ''];
         }
 
         $result = $this->networkRetryHelper()->run(
-            fn(): array => $this->console->captureWithExitCode($command),
+            fn(): array => $this->scripts->captureWithExitCode(AppScript::GITHUB, $arguments),
             fn(array $result): bool => $result[0] !== 0 && $this->isRetryableNetworkError($result[1]),
         );
 

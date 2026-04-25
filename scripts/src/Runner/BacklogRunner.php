@@ -232,7 +232,6 @@ final class BacklogRunner extends AbstractScriptRunner
         if ($this->gitHubClient === null) {
             $this->gitHubClient = new GitHubClient(
                 $this->dryRun,
-                $this->consoleClient(),
                 $this->projectScriptClient(),
                 self::NETWORK_ERROR_NEEDLES,
                 self::RETRY_COUNT,

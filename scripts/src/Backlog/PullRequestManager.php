@@ -136,11 +136,11 @@ final class PullRequestManager
             escapeshellarg($branch),
             escapeshellarg($bodyFile),
         );
-        $command = 'php ' . escapeshellarg('scripts/github.php') . ' ' . $arguments;
+        $command = sprintf('github.php %s', $arguments);
 
         [$code, $output] = $this->networkRetryHelper()->run(
-            function () use ($branch, $command): array {
-                [$code, $output] = $this->github->captureWithExitCode($command);
+            function () use ($branch, $arguments): array {
+                [$code, $output] = $this->github->captureArgumentsWithExitCode($arguments);
                 if ($code !== 0 && $this->isHeadInvalidCreateError($output)) {
                     $this->waitForRemoteBranchVisibility($branch);
                 }
