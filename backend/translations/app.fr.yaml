@@ -540,6 +540,14 @@ team:
 ticket:
   validation:
     title_required: Le champ "title" est obligatoire.
+    content_required: Le champ "content" est obligatoire.
+    priority_required: Le champ "priority" est obligatoire.
+    priority_invalid: La priorité fournie est invalide.
+    status_required: Le champ "status" est obligatoire.
+    status_invalid: Le statut fourni est invalide.
+    type_invalid: Le type de tâche fourni est invalide.
+    description_required: Le champ "description" est obligatoire.
+    action_key_required: Le champ "actionKey" est obligatoire.
   error:
     not_found: Tâche introuvable.
     active_execution_before_workflow_transition: Impossible de passer à l'étape suivante tant qu'une exécution agent est encore en cours sur l'étape courante.
@@ -671,16 +679,6 @@ ticket:
       not_finished: Pas encore terminé
       exhausted_retries: Les tentatives ont été épuisées.
       auto: Automatique
-  validation:
-    content_required: Le champ "content" est obligatoire.
-    priority_required: Le champ "priority" est obligatoire.
-    priority_invalid: La priorité fournie est invalide.
-    status_required: Le champ "status" est obligatoire.
-    status_invalid: Le statut fourni est invalide.
-    title_required: Le champ "title" est obligatoire.
-    type_invalid: Le type de tâche fourni est invalide.
-    description_required: Le champ "description" est obligatoire.
-    action_key_required: Le champ "actionKey" est obligatoire.
 token:
   error:
     agent_not_found: Agent introuvable.
