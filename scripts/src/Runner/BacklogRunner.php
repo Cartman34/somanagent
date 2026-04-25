@@ -60,6 +60,8 @@ final class BacklogRunner extends AbstractScriptRunner
     private ?GitHubClient $gitHubClient = null;
     private ?BacklogWorktreeManager $worktreeManager = null;
     private ?PullRequestManager $pullRequestManager = null;
+    private ?string $boardPath = null;
+    private ?string $reviewFilePath = null;
 
     protected function getDescription(): string
     {
@@ -88,9 +90,11 @@ final class BacklogRunner extends AbstractScriptRunner
      */
     public function run(array $args): int
     {
-        $command = array_shift($args) ?? '';
-        [$commandArgs, $options] = $this->parseArgs($args);
+        [$parsedArgs, $options] = $this->parseArgs($args);
+        $command = array_shift($parsedArgs) ?? '';
+        $commandArgs = $parsedArgs;
         $this->configureExecutionModes($options);
+        $this->configureTestFileOverrides($options);
 
         if ($command === '') {
             $this->printHelp();
@@ -149,6 +153,57 @@ final class BacklogRunner extends AbstractScriptRunner
             BacklogCommandName::FEATURE_MERGE->value => $this->featureMerge($commandArgs, $options),
             default => throw new \RuntimeException("Unknown backlog command: {$command}. Run `php scripts/backlog.php help` for the available commands."),
         };
+    }
+
+    /**
+     * @param array<string, string|bool> $options
+     */
+    private function configureTestFileOverrides(array $options): void
+    {
+        $boardFile = isset($options['board-file']) ? trim((string) $options['board-file']) : '';
+        $reviewFile = isset($options['review-file']) ? trim((string) $options['review-file']) : '';
+
+        if ($boardFile === '' && $reviewFile === '') {
+            return;
+        }
+
+        if (!isset($options['test-mode'])) {
+            throw new \RuntimeException('backlog test file overrides require --test-mode.');
+        }
+
+        if ($boardFile !== '') {
+            $this->boardPath = $this->validateTestFileOverride($boardFile, 'board-file');
+        }
+
+        if ($reviewFile !== '') {
+            $this->reviewFilePath = $this->validateTestFileOverride($reviewFile, 'review-file');
+        }
+    }
+
+    private function validateTestFileOverride(string $path, string $option): string
+    {
+        $absolutePath = str_starts_with($path, '/')
+            ? $path
+            : $this->projectRoot . '/' . ltrim($path, '/');
+
+        $normalizedPath = str_replace('\\', '/', $absolutePath);
+        $allowedPrefix = str_replace('\\', '/', $this->projectRoot . '/local/tmp/');
+        if (!str_starts_with($normalizedPath, $allowedPrefix)) {
+            throw new \RuntimeException(sprintf(
+                '--%s must point inside local/tmp/ when --test-mode is enabled.',
+                $option,
+            ));
+        }
+
+        if (!is_file($absolutePath)) {
+            throw new \RuntimeException(sprintf(
+                'Test file not found for --%s: %s',
+                $option,
+                $path,
+            ));
+        }
+
+        return $absolutePath;
     }
 
     private function printCommandHelp(string $command): void
@@ -582,13 +637,13 @@ final class BacklogRunner extends AbstractScriptRunner
             if (!$hasFeatureContent) {
                 $this->entryService()->removeActiveEntryAt($board, $parent['index']);
                 if ($this->gitClient()->succeeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/heads/' . ($parent['entry']->getMeta('branch') ?? ''))))) {
-                    $this->consoleClient()->runGit(sprintf('git branch -D %s', escapeshellarg($parent['entry']->getMeta('branch') ?? '')));
+                    $this->gitClient()->run(sprintf('git branch -D %s', escapeshellarg($parent['entry']->getMeta('branch') ?? '')));
                 }
             }
             $this->saveBoard($board, 'feature-release');
             $cleaned = $this->worktreeManager()->cleanupManagedWorktreesForBranch($branch, $board);
             if ($this->gitClient()->succeeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/heads/' . $branch)))) {
-                $this->consoleClient()->runGit(sprintf('git branch -D %s', escapeshellarg($branch)));
+                $this->gitClient()->run(sprintf('git branch -D %s', escapeshellarg($branch)));
             }
 
             $this->console->ok(sprintf('Released task %s back to todo', $task));
@@ -609,7 +664,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $cleaned = $this->worktreeManager()->cleanupManagedWorktreesForBranch($branch, $board);
         if ($this->gitClient()->succeeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/heads/' . $branch)))) {
-            $this->consoleClient()->runGit(sprintf('git branch -D %s', escapeshellarg($branch)));
+            $this->gitClient()->run(sprintf('git branch -D %s', escapeshellarg($branch)));
         }
 
         $this->console->ok(sprintf('Released feature %s back to todo', $feature));
@@ -662,7 +717,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $mergeContext = $this->worktreeManager()->prepareFeatureMergeWorktree($featureBranch, $feature);
 
         try {
-            $this->consoleClient()->runGit($this->consoleClient()->gitInPath(
+            $this->gitClient()->run($this->gitClient()->inPath(
                 $mergeContext['path'],
                 sprintf(
                     'merge --no-ff %s -m %s',
@@ -694,7 +749,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->worktreeManager()->cleanupMergedTaskWorktree($taskAgent, $taskBranch, $board);
 
         if ($this->gitClient()->succeeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/heads/' . $taskBranch)))) {
-            $this->consoleClient()->runGit(sprintf('git branch -D %s', escapeshellarg($taskBranch)));
+            $this->gitClient()->run(sprintf('git branch -D %s', escapeshellarg($taskBranch)));
         }
 
         $this->console->ok(sprintf('Merged task %s into feature %s locally', $task, $feature));
@@ -1679,8 +1734,8 @@ final class BacklogRunner extends AbstractScriptRunner
             $this->gitClient()->runNetwork('git fetch origin main:main');
             $skippedMainCheckout = true;
         } else {
-            $this->consoleClient()->runGit('git checkout main');
-            $this->consoleClient()->runGit('git pull');
+            $this->gitClient()->run('git checkout main');
+            $this->gitClient()->run('git pull');
         }
 
         $board->removeFeature($feature);
@@ -1691,8 +1746,8 @@ final class BacklogRunner extends AbstractScriptRunner
         $cleaned = $this->worktreeManager()->cleanupManagedWorktreesForBranch($branch, $board);
         $cleaned += $this->worktreeManager()->cleanupAbandonedManagedWorktrees($board);
 
-        $this->consoleClient()->runGit(sprintf('git push origin --delete %s', escapeshellarg($branch)));
-        $this->consoleClient()->runGit(sprintf('git branch -D %s', escapeshellarg($branch)));
+        $this->gitClient()->run(sprintf('git push origin --delete %s', escapeshellarg($branch)));
+        $this->gitClient()->run(sprintf('git branch -D %s', escapeshellarg($branch)));
 
         $this->console->ok(sprintf('Merged feature %s', $feature));
         if ($skippedMainCheckout) {
@@ -1799,12 +1854,12 @@ final class BacklogRunner extends AbstractScriptRunner
 
     private function board(): BacklogBoard
     {
-        return new BacklogBoard($this->projectRoot . '/local/backlog-board.md');
+        return new BacklogBoard($this->boardPath ?? ($this->projectRoot . '/local/backlog-board.md'));
     }
 
     private function reviewFile(): BacklogReviewFile
     {
-        return new BacklogReviewFile($this->projectRoot . '/local/backlog-review.md');
+        return new BacklogReviewFile($this->reviewFilePath ?? ($this->projectRoot . '/local/backlog-review.md'));
     }
 
     private function featureHasNoDevelopment(BoardEntry $entry): bool
