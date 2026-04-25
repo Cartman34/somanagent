@@ -16,57 +16,40 @@ final class BacklogWorktreeManager
     private bool $dryRun;
     private string $backendEnvLocalFallback;
     private BacklogEntryResolver $entryResolver;
-
-    /** @var callable(string): void */
-    private $verboseLogger;
-
-    /** @var callable(string): void */
-    private $commandRunner;
-
-    /** @var callable(string): string */
-    private $commandCapturer;
-
-    /** @var callable(string): bool */
-    private $commandSuccessChecker;
+    private BacklogShell $shell;
 
     public function __construct(
         string $projectRoot,
         bool $dryRun,
         string $backendEnvLocalFallback,
         BacklogEntryResolver $entryResolver,
-        callable $verboseLogger,
-        callable $commandRunner,
-        callable $commandCapturer,
-        callable $commandSuccessChecker,
+        BacklogShell $shell,
     ) {
         $this->projectRoot = $projectRoot;
         $this->dryRun = $dryRun;
         $this->backendEnvLocalFallback = $backendEnvLocalFallback;
         $this->entryResolver = $entryResolver;
-        $this->verboseLogger = $verboseLogger;
-        $this->commandRunner = $commandRunner;
-        $this->commandCapturer = $commandCapturer;
-        $this->commandSuccessChecker = $commandSuccessChecker;
+        $this->shell = $shell;
     }
 
     private function logVerbose(string $message): void
     {
-        ($this->verboseLogger)($message);
+        $this->shell->logVerbose($message);
     }
 
     private function runCommand(string $command): void
     {
-        ($this->commandRunner)($command);
+        $this->shell->run($command);
     }
 
     private function capture(string $command): string
     {
-        return ($this->commandCapturer)($command);
+        return $this->shell->capture($command);
     }
 
     private function commandSucceeds(string $command): bool
     {
-        return ($this->commandSuccessChecker)($command);
+        return $this->shell->succeeds($command);
     }
 
     public function prepareAgentWorktree(string $agent): string
@@ -788,57 +771,26 @@ final class BacklogWorktreeManager
 
     private function runGitCommand(string $command): void
     {
-        $this->logVerbose(($this->dryRun ? '[dry-run] Would run git command: ' : 'Run git command: ') . $command);
-        if ($this->dryRun) {
-            return;
-        }
-
-        $this->runCommand($command);
+        $this->shell->runGit($command);
     }
 
     private function captureGitOutput(string $command): string
     {
-        $this->logVerbose(($this->dryRun ? '[dry-run] Would capture git output: ' : 'Capture git output: ') . $command);
-        if ($this->dryRun) {
-            return '';
-        }
-
-        return $this->capture($command);
+        return $this->shell->captureGit($command);
     }
 
     private function gitCommandSucceeds(string $command): bool
     {
-        $this->logVerbose(($this->dryRun ? '[dry-run] Would check git command success: ' : 'Check git command success: ') . $command);
-        if ($this->dryRun) {
-            return false;
-        }
-
-        return $this->commandSucceeds($command);
+        return $this->shell->gitSucceeds($command);
     }
 
     private function gitInPath(string $path, string $subCommand): string
     {
-        return sprintf(
-            'git -C %s %s',
-            escapeshellarg($this->toRelativeProjectPath($path)),
-            $subCommand,
-        );
+        return $this->shell->gitInPath($path, $subCommand);
     }
 
     private function toRelativeProjectPath(string $path): string
     {
-        $normalizedRoot = rtrim(str_replace('\\', '/', $this->projectRoot), '/');
-        $normalizedPath = str_replace('\\', '/', $path);
-
-        if ($normalizedPath === $normalizedRoot) {
-            return '.';
-        }
-
-        $prefix = $normalizedRoot . '/';
-        if (!str_starts_with($normalizedPath, $prefix)) {
-            return $path;
-        }
-
-        return substr($normalizedPath, strlen($prefix));
+        return $this->shell->toRelativeProjectPath($path);
     }
 }

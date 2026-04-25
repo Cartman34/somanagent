@@ -16,6 +16,7 @@ final class BacklogPullRequestManager
 {
     private bool $dryRun;
     private string $headInvalidNeedle;
+    private BacklogShell $shell;
 
     /** @var array<string> */
     private array $networkErrorNeedles;
@@ -24,48 +25,35 @@ final class BacklogPullRequestManager
     private int $retryBaseDelay;
     private int $retryFactor;
 
-    /** @var callable(string): void */
-    private $verboseLogger;
-
-    /** @var callable(string): string */
-    private $pathRelativizer;
-
-    /** @var callable(string): array{0: int, 1: string} */
-    private $captureWithExitCode;
-
     /**
      * @param array<string> $networkErrorNeedles
      */
     public function __construct(
         bool $dryRun,
         string $headInvalidNeedle,
+        BacklogShell $shell,
         array $networkErrorNeedles,
         int $retryCount,
         int $retryBaseDelay,
         int $retryFactor,
-        callable $verboseLogger,
-        callable $pathRelativizer,
-        callable $captureWithExitCode,
     ) {
         $this->dryRun = $dryRun;
         $this->headInvalidNeedle = $headInvalidNeedle;
+        $this->shell = $shell;
         $this->networkErrorNeedles = $networkErrorNeedles;
         $this->retryCount = $retryCount;
         $this->retryBaseDelay = $retryBaseDelay;
         $this->retryFactor = $retryFactor;
-        $this->verboseLogger = $verboseLogger;
-        $this->pathRelativizer = $pathRelativizer;
-        $this->captureWithExitCode = $captureWithExitCode;
     }
 
     private function logVerbose(string $message): void
     {
-        ($this->verboseLogger)($message);
+        $this->shell->logVerbose($message);
     }
 
     private function toRelativeProjectPath(string $path): string
     {
-        return ($this->pathRelativizer)($path);
+        return $this->shell->toRelativeProjectPath($path);
     }
 
     /**
@@ -73,7 +61,7 @@ final class BacklogPullRequestManager
      */
     private function captureWithExitCode(string $command): array
     {
-        return ($this->captureWithExitCode)($command);
+        return $this->shell->captureWithExitCode($command);
     }
 
     public function createOrUpdatePr(string $branch, string $title, string $bodyFile): void
