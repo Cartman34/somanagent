@@ -21,6 +21,9 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
     {
         $driver->createTodoTask(sprintf('[fix] %s', $context->fixFeature));
         $driver->startNextFeature($context->agentPrimary);
+        $driver->trackFeatureBranch($context->fixFeature);
+        $driver->commitFeatureChange($context->agentPrimary, $context->fixFeature, 'test-feature-review-lifecycle.txt');
+        $driver->createRemoteTestBaseBranch();
 
         $rejectBody = $driver->createBodyFile('test-feature-review-reject.md', ['1. Reject feature review for workflow coverage.']);
         $approveBody = $driver->createBodyFile('test-feature-review-approve.md', ['1. Approve feature review for workflow coverage.']);

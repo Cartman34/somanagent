@@ -62,6 +62,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private ?PullRequestManager $pullRequestManager = null;
     private ?string $boardPath = null;
     private ?string $reviewFilePath = null;
+    private ?string $prBaseBranchOverride = null;
 
     protected function getDescription(): string
     {
@@ -162,8 +163,9 @@ final class BacklogRunner extends AbstractScriptRunner
     {
         $boardFile = isset($options['board-file']) ? trim((string) $options['board-file']) : '';
         $reviewFile = isset($options['review-file']) ? trim((string) $options['review-file']) : '';
+        $prBaseBranch = isset($options['pr-base-branch']) ? trim((string) $options['pr-base-branch']) : '';
 
-        if ($boardFile === '' && $reviewFile === '') {
+        if ($boardFile === '' && $reviewFile === '' && $prBaseBranch === '') {
             return;
         }
 
@@ -177,6 +179,9 @@ final class BacklogRunner extends AbstractScriptRunner
 
         if ($reviewFile !== '') {
             $this->reviewFilePath = $this->validateTestFileOverride($reviewFile, 'review-file');
+        }
+        if ($prBaseBranch !== '') {
+            $this->prBaseBranchOverride = $prBaseBranch;
         }
     }
 
@@ -209,6 +214,11 @@ final class BacklogRunner extends AbstractScriptRunner
     private function printCommandHelp(string $command): void
     {
         echo $this->commandHelp()->renderCommandHelp($command);
+    }
+
+    private function prBaseBranch(): string
+    {
+        return $this->prBaseBranchOverride ?? 'main';
     }
 
     private function commandHelp(): BacklogCommandHelp
@@ -1638,7 +1648,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $this->pullRequestManager()->pushBranchAndWaitForRemoteVisibility($branch);
-        $this->pullRequestManager()->createOrUpdatePr($branch, $title, $bodyFile);
+        $this->pullRequestManager()->createOrUpdatePr($branch, $title, $bodyFile, $this->prBaseBranch());
         $prNumber = $this->pullRequestManager()->findPrNumberByBranch($branch);
         if ($prNumber !== null) {
             $match['entry']->setMeta('pr', (string) $prNumber);
@@ -1724,10 +1734,18 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $type = $this->determinePrType($match['entry']);
-        $this->pullRequestManager()->createOrUpdatePr($branch, $this->buildPrTitle($type, $match['entry']), $bodyFile);
-            $this->pullRequestManager()->mergePr($prNumber);
+        $this->pullRequestManager()->createOrUpdatePr($branch, $this->buildPrTitle($type, $match['entry']), $bodyFile, $this->prBaseBranch());
+        $this->pullRequestManager()->mergePr($prNumber);
         $skippedMainCheckout = false;
-        if ($this->workspaceCurrentBranch() === 'main') {
+        $targetBaseBranch = $this->prBaseBranch();
+        if ($targetBaseBranch !== 'main') {
+            $this->gitClient()->runNetwork(sprintf(
+                'git fetch origin %s:%s',
+                escapeshellarg($targetBaseBranch),
+                escapeshellarg($targetBaseBranch),
+            ));
+            $skippedMainCheckout = true;
+        } elseif ($this->workspaceCurrentBranch() === 'main') {
             $this->updateLocalMainInWorkspaceWithWarning('feature-merge');
             $skippedMainCheckout = true;
         } elseif ($this->workspaceHasLocalChanges()) {
@@ -1751,7 +1769,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $this->console->ok(sprintf('Merged feature %s', $feature));
         if ($skippedMainCheckout) {
-            $this->console->line('Main was handled without checkout in WP.');
+            $this->console->line(sprintf('%s was handled without checkout in WP.', $targetBaseBranch === 'main' ? 'Main' : $targetBaseBranch));
         }
         if ($cleaned > 0) {
             $this->console->line(sprintf('Cleaned %d abandoned managed worktree%s.', $cleaned, $cleaned > 1 ? 's' : ''));

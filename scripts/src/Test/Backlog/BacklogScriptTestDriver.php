@@ -64,6 +64,8 @@ MD);
 
     public function finalizeArtifacts(): void
     {
+        $this->cleanupTrackedResources();
+
         if ($this->context->keepArtifacts) {
             $this->console->line(sprintf(
                 'Kept test artifacts: %s and %s',
@@ -108,6 +110,7 @@ MD);
     public function startNextFeature(string $agent): void
     {
         $this->runBacklog(['feature-start', '--agent', $agent]);
+        $this->context->recordWorktree($this->managedWorktreePath($agent));
     }
 
     public function assignFeatureAsManager(string $feature, string $agent): void
@@ -195,6 +198,13 @@ MD);
     public function approveFeature(string $feature, string $bodyFile): void
     {
         $this->runBacklog(['feature-review-approve', $feature, '--body-file', $bodyFile]);
+        $entry = $this->requireFeatureEntry($feature);
+        $branch = $entry->getMeta('branch');
+        if ($branch !== null && $branch !== '') {
+            $this->context->recordRemoteBranch($branch);
+        }
+        $prNumber = $entry->getMeta('pr');
+        $this->context->setPullRequestNumber($prNumber !== null ? (int) $prNumber : null);
     }
 
     public function blockFeature(string $agent, string $feature): void
@@ -210,6 +220,65 @@ MD);
     public function mergeFeature(string $feature, string $bodyFile): void
     {
         $this->runBacklog(['feature-merge', $feature, '--body-file', $bodyFile]);
+        $this->context->markPullRequestMerged();
+    }
+
+    public function commitFeatureChange(string $agent, string $feature, string $fileName): void
+    {
+        $worktreePath = $this->managedWorktreePath($agent);
+        $relativeFilePath = $fileName;
+        $absoluteFilePath = $worktreePath . '/' . $relativeFilePath;
+
+        $parent = dirname($absoluteFilePath);
+        if (!is_dir($parent) && !mkdir($parent, 0777, true) && !is_dir($parent)) {
+            throw new \RuntimeException("Unable to create worktree test directory: {$parent}");
+        }
+
+        $contents = sprintf(
+            "feature=%s\nagent=%s\nts=%s\n",
+            $feature,
+            $agent,
+            date('c'),
+        );
+        if (file_put_contents($absoluteFilePath, $contents) === false) {
+            throw new \RuntimeException("Unable to write worktree test file: {$absoluteFilePath}");
+        }
+
+        $this->runGitInWorktree($worktreePath, sprintf('add %s', escapeshellarg($relativeFilePath)));
+        $this->runGitInWorktree($worktreePath, sprintf(
+            'commit -m %s',
+            escapeshellarg(sprintf('[%s] Add workflow test artifact', $feature)),
+        ));
+    }
+
+    public function trackFeatureBranch(string $feature): string
+    {
+        $entry = $this->requireFeatureEntry($feature);
+        $branch = $entry->getMeta('branch') ?? '';
+        if ($branch === '') {
+            throw new \RuntimeException("Feature {$feature} has no branch metadata in test backlog.");
+        }
+
+        $this->context->recordLocalBranch($branch);
+
+        return $branch;
+    }
+
+    public function createRemoteTestBaseBranch(): string
+    {
+        $branch = sprintf('test/backlog-workflow-%s-%04d', date('Ymd-His'), random_int(1000, 9999));
+        $this->runGitRoot('fetch origin main:main');
+        $this->runGitRoot(sprintf(
+            'branch %s %s',
+            escapeshellarg($branch),
+            escapeshellarg('main'),
+        ));
+        $this->context->recordLocalBranch($branch);
+        $this->runGitRoot(sprintf('push -u origin %s', escapeshellarg($branch)));
+        $this->context->recordRemoteBranch($branch);
+        $this->context->setPrBaseBranch($branch);
+
+        return $branch;
     }
 
     public function assertActiveFeatureExists(string $feature): void
@@ -261,6 +330,7 @@ MD);
     {
         $path = $this->context->tmpDir . '/' . $name;
         $this->writeFile($path, implode("\n", $lines) . "\n");
+        $this->context->recordTempFile($path);
 
         return $path;
     }
@@ -286,6 +356,10 @@ MD);
         $parts[] = escapeshellarg($this->relativePath($this->context->boardPath));
         $parts[] = '--review-file';
         $parts[] = escapeshellarg($this->relativePath($this->context->reviewPath));
+        if ($this->context->prBaseBranch() !== null) {
+            $parts[] = '--pr-base-branch';
+            $parts[] = escapeshellarg($this->context->prBaseBranch());
+        }
 
         if ($this->context->dryRun) {
             $parts[] = '--dry-run';
@@ -313,6 +387,16 @@ MD);
         return new BacklogBoard($this->context->boardPath);
     }
 
+    private function requireFeatureEntry(string $feature): \SoManAgent\Script\Backlog\BoardEntry
+    {
+        $match = $this->board()->findFeature($feature);
+        if ($match === null) {
+            throw new \RuntimeException("Expected active feature not found in test backlog: {$feature}");
+        }
+
+        return $match['entry'];
+    }
+
     private function assertOutputContains(string $output, string $needle): void
     {
         if (!str_contains($output, $needle)) {
@@ -325,6 +409,125 @@ MD);
         if (file_put_contents($path, $contents) === false) {
             throw new \RuntimeException("Unable to write test artifact: {$path}");
         }
+    }
+
+    private function runGitInWorktree(string $worktreePath, string $subCommand): void
+    {
+        $command = sprintf(
+            'git -C %s %s',
+            escapeshellarg($this->relativePath($worktreePath)),
+            $subCommand,
+        );
+        [$code, $output] = $this->consoleClient->captureWithExitCode($command);
+        if ($code !== 0) {
+            throw new \RuntimeException(sprintf(
+                "Git command failed with exit code %d: %s\n%s",
+                $code,
+                $command,
+                $output,
+            ));
+        }
+    }
+
+    private function runGitRoot(string $subCommand): void
+    {
+        $command = sprintf('git %s', $subCommand);
+        [$code, $output] = $this->consoleClient->captureWithExitCode($command);
+        if ($code !== 0) {
+            throw new \RuntimeException(sprintf(
+                "Git command failed with exit code %d: %s\n%s",
+                $code,
+                $command,
+                $output,
+            ));
+        }
+    }
+
+    private function cleanupTrackedResources(): void
+    {
+        if ($this->context->pullRequestNumber() !== null && !$this->context->isPullRequestMerged()) {
+            $this->cleanupCommand(
+                sprintf('close PR #%d', $this->context->pullRequestNumber()),
+                sprintf('php scripts/github.php pr close %d', $this->context->pullRequestNumber()),
+                ['GitHub API error 404', 'already closed'],
+            );
+        }
+
+        foreach ($this->context->remoteBranches() as $branch) {
+            $this->cleanupCommand(
+                sprintf('delete remote branch %s', $branch),
+                sprintf('git push origin --delete %s', escapeshellarg($branch)),
+                ['remote ref does not exist', 'unable to delete'],
+            );
+        }
+
+        foreach ($this->context->worktrees() as $worktree) {
+            if (!is_dir($worktree)) {
+                $this->console->line(sprintf('[cleanup] already clean: %s', $this->relativePath($worktree)));
+                continue;
+            }
+
+            $this->cleanupCommand(
+                sprintf('remove worktree %s', $this->relativePath($worktree)),
+                sprintf('git worktree remove --force %s', escapeshellarg($this->relativePath($worktree))),
+                ['is not a working tree'],
+            );
+        }
+
+        foreach ($this->context->localBranches() as $branch) {
+            $this->cleanupCommand(
+                sprintf('delete local branch %s', $branch),
+                sprintf('git branch -D %s', escapeshellarg($branch)),
+                ['not found', 'branch \''],
+            );
+        }
+
+        if (!$this->context->keepArtifacts) {
+            foreach ($this->context->tempFiles() as $path) {
+                if (!is_file($path)) {
+                    $this->console->line(sprintf('[cleanup] already clean: %s', $this->relativePath($path)));
+                    continue;
+                }
+
+                if (!unlink($path)) {
+                    $this->console->warn(sprintf('[cleanup] failed: remove temp file %s', $this->relativePath($path)));
+                    continue;
+                }
+
+                $this->console->line(sprintf('[cleanup] cleaned: %s', $this->relativePath($path)));
+            }
+        }
+    }
+
+    /**
+     * @param array<string> $expectedMissingNeedles
+     */
+    private function cleanupCommand(string $label, string $command, array $expectedMissingNeedles = []): void
+    {
+        [$code, $output] = $this->consoleClient->captureWithExitCode($command);
+        if ($code === 0) {
+            $this->console->line(sprintf('[cleanup] cleaned: %s', $label));
+
+            return;
+        }
+
+        foreach ($expectedMissingNeedles as $needle) {
+            if ($needle !== '' && str_contains($output, $needle)) {
+                $this->console->line(sprintf('[cleanup] already clean: %s', $label));
+
+                return;
+            }
+        }
+
+        $this->console->warn(sprintf('[cleanup] failed: %s', $label));
+        if ($output !== '') {
+            $this->console->line($output);
+        }
+    }
+
+    private function managedWorktreePath(string $agent): string
+    {
+        return $this->context->projectRoot . '/.worktrees/' . $agent;
     }
 
     private function relativePath(string $path): string

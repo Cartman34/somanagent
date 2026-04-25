@@ -42,12 +42,12 @@ final class PullRequestManager
         $this->retryFactor = $retryFactor;
     }
 
-    public function createOrUpdatePr(string $branch, string $title, string $bodyFile): void
+    public function createOrUpdatePr(string $branch, string $title, string $bodyFile, string $baseBranch = 'main'): void
     {
         $prNumber = $this->findPrNumberByBranch($branch);
 
         if ($prNumber === null) {
-            $this->createPrWithRetry($branch, $title, $bodyFile);
+            $this->createPrWithRetry($branch, $title, $bodyFile, $baseBranch);
 
             return;
         }
@@ -110,6 +110,25 @@ final class PullRequestManager
         ));
     }
 
+    public function closePr(int $prNumber): void
+    {
+        $this->github->run(sprintf('pr close %d', $prNumber));
+    }
+
+    public function mergePr(int $prNumber): void
+    {
+        $this->github->run(sprintf('pr merge %d', $prNumber));
+    }
+
+    public function editPrTitle(int $prNumber, string $title): void
+    {
+        $this->github->run(sprintf(
+            'pr edit %d --title %s',
+            $prNumber,
+            escapeshellarg($title),
+        ));
+    }
+
     public function findPrNumberByBranch(string $branch): ?int
     {
         if ($branch === '') {
@@ -128,12 +147,13 @@ final class PullRequestManager
         return null;
     }
 
-    private function createPrWithRetry(string $branch, string $title, string $bodyFile): void
+    private function createPrWithRetry(string $branch, string $title, string $bodyFile, string $baseBranch): void
     {
         $arguments = sprintf(
-            'pr create --title %s --head %s --base main --body-file %s',
+            'pr create --title %s --head %s --base %s --body-file %s',
             escapeshellarg($title),
             escapeshellarg($branch),
+            escapeshellarg($baseBranch),
             escapeshellarg($bodyFile),
         );
         $command = sprintf('github.php %s', $arguments);

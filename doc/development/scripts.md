@@ -107,6 +107,8 @@ Notes:
 - the script never uses `local/backlog-board.md` or `local/backlog-review.md` directly
 - it passes `--test-mode`, `--board-file`, and `--review-file` to `backlog.php` with temporary files under `local/tmp/`
 - `feature-review-lifecycle` is skipped unless `--allow-remote` is enabled
+- the remote campaign creates a temporary PR base branch instead of targeting `main`
+- cleanup always runs in best effort and only acts on resources recorded by the test context
 - use `--keep-artifacts` to inspect temporary backlog and review files after the run
 - detailed reusable campaign intent is documented in `doc/development/script-backlog-test-scenarios.md`
 
