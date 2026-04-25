@@ -199,11 +199,11 @@ MD);
     {
         $this->runBacklog(['feature-review-approve', $feature, '--body-file', $bodyFile]);
         $entry = $this->requireFeatureEntry($feature);
-        $branch = $entry->getMeta('branch');
+        $branch = $entry->branch();
         if ($branch !== null && $branch !== '') {
             $this->context->recordRemoteBranch($branch);
         }
-        $prNumber = $entry->getMeta('pr');
+        $prNumber = $entry->pr();
         $this->context->setPullRequestNumber($prNumber !== null ? (int) $prNumber : null);
     }
 
@@ -254,7 +254,7 @@ MD);
     public function trackFeatureBranch(string $feature): string
     {
         $entry = $this->requireFeatureEntry($feature);
-        $branch = $entry->getMeta('branch') ?? '';
+        $branch = $entry->branch() ?? '';
         if ($branch === '') {
             throw new \RuntimeException("Feature {$feature} has no branch metadata in test backlog.");
         }

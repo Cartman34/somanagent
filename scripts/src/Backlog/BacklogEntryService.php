@@ -49,12 +49,12 @@ final class BacklogEntryService
 
     public function entryKind(BoardEntry $entry): string
     {
-        $kind = trim((string) $entry->getMeta('kind'));
-        if ($kind !== '') {
+        $kind = $entry->kind();
+        if ($kind !== null) {
             return $kind;
         }
 
-        return $entry->hasMeta('task') ? self::ENTRY_KIND_TASK : self::ENTRY_KIND_FEATURE;
+        return $entry->task() !== null ? self::ENTRY_KIND_TASK : self::ENTRY_KIND_FEATURE;
     }
 
     public function isFeatureEntry(BoardEntry $entry): bool
@@ -90,8 +90,8 @@ final class BacklogEntryService
 
     public function taskDeclaredBranchType(BoardEntry $entry, string $command): string
     {
-        $type = trim((string) $entry->getMeta('type'));
-        if ($type === '') {
+        $type = $entry->type();
+        if ($type === null) {
             return '';
         }
         if (!in_array($type, [self::BRANCH_TYPE_FEAT, self::BRANCH_TYPE_FIX], true)) {
@@ -114,7 +114,7 @@ final class BacklogEntryService
         $declaredType = $this->taskDeclaredBranchType($entry, BacklogCommandName::FEATURE_START->value);
 
         if ($parentFeatureEntry !== null) {
-            $parentBranch = $parentFeatureEntry->getMeta('branch') ?? '';
+            $parentBranch = $parentFeatureEntry->branch() ?? '';
             $parentBranchType = $this->detectBranchType($parentBranch);
             if ($parentBranchType === '') {
                 throw new \RuntimeException('Parent feature metadata is incomplete: missing branch type.');
@@ -187,7 +187,7 @@ final class BacklogEntryService
         string $command,
     ): void {
         foreach ($this->entryResolver->findTaskEntriesByFeature($board, $feature) as $match) {
-            if (($match['entry']->getMeta('task') ?? '') === $task) {
+            if ($match['entry']->task() === $task) {
                 throw new \RuntimeException(sprintf(
                     '%s cannot continue because task %s is already active in feature %s.',
                     $command,
@@ -213,7 +213,7 @@ final class BacklogEntryService
     {
         $normalizedText = trim($text);
         if (preg_match(self::TASK_CREATE_TYPE_SHORT_PREFIX_PATTERN, $normalizedText, $matches) === 1) {
-            $entry = new BoardEntry(trim($matches[2]), [], ['type' => strtolower($matches[1])]);
+            $entry = new BoardEntry(trim($matches[2]), [], [BoardEntry::META_TYPE => strtolower($matches[1])]);
             $this->validateTaskEntryTypeMetadata($entry, BacklogCommandName::TASK_CREATE->value);
 
             return $entry;
@@ -315,7 +315,7 @@ final class BacklogEntryService
     public function appendTaskContribution(BoardEntry $featureEntry, BoardEntry $taskEntry): void
     {
         $blocks = $this->featureContributionBlocks($featureEntry);
-        $task = (string) ($taskEntry->getMeta('task') ?? '');
+        $task = (string) ($taskEntry->task() ?? '');
         foreach ($blocks as $block) {
             if ($block['task'] === $task) {
                 return;
@@ -335,7 +335,7 @@ final class BacklogEntryService
         $blocks = $this->featureContributionBlocks($featureEntry);
         $remaining = [];
         $removed = false;
-        $task = (string) ($taskEntry->getMeta('task') ?? '');
+        $task = (string) ($taskEntry->task() ?? '');
 
         foreach ($blocks as $block) {
             if (!$removed && $block['task'] === $task) {
@@ -366,8 +366,8 @@ final class BacklogEntryService
     {
         return sprintf(
             '%s/%s',
-            $entry->getMeta('feature') ?? '-',
-            $entry->getMeta('task') ?? '-',
+            $entry->feature() ?? '-',
+            $entry->task() ?? '-',
         );
     }
 }

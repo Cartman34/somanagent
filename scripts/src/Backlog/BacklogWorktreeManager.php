@@ -92,12 +92,12 @@ final class BacklogWorktreeManager
 
     public function prepareFeatureAgentWorktree(BoardEntry $entry): string
     {
-        $agent = $entry->getMeta('agent') ?? '';
+        $agent = $entry->agent() ?? '';
         if ($agent === '') {
             throw new \RuntimeException('Feature has no assigned agent worktree.');
         }
 
-        $branch = $entry->getMeta('branch') ?? '';
+        $branch = $entry->branch() ?? '';
         if ($branch === '') {
             throw new \RuntimeException('Feature has no branch metadata.');
         }
@@ -703,9 +703,9 @@ final class BacklogWorktreeManager
     {
         $features = [];
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-            $branch = $entry->getMeta('branch') ?? '';
-            $feature = $entry->getMeta('feature') ?? '';
-            $agent = $entry->getMeta('agent') ?? '';
+            $branch = $entry->branch() ?? '';
+            $feature = $entry->feature() ?? '';
+            $agent = $entry->agent() ?? '';
             if ($branch === '' || $feature === '' || $agent === '') {
                 continue;
             }

@@ -64,7 +64,7 @@ final class BacklogEntryResolver
             $task = $this->normalizeFeatureSlug($task);
 
             foreach ($this->findTaskEntriesByFeature($board, $feature) as $match) {
-                if (($match['entry']->getMeta('task') ?? '') === $task) {
+                if ($match['entry']->task() === $task) {
                     return $match;
                 }
             }
@@ -195,7 +195,7 @@ final class BacklogEntryResolver
         $matches = [];
 
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $index => $entry) {
-            if (!$this->isFeatureEntry($entry) || ($entry->getMeta('agent') ?? '') !== $agent) {
+            if (!$this->isFeatureEntry($entry) || $entry->agent() !== $agent) {
                 continue;
             }
 
@@ -217,7 +217,7 @@ final class BacklogEntryResolver
         $matches = [];
 
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $index => $entry) {
-            if (!$this->isTaskEntry($entry) || ($entry->getMeta('agent') ?? '') !== $agent) {
+            if (!$this->isTaskEntry($entry) || $entry->agent() !== $agent) {
                 continue;
             }
 
@@ -240,7 +240,7 @@ final class BacklogEntryResolver
             if (!$this->isFeatureEntry($entry)) {
                 continue;
             }
-            if (($entry->getMeta('feature') ?? '') !== $feature) {
+            if ($entry->feature() !== $feature) {
                 continue;
             }
 
@@ -261,7 +261,7 @@ final class BacklogEntryResolver
             if (!$this->isTaskEntry($entry)) {
                 continue;
             }
-            if (($entry->getMeta('feature') ?? '') !== $feature) {
+            if ($entry->feature() !== $feature) {
                 continue;
             }
 
@@ -290,7 +290,7 @@ final class BacklogEntryResolver
             if (!$this->isTaskEntry($entry)) {
                 continue;
             }
-            if (($entry->getMeta('task') ?? '') !== $task) {
+            if ($entry->task() !== $task) {
                 continue;
             }
 
@@ -307,7 +307,7 @@ final class BacklogEntryResolver
 
     private function entryKind(BoardEntry $entry): string
     {
-        $kind = trim((string) $entry->getMeta('kind'));
+        $kind = $entry->kind();
         if ($kind !== '') {
             return $kind;
         }
