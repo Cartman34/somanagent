@@ -10,9 +10,9 @@ namespace SoManAgent\Script\Backlog;
 use SoManAgent\Script\TextSlugger;
 
 /**
- * Handles reusable backlog task and feature entry mutations.
+ * Handles reusable backlog feature/task entry rules and mutations.
  */
-final class BacklogTaskService
+final class BacklogEntryService
 {
     public const ENTRY_KIND_FEATURE = 'feature';
     public const ENTRY_KIND_TASK = 'task';
@@ -111,7 +111,7 @@ final class BacklogTaskService
 
     public function resolveFeatureStartBranchType(BoardEntry $entry, ?BoardEntry $parentFeatureEntry, string $override): string
     {
-        $declaredType = $this->taskDeclaredBranchType($entry, BacklogCommand::FEATURE_START);
+        $declaredType = $this->taskDeclaredBranchType($entry, BacklogCommandName::FEATURE_START->value);
 
         if ($parentFeatureEntry !== null) {
             $parentBranch = $parentFeatureEntry->getMeta('branch') ?? '';
@@ -214,13 +214,13 @@ final class BacklogTaskService
         $normalizedText = trim($text);
         if (preg_match(self::TASK_CREATE_TYPE_SHORT_PREFIX_PATTERN, $normalizedText, $matches) === 1) {
             $entry = new BoardEntry(trim($matches[2]), [], ['type' => strtolower($matches[1])]);
-            $this->validateTaskEntryTypeMetadata($entry, BacklogCommand::TASK_CREATE);
+            $this->validateTaskEntryTypeMetadata($entry, BacklogCommandName::TASK_CREATE->value);
 
             return $entry;
         }
 
         $entry = BoardEntry::fromLines(['- ' . $normalizedText]);
-        $this->validateTaskEntryTypeMetadata($entry, BacklogCommand::TASK_CREATE);
+        $this->validateTaskEntryTypeMetadata($entry, BacklogCommandName::TASK_CREATE->value);
 
         return $entry;
     }

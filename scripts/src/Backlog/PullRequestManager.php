@@ -7,61 +7,39 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog;
 
+use SoManAgent\Script\Client\GitClient;
+use SoManAgent\Script\Client\GitHubClient;
 use SoManAgent\Script\RetryHelper;
 
 /**
- * Handles remote git branch visibility checks and GitHub PR orchestration.
+ * Handles backlog pull-request orchestration above Git and GitHub clients.
  */
-final class BacklogPullRequestManager
+final class PullRequestManager
 {
     private bool $dryRun;
     private string $headInvalidNeedle;
-    private BacklogShell $shell;
-
-    /** @var array<string> */
-    private array $networkErrorNeedles;
-
+    private GitClient $git;
+    private GitHubClient $github;
     private int $retryCount;
     private int $retryBaseDelay;
     private int $retryFactor;
 
-    /**
-     * @param array<string> $networkErrorNeedles
-     */
     public function __construct(
         bool $dryRun,
         string $headInvalidNeedle,
-        BacklogShell $shell,
-        array $networkErrorNeedles,
+        GitClient $git,
+        GitHubClient $github,
         int $retryCount,
         int $retryBaseDelay,
         int $retryFactor,
     ) {
         $this->dryRun = $dryRun;
         $this->headInvalidNeedle = $headInvalidNeedle;
-        $this->shell = $shell;
-        $this->networkErrorNeedles = $networkErrorNeedles;
+        $this->git = $git;
+        $this->github = $github;
         $this->retryCount = $retryCount;
         $this->retryBaseDelay = $retryBaseDelay;
         $this->retryFactor = $retryFactor;
-    }
-
-    private function logVerbose(string $message): void
-    {
-        $this->shell->logVerbose($message);
-    }
-
-    private function toRelativeProjectPath(string $path): string
-    {
-        return $this->shell->toRelativeProjectPath($path);
-    }
-
-    /**
-     * @return array{0: int, 1: string}
-     */
-    private function captureWithExitCode(string $command): array
-    {
-        return $this->shell->captureWithExitCode($command);
     }
 
     public function createOrUpdatePr(string $branch, string $title, string $bodyFile): void
@@ -74,8 +52,8 @@ final class BacklogPullRequestManager
             return;
         }
 
-        $this->runGithubCommand(sprintf(
-            'php scripts/github.php pr edit %d --title %s --body-file %s',
+        $this->github->run(sprintf(
+            'pr edit %d --title %s --body-file %s',
             $prNumber,
             escapeshellarg($title),
             escapeshellarg($bodyFile),
@@ -85,21 +63,21 @@ final class BacklogPullRequestManager
     public function pushBranchAndWaitForRemoteVisibility(string $branch, ?string $worktree = null): void
     {
         $gitPrefix = $worktree !== null
-            ? sprintf('git -C %s', escapeshellarg($this->toRelativeProjectPath($worktree)))
+            ? sprintf('git -C %s', escapeshellarg($this->git->toRelativeProjectPath($worktree)))
             : 'git';
 
-        $this->runNetworkCommand(sprintf(
+        $this->git->runNetwork(sprintf(
             '%s push -u origin %s',
             $gitPrefix,
             escapeshellarg($branch),
-        ), 'Git');
+        ));
 
-        $this->runNetworkCommand(sprintf(
+        $this->git->runNetwork(sprintf(
             '%s fetch origin %s:%s',
             $gitPrefix,
             escapeshellarg($branch),
             escapeshellarg('refs/remotes/origin/' . $branch),
-        ), 'Git');
+        ));
 
         $this->waitForRemoteBranchVisibility($branch);
     }
@@ -111,8 +89,8 @@ final class BacklogPullRequestManager
             throw new \RuntimeException("No open PR found for branch {$branch}.");
         }
 
-        $this->runGithubCommand(sprintf(
-            'php scripts/github.php pr edit %d --body-file %s',
+        $this->github->run(sprintf(
+            'pr edit %d --body-file %s',
             $prNumber,
             escapeshellarg($bodyFile),
         ));
@@ -125,8 +103,8 @@ final class BacklogPullRequestManager
             return;
         }
 
-        $this->runGithubCommand(sprintf(
-            'php scripts/github.php pr edit %d --body-file %s',
+        $this->github->run(sprintf(
+            'pr edit %d --body-file %s',
             $prNumber,
             escapeshellarg($bodyFile),
         ));
@@ -138,7 +116,7 @@ final class BacklogPullRequestManager
             return null;
         }
 
-        $output = $this->captureNetworkOutputWithRetry('php scripts/github.php pr list', 'GitHub');
+        $output = $this->github->capture('pr list');
         foreach (explode("\n", trim($output)) as $line) {
             if (preg_match('/^\s*#(\d+)\s+.*\[(.+?) → (.+?)\]$/u', $line, $matches) === 1) {
                 if ($matches[2] === $branch) {
@@ -150,36 +128,19 @@ final class BacklogPullRequestManager
         return null;
     }
 
-    public function runGithubCommand(string $command): void
-    {
-        $this->runNetworkCommand($command, 'GitHub');
-    }
-
-    public function runNetworkCommand(string $command, string $label): void
-    {
-        [$code, $output] = $this->captureNetworkCommandWithRetry($command, $label);
-        if ($code !== 0) {
-            throw new \RuntimeException(sprintf(
-                "Command failed with exit code %d: %s\n%s",
-                $code,
-                $command,
-                $output,
-            ));
-        }
-    }
-
     private function createPrWithRetry(string $branch, string $title, string $bodyFile): void
     {
-        $command = sprintf(
-            'php scripts/github.php pr create --title %s --head %s --base main --body-file %s',
+        $arguments = sprintf(
+            'pr create --title %s --head %s --base main --body-file %s',
             escapeshellarg($title),
             escapeshellarg($branch),
             escapeshellarg($bodyFile),
         );
+        $command = 'php ' . escapeshellarg('scripts/github.php') . ' ' . $arguments;
 
         [$code, $output] = $this->networkRetryHelper()->run(
             function () use ($branch, $command): array {
-                [$code, $output] = $this->captureNetworkCommandWithRetry($command, 'GitHub');
+                [$code, $output] = $this->github->captureWithExitCode($command);
                 if ($code !== 0 && $this->isHeadInvalidCreateError($output)) {
                     $this->waitForRemoteBranchVisibility($branch);
                 }
@@ -202,8 +163,6 @@ final class BacklogPullRequestManager
     private function waitForRemoteBranchVisibility(string $branch): void
     {
         if ($this->dryRun) {
-            $this->logVerbose('[dry-run] Would wait for remote branch visibility: ' . $branch);
-
             return;
         }
 
@@ -221,19 +180,10 @@ final class BacklogPullRequestManager
 
     private function isRemoteBranchVisible(string $branch): bool
     {
-        [$code, $output] = $this->captureNetworkCommandWithRetry(sprintf(
+        $output = $this->git->captureNetwork(sprintf(
             'git ls-remote --heads origin %s',
             escapeshellarg($branch),
-        ), 'Git');
-
-        if ($code !== 0) {
-            throw new \RuntimeException(sprintf(
-                "Command failed with exit code %d while checking remote branch visibility: %s\n%s",
-                $code,
-                $branch,
-                $output,
-            ));
-        }
+        ));
 
         return trim($output) !== '';
     }
@@ -241,63 +191,6 @@ final class BacklogPullRequestManager
     private function isHeadInvalidCreateError(string $output): bool
     {
         return str_contains($output, $this->headInvalidNeedle);
-    }
-
-    /**
-     * Runs one network command with retry on transient transport failures.
-     *
-     * @return array{0: int, 1: string}
-     */
-    private function captureNetworkCommandWithRetry(string $command, string $label): array
-    {
-        if ($this->dryRun) {
-            $this->logVerbose(sprintf('[dry-run] Would run %s command: %s', strtolower($label), $command));
-
-            return [0, ''];
-        }
-
-        $result = $this->networkRetryHelper()->run(
-            fn(): array => $this->captureWithExitCode($command),
-            fn(array $result): bool => $result[0] !== 0 && $this->isRetryableNetworkError($result[1]),
-        );
-
-        if ($result[0] !== 0 && $this->isRetryableNetworkError($result[1])) {
-            throw new \RuntimeException(sprintf(
-                "%s network error after %d retries. Safe to rerun the same command.\nCommand: %s\n%s",
-                $label,
-                $this->retryCount,
-                $command,
-                $result[1],
-            ));
-        }
-
-        return $result;
-    }
-
-    private function captureNetworkOutputWithRetry(string $command, string $label): string
-    {
-        [$code, $output] = $this->captureNetworkCommandWithRetry($command, $label);
-        if ($code !== 0) {
-            throw new \RuntimeException(sprintf(
-                "Command failed with exit code %d: %s\n%s",
-                $code,
-                $command,
-                $output,
-            ));
-        }
-
-        return $output;
-    }
-
-    private function isRetryableNetworkError(string $output): bool
-    {
-        foreach ($this->networkErrorNeedles as $needle) {
-            if (str_contains($output, $needle)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private function networkRetryHelper(): RetryHelper

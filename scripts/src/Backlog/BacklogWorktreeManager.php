@@ -7,6 +7,11 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog;
 
+use SoManAgent\Script\Client\AppScript;
+use SoManAgent\Script\Client\ConsoleClient;
+use SoManAgent\Script\Client\GitClient;
+use SoManAgent\Script\Client\ProjectScriptClient;
+
 /**
  * Handles managed backlog worktrees and local git orchestration.
  */
@@ -16,40 +21,46 @@ final class BacklogWorktreeManager
     private bool $dryRun;
     private string $backendEnvLocalFallback;
     private BacklogEntryResolver $entryResolver;
-    private BacklogShell $shell;
+    private ConsoleClient $console;
+    private GitClient $git;
+    private ProjectScriptClient $scripts;
 
     public function __construct(
         string $projectRoot,
         bool $dryRun,
         string $backendEnvLocalFallback,
         BacklogEntryResolver $entryResolver,
-        BacklogShell $shell,
+        ConsoleClient $console,
+        GitClient $git,
+        ProjectScriptClient $scripts,
     ) {
         $this->projectRoot = $projectRoot;
         $this->dryRun = $dryRun;
         $this->backendEnvLocalFallback = $backendEnvLocalFallback;
         $this->entryResolver = $entryResolver;
-        $this->shell = $shell;
+        $this->console = $console;
+        $this->git = $git;
+        $this->scripts = $scripts;
     }
 
     private function logVerbose(string $message): void
     {
-        $this->shell->logVerbose($message);
+        $this->console->logVerbose($message);
     }
 
     private function runCommand(string $command): void
     {
-        $this->shell->run($command);
+        $this->console->run($command);
     }
 
     private function capture(string $command): string
     {
-        return $this->shell->capture($command);
+        return $this->console->capture($command);
     }
 
     private function commandSucceeds(string $command): bool
     {
-        return $this->shell->succeeds($command);
+        return $this->console->succeeds($command);
     }
 
     public function prepareAgentWorktree(string $agent): string
@@ -434,10 +445,7 @@ final class BacklogWorktreeManager
             return;
         }
 
-        $this->runCommand(sprintf(
-            'cd %s && php scripts/review.php',
-            escapeshellarg($this->toRelativeProjectPath($worktree)),
-        ));
+        $this->scripts->run(AppScript::REVIEW, projectRoot: $worktree);
     }
 
     private function ensureWorktreeRuntimeState(string $worktree, bool $created): void
@@ -771,26 +779,26 @@ final class BacklogWorktreeManager
 
     private function runGitCommand(string $command): void
     {
-        $this->shell->runGit($command);
+        $this->git->run($command);
     }
 
     private function captureGitOutput(string $command): string
     {
-        return $this->shell->captureGit($command);
+        return $this->git->capture($command);
     }
 
     private function gitCommandSucceeds(string $command): bool
     {
-        return $this->shell->gitSucceeds($command);
+        return $this->git->succeeds($command);
     }
 
     private function gitInPath(string $path, string $subCommand): string
     {
-        return $this->shell->gitInPath($path, $subCommand);
+        return $this->git->inPath($path, $subCommand);
     }
 
     private function toRelativeProjectPath(string $path): string
     {
-        return $this->shell->toRelativeProjectPath($path);
+        return $this->console->toRelativeProjectPath($path);
     }
 }

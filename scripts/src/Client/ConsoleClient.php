@@ -5,14 +5,14 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog;
+namespace SoManAgent\Script\Client;
 
 use SoManAgent\Script\Application;
 
 /**
- * Reusable shell and git execution service for backlog workflow services.
+ * Low-level command execution client shared by higher-level transport clients.
  */
-final class BacklogShell
+final class ConsoleClient
 {
     private string $projectRoot;
     private bool $dryRun;
@@ -83,45 +83,6 @@ final class BacklogShell
         exec($command . ' 2>&1', $output, $code);
 
         return $code === 0;
-    }
-
-    public function runGit(string $command): void
-    {
-        $this->logVerbose(($this->dryRun ? '[dry-run] Would run git command: ' : 'Run git command: ') . $command);
-        if ($this->dryRun) {
-            return;
-        }
-
-        $this->run($command);
-    }
-
-    public function captureGit(string $command): string
-    {
-        $this->logVerbose(($this->dryRun ? '[dry-run] Would capture git output: ' : 'Capture git output: ') . $command);
-        if ($this->dryRun) {
-            return '';
-        }
-
-        return $this->capture($command);
-    }
-
-    public function gitSucceeds(string $command): bool
-    {
-        $this->logVerbose(($this->dryRun ? '[dry-run] Would check git command success: ' : 'Check git command success: ') . $command);
-        if ($this->dryRun) {
-            return false;
-        }
-
-        return $this->succeeds($command);
-    }
-
-    public function gitInPath(string $path, string $subCommand): string
-    {
-        return sprintf(
-            'git -C %s %s',
-            escapeshellarg($this->toRelativeProjectPath($path)),
-            $subCommand,
-        );
     }
 
     public function toRelativeProjectPath(string $path): string
