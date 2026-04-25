@@ -143,7 +143,7 @@ final class BoardEntry
         return $this->getMeta($key) !== null;
     }
 
-    public function agent(): ?string
+    public function getAgent(): ?string
     {
         return $this->getMeta(self::META_AGENT);
     }
@@ -153,47 +153,47 @@ final class BoardEntry
         $this->setMeta(self::META_AGENT, $agent);
     }
 
-    public function base(): ?string
+    public function getBase(): ?string
     {
         return $this->getMeta(self::META_BASE);
     }
 
-    public function branch(): ?string
+    public function getBranch(): ?string
     {
         return $this->getMeta(self::META_BRANCH);
     }
 
-    public function feature(): ?string
+    public function getFeature(): ?string
     {
         return $this->getMeta(self::META_FEATURE);
     }
 
-    public function featureBranch(): ?string
+    public function getFeatureBranch(): ?string
     {
         return $this->getMeta(self::META_FEATURE_BRANCH);
     }
 
-    public function kind(): ?string
+    public function getKind(): ?string
     {
         return $this->getMeta(self::META_KIND);
     }
 
-    public function pr(): ?string
+    public function getPr(): ?string
     {
         return $this->getMeta(self::META_PR);
     }
 
-    public function stage(): ?string
+    public function getStage(): ?string
     {
         return $this->getMeta(self::META_STAGE);
     }
 
-    public function task(): ?string
+    public function getTask(): ?string
     {
         return $this->getMeta(self::META_TASK);
     }
 
-    public function type(): ?string
+    public function getType(): ?string
     {
         return $this->getMeta(self::META_TYPE);
     }

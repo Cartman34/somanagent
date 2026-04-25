@@ -104,7 +104,7 @@ final class BacklogBoard
             if (!$this->isFeatureEntry($entry)) {
                 continue;
             }
-            if ($entry->feature() === $feature) {
+            if ($entry->getFeature() === $feature) {
                 return ['section' => self::SECTION_ACTIVE, 'index' => $index, 'entry' => $entry];
             }
         }
@@ -123,7 +123,7 @@ final class BacklogBoard
             if (!$this->isFeatureEntry($entry)) {
                 continue;
             }
-            if ($entry->agent() === $agent) {
+            if ($entry->getAgent() === $agent) {
                 $matches[] = ['section' => self::SECTION_ACTIVE, 'index' => $index, 'entry' => $entry];
             }
         }
@@ -139,15 +139,15 @@ final class BacklogBoard
         $matches = [];
 
         foreach ($this->getEntries(self::SECTION_TODO) as $index => $entry) {
-            if ($entry->agent() === null) {
+            if ($entry->getAgent() === null) {
                 continue;
             }
 
-            if ($agent !== null && $entry->agent() !== $agent) {
+            if ($agent !== null && $entry->getAgent() !== $agent) {
                 continue;
             }
 
-            if ($feature !== null && $entry->feature() !== $feature) {
+            if ($feature !== null && $entry->getFeature() !== $feature) {
                 continue;
             }
 
@@ -163,7 +163,7 @@ final class BacklogBoard
     public function findNextBookableTask(bool $force = false): ?array
     {
         foreach ($this->getEntries(self::SECTION_TODO) as $index => $entry) {
-            if ($force || $entry->agent() === null) {
+            if ($force || $entry->getAgent() === null) {
                 return ['index' => $index, 'entry' => $entry];
             }
         }
@@ -212,11 +212,11 @@ final class BacklogBoard
         $entries = $this->getEntries(self::SECTION_TODO);
 
         foreach ($entries as $entry) {
-            if ($entry->agent() !== $agent) {
+            if ($entry->getAgent() !== $agent) {
                 continue;
             }
 
-            if ($feature !== null && $entry->feature() !== $feature) {
+            if ($feature !== null && $entry->getFeature() !== $feature) {
                 continue;
             }
 
@@ -345,7 +345,7 @@ final class BacklogBoard
      */
     public static function entryStage(BoardEntry $entry): ?string
     {
-        return self::normalizeStage($entry->stage());
+        return self::normalizeStage($entry->getStage());
     }
 
     /**
@@ -494,7 +494,7 @@ final class BacklogBoard
 
     private function isFeatureEntry(BoardEntry $entry): bool
     {
-        $kind = $entry->kind();
+        $kind = $entry->getKind();
         if ($kind !== '') {
             return $kind === 'feature';
         }

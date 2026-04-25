@@ -49,12 +49,12 @@ final class BacklogEntryService
 
     public function entryKind(BoardEntry $entry): string
     {
-        $kind = $entry->kind();
+        $kind = $entry->getKind();
         if ($kind !== null) {
             return $kind;
         }
 
-        return $entry->task() !== null ? self::ENTRY_KIND_TASK : self::ENTRY_KIND_FEATURE;
+        return $entry->getTask() !== null ? self::ENTRY_KIND_TASK : self::ENTRY_KIND_FEATURE;
     }
 
     public function isFeatureEntry(BoardEntry $entry): bool
@@ -90,7 +90,7 @@ final class BacklogEntryService
 
     public function taskDeclaredBranchType(BoardEntry $entry, string $command): string
     {
-        $type = $entry->type();
+        $type = $entry->getType();
         if ($type === null) {
             return '';
         }
@@ -114,7 +114,7 @@ final class BacklogEntryService
         $declaredType = $this->taskDeclaredBranchType($entry, BacklogCommandName::FEATURE_START->value);
 
         if ($parentFeatureEntry !== null) {
-            $parentBranch = $parentFeatureEntry->branch() ?? '';
+            $parentBranch = $parentFeatureEntry->getBranch() ?? '';
             $parentBranchType = $this->detectBranchType($parentBranch);
             if ($parentBranchType === '') {
                 throw new \RuntimeException('Parent feature metadata is incomplete: missing branch type.');
@@ -187,7 +187,7 @@ final class BacklogEntryService
         string $command,
     ): void {
         foreach ($this->entryResolver->findTaskEntriesByFeature($board, $feature) as $match) {
-            if ($match['entry']->task() === $task) {
+            if ($match['entry']->getTask() === $task) {
                 throw new \RuntimeException(sprintf(
                     '%s cannot continue because task %s is already active in feature %s.',
                     $command,
@@ -315,7 +315,7 @@ final class BacklogEntryService
     public function appendTaskContribution(BoardEntry $featureEntry, BoardEntry $taskEntry): void
     {
         $blocks = $this->featureContributionBlocks($featureEntry);
-        $task = (string) ($taskEntry->task() ?? '');
+        $task = (string) ($taskEntry->getTask() ?? '');
         foreach ($blocks as $block) {
             if ($block['task'] === $task) {
                 return;
@@ -335,7 +335,7 @@ final class BacklogEntryService
         $blocks = $this->featureContributionBlocks($featureEntry);
         $remaining = [];
         $removed = false;
-        $task = (string) ($taskEntry->task() ?? '');
+        $task = (string) ($taskEntry->getTask() ?? '');
 
         foreach ($blocks as $block) {
             if (!$removed && $block['task'] === $task) {
@@ -366,8 +366,8 @@ final class BacklogEntryService
     {
         return sprintf(
             '%s/%s',
-            $entry->feature() ?? '-',
-            $entry->task() ?? '-',
+            $entry->getFeature() ?? '-',
+            $entry->getTask() ?? '-',
         );
     }
 }

@@ -31,6 +31,7 @@ enum BacklogCommandName: string
     case FEATURE_LIST = 'feature-list';
     case WORKTREE_LIST = 'worktree-list';
     case WORKTREE_CLEAN = 'worktree-clean';
+    case WORKTREE_RESTORE = 'worktree-restore';
     case FEATURE_STATUS = 'feature-status';
     case FEATURE_REVIEW_NEXT = 'feature-review-next';
     case FEATURE_REVIEW_REQUEST = 'feature-review-request';

@@ -64,7 +64,7 @@ final class BacklogEntryResolver
             $task = $this->normalizeFeatureSlug($task);
 
             foreach ($this->findTaskEntriesByFeature($board, $feature) as $match) {
-                if ($match['entry']->task() === $task) {
+                if ($match['entry']->getTask() === $task) {
                     return $match;
                 }
             }
@@ -195,7 +195,7 @@ final class BacklogEntryResolver
         $matches = [];
 
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $index => $entry) {
-            if (!$this->isFeatureEntry($entry) || $entry->agent() !== $agent) {
+            if (!$this->isFeatureEntry($entry) || $entry->getAgent() !== $agent) {
                 continue;
             }
 
@@ -217,7 +217,7 @@ final class BacklogEntryResolver
         $matches = [];
 
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $index => $entry) {
-            if (!$this->isTaskEntry($entry) || $entry->agent() !== $agent) {
+            if (!$this->isTaskEntry($entry) || $entry->getAgent() !== $agent) {
                 continue;
             }
 
@@ -240,7 +240,7 @@ final class BacklogEntryResolver
             if (!$this->isFeatureEntry($entry)) {
                 continue;
             }
-            if ($entry->feature() !== $feature) {
+            if ($entry->getFeature() !== $feature) {
                 continue;
             }
 
@@ -261,7 +261,7 @@ final class BacklogEntryResolver
             if (!$this->isTaskEntry($entry)) {
                 continue;
             }
-            if ($entry->feature() !== $feature) {
+            if ($entry->getFeature() !== $feature) {
                 continue;
             }
 
@@ -290,7 +290,7 @@ final class BacklogEntryResolver
             if (!$this->isTaskEntry($entry)) {
                 continue;
             }
-            if ($entry->task() !== $task) {
+            if ($entry->getTask() !== $task) {
                 continue;
             }
 
@@ -307,7 +307,7 @@ final class BacklogEntryResolver
 
     private function entryKind(BoardEntry $entry): string
     {
-        $kind = $entry->kind();
+        $kind = $entry->getKind();
         if ($kind !== '') {
             return $kind;
         }
