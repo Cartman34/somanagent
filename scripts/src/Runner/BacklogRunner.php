@@ -12,6 +12,7 @@ use SoManAgent\Script\Backlog\BacklogBoard;
 use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogEntryService;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
+use SoManAgent\Script\Backlog\BacklogGitWorkflow;
 use SoManAgent\Script\Backlog\BacklogReviewFile;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
 use SoManAgent\Script\Backlog\BoardEntry;
@@ -58,6 +59,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private ?GitClient $gitClient = null;
     private ?ProjectScriptClient $projectScriptClient = null;
     private ?GitHubClient $gitHubClient = null;
+    private ?BacklogGitWorkflow $gitWorkflow = null;
     private ?BacklogWorktreeManager $worktreeManager = null;
     private ?PullRequestManager $pullRequestManager = null;
     private ?string $boardPath = null;
@@ -325,6 +327,24 @@ final class BacklogRunner extends AbstractScriptRunner
         return $this->worktreeManager;
     }
 
+    private function gitWorkflow(): BacklogGitWorkflow
+    {
+        if ($this->gitWorkflow === null) {
+            $this->gitWorkflow = new BacklogGitWorkflow(
+                $this->dryRun,
+                $this->consoleClient(),
+                $this->console,
+                $this->gitClient(),
+                $this->pullRequestManager(),
+                function (string $message): void {
+                    $this->logVerbose($message);
+                },
+            );
+        }
+
+        return $this->gitWorkflow;
+    }
+
     private function pullRequestManager(): PullRequestManager
     {
         if ($this->pullRequestManager === null) {
@@ -493,8 +513,8 @@ final class BacklogRunner extends AbstractScriptRunner
                 $branchType = $this->entryService()->resolveFeatureStartBranchType($first, null, $branchTypeOverride);
                 $featureBranch = $branchType . '/' . $scopedTask['featureGroup'];
                 $branch = $branchType . '/' . $scopedTask['featureGroup'] . '--' . $task;
-                $this->updateLocalMainBeforeFeatureStart();
-                $featureBase = trim($this->gitClient()->capture('git rev-parse origin/main'));
+                $this->gitWorkflow()->updateMainBeforeFeatureStart();
+                $featureBase = $this->gitWorkflow()->originMainHead();
                 $this->worktreeManager()->ensureLocalBranchExists($featureBranch, 'origin/main');
 
                 $featureEntry = new BoardEntry($scopedTask['text'], [], [
@@ -512,16 +532,13 @@ final class BacklogRunner extends AbstractScriptRunner
                 $parent = $this->entryResolver()->requireParentFeature($board, $scopedTask['featureGroup']);
             } else {
                 $branchType = $this->entryService()->resolveFeatureStartBranchType($first, $parent['entry'], $branchTypeOverride);
-                $featureBranch = $parent['entry']->getMeta('branch') ?: ($branchType . '/' . $scopedTask['featureGroup']);
+                $featureBranch = $parent['entry']->branch() ?: ($branchType . '/' . $scopedTask['featureGroup']);
                 $branch = $branchType . '/' . $scopedTask['featureGroup'] . '--' . $task;
                 $this->entryService()->invalidateFeatureReviewState($parent['entry']);
             }
             $this->entryService()->assertTaskSlugAvailableForFeature($board, $parent['entry'], $scopedTask['featureGroup'], $task, 'feature-start');
 
-            $taskBase = trim($this->gitClient()->capture(sprintf(
-                'git rev-parse %s',
-                escapeshellarg($featureBranch),
-            )));
+            $taskBase = $this->gitWorkflow()->branchHead($featureBranch);
             $this->worktreeManager()->requireLocalBranchExists($featureBranch, 'feature-start');
             $this->worktreeManager()->checkoutBranchInWorktree($worktree, $branch, true, $featureBranch);
 
@@ -541,8 +558,8 @@ final class BacklogRunner extends AbstractScriptRunner
         } else {
             $branchType = $this->entryService()->resolveFeatureStartBranchType($first, null, $branchTypeOverride);
             $feature = $this->entryService()->normalizeFeatureSlug($first->getText());
-            $this->updateLocalMainBeforeFeatureStart();
-            $base = trim($this->gitClient()->capture('git rev-parse origin/main'));
+            $this->gitWorkflow()->updateMainBeforeFeatureStart();
+            $base = $this->gitWorkflow()->originMainHead();
             $branch = $branchType . '/' . $feature;
             $this->worktreeManager()->checkoutBranchInWorktree($worktree, $branch, true);
 
@@ -646,15 +663,11 @@ final class BacklogRunner extends AbstractScriptRunner
             }
             if (!$hasFeatureContent) {
                 $this->entryService()->removeActiveEntryAt($board, $parent['index']);
-                if ($this->gitClient()->succeeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/heads/' . ($parent['entry']->getMeta('branch') ?? ''))))) {
-                    $this->gitClient()->run(sprintf('git branch -D %s', escapeshellarg($parent['entry']->getMeta('branch') ?? '')));
-                }
+                $this->gitWorkflow()->deleteLocalBranchIfExists($parent['entry']->branch());
             }
             $this->saveBoard($board, 'feature-release');
             $cleaned = $this->worktreeManager()->cleanupManagedWorktreesForBranch($branch, $board);
-            if ($this->gitClient()->succeeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/heads/' . $branch)))) {
-                $this->gitClient()->run(sprintf('git branch -D %s', escapeshellarg($branch)));
-            }
+            $this->gitWorkflow()->deleteLocalBranchIfExists($branch);
 
             $this->console->ok(sprintf('Released task %s back to todo', $task));
             if ($cleaned > 0) {
@@ -673,9 +686,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->saveBoard($board, 'feature-release');
 
         $cleaned = $this->worktreeManager()->cleanupManagedWorktreesForBranch($branch, $board);
-        if ($this->gitClient()->succeeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/heads/' . $branch)))) {
-            $this->gitClient()->run(sprintf('git branch -D %s', escapeshellarg($branch)));
-        }
+        $this->gitWorkflow()->deleteLocalBranchIfExists($branch);
 
         $this->console->ok(sprintf('Released feature %s back to todo', $feature));
         if ($cleaned > 0) {
@@ -727,14 +738,11 @@ final class BacklogRunner extends AbstractScriptRunner
         $mergeContext = $this->worktreeManager()->prepareFeatureMergeWorktree($featureBranch, $feature);
 
         try {
-            $this->gitClient()->run($this->gitClient()->inPath(
+            $this->gitWorkflow()->mergeBranchInPath(
                 $mergeContext['path'],
-                sprintf(
-                    'merge --no-ff %s -m %s',
-                    escapeshellarg($taskBranch),
-                    escapeshellarg(sprintf('Merge task %s into feature %s', $task, $feature)),
-                ),
-            ));
+                $taskBranch,
+                sprintf('Merge task %s into feature %s', $task, $feature),
+            );
         } catch (\Throwable $exception) {
             if ($mergeContext['temporary']) {
                 $this->worktreeManager()->removeTemporaryMergeWorktree($mergeContext['path']);
@@ -758,9 +766,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $this->worktreeManager()->cleanupMergedTaskWorktree($taskAgent, $taskBranch, $board);
 
-        if ($this->gitClient()->succeeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/heads/' . $taskBranch)))) {
-            $this->gitClient()->run(sprintf('git branch -D %s', escapeshellarg($taskBranch)));
-        }
+        $this->gitWorkflow()->deleteLocalBranchIfExists($taskBranch);
 
         $this->console->ok(sprintf('Merged task %s into feature %s locally', $task, $feature));
 
@@ -1003,18 +1009,15 @@ final class BacklogRunner extends AbstractScriptRunner
                     ));
                 }
 
-                $featureBranch = $entry->getMeta('branch') ?? '';
+                $featureBranch = $entry->branch();
                 $branchType = $this->entryService()->detectBranchType($featureBranch);
-                if ($featureBranch === '' || $branchType === '') {
+                if ($featureBranch === null || $branchType === '') {
                     throw new \RuntimeException('Current feature metadata is incomplete: missing branch information.');
                 }
                 $this->entryService()->assertTaskSlugAvailableForFeature($board, $entry, (string) $feature, $scopedTask['task'], 'feature-task-add');
 
                 $taskBranch = $branchType . '/' . $feature . '--' . $scopedTask['task'];
-                $taskBase = trim($this->gitClient()->capture(sprintf(
-                    'git rev-parse %s',
-                    escapeshellarg($featureBranch),
-                )));
+                $taskBase = $this->gitWorkflow()->branchHead($featureBranch);
 
                 $worktree = $this->worktreeManager()->prepareAgentWorktree($agent);
                 $this->worktreeManager()->checkoutBranchInWorktree($worktree, $taskBranch, true, $featureBranch);
@@ -1684,7 +1687,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $this->worktreeManager()->ensureBranchHasNoDirtyManagedWorktree($branch);
-        $this->pushBranchIfAhead($branch);
+        $this->gitWorkflow()->pushBranchIfAhead($branch);
 
         $prNumber = $this->storedPrNumber($match['entry']);
         if ($prNumber !== null) {
@@ -1738,23 +1741,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->pullRequestManager()->mergePr($prNumber);
         $skippedMainCheckout = false;
         $targetBaseBranch = $this->prBaseBranch();
-        if ($targetBaseBranch !== 'main') {
-            $this->gitClient()->runNetwork(sprintf(
-                'git fetch origin %s:%s',
-                escapeshellarg($targetBaseBranch),
-                escapeshellarg($targetBaseBranch),
-            ));
-            $skippedMainCheckout = true;
-        } elseif ($this->workspaceCurrentBranch() === 'main') {
-            $this->updateLocalMainInWorkspaceWithWarning('feature-merge');
-            $skippedMainCheckout = true;
-        } elseif ($this->workspaceHasLocalChanges()) {
-            $this->gitClient()->runNetwork('git fetch origin main:main');
-            $skippedMainCheckout = true;
-        } else {
-            $this->gitClient()->run('git checkout main');
-            $this->gitClient()->run('git pull');
-        }
+        $skippedMainCheckout = $this->gitWorkflow()->handleMergeBaseAfterPrMerge($targetBaseBranch, 'feature-merge');
 
         $board->removeFeature($feature);
         $board->clearReservations($match['entry']->getMeta('agent') ?? '', $feature);
@@ -1764,8 +1751,8 @@ final class BacklogRunner extends AbstractScriptRunner
         $cleaned = $this->worktreeManager()->cleanupManagedWorktreesForBranch($branch, $board);
         $cleaned += $this->worktreeManager()->cleanupAbandonedManagedWorktrees($board);
 
-        $this->gitClient()->run(sprintf('git push origin --delete %s', escapeshellarg($branch)));
-        $this->gitClient()->run(sprintf('git branch -D %s', escapeshellarg($branch)));
+        $this->gitWorkflow()->deleteRemoteBranch($branch);
+        $this->gitWorkflow()->deleteLocalBranchIfExists($branch);
 
         $this->console->ok(sprintf('Merged feature %s', $feature));
         if ($skippedMainCheckout) {
@@ -1882,21 +1869,15 @@ final class BacklogRunner extends AbstractScriptRunner
 
     private function featureHasNoDevelopment(BoardEntry $entry): bool
     {
-        $branch = $entry->getMeta('branch') ?? '';
-        $base = $entry->getMeta('base') ?? '';
-        if ($branch === '' || $base === '') {
+        $branch = $entry->branch();
+        $base = $entry->base();
+        if ($branch === null || $base === null) {
             throw new \RuntimeException('Feature metadata is incomplete: missing branch or base.');
         }
 
         $this->worktreeManager()->ensureBranchHasNoDirtyManagedWorktree($branch);
 
-        $ahead = trim($this->gitClient()->capture(sprintf(
-            'git rev-list --count %s..%s',
-            escapeshellarg($base),
-            escapeshellarg($branch),
-        )));
-
-        return $ahead === '0';
+        return $this->gitWorkflow()->branchHasNoDevelopment($base, $branch);
     }
 
     private function featureSlugger(): TextSlugger
@@ -1907,88 +1888,15 @@ final class BacklogRunner extends AbstractScriptRunner
         );
     }
 
-    private function pushBranchIfAhead(string $branch): void
-    {
-        if (!$this->gitClient()->succeeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/heads/' . $branch)))) {
-            return;
-        }
-
-        if (!$this->gitClient()->succeeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/remotes/origin/' . $branch)))) {
-            $this->pullRequestManager()->pushBranchAndWaitForRemoteVisibility($branch);
-
-            return;
-        }
-
-        $ahead = trim($this->gitClient()->capture(sprintf(
-            'git rev-list --count %s..%s',
-            escapeshellarg('origin/' . $branch),
-            escapeshellarg($branch),
-        )));
-
-        if ($ahead !== '0') {
-            $this->pullRequestManager()->pushBranchAndWaitForRemoteVisibility($branch);
-        }
-    }
-
-    private function workspaceHasLocalChanges(): bool
-    {
-        if ($this->dryRun) {
-            $this->logVerbose('[dry-run] Inspect workspace changes: git status --short');
-
-            return trim($this->consoleClient()->capture('git status --short')) !== '';
-        }
-
-        return trim($this->gitClient()->capture('git status --short')) !== '';
-    }
-
-    private function workspaceCurrentBranch(): string
-    {
-        if ($this->dryRun) {
-            $this->logVerbose('[dry-run] Inspect workspace branch: git branch --show-current');
-
-            return trim($this->consoleClient()->capture('git branch --show-current'));
-        }
-
-        return trim($this->gitClient()->capture('git branch --show-current'));
-    }
-
-    private function updateLocalMainBeforeFeatureStart(): void
-    {
-        if ($this->workspaceCurrentBranch() !== 'main') {
-            $this->gitClient()->runNetwork('git fetch origin main:main');
-
-            return;
-        }
-
-        $this->updateLocalMainInWorkspaceWithWarning('feature-start');
-    }
-
-    private function updateLocalMainInWorkspaceWithWarning(string $context): void
-    {
-        try {
-            $this->gitClient()->runNetwork('git pull --ff-only');
-        } catch (\RuntimeException $exception) {
-            $this->console->warn(sprintf(
-                'Unable to update local main in WP during %s; continuing with the current local main.',
-                $context,
-            ));
-            $this->logVerbose('Main update warning detail: ' . $exception->getMessage());
-        }
-    }
-
     private function determinePrType(BoardEntry $entry): string
     {
-        $base = $entry->getMeta('base') ?? '';
-        $branch = $entry->getMeta('branch') ?? '';
-        if ($base === '' || $branch === '') {
+        $base = $entry->base();
+        $branch = $entry->branch();
+        if ($base === null || $branch === null) {
             throw new \RuntimeException('Cannot determine PR type without base and branch metadata.');
         }
 
-        $files = array_values(array_filter(explode("\n", trim($this->gitClient()->capture(sprintf(
-            'git diff --name-only %s..%s',
-            escapeshellarg($base),
-            escapeshellarg($branch),
-        ))))));
+        $files = $this->gitWorkflow()->changedFiles($base, $branch);
 
         if ($files === []) {
             return str_starts_with($branch, 'fix/') ? 'FIX' : 'FEAT';
