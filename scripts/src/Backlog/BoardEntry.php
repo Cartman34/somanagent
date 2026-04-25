@@ -12,6 +12,18 @@ namespace SoManAgent\Script\Backlog;
  */
 final class BoardEntry
 {
+    public const META_AGENT = 'agent';
+    public const META_BASE = 'base';
+    public const META_BLOCKED = 'blocked';
+    public const META_BRANCH = 'branch';
+    public const META_FEATURE = 'feature';
+    public const META_FEATURE_BRANCH = 'feature-branch';
+    public const META_KIND = 'kind';
+    public const META_PR = 'pr';
+    public const META_STAGE = 'stage';
+    public const META_TASK = 'task';
+    public const META_TYPE = 'type';
+
     private const META_BLOCK_PREFIX = '  meta:';
     private const META_LINE_PREFIX = '    ';
 
@@ -106,11 +118,18 @@ final class BoardEntry
 
     public function getMeta(string $key): ?string
     {
-        return $this->metadata[$key] ?? null;
+        return self::parseEmptyString($this->metadata[$key] ?? null);
     }
 
-    public function setMeta(string $key, string $value): void
+    public function setMeta(string $key, ?string $value): void
     {
+        $value = self::parseEmptyString($value);
+        if ($value === null) {
+            $this->unsetMeta($key);
+
+            return;
+        }
+
         $this->metadata[$key] = $value;
     }
 
@@ -121,7 +140,67 @@ final class BoardEntry
 
     public function hasMeta(string $key): bool
     {
-        return array_key_exists($key, $this->metadata);
+        return $this->getMeta($key) !== null;
+    }
+
+    public function agent(): ?string
+    {
+        return $this->getMeta(self::META_AGENT);
+    }
+
+    public function setAgent(?string $agent): void
+    {
+        $this->setMeta(self::META_AGENT, $agent);
+    }
+
+    public function base(): ?string
+    {
+        return $this->getMeta(self::META_BASE);
+    }
+
+    public function branch(): ?string
+    {
+        return $this->getMeta(self::META_BRANCH);
+    }
+
+    public function feature(): ?string
+    {
+        return $this->getMeta(self::META_FEATURE);
+    }
+
+    public function featureBranch(): ?string
+    {
+        return $this->getMeta(self::META_FEATURE_BRANCH);
+    }
+
+    public function kind(): ?string
+    {
+        return $this->getMeta(self::META_KIND);
+    }
+
+    public function pr(): ?string
+    {
+        return $this->getMeta(self::META_PR);
+    }
+
+    public function stage(): ?string
+    {
+        return $this->getMeta(self::META_STAGE);
+    }
+
+    public function task(): ?string
+    {
+        return $this->getMeta(self::META_TASK);
+    }
+
+    public function type(): ?string
+    {
+        return $this->getMeta(self::META_TYPE);
+    }
+
+    public function isBlocked(): bool
+    {
+        return $this->hasMeta(self::META_BLOCKED);
     }
 
     /**
@@ -216,5 +295,12 @@ final class BoardEntry
         }
 
         return [array_slice($lines, 0, $metaStartIndex), $metadata];
+    }
+
+    public static function parseEmptyString(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
     }
 }
