@@ -323,6 +323,30 @@ MD);
         $this->assertOutputContains($this->runBacklog(['worktree-list']), $needle);
     }
 
+    public function removeManagedWorktree(string $agent): void
+    {
+        $path = $this->managedWorktreePath($agent);
+        if (!is_dir($path) && !is_file($path)) {
+            return;
+        }
+
+        $this->runGitRoot(sprintf(
+            'worktree remove --force %s',
+            escapeshellarg($this->relativePath($path)),
+        ));
+    }
+
+    public function restoreWorktree(string $agent): void
+    {
+        $this->runBacklog(['worktree-restore', '--agent', $agent]);
+        $path = $this->managedWorktreePath($agent);
+        if (!is_dir($path) && !is_file($path)) {
+            throw new \RuntimeException("Expected restored worktree not found: {$path}");
+        }
+
+        $this->context->recordWorktree($path);
+    }
+
     /**
      * @param array<string> $lines
      */

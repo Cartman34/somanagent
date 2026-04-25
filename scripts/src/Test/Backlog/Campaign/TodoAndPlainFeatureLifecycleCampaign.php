@@ -28,6 +28,9 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
         $driver->startNextFeature($context->agentPrimary);
         $driver->assertStatusContains($context->agentPrimary, $context->plainFeature, true);
         $driver->assertWorktreeListContains($context->agentPrimary);
+        $driver->removeManagedWorktree($context->agentPrimary);
+        $driver->restoreWorktree($context->agentPrimary);
+        $driver->assertWorktreeListContains($context->agentPrimary);
         $driver->releaseFeature($context->agentPrimary, $context->plainFeature);
         $driver->assertTodoContains($context->plainFeature);
         $driver->removeFirstTodoTask();
