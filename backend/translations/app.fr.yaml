@@ -538,6 +538,8 @@ team:
   item:
     loading: Chargement de l'équipe…
 ticket:
+  validation:
+    title_required: Le champ "title" est obligatoire.
   error:
     not_found: Tâche introuvable.
     active_execution_before_workflow_transition: Impossible de passer à l'étape suivante tant qu'une exécution agent est encore en cours sur l'étape courante.
