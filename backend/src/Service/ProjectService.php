@@ -51,10 +51,6 @@ class ProjectService
      */
     public function create(CreateProjectDto $dto): Project
     {
-        if ($dto->teamId === null || $dto->teamId === '') {
-            throw new \LogicException($this->translator->trans('project.validation.team_required', [], 'app'));
-        }
-
         $team = $this->teamRepository->find(Uuid::fromString($dto->teamId));
         if ($team === null) {
             throw new \LogicException($this->translator->trans('project.validation.team_invalid', [], 'app'));

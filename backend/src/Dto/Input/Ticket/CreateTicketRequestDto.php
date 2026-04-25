@@ -44,7 +44,9 @@ final class CreateTicketRequestDto
         $priority = TaskPriority::Medium;
         if (isset($data['priority']) && $data['priority'] !== '') {
             $p = TaskPriority::tryFrom((string) $data['priority']);
-            if ($p !== null) {
+            if ($p === null) {
+                $errors[] = ['field' => 'priority', 'code' => 'ticket.validation.priority_invalid'];
+            } else {
                 $priority = $p;
             }
         }
