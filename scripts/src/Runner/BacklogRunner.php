@@ -38,6 +38,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private const OPTION_BOARD_FILE = 'board-file';
     private const OPTION_BODY_FILE = 'body-file';
     private const OPTION_BRANCH_TYPE = 'branch-type';
+    private const OPTION_FEATURE_TEXT = 'feature-text';
     private const OPTION_PR_BASE_BRANCH = 'pr-base-branch';
     private const OPTION_REVIEW_FILE = 'review-file';
     private const OPTION_TEST_MODE = 'test-mode';
@@ -452,7 +453,7 @@ final class BacklogRunner extends AbstractScriptRunner
     }
 
     /**
-     * Removes one queued todo task by its 1-based displayed number.
+     * Removes one queued to-do task by its 1-based displayed number.
      *
      * @param array<string> $commandArgs
      */
@@ -599,17 +600,17 @@ final class BacklogRunner extends AbstractScriptRunner
         $board->setEntries(BacklogBoard::SECTION_ACTIVE, $entries);
         $this->logVerbose(sprintf(
             'feature-start: feature=%s todo-after-remove=%d active-after-add=%d active-stage=%s',
-            (string) ($featureEntry->getMeta('task') ?? $featureEntry->getMeta('feature')),
+            (string) ($featureEntry->task() ?? $featureEntry->feature()),
             count($board->getEntries(BacklogBoard::SECTION_TODO)),
             count($board->getEntries(BacklogBoard::SECTION_ACTIVE)),
-            (string) $featureEntry->getMeta('stage'),
+            (string) $featureEntry->stage(),
         ));
         $this->saveBoard($board, 'feature-start');
 
         $this->console->ok(sprintf(
             'Started %s %s on %s',
             $this->entryService()->entryKind($featureEntry),
-            $featureEntry->getMeta('task') ?? $featureEntry->getMeta('feature') ?? '-',
+            $featureEntry->task() ?? $featureEntry->feature() ?? '-',
             $branch,
         ));
 
@@ -624,14 +625,15 @@ final class BacklogRunner extends AbstractScriptRunner
     {
         $agent = $this->requireAgent($options);
         $board = $this->board();
-        if (isset($commandArgs[0]) && trim($commandArgs[0]) !== '') {
-            $target = $this->entryService()->normalizeFeatureSlug($commandArgs[0]);
+        $requestedTarget = BoardEntry::parseEmptyString($commandArgs[0] ?? null);
+        if ($requestedTarget !== null) {
+            $target = $this->entryService()->normalizeFeatureSlug($requestedTarget);
             $task = $this->entryResolver()->getSingleTaskForAgent($board, $agent, false);
-            if ($task !== null && ($task->getMeta('task') ?? '') === $target) {
+            if ($task !== null && $task->task() === $target) {
                 $current = $this->entryResolver()->requireSingleTaskForAgent($board, $agent);
             } else {
                 $current = $this->entryResolver()->requireSingleFeatureForAgent($board, $agent);
-                if (($current['entry']->getMeta('feature') ?? '') !== $target) {
+                if ($current['entry']->feature() !== $target) {
                     throw new \RuntimeException(sprintf(
                         'Agent %s has no active feature or task matching %s.',
                         $agent,
@@ -643,8 +645,8 @@ final class BacklogRunner extends AbstractScriptRunner
             $current = $this->entryResolver()->findTaskEntriesByAgent($board, $agent)[0] ?? $this->entryResolver()->requireSingleFeatureForAgent($board, $agent);
         }
         $entry = $current['entry'];
-        $branch = $entry->getMeta('branch') ?? '';
-        if ($branch === '') {
+        $branch = $entry->branch();
+        if ($branch === null) {
             throw new \RuntimeException('Active entry has no branch metadata.');
         }
 
@@ -656,8 +658,8 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         if ($this->entryService()->isTaskEntry($entry)) {
-            $feature = $entry->getMeta('feature') ?? '';
-            $task = $entry->getMeta('task') ?? '';
+            $feature = $entry->feature() ?? '';
+            $task = $entry->task() ?? '';
             $parent = $this->entryResolver()->requireParentFeature($board, $feature);
             $todoEntries = $board->getEntries(BacklogBoard::SECTION_TODO);
             array_unshift($todoEntries, new BoardEntry(
@@ -686,7 +688,7 @@ final class BacklogRunner extends AbstractScriptRunner
             return 0;
         }
 
-        $feature = $entry->getMeta('feature') ?? '';
+        $feature = $entry->feature() ?? '';
         $this->entryResolver()->assertNoActiveTasksForFeature($board, $feature, 'feature-release');
         $todoEntries = $board->getEntries(BacklogBoard::SECTION_TODO);
         array_unshift($todoEntries, new BoardEntry($entry->getText(), $entry->getExtraLines()));
@@ -736,10 +738,10 @@ final class BacklogRunner extends AbstractScriptRunner
         }
         $taskAgent = $entry->agent() ?? '';
 
-        $feature = $entry->getMeta('feature') ?? '';
-        $task = $entry->getMeta('task') ?? '';
-        $featureBranch = $entry->getMeta('feature-branch') ?? '';
-        $taskBranch = $entry->getMeta('branch') ?? '';
+        $feature = $entry->feature() ?? '';
+        $task = $entry->task() ?? '';
+        $featureBranch = $entry->featureBranch() ?? '';
+        $taskBranch = $entry->branch() ?? '';
         $parent = $this->entryResolver()->requireParentFeature($board, $feature);
         $taskWorktree = $this->worktreeManager()->prepareFeatureAgentWorktree($entry);
         $this->worktreeManager()->runReviewScript($taskWorktree);
@@ -761,7 +763,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $this->entryService()->removeActiveEntryAt($board, $match['index']);
-        if (($parent['entry']->getMeta('agent') ?? '') === '') {
+        if ($parent['entry']->agent() === null) {
             $parent['entry']->setAgent($taskAgent);
         }
         $this->entryService()->invalidateFeatureReviewState($parent['entry']);
@@ -796,7 +798,7 @@ final class BacklogRunner extends AbstractScriptRunner
             : $this->entryResolver()->requireSingleTaskForAgent($board, $agent);
         $entry = $match['entry'];
         $this->entryService()->assertTaskEntry($entry, 'task-review-request');
-        if (($entry->getMeta('agent') ?? '') !== $agent) {
+        if ($entry->agent() !== $agent) {
             throw new \RuntimeException('task-review-request requires the task to be assigned to the provided agent.');
         }
 
@@ -945,7 +947,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $entry = $match['entry'];
         $this->entryService()->assertTaskEntry($entry, 'task-rework');
 
-        if (($entry->getMeta('agent') ?? '') !== $agent) {
+        if ($entry->agent() !== $agent) {
             throw new \RuntimeException('task-rework requires the task to be assigned to the provided agent.');
         }
 
@@ -960,7 +962,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->saveBoard($board, 'task-rework');
 
         $taskWorktree = $this->worktreeManager()->prepareFeatureAgentWorktree($entry);
-        $this->worktreeManager()->checkoutBranchInWorktree($taskWorktree, $entry->getMeta('branch') ?? '', false);
+        $this->worktreeManager()->checkoutBranchInWorktree($taskWorktree, $entry->branch() ?? '', false);
 
         $this->console->ok(sprintf(
             'Moved task %s back to %s',
@@ -978,14 +980,14 @@ final class BacklogRunner extends AbstractScriptRunner
     private function featureTaskAdd(array $commandArgs, array $options): int
     {
         $agent = $this->requireAgent($options);
-        $featureText = trim((string) ($options['feature-text'] ?? ''));
-        if ($featureText === '') {
+        $featureText = BoardEntry::parseEmptyString((string) ($options[self::OPTION_FEATURE_TEXT] ?? ''));
+        if ($featureText === null) {
             throw new \RuntimeException('feature-task-add requires --feature-text.');
         }
 
         $board = $this->board();
         $current = $this->entryResolver()->requireSingleFeatureForAgent($board, $agent);
-        $feature = $current['entry']->getMeta('feature');
+        $feature = $current['entry']->feature();
         $target = $this->entryService()->nextTodoTask($board);
         if ($target === null) {
             throw new \RuntimeException('No queued task available to add to the current feature.');
@@ -1099,13 +1101,13 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $match = $this->entryResolver()->requireFeature($board, $feature);
-        $previousAgent = trim((string) ($match['entry']->getMeta('agent') ?? ''));
+        $previousAgent = $match['entry']->agent();
         $match['entry']->setAgent($agent);
         $this->saveBoard($board, 'feature-assign');
 
         $worktree = $this->worktreeManager()->prepareAgentWorktree($agent);
-        $this->worktreeManager()->checkoutBranchInWorktree($worktree, $match['entry']->getMeta('branch') ?? '', false);
-        $cleaned = $previousAgent !== '' && $previousAgent !== $agent
+        $this->worktreeManager()->checkoutBranchInWorktree($worktree, $match['entry']->branch() ?? '', false);
+        $cleaned = $previousAgent !== null && $previousAgent !== $agent
             ? $this->worktreeManager()->cleanupAbandonedManagedWorktrees($board)
             : 0;
 
@@ -1128,7 +1130,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $board = $this->board();
         $feature = isset($commandArgs[0])
             ? $this->entryService()->normalizeFeatureSlug($commandArgs[0])
-            : $this->entryResolver()->requireSingleFeatureForAgent($board, $agent)['entry']->getMeta('feature');
+            : $this->entryResolver()->requireSingleFeatureForAgent($board, $agent)['entry']->feature();
         $actorAgent = $actorRole === self::ROLE_DEVELOPER ? $this->requireWorkflowAgent() : null;
 
         if ($feature === null) {
@@ -1137,7 +1139,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $match = $this->entryResolver()->requireFeature($board, $feature);
         $this->assertCanUnassignFeature($actorRole, $actorAgent, $agent, $feature, $match['entry']);
-        if (($match['entry']->getMeta('agent') ?? '') !== $agent) {
+        if ($match['entry']->agent() !== $agent) {
             throw new \RuntimeException("Feature {$feature} is not assigned to agent {$agent}.");
         }
 
@@ -1199,8 +1201,8 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $match = $this->entryResolver()->requireFeature($board, $feature);
-        $assignedAgent = trim((string) ($match['entry']->getMeta('agent') ?? ''));
-        if ($assignedAgent !== '' && $assignedAgent !== $actorAgent) {
+        $assignedAgent = $match['entry']->agent();
+        if ($assignedAgent !== null && $assignedAgent !== $actorAgent) {
             throw new \RuntimeException(sprintf(
                 'Feature %s is already assigned to %s. Only manager can reassign it.',
                 $feature,
@@ -1227,12 +1229,12 @@ final class BacklogRunner extends AbstractScriptRunner
             ));
         }
 
-        $assignedAgent = trim((string) ($entry->getMeta('agent') ?? ''));
+        $assignedAgent = $entry->agent();
         if ($assignedAgent !== $actorAgent) {
             throw new \RuntimeException(sprintf(
                 'Feature %s is assigned to %s. Developer role can only unassign its own feature.',
                 $feature,
-                $assignedAgent === '' ? 'no agent' : $assignedAgent,
+                $assignedAgent === null ? 'no agent' : $assignedAgent,
             ));
         }
     }
@@ -1247,7 +1249,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $board = $this->board();
         $feature = isset($commandArgs[0])
             ? $this->entryService()->normalizeFeatureSlug($commandArgs[0])
-            : $this->entryResolver()->requireSingleFeatureForAgent($board, $agent)['entry']->getMeta('feature');
+            : $this->entryResolver()->requireSingleFeatureForAgent($board, $agent)['entry']->feature();
 
         if ($feature === null) {
             throw new \RuntimeException('No feature available for feature-rework.');
@@ -1263,7 +1265,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->saveBoard($board, 'feature-rework');
 
         $worktree = $this->worktreeManager()->prepareAgentWorktree($agent);
-        $this->worktreeManager()->checkoutBranchInWorktree($worktree, $match['entry']->getMeta('branch') ?? '', false);
+        $this->worktreeManager()->checkoutBranchInWorktree($worktree, $match['entry']->branch() ?? '', false);
 
         $this->console->ok(sprintf('Moved feature %s back to %s', $feature, BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_PROGRESS)));
 
@@ -1280,7 +1282,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $board = $this->board();
         $feature = isset($commandArgs[0])
             ? $this->entryService()->normalizeFeatureSlug($commandArgs[0])
-            : $this->entryResolver()->requireSingleFeatureForAgent($board, $agent)['entry']->getMeta('feature');
+            : $this->entryResolver()->requireSingleFeatureForAgent($board, $agent)['entry']->feature();
 
         if ($feature === null) {
             throw new \RuntimeException('No feature available for feature-block.');
@@ -1312,14 +1314,14 @@ final class BacklogRunner extends AbstractScriptRunner
         $board = $this->board();
         $feature = isset($commandArgs[0])
             ? $this->entryService()->normalizeFeatureSlug($commandArgs[0])
-            : $this->entryResolver()->requireSingleFeatureForAgent($board, $agent)['entry']->getMeta('feature');
+            : $this->entryResolver()->requireSingleFeatureForAgent($board, $agent)['entry']->feature();
 
         if ($feature === null) {
             throw new \RuntimeException('No feature available for feature-unblock.');
         }
 
         $match = $this->entryResolver()->requireFeature($board, $feature);
-        if (($match['entry']->getMeta('agent') ?? '') !== $agent) {
+        if ($match['entry']->agent() !== $agent) {
             throw new \RuntimeException("Feature {$feature} is not assigned to agent {$agent}.");
         }
 
@@ -1355,13 +1357,13 @@ final class BacklogRunner extends AbstractScriptRunner
             foreach ($entries as $entry) {
                 $parts = [
                     'kind=' . $this->entryService()->entryKind($entry),
-                    $entry->getMeta('feature') ?? '-',
-                    'branch=' . ($entry->getMeta('branch') ?? '-'),
-                    'agent=' . ($entry->getMeta('agent') ?? '-'),
+                    $entry->feature() ?? '-',
+                    'branch=' . ($entry->branch() ?? '-'),
+                    'agent=' . ($entry->agent() ?? '-'),
                 ];
                 if ($this->entryService()->isTaskEntry($entry)) {
-                    $parts[] = 'task=' . ($entry->getMeta('task') ?? '-');
-                    $parts[] = 'feature-branch=' . ($entry->getMeta('feature-branch') ?? '-');
+                    $parts[] = 'task=' . ($entry->task() ?? '-');
+                    $parts[] = 'feature-branch=' . ($entry->featureBranch() ?? '-');
                 }
                 if ($entry->hasMeta('blocked')) {
                     $parts[] = 'blocked=yes';
@@ -1466,7 +1468,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
                 return 0;
             }
-            $feature = $this->entryResolver()->requireSingleFeatureForAgent($board, $agent)['entry']->getMeta('feature');
+            $feature = $this->entryResolver()->requireSingleFeatureForAgent($board, $agent)['entry']->feature();
         }
 
         if ($feature === null) {
@@ -1491,8 +1493,8 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $entry = $entries[0];
-        $feature = $entry->getMeta('feature') ?? null;
-        if ($feature === null || $feature === '') {
+        $feature = $entry->feature();
+        if ($feature === null) {
             throw new \RuntimeException('Next review feature has no feature metadata.');
         }
 
@@ -1506,15 +1508,15 @@ final class BacklogRunner extends AbstractScriptRunner
         $stage = $this->entryService()->featureStage($entry);
         $this->console->line('Kind: ' . $this->entryService()->entryKind($entry));
         if ($this->entryService()->isTaskEntry($entry)) {
-            $this->console->line('Feature: ' . ($entry->getMeta('feature') ?? '-'));
-            $this->console->line('Task: ' . ($entry->getMeta('task') ?? '-'));
+            $this->console->line('Feature: ' . ($entry->feature() ?? '-'));
+            $this->console->line('Task: ' . ($entry->task() ?? '-'));
             $this->console->line('Ref: ' . $this->entryService()->taskReviewKey($entry));
-            $this->console->line('Feature Branch: ' . ($entry->getMeta('feature-branch') ?? '-'));
+            $this->console->line('Feature Branch: ' . ($entry->featureBranch() ?? '-'));
         } else {
-            $this->console->line('Feature: ' . ($entry->getMeta('feature') ?? '-'));
+            $this->console->line('Feature: ' . ($entry->feature() ?? '-'));
         }
-        $this->console->line('Branch: ' . ($entry->getMeta('branch') ?? '-'));
-        $this->console->line('Base: ' . ($entry->getMeta('base') ?? '-'));
+        $this->console->line('Branch: ' . ($entry->branch() ?? '-'));
+        $this->console->line('Base: ' . ($entry->base() ?? '-'));
         $this->console->line('Stage: ' . BacklogBoard::stageLabel($stage));
         $this->console->line('PR: ' . $this->describePrStatus($entry));
         $this->console->line('Summary: ' . $entry->getText());
@@ -1546,7 +1548,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $board = $this->board();
         $feature = isset($commandArgs[0])
             ? $this->entryService()->normalizeFeatureSlug($commandArgs[0])
-            : $this->entryResolver()->requireSingleFeatureForAgent($board, $agent)['entry']->getMeta('feature');
+            : $this->entryResolver()->requireSingleFeatureForAgent($board, $agent)['entry']->feature();
 
         if ($feature === null) {
             throw new \RuntimeException('No feature available for feature-review-request.');
@@ -1558,7 +1560,7 @@ final class BacklogRunner extends AbstractScriptRunner
         if ($this->entryService()->featureStage($match['entry']) !== BacklogBoard::STAGE_IN_PROGRESS) {
             throw new \RuntimeException("Feature {$feature} must be in " . BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_PROGRESS) . '.');
         }
-        if (($match['entry']->getMeta('agent') ?? '') !== $agent) {
+        if ($match['entry']->agent() !== $agent) {
             throw new \RuntimeException("Feature {$feature} is not assigned to agent {$agent}.");
         }
 
@@ -1654,8 +1656,8 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $type = $this->determinePrType($match['entry']);
         $title = $this->buildPrTitle($type, $match['entry']);
-        $branch = $match['entry']->getMeta('branch') ?? '';
-        if ($branch === '') {
+        $branch = $match['entry']->branch();
+        if ($branch === null) {
             throw new \RuntimeException("Feature {$feature} has no branch metadata.");
         }
 
@@ -1690,8 +1692,8 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->entryService()->assertFeatureEntry($match['entry'], 'feature-close');
         $this->entryResolver()->assertNoActiveTasksForFeature($board, $feature, 'feature-close');
 
-        $branch = $match['entry']->getMeta('branch') ?? '';
-        if ($branch === '') {
+        $branch = $match['entry']->branch();
+        if ($branch === null) {
             throw new \RuntimeException("Feature {$feature} has no branch metadata.");
         }
 
@@ -1704,7 +1706,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $board->removeFeature($feature);
-        $board->clearReservations($match['entry']->getMeta('agent') ?? '', $feature);
+        $board->clearReservations($match['entry']->agent() ?? '', $feature);
         $review->clearReview($feature);
         $this->saveBoard($board, 'feature-close');
         $this->saveReviewFile($review, 'feature-close');
@@ -1739,7 +1741,7 @@ final class BacklogRunner extends AbstractScriptRunner
             throw new \RuntimeException("Feature {$feature} is blocked and cannot be merged.");
         }
 
-        $branch = $match['entry']->getMeta('branch') ?? '';
+        $branch = $match['entry']->branch() ?? '';
         $prNumber = $this->pullRequestManager()->findPrNumberByBranch($branch);
         if ($prNumber === null) {
             throw new \RuntimeException("No open PR found for branch {$branch}.");
@@ -1753,7 +1755,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $skippedMainCheckout = $this->gitWorkflow()->handleMergeBaseAfterPrMerge($targetBaseBranch, 'feature-merge');
 
         $board->removeFeature($feature);
-        $board->clearReservations($match['entry']->getMeta('agent') ?? '', $feature);
+        $board->clearReservations($match['entry']->agent() ?? '', $feature);
         $review->clearReview($feature);
         $this->saveBoard($board, 'feature-merge');
         $this->saveReviewFile($review, 'feature-merge');
@@ -2076,8 +2078,8 @@ final class BacklogRunner extends AbstractScriptRunner
             return '#' . $storedPrNumber;
         }
 
-        $branch = $entry->getMeta('branch') ?? '';
-        if ($branch === '') {
+        $branch = $entry->branch();
+        if ($branch === null) {
             return 'none';
         }
 
@@ -2086,8 +2088,8 @@ final class BacklogRunner extends AbstractScriptRunner
 
     private function storedPrNumber(BoardEntry $entry): ?int
     {
-        $pr = $entry->getMeta('pr');
-        if ($pr === null || $pr === '' || $pr === 'none') {
+        $pr = $entry->pr();
+        if ($pr === null || $pr === 'none') {
             return null;
         }
 
