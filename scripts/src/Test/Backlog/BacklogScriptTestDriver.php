@@ -418,7 +418,7 @@ MD);
             throw new \RuntimeException("Expected active feature not found in test backlog: {$feature}");
         }
 
-        return $match['entry'];
+        return $match->getEntry();
     }
 
     private function assertOutputContains(string $output, string $needle): void

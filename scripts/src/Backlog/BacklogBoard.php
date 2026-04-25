@@ -70,7 +70,7 @@ final class BacklogBoard
     }
 
     /**
-     * @return array<int, array{section: string, index: int, entry: BoardEntry}>
+     * @return array<int, BoardEntryMatch>
      */
     public function findFeaturesByStage(string $stage): array
     {
@@ -89,23 +89,22 @@ final class BacklogBoard
                 continue;
             }
 
-            $matches[] = ['section' => self::SECTION_ACTIVE, 'index' => $index, 'entry' => $entry];
+            $matches[] = new BoardEntryMatch(self::SECTION_ACTIVE, $index, $entry);
         }
 
         return $matches;
     }
 
     /**
-     * @return array{section: string, index: int, entry: BoardEntry}|null
      */
-    public function findFeature(string $feature): ?array
+    public function findFeature(string $feature): ?BoardEntryMatch
     {
         foreach ($this->getEntries(self::SECTION_ACTIVE) as $index => $entry) {
             if (!$this->isFeatureEntry($entry)) {
                 continue;
             }
             if ($entry->getFeature() === $feature) {
-                return ['section' => self::SECTION_ACTIVE, 'index' => $index, 'entry' => $entry];
+                return new BoardEntryMatch(self::SECTION_ACTIVE, $index, $entry);
             }
         }
 
@@ -113,7 +112,7 @@ final class BacklogBoard
     }
 
     /**
-     * @return array<int, array{section: string, index: int, entry: BoardEntry}>
+     * @return array<int, BoardEntryMatch>
      */
     public function findFeaturesByAgent(string $agent): array
     {
@@ -124,7 +123,7 @@ final class BacklogBoard
                 continue;
             }
             if ($entry->getAgent() === $agent) {
-                $matches[] = ['section' => self::SECTION_ACTIVE, 'index' => $index, 'entry' => $entry];
+                $matches[] = new BoardEntryMatch(self::SECTION_ACTIVE, $index, $entry);
             }
         }
 
@@ -132,7 +131,7 @@ final class BacklogBoard
     }
 
     /**
-     * @return array<int, array{index: int, entry: BoardEntry}>
+     * @return array<int, BoardEntryMatch>
      */
     public function findReservedTasks(?string $agent = null, ?string $feature = null): array
     {
@@ -151,20 +150,19 @@ final class BacklogBoard
                 continue;
             }
 
-            $matches[] = ['index' => $index, 'entry' => $entry];
+            $matches[] = new BoardEntryMatch(self::SECTION_TODO, $index, $entry);
         }
 
         return $matches;
     }
 
     /**
-     * @return array{index: int, entry: BoardEntry}|null
      */
-    public function findNextBookableTask(bool $force = false): ?array
+    public function findNextBookableTask(bool $force = false): ?BoardEntryMatch
     {
         foreach ($this->getEntries(self::SECTION_TODO) as $index => $entry) {
             if ($force || $entry->getAgent() === null) {
-                return ['index' => $index, 'entry' => $entry];
+                return new BoardEntryMatch(self::SECTION_TODO, $index, $entry);
             }
         }
 
@@ -186,7 +184,7 @@ final class BacklogBoard
             throw new \RuntimeException("Unknown feature stage: {$stage}");
         }
 
-        $match['entry']->setMeta(BoardEntry::META_STAGE, $normalizedStage);
+        $match->getEntry()->setMeta(BoardEntry::META_STAGE, $normalizedStage);
     }
 
     /**
@@ -199,9 +197,9 @@ final class BacklogBoard
             return;
         }
 
-        $entries = $this->getEntries($match['section']);
-        array_splice($entries, $match['index'], 1);
-        $this->setEntries($match['section'], array_values($entries));
+        $entries = $this->getEntries($match->getSection());
+        array_splice($entries, $match->getIndex(), 1);
+        $this->setEntries($match->getSection(), array_values($entries));
     }
 
     /**

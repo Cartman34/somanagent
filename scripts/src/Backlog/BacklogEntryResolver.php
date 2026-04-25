@@ -37,9 +37,8 @@ final class BacklogEntryResolver
 
     /**
      * @param array<string> $commandArgs
-     * @return array{section: string, index: int, entry: BoardEntry}
      */
-    public function requireTaskByReferenceArgument(BacklogBoard $board, array $commandArgs, string $command): array
+    public function requireTaskByReferenceArgument(BacklogBoard $board, array $commandArgs, string $command): BoardEntryMatch
     {
         if (!isset($commandArgs[0]) || trim($commandArgs[0]) === '') {
             throw new \RuntimeException(sprintf('%s requires <feature/task>.', $command));
@@ -48,10 +47,7 @@ final class BacklogEntryResolver
         return $this->requireTaskByReference($board, $commandArgs[0], $command);
     }
 
-    /**
-     * @return array{section: string, index: int, entry: BoardEntry}
-     */
-    public function requireTaskByReference(BacklogBoard $board, string $reference, string $command): array
+    public function requireTaskByReference(BacklogBoard $board, string $reference, string $command): BoardEntryMatch
     {
         $normalizedReference = trim($reference);
         if ($normalizedReference === '') {
@@ -64,7 +60,7 @@ final class BacklogEntryResolver
             $task = $this->normalizeFeatureSlug($task);
 
             foreach ($this->findTaskEntriesByFeature($board, $feature) as $match) {
-                if ($match['entry']->getTask() === $task) {
+                if ($match->getEntry()->getTask() === $task) {
                     return $match;
                 }
             }
@@ -88,10 +84,7 @@ final class BacklogEntryResolver
         return $matches[0];
     }
 
-    /**
-     * @return array{section: string, index: int, entry: BoardEntry}
-     */
-    public function requireFeature(BacklogBoard $board, string $feature): array
+    public function requireFeature(BacklogBoard $board, string $feature): BoardEntryMatch
     {
         $match = $this->findParentFeatureEntry($board, $feature);
         if ($match === null) {
@@ -101,10 +94,7 @@ final class BacklogEntryResolver
         return $match;
     }
 
-    /**
-     * @return array{section: string, index: int, entry: BoardEntry}
-     */
-    public function requireParentFeature(BacklogBoard $board, string $feature): array
+    public function requireParentFeature(BacklogBoard $board, string $feature): BoardEntryMatch
     {
         return $this->requireFeature($board, $feature);
     }
@@ -124,13 +114,10 @@ final class BacklogEntryResolver
             throw new \RuntimeException("Agent {$agent} has multiple active features. Resolve the backlog before continuing.");
         }
 
-        return $matches[0]['entry'];
+        return $matches[0]->getEntry();
     }
 
-    /**
-     * @return array{section: string, index: int, entry: BoardEntry}
-     */
-    public function requireSingleFeatureForAgent(BacklogBoard $board, string $agent): array
+    public function requireSingleFeatureForAgent(BacklogBoard $board, string $agent): BoardEntryMatch
     {
         $matches = $this->findFeatureEntriesByAgent($board, $agent);
         if ($matches === []) {
@@ -159,13 +146,10 @@ final class BacklogEntryResolver
             throw new \RuntimeException("Agent {$agent} has multiple active tasks.");
         }
 
-        return $matches[0]['entry'];
+        return $matches[0]->getEntry();
     }
 
-    /**
-     * @return array{section: string, index: int, entry: BoardEntry}
-     */
-    public function requireSingleTaskForAgent(BacklogBoard $board, string $agent): array
+    public function requireSingleTaskForAgent(BacklogBoard $board, string $agent): BoardEntryMatch
     {
         $matches = $this->findTaskEntriesByAgent($board, $agent);
         if ($matches === []) {
@@ -180,7 +164,7 @@ final class BacklogEntryResolver
     }
 
     /**
-     * @return array<int, array{section: string, index: int, entry: BoardEntry}>
+     * @return array<int, BoardEntryMatch>
      */
     public function findFeaturesByAgent(BacklogBoard $board, string $agent): array
     {
@@ -188,7 +172,7 @@ final class BacklogEntryResolver
     }
 
     /**
-     * @return array<int, array{section: string, index: int, entry: BoardEntry}>
+     * @return array<int, BoardEntryMatch>
      */
     public function findFeatureEntriesByAgent(BacklogBoard $board, string $agent): array
     {
@@ -199,18 +183,14 @@ final class BacklogEntryResolver
                 continue;
             }
 
-            $matches[] = [
-                'section' => BacklogBoard::SECTION_ACTIVE,
-                'index' => $index,
-                'entry' => $entry,
-            ];
+            $matches[] = new BoardEntryMatch(BacklogBoard::SECTION_ACTIVE, $index, $entry);
         }
 
         return $matches;
     }
 
     /**
-     * @return array<int, array{section: string, index: int, entry: BoardEntry}>
+     * @return array<int, BoardEntryMatch>
      */
     public function findTaskEntriesByAgent(BacklogBoard $board, string $agent): array
     {
@@ -221,20 +201,13 @@ final class BacklogEntryResolver
                 continue;
             }
 
-            $matches[] = [
-                'section' => BacklogBoard::SECTION_ACTIVE,
-                'index' => $index,
-                'entry' => $entry,
-            ];
+            $matches[] = new BoardEntryMatch(BacklogBoard::SECTION_ACTIVE, $index, $entry);
         }
 
         return $matches;
     }
 
-    /**
-     * @return array{section: string, index: int, entry: BoardEntry}|null
-     */
-    public function findParentFeatureEntry(BacklogBoard $board, string $feature): ?array
+    public function findParentFeatureEntry(BacklogBoard $board, string $feature): ?BoardEntryMatch
     {
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $index => $entry) {
             if (!$this->isFeatureEntry($entry)) {
@@ -244,14 +217,14 @@ final class BacklogEntryResolver
                 continue;
             }
 
-            return ['section' => BacklogBoard::SECTION_ACTIVE, 'index' => $index, 'entry' => $entry];
+            return new BoardEntryMatch(BacklogBoard::SECTION_ACTIVE, $index, $entry);
         }
 
         return null;
     }
 
     /**
-     * @return array<int, array{section: string, index: int, entry: BoardEntry}>
+     * @return array<int, BoardEntryMatch>
      */
     public function findTaskEntriesByFeature(BacklogBoard $board, string $feature): array
     {
@@ -265,22 +238,19 @@ final class BacklogEntryResolver
                 continue;
             }
 
-            $matches[] = ['section' => BacklogBoard::SECTION_ACTIVE, 'index' => $index, 'entry' => $entry];
+            $matches[] = new BoardEntryMatch(BacklogBoard::SECTION_ACTIVE, $index, $entry);
         }
 
         return $matches;
     }
 
-    /**
-     * @return array{section: string, index: int, entry: BoardEntry}|null
-     */
-    public function findTaskEntryByTaskSlug(BacklogBoard $board, string $task): ?array
+    public function findTaskEntryByTaskSlug(BacklogBoard $board, string $task): ?BoardEntryMatch
     {
         return $this->findTaskEntriesByTaskSlug($board, $task)[0] ?? null;
     }
 
     /**
-     * @return array<int, array{section: string, index: int, entry: BoardEntry}>
+     * @return array<int, BoardEntryMatch>
      */
     public function findTaskEntriesByTaskSlug(BacklogBoard $board, string $task): array
     {
@@ -294,7 +264,7 @@ final class BacklogEntryResolver
                 continue;
             }
 
-            $matches[] = ['section' => BacklogBoard::SECTION_ACTIVE, 'index' => $index, 'entry' => $entry];
+            $matches[] = new BoardEntryMatch(BacklogBoard::SECTION_ACTIVE, $index, $entry);
         }
 
         return $matches;
@@ -308,11 +278,11 @@ final class BacklogEntryResolver
     private function entryKind(BoardEntry $entry): string
     {
         $kind = $entry->getKind();
-        if ($kind !== '') {
+        if ($kind !== null) {
             return $kind;
         }
 
-        return $entry->hasMeta('task') ? 'task' : 'feature';
+        return $entry->getTask() !== null ? 'task' : 'feature';
     }
 
     private function isFeatureEntry(BoardEntry $entry): bool

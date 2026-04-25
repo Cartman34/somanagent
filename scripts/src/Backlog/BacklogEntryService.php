@@ -39,7 +39,7 @@ final class BacklogEntryService
             throw new \RuntimeException('No non-reserved task available in the todo section.');
         }
 
-        return $target['entry']->getText();
+        return $target->getEntry()->getText();
     }
 
     public function normalizeFeatureSlug(string $text): string
@@ -187,7 +187,7 @@ final class BacklogEntryService
         string $command,
     ): void {
         foreach ($this->entryResolver->findTaskEntriesByFeature($board, $feature) as $match) {
-            if ($match['entry']->getTask() === $task) {
+            if ($match->getEntry()->getTask() === $task) {
                 throw new \RuntimeException(sprintf(
                     '%s cannot continue because task %s is already active in feature %s.',
                     $command,
@@ -226,12 +226,12 @@ final class BacklogEntryService
     }
 
     /**
-     * @param array<int, array{index: int, entry: BoardEntry}> $reserved
+     * @param array<int, BoardEntryMatch> $reserved
      */
     public function removeReservedTasks(BacklogBoard $board, array $reserved): void
     {
         $entries = $board->getEntries(BacklogBoard::SECTION_TODO);
-        $indexes = array_map(static fn(array $item): int => $item['index'], $reserved);
+        $indexes = array_map(static fn(BoardEntryMatch $item): int => $item->getIndex(), $reserved);
         rsort($indexes);
 
         foreach ($indexes as $index) {
@@ -249,16 +249,15 @@ final class BacklogEntryService
     }
 
     /**
-     * @return array{index: int, entry: BoardEntry}|null
      */
-    public function nextTodoTask(BacklogBoard $board): ?array
+    public function nextTodoTask(BacklogBoard $board): ?BoardEntryMatch
     {
         $entries = $board->getEntries(BacklogBoard::SECTION_TODO);
         if ($entries === []) {
             return null;
         }
 
-        return ['index' => 0, 'entry' => $entries[0]];
+        return new BoardEntryMatch(BacklogBoard::SECTION_TODO, 0, $entries[0]);
     }
 
     public function detectBranchType(string $branch): string
