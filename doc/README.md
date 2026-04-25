@@ -54,6 +54,7 @@ It lets you assemble generic AI agent teams, assign them roles and skills, then 
 |---|---|
 | [Installation](development/installation.md) | Prerequisites and full setup |
 | [Scripts](development/scripts.md) | Available scripts in `scripts/` |
+| [Script Backlog Test Scenarios](development/script-backlog-test-scenarios.md) | Reusable validation scenarios for `php scripts/backlog.php` |
 | [Symfony commands](development/commands.md) | Available `bin/console` commands |
 | [Fixtures](development/fixtures.md) | Reference seed data and sample workflows |
 | [Troubleshooting](development/troubleshooting.md) | Quick local recovery notes and useful checks |

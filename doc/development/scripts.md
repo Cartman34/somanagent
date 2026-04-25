@@ -24,6 +24,7 @@ php scripts/help.php migrate.php
 | `check-php.sh` | Bash | Check that PHP 8.4+ is installed |
 | `help.php` | PHP | Display help for all scripts |
 | `backlog.php` | PHP | Run the local backlog workflow for features, child tasks, reviews, and merges |
+| `test-backlog-workflow.php` | PHP | Run reusable sequential validation campaigns for `backlog.php` on temporary backlog files |
 | `setup.php` | PHP | Full installation (first time) |
 | `dev.php` | PHP | Start / stop the environment |
 | `migrate.php` | PHP | Run Doctrine migrations |
@@ -88,6 +89,26 @@ Notes:
 - reviewer commands never use `--agent`
 - `feature-start` reads the next queued board entry and accepts plain text, optional `[feat]` / `[fix]` prefixes, and scoped entries like `[feature-slug][task-slug] Task text`
 - child task review stays local; only the parent feature uses the remote PR flow
+
+---
+
+### `test-backlog-workflow.php`
+Runs reusable sequential validation campaigns for `php scripts/backlog.php` against temporary backlog and review files under `local/tmp/`.
+
+```bash
+php scripts/test-backlog-workflow.php
+php scripts/test-backlog-workflow.php --campaign help
+php scripts/test-backlog-workflow.php --campaign scoped-task-lifecycle
+php scripts/test-backlog-workflow.php --allow-remote --campaign feature-review-lifecycle
+php scripts/test-backlog-workflow.php --keep-artifacts
+```
+
+Notes:
+- the script never uses `local/backlog-board.md` or `local/backlog-review.md` directly
+- it passes `--test-mode`, `--board-file`, and `--review-file` to `backlog.php` with temporary files under `local/tmp/`
+- `feature-review-lifecycle` is skipped unless `--allow-remote` is enabled
+- use `--keep-artifacts` to inspect temporary backlog and review files after the run
+- detailed reusable campaign intent is documented in `doc/development/script-backlog-test-scenarios.md`
 
 ---
 
