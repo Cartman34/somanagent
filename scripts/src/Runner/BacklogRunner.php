@@ -18,6 +18,7 @@ use SoManAgent\Script\Backlog\BacklogReviewBodyFormatter;
 use SoManAgent\Script\Backlog\BacklogReviewFile;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
 use SoManAgent\Script\Backlog\BoardEntry;
+use SoManAgent\Script\Backlog\PullRequestTag;
 use SoManAgent\Script\Backlog\PullRequestManager;
 use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Client\GitClient;
@@ -2014,7 +2015,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $files = $this->gitWorkflow()->changedFiles($base, $branch);
 
         if ($files === []) {
-            return str_starts_with($branch, 'fix/') ? 'FIX' : 'FEAT';
+            return str_starts_with($branch, 'fix/') ? PullRequestTag::FIX->value : PullRequestTag::FEAT->value;
         }
 
         $docOnly = true;
@@ -2035,14 +2036,14 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         if ($docOnly) {
-            return 'DOC';
+            return PullRequestTag::DOC->value;
         }
 
         if ($techOnly) {
-            return 'TECH';
+            return PullRequestTag::TECH->value;
         }
 
-        return str_starts_with($branch, 'fix/') ? 'FIX' : 'FEAT';
+        return str_starts_with($branch, 'fix/') ? PullRequestTag::FIX->value : PullRequestTag::FEAT->value;
     }
 
     private function buildPrTitle(string $type, BoardEntry $entry): string
@@ -2058,16 +2059,18 @@ final class BacklogRunner extends AbstractScriptRunner
     {
         $type = $this->entryService()->featureStage($entry) === BacklogBoard::STAGE_APPROVED
             ? $this->determinePrType($entry)
-            : 'WIP';
+            : PullRequestTag::WIP->value;
 
         return $this->buildPrTitle($type, $entry);
     }
 
     private function ensureBlockedTitle(string $title): string
     {
-        return str_contains($title, '[BLOCKED]')
+        $tag = '[' . PullRequestTag::BLOCKED->value . ']';
+
+        return str_contains($title, $tag)
             ? $title
-            : '[BLOCKED] ' . $title;
+            : $tag . ' ' . $title;
     }
 
     /**
