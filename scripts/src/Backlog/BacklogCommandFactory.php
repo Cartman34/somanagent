@@ -7,9 +7,9 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog;
 
-use SoManAgent\Script\Backlog\Handler\AbstractBacklogHandler;
-use SoManAgent\Script\Backlog\Handler\StatusHandler;
-use SoManAgent\Script\Backlog\Handler\WorktreeListHandler;
+use SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
+use SoManAgent\Script\Backlog\Command\BacklogStatusCommand;
+use SoManAgent\Script\Backlog\Command\BacklogWorktreeListCommand;
 use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Console;
 use SoManAgent\Script\TextSlugger;
@@ -17,7 +17,7 @@ use SoManAgent\Script\TextSlugger;
 /**
  * Factory for creating backlog command handlers with their dependencies.
  */
-final class BacklogHandlerFactory
+final class BacklogCommandFactory
 {
     private Console $console;
 
@@ -63,10 +63,10 @@ final class BacklogHandlerFactory
         $this->reviewFilePath = $reviewFilePath;
     }
 
-    public function createHandler(string $commandName): AbstractBacklogHandler
+    public function createHandler(string $commandName): AbstractBacklogCommand
     {
-        $handler = match ($commandName) {
-            BacklogCommandName::STATUS->value => new StatusHandler(
+        $command = match ($commandName) {
+            BacklogCommandName::STATUS->value => new BacklogStatusCommand(
                 $this->console,
                 $this->dryRun,
                 $this->projectRoot,
@@ -75,7 +75,7 @@ final class BacklogHandlerFactory
                 $this->worktreeManager,
                 $this->consoleClient
             ),
-            BacklogCommandName::WORKTREE_LIST->value => new WorktreeListHandler(
+            BacklogCommandName::WORKTREE_LIST->value => new BacklogWorktreeListCommand(
                 $this->console,
                 $this->dryRun,
                 $this->projectRoot,
@@ -85,9 +85,9 @@ final class BacklogHandlerFactory
             default => throw new \RuntimeException(sprintf('No handler found for command: %s', $commandName)),
         };
 
-        $handler->setBoardPath($this->boardPath);
-        $handler->setReviewFilePath($this->reviewFilePath);
+        $command->setBoardPath($this->boardPath);
+        $command->setReviewFilePath($this->reviewFilePath);
 
-        return $handler;
+        return $command;
     }
 }

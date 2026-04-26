@@ -5,15 +5,15 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Handler;
+namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\BacklogBoard;
 use SoManAgent\Script\Console;
 
 /**
- * Base class for all backlog command handlers.
+ * Base class for all backlog commands.
  */
-abstract class AbstractBacklogHandler
+abstract class AbstractBacklogCommand
 {
     protected Console $console;
 

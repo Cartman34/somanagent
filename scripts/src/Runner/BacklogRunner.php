@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Runner;
 
-use SoManAgent\Script\Backlog\BacklogHandlerFactory;
+use SoManAgent\Script\Backlog\BacklogCommandFactory;
 use SoManAgent\Script\Backlog\BacklogCommandHelp;
 use SoManAgent\Script\Backlog\BacklogBoard;
 use SoManAgent\Script\Backlog\BacklogCliOption;
@@ -64,7 +64,7 @@ final class BacklogRunner extends AbstractScriptRunner
     ];
 
     private ?BacklogCommandHelp $commandHelp = null;
-    private ?BacklogHandlerFactory $handlerFactory = null;
+    private ?BacklogCommandFactory $commandFactory = null;
     private ?BacklogEntryResolver $entryResolver = null;
     private ?BacklogEntryService $entryService = null;
     private ?ConsoleClient $consoleClient = null;
@@ -179,7 +179,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
     private function handleCommand(string $command, array $commandArgs, array $options): int
     {
-        $this->handlerFactory()->createHandler($command)->handle($commandArgs, $options);
+        $this->commandFactory()->createHandler($command)->handle($commandArgs, $options);
 
         return 0;
     }
@@ -258,10 +258,10 @@ final class BacklogRunner extends AbstractScriptRunner
         return $this->commandHelp;
     }
 
-    private function handlerFactory(): BacklogHandlerFactory
+    private function commandFactory(): BacklogCommandFactory
     {
-        if ($this->handlerFactory === null) {
-            $this->handlerFactory = new BacklogHandlerFactory(
+        if ($this->commandFactory === null) {
+            $this->commandFactory = new BacklogCommandFactory(
                 $this->console,
                 $this->dryRun,
                 $this->projectRoot,
@@ -275,7 +275,7 @@ final class BacklogRunner extends AbstractScriptRunner
             );
         }
 
-        return $this->handlerFactory;
+        return $this->commandFactory;
     }
 
     private function boardPath(): string

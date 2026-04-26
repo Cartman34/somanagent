@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Handler;
+namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\BacklogBoard;
 use SoManAgent\Script\Backlog\BacklogCommandName;
@@ -20,9 +20,9 @@ use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Console;
 
 /**
- * Handler for the status command.
+ * Command for displaying the backlog status.
  */
-final class StatusHandler extends AbstractBacklogHandler
+final class BacklogStatusCommand extends AbstractBacklogCommand
 {
     private BacklogEntryResolver $entryResolver;
 
@@ -88,7 +88,7 @@ final class StatusHandler extends AbstractBacklogHandler
                         'pr=' . $this->describePrStatus($entry),
                     ];
                     if ($entry->isBlocked()) {
-                        $parts[] = 'blocked=yes';
+                        $parts[] = 'blocked=' . BacklogMetaValue::YES->value;
                     }
                     $this->console->line('- ' . implode(' ', $parts));
                 }
@@ -111,7 +111,7 @@ final class StatusHandler extends AbstractBacklogHandler
                     $parts[] = 'feature-branch=' . ($entry->getFeatureBranch() ?? '-');
                 }
                 if ($entry->isBlocked()) {
-                    $parts[] = 'blocked=yes';
+                    $parts[] = 'blocked=' . BacklogMetaValue::YES->value;
                 }
                 $this->console->line('- ' . implode(' ', $parts));
             }
@@ -218,22 +218,21 @@ final class StatusHandler extends AbstractBacklogHandler
             return;
         }
 
-        $this->console->line('State: ' . $this->statusWorktreeStateLabel($worktree->getState()->value));
+        $this->console->line('State: ' . $this->statusWorktreeStateLabel($worktree->getState()));
         $this->console->line('Path: ' . $expectedRelativePath);
         $this->console->line('Branch: ' . ($worktree->getBranch() ?? '-'));
         $this->console->line('Action: ' . $worktree->getAction()->value);
     }
 
-    private function statusWorktreeStateLabel(string $state): string
+    private function statusWorktreeStateLabel(WorktreeState $state): string
     {
         return match ($state) {
-            WorktreeState::ACTIVE->value => WorktreeAction::CLEAN->value,
-            WorktreeState::DIRTY->value => WorktreeState::DIRTY->value,
-            WorktreeState::BLOCKED->value => 'inconsistent',
-            WorktreeState::DETACHED_MANAGED->value => 'detached',
-            WorktreeState::PRUNABLE->value => WorktreeState::PRUNABLE->value,
-            WorktreeState::ORPHAN->value => WorktreeState::ORPHAN->value,
-            default => $state,
+            WorktreeState::ACTIVE => WorktreeAction::CLEAN->value,
+            WorktreeState::DIRTY => WorktreeState::DIRTY->value,
+            WorktreeState::BLOCKED => 'inconsistent',
+            WorktreeState::DETACHED_MANAGED => 'detached',
+            WorktreeState::PRUNABLE => WorktreeState::PRUNABLE->value,
+            WorktreeState::ORPHAN => WorktreeState::ORPHAN->value,
         };
     }
 
@@ -242,11 +241,6 @@ final class StatusHandler extends AbstractBacklogHandler
         $storedPrNumber = $this->storedPrNumber($entry);
         if ($storedPrNumber !== null) {
             return '#' . $storedPrNumber;
-        }
-
-        $branch = $entry->getBranch();
-        if ($branch === null) {
-            return BacklogMetaValue::NONE->value;
         }
 
         return BacklogMetaValue::NONE->value;

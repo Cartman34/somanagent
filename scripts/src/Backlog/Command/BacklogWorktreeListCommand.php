@@ -5,16 +5,16 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Handler;
+namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
 use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Console;
 
 /**
- * Handler for the worktree-list command.
+ * Command for listing managed and external worktrees.
  */
-final class WorktreeListHandler extends AbstractBacklogHandler
+final class BacklogWorktreeListCommand extends AbstractBacklogCommand
 {
     private BacklogWorktreeManager $worktreeManager;
 
