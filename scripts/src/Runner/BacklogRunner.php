@@ -14,6 +14,8 @@ use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogEntryService;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
 use SoManAgent\Script\Backlog\BacklogGitWorkflow;
+use SoManAgent\Script\Backlog\ExternalWorktree;
+use SoManAgent\Script\Backlog\ManagedWorktree;
 use SoManAgent\Script\Backlog\BacklogReviewBodyFormatter;
 use SoManAgent\Script\Backlog\BacklogReviewFile;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
@@ -1390,36 +1392,36 @@ final class BacklogRunner extends AbstractScriptRunner
     private function worktreeList(): int
     {
         $board = $this->board();
-        ['managed' => $managed, 'external' => $external] = $this->worktreeManager()->classifyWorktrees($board);
+        $classification = $this->worktreeManager()->classifyWorktrees($board);
 
-        if ($managed === [] && $external === []) {
+        if ($classification->getManaged() === [] && $classification->getExternal() === []) {
             $this->console->line('No worktree to report.');
 
             return 0;
         }
 
-        if ($managed !== []) {
+        if ($classification->getManaged() !== []) {
             $this->console->line('[Managed worktrees]');
-            foreach ($managed as $item) {
+            foreach ($classification->getManaged() as $item) {
                 $parts = [
-                    $this->consoleClient()->toRelativeProjectPath($item['path']),
-                    'state=' . $item['state'],
-                    'branch=' . ($item['branch'] ?? '-'),
-                    'feature=' . ($item['feature'] ?? '-'),
-                    'agent=' . ($item['agent'] ?? '-'),
-                    'action=' . $item['action'],
+                    $this->consoleClient()->toRelativeProjectPath($item->getPath()),
+                    'state=' . $item->getState()->value,
+                    'branch=' . ($item->getBranch() ?? '-'),
+                    'feature=' . ($item->getFeature() ?? '-'),
+                    'agent=' . ($item->getAgent() ?? '-'),
+                    'action=' . $item->getAction()->value,
                 ];
                 $this->console->line('- ' . implode(' ', $parts));
             }
         }
 
-        if ($external !== []) {
+        if ($classification->getExternal() !== []) {
             $this->console->line('[External worktrees]');
-            foreach ($external as $item) {
+            foreach ($classification->getExternal() as $item) {
                 $parts = [
-                    $item['path'],
-                    'branch=' . ($item['branch'] ?? '-'),
-                    'action=' . $item['action'],
+                    $item->getPath(),
+                    'branch=' . ($item->getBranch() ?? '-'),
+                    'action=' . $item->getAction()->value,
                 ];
                 $this->console->line('- ' . implode(' ', $parts));
             }
@@ -1521,8 +1523,8 @@ final class BacklogRunner extends AbstractScriptRunner
         $expectedPath = $this->projectRoot . '/.worktrees/' . $agent;
         $expectedRelativePath = $this->consoleClient()->toRelativeProjectPath($expectedPath);
         $worktree = null;
-        foreach ($this->worktreeManager()->classifyWorktrees($board)['managed'] as $item) {
-            if ($item['path'] === $expectedPath) {
+        foreach ($this->worktreeManager()->classifyWorktrees($board)->getManaged() as $item) {
+            if ($item->getPath() === $expectedPath) {
                 $worktree = $item;
                 break;
             }
@@ -1535,10 +1537,10 @@ final class BacklogRunner extends AbstractScriptRunner
             return;
         }
 
-        $this->console->line('State: ' . $this->statusWorktreeStateLabel($worktree['state']));
+        $this->console->line('State: ' . $this->statusWorktreeStateLabel($worktree->getState()->value));
         $this->console->line('Path: ' . $expectedRelativePath);
-        $this->console->line('Branch: ' . ($worktree['branch'] ?? '-'));
-        $this->console->line('Action: ' . $worktree['action']);
+        $this->console->line('Branch: ' . ($worktree->getBranch() ?? '-'));
+        $this->console->line('Action: ' . $worktree->getAction()->value);
     }
 
     /**

@@ -11,7 +11,10 @@ use SoManAgent\Script\Client\AppScript;
 use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Client\GitClient;
 use SoManAgent\Script\Client\ProjectScriptClient;
+use SoManAgent\Script\Backlog\ExternalWorktree;
+use SoManAgent\Script\Backlog\ManagedWorktree;
 use SoManAgent\Script\Backlog\WorktreeAction;
+use SoManAgent\Script\Backlog\WorktreeClassification;
 use SoManAgent\Script\Backlog\WorktreeState;
 
 /**
@@ -351,10 +354,7 @@ final class BacklogWorktreeManager
         }
     }
 
-    /**
-     * @return array{managed: array<int, array{path: string, branch: string|null, feature: string|null, agent: string|null, state: string, action: string}>, external: array<int, array{path: string, branch: string|null, action: string}>}
-     */
-    public function classifyWorktrees(BacklogBoard $board): array
+    public function classifyWorktrees(BacklogBoard $board): WorktreeClassification
     {
         $managed = [];
         $external = [];
@@ -368,23 +368,23 @@ final class BacklogWorktreeManager
             }
 
             if (!$this->isManagedAgentWorktree($path)) {
-                $external[] = [
-                    'path' => $path,
-                    'branch' => $worktree['branch'],
-                    'action' => $worktree['prunable'] ? WorktreeAction::MANUAL_PRUNE->value : WorktreeAction::MANUAL_REMOVE->value,
-                ];
+                $external[] = new ExternalWorktree(
+                    $path,
+                    $worktree['branch'],
+                    $worktree['prunable'] ? WorktreeAction::MANUAL_PRUNE : WorktreeAction::MANUAL_REMOVE
+                );
                 continue;
             }
 
             $feature = null;
             $agent = null;
-            $state = WorktreeState::ORPHAN->value;
-            $action = WorktreeAction::CLEAN->value;
+            $state = WorktreeState::ORPHAN;
+            $action = WorktreeAction::CLEAN;
             $branch = $worktree['branch'];
 
             if ($worktree['prunable']) {
-                $state = WorktreeState::PRUNABLE->value;
-                $action = WorktreeAction::MANUAL_PRUNE->value;
+                $state = WorktreeState::PRUNABLE;
+                $action = WorktreeAction::MANUAL_PRUNE;
             } elseif ($branch !== null && isset($activeEntriesByBranch[$branch])) {
                 $feature = $activeEntriesByBranch[$branch]['feature'];
                 $agent = $activeEntriesByBranch[$branch]['agent'];
@@ -392,41 +392,41 @@ final class BacklogWorktreeManager
                 $dirty = $this->worktreeIsDirty($path);
 
                 if ($path !== $expectedPath) {
-                    $state = WorktreeState::BLOCKED->value;
-                    $action = WorktreeAction::MANUAL_REVIEW->value;
+                    $state = WorktreeState::BLOCKED;
+                    $action = WorktreeAction::MANUAL_REVIEW;
                 } elseif ($dirty) {
-                    $state = WorktreeState::DIRTY->value;
-                    $action = WorktreeAction::MANUAL_REVIEW->value;
+                    $state = WorktreeState::DIRTY;
+                    $action = WorktreeAction::MANUAL_REVIEW;
                 } else {
-                    $state = WorktreeState::ACTIVE->value;
-                    $action = WorktreeAction::KEEP->value;
+                    $state = WorktreeState::ACTIVE;
+                    $action = WorktreeAction::KEEP;
                 }
             } else {
                 $agent = basename($path);
                 if (isset($activeEntriesByAgent[$agent])) {
                     $feature = $activeEntriesByAgent[$agent]['feature'];
-                    $state = WorktreeState::BLOCKED->value;
-                    $action = WorktreeAction::MANUAL_REVIEW->value;
+                    $state = WorktreeState::BLOCKED;
+                    $action = WorktreeAction::MANUAL_REVIEW;
                 } elseif ($this->worktreeIsDirty($path)) {
-                    $state = WorktreeState::DIRTY->value;
-                    $action = WorktreeAction::MANUAL_REVIEW->value;
+                    $state = WorktreeState::DIRTY;
+                    $action = WorktreeAction::MANUAL_REVIEW;
                 } elseif ($branch === null) {
-                    $state = WorktreeState::DETACHED_MANAGED->value;
-                    $action = WorktreeAction::CLEAN->value;
+                    $state = WorktreeState::DETACHED_MANAGED;
+                    $action = WorktreeAction::CLEAN;
                 }
             }
 
-            $managed[] = [
-                'path' => $path,
-                'branch' => $branch,
-                'feature' => $feature,
-                'agent' => $agent,
-                'state' => $state,
-                'action' => $action,
-            ];
+            $managed[] = new ManagedWorktree(
+                $path,
+                $branch,
+                $feature,
+                $agent,
+                $state,
+                $action
+            );
         }
 
-        return ['managed' => $managed, 'external' => $external];
+        return new WorktreeClassification($managed, $external);
     }
 
     /**
@@ -434,17 +434,17 @@ final class BacklogWorktreeManager
      */
     public function cleanupAbandonedManagedWorktrees(BacklogBoard $board): int
     {
-        ['managed' => $managed] = $this->classifyWorktrees($board);
+        $managed = $this->classifyWorktrees($board)->getManaged();
 
         $cleanable = array_values(array_filter(
             $managed,
-            static fn(array $item): bool => in_array($item['state'], [WorktreeState::ORPHAN->value, WorktreeState::DETACHED_MANAGED->value], true),
+            static fn(ManagedWorktree $item): bool => in_array($item->getState(), [WorktreeState::ORPHAN, WorktreeState::DETACHED_MANAGED], true),
         ));
 
         foreach ($cleanable as $item) {
             $this->runGitCommand(sprintf(
                 'git worktree remove %s --force',
-                escapeshellarg($this->toRelativeProjectPath($item['path'])),
+                escapeshellarg($this->toRelativeProjectPath($item->getPath())),
             ));
         }
 
@@ -461,17 +461,17 @@ final class BacklogWorktreeManager
         }
 
         $count = 0;
-        foreach ($this->classifyWorktrees($board)['managed'] as $item) {
-            if (($item['branch'] ?? null) !== $branch) {
+        foreach ($this->classifyWorktrees($board)->getManaged() as $item) {
+            if ($item->getBranch() !== $branch) {
                 continue;
             }
-            if (!in_array($item['state'], [WorktreeState::ORPHAN->value, WorktreeState::DETACHED_MANAGED->value], true)) {
+            if (!in_array($item->getState(), [WorktreeState::ORPHAN, WorktreeState::DETACHED_MANAGED], true)) {
                 continue;
             }
 
             $this->runGitCommand(sprintf(
                 'git worktree remove %s --force',
-                escapeshellarg($this->toRelativeProjectPath($item['path'])),
+                escapeshellarg($this->toRelativeProjectPath($item->getPath())),
             ));
             $count++;
         }
