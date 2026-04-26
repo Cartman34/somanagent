@@ -11,6 +11,7 @@ use SoManAgent\Script\Client\AppScript;
 use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Client\GitClient;
 use SoManAgent\Script\Client\ProjectScriptClient;
+use SoManAgent\Script\Backlog\ActiveEntryReference;
 use SoManAgent\Script\Backlog\ExternalWorktree;
 use SoManAgent\Script\Backlog\ManagedWorktree;
 use SoManAgent\Script\Backlog\WorktreeAction;
@@ -386,8 +387,8 @@ final class BacklogWorktreeManager
                 $state = WorktreeState::PRUNABLE;
                 $action = WorktreeAction::MANUAL_PRUNE;
             } elseif ($branch !== null && isset($activeEntriesByBranch[$branch])) {
-                $feature = $activeEntriesByBranch[$branch]['feature'];
-                $agent = $activeEntriesByBranch[$branch]['agent'];
+                $feature = $activeEntriesByBranch[$branch]->getFeature();
+                $agent = $activeEntriesByBranch[$branch]->getAgent();
                 $expectedPath = $this->projectRoot . '/.worktrees/' . $agent;
                 $dirty = $this->worktreeIsDirty($path);
 
@@ -404,7 +405,7 @@ final class BacklogWorktreeManager
             } else {
                 $agent = basename($path);
                 if (isset($activeEntriesByAgent[$agent])) {
-                    $feature = $activeEntriesByAgent[$agent]['feature'];
+                    $feature = $activeEntriesByAgent[$agent]->getFeature();
                     $state = WorktreeState::BLOCKED;
                     $action = WorktreeAction::MANUAL_REVIEW;
                 } elseif ($this->worktreeIsDirty($path)) {
@@ -804,7 +805,7 @@ final class BacklogWorktreeManager
     }
 
     /**
-     * @return array<string, array{feature: string, agent: string}>
+     * @return array<string, ActiveEntryReference>
      */
     private function activeEntriesByBranch(BacklogBoard $board): array
     {
@@ -817,17 +818,14 @@ final class BacklogWorktreeManager
                 continue;
             }
 
-            $features[$branch] = [
-                'feature' => $feature,
-                'agent' => $agent,
-            ];
+            $features[$branch] = new ActiveEntryReference($feature, $agent, $branch);
         }
 
         return $features;
     }
 
     /**
-     * @return array<string, array{feature: string, branch: string|null}>
+     * @return array<string, ActiveEntryReference>
      */
     private function activeEntriesByAgent(BacklogBoard $board): array
     {
@@ -839,10 +837,7 @@ final class BacklogWorktreeManager
                 continue;
             }
 
-            $entries[$agent] = [
-                'feature' => $feature,
-                'branch' => $entry->getBranch(),
-            ];
+            $entries[$agent] = new ActiveEntryReference($feature, $agent, $entry->getBranch());
         }
 
         return $entries;
