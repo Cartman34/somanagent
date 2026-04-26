@@ -6,9 +6,11 @@ arguments:
 options:
   -
     name: '--body-file'
-    description: 'Local file containing reviewer notes'
+    description: 'Local file containing one plain rejection finding per line'
 examples:
   - 'php scripts/backlog.php feature-review-reject delete-question-reply --body-file local/tmp/review.md'
 notes:
   - 'The feature must already be in the review stage.'
   - 'Review notes are stored under `local/backlog-review.md` with the feature slug as key.'
+  - 'The body file must contain plain findings only: one finding per line, optional leading numbers or bullets, no Markdown headings.'
+  - 'The script rewrites findings as a clean numbered list.'

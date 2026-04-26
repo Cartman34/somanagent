@@ -890,7 +890,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $entry->setMeta(BoardEntry::META_STAGE, BacklogBoard::STAGE_REJECTED);
-        $review->setReview($this->entryService()->taskReviewKey($entry), $this->numberedReviewItems($bodyFile));
+        $review->setReview($this->entryService()->taskReviewKey($entry), $this->reviewBodyItems($bodyFile));
         $this->saveBoard($board, BacklogCommandName::TASK_REVIEW_REJECT->value);
         $this->saveReviewFile($review, BacklogCommandName::TASK_REVIEW_REJECT->value);
 
@@ -1721,7 +1721,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $match->getEntry()->setMeta(BoardEntry::META_STAGE, BacklogBoard::STAGE_REJECTED);
-        $review->setReview($feature, $this->numberedReviewItems($bodyFile));
+        $review->setReview($feature, $this->reviewBodyItems($bodyFile));
         $this->saveBoard($board, BacklogCommandName::FEATURE_REVIEW_REJECT->value);
         $this->saveReviewFile($review, BacklogCommandName::FEATURE_REVIEW_REJECT->value);
 
@@ -2069,7 +2069,7 @@ final class BacklogRunner extends AbstractScriptRunner
     /**
      * @return array<string>
      */
-    private function numberedReviewItems(string $bodyFile): array
+    private function reviewBodyItems(string $bodyFile): array
     {
         $contents = trim((string) file_get_contents($bodyFile));
         if ($contents === '') {
@@ -2079,11 +2079,22 @@ final class BacklogRunner extends AbstractScriptRunner
         $lines = array_values(array_filter(array_map('trim', preg_split('/\R/', $contents) ?: [])));
         $items = [];
 
-        foreach ($lines as $index => $line) {
-            $normalized = preg_match('/^\d+\.\s+/', $line) === 1
-                ? $line
-                : sprintf('%d. %s', $index + 1, $line);
-            $items[] = $normalized;
+        foreach ($lines as $line) {
+            $item = preg_replace('/^\d+\.\s+/', '', $line);
+            $item = preg_replace('/^[-*]\s+/', '', is_string($item) ? $item : $line);
+            $item = trim(is_string($item) ? $item : $line);
+            if ($item === '') {
+                continue;
+            }
+            if (preg_match('/^#{1,6}\s+/', $item) === 1) {
+                throw new \RuntimeException('Review body items must be plain findings. Remove Markdown headings from --body-file.');
+            }
+
+            $items[] = sprintf('%d. %s', count($items) + 1, $item);
+        }
+
+        if ($items === []) {
+            return ['1. No details provided.'];
         }
 
         return $items;

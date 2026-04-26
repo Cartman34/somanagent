@@ -83,7 +83,7 @@ Rules:
 
 ### `task-review-reject`
 
-1. Prepare the numbered review body file under `local/tmp/`.
+1. Prepare the review body file under `local/tmp/`: one plain finding per line, optional leading numbers or bullets, no Markdown headings.
 2. Run `php scripts/backlog.php task-review-reject <feature/task> --body-file=<path>`.
 3. The script sets `meta.stage=rejected` and overwrites the `### <feature>/<task>` section in `local/backlog-review.md`.
 4. Developers resume corrections on that task through `php scripts/backlog.php task-rework --agent=<code> [<task>|<feature/task>]`.
@@ -136,7 +136,7 @@ Also check:
 
 ### `feature-review-reject`
 
-1. Prepare the numbered review body file under `local/tmp/`.
+1. Prepare the review body file under `local/tmp/`: one plain finding per line, optional leading numbers or bullets, no Markdown headings.
 2. Run `php scripts/backlog.php feature-review-reject <feature> --body-file=<path>`.
 3. The script sets `meta.stage=rejected` and overwrites the `### <feature>` section in `local/backlog-review.md`.
 

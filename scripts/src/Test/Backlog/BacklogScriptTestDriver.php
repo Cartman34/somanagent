@@ -175,6 +175,11 @@ MD);
         $this->runBacklog(['task-review-reject', $reference, '--body-file', $bodyFile]);
     }
 
+    public function assertTaskReviewRejectFails(string $reference, string $bodyFile, string $needle): void
+    {
+        $this->assertBacklogFails(['task-review-reject', $reference, '--body-file', $bodyFile], $needle);
+    }
+
     public function reworkTask(string $agent, string $reference): void
     {
         $this->runBacklog(['task-rework', '--agent', $agent, $reference]);
@@ -203,6 +208,11 @@ MD);
     public function rejectFeatureReview(string $feature, string $bodyFile): void
     {
         $this->runBacklog(['feature-review-reject', $feature, '--body-file', $bodyFile]);
+    }
+
+    public function assertFeatureReviewRejectFails(string $feature, string $bodyFile, string $needle): void
+    {
+        $this->assertBacklogFails(['feature-review-reject', $feature, '--body-file', $bodyFile], $needle);
     }
 
     public function reworkFeature(string $agent, string $feature): void
@@ -387,6 +397,39 @@ MD);
      */
     public function runBacklog(array $arguments, array $env = []): string
     {
+        $command = $this->buildBacklogCommand($arguments, $env);
+        [$code, $output] = $this->consoleClient->captureWithExitCode($command);
+        if ($code !== 0) {
+            throw new \RuntimeException(sprintf(
+                "Backlog command failed with exit code %d: %s\n%s",
+                $code,
+                $command,
+                $output,
+            ));
+        }
+
+        return $output;
+    }
+
+    /**
+     * @param array<string> $arguments
+     */
+    private function assertBacklogFails(array $arguments, string $needle): void
+    {
+        $command = $this->buildBacklogCommand($arguments);
+        [$code, $output] = $this->consoleClient->captureWithExitCode($command);
+        if ($code === 0) {
+            throw new \RuntimeException("Expected backlog command to fail: {$command}");
+        }
+        $this->assertOutputContains($output, $needle);
+    }
+
+    /**
+     * @param array<string> $arguments
+     * @param array<string, string> $env
+     */
+    private function buildBacklogCommand(array $arguments, array $env = []): string
+    {
         $parts = [];
         foreach ($env as $key => $value) {
             $parts[] = sprintf('%s=%s', $key, escapeshellarg($value));
@@ -414,18 +457,7 @@ MD);
             $parts[] = '--verbose';
         }
 
-        $command = implode(' ', $parts);
-        [$code, $output] = $this->consoleClient->captureWithExitCode($command);
-        if ($code !== 0) {
-            throw new \RuntimeException(sprintf(
-                "Backlog command failed with exit code %d: %s\n%s",
-                $code,
-                $command,
-                $output,
-            ));
-        }
-
-        return $output;
+        return implode(' ', $parts);
     }
 
     private function board(): BacklogBoard

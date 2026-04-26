@@ -26,6 +26,7 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $driver->createRemoteTestBaseBranch();
 
         $rejectBody = $driver->createBodyFile('test-feature-review-reject.md', ['1. Reject feature review for workflow coverage.']);
+        $invalidRejectBody = $driver->createBodyFile('test-feature-review-invalid.md', ['1. ### Revue de la feature']);
         $approveBody = $driver->createBodyFile('test-feature-review-approve.md', ['1. Approve feature review for workflow coverage.']);
         $mergeBody = $driver->createBodyFile('test-feature-merge.md', ['1. Merge feature for workflow coverage.']);
 
@@ -34,6 +35,7 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
             throw new \RuntimeException('Expected review-next to return the active feature review.');
         }
         $driver->checkFeatureReview($context->fixFeature);
+        $driver->assertFeatureReviewRejectFails($context->fixFeature, $invalidRejectBody, 'Review body items must be plain findings');
         $driver->rejectFeatureReview($context->fixFeature, $rejectBody);
         $driver->assertReviewContains($context->fixFeature);
         $driver->reworkFeature($context->agentPrimary, $context->fixFeature);
