@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Dto\Input\Team\CreateTeamDto;
+use App\Dto\Input\Team\UpdateTeamDto;
 use App\Entity\Agent;
 use App\Entity\Team;
 use App\Enum\AuditAction;
@@ -31,19 +33,19 @@ class TeamService
     /**
      * Create a new team and persist it with an audit trail.
      */
-    public function create(string $name, ?string $description = null): Team
+    public function create(CreateTeamDto $dto): Team
     {
-        $team = new Team($name, $description);
-        $this->entityService->create($team, AuditAction::TeamCreated, ['name' => $name]);
+        $team = new Team($dto->name, $dto->description);
+        $this->entityService->create($team, AuditAction::TeamCreated, ['name' => $dto->name]);
         return $team;
     }
 
     /**
      * Update a team's name and description, then persist the changes.
      */
-    public function update(Team $team, string $name, ?string $description): Team
+    public function update(Team $team, UpdateTeamDto $dto): Team
     {
-        $team->setName($name)->setDescription($description);
+        $team->setName($dto->name ?? $team->getName())->setDescription($dto->description ?? $team->getDescription());
         $this->entityService->update($team, AuditAction::TeamUpdated);
         return $team;
     }

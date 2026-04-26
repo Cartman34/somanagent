@@ -7,10 +7,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Enum\WorkflowTrigger;
+use App\Dto\Input\Workflow\CreateWorkflowDto;
+use App\Dto\Input\Workflow\UpdateWorkflowDto;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\WorkflowService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,15 +20,17 @@ use Symfony\Component\Routing\Attribute\Route;
  * REST controller managing workflows, their steps, and activation lifecycle.
  */
 #[Route('/api/workflows')]
-class WorkflowController extends AbstractController
+class WorkflowController extends AbstractApiController
 {
     /**
      * Initializes the controller with its dependencies.
      */
     public function __construct(
         private readonly WorkflowService $workflowService,
-        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
-    ) {}
+        ApiErrorPayloadFactory $apiErrorPayloadFactory,
+    ) {
+        parent::__construct($apiErrorPayloadFactory);
+    }
 
     /**
      * Returns the workflow catalogue with activation metadata.
@@ -41,23 +43,16 @@ class WorkflowController extends AbstractController
 
     /**
      * Creates a new immutable workflow definition.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('', name: 'workflow_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        $data = $request->toArray();
-        if (empty($data['name'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('workflow.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => CreateWorkflowDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
-        $trigger  = WorkflowTrigger::tryFrom($data['trigger'] ?? 'manual') ?? WorkflowTrigger::Manual;
-        $workflow = $this->workflowService->create(
-            $data['name'],
-            $trigger,
-            $data['description'] ?? null,
-        );
+        $workflow = $this->workflowService->create($dto);
 
         return $this->json(['id' => (string) $workflow->getId(), 'name' => $workflow->getName()], Response::HTTP_CREATED);
     }
@@ -78,10 +73,8 @@ class WorkflowController extends AbstractController
 
     /**
      * Updates an inactive workflow definition.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
-    #[Route('/{id}', name: 'workflow_update', methods: ['PUT'])]
+    #[Route('/{id}', name: 'workflow_update', methods: ['PATCH'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $workflow = $this->workflowService->findById($id);
@@ -93,14 +86,11 @@ class WorkflowController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('workflow.error.immutable'), Response::HTTP_CONFLICT);
         }
 
-        $data = $request->toArray();
-        $trigger = WorkflowTrigger::tryFrom($data['trigger'] ?? $workflow->getTrigger()->value) ?? $workflow->getTrigger();
-        $workflow = $this->workflowService->update(
-            $workflow,
-            $data['name'] ?? $workflow->getName(),
-            $trigger,
-            $data['description'] ?? null,
-        );
+        $dto = $this->tryParseDto(fn() => UpdateWorkflowDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
+        }
+        $workflow = $this->workflowService->update($workflow, $dto);
 
         return $this->json($this->buildWorkflowPayload($workflow, true));
     }

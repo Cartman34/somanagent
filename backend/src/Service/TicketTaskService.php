@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Dto\Input\Ticket\CreateTicketTaskDto;
+use App\Dto\Input\Ticket\UpdateTicketTaskDto;
 use App\Entity\Agent;
 use App\Entity\AgentAction;
 use App\Entity\Ticket;
@@ -64,28 +66,23 @@ final class TicketTaskService
      */
     public function create(
         Ticket $ticket,
-        string $actionKey,
-        string $title,
-        ?string $description = null,
-        TaskPriority $priority = TaskPriority::Medium,
-        ?string $parentId = null,
-        ?string $assignedAgentId = null,
+        CreateTicketTaskDto $dto,
     ): TicketTask {
-        $action = $this->requireAction($actionKey);
-        $task = new TicketTask($ticket, $action, $title, $description, $priority);
+        $action = $this->requireAction($dto->actionKey);
+        $task = new TicketTask($ticket, $action, $dto->title, $dto->description, $dto->priority);
         $task
             ->setAssignedRole($action->getRole())
             ->setWorkflowStep($this->resolveWorkflowStepForAction($ticket, $action));
 
-        if ($parentId !== null) {
-            $parent = $this->ticketTaskRepository->find(Uuid::fromString($parentId));
+        if ($dto->parentTaskId !== null) {
+            $parent = $this->ticketTaskRepository->find(Uuid::fromString($dto->parentTaskId));
             if ($parent !== null) {
                 $task->setParent($parent);
             }
         }
 
-        if ($assignedAgentId !== null) {
-            $agent = $this->agentRepository->find(Uuid::fromString($assignedAgentId));
+        if ($dto->assignedAgentId !== null) {
+            $agent = $this->agentRepository->find(Uuid::fromString($dto->assignedAgentId));
             if ($agent !== null) {
                 $task->setAssignedAgent($agent);
             }
@@ -96,7 +93,7 @@ final class TicketTaskService
         }
 
         $this->entityService->create($task, AuditAction::TaskCreated, [
-            'title'     => $title,
+            'title'     => $dto->title,
             'ticket'    => (string) $ticket->getId(),
             'actionKey' => $action->getKey(),
         ]);
@@ -106,23 +103,19 @@ final class TicketTaskService
     }
 
     /**
-     * Update a ticket task's fields, action, and assigned agent.
+     * Update a ticket task's fields, action, and assigned agent (PATCH mode).
      */
     public function update(
         TicketTask $task,
-        string $title,
-        ?string $description,
-        TaskPriority $priority,
-        ?string $actionKey,
-        ?string $assignedAgentId,
+        UpdateTicketTaskDto $dto,
     ): TicketTask {
         $task
-            ->setTitle($title)
-            ->setDescription($description)
-            ->setPriority($priority);
+            ->setTitle($dto->title ?? $task->getTitle())
+            ->setDescription($dto->description ?? $task->getDescription())
+            ->setPriority($dto->priority ?? $task->getPriority());
 
-        if ($actionKey !== null && $actionKey !== '') {
-            $action = $this->requireAction($actionKey);
+        if ($dto->actionKey !== null && $dto->actionKey !== '') {
+            $action = $this->requireAction($dto->actionKey);
             $task
                 ->setAgentAction($action)
                 ->setAssignedRole($action->getRole())
@@ -130,7 +123,7 @@ final class TicketTaskService
                 ->setAssignedAgent(null);
         }
 
-        $agent = $assignedAgentId ? $this->agentRepository->find(Uuid::fromString($assignedAgentId)) : null;
+        $agent = $dto->assignedAgentId ? $this->agentRepository->find(Uuid::fromString($dto->assignedAgentId)) : null;
         $task->setAssignedAgent($agent ?? $this->resolveAgentForTask($task));
 
         $this->entityService->update($task, AuditAction::TaskUpdated);

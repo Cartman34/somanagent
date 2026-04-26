@@ -7,9 +7,12 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Dto\Input\Agent\CreateAgentDto;
+use App\Dto\Input\Agent\UpdateAgentDto;
 use App\Entity\Agent;
 use App\Enum\AuditAction;
 use App\Enum\ConnectorType;
+use App\Exception\ValidationException;
 use App\Repository\AgentRepository;
 use App\Repository\RoleRepository;
 use App\Repository\TeamRepository;
@@ -34,25 +37,20 @@ class AgentService
     /**
      * Create a new agent and persist it with an audit trail.
      */
-    public function create(
-        string        $name,
-        ConnectorType $connector,
-        ConnectorConfig $config,
-        ?string       $description = null,
-        ?string       $roleId      = null,
-    ): Agent {
-        $agent = new Agent($name, $connector, $config, $description);
+    public function create(CreateAgentDto $dto): Agent
+    {
+        $agent = new Agent($dto->name, $dto->connector, $dto->config, $dto->description);
 
-        if ($roleId !== null) {
-            $role = $this->roleRepository->find(Uuid::fromString($roleId));
+        if ($dto->roleId !== null) {
+            $role = $this->roleRepository->find(Uuid::fromString($dto->roleId));
             if ($role !== null) {
                 $agent->setRole($role);
             }
         }
 
         $this->entityService->create($agent, AuditAction::AgentCreated, [
-            'name'      => $name,
-            'connector' => $connector->value,
+            'name'      => $dto->name,
+            'connector' => $dto->connector->value,
         ]);
 
         return $agent;
@@ -60,19 +58,41 @@ class AgentService
 
     /**
      * Update an existing agent's properties and persist the changes.
+     * Implements PATCH semantics: only provided fields are updated.
+     *
+     * @throws ValidationException when config.model is missing
      */
-    public function update(
-        Agent         $agent,
-        string        $name,
-        ?string       $description,
-        ConnectorType $connector,
-        ConnectorConfig $config,
-        ?string       $roleId,
-    ): Agent {
-        $agent->setName($name)->setDescription($description)->setConnector($connector)->setConnectorConfig($config);
+    public function update(Agent $agent, UpdateAgentDto $dto): Agent
+    {
+        // Resolve connector: use dto value if provided, otherwise keep existing
+        $connector = $agent->getConnector();
+        if ($dto->connectorValue !== null) {
+            $connector = ConnectorType::from($dto->connectorValue);
+        }
 
-        $role = $roleId ? $this->roleRepository->find(Uuid::fromString($roleId)) : null;
-        $agent->setRole($role);
+        // Resolve config: construct from dto if provided, otherwise keep existing
+        $configData = $dto->configData ?? $agent->getConnectorConfig()->toArray();
+        $config = ConnectorConfig::fromArray($configData);
+
+        // Validate that model is present
+        if (!is_string($config->model) || trim($config->model) === '') {
+            throw new ValidationException([
+                ['field' => 'config.model', 'code' => 'agent.validation.model_required'],
+            ]);
+        }
+
+        // Apply PATCH updates
+        $agent
+            ->setName($dto->name ?? $agent->getName())
+            ->setDescription($dto->description ?? $agent->getDescription())
+            ->setConnector($connector)
+            ->setConnectorConfig($config);
+
+        // Resolve role: use dto value if provided, otherwise keep existing
+        if ($dto->roleId !== null) {
+            $role = $this->roleRepository->find(Uuid::fromString($dto->roleId));
+            $agent->setRole($role);
+        }
 
         $this->entityService->update($agent, AuditAction::AgentUpdated);
 

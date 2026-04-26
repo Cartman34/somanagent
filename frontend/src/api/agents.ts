@@ -40,7 +40,7 @@ export const agentsApi = {
   },
 
   update: async (id: string, payload: AgentPayload): Promise<Agent> => {
-    const { data } = await apiClient.put(`/agents/${id}`, payload)
+    const { data } = await apiClient.patch(`/agents/${id}`, payload)
     return data
   },
 

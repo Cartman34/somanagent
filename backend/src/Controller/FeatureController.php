@@ -7,11 +7,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Enum\FeatureStatus;
+use App\Dto\Input\Feature\CreateFeatureDto;
+use App\Dto\Input\Feature\UpdateFeatureDto;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\FeatureService;
 use App\Service\ProjectService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -21,7 +21,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * REST controller managing features (epics) within projects.
  */
 #[Route('/api')]
-class FeatureController extends AbstractController
+class FeatureController extends AbstractApiController
 {
     /**
      * Initializes the controller with its dependencies.
@@ -29,8 +29,10 @@ class FeatureController extends AbstractController
     public function __construct(
         private readonly FeatureService $featureService,
         private readonly ProjectService $projectService,
-        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
-    ) {}
+        ApiErrorPayloadFactory $apiErrorPayloadFactory,
+    ) {
+        parent::__construct($apiErrorPayloadFactory);
+    }
 
     /**
      * Lists all features for a given project.
@@ -55,8 +57,6 @@ class FeatureController extends AbstractController
 
     /**
      * Creates a new feature for a given project.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/projects/{projectId}/features', name: 'feature_create', methods: ['POST'])]
     public function create(string $projectId, Request $request): JsonResponse
@@ -66,12 +66,12 @@ class FeatureController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('feature.error.project_not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $data = $request->toArray();
-        if (empty($data['name'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('feature.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => CreateFeatureDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
-        $feature = $this->featureService->create($project, $data['name'], $data['description'] ?? null);
+        $feature = $this->featureService->create($project, $dto);
         return $this->json(['id' => (string) $feature->getId(), 'name' => $feature->getName()], Response::HTTP_CREATED);
     }
 
@@ -99,10 +99,8 @@ class FeatureController extends AbstractController
 
     /**
      * Updates an existing feature.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
-    #[Route('/features/{id}', name: 'feature_update', methods: ['PUT'])]
+    #[Route('/features/{id}', name: 'feature_update', methods: ['PATCH'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $feature = $this->featureService->findById($id);
@@ -110,9 +108,11 @@ class FeatureController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('feature.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $data   = $request->toArray();
-        $status = isset($data['status']) ? FeatureStatus::from($data['status']) : $feature->getStatus();
-        $this->featureService->update($feature, $data['name'] ?? $feature->getName(), $data['description'] ?? null, $status);
+        $dto = $this->tryParseDto(fn() => UpdateFeatureDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
+        }
+        $this->featureService->update($feature, $dto);
         return $this->json(['id' => (string) $feature->getId(), 'name' => $feature->getName()]);
     }
 

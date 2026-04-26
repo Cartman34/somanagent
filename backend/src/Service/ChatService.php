@@ -52,7 +52,7 @@ class ChatService
     /**
      * @return array{human: ChatMessage, agent: ChatMessage}
      */
-    public function sendAndReceive(Project $project, Agent $agent, string $content): array
+    public function sendAndReceive(Project $project, Agent $agent, \App\Dto\Input\Chat\SendChatMessageDto $dto): array
     {
         $exchangeId = (string) Uuid::v7();
         $config     = $agent->getConnectorConfig();
@@ -61,7 +61,7 @@ class ChatService
             $project,
             $agent,
             ChatAuthor::Human,
-            $content,
+            $dto->content,
             $exchangeId,
             false,
             [
@@ -73,7 +73,7 @@ class ChatService
 
         try {
             $recentConversation = array_slice($this->getConversation($project, $agent, 12), -12);
-            $prompt = Prompt::create('', $content, [
+            $prompt = Prompt::create('', $dto->content, [
                 ...$this->contextBuilder->buildForProjectChat($project, $agent, $recentConversation),
             ]);
 
@@ -177,9 +177,9 @@ class ChatService
      *
      * @throws \InvalidArgumentException When the parent message is not found.
      */
-    public function reply(Project $project, Agent $agent, string $content, string $replyToMessageId): ChatMessage
+    public function reply(Project $project, Agent $agent, \App\Dto\Input\Chat\ReplyChatMessageDto $dto): ChatMessage
     {
-        $parentMessage = $this->chatMessageRepository->find($replyToMessageId);
+        $parentMessage = $this->chatMessageRepository->find($dto->replyToMessageId);
         if ($parentMessage === null) {
             throw new \InvalidArgumentException('Parent message not found');
         }
@@ -188,7 +188,7 @@ class ChatService
             $project,
             $agent,
             ChatAuthor::Human,
-            $content,
+            $dto->content,
             $parentMessage->getExchangeId(),
             false,
             [
@@ -202,7 +202,7 @@ class ChatService
     /**
      * Edits one human-authored chat message while keeping a minimal edit trace in metadata.
      */
-    public function editHumanMessage(Project $project, Agent $agent, string $messageId, string $content): ChatMessage
+    public function editHumanMessage(Project $project, Agent $agent, string $messageId, \App\Dto\Input\Chat\UpdateChatMessageDto $dto): ChatMessage
     {
         $message = $this->chatMessageRepository->find($messageId);
         if (
@@ -218,7 +218,7 @@ class ChatService
         }
 
         $previousContent = trim($message->getContent());
-        $nextContent = trim($content);
+        $nextContent = trim($dto->content);
         if ($previousContent === $nextContent) {
             return $message;
         }

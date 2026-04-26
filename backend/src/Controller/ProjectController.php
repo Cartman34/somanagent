@@ -7,12 +7,14 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Enum\DispatchMode;
+use App\Dto\Input\Project\CreateModuleDto;
+use App\Dto\Input\Project\CreateProjectDto;
+use App\Dto\Input\Project\UpdateModuleDto;
+use App\Dto\Input\Project\UpdateProjectDto;
 use App\Repository\AuditLogRepository;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\ProjectService;
 use App\Service\TokenUsageService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,7 +24,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * REST controller managing projects, their modules, audit logs, and token usage.
  */
 #[Route('/api/projects')]
-class ProjectController extends AbstractController
+class ProjectController extends AbstractApiController
 {
     /**
      * Initializes the controller with its dependencies.
@@ -31,8 +33,10 @@ class ProjectController extends AbstractController
         private readonly ProjectService    $projectService,
         private readonly AuditLogRepository $auditLogRepository,
         private readonly TokenUsageService  $tokenUsageService,
-        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
-    ) {}
+        ApiErrorPayloadFactory $apiErrorPayloadFactory,
+    ) {
+        parent::__construct($apiErrorPayloadFactory);
+    }
 
     /**
      * Lists all projects.
@@ -57,30 +61,17 @@ class ProjectController extends AbstractController
 
     /**
      * Creates a new project.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('', name: 'project_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        $data = $request->toArray();
-        if (empty($data['name'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('project.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-        if (empty($data['teamId'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('project.validation.team_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => CreateProjectDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         try {
-            $project = $this->projectService->create(
-                $data['name'],
-                $data['description'] ?? null,
-                $data['repositoryUrl'] ?? null,
-                $data['teamId'] ?? null,
-                $data['workflowId'] ?? null,
-                DispatchMode::from($data['dispatchMode'] ?? DispatchMode::Auto->value),
-                $data['defaultTicketRoleId'] ?? null,
-            );
+            $project = $this->projectService->create($dto);
         } catch (\LogicException $exception) {
             return $this->json($this->apiErrorPayloadFactory->fromMessage($exception->getMessage()), Response::HTTP_CONFLICT);
         }
@@ -133,10 +124,8 @@ class ProjectController extends AbstractController
 
     /**
      * Updates an existing project.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
-    #[Route('/{id}', name: 'project_update', methods: ['PUT'])]
+    #[Route('/{id}', name: 'project_update', methods: ['PATCH'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $project = $this->projectService->findById($id);
@@ -144,18 +133,13 @@ class ProjectController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('project.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $data = $request->toArray();
+        $dto = $this->tryParseDto(fn() => UpdateProjectDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
+        }
+
         try {
-            $this->projectService->update(
-                $project,
-                $data['name'] ?? $project->getName(),
-                $data['description'] ?? null,
-                $data['repositoryUrl'] ?? null,
-                array_key_exists('teamId', $data) ? ($data['teamId'] ?: null) : ($project->getTeam() ? (string) $project->getTeam()->getId() : null),
-                array_key_exists('workflowId', $data) ? ($data['workflowId'] ?: null) : ($project->getWorkflow() ? (string) $project->getWorkflow()->getId() : null),
-                array_key_exists('dispatchMode', $data) ? DispatchMode::from($data['dispatchMode']) : $project->getDispatchMode(),
-                array_key_exists('defaultTicketRoleId', $data) ? ($data['defaultTicketRoleId'] ?: null) : ($project->getDefaultTicketRole() ? (string) $project->getDefaultTicketRole()->getId() : null),
-            );
+            $this->projectService->update($project, $dto);
         } catch (\LogicException $exception) {
             return $this->json($this->apiErrorPayloadFactory->fromMessage($exception->getMessage()), Response::HTTP_CONFLICT);
         }
@@ -234,8 +218,6 @@ class ProjectController extends AbstractController
 
     /**
      * Adds a module to a project.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/{id}/modules', name: 'module_create', methods: ['POST'])]
     public function addModule(string $id, Request $request): JsonResponse
@@ -245,12 +227,12 @@ class ProjectController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('project.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $data = $request->toArray();
-        if (empty($data['name'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('project.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => CreateModuleDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
-        $module = $this->projectService->addModule($project, $data['name'], $data['description'] ?? null, $data['repositoryUrl'] ?? null, $data['stack'] ?? null);
+        $module = $this->projectService->addModule($project, $dto);
         return $this->json([
             'id'            => (string) $module->getId(),
             'name'          => $module->getName(),
@@ -261,10 +243,8 @@ class ProjectController extends AbstractController
 
     /**
      * Updates an existing module.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
-    #[Route('/modules/{id}', name: 'module_update', methods: ['PUT'])]
+    #[Route('/modules/{id}', name: 'module_update', methods: ['PATCH'])]
     public function updateModule(string $id, Request $request): JsonResponse
     {
         $module = $this->projectService->findModuleById($id);
@@ -272,8 +252,8 @@ class ProjectController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('project.module.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $data   = $request->toArray();
-        $module = $this->projectService->updateModule($module, $data['name'] ?? $module->getName(), $data['description'] ?? null, $data['repositoryUrl'] ?? null, $data['stack'] ?? null);
+        $dto = UpdateModuleDto::fromArray($request->toArray());
+        $module = $this->projectService->updateModule($module, $dto);
         return $this->json(['id' => (string) $module->getId(), 'name' => $module->getName()]);
     }
 

@@ -29,7 +29,7 @@ export const teamsApi = {
   },
 
   update: async (id: string, payload: TeamPayload): Promise<Team> => {
-    const { data } = await apiClient.put(`/teams/${id}`, payload)
+    const { data } = await apiClient.patch(`/teams/${id}`, payload)
     return data
   },
 

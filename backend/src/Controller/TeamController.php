@@ -7,9 +7,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Dto\Input\Team\AddTeamAgentDto;
+use App\Dto\Input\Team\CreateTeamDto;
+use App\Dto\Input\Team\UpdateTeamDto;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\TeamService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -19,15 +21,17 @@ use Symfony\Component\Routing\Attribute\Route;
  * REST controller managing teams and their agent membership.
  */
 #[Route('/api/teams')]
-class TeamController extends AbstractController
+class TeamController extends AbstractApiController
 {
     /**
      * Initializes the controller with its dependencies.
      */
     public function __construct(
         private readonly TeamService $teamService,
-        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
-    ) {}
+        ApiErrorPayloadFactory $apiErrorPayloadFactory,
+    ) {
+        parent::__construct($apiErrorPayloadFactory);
+    }
 
     /**
      * Lists all teams.
@@ -46,18 +50,16 @@ class TeamController extends AbstractController
 
     /**
      * Creates a new team.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('', name: 'team_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        $data = $request->toArray();
-        if (empty($data['name'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('team.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => CreateTeamDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
-        $team = $this->teamService->create($data['name'], $data['description'] ?? null);
+        $team = $this->teamService->create($dto);
         return $this->json(['id' => (string) $team->getId(), 'name' => $team->getName()], Response::HTTP_CREATED);
     }
 
@@ -89,10 +91,8 @@ class TeamController extends AbstractController
 
     /**
      * Updates an existing team.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
-    #[Route('/{id}', name: 'team_update', methods: ['PUT'])]
+    #[Route('/{id}', name: 'team_update', methods: ['PATCH'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $team = $this->teamService->findById($id);
@@ -100,8 +100,8 @@ class TeamController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('team.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $data = $request->toArray();
-        $this->teamService->update($team, $data['name'] ?? $team->getName(), $data['description'] ?? null);
+        $dto = UpdateTeamDto::fromArray($request->toArray());
+        $this->teamService->update($team, $dto);
         return $this->json(['id' => (string) $team->getId(), 'name' => $team->getName()]);
     }
 
@@ -124,8 +124,6 @@ class TeamController extends AbstractController
 
     /**
      * Adds an agent to a team.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/{id}/agents', name: 'team_add_agent', methods: ['POST'])]
     public function addAgent(string $id, Request $request): JsonResponse
@@ -135,12 +133,12 @@ class TeamController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('team.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $data = $request->toArray();
-        if (empty($data['agentId'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('team.validation.agent_id_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => AddTeamAgentDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
-        $agent = $this->teamService->findAgentById($data['agentId']);
+        $agent = $this->teamService->findAgentById($dto->agentId);
         if ($agent === null) {
             return $this->json($this->apiErrorPayloadFactory->create('agent.error.not_found'), Response::HTTP_NOT_FOUND);
         }

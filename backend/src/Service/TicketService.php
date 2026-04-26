@@ -7,6 +7,9 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Dto\Input\Ticket\CreateTicketDto;
+use App\Dto\Input\Ticket\CreateTicketRequestDto;
+use App\Dto\Input\Ticket\UpdateTicketDto;
 use App\Entity\Feature;
 use App\Entity\Project;
 use App\Entity\Ticket;
@@ -49,15 +52,11 @@ final class TicketService
      */
     public function create(
         Project       $project,
-        TaskType      $type,
-        string        $title,
-        ?string       $description = null,
-        TaskPriority  $priority    = TaskPriority::Medium,
-        ?string       $featureId      = null,
+        CreateTicketDto $dto,
         ?string       $initialRequest = null,
         ?string       $initialTitle   = null,
     ): Ticket {
-        $ticket = new Ticket($project, $type, $title, $description, $priority);
+        $ticket = new Ticket($project, $dto->type, $dto->title, $dto->description, $dto->priority);
 
         if ($initialRequest !== null) {
             $ticket->setInitialRequest($initialRequest);
@@ -67,15 +66,15 @@ final class TicketService
             $ticket->setInitialTitle($initialTitle);
         }
 
-        if ($type === TaskType::UserStory || $type === TaskType::Bug) {
+        if ($dto->type === TaskType::UserStory || $dto->type === TaskType::Bug) {
             $defaultRole = $project->getDefaultTicketRole();
             if ($defaultRole !== null) {
                 $ticket->setAssignedRole($defaultRole);
             }
         }
 
-        if ($featureId !== null) {
-            $feature = $this->featureRepository->find(Uuid::fromString($featureId));
+        if ($dto->featureId !== null) {
+            $feature = $this->featureRepository->find(Uuid::fromString($dto->featureId));
             if ($feature !== null) {
                 $ticket->setFeature($feature);
             }
@@ -84,8 +83,8 @@ final class TicketService
         $this->initializeCurrentWorkflowStep($ticket);
 
         $this->entityService->create($ticket, AuditAction::TaskCreated, [
-            'title'   => $title,
-            'type'    => $type->value,
+            'title'   => $dto->title,
+            'type'    => $dto->type->value,
             'project' => (string) $project->getId(),
         ]);
 
@@ -96,25 +95,61 @@ final class TicketService
     }
 
     /**
-     * Update the ticket's title, description, priority, and feature.
+     * Create a new request (user story) from a request DTO.
+     */
+    public function createRequest(
+        Project $project,
+        CreateTicketRequestDto $dto,
+    ): Ticket {
+        return $this->create(
+            $project,
+            new CreateTicketDto(
+                title: $dto->title,
+                type: TaskType::UserStory,
+                priority: $dto->priority,
+                description: null,
+                featureId: null,
+            ),
+            initialRequest: $dto->description,
+            initialTitle: $dto->title,
+        );
+    }
+
+    /**
+     * Update the ticket's title, description, priority, and feature (PATCH mode).
      */
     public function update(
-        Ticket       $ticket,
-        string       $title,
-        ?string      $description,
-        TaskPriority $priority,
-        ?string      $featureId,
+        Ticket $ticket,
+        UpdateTicketDto $dto,
     ): Ticket {
         $ticket
-            ->setTitle($title)
-            ->setDescription($description)
-            ->setPriority($priority);
+            ->setTitle($dto->title ?? $ticket->getTitle())
+            ->setDescription($dto->description ?? $ticket->getDescription())
+            ->setPriority($dto->priority ?? $ticket->getPriority());
 
-        $feature = $featureId ? $this->featureRepository->find(Uuid::fromString($featureId)) : null;
+        $feature = $dto->featureId !== null ? $this->featureRepository->find(Uuid::fromString($dto->featureId)) : $ticket->getFeature();
         $ticket->setFeature($feature);
 
         $this->entityService->update($ticket, AuditAction::TaskUpdated);
         $this->realtimeUpdateService->publishTicketChanged($ticket, 'updated');
+
+        return $ticket;
+    }
+
+    /**
+     * Reprioritize a ticket and record the change in the audit log.
+     */
+    public function reprioritize(Ticket $ticket, TaskPriority $priority): Ticket
+    {
+        $previous = $ticket->getPriority();
+        $ticket->setPriority($priority);
+        $this->entityService->update($ticket, AuditAction::TaskReprioritized, [
+            'from' => $previous->value,
+            'to'   => $priority->value,
+        ]);
+        $this->realtimeUpdateService->publishTicketChanged($ticket, 'priority_changed', [
+            'priority' => $priority->value,
+        ]);
 
         return $ticket;
     }

@@ -81,7 +81,7 @@ Any skill (imported or custom) can be edited locally. Changes are:
 - Written to the corresponding `SKILL.md` file
 
 ```http
-PUT /api/skills/{id}/content
+PATCH /api/skills/{id}/content
 Content-Type: application/json
 
 { "content": "---\nname: ...\n---\n\n## Modified instructions..." }

@@ -66,7 +66,7 @@ export const ticketsApi = {
   },
 
   update: async (id: string, payload: Partial<TicketPayload>): Promise<Ticket> => {
-    const { data } = await apiClient.put(`/tickets/${id}`, payload)
+    const { data } = await apiClient.patch(`/tickets/${id}`, payload)
     return data
   },
 
@@ -117,7 +117,7 @@ export const ticketTasksApi = {
   },
 
   update: async (id: string, payload: Partial<TicketTaskPayload>): Promise<TicketTask> => {
-    const { data } = await apiClient.put(`/ticket-tasks/${id}`, payload)
+    const { data } = await apiClient.patch(`/ticket-tasks/${id}`, payload)
     return data
   },
 

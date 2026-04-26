@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Exception\ValidationException;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
@@ -70,6 +71,19 @@ final class ApiErrorPayloadFactory
         return [
             'error' => $message,
             'i18n' => null,
+        ];
+    }
+
+    /**
+     * Builds a multi-error validation payload from a ValidationException.
+     *
+     * @return array{message: string, errors: array<int, array{field: string, code: string}>}
+     */
+    public function fromValidationException(ValidationException $exception): array
+    {
+        return [
+            'message' => $exception->getMessage(),
+            'errors'  => $exception->getErrors(),
         ];
     }
 }

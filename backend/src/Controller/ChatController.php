@@ -7,12 +7,14 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Dto\Input\Chat\ReplyChatMessageDto;
+use App\Dto\Input\Chat\SendChatMessageDto;
+use App\Dto\Input\Chat\UpdateChatMessageDto;
 use App\Entity\ChatMessage;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\AgentService;
 use App\Service\ChatService;
 use App\Service\ProjectService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,7 +24,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * REST controller managing chat conversations within a project.
  */
 #[Route('/api/projects/{projectId}/chat')]
-class ChatController extends AbstractController
+class ChatController extends AbstractApiController
 {
     /**
      * Initializes the controller with the services required for project chat endpoints.
@@ -31,8 +33,10 @@ class ChatController extends AbstractController
         private readonly ChatService    $chatService,
         private readonly ProjectService $projectService,
         private readonly AgentService   $agentService,
-        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
-    ) {}
+        ApiErrorPayloadFactory $apiErrorPayloadFactory,
+    ) {
+        parent::__construct($apiErrorPayloadFactory);
+    }
 
     /**
      * Returns the chat history for a given project and agent.
@@ -54,8 +58,6 @@ class ChatController extends AbstractController
 
     /**
      * Sends a new user message and returns both the stored human and agent replies.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/{agentId}', name: 'chat_send', methods: ['POST'])]
     public function send(string $projectId, string $agentId, Request $request): JsonResponse
@@ -67,12 +69,12 @@ class ChatController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('chat.error.project_or_agent_not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $data = $request->toArray();
-        if (empty($data['content'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('chat.validation.content_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => SendChatMessageDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
-        $exchange = $this->chatService->sendAndReceive($project, $agent, trim((string) $data['content']));
+        $exchange = $this->chatService->sendAndReceive($project, $agent, $dto);
 
         return $this->json([
             'humanMessage' => $this->serializeMessage($exchange['human']),
@@ -82,8 +84,6 @@ class ChatController extends AbstractController
 
     /**
      * Reply to an existing chat message in the given project / agent conversation.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      *
      * @param string $projectId Project UUID
      * @param string $agentId   Agent UUID
@@ -98,24 +98,18 @@ class ChatController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('chat.error.project_or_agent_not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $data = $request->toArray();
-        if (empty($data['content'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('chat.validation.content_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => ReplyChatMessageDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
-        if (empty($data['replyToMessageId'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('chat.validation.reply_to_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        $message = $this->chatService->reply($project, $agent, trim((string) $data['content']), $data['replyToMessageId']);
+        $message = $this->chatService->reply($project, $agent, $dto);
 
         return $this->json($this->serializeMessage($message), Response::HTTP_CREATED);
     }
 
     /**
      * Edits one existing human-authored chat message within the same project / agent conversation.
-     *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
      */
     #[Route('/{agentId}/messages/{messageId}', name: 'chat_message_update', methods: ['PATCH'])]
     public function updateMessage(string $projectId, string $agentId, string $messageId, Request $request): JsonResponse
@@ -127,13 +121,13 @@ class ChatController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('chat.error.project_or_agent_not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $data = $request->toArray();
-        if (empty($data['content'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('chat.validation.content_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => UpdateChatMessageDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         try {
-            $message = $this->chatService->editHumanMessage($project, $agent, $messageId, trim((string) $data['content']));
+            $message = $this->chatService->editHumanMessage($project, $agent, $messageId, $dto);
         } catch (\InvalidArgumentException $e) {
             $key = $e->getMessage();
             if ($key === 'chat.error.message_not_found') {

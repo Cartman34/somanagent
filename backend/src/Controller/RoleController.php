@@ -7,9 +7,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Dto\Input\Role\AddRoleSkillDto;
+use App\Dto\Input\Role\CreateRoleDto;
+use App\Dto\Input\Role\UpdateRoleDto;
 use App\Service\ApiErrorPayloadFactory;
 use App\Service\RoleService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -19,15 +21,17 @@ use Symfony\Component\Routing\Attribute\Route;
  * REST controller managing specialization roles.
  */
 #[Route('/api/roles')]
-class RoleController extends AbstractController
+class RoleController extends AbstractApiController
 {
     /**
      * Initializes the controller with its dependencies.
      */
     public function __construct(
         private readonly RoleService $roleService,
-        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
-    ) {}
+        ApiErrorPayloadFactory $apiErrorPayloadFactory,
+    ) {
+        parent::__construct($apiErrorPayloadFactory);
+    }
 
     /**
      * Returns the list of all roles with their associated skills.
@@ -50,19 +54,17 @@ class RoleController extends AbstractController
     /**
      * Creates a new role.
      *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
-     *
      * @param Request $request JSON body containing slug, name, and optional description
      */
     #[Route('', name: 'role_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        $data = $request->toArray();
-        if (empty($data['slug']) || empty($data['name'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('role.validation.slug_name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => CreateRoleDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
-        $role = $this->roleService->create($data['slug'], $data['name'], $data['description'] ?? null);
+        $role = $this->roleService->create($dto);
         return $this->json(['id' => (string) $role->getId(), 'slug' => $role->getSlug(), 'name' => $role->getName()], Response::HTTP_CREATED);
     }
 
@@ -98,12 +100,10 @@ class RoleController extends AbstractController
     /**
      * Updates an existing role.
      *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
-     *
      * @param string  $id      the role identifier
      * @param Request $request JSON body containing optional slug, name, and description fields
      */
-    #[Route('/{id}', name: 'role_update', methods: ['PUT'])]
+    #[Route('/{id}', name: 'role_update', methods: ['PATCH'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $role = $this->roleService->findById($id);
@@ -111,13 +111,8 @@ class RoleController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('role.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $data = $request->toArray();
-        $this->roleService->update(
-            $role,
-            $data['slug'] ?? $role->getSlug(),
-            $data['name'] ?? $role->getName(),
-            $data['description'] ?? null,
-        );
+        $dto = UpdateRoleDto::fromArray($request->toArray());
+        $this->roleService->update($role, $dto);
         return $this->json(['id' => (string) $role->getId(), 'slug' => $role->getSlug(), 'name' => $role->getName()]);
     }
 
@@ -143,8 +138,6 @@ class RoleController extends AbstractController
     /**
      * Adds a skill to a role.
      *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
-     *
      * @param string  $id      the role identifier
      * @param Request $request JSON body containing the skillId to add
      */
@@ -156,13 +149,13 @@ class RoleController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('role.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $data = $request->toArray();
-        if (empty($data['skillId'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('role.validation.skill_id_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => AddRoleSkillDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
         try {
-            $this->roleService->addSkill($role, $data['skillId']);
+            $this->roleService->addSkill($role, $dto->skillId);
         } catch (\InvalidArgumentException $e) {
             return $this->json($this->apiErrorPayloadFactory->fromMessage($e->getMessage()), Response::HTTP_NOT_FOUND);
         }

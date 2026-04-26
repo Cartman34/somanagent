@@ -7,16 +7,17 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Dto\Input\Agent\CreateAgentDto;
+use App\Dto\Input\Agent\UpdateAgentDto;
 use App\Entity\AgentTaskExecution;
 use App\Entity\AgentTaskExecutionAttempt;
 use App\Enum\ConnectorType;
+use App\Exception\ValidationException;
 use App\Repository\AgentRepository;
 use App\Repository\AgentTaskExecutionRepository;
 use App\Service\AgentModelCatalogService;
 use App\Service\AgentService;
 use App\Service\ApiErrorPayloadFactory;
-use App\ValueObject\ConnectorConfig;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,7 +27,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * REST controller managing agents: CRUD, connector configuration, and execution history.
  */
 #[Route('/api/agents')]
-class AgentController extends AbstractController
+class AgentController extends AbstractApiController
 {
     /**
      * Initializes the controller with its dependencies.
@@ -36,8 +37,10 @@ class AgentController extends AbstractController
         private readonly AgentRepository $agentRepository,
         private readonly AgentTaskExecutionRepository $agentTaskExecutionRepository,
         private readonly AgentModelCatalogService $agentModelCatalogService,
-        private readonly ApiErrorPayloadFactory $apiErrorPayloadFactory,
-    ) {}
+        ApiErrorPayloadFactory $apiErrorPayloadFactory,
+    ) {
+        parent::__construct($apiErrorPayloadFactory);
+    }
 
     /**
      * Lists all agents.
@@ -64,27 +67,18 @@ class AgentController extends AbstractController
     /**
      * Creates a new agent.
      *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
-     *
      * @param Request $request JSON payload containing name, connector, config, description, and roleId
      * @return JsonResponse Created agent id and name with HTTP 201
      */
     #[Route('', name: 'agent_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        $data = $request->toArray();
-        if (empty($data['name'])) {
-            return $this->json($this->apiErrorPayloadFactory->create('agent.validation.name_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => CreateAgentDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
-        if (!is_array($data['config'] ?? null) || !is_string($data['config']['model'] ?? null) || trim($data['config']['model']) === '') {
-            return $this->json($this->apiErrorPayloadFactory->create('agent.validation.model_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        $connector = ConnectorType::from($data['connector'] ?? ConnectorType::ClaudeApi->value);
-        $config    = ConnectorConfig::fromArray($data['config']);
-
-        $agent = $this->agentService->create($data['name'], $connector, $config, $data['description'] ?? null, $data['roleId'] ?? null);
+        $agent = $this->agentService->create($dto);
 
         return $this->json(['id' => (string) $agent->getId(), 'name' => $agent->getName()], Response::HTTP_CREATED);
     }
@@ -119,13 +113,11 @@ class AgentController extends AbstractController
     /**
      * Updates an existing agent.
      *
-     * TODO: Replace raw request parsing with a dedicated input DTO for this write endpoint.
-     *
      * @param string  $id      Agent UUID
      * @param Request $request JSON payload with fields to update
      * @return JsonResponse Updated agent id and name or 404 if not found
      */
-    #[Route('/{id}', name: 'agent_update', requirements: ['id' => '[0-9a-fA-F-]{36}'], methods: ['PUT'])]
+    #[Route('/{id}', name: 'agent_update', requirements: ['id' => '[0-9a-fA-F-]{36}'], methods: ['PATCH'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $agent = $this->agentService->findById($id);
@@ -133,17 +125,17 @@ class AgentController extends AbstractController
             return $this->json($this->apiErrorPayloadFactory->create('agent.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $data      = $request->toArray();
-        $connector = ConnectorType::from($data['connector'] ?? $agent->getConnector()->value);
-        $configData = $data['config'] ?? $agent->getConnectorConfig()->toArray();
-
-        if (!is_array($configData) || !is_string($configData['model'] ?? null) || trim($configData['model']) === '') {
-            return $this->json($this->apiErrorPayloadFactory->create('agent.validation.model_required'), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $dto = $this->tryParseDto(fn() => UpdateAgentDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
         }
 
-        $config = ConnectorConfig::fromArray($configData);
+        try {
+            $this->agentService->update($agent, $dto);
+        } catch (ValidationException $e) {
+            return $this->json($this->apiErrorPayloadFactory->fromValidationException($e), Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
 
-        $this->agentService->update($agent, $data['name'] ?? $agent->getName(), $data['description'] ?? null, $connector, $config, $data['roleId'] ?? null);
         return $this->json(['id' => (string) $agent->getId(), 'name' => $agent->getName()]);
     }
 

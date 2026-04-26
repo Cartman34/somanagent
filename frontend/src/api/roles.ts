@@ -30,7 +30,7 @@ export const rolesApi = {
   },
 
   update: async (id: string, payload: RolePayload): Promise<Role> => {
-    const { data } = await apiClient.put(`/roles/${id}`, payload)
+    const { data } = await apiClient.patch(`/roles/${id}`, payload)
     return data
   },
 
