@@ -328,7 +328,8 @@ final class BacklogWorktreeManager
     {
         $managed = [];
         $external = [];
-        $activeFeatures = $this->activeFeaturesByBranch($board);
+        $activeEntriesByBranch = $this->activeEntriesByBranch($board);
+        $activeEntriesByAgent = $this->activeEntriesByAgent($board);
 
         foreach ($this->gitWorktreeBlocks() as $worktree) {
             $path = $worktree['path'];
@@ -354,9 +355,9 @@ final class BacklogWorktreeManager
             if ($worktree['prunable']) {
                 $state = 'prunable';
                 $action = 'manual-prune';
-            } elseif ($branch !== null && isset($activeFeatures[$branch])) {
-                $feature = $activeFeatures[$branch]['feature'];
-                $agent = $activeFeatures[$branch]['agent'];
+            } elseif ($branch !== null && isset($activeEntriesByBranch[$branch])) {
+                $feature = $activeEntriesByBranch[$branch]['feature'];
+                $agent = $activeEntriesByBranch[$branch]['agent'];
                 $expectedPath = $this->projectRoot . '/.worktrees/' . $agent;
                 $dirty = $this->worktreeIsDirty($path);
 
@@ -372,7 +373,11 @@ final class BacklogWorktreeManager
                 }
             } else {
                 $agent = basename($path);
-                if ($this->worktreeIsDirty($path)) {
+                if (isset($activeEntriesByAgent[$agent])) {
+                    $feature = $activeEntriesByAgent[$agent]['feature'];
+                    $state = 'blocked';
+                    $action = 'manual-review';
+                } elseif ($this->worktreeIsDirty($path)) {
                     $state = 'dirty';
                     $action = 'manual-review';
                 } elseif ($branch === null) {
@@ -699,7 +704,7 @@ final class BacklogWorktreeManager
     /**
      * @return array<string, array{feature: string, agent: string}>
      */
-    private function activeFeaturesByBranch(BacklogBoard $board): array
+    private function activeEntriesByBranch(BacklogBoard $board): array
     {
         $features = [];
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
@@ -717,6 +722,28 @@ final class BacklogWorktreeManager
         }
 
         return $features;
+    }
+
+    /**
+     * @return array<string, array{feature: string, branch: string|null}>
+     */
+    private function activeEntriesByAgent(BacklogBoard $board): array
+    {
+        $entries = [];
+        foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
+            $agent = $entry->getAgent() ?? '';
+            $feature = $entry->getFeature() ?? '';
+            if ($agent === '' || $feature === '') {
+                continue;
+            }
+
+            $entries[$agent] = [
+                'feature' => $feature,
+                'branch' => $entry->getBranch(),
+            ];
+        }
+
+        return $entries;
     }
 
     /**
