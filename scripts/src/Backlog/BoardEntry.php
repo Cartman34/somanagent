@@ -291,51 +291,30 @@ final class BoardEntry
      */
     private function importMetadata(array $metadata): void
     {
-        foreach ($metadata as $key => $value) {
-            $value = self::parseEmptyString($value);
-            if ($value === null) {
-                continue;
-            }
+        $this->agent = self::parseEmptyString($metadata[self::META_AGENT] ?? null);
+        $this->base = self::parseEmptyString($metadata[self::META_BASE] ?? null);
+        $this->blocked = (self::parseEmptyString($metadata[self::META_BLOCKED] ?? null) === BacklogMetaValue::YES->value);
+        $this->branch = self::parseEmptyString($metadata[self::META_BRANCH] ?? null);
+        $this->feature = self::parseEmptyString($metadata[self::META_FEATURE] ?? null);
+        $this->featureBranch = self::parseEmptyString($metadata[self::META_FEATURE_BRANCH] ?? null);
+        $this->kind = self::parseEmptyString($metadata[self::META_KIND] ?? null);
+        $this->pr = self::parseEmptyString($metadata[self::META_PR] ?? null);
+        $this->stage = self::parseEmptyString($metadata[self::META_STAGE] ?? null);
+        $this->task = self::parseEmptyString($metadata[self::META_TASK] ?? null);
+        $this->type = self::parseEmptyString($metadata[self::META_TYPE] ?? null);
 
-            switch ($key) {
-                case self::META_AGENT:
-                    $this->agent = $value;
-                    break;
-                case self::META_BASE:
-                    $this->base = $value;
-                    break;
-                case self::META_BLOCKED:
-                    $this->blocked = ($value === BacklogMetaValue::YES->value);
-                    break;
-                case self::META_BRANCH:
-                    $this->branch = $value;
-                    break;
-                case self::META_FEATURE:
-                    $this->feature = $value;
-                    break;
-                case self::META_FEATURE_BRANCH:
-                    $this->featureBranch = $value;
-                    break;
-                case self::META_KIND:
-                    $this->kind = $value;
-                    break;
-                case self::META_PR:
-                    $this->pr = $value;
-                    break;
-                case self::META_STAGE:
-                    $this->stage = $value;
-                    break;
-                case self::META_TASK:
-                    $this->task = $value;
-                    break;
-                case self::META_TYPE:
-                    $this->type = $value;
-                    break;
-                default:
-                    $this->extraMetadata[$key] = $value;
-                    break;
-            }
-        }
+        $knownKeys = [
+            self::META_AGENT, self::META_BASE, self::META_BLOCKED, self::META_BRANCH,
+            self::META_FEATURE, self::META_FEATURE_BRANCH, self::META_KIND,
+            self::META_PR, self::META_STAGE, self::META_TASK, self::META_TYPE,
+        ];
+
+        $this->extraMetadata = array_diff_key($metadata, array_flip($knownKeys));
+        // Clean empty values from extra metadata
+        $this->extraMetadata = array_filter(
+            array_map(self::parseEmptyString(...), $this->extraMetadata),
+            static fn(?string $value): bool => $value !== null
+        );
     }
 
     /**
