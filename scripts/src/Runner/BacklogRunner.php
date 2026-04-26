@@ -9,6 +9,7 @@ namespace SoManAgent\Script\Runner;
 
 use SoManAgent\Script\Backlog\BacklogCommandHelp;
 use SoManAgent\Script\Backlog\BacklogBoard;
+use SoManAgent\Script\Backlog\BacklogCliOption;
 use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogEntryService;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
@@ -35,14 +36,6 @@ final class BacklogRunner extends AbstractScriptRunner
     private const ENV_ACTIVE_AGENT = 'SOMANAGER_AGENT';
     private const DEFAULT_BOARD_PATH = 'local/backlog-board.md';
     private const DEFAULT_REVIEW_FILE_PATH = 'local/backlog-review.md';
-    private const OPTION_AGENT = 'agent';
-    private const OPTION_BOARD_FILE = 'board-file';
-    private const OPTION_BODY_FILE = 'body-file';
-    private const OPTION_BRANCH_TYPE = 'branch-type';
-    private const OPTION_FEATURE_TEXT = 'feature-text';
-    private const OPTION_PR_BASE_BRANCH = 'pr-base-branch';
-    private const OPTION_REVIEW_FILE = 'review-file';
-    private const OPTION_TEST_MODE = 'test-mode';
     private const WA_BACKEND_ENV_LOCAL_FALLBACK = "DATABASE_URL=\"postgresql://somanagent:secret@localhost:5432/somanagent?serverVersion=16&charset=utf8\"\n";
     private const PR_CREATE_HEAD_INVALID_NEEDLE = 'resource=PullRequest, field=head, code=invalid';
     private const RETRY_COUNT = 3;
@@ -175,24 +168,24 @@ final class BacklogRunner extends AbstractScriptRunner
      */
     private function configureTestFileOverrides(array $options): void
     {
-        $boardFile = BoardEntry::parseEmptyString((string) ($options[self::OPTION_BOARD_FILE] ?? ''));
-        $reviewFile = BoardEntry::parseEmptyString((string) ($options[self::OPTION_REVIEW_FILE] ?? ''));
-        $prBaseBranch = BoardEntry::parseEmptyString((string) ($options[self::OPTION_PR_BASE_BRANCH] ?? ''));
+        $boardFile = BoardEntry::parseEmptyString((string) ($options[BacklogCliOption::BOARD_FILE->value] ?? ''));
+        $reviewFile = BoardEntry::parseEmptyString((string) ($options[BacklogCliOption::REVIEW_FILE->value] ?? ''));
+        $prBaseBranch = BoardEntry::parseEmptyString((string) ($options[BacklogCliOption::PR_BASE_BRANCH->value] ?? ''));
 
         if ($boardFile === null && $reviewFile === null && $prBaseBranch === null) {
             return;
         }
 
-        if (!isset($options[self::OPTION_TEST_MODE])) {
+        if (!isset($options[BacklogCliOption::TEST_MODE->value])) {
             throw new \RuntimeException('backlog test file overrides require --test-mode.');
         }
 
         if ($boardFile !== null) {
-            $this->boardPath = $this->validateTestFileOverride($boardFile, self::OPTION_BOARD_FILE);
+            $this->boardPath = $this->validateTestFileOverride($boardFile, BacklogCliOption::BOARD_FILE->value);
         }
 
         if ($reviewFile !== null) {
-            $this->reviewFilePath = $this->validateTestFileOverride($reviewFile, self::OPTION_REVIEW_FILE);
+            $this->reviewFilePath = $this->validateTestFileOverride($reviewFile, BacklogCliOption::REVIEW_FILE->value);
         }
         if ($prBaseBranch !== null) {
             $this->prBaseBranchOverride = $prBaseBranch;
@@ -726,7 +719,7 @@ final class BacklogRunner extends AbstractScriptRunner
     {
         $board = $this->board();
         $review = $this->reviewFile();
-        $agent = BoardEntry::parseEmptyString((string) ($options[self::OPTION_AGENT] ?? ''));
+        $agent = BoardEntry::parseEmptyString((string) ($options[BacklogCliOption::AGENT->value] ?? ''));
         if ($agent !== null) {
             $match = isset($commandArgs[0])
                 ? $this->entryResolver()->requireTaskByReference($board, $commandArgs[0], BacklogCommandName::FEATURE_TASK_MERGE->value)
@@ -870,7 +863,7 @@ final class BacklogRunner extends AbstractScriptRunner
             $this->worktreeManager()->runReviewScript($reviewWorktree, $entry->getBase());
         } catch (\RuntimeException $exception) {
             $message = 'Mechanical review `php scripts/review.php` failed. Fix mechanical issues before submitting the task again.';
-            $this->taskReviewReject([$this->entryService()->taskReviewKey($entry)], ['body-file' => $this->writeTempContent([$message])], true);
+            $this->taskReviewReject([$this->entryService()->taskReviewKey($entry)], [BacklogCliOption::BODY_FILE->value => $this->writeTempContent([$message])], true);
             throw $exception;
         }
 
@@ -991,7 +984,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private function featureTaskAdd(array $commandArgs, array $options): int
     {
         $agent = $this->requireAgent($options);
-        $featureText = BoardEntry::parseEmptyString((string) ($options[self::OPTION_FEATURE_TEXT] ?? ''));
+        $featureText = BoardEntry::parseEmptyString((string) ($options[BacklogCliOption::FEATURE_TEXT->value] ?? ''));
         if ($featureText === null) {
             throw new \RuntimeException('feature-task-add requires --feature-text.');
         }
@@ -1081,7 +1074,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->entryService()->removeReservedTasks($board, $reserved);
 
         $this->saveBoard($board, BacklogCommandName::FEATURE_TASK_ADD->value);
-        $bodyFile = isset($options[self::OPTION_BODY_FILE])
+        $bodyFile = isset($options[BacklogCliOption::BODY_FILE->value])
             ? $this->requireBodyFile($options)
             : null;
         if ($bodyFile !== null) {
@@ -1466,7 +1459,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private function status(array $commandArgs, array $options): int
     {
         $board = $this->board();
-        $agent = BoardEntry::parseEmptyString((string) ($options[self::OPTION_AGENT] ?? ''));
+        $agent = BoardEntry::parseEmptyString((string) ($options[BacklogCliOption::AGENT->value] ?? ''));
         $feature = isset($commandArgs[0]) ? $this->entryService()->normalizeFeatureSlug($commandArgs[0]) : null;
 
         if ($agent === null && $feature === null) {
@@ -1585,7 +1578,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private function worktreeRestore(array $commandArgs, array $options): int
     {
         $board = $this->board();
-        $agent = BoardEntry::parseEmptyString((string) ($options[self::OPTION_AGENT] ?? ''));
+        $agent = BoardEntry::parseEmptyString((string) ($options[BacklogCliOption::AGENT->value] ?? ''));
         $entry = null;
 
         if ($agent !== null) {
@@ -1705,7 +1698,7 @@ final class BacklogRunner extends AbstractScriptRunner
             $this->worktreeManager()->runReviewScript($reviewWorktree, $match->getEntry()->getBase());
         } catch (\RuntimeException $exception) {
             $message = 'Mechanical review `php scripts/review.php` failed. Fix mechanical issues before requesting review again.';
-            $this->featureReviewReject([$feature], ['body-file' => $this->writeTempContent([$message])], true);
+            $this->featureReviewReject([$feature], [BacklogCliOption::BODY_FILE->value => $this->writeTempContent([$message])], true);
             throw $exception;
         }
 
@@ -1926,7 +1919,7 @@ final class BacklogRunner extends AbstractScriptRunner
      */
     private function requireAgent(array $options): string
     {
-        $agent = BoardEntry::parseEmptyString((string) ($options[self::OPTION_AGENT] ?? ''));
+        $agent = BoardEntry::parseEmptyString((string) ($options[BacklogCliOption::AGENT->value] ?? ''));
         if ($agent === null) {
             throw new \RuntimeException('This command requires --agent=<code>.');
         }
@@ -1939,7 +1932,7 @@ final class BacklogRunner extends AbstractScriptRunner
      */
     private function readBranchTypeOverride(array $options): string
     {
-        $branchType = BoardEntry::parseEmptyString((string) ($options[self::OPTION_BRANCH_TYPE] ?? ''));
+        $branchType = BoardEntry::parseEmptyString((string) ($options[BacklogCliOption::BRANCH_TYPE->value] ?? ''));
         if ($branchType === null) {
             return '';
         }
@@ -1955,7 +1948,7 @@ final class BacklogRunner extends AbstractScriptRunner
      */
     private function requireBodyFile(array $options): string
     {
-        $bodyFile = BoardEntry::parseEmptyString((string) ($options[self::OPTION_BODY_FILE] ?? ''));
+        $bodyFile = BoardEntry::parseEmptyString((string) ($options[BacklogCliOption::BODY_FILE->value] ?? ''));
         if ($bodyFile === null) {
             throw new \RuntimeException('This command requires --body-file=<path>.');
         }
