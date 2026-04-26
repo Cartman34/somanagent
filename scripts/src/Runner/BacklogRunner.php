@@ -522,8 +522,8 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $worktree = $this->worktreeManager()->prepareAgentWorktree($agent);
         $first = $reserved[0]->getEntry();
-        $first->unsetMeta(BoardEntry::META_FEATURE);
-        $first->unsetMeta(BoardEntry::META_AGENT);
+        $first->setFeature(null);
+        $first->setAgent(null);
         $scopedTask = $this->entryService()->extractScopedTaskMetadata($first->getText());
         if ($scopedTask !== null) {
             $task = $scopedTask['task'];
@@ -596,8 +596,8 @@ final class BacklogRunner extends AbstractScriptRunner
 
         foreach (array_slice($reserved, 1) as $task) {
             $reservedEntry = $task->getEntry();
-            $reservedEntry->unsetMeta(BoardEntry::META_FEATURE);
-            $reservedEntry->unsetMeta(BoardEntry::META_AGENT);
+            $reservedEntry->setFeature(null);
+            $reservedEntry->setAgent(null);
             $featureEntry->appendExtraLines(['  - ' . $reservedEntry->getText()]);
             foreach ($reservedEntry->getExtraLines() as $line) {
                 $featureEntry->appendExtraLines(['  ' . ltrim($line)]);
@@ -815,7 +815,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $taskWorktree = $this->worktreeManager()->prepareFeatureAgentWorktree($entry);
         $this->worktreeManager()->runReviewScript($taskWorktree, $entry->getBase());
 
-        $entry->setMeta(BoardEntry::META_STAGE, BacklogBoard::STAGE_IN_REVIEW);
+        $entry->setStage(BacklogBoard::STAGE_IN_REVIEW);
         $review->clearReview($this->entryService()->taskReviewKey($entry));
         $this->saveBoard($board, BacklogCommandName::TASK_REVIEW_REQUEST->value);
         $this->saveReviewFile($review, BacklogCommandName::TASK_REVIEW_REQUEST->value);
@@ -899,7 +899,7 @@ final class BacklogRunner extends AbstractScriptRunner
             ));
         }
 
-        $entry->setMeta(BoardEntry::META_STAGE, BacklogBoard::STAGE_REJECTED);
+        $entry->setStage(BacklogBoard::STAGE_REJECTED);
         $review->setReview($this->entryService()->taskReviewKey($entry), $this->reviewBodyFormatter()->fromFile($bodyFile));
         $this->saveBoard($board, BacklogCommandName::TASK_REVIEW_REJECT->value);
         $this->saveReviewFile($review, BacklogCommandName::TASK_REVIEW_REJECT->value);
@@ -933,7 +933,7 @@ final class BacklogRunner extends AbstractScriptRunner
             ));
         }
 
-        $entry->setMeta(BoardEntry::META_STAGE, BacklogBoard::STAGE_APPROVED);
+        $entry->setStage(BacklogBoard::STAGE_APPROVED);
         $review->clearReview($this->entryService()->taskReviewKey($entry));
         $this->saveBoard($board, BacklogCommandName::TASK_REVIEW_APPROVE->value);
         $this->saveReviewFile($review, BacklogCommandName::TASK_REVIEW_APPROVE->value);
@@ -968,7 +968,7 @@ final class BacklogRunner extends AbstractScriptRunner
             ));
         }
 
-        $entry->setMeta(BoardEntry::META_STAGE, BacklogBoard::STAGE_IN_PROGRESS);
+        $entry->setStage(BacklogBoard::STAGE_IN_PROGRESS);
         $this->saveBoard($board, BacklogCommandName::TASK_REWORK->value);
 
         $taskWorktree = $this->worktreeManager()->prepareFeatureAgentWorktree($entry);
@@ -1011,8 +1011,8 @@ final class BacklogRunner extends AbstractScriptRunner
 
         foreach ($reserved as $task) {
             $reservedEntry = $task->getEntry();
-            $reservedEntry->unsetMeta(BoardEntry::META_FEATURE);
-            $reservedEntry->unsetMeta(BoardEntry::META_AGENT);
+            $reservedEntry->setFeature(null);
+            $reservedEntry->setAgent(null);
             $scopedTask = $this->entryService()->extractScopedTaskMetadata($reservedEntry->getText());
 
             if ($scopedTask !== null) {
@@ -1153,7 +1153,7 @@ final class BacklogRunner extends AbstractScriptRunner
             throw new \RuntimeException("Feature {$feature} is not assigned to agent {$agent}.");
         }
 
-        $match->getEntry()->unsetMeta(BoardEntry::META_AGENT);
+        $match->getEntry()->setAgent(null);
         $this->saveBoard($board, BacklogCommandName::FEATURE_UNASSIGN->value);
         $cleaned = $this->worktreeManager()->cleanupAbandonedManagedWorktrees($board);
 
@@ -1271,7 +1271,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $match->getEntry()->setAgent($agent);
-        $match->getEntry()->setMeta(BoardEntry::META_STAGE, BacklogBoard::STAGE_IN_PROGRESS);
+        $match->getEntry()->setStage(BacklogBoard::STAGE_IN_PROGRESS);
         $this->saveBoard($board, BacklogCommandName::FEATURE_REWORK->value);
 
         $worktree = $this->worktreeManager()->prepareAgentWorktree($agent);
@@ -1299,7 +1299,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $match = $this->entryResolver()->requireFeature($board, $feature);
-        $match->getEntry()->setMeta(BoardEntry::META_BLOCKED, BacklogMetaValue::YES->value);
+        $match->getEntry()->setBlocked(true);
         $this->saveBoard($board, BacklogCommandName::FEATURE_BLOCK->value);
 
         $prNumber = $this->storedPrNumber($match->getEntry());
@@ -1335,7 +1335,7 @@ final class BacklogRunner extends AbstractScriptRunner
             throw new \RuntimeException("Feature {$feature} is not assigned to agent {$agent}.");
         }
 
-        $match->getEntry()->unsetMeta(BoardEntry::META_BLOCKED);
+        $match->getEntry()->setBlocked(false);
         $this->saveBoard($board, BacklogCommandName::FEATURE_UNBLOCK->value);
 
         $prNumber = $this->storedPrNumber($match->getEntry());
@@ -1375,7 +1375,7 @@ final class BacklogRunner extends AbstractScriptRunner
                     $parts[] = 'task=' . ($entry->getTask() ?? '-');
                     $parts[] = 'feature-branch=' . ($entry->getFeatureBranch() ?? '-');
                 }
-                if ($entry->hasMeta('blocked')) {
+                if ($entry->isBlocked()) {
                     $parts[] = 'blocked=yes';
                 }
                 $this->console->line('- ' . implode(' ', $parts));
@@ -1631,7 +1631,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->console->line('Summary: ' . $entry->getText());
         $this->printEntryStatusDetails($entry);
         $this->console->line('Next: ' . $this->nextStepForEntry($entry, $stage));
-        $this->console->line('Blocker: ' . ($entry->hasMeta('blocked') ? 'blocked' : '-'));
+        $this->console->line('Blocker: ' . ($entry->isBlocked() ? 'blocked' : '-'));
     }
 
     private function printEntryStatusDetails(BoardEntry $entry): void
@@ -1676,7 +1676,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $worktree = $this->worktreeManager()->prepareFeatureAgentWorktree($match->getEntry());
         $this->worktreeManager()->runReviewScript($worktree, $match->getEntry()->getBase());
 
-        $match->getEntry()->setMeta(BoardEntry::META_STAGE, BacklogBoard::STAGE_IN_REVIEW);
+        $match->getEntry()->setStage(BacklogBoard::STAGE_IN_REVIEW);
         $this->saveBoard($board, BacklogCommandName::FEATURE_REVIEW_REQUEST->value);
 
         $this->console->ok(sprintf('Feature %s moved to %s', $feature, BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_REVIEW)));
@@ -1730,7 +1730,7 @@ final class BacklogRunner extends AbstractScriptRunner
             throw new \RuntimeException("Feature {$feature} must be in " . BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_REVIEW) . ' to be rejected.');
         }
 
-        $match->getEntry()->setMeta(BoardEntry::META_STAGE, BacklogBoard::STAGE_REJECTED);
+        $match->getEntry()->setStage(BacklogBoard::STAGE_REJECTED);
         $review->setReview($feature, $this->reviewBodyFormatter()->fromFile($bodyFile));
         $this->saveBoard($board, BacklogCommandName::FEATURE_REVIEW_REJECT->value);
         $this->saveReviewFile($review, BacklogCommandName::FEATURE_REVIEW_REJECT->value);
@@ -1774,10 +1774,10 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->pullRequestManager()->createOrUpdatePr($branch, $title, $bodyFile, $this->prBaseBranch());
         $prNumber = $this->pullRequestManager()->findPrNumberByBranch($branch);
         if ($prNumber !== null) {
-            $match->getEntry()->setMeta(BoardEntry::META_PR, (string) $prNumber);
+            $match->getEntry()->setPr((string) $prNumber);
         }
 
-        $match->getEntry()->setMeta(BoardEntry::META_STAGE, BacklogBoard::STAGE_APPROVED);
+        $match->getEntry()->setStage(BacklogBoard::STAGE_APPROVED);
         $review->clearReview($feature);
         $this->saveBoard($board, BacklogCommandName::FEATURE_REVIEW_APPROVE->value);
         $this->saveReviewFile($review, BacklogCommandName::FEATURE_REVIEW_APPROVE->value);
@@ -1846,7 +1846,7 @@ final class BacklogRunner extends AbstractScriptRunner
         if ($this->entryService()->featureStage($match->getEntry()) !== BacklogBoard::STAGE_APPROVED) {
             throw new \RuntimeException("Feature {$feature} must be in " . BacklogBoard::stageLabel(BacklogBoard::STAGE_APPROVED) . ' before merge.');
         }
-        if ($match->getEntry()->hasMeta('blocked')) {
+        if ($match->getEntry()->isBlocked()) {
             throw new \RuntimeException("Feature {$feature} is blocked and cannot be merged.");
         }
 
@@ -2055,7 +2055,7 @@ final class BacklogRunner extends AbstractScriptRunner
     {
         $title = sprintf('[%s] %s', $type, $entry->getText());
 
-        return $entry->hasMeta('blocked')
+        return $entry->isBlocked()
             ? $this->ensureBlockedTitle($title)
             : $title;
     }

@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog;
 
+use SoManAgent\Script\Backlog\BacklogMetaValue;
+
 /**
  * Represents one top-level backlog item and its optional nested bullet lines.
  */
@@ -158,9 +160,19 @@ final class BoardEntry
         return $this->getMeta(self::META_BASE);
     }
 
+    public function setBase(?string $base): void
+    {
+        $this->setMeta(self::META_BASE, $base);
+    }
+
     public function getBranch(): ?string
     {
         return $this->getMeta(self::META_BRANCH);
+    }
+
+    public function setBranch(?string $branch): void
+    {
+        $this->setMeta(self::META_BRANCH, $branch);
     }
 
     public function getFeature(): ?string
@@ -168,9 +180,19 @@ final class BoardEntry
         return $this->getMeta(self::META_FEATURE);
     }
 
+    public function setFeature(?string $feature): void
+    {
+        $this->setMeta(self::META_FEATURE, $feature);
+    }
+
     public function getFeatureBranch(): ?string
     {
         return $this->getMeta(self::META_FEATURE_BRANCH);
+    }
+
+    public function setFeatureBranch(?string $featureBranch): void
+    {
+        $this->setMeta(self::META_FEATURE_BRANCH, $featureBranch);
     }
 
     public function getKind(): ?string
@@ -178,9 +200,19 @@ final class BoardEntry
         return $this->getMeta(self::META_KIND);
     }
 
+    public function setKind(?string $kind): void
+    {
+        $this->setMeta(self::META_KIND, $kind);
+    }
+
     public function getPr(): ?string
     {
         return $this->getMeta(self::META_PR);
+    }
+
+    public function setPr(?string $pr): void
+    {
+        $this->setMeta(self::META_PR, $pr);
     }
 
     public function getStage(): ?string
@@ -188,9 +220,19 @@ final class BoardEntry
         return $this->getMeta(self::META_STAGE);
     }
 
+    public function setStage(?string $stage): void
+    {
+        $this->setMeta(self::META_STAGE, $stage);
+    }
+
     public function getTask(): ?string
     {
         return $this->getMeta(self::META_TASK);
+    }
+
+    public function setTask(?string $task): void
+    {
+        $this->setMeta(self::META_TASK, $task);
     }
 
     public function getType(): ?string
@@ -198,9 +240,23 @@ final class BoardEntry
         return $this->getMeta(self::META_TYPE);
     }
 
+    public function setType(?string $type): void
+    {
+        $this->setMeta(self::META_TYPE, $type);
+    }
+
     public function isBlocked(): bool
     {
         return $this->hasMeta(self::META_BLOCKED);
+    }
+
+    public function setBlocked(bool $blocked): void
+    {
+        if ($blocked) {
+            $this->setMeta(self::META_BLOCKED, BacklogMetaValue::YES->value);
+        } else {
+            $this->unsetMeta(self::META_BLOCKED);
+        }
     }
 
     /**
