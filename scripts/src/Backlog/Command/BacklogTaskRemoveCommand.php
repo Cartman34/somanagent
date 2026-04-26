@@ -9,13 +9,17 @@ namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\BacklogBoard;
 use SoManAgent\Script\Backlog\BacklogCommandName;
-use SoManAgent\Script\Console;
 
 /**
  * Command for removing a task from the todo section.
  */
 final class BacklogTaskRemoveCommand extends AbstractBacklogCommand
 {
+    public function __construct(BacklogCommandContext $context)
+    {
+        parent::__construct($context);
+    }
+
     public function handle(array $commandArgs, array $options): void
     {
         $position = (int) ($commandArgs[0] ?? 0);

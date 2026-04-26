@@ -7,9 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
-use SoManAgent\Script\Console;
 
 /**
  * Command for cleaning abandoned managed worktrees.
@@ -18,14 +16,10 @@ final class BacklogWorktreeCleanCommand extends AbstractBacklogCommand
 {
     private BacklogWorktreeManager $worktreeManager;
 
-    public function __construct(
-        Console $console,
-        bool $dryRun,
-        string $projectRoot,
-        BacklogWorktreeManager $worktreeManager
-    ) {
-        parent::__construct($console, $dryRun, $projectRoot);
-        $this->worktreeManager = $worktreeManager;
+    public function __construct(BacklogCommandContext $context)
+    {
+        parent::__construct($context);
+        $this->worktreeManager = $context->getWorktreeManager();
     }
 
     public function handle(array $commandArgs, array $options): void

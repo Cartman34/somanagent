@@ -12,7 +12,6 @@ use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
 use SoManAgent\Script\Backlog\BacklogEntryService;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
-use SoManAgent\Script\Console;
 
 /**
  * Command for reworking a rejected feature.
@@ -25,18 +24,12 @@ final class BacklogFeatureReworkCommand extends AbstractBacklogCommand
 
     private BacklogWorktreeManager $worktreeManager;
 
-    public function __construct(
-        Console $console,
-        bool $dryRun,
-        string $projectRoot,
-        BacklogEntryResolver $entryResolver,
-        BacklogEntryService $entryService,
-        BacklogWorktreeManager $worktreeManager
-    ) {
-        parent::__construct($console, $dryRun, $projectRoot);
-        $this->entryResolver = $entryResolver;
-        $this->entryService = $entryService;
-        $this->worktreeManager = $worktreeManager;
+    public function __construct(BacklogCommandContext $context)
+    {
+        parent::__construct($context);
+        $this->entryResolver = $context->getEntryResolver();
+        $this->entryService = $context->getEntryService();
+        $this->worktreeManager = $context->getWorktreeManager();
     }
 
     public function handle(array $commandArgs, array $options): void

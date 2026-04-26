@@ -16,7 +16,6 @@ use SoManAgent\Script\Backlog\BacklogMetaValue;
 use SoManAgent\Script\Backlog\BoardEntry;
 use SoManAgent\Script\Backlog\PullRequestManager;
 use SoManAgent\Script\Backlog\PullRequestTag;
-use SoManAgent\Script\Console;
 
 /**
  * Command for blocking a feature.
@@ -32,19 +31,13 @@ final class BacklogFeatureBlockCommand extends AbstractBacklogCommand
     private PullRequestManager $pullRequestManager;
 
     public function __construct(
-        Console $console,
-        bool $dryRun,
-        string $projectRoot,
-        BacklogEntryResolver $entryResolver,
-        BacklogEntryService $entryService,
-        BacklogGitWorkflow $gitWorkflow,
-        PullRequestManager $pullRequestManager
+        BacklogCommandContext $context
     ) {
-        parent::__construct($console, $dryRun, $projectRoot);
-        $this->entryResolver = $entryResolver;
-        $this->entryService = $entryService;
-        $this->gitWorkflow = $gitWorkflow;
-        $this->pullRequestManager = $pullRequestManager;
+        parent::__construct($context);
+        $this->entryResolver = $context->getEntryResolver();
+        $this->entryService = $context->getEntryService();
+        $this->gitWorkflow = $context->getGitWorkflow();
+        $this->pullRequestManager = $context->getPullRequestManager();
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -69,77 +62,11 @@ final class BacklogFeatureBlockCommand extends AbstractBacklogCommand
 
         $prNumber = $this->storedPrNumber($entry);
         if ($prNumber !== null) {
-            $type = $this->entryService->featureStage($entry) === BacklogBoard::STAGE_APPROVED ? $this->determinePrType($entry) : PullRequestTag::WIP->value;
+            $type = $this->entryService->featureStage($entry) === BacklogBoard::STAGE_APPROVED ? $this->determinePrType($entry, $this->gitWorkflow) : PullRequestTag::WIP->value;
             $title = $this->ensureBlockedTitle($this->buildPrTitle($type, $entry));
             $this->pullRequestManager->editPrTitle($prNumber, $title);
         }
 
         $this->console->ok(sprintf('Marked feature %s as blocked', $feature));
-    }
-
-    private function storedPrNumber(BoardEntry $entry): ?int
-    {
-        $pr = $entry->getPr();
-        if ($pr === null || $pr === BacklogMetaValue::NONE->value) {
-            return null;
-        }
-
-        return (int) $pr;
-    }
-
-    private function determinePrType(BoardEntry $entry): string
-    {
-        $base = $entry->getBase();
-        $branch = $entry->getBranch();
-        if ($base === null || $branch === null) {
-            throw new \RuntimeException('Cannot determine PR type without base and branch metadata.');
-        }
-
-        $files = $this->gitWorkflow->changedFiles($base, $branch);
-
-        if ($files === []) {
-            return str_starts_with($branch, 'fix/') ? PullRequestTag::FIX->value : PullRequestTag::FEAT->value;
-        }
-
-        $docOnly = true;
-        $techOnly = true;
-
-        foreach ($files as $file) {
-            if (!str_starts_with($file, 'doc/') && $file !== 'AGENTS.md') {
-                $docOnly = false;
-            }
-
-            if (
-                !str_starts_with($file, 'scripts/')
-                && !str_starts_with($file, '.github/')
-                && !in_array($file, ['AGENTS.md', 'composer.json', 'composer.lock', 'package.json', 'package-lock.json', 'pnpm-lock.yaml'], true)
-            ) {
-                $techOnly = false;
-            }
-        }
-
-        if ($docOnly) {
-            return PullRequestTag::DOC->value;
-        }
-
-        if ($techOnly) {
-            return PullRequestTag::TECH->value;
-        }
-
-        return str_starts_with($branch, 'fix/') ? PullRequestTag::FIX->value : PullRequestTag::FEAT->value;
-    }
-
-    private function buildPrTitle(string $type, BoardEntry $entry): string
-    {
-        return sprintf('[%s] %s', $type, $entry->getText());
-    }
-
-    private function ensureBlockedTitle(string $title): string
-    {
-        $tag = '[' . PullRequestTag::BLOCKED->value . ']';
-
-        return str_contains($title, $tag)
-            ? $title
-            : $tag . ' ' . $title;
     }
 }

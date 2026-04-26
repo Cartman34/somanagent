@@ -10,7 +10,6 @@ namespace SoManAgent\Script\Backlog\Command;
 use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
-use SoManAgent\Script\Console;
 
 /**
  * Command for unassigning a feature from an agent.
@@ -21,16 +20,11 @@ final class BacklogFeatureUnassignCommand extends AbstractBacklogCommand
 
     private BacklogWorktreeManager $worktreeManager;
 
-    public function __construct(
-        Console $console,
-        bool $dryRun,
-        string $projectRoot,
-        BacklogEntryResolver $entryResolver,
-        BacklogWorktreeManager $worktreeManager
-    ) {
-        parent::__construct($console, $dryRun, $projectRoot);
-        $this->entryResolver = $entryResolver;
-        $this->worktreeManager = $worktreeManager;
+    public function __construct(BacklogCommandContext $context)
+    {
+        parent::__construct($context);
+        $this->entryResolver = $context->getEntryResolver();
+        $this->worktreeManager = $context->getWorktreeManager();
     }
 
     public function handle(array $commandArgs, array $options): void

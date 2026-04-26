@@ -13,7 +13,6 @@ use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
 use SoManAgent\Script\Backlog\BacklogEntryService;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
-use SoManAgent\Script\Console;
 
 /**
  * Command for checking a task review.
@@ -28,20 +27,13 @@ final class BacklogTaskReviewCheckCommand extends AbstractBacklogCommand
 
     private BacklogCommandFactory $commandFactory;
 
-    public function __construct(
-        Console $console,
-        bool $dryRun,
-        string $projectRoot,
-        BacklogEntryResolver $entryResolver,
-        BacklogEntryService $entryService,
-        BacklogWorktreeManager $worktreeManager,
-        BacklogCommandFactory $commandFactory
-    ) {
-        parent::__construct($console, $dryRun, $projectRoot);
-        $this->entryResolver = $entryResolver;
-        $this->entryService = $entryService;
-        $this->worktreeManager = $worktreeManager;
-        $this->commandFactory = $commandFactory;
+    public function __construct(BacklogCommandContext $context)
+    {
+        parent::__construct($context);
+        $this->entryResolver = $context->getEntryResolver();
+        $this->entryService = $context->getEntryService();
+        $this->worktreeManager = $context->getWorktreeManager();
+        $this->commandFactory = $context->getCommandFactory();
     }
 
     public function handle(array $commandArgs, array $options): void

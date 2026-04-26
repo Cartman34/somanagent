@@ -10,7 +10,6 @@ namespace SoManAgent\Script\Backlog\Command;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
 use SoManAgent\Script\Backlog\BoardEntry;
-use SoManAgent\Script\Console;
 
 /**
  * Command for restoring an agent worktree.
@@ -21,16 +20,11 @@ final class BacklogWorktreeRestoreCommand extends AbstractBacklogCommand
 
     private BacklogEntryResolver $entryResolver;
 
-    public function __construct(
-        Console $console,
-        bool $dryRun,
-        string $projectRoot,
-        BacklogWorktreeManager $worktreeManager,
-        BacklogEntryResolver $entryResolver
-    ) {
-        parent::__construct($console, $dryRun, $projectRoot);
-        $this->worktreeManager = $worktreeManager;
-        $this->entryResolver = $entryResolver;
+    public function __construct(BacklogCommandContext $context)
+    {
+        parent::__construct($context);
+        $this->worktreeManager = $context->getWorktreeManager();
+        $this->entryResolver = $context->getEntryResolver();
     }
 
     public function handle(array $commandArgs, array $options): void

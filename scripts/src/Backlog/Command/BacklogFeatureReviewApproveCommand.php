@@ -73,7 +73,7 @@ final class BacklogFeatureReviewApproveCommand extends AbstractBacklogCommand
             throw new \RuntimeException('Feature has no branch metadata.');
         }
 
-        $type = $this->determinePrType($entry);
+        $type = $this->determinePrType($entry, $this->gitWorkflow);
         $title = $this->buildPrTitle($type, $entry);
 
         $this->pullRequestManager->pushBranchAndWaitForRemoteVisibility($branch);
@@ -96,63 +96,5 @@ final class BacklogFeatureReviewApproveCommand extends AbstractBacklogCommand
         return is_string($options['pr-base-branch'] ?? null) ? $options['pr-base-branch'] : BacklogGitWorkflow::MAIN_BRANCH;
     }
 
-    private function determinePrType(BoardEntry $entry): string
-    {
-        $base = $entry->getBase();
-        $branch = $entry->getBranch();
-        if ($base === null || $branch === null) {
-            throw new \RuntimeException('Cannot determine PR type without base and branch metadata.');
-        }
-
-        $files = $this->gitWorkflow->changedFiles($base, $branch);
-
-        if ($files === []) {
-            return str_starts_with($branch, 'fix/') ? PullRequestTag::FIX->value : PullRequestTag::FEAT->value;
-        }
-
-        $docOnly = true;
-        $techOnly = true;
-
-        foreach ($files as $file) {
-            if (!str_starts_with($file, 'doc/') && $file !== 'AGENTS.md') {
-                $docOnly = false;
-            }
-
-            if (
-                !str_starts_with($file, 'scripts/')
-                && !str_starts_with($file, '.github/')
-                && !in_array($file, ['AGENTS.md', 'composer.json', 'composer.lock', 'package.json', 'package-lock.json', 'pnpm-lock.yaml'], true)
-            ) {
-                $techOnly = false;
-            }
-        }
-
-        if ($docOnly) {
-            return PullRequestTag::DOC->value;
-        }
-
-        if ($techOnly) {
-            return PullRequestTag::TECH->value;
-        }
-
-        return str_starts_with($branch, 'fix/') ? PullRequestTag::FIX->value : PullRequestTag::FEAT->value;
-    }
-
-    private function buildPrTitle(string $type, BoardEntry $entry): string
-    {
-        $title = sprintf('[%s] %s', $type, $entry->getText());
-
-        return $entry->isBlocked()
-            ? $this->ensureBlockedTitle($title)
-            : $title;
-    }
-
-    private function ensureBlockedTitle(string $title): string
-    {
-        $tag = '[' . PullRequestTag::BLOCKED->value . ']';
-
-        return str_contains($title, $tag)
-            ? $title
-            : $tag . ' ' . $title;
-    }
+}
 }

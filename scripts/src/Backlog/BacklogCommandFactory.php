@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog;
 
 use SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
+use SoManAgent\Script\Backlog\Command\BacklogCommandContext;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureAssignCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureBlockCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureCloseCommand;
@@ -22,8 +23,6 @@ use SoManAgent\Script\Backlog\Command\BacklogFeatureReworkCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureStartCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureTaskAddCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureTaskMergeCommand;
-use SoManAgent\Script\Backlog\Command\BacklogFeatureUnassignCommand;
-use SoManAgent\Script\Backlog\Command\BacklogFeatureUnblockCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewNextCommand;
 use SoManAgent\Script\Backlog\Command\BacklogStatusCommand;
 use SoManAgent\Script\Backlog\Command\BacklogTaskCreateCommand;
@@ -46,27 +45,7 @@ use SoManAgent\Script\TextSlugger;
  */
 final class BacklogCommandFactory
 {
-    private Console $console;
-
-    private bool $dryRun;
-
-    private string $projectRoot;
-
-    private BacklogWorktreeManager $worktreeManager;
-
-    private BacklogEntryService $entryService;
-
-    private BacklogEntryResolver $entryResolver;
-
-    private ConsoleClient $consoleClient;
-
-    private TextSlugger $featureSlugger;
-
-    private BacklogReviewBodyFormatter $reviewBodyFormatter;
-
-    private BacklogGitWorkflow $gitWorkflow;
-
-    private PullRequestManager $pullRequestManager;
+    private BacklogCommandContext $context;
 
     private string $boardPath;
 
@@ -87,254 +66,65 @@ final class BacklogCommandFactory
         string $boardPath,
         string $reviewFilePath
     ) {
-        $this->console = $console;
-        $this->dryRun = $dryRun;
-        $this->projectRoot = $projectRoot;
-        $this->worktreeManager = $worktreeManager;
-        $this->entryService = $entryService;
-        $this->entryResolver = $entryResolver;
-        $this->consoleClient = $consoleClient;
-        $this->featureSlugger = $featureSlugger;
-        $this->reviewBodyFormatter = $reviewBodyFormatter;
-        $this->gitWorkflow = $gitWorkflow;
-        $this->pullRequestManager = $pullRequestManager;
+        $this->context = new BacklogCommandContext(
+            $console,
+            $dryRun,
+            $projectRoot,
+            $worktreeManager,
+            $entryService,
+            $entryResolver,
+            $consoleClient,
+            $featureSlugger,
+            $reviewBodyFormatter,
+            $gitWorkflow,
+            $pullRequestManager,
+            $this
+        );
         $this->boardPath = $boardPath;
         $this->reviewFilePath = $reviewFilePath;
     }
 
     public function createHandler(string $commandName): AbstractBacklogCommand
     {
-        $command = match ($commandName) {
-            BacklogCommandName::STATUS->value => new BacklogStatusCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryResolver,
-                $this->entryService,
-                $this->worktreeManager,
-                $this->consoleClient
-            ),
-            BacklogCommandName::WORKTREE_LIST->value => new BacklogWorktreeListCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->worktreeManager,
-                $this->consoleClient
-            ),
-            BacklogCommandName::WORKTREE_CLEAN->value => new BacklogWorktreeCleanCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->worktreeManager
-            ),
-            BacklogCommandName::WORKTREE_RESTORE->value => new BacklogWorktreeRestoreCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->worktreeManager,
-                $this->entryResolver
-            ),
-            BacklogCommandName::TASK_CREATE->value => new BacklogTaskCreateCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryService
-            ),
-            BacklogCommandName::TASK_TODO_LIST->value => new BacklogTaskTodoListCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot
-            ),
-            BacklogCommandName::TASK_REMOVE->value => new BacklogTaskRemoveCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot
-            ),
-            BacklogCommandName::TASK_REVIEW_REQUEST->value => new BacklogTaskReviewRequestCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryResolver,
-                $this->entryService,
-                $this->worktreeManager
-            ),
-            BacklogCommandName::TASK_REVIEW_CHECK->value => new BacklogTaskReviewCheckCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryResolver,
-                $this->entryService,
-                $this->worktreeManager,
-                $this
-            ),
-            BacklogCommandName::TASK_REVIEW_REJECT->value => new BacklogTaskReviewRejectCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryResolver,
-                $this->entryService,
-                $this->reviewBodyFormatter
-            ),
-            BacklogCommandName::TASK_REVIEW_APPROVE->value => new BacklogTaskReviewApproveCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryResolver,
-                $this->entryService
-            ),
-            BacklogCommandName::TASK_REWORK->value => new BacklogTaskReworkCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryResolver,
-                $this->entryService,
-                $this->worktreeManager
-            ),
-            BacklogCommandName::REVIEW_NEXT->value => new BacklogReviewNextCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryService
-            ),
-            BacklogCommandName::FEATURE_START->value => new BacklogFeatureStartCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryResolver,
-                $this->entryService,
-                $this->worktreeManager,
-                $this->gitWorkflow
-            ),
-            BacklogCommandName::FEATURE_RELEASE->value => new BacklogFeatureReleaseCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryResolver,
-                $this->entryService,
-                $this->worktreeManager,
-                $this->gitWorkflow
-            ),
-            BacklogCommandName::FEATURE_TASK_ADD->value => new BacklogFeatureTaskAddCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryResolver,
-                $this->entryService,
-                $this->worktreeManager,
-                $this->gitWorkflow,
-                $this->pullRequestManager
-            ),
-            BacklogCommandName::FEATURE_TASK_MERGE->value => new BacklogFeatureTaskMergeCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryResolver,
-                $this->entryService,
-                $this->worktreeManager,
-                $this->gitWorkflow
-            ),
-            BacklogCommandName::FEATURE_ASSIGN->value => new BacklogFeatureAssignCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryResolver,
-                $this->worktreeManager
-            ),
-            BacklogCommandName::FEATURE_UNASSIGN->value => new BacklogFeatureUnassignCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryResolver,
-                $this->worktreeManager
-            ),
-            BacklogCommandName::FEATURE_REWORK->value => new BacklogFeatureReworkCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryResolver,
-                $this->entryService,
-                $this->worktreeManager
-            ),
-            BacklogCommandName::FEATURE_BLOCK->value => new BacklogFeatureBlockCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryResolver,
-                $this->entryService,
-                $this->gitWorkflow,
-                $this->pullRequestManager
-            ),
-            BacklogCommandName::FEATURE_UNBLOCK->value => new BacklogFeatureUnblockCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryResolver,
-                $this->entryService,
-                $this->gitWorkflow,
-                $this->pullRequestManager
-            ),
-            BacklogCommandName::FEATURE_LIST->value => new BacklogFeatureListCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryService
-            ),
-            BacklogCommandName::FEATURE_REVIEW_REQUEST->value => new BacklogFeatureReviewRequestCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryResolver,
-                $this->entryService,
-                $this->worktreeManager
-            ),
-            BacklogCommandName::FEATURE_REVIEW_CHECK->value => new BacklogFeatureReviewCheckCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryResolver,
-                $this->entryService,
-                $this->worktreeManager,
-                $this
-            ),
-            BacklogCommandName::FEATURE_REVIEW_REJECT->value => new BacklogFeatureReviewRejectCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryResolver,
-                $this->entryService,
-                $this->reviewBodyFormatter
-            ),
-            BacklogCommandName::FEATURE_REVIEW_APPROVE->value => new BacklogFeatureReviewApproveCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryResolver,
-                $this->entryService,
-                $this->gitWorkflow,
-                $this->pullRequestManager
-            ),
-            BacklogCommandName::FEATURE_CLOSE->value => new BacklogFeatureCloseCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryResolver,
-                $this->entryService,
-                $this->worktreeManager,
-                $this->gitWorkflow
-            ),
-            BacklogCommandName::FEATURE_MERGE->value => new BacklogFeatureMergeCommand(
-                $this->console,
-                $this->dryRun,
-                $this->projectRoot,
-                $this->entryResolver,
-                $this->entryService,
-                $this->worktreeManager,
-                $this->gitWorkflow,
-                $this->pullRequestManager
-            ),
-            default => throw new \RuntimeException(sprintf('No handler found for command: %s', $commandName)),
-        };
+        $map = [
+            BacklogCommandName::STATUS->value => Command\BacklogStatusCommand::class,
+            BacklogCommandName::WORKTREE_LIST->value => Command\BacklogWorktreeListCommand::class,
+            BacklogCommandName::WORKTREE_CLEAN->value => Command\BacklogWorktreeCleanCommand::class,
+            BacklogCommandName::WORKTREE_RESTORE->value => Command\BacklogWorktreeRestoreCommand::class,
+            BacklogCommandName::TASK_CREATE->value => Command\BacklogTaskCreateCommand::class,
+            BacklogCommandName::TASK_TODO_LIST->value => Command\BacklogTaskTodoListCommand::class,
+            BacklogCommandName::TASK_REMOVE->value => Command\BacklogTaskRemoveCommand::class,
+            BacklogCommandName::TASK_REVIEW_REQUEST->value => Command\BacklogTaskReviewRequestCommand::class,
+            BacklogCommandName::TASK_REVIEW_CHECK->value => Command\BacklogTaskReviewCheckCommand::class,
+            BacklogCommandName::TASK_REVIEW_REJECT->value => Command\BacklogTaskReviewRejectCommand::class,
+            BacklogCommandName::TASK_REVIEW_APPROVE->value => Command\BacklogTaskReviewApproveCommand::class,
+            BacklogCommandName::TASK_REWORK->value => Command\BacklogTaskReworkCommand::class,
+            BacklogCommandName::REVIEW_NEXT->value => Command\BacklogReviewNextCommand::class,
+            BacklogCommandName::FEATURE_START->value => Command\BacklogFeatureStartCommand::class,
+            BacklogCommandName::FEATURE_RELEASE->value => Command\BacklogFeatureReleaseCommand::class,
+            BacklogCommandName::FEATURE_TASK_ADD->value => Command\BacklogFeatureTaskAddCommand::class,
+            BacklogCommandName::FEATURE_TASK_MERGE->value => Command\BacklogFeatureTaskMergeCommand::class,
+            BacklogCommandName::FEATURE_ASSIGN->value => Command\BacklogFeatureAssignCommand::class,
+            BacklogCommandName::FEATURE_UNASSIGN->value => Command\BacklogFeatureUnassignCommand::class,
+            BacklogCommandName::FEATURE_REWORK->value => Command\BacklogFeatureReworkCommand::class,
+            BacklogCommandName::FEATURE_BLOCK->value => Command\BacklogFeatureBlockCommand::class,
+            BacklogCommandName::FEATURE_UNBLOCK->value => Command\BacklogFeatureUnblockCommand::class,
+            BacklogCommandName::FEATURE_LIST->value => Command\BacklogFeatureListCommand::class,
+            BacklogCommandName::FEATURE_REVIEW_REQUEST->value => Command\BacklogFeatureReviewRequestCommand::class,
+            BacklogCommandName::FEATURE_REVIEW_CHECK->value => Command\BacklogFeatureReviewCheckCommand::class,
+            BacklogCommandName::FEATURE_REVIEW_REJECT->value => Command\BacklogFeatureReviewRejectCommand::class,
+            BacklogCommandName::FEATURE_REVIEW_APPROVE->value => Command\BacklogFeatureReviewApproveCommand::class,
+            BacklogCommandName::FEATURE_CLOSE->value => Command\BacklogFeatureCloseCommand::class,
+            BacklogCommandName::FEATURE_MERGE->value => Command\BacklogFeatureMergeCommand::class,
+        ];
 
+        $class = $map[$commandName] ?? null;
+        if ($class === null) {
+            throw new \RuntimeException(sprintf('No handler found for command: %s', $commandName));
+        }
+
+        /** @var AbstractBacklogCommand $command */
+        $command = new $class($this->context);
         $command->setBoardPath($this->boardPath);
         $command->setReviewFilePath($this->reviewFilePath);
 

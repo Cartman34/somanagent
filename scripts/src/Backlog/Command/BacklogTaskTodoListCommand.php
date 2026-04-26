@@ -8,13 +8,17 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\BacklogBoard;
-use SoManAgent\Script\Console;
 
 /**
  * Command for listing tasks in the todo section.
  */
 final class BacklogTaskTodoListCommand extends AbstractBacklogCommand
 {
+    public function __construct(BacklogCommandContext $context)
+    {
+        parent::__construct($context);
+    }
+
     public function handle(array $commandArgs, array $options): void
     {
         $entries = $this->loadBoard()->getEntries(BacklogBoard::SECTION_TODO);

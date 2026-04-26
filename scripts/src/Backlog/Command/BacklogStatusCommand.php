@@ -17,7 +17,6 @@ use SoManAgent\Script\Backlog\BoardEntry;
 use SoManAgent\Script\Backlog\WorktreeAction;
 use SoManAgent\Script\Backlog\WorktreeState;
 use SoManAgent\Script\Client\ConsoleClient;
-use SoManAgent\Script\Console;
 
 /**
  * Command for displaying the backlog status.
@@ -32,20 +31,13 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
 
     private ConsoleClient $consoleClient;
 
-    public function __construct(
-        Console $console,
-        bool $dryRun,
-        string $projectRoot,
-        BacklogEntryResolver $entryResolver,
-        BacklogEntryService $entryService,
-        BacklogWorktreeManager $worktreeManager,
-        ConsoleClient $consoleClient
-    ) {
-        parent::__construct($console, $dryRun, $projectRoot);
-        $this->entryResolver = $entryResolver;
-        $this->entryService = $entryService;
-        $this->worktreeManager = $worktreeManager;
-        $this->consoleClient = $consoleClient;
+    public function __construct(BacklogCommandContext $context)
+    {
+        parent::__construct($context);
+        $this->entryResolver = $context->getEntryResolver();
+        $this->entryService = $context->getEntryService();
+        $this->worktreeManager = $context->getWorktreeManager();
+        $this->consoleClient = $context->getConsoleClient();
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -244,16 +236,6 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
         }
 
         return BacklogMetaValue::NONE->value;
-    }
-
-    private function storedPrNumber(BoardEntry $entry): ?int
-    {
-        $pr = $entry->getPr();
-        if ($pr === null || $pr === BacklogMetaValue::NONE->value) {
-            return null;
-        }
-
-        return (int) $pr;
     }
 
     private function nextStepForEntry(BoardEntry $entry, string $stage): string

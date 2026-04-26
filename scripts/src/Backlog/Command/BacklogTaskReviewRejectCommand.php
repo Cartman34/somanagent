@@ -12,7 +12,6 @@ use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
 use SoManAgent\Script\Backlog\BacklogEntryService;
 use SoManAgent\Script\Backlog\BacklogReviewBodyFormatter;
-use SoManAgent\Script\Console;
 
 /**
  * Command for rejecting a task review.
@@ -25,18 +24,12 @@ final class BacklogTaskReviewRejectCommand extends AbstractBacklogCommand
 
     private BacklogReviewBodyFormatter $reviewBodyFormatter;
 
-    public function __construct(
-        Console $console,
-        bool $dryRun,
-        string $projectRoot,
-        BacklogEntryResolver $entryResolver,
-        BacklogEntryService $entryService,
-        BacklogReviewBodyFormatter $reviewBodyFormatter
-    ) {
-        parent::__construct($console, $dryRun, $projectRoot);
-        $this->entryResolver = $entryResolver;
-        $this->entryService = $entryService;
-        $this->reviewBodyFormatter = $reviewBodyFormatter;
+    public function __construct(BacklogCommandContext $context)
+    {
+        parent::__construct($context);
+        $this->entryResolver = $context->getEntryResolver();
+        $this->entryService = $context->getEntryService();
+        $this->reviewBodyFormatter = $context->getReviewBodyFormatter();
     }
 
     public function handle(array $commandArgs, array $options): void

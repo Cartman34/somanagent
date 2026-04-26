@@ -9,7 +9,6 @@ namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
 use SoManAgent\Script\Client\ConsoleClient;
-use SoManAgent\Script\Console;
 
 /**
  * Command for listing managed and external worktrees.
@@ -20,16 +19,11 @@ final class BacklogWorktreeListCommand extends AbstractBacklogCommand
 
     private ConsoleClient $consoleClient;
 
-    public function __construct(
-        Console $console,
-        bool $dryRun,
-        string $projectRoot,
-        BacklogWorktreeManager $worktreeManager,
-        ConsoleClient $consoleClient
-    ) {
-        parent::__construct($console, $dryRun, $projectRoot);
-        $this->worktreeManager = $worktreeManager;
-        $this->consoleClient = $consoleClient;
+    public function __construct(BacklogCommandContext $context)
+    {
+        parent::__construct($context);
+        $this->worktreeManager = $context->getWorktreeManager();
+        $this->consoleClient = $context->getConsoleClient();
     }
 
     public function handle(array $commandArgs, array $options): void

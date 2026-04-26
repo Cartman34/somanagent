@@ -17,7 +17,6 @@ use SoManAgent\Script\Backlog\BacklogMetaValue;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
 use SoManAgent\Script\Backlog\BoardEntry;
 use SoManAgent\Script\Backlog\PullRequestManager;
-use SoManAgent\Script\Console;
 
 /**
  * Command for adding a task to an active feature.
@@ -34,22 +33,14 @@ final class BacklogFeatureTaskAddCommand extends AbstractBacklogCommand
 
     private PullRequestManager $pullRequestManager;
 
-    public function __construct(
-        Console $console,
-        bool $dryRun,
-        string $projectRoot,
-        BacklogEntryResolver $entryResolver,
-        BacklogEntryService $entryService,
-        BacklogWorktreeManager $worktreeManager,
-        BacklogGitWorkflow $gitWorkflow,
-        PullRequestManager $pullRequestManager
-    ) {
-        parent::__construct($console, $dryRun, $projectRoot);
-        $this->entryResolver = $entryResolver;
-        $this->entryService = $entryService;
-        $this->worktreeManager = $worktreeManager;
-        $this->gitWorkflow = $gitWorkflow;
-        $this->pullRequestManager = $pullRequestManager;
+    public function __construct(BacklogCommandContext $context)
+    {
+        parent::__construct($context);
+        $this->entryResolver = $context->getEntryResolver();
+        $this->entryService = $context->getEntryService();
+        $this->worktreeManager = $context->getWorktreeManager();
+        $this->gitWorkflow = $context->getGitWorkflow();
+        $this->pullRequestManager = $context->getPullRequestManager();
     }
 
     public function handle(array $commandArgs, array $options): void

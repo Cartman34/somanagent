@@ -11,7 +11,6 @@ use SoManAgent\Script\Backlog\BacklogBoard;
 use SoManAgent\Script\Backlog\BacklogEntryService;
 use SoManAgent\Script\Backlog\BacklogMetaValue;
 use SoManAgent\Script\Backlog\BoardEntry;
-use SoManAgent\Script\Console;
 
 /**
  * Command for displaying the next item to review.
@@ -20,14 +19,10 @@ final class BacklogReviewNextCommand extends AbstractBacklogCommand
 {
     private BacklogEntryService $entryService;
 
-    public function __construct(
-        Console $console,
-        bool $dryRun,
-        string $projectRoot,
-        BacklogEntryService $entryService
-    ) {
-        parent::__construct($console, $dryRun, $projectRoot);
-        $this->entryService = $entryService;
+    public function __construct(BacklogCommandContext $context)
+    {
+        parent::__construct($context);
+        $this->entryService = $context->getEntryService();
     }
 
     public function handle(array $commandArgs, array $options): void

@@ -11,7 +11,6 @@ use SoManAgent\Script\Backlog\BacklogBoard;
 use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
 use SoManAgent\Script\Backlog\BacklogEntryService;
-use SoManAgent\Script\Console;
 
 /**
  * Command for approving a task review.
@@ -22,16 +21,11 @@ final class BacklogTaskReviewApproveCommand extends AbstractBacklogCommand
 
     private BacklogEntryService $entryService;
 
-    public function __construct(
-        Console $console,
-        bool $dryRun,
-        string $projectRoot,
-        BacklogEntryResolver $entryResolver,
-        BacklogEntryService $entryService
-    ) {
-        parent::__construct($console, $dryRun, $projectRoot);
-        $this->entryResolver = $entryResolver;
-        $this->entryService = $entryService;
+    public function __construct(BacklogCommandContext $context)
+    {
+        parent::__construct($context);
+        $this->entryResolver = $context->getEntryResolver();
+        $this->entryService = $context->getEntryService();
     }
 
     public function handle(array $commandArgs, array $options): void

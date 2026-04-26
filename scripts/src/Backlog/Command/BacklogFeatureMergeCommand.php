@@ -15,7 +15,6 @@ use SoManAgent\Script\Backlog\BacklogGitWorkflow;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
 use SoManAgent\Script\Backlog\BoardEntry;
 use SoManAgent\Script\Backlog\PullRequestManager;
-use SoManAgent\Script\Console;
 
 /**
  * Command for merging a feature into the base branch.
@@ -32,22 +31,14 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
 
     private PullRequestManager $pullRequestManager;
 
-    public function __construct(
-        Console $console,
-        bool $dryRun,
-        string $projectRoot,
-        BacklogEntryResolver $entryResolver,
-        BacklogEntryService $entryService,
-        BacklogWorktreeManager $worktreeManager,
-        BacklogGitWorkflow $gitWorkflow,
-        PullRequestManager $pullRequestManager
-    ) {
-        parent::__construct($console, $dryRun, $projectRoot);
-        $this->entryResolver = $entryResolver;
-        $this->entryService = $entryService;
-        $this->worktreeManager = $worktreeManager;
-        $this->gitWorkflow = $gitWorkflow;
-        $this->pullRequestManager = $pullRequestManager;
+    public function __construct(BacklogCommandContext $context)
+    {
+        parent::__construct($context);
+        $this->entryResolver = $context->getEntryResolver();
+        $this->entryService = $context->getEntryService();
+        $this->worktreeManager = $context->getWorktreeManager();
+        $this->gitWorkflow = $context->getGitWorkflow();
+        $this->pullRequestManager = $context->getPullRequestManager();
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -70,7 +61,6 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         }
 
         $branch = $entry->getBranch() ?? '';
-        $base = $entry->getBase() ?? '';
         $prNumber = $this->storedPrNumber($entry);
 
         if ($prNumber !== null) {
@@ -92,15 +82,5 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         if ($cleaned > 0) {
             $this->console->line(sprintf('Cleaned %d abandoned managed worktree%s.', $cleaned, $cleaned > 1 ? 's' : ''));
         }
-    }
-
-    private function storedPrNumber(BoardEntry $entry): ?int
-    {
-        $pr = $entry->getPr();
-        if ($pr === null || $pr === 'none') {
-            return null;
-        }
-
-        return (int) $pr;
     }
 }
