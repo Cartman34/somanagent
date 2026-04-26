@@ -12,7 +12,7 @@ namespace SoManAgent\Script\Backlog;
  */
 final class BacklogBoard
 {
-    public const SECTION_TODO = "\u{00C0} faire";
+    public const SECTION_TODO = "À faire";
     public const SECTION_ACTIVE = 'Traitement en cours';
 
     public const STAGE_IN_PROGRESS = 'development';
@@ -20,10 +20,10 @@ final class BacklogBoard
     public const STAGE_REJECTED = 'rejected';
     public const STAGE_APPROVED = 'approved';
 
-    private const LEGACY_SECTION_IN_PROGRESS = "En d\u{00E9}veloppement";
-    private const LEGACY_SECTION_IN_REVIEW = "\u{00C0} relire";
-    private const LEGACY_SECTION_REJECTED = "Rejet\u{00E9}es";
-    private const LEGACY_SECTION_APPROVED = "Approuv\u{00E9}es";
+    private const LEGACY_SECTION_IN_PROGRESS = "En développement";
+    private const LEGACY_SECTION_IN_REVIEW = "À relire";
+    private const LEGACY_SECTION_REJECTED = "Rejetées";
+    private const LEGACY_SECTION_APPROVED = "Approuvées";
 
     /** @var array<int, string> */
     private const TASK_SECTIONS = [

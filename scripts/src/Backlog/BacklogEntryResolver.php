@@ -84,6 +84,33 @@ final class BacklogEntryResolver
         return $matches[0];
     }
 
+    /**
+     * @param array<string> $commandArgs
+     */
+    public function requireFeatureByReferenceArgument(BacklogBoard $board, array $commandArgs, string $command): string
+    {
+        if (!isset($commandArgs[0]) || trim($commandArgs[0]) === '') {
+            throw new \RuntimeException(sprintf('%s requires <feature>.', $command));
+        }
+
+        return $this->requireFeatureByReference($board, $commandArgs[0], $command);
+    }
+
+    public function requireFeatureByReference(BacklogBoard $board, string $reference, string $command): string
+    {
+        $normalizedReference = $this->normalizeFeatureSlug($reference);
+        if ($normalizedReference === '') {
+            throw new \RuntimeException(sprintf('%s requires a feature reference.', $command));
+        }
+
+        $match = $this->findParentFeatureEntry($board, $normalizedReference);
+        if ($match === null) {
+            throw new \RuntimeException(sprintf('Feature not found: %s', $normalizedReference));
+        }
+
+        return $normalizedReference;
+    }
+
     public function requireFeature(BacklogBoard $board, string $feature): BoardEntryMatch
     {
         $match = $this->findParentFeatureEntry($board, $feature);
