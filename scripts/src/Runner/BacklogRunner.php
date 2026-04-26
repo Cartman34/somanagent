@@ -744,7 +744,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $taskBranch = $entry->getBranch() ?? '';
         $parent = $this->entryResolver()->requireParentFeature($board, $feature);
         $taskWorktree = $this->worktreeManager()->prepareFeatureAgentWorktree($entry);
-        $this->worktreeManager()->runReviewScript($taskWorktree);
+        $this->worktreeManager()->runReviewScript($taskWorktree, $entry->getBase());
         $this->worktreeManager()->ensureBranchHasNoDirtyManagedWorktree($taskBranch);
         $mergeContext = $this->worktreeManager()->prepareFeatureMergeWorktree($featureBranch, $feature);
 
@@ -803,7 +803,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $taskWorktree = $this->worktreeManager()->prepareFeatureAgentWorktree($entry);
-        $this->worktreeManager()->runReviewScript($taskWorktree);
+        $this->worktreeManager()->runReviewScript($taskWorktree, $entry->getBase());
 
         $entry->setMeta(BoardEntry::META_STAGE, BacklogBoard::STAGE_IN_REVIEW);
         $review->clearReview($this->entryService()->taskReviewKey($entry));
@@ -856,7 +856,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $reviewWorktree = $this->worktreeManager()->prepareFeatureAgentWorktree($entry);
 
         try {
-            $this->worktreeManager()->runReviewScript($reviewWorktree);
+            $this->worktreeManager()->runReviewScript($reviewWorktree, $entry->getBase());
         } catch (\RuntimeException $exception) {
             $message = 'Mechanical review `php scripts/review.php` failed. Fix mechanical issues before submitting the task again.';
             $this->taskReviewReject([$this->entryService()->taskReviewKey($entry)], ['body-file' => $this->writeTempContent([$message])], true);
@@ -1664,7 +1664,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $worktree = $this->worktreeManager()->prepareFeatureAgentWorktree($match->getEntry());
-        $this->worktreeManager()->runReviewScript($worktree);
+        $this->worktreeManager()->runReviewScript($worktree, $match->getEntry()->getBase());
 
         $match->getEntry()->setMeta(BoardEntry::META_STAGE, BacklogBoard::STAGE_IN_REVIEW);
         $this->saveBoard($board, BacklogCommandName::FEATURE_REVIEW_REQUEST->value);
@@ -1691,7 +1691,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $reviewWorktree = $this->worktreeManager()->prepareFeatureAgentWorktree($match->getEntry());
 
         try {
-            $this->worktreeManager()->runReviewScript($reviewWorktree);
+            $this->worktreeManager()->runReviewScript($reviewWorktree, $match->getEntry()->getBase());
         } catch (\RuntimeException $exception) {
             $message = 'Mechanical review `php scripts/review.php` failed. Fix mechanical issues before requesting review again.';
             $this->featureReviewReject([$feature], ['body-file' => $this->writeTempContent([$message])], true);

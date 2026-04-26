@@ -25,6 +25,14 @@ final class ReviewRunner extends AbstractScriptRunner
     {
         return [
             'php scripts/review.php',
+            'php scripts/review.php --base=HEAD~1',
+        ];
+    }
+
+    protected function getOptions(): array
+    {
+        return [
+            ['name' => '--base', 'description' => 'Also review files changed between this git base ref and HEAD'],
         ];
     }
 
@@ -33,8 +41,10 @@ final class ReviewRunner extends AbstractScriptRunner
      */
     public function run(array $args): int
     {
+        $base = $this->parseBaseOption($args);
         [$modifiedFiles, $untrackedFiles] = $this->collectGitStatusFiles();
-        $allFiles = $this->filterExistingFiles(array_merge($modifiedFiles, $untrackedFiles));
+        $committedFiles = $base !== null ? $this->collectCommittedFiles($base) : [];
+        $allFiles = $this->filterExistingFiles(array_values(array_unique(array_merge($modifiedFiles, $untrackedFiles, $committedFiles))));
         $phpFiles = $this->filterPhpSourceFiles($allFiles);
         $tsFiles = $this->filterFrontendSourceFiles($allFiles);
 
@@ -45,6 +55,12 @@ final class ReviewRunner extends AbstractScriptRunner
         echo "=== Untracked files ===\n";
         $this->printPrefixedList($untrackedFiles, '?? ');
         echo "\n";
+
+        if ($base !== null) {
+            echo "=== Committed files since {$base} ===\n";
+            $this->printPrefixedList($committedFiles, 'C  ');
+            echo "\n";
+        }
 
         $frenchHits = $this->collectFrenchStringHits($allFiles);
         echo "=== French strings in modified/new source files ===\n";
@@ -87,6 +103,37 @@ final class ReviewRunner extends AbstractScriptRunner
     }
 
     /**
+     * @param array<string> $args
+     */
+    private function parseBaseOption(array $args): ?string
+    {
+        $base = null;
+
+        while ($args !== []) {
+            $arg = array_shift($args);
+            if ($arg === null) {
+                continue;
+            }
+
+            if (str_starts_with($arg, '--base=')) {
+                $base = substr($arg, strlen('--base='));
+                continue;
+            }
+
+            if ($arg === '--base') {
+                $base = (string) array_shift($args);
+                continue;
+            }
+
+            throw new \RuntimeException("Unknown review argument: {$arg}");
+        }
+
+        $base = trim((string) $base);
+
+        return $base !== '' ? $base : null;
+    }
+
+    /**
      * @return array{0: list<string>, 1: list<string>}
      */
     private function collectGitStatusFiles(): array
@@ -121,6 +168,22 @@ final class ReviewRunner extends AbstractScriptRunner
         }
 
         return [$modifiedFiles, $untrackedFiles];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function collectCommittedFiles(string $base): array
+    {
+        [$exitCode, $lines] = $this->runCommand(sprintf(
+            'git diff --name-only --diff-filter=ACMR %s..HEAD',
+            escapeshellarg($base),
+        ));
+        if ($exitCode !== 0) {
+            throw new \RuntimeException(sprintf('Unable to collect committed files since base %s.', $base));
+        }
+
+        return array_values(array_filter(array_map('trim', $lines), static fn(string $line): bool => $line !== ''));
     }
 
     /**

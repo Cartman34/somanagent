@@ -20,16 +20,25 @@ final class ProjectScriptClient
 {
     private ConsoleClient $console;
 
+    /**
+     * Creates the project script execution client.
+     */
     public function __construct(ConsoleClient $console)
     {
         $this->console = $console;
     }
 
+    /**
+     * Executes one known project script and throws on failure.
+     */
     public function run(AppScript $script, string $arguments = '', ?string $projectRoot = null): void
     {
         $this->console->run($this->command($script, $arguments, $projectRoot));
     }
 
+    /**
+     * Executes one known project script and returns its captured output.
+     */
     public function capture(AppScript $script, string $arguments = '', ?string $projectRoot = null): string
     {
         return $this->console->capture($this->command($script, $arguments, $projectRoot));
@@ -43,12 +52,20 @@ final class ProjectScriptClient
         return $this->console->captureWithExitCode($this->command($script, $arguments, $projectRoot));
     }
 
+    /**
+     * Builds the shell command used to execute one known project script.
+     */
     public function command(AppScript $script, string $arguments = '', ?string $projectRoot = null): string
     {
-        $scriptPath = $projectRoot === null
-            ? $script->value
-            : $this->console->toRelativeProjectPath(rtrim($projectRoot, '/') . '/' . $script->value);
+        if ($projectRoot !== null) {
+            return trim(sprintf(
+                'cd %s && php %s %s',
+                escapeshellarg($this->console->toRelativeProjectPath($projectRoot)),
+                escapeshellarg($script->value),
+                trim($arguments),
+            ));
+        }
 
-        return trim(sprintf('php %s %s', escapeshellarg($scriptPath), trim($arguments)));
+        return trim(sprintf('php %s %s', escapeshellarg($script->value), trim($arguments)));
     }
 }

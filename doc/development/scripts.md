@@ -299,7 +299,7 @@ php scripts/health.php --url http://my-server:8080
 ---
 
 ### `review.php`
-Runs mechanical pre-commit checks on modified and untracked files. Designed to be used by AI agents during the `review` command, before manual inspection.
+Runs mechanical checks on modified and untracked files. With `--base=<ref>`, it also checks files changed by commits between that base and `HEAD`. Designed to be used by AI agents during the `review` command, before manual inspection.
 
 Blockers (exit code 1):
 - French strings (accented characters) in `backend/src/` `.php` and `frontend/src/` `.ts/.tsx`
@@ -311,6 +311,7 @@ Blockers (exit code 1):
 Informational (no exit code impact):
 - List of modified files
 - List of untracked files
+- List of committed files since `--base`, when provided
 - Modified backend services without a dedicated mapped PHPUnit test
 
 Limitations: only detects accented characters as French strings — complement with a manual diff review for unaccented French words (`Valider`, `Commenter`, etc.). JSDoc check covers export declarations only, not re-exports.
@@ -319,6 +320,7 @@ The review flow skips container-backed validations that depend on local uncommit
 
 ```bash
 php scripts/review.php
+php scripts/review.php --base=HEAD~1
 ```
 
 ---
