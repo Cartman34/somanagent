@@ -491,10 +491,10 @@ final class BacklogBoard
     private function isFeatureEntry(BoardEntry $entry): bool
     {
         $kind = $entry->getKind();
-        if ($kind !== '') {
+        if ($kind !== null && $kind !== '') {
             return $kind === 'feature';
         }
 
-        return !$entry->hasMeta('task');
+        return $entry->getTask() === null;
     }
 }

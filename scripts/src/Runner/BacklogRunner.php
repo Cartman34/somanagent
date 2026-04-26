@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Runner;
 
+use SoManAgent\Script\Backlog\BacklogHandlerFactory;
 use SoManAgent\Script\Backlog\BacklogCommandHelp;
 use SoManAgent\Script\Backlog\BacklogBoard;
 use SoManAgent\Script\Backlog\BacklogCliOption;
@@ -63,6 +64,7 @@ final class BacklogRunner extends AbstractScriptRunner
     ];
 
     private ?BacklogCommandHelp $commandHelp = null;
+    private ?BacklogHandlerFactory $handlerFactory = null;
     private ?BacklogEntryResolver $entryResolver = null;
     private ?BacklogEntryService $entryService = null;
     private ?ConsoleClient $consoleClient = null;
@@ -135,38 +137,51 @@ final class BacklogRunner extends AbstractScriptRunner
             return 0;
         }
 
-        return match ($command) {
-            BacklogCommandName::STATUS->value => $this->status($commandArgs, $options),
-            BacklogCommandName::TASK_CREATE->value => $this->createTask($commandArgs, $options),
-            BacklogCommandName::TASK_TODO_LIST->value => $this->taskTodoList(),
-            BacklogCommandName::TASK_REMOVE->value => $this->taskRemove($commandArgs),
-            BacklogCommandName::REVIEW_NEXT->value => $this->reviewNext(),
-            BacklogCommandName::TASK_REVIEW_REQUEST->value => $this->taskReviewRequest($commandArgs, $options),
-            BacklogCommandName::TASK_REVIEW_CHECK->value => $this->taskReviewCheck($commandArgs),
-            BacklogCommandName::TASK_REVIEW_REJECT->value => $this->taskReviewReject($commandArgs, $options),
-            BacklogCommandName::TASK_REVIEW_APPROVE->value => $this->taskReviewApprove($commandArgs),
-            BacklogCommandName::TASK_REWORK->value => $this->taskRework($commandArgs, $options),
-            BacklogCommandName::FEATURE_START->value => $this->featureStart($commandArgs, $options),
-            BacklogCommandName::FEATURE_RELEASE->value => $this->featureRelease($commandArgs, $options),
-            BacklogCommandName::FEATURE_TASK_ADD->value => $this->featureTaskAdd($commandArgs, $options),
-            BacklogCommandName::FEATURE_TASK_MERGE->value => $this->featureTaskMerge($commandArgs, $options),
-            BacklogCommandName::FEATURE_ASSIGN->value => $this->featureAssign($commandArgs, $options),
-            BacklogCommandName::FEATURE_UNASSIGN->value => $this->featureUnassign($commandArgs, $options),
-            BacklogCommandName::FEATURE_REWORK->value => $this->featureRework($commandArgs, $options),
-            BacklogCommandName::FEATURE_BLOCK->value => $this->featureBlock($commandArgs, $options),
-            BacklogCommandName::FEATURE_UNBLOCK->value => $this->featureUnblock($commandArgs, $options),
-            BacklogCommandName::FEATURE_LIST->value => $this->featureList(),
-            BacklogCommandName::WORKTREE_LIST->value => $this->worktreeList(),
-            BacklogCommandName::WORKTREE_CLEAN->value => $this->worktreeClean(),
-            BacklogCommandName::WORKTREE_RESTORE->value => $this->worktreeRestore($commandArgs, $options),
-            BacklogCommandName::FEATURE_REVIEW_REQUEST->value => $this->featureReviewRequest($commandArgs, $options),
-            BacklogCommandName::FEATURE_REVIEW_CHECK->value => $this->featureReviewCheck($commandArgs),
-            BacklogCommandName::FEATURE_REVIEW_REJECT->value => $this->featureReviewReject($commandArgs, $options),
-            BacklogCommandName::FEATURE_REVIEW_APPROVE->value => $this->featureReviewApprove($commandArgs, $options),
-            BacklogCommandName::FEATURE_CLOSE->value => $this->featureClose($commandArgs),
-            BacklogCommandName::FEATURE_MERGE->value => $this->featureMerge($commandArgs, $options),
-            default => throw new \RuntimeException("Unknown backlog command: {$command}. Run `php scripts/backlog.php help` for the available commands."),
-        };
+        try {
+            return match ($command) {
+                BacklogCommandName::STATUS->value => $this->handleCommand($command, $commandArgs, $options),
+                BacklogCommandName::TASK_CREATE->value => $this->createTask($commandArgs, $options),
+                BacklogCommandName::TASK_TODO_LIST->value => $this->taskTodoList(),
+                BacklogCommandName::TASK_REMOVE->value => $this->taskRemove($commandArgs),
+                BacklogCommandName::REVIEW_NEXT->value => $this->reviewNext(),
+                BacklogCommandName::TASK_REVIEW_REQUEST->value => $this->taskReviewRequest($commandArgs, $options),
+                BacklogCommandName::TASK_REVIEW_CHECK->value => $this->taskReviewCheck($commandArgs),
+                BacklogCommandName::TASK_REVIEW_REJECT->value => $this->taskReviewReject($commandArgs, $options),
+                BacklogCommandName::TASK_REVIEW_APPROVE->value => $this->taskReviewApprove($commandArgs),
+                BacklogCommandName::TASK_REWORK->value => $this->taskRework($commandArgs, $options),
+                BacklogCommandName::FEATURE_START->value => $this->featureStart($commandArgs, $options),
+                BacklogCommandName::FEATURE_RELEASE->value => $this->featureRelease($commandArgs, $options),
+                BacklogCommandName::FEATURE_TASK_ADD->value => $this->featureTaskAdd($commandArgs, $options),
+                BacklogCommandName::FEATURE_TASK_MERGE->value => $this->featureTaskMerge($commandArgs, $options),
+                BacklogCommandName::FEATURE_ASSIGN->value => $this->featureAssign($commandArgs, $options),
+                BacklogCommandName::FEATURE_UNASSIGN->value => $this->featureUnassign($commandArgs, $options),
+                BacklogCommandName::FEATURE_REWORK->value => $this->featureRework($commandArgs, $options),
+                BacklogCommandName::FEATURE_BLOCK->value => $this->featureBlock($commandArgs, $options),
+                BacklogCommandName::FEATURE_UNBLOCK->value => $this->featureUnblock($commandArgs, $options),
+                BacklogCommandName::FEATURE_LIST->value => $this->featureList(),
+                BacklogCommandName::WORKTREE_LIST->value => $this->handleCommand($command, $commandArgs, $options),
+                BacklogCommandName::WORKTREE_CLEAN->value => $this->worktreeClean(),
+                BacklogCommandName::WORKTREE_RESTORE->value => $this->worktreeRestore($commandArgs, $options),
+                BacklogCommandName::FEATURE_REVIEW_REQUEST->value => $this->featureReviewRequest($commandArgs, $options),
+                BacklogCommandName::FEATURE_REVIEW_CHECK->value => $this->featureReviewCheck($commandArgs),
+                BacklogCommandName::FEATURE_REVIEW_REJECT->value => $this->featureReviewReject($commandArgs, $options),
+                BacklogCommandName::FEATURE_REVIEW_APPROVE->value => $this->featureReviewApprove($commandArgs, $options),
+                BacklogCommandName::FEATURE_CLOSE->value => $this->featureClose($commandArgs),
+                BacklogCommandName::FEATURE_MERGE->value => $this->featureMerge($commandArgs, $options),
+                default => throw new \RuntimeException("Unknown command: {$command}"),
+            };
+        } catch (\Exception $e) {
+            $this->console->fail($e->getMessage());
+
+            return 1;
+        }
+    }
+
+    private function handleCommand(string $command, array $commandArgs, array $options): int
+    {
+        $this->handlerFactory()->createHandler($command)->handle($commandArgs, $options);
+
+        return 0;
     }
 
     /**
@@ -241,6 +256,36 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         return $this->commandHelp;
+    }
+
+    private function handlerFactory(): BacklogHandlerFactory
+    {
+        if ($this->handlerFactory === null) {
+            $this->handlerFactory = new BacklogHandlerFactory(
+                $this->console,
+                $this->dryRun,
+                $this->projectRoot,
+                $this->worktreeManager(),
+                $this->entryService(),
+                $this->entryResolver(),
+                $this->consoleClient(),
+                $this->featureSlugger(),
+                $this->boardPath(),
+                $this->reviewFilePath()
+            );
+        }
+
+        return $this->handlerFactory;
+    }
+
+    private function boardPath(): string
+    {
+        return $this->boardPath ?? ($this->projectRoot . '/' . self::DEFAULT_BOARD_PATH);
+    }
+
+    private function reviewFilePath(): string
+    {
+        return $this->reviewFilePath ?? ($this->projectRoot . '/' . self::DEFAULT_REVIEW_FILE_PATH);
     }
 
     private function entryResolver(): BacklogEntryResolver
@@ -1389,48 +1434,6 @@ final class BacklogRunner extends AbstractScriptRunner
         return 0;
     }
 
-    private function worktreeList(): int
-    {
-        $board = $this->board();
-        $classification = $this->worktreeManager()->classifyWorktrees($board);
-
-        if ($classification->getManaged() === [] && $classification->getExternal() === []) {
-            $this->console->line('No worktree to report.');
-
-            return 0;
-        }
-
-        if ($classification->getManaged() !== []) {
-            $this->console->line('[Managed worktrees]');
-            foreach ($classification->getManaged() as $item) {
-                $parts = [
-                    $this->consoleClient()->toRelativeProjectPath($item->getPath()),
-                    'state=' . $item->getState()->value,
-                    'branch=' . ($item->getBranch() ?? '-'),
-                    'feature=' . ($item->getFeature() ?? '-'),
-                    'agent=' . ($item->getAgent() ?? '-'),
-                    'action=' . $item->getAction()->value,
-                ];
-                $this->console->line('- ' . implode(' ', $parts));
-            }
-        }
-
-        if ($classification->getExternal() !== []) {
-            $this->console->line('[External worktrees]');
-            foreach ($classification->getExternal() as $item) {
-                $parts = [
-                    $item->getPath(),
-                    'branch=' . ($item->getBranch() ?? '-'),
-                    'action=' . $item->getAction()->value,
-                ];
-                $this->console->line('- ' . implode(' ', $parts));
-            }
-            $this->console->line('Manual cleanup: verify each external worktree is disposable, then use `git worktree remove <path>` or `git worktree prune` when only metadata remains.');
-        }
-
-        return 0;
-    }
-
     private function worktreeClean(): int
     {
         $board = $this->board();
@@ -1453,58 +1456,6 @@ final class BacklogRunner extends AbstractScriptRunner
         $skipped = count($classification->getManaged());
         if ($skipped > 0) {
             $this->console->line(sprintf('Skipped %d managed worktree%s that require manual attention.', $skipped, $skipped > 1 ? 's' : ''));
-        }
-
-        return 0;
-    }
-
-    /**
-     * @param array<string> $commandArgs
-     * @param array<string, string|bool> $options
-     */
-    private function status(array $commandArgs, array $options): int
-    {
-        $board = $this->board();
-        $agent = BoardEntry::parseEmptyString((string) ($options[BacklogCliOption::AGENT->value] ?? ''));
-        $feature = isset($commandArgs[0]) ? $this->entryService()->normalizeFeatureSlug($commandArgs[0]) : null;
-
-        if ($agent === null && $feature === null) {
-            throw new \RuntimeException('status requires --agent=<code> or <feature>.');
-        }
-
-        $taskEntry = $agent !== null
-            ? $this->entryResolver()->getSingleTaskForAgent($board, $agent, false)
-            : null;
-        $featureEntry = null;
-        if ($feature !== null) {
-            $featureEntry = $this->entryResolver()->requireFeature($board, $feature)->getEntry();
-        } elseif ($taskEntry !== null && $taskEntry->getFeature() !== null) {
-            $featureEntry = $this->entryResolver()->requireFeature($board, $taskEntry->getFeature())->getEntry();
-        } elseif ($agent !== null) {
-            $featureEntry = $this->entryResolver()->getSingleFeatureForAgent($board, $agent, false);
-        }
-
-        $this->console->line('[Agent]');
-        $this->console->line('Agent: ' . ($agent ?? ($featureEntry?->getAgent() ?? '-')));
-
-        $this->printStatusWorktree($board, $agent);
-
-        if ($taskEntry !== null) {
-            $this->console->line('[Task]');
-            $this->printStatusEntry($taskEntry);
-            $this->console->line('Next: ' . $this->nextStepForEntry($taskEntry, $this->entryService()->featureStage($taskEntry)));
-        } else {
-            $this->console->line('[Task]');
-            $this->console->line('Active: ' . BacklogMetaValue::NONE->value);
-        }
-
-        if ($featureEntry !== null) {
-            $this->console->line('[Feature]');
-            $this->printStatusEntry($featureEntry);
-            $this->console->line('Next: ' . $this->nextStepForEntry($featureEntry, $this->entryService()->featureStage($featureEntry)));
-        } else {
-            $this->console->line('[Feature]');
-            $this->console->line('Active: ' . BacklogMetaValue::NONE->value);
         }
 
         return 0;
@@ -1980,12 +1931,12 @@ final class BacklogRunner extends AbstractScriptRunner
 
     private function board(): BacklogBoard
     {
-        return new BacklogBoard($this->boardPath ?? ($this->projectRoot . '/' . self::DEFAULT_BOARD_PATH));
+        return new BacklogBoard($this->boardPath());
     }
 
     private function reviewFile(): BacklogReviewFile
     {
-        return new BacklogReviewFile($this->reviewFilePath ?? ($this->projectRoot . '/' . self::DEFAULT_REVIEW_FILE_PATH));
+        return new BacklogReviewFile($this->reviewFilePath());
     }
 
     private function featureHasNoDevelopment(BoardEntry $entry): bool
