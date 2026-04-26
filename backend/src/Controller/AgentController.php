@@ -125,7 +125,11 @@ class AgentController extends AbstractApiController
             return $this->json($this->apiErrorPayloadFactory->create('agent.error.not_found'), Response::HTTP_NOT_FOUND);
         }
 
-        $dto = UpdateAgentDto::fromArray($request->toArray());
+        $dto = $this->tryParseDto(fn() => UpdateAgentDto::fromArray($request->toArray()));
+        if ($dto instanceof JsonResponse) {
+            return $dto;
+        }
+
         try {
             $this->agentService->update($agent, $dto);
         } catch (ValidationException $e) {

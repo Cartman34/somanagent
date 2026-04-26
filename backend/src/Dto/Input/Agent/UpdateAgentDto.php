@@ -7,9 +7,11 @@ declare(strict_types=1);
 
 namespace App\Dto\Input\Agent;
 
+use App\Enum\ConnectorType;
+use App\Exception\ValidationException;
+
 /**
  * Input DTO for updating an agent (all fields optional).
- * All fields are optional and no validation errors are thrown.
  */
 final class UpdateAgentDto
 {
@@ -29,13 +31,27 @@ final class UpdateAgentDto
     ) {}
 
     /**
-     * Creates an instance from raw request data. No required fields.
+     * @throws ValidationException when the connector value is provided but invalid
      */
     public static function fromArray(array $data): self
     {
+        $errors = [];
+        $connectorValue = null;
+
+        if (isset($data['connector'])) {
+            $connectorValue = (string) $data['connector'];
+            if (ConnectorType::tryFrom($connectorValue) === null) {
+                $errors[] = ['field' => 'connector', 'code' => 'agent.validation.connector_invalid'];
+            }
+        }
+
+        if ($errors !== []) {
+            throw new ValidationException($errors);
+        }
+
         return new self(
             name: isset($data['name']) && $data['name'] !== '' ? (string) $data['name'] : null,
-            connectorValue: isset($data['connector']) ? (string) $data['connector'] : null,
+            connectorValue: $connectorValue,
             configData: is_array($data['config'] ?? null) ? $data['config'] : null,
             description: isset($data['description']) && $data['description'] !== '' ? (string) $data['description'] : null,
             roleId: isset($data['roleId']) && $data['roleId'] !== '' ? (string) $data['roleId'] : null,
