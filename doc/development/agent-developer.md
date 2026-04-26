@@ -25,7 +25,6 @@ Read this file only when the active task requires developer workflow details.
 - `worktree-list`
 - `worktree-clean`
 - `feature-review-next`
-- `feature-status`
 - `feature-review-request`
 
 ## Responsibilities
@@ -183,12 +182,6 @@ Read this file only when the active task requires developer workflow details.
 1. Run `php scripts/backlog.php status --agent=<code>` or `php scripts/backlog.php status <feature>`.
 2. The script prints the agent worktree state, the active task if any, the parent feature if any, and separate next actions for task and feature workflow.
 3. Use this command before choosing between `task-review-request` and `feature-review-request`.
-
-### `feature-status`
-
-1. Run `php scripts/backlog.php feature-status [--agent=<code>] [<feature>]`.
-2. The script prints `Feature`, `Branch`, `Base`, `Stage`, `PR`, `Summary`, `Next`, and `Blocker`.
-3. When the active entry contains nested backlog bullets, the script also prints them under `Details:` for both `kind=feature` and `kind=task`.
 
 ### `feature-review-request`
 

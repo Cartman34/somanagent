@@ -158,7 +158,6 @@ final class BacklogRunner extends AbstractScriptRunner
             BacklogCommandName::WORKTREE_LIST->value => $this->worktreeList(),
             BacklogCommandName::WORKTREE_CLEAN->value => $this->worktreeClean(),
             BacklogCommandName::WORKTREE_RESTORE->value => $this->worktreeRestore($commandArgs, $options),
-            BacklogCommandName::FEATURE_STATUS->value => $this->featureStatus($commandArgs, $options),
             BacklogCommandName::FEATURE_REVIEW_NEXT->value => $this->featureReviewNext(),
             BacklogCommandName::FEATURE_REVIEW_REQUEST->value => $this->featureReviewRequest($commandArgs, $options),
             BacklogCommandName::FEATURE_REVIEW_CHECK->value => $this->featureReviewCheck($commandArgs),
@@ -1566,6 +1565,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->console->line('PR: ' . $this->describePrStatus($entry));
         $this->console->line('Blocker: ' . ($entry->isBlocked() ? 'blocked' : '-'));
         $this->console->line('Summary: ' . $entry->getText());
+        $this->printEntryStatusDetails($entry);
     }
 
     /**
@@ -1599,39 +1599,6 @@ final class BacklogRunner extends AbstractScriptRunner
             $this->consoleClient()->toRelativeProjectPath($worktree),
             $branch,
         ));
-
-        return 0;
-    }
-
-    /**
-     * @param array<string> $commandArgs
-     * @param array<string, string|bool> $options
-     */
-    private function featureStatus(array $commandArgs, array $options): int
-    {
-        $board = $this->board();
-        $feature = isset($commandArgs[0]) ? $this->entryService()->normalizeFeatureSlug($commandArgs[0]) : null;
-
-        if ($feature === null) {
-            $agent = BoardEntry::parseEmptyString((string) ($options[self::OPTION_AGENT] ?? ''));
-            if ($agent === null) {
-                throw new \RuntimeException('feature-status requires either <feature> or --agent.');
-            }
-            $task = $this->entryResolver()->getSingleTaskForAgent($board, $agent, false);
-            if ($task !== null) {
-                $this->printEntryStatus($task);
-
-                return 0;
-            }
-            $feature = $this->entryResolver()->requireSingleFeatureForAgent($board, $agent)->getEntry()->getFeature();
-        }
-
-        if ($feature === null) {
-            throw new \RuntimeException('Unable to resolve target feature for feature-status.');
-        }
-
-        $match = $this->entryResolver()->requireFeature($board, $feature);
-        $this->printEntryStatus($match->getEntry());
 
         return 0;
     }

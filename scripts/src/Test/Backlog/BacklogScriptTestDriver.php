@@ -142,11 +142,11 @@ MD);
         $this->runBacklog(['feature-close', $feature]);
     }
 
-    public function featureStatus(string $featureOrAgent, bool $isAgent = false): string
+    public function status(string $featureOrAgent, bool $isAgent = false): string
     {
         return $isAgent
-            ? $this->runBacklog(['feature-status', '--agent', $featureOrAgent])
-            : $this->runBacklog(['feature-status', $featureOrAgent]);
+            ? $this->runBacklog(['status', '--agent', $featureOrAgent])
+            : $this->runBacklog(['status', $featureOrAgent]);
     }
 
     public function addQueuedTaskToCurrentFeature(string $agent, string $featureText): void
@@ -324,7 +324,7 @@ MD);
 
     public function assertStatusContains(string $featureOrAgent, string $needle, bool $isAgent = false): void
     {
-        $this->assertOutputContains($this->featureStatus($featureOrAgent, $isAgent), $needle);
+        $this->assertOutputContains($this->status($featureOrAgent, $isAgent), $needle);
     }
 
     public function assertWorktreeListContains(string $needle): void

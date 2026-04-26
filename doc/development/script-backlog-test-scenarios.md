@@ -127,7 +127,7 @@ Validate `feature-start` on a plain queued task.
    - `php scripts/backlog.php feature-start --agent d01`
 4. Inspect result:
    - `php scripts/backlog.php feature-list`
-   - `php scripts/backlog.php feature-status --agent d01`
+   - `php scripts/backlog.php status --agent d01`
    - `php scripts/backlog.php worktree-list`
 
 ### Expected checks
@@ -175,7 +175,7 @@ Validate feature assignment and unassignment permissions.
 3. Run with manager role:
    - `SOMANAGER_ROLE=manager php scripts/backlog.php feature-assign test-assign-feature --agent d02`
 4. Inspect:
-   - `php scripts/backlog.php feature-status --agent d02`
+   - `php scripts/backlog.php status --agent d02`
 5. Unassign with manager role:
    - `SOMANAGER_ROLE=manager php scripts/backlog.php feature-unassign test-assign-feature --agent d02`
 
@@ -206,7 +206,7 @@ Validate `feature-start` on scoped queued tasks.
    - `php scripts/backlog.php feature-start --agent d01`
 4. Inspect:
    - `php scripts/backlog.php feature-list`
-   - `php scripts/backlog.php feature-status test-scoped-feature`
+   - `php scripts/backlog.php status test-scoped-feature`
    - `php scripts/backlog.php worktree-list`
 
 ### Expected checks
@@ -232,7 +232,7 @@ Validate `feature-task-add` for scoped child tasks.
 3. Run:
    - `php scripts/backlog.php feature-task-add --agent d01 --feature-text "Updated feature summary"`
 4. Inspect:
-   - `php scripts/backlog.php feature-status test-scoped-feature`
+   - `php scripts/backlog.php status test-scoped-feature`
    - `php scripts/backlog.php feature-list`
 
 ### Expected checks
@@ -282,7 +282,7 @@ Validate local merge of one approved child task into its parent feature.
 1. Merge approved task:
    - `php scripts/backlog.php feature-task-merge test-scoped-feature/test-child-a`
 2. Inspect:
-   - `php scripts/backlog.php feature-status test-scoped-feature`
+   - `php scripts/backlog.php status test-scoped-feature`
    - `php scripts/backlog.php feature-list`
    - `php scripts/backlog.php worktree-list`
 
@@ -306,7 +306,7 @@ Validate remote feature review transitions.
    - `php scripts/backlog.php feature-review-request --agent d01 test-scoped-feature`
 2. Inspect:
    - `php scripts/backlog.php feature-review-next`
-   - `php scripts/backlog.php feature-status test-scoped-feature`
+   - `php scripts/backlog.php status test-scoped-feature`
 3. Run mechanical check:
    - `php scripts/backlog.php feature-review-check test-scoped-feature`
 4. Reject:
@@ -333,7 +333,7 @@ Validate blocked flag handling and PR title synchronization.
 1. Block:
    - `php scripts/backlog.php feature-block --agent d01 test-scoped-feature`
 2. Inspect:
-   - `php scripts/backlog.php feature-status test-scoped-feature`
+   - `php scripts/backlog.php status test-scoped-feature`
 3. Unblock:
    - `php scripts/backlog.php feature-unblock --agent d01 test-scoped-feature`
 4. Inspect again.
@@ -399,7 +399,7 @@ Validate explicit failures and guardrails.
 1. Run one backlog command from a `WA` and confirm it fails.
 2. Call a developer command without `--agent` and confirm it fails.
 3. Call a reviewer command with `--agent` only if the command explicitly forbids it and confirm it fails when expected.
-4. Try `feature-status` without `<feature>` and without `--agent` and confirm it fails.
+4. Try `status` without `<feature>` and without `--agent` and confirm it fails.
 5. Try to merge or release with invalid stage and confirm it fails.
 6. Try to reuse an already-active child task slug and confirm it fails.
 
@@ -424,6 +424,6 @@ When the full scenario set is too expensive, run at least:
 3. `php scripts/backlog.php task-todo-list`
 4. `php scripts/backlog.php feature-list`
 5. `php scripts/backlog.php worktree-list`
-6. `php scripts/backlog.php feature-status --agent <known-agent>`
+6. `php scripts/backlog.php status --agent <known-agent>`
 
 This smoke suite is not enough for workflow refactors. Use the full scenarios for structural changes.
