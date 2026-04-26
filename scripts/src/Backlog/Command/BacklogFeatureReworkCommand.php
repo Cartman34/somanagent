@@ -56,6 +56,6 @@ final class BacklogFeatureReworkCommand extends AbstractBacklogCommand
         $worktree = $this->worktreeManager->prepareAgentWorktree($agent);
         $this->worktreeManager->checkoutBranchInWorktree($worktree, $entry->getBranch() ?? '', false);
 
-        $this->console->ok(sprintf('Moved feature %s back to %s', $feature, BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_PROGRESS)));
+        $this->presenter->displaySuccess(sprintf('Moved feature %s back to %s', $feature, BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_PROGRESS)));
     }
 }

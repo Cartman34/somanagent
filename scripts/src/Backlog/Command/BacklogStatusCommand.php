@@ -25,15 +25,18 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
 
     private BacklogWorktreeManager $worktreeManager;
 
-    private BacklogPresenter $presenter;
-
-    public function __construct(BacklogCommandContext $context)
-    {
-        parent::__construct($context);
-        $this->entryResolver = $context->getEntryResolver();
-        $this->entryService = $context->getEntryService();
-        $this->worktreeManager = $context->getWorktreeManager();
-        $this->presenter = $context->getPresenter();
+    public function __construct(
+        BacklogPresenter $presenter,
+        bool $dryRun,
+        string $projectRoot,
+        BacklogEntryResolver $entryResolver,
+        BacklogEntryService $entryService,
+        BacklogWorktreeManager $worktreeManager
+    ) {
+        parent::__construct($presenter, $dryRun, $projectRoot);
+        $this->entryResolver = $entryResolver;
+        $this->entryService = $entryService;
+        $this->worktreeManager = $worktreeManager;
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -66,19 +69,19 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
             $this->presenter->displayStageHeader($stage);
             $matches = $board->findFeaturesByStage($stage);
             if ($matches === []) {
-                $this->console->line('  none');
+                $this->presenter->displayLine('  none');
             } else {
                 foreach ($matches as $match) {
                     $this->presenter->displayEntryLine($match->getEntry());
                 }
             }
-            $this->console->line('');
+            $this->presenter->displayLine('');
         }
 
-        $this->console->line('[' . BacklogBoard::SECTION_TODO . ']');
+        $this->presenter->displayLine('[' . BacklogBoard::SECTION_TODO . ']');
         $reserved = $board->findReservedTasks();
         if ($reserved === []) {
-            $this->console->line('  none');
+            $this->presenter->displayLine('  none');
         } else {
             foreach ($reserved as $match) {
                 $this->presenter->displayTodoEntryLine($match->getEntry());
@@ -91,22 +94,22 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
         $taskEntry = $this->entryResolver->findTaskEntriesByAgent($board, $agent)[0] ?? null;
         $featureEntry = $this->entryResolver->findFeatureEntriesByAgent($board, $agent)[0] ?? null;
 
-        $this->console->line('[Task]');
+        $this->presenter->displayLine('[Task]');
         if ($taskEntry !== null) {
             $this->presenter->displayEntryStatus($taskEntry->getEntry());
         } else {
-            $this->console->line('Active: ' . BacklogMetaValue::NONE->value);
+            $this->presenter->displayLine('Active: ' . BacklogMetaValue::NONE->value);
         }
 
-        $this->console->line('');
-        $this->console->line('[Feature]');
+        $this->presenter->displayLine('');
+        $this->presenter->displayLine('[Feature]');
         if ($featureEntry !== null) {
             $this->presenter->displayEntryStatus($featureEntry->getEntry());
         } else {
-            $this->console->line('Active: ' . BacklogMetaValue::NONE->value);
+            $this->presenter->displayLine('Active: ' . BacklogMetaValue::NONE->value);
         }
 
-        $this->console->line('');
+        $this->presenter->displayLine('');
         $this->statusWorktree($board, $agent);
     }
 
@@ -116,19 +119,19 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
         $match = $this->entryResolver->requireFeature($board, $target);
         $entry = $match->getEntry();
 
-        $this->console->line('[Feature]');
+        $this->presenter->displayLine('[Feature]');
         $this->presenter->displayEntryStatus($entry);
 
-        $this->console->line('');
+        $this->presenter->displayLine('');
         $this->statusWorktree($board, $entry->getAgent());
     }
 
     private function statusWorktree(BacklogBoard $board, ?string $agent): void
     {
-        $this->console->line('[Worktree]');
+        $this->presenter->displayLine('[Worktree]');
         if ($agent === null) {
-            $this->console->line('State: unknown');
-            $this->console->line('Path: -');
+            $this->presenter->displayLine('State: unknown');
+            $this->presenter->displayLine('Path: -');
 
             return;
         }
@@ -143,8 +146,8 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
         }
 
         if ($worktree === null) {
-            $this->console->line('State: absent');
-            $this->console->line('Path: ' . $expectedPath);
+            $this->presenter->displayLine('State: absent');
+            $this->presenter->displayLine('Path: ' . $expectedPath);
 
             return;
         }

@@ -12,6 +12,7 @@ use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
 use SoManAgent\Script\Backlog\BacklogEntryService;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
+use SoManAgent\Script\Backlog\BacklogPresenter;
 
 /**
  * Command for reworking a rejected task.
@@ -24,12 +25,18 @@ final class BacklogTaskReworkCommand extends AbstractBacklogCommand
 
     private BacklogWorktreeManager $worktreeManager;
 
-    public function __construct(BacklogCommandContext $context)
-    {
-        parent::__construct($context);
-        $this->entryResolver = $context->getEntryResolver();
-        $this->entryService = $context->getEntryService();
-        $this->worktreeManager = $context->getWorktreeManager();
+    public function __construct(
+        BacklogPresenter $presenter,
+        bool $dryRun,
+        string $projectRoot,
+        BacklogEntryResolver $entryResolver,
+        BacklogEntryService $entryService,
+        BacklogWorktreeManager $worktreeManager
+    ) {
+        parent::__construct($presenter, $dryRun, $projectRoot);
+        $this->entryResolver = $entryResolver;
+        $this->entryService = $entryService;
+        $this->worktreeManager = $worktreeManager;
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -62,7 +69,7 @@ final class BacklogTaskReworkCommand extends AbstractBacklogCommand
         $worktree = $this->worktreeManager->prepareAgentWorktree($agent);
         $this->worktreeManager->checkoutBranchInWorktree($worktree, $entry->getBranch() ?? '', false);
 
-        $this->console->ok(sprintf(
+        $this->presenter->displaySuccess(sprintf(
             'Task %s moved back to %s',
             $this->entryService->taskReviewKey($entry),
             BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_PROGRESS),

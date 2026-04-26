@@ -57,33 +57,18 @@ final class BacklogWorktreeManager
         $this->console->logVerbose($message);
     }
 
-    private function runCommand(string $command): void
-    {
-        $this->console->run($command);
-    }
-
-    private function capture(string $command): string
-    {
-        return $this->console->capture($command);
-    }
-
-    private function commandSucceeds(string $command): bool
-    {
-        return $this->console->succeeds($command);
-    }
-
     /**
      * Ensures the managed worktree for an agent exists and is clean.
      */
     public function prepareAgentWorktree(string $agent): string
     {
         $path = $this->projectRoot . '/.worktrees/' . $agent;
-        $relativePath = $this->toRelativeProjectPath($path);
+        $relativePath = $this->git->toRelativeProjectPath($path);
         $exists = is_dir($path . '/.git') || is_file($path . '/.git');
         $created = false;
 
         if (!$exists) {
-            $this->runGitCommand(sprintf('git worktree add --detach %s HEAD', escapeshellarg($relativePath)));
+            $this->git->addWorktreeDetach($path);
             $created = true;
             if ($this->dryRun) {
                 $this->logVerbose('[dry-run] Skipping worktree status check for non-created path: ' . $relativePath);
@@ -93,8 +78,7 @@ final class BacklogWorktreeManager
         }
 
         $this->ensureWorktreeRuntimeIgnores($path);
-        $status = trim($this->captureGitOutput($this->gitInPath($path, 'status --short')));
-        if ($status !== '') {
+        if ($this->git->hasLocalChanges($path)) {
             throw new \RuntimeException("Agent worktree is dirty: {$path}");
         }
 
@@ -131,8 +115,7 @@ final class BacklogWorktreeManager
     {
         $existingPath = $this->findWorktreePathForBranch($featureBranch);
         if ($existingPath !== null) {
-            $dirty = trim($this->captureGitOutput($this->gitInPath($existingPath, 'status --short')));
-            if ($dirty !== '') {
+            if ($this->git->hasLocalChanges($existingPath)) {
                 throw new \RuntimeException(sprintf(
                     'Feature branch %s is still dirty in worktree %s. Clean it before feature-task-merge.',
                     $featureBranch,
@@ -144,7 +127,6 @@ final class BacklogWorktreeManager
         }
 
         $path = $this->projectRoot . '/.worktrees/merge-' . $feature;
-        $relativePath = $this->toRelativeProjectPath($path);
         if (is_dir($path) || is_file($path)) {
             throw new \RuntimeException(sprintf(
                 'Temporary merge worktree path already exists: %s',
@@ -152,11 +134,7 @@ final class BacklogWorktreeManager
             ));
         }
 
-        $this->runGitCommand(sprintf(
-            'git worktree add %s %s',
-            escapeshellarg($relativePath),
-            escapeshellarg($featureBranch),
-        ));
+        $this->git->addWorktree($path, $featureBranch);
         $this->ensureWorktreeRuntimeState($path, true);
 
         return ['path' => $path, 'temporary' => true];
@@ -171,18 +149,14 @@ final class BacklogWorktreeManager
             return;
         }
 
-        $dirty = trim($this->captureGitOutput($this->gitInPath($path, 'status --short')));
-        if ($dirty !== '') {
+        if ($this->git->hasLocalChanges($path)) {
             throw new \RuntimeException(sprintf(
                 'Temporary merge worktree is dirty and cannot be removed automatically: %s',
                 $path,
             ));
         }
 
-        $this->runGitCommand(sprintf(
-            'git worktree remove %s --force',
-            escapeshellarg($this->toRelativeProjectPath($path)),
-        ));
+        $this->git->removeWorktreeForce($path);
     }
 
     /**
@@ -204,8 +178,7 @@ final class BacklogWorktreeManager
             return;
         }
 
-        $dirty = trim($this->captureGitOutput($this->gitInPath($path, 'status --short')));
-        if ($dirty !== '') {
+        if ($this->git->hasLocalChanges($path)) {
             throw new \RuntimeException(sprintf(
                 'Task worktree for %s is dirty after merge and must be cleaned manually: %s',
                 $agent,
@@ -213,10 +186,7 @@ final class BacklogWorktreeManager
             ));
         }
 
-        $this->runGitCommand(sprintf(
-            'git worktree remove %s --force',
-            escapeshellarg($this->toRelativeProjectPath($path)),
-        ));
+        $this->git->removeWorktreeForce($path);
     }
 
     /**
@@ -224,18 +194,11 @@ final class BacklogWorktreeManager
      */
     public function ensureLocalBranchExists(string $branch, string $startPoint): void
     {
-        if ($this->gitCommandSucceeds(sprintf(
-            'git show-ref --verify --quiet %s',
-            escapeshellarg('refs/heads/' . $branch),
-        ))) {
+        if ($this->git->localBranchExists($branch)) {
             return;
         }
 
-        $this->runGitCommand(sprintf(
-            'git branch %s %s',
-            escapeshellarg($branch),
-            escapeshellarg($startPoint),
-        ));
+        $this->git->createBranch($branch, $startPoint);
     }
 
     /**
@@ -253,10 +216,7 @@ final class BacklogWorktreeManager
             return;
         }
 
-        if ($this->gitCommandSucceeds(sprintf(
-            'git show-ref --verify --quiet %s',
-            escapeshellarg('refs/heads/' . $branch),
-        ))) {
+        if ($this->git->localBranchExists($branch)) {
             return;
         }
 
@@ -279,59 +239,38 @@ final class BacklogWorktreeManager
         $this->releaseBranchFromOtherWorktrees($branch, $worktree);
 
         if ($this->dryRun && !is_dir($worktree . '/.git') && !is_file($worktree . '/.git')) {
-            $this->logVerbose('[dry-run] Skipping worktree-local git inspection for non-created path: ' . $this->toRelativeProjectPath($worktree));
+            $this->logVerbose('[dry-run] Skipping worktree-local git inspection for non-created path: ' . $this->git->toRelativeProjectPath($worktree));
             if ($create) {
-                $this->runGitCommand($this->gitInPath(
-                    $worktree,
-                    sprintf('checkout -B %s %s', escapeshellarg($branch), escapeshellarg($startPoint)),
-                ));
+                $this->git->checkoutBranchCreate($worktree, $branch, $startPoint);
 
                 return;
             }
 
-            $this->runGitCommand($this->gitInPath(
-                $worktree,
-                sprintf('checkout %s', escapeshellarg($branch)),
-            ));
+            $this->git->checkoutBranch($worktree, $branch);
 
             return;
         }
 
-        $currentBranch = null;
-        if ($this->gitCommandSucceeds($this->gitInPath($worktree, 'symbolic-ref --quiet --short HEAD'))) {
-            $currentBranch = trim($this->captureGitOutput($this->gitInPath($worktree, 'symbolic-ref --quiet --short HEAD')));
-        }
+        $currentBranch = $this->git->currentBranch($worktree);
 
         if (!$create && $currentBranch === $branch) {
             return;
         }
 
         if ($create) {
-            $this->runGitCommand($this->gitInPath(
-                $worktree,
-                sprintf('checkout -B %s %s', escapeshellarg($branch), escapeshellarg($startPoint)),
-            ));
+            $this->git->checkoutBranchCreate($worktree, $branch, $startPoint);
 
             return;
         }
 
-        $hasLocal = $this->gitCommandSucceeds($this->gitInPath(
-            $worktree,
-            sprintf('rev-parse --verify %s', escapeshellarg($branch)),
-        ));
-        if ($hasLocal) {
-            $this->runGitCommand($this->gitInPath(
-                $worktree,
-                sprintf('checkout %s', escapeshellarg($branch)),
-            ));
+        // Check if branch exists locally or on remote
+        if ($this->git->localBranchExists($branch)) {
+            $this->git->checkoutBranch($worktree, $branch);
 
             return;
         }
 
-        $this->runGitCommand($this->gitInPath(
-            $worktree,
-            sprintf('checkout -B %s origin/%s', escapeshellarg($branch), escapeshellarg($branch)),
-        ));
+        $this->git->checkoutBranchCreate($worktree, $branch, 'origin/' . $branch);
     }
 
     /**
@@ -344,8 +283,7 @@ final class BacklogWorktreeManager
                 continue;
             }
 
-            $dirty = trim($this->captureGitOutput($this->gitInPath($binding['path'], 'status --short')));
-            if ($dirty !== '') {
+            if ($this->git->hasLocalChanges($binding['path'])) {
                 throw new \RuntimeException(sprintf(
                     'Feature branch %s is still dirty in worktree %s. Commit or discard local changes before feature-close.',
                     $branch,
@@ -443,10 +381,7 @@ final class BacklogWorktreeManager
         ));
 
         foreach ($cleanable as $item) {
-            $this->runGitCommand(sprintf(
-                'git worktree remove %s --force',
-                escapeshellarg($this->toRelativeProjectPath($item->getPath())),
-            ));
+            $this->git->removeWorktreeForce($item->getPath());
         }
 
         return count($cleanable);
@@ -470,10 +405,7 @@ final class BacklogWorktreeManager
                 continue;
             }
 
-            $this->runGitCommand(sprintf(
-                'git worktree remove %s --force',
-                escapeshellarg($this->toRelativeProjectPath($item->getPath())),
-            ));
+            $this->git->removeWorktreeForce($item->getPath());
             $count++;
         }
 
@@ -485,7 +417,7 @@ final class BacklogWorktreeManager
      */
     public function runReviewScript(string $worktree, ?string $base = null): void
     {
-        $this->logVerbose(($this->dryRun ? '[dry-run] Would run review in ' : 'Run review in ') . $this->toRelativeProjectPath($worktree));
+        $this->logVerbose(($this->dryRun ? '[dry-run] Would run review in ' : 'Run review in ') . $this->git->toRelativeProjectPath($worktree));
         if ($this->dryRun) {
             return;
         }
@@ -508,7 +440,7 @@ final class BacklogWorktreeManager
             $parent = dirname($targetPath);
             if (!is_dir($parent)) {
                 if ($this->dryRun) {
-                    $this->logVerbose('[dry-run] Would create directory: ' . $this->toRelativeProjectPath($parent));
+                    $this->logVerbose('[dry-run] Would create directory: ' . $this->git->toRelativeProjectPath($parent));
                     continue;
                 }
                 mkdir($parent, 0777, true);
@@ -532,7 +464,7 @@ final class BacklogWorktreeManager
             return;
         }
 
-        $excludePath = trim($this->captureGitOutput($this->gitInPath($worktree, 'rev-parse --git-path info/exclude')));
+        $excludePath = $this->git->getGitPath($worktree, 'info/exclude');
         if ($excludePath === '') {
             return;
         }
@@ -567,19 +499,13 @@ final class BacklogWorktreeManager
 
     private function hideTrackedRuntimePathChanges(string $worktree, string $relativePath): void
     {
-        $tracked = array_values(array_filter(explode("\n", trim($this->captureGitOutput($this->gitInPath(
-            $worktree,
-            sprintf('ls-files -- %s', escapeshellarg($relativePath)),
-        ))))));
+        $tracked = $this->git->getTrackedFiles($worktree, $relativePath);
         if ($tracked === []) {
             return;
         }
 
         foreach (array_chunk($tracked, 50) as $chunk) {
-            $this->runGitCommand($this->gitInPath(
-                $worktree,
-                'update-index --assume-unchanged -- ' . implode(' ', array_map('escapeshellarg', $chunk)),
-            ));
+            $this->git->updateIndexAssumeUnchanged($worktree, $chunk);
         }
     }
 
@@ -599,7 +525,7 @@ final class BacklogWorktreeManager
     {
         $this->removeFilesystemPath($targetPath);
         if ($this->dryRun) {
-            $this->logVerbose('[dry-run] Would copy path: ' . $this->toRelativeProjectPath($sourcePath) . ' -> ' . $this->toRelativeProjectPath($targetPath));
+            $this->logVerbose('[dry-run] Would copy path: ' . $this->git->toRelativeProjectPath($sourcePath) . ' -> ' . $this->git->toRelativeProjectPath($targetPath));
             return;
         }
         $this->copyFilesystemPath($sourcePath, $targetPath);
@@ -620,7 +546,7 @@ final class BacklogWorktreeManager
         $targetPath = $worktree . '/backend/.env.local';
         $contents = $this->buildBackendWorktreeEnvLocalContents();
         if ($this->dryRun) {
-            $this->logVerbose('[dry-run] Would write file: ' . $this->toRelativeProjectPath($targetPath));
+            $this->logVerbose('[dry-run] Would write file: ' . $this->git->toRelativeProjectPath($targetPath));
             return;
         }
 
@@ -657,7 +583,7 @@ final class BacklogWorktreeManager
         }
 
         if ($this->dryRun) {
-            $this->logVerbose('[dry-run] Would remove path: ' . $this->toRelativeProjectPath($path));
+            $this->logVerbose('[dry-run] Would remove path: ' . $this->git->toRelativeProjectPath($path));
             return;
         }
 
@@ -723,8 +649,8 @@ final class BacklogWorktreeManager
 
     private function releaseBranchFromOtherWorktrees(string $branch, string $keepWorktree): void
     {
-        $output = $this->captureGitOutput('git worktree list --porcelain');
-        $blocks = preg_split('/\n\n/', trim($output)) ?: [];
+        $output = $this->git->listWorktreesPorcelain();
+        $blocks = preg_split('/\n\n/', $output) ?: [];
 
         foreach ($blocks as $block) {
             $path = null;
@@ -743,8 +669,7 @@ final class BacklogWorktreeManager
                 continue;
             }
 
-            $dirty = trim($this->captureGitOutput($this->gitInPath($path, 'status --short')));
-            if ($dirty !== '') {
+            if ($this->git->hasLocalChanges($path)) {
                 throw new \RuntimeException("Branch {$branch} is still active in a dirty worktree: {$path}");
             }
 
@@ -752,7 +677,7 @@ final class BacklogWorktreeManager
                 throw new \RuntimeException("Branch {$branch} is active in a non-managed worktree: {$path}");
             }
 
-            $this->runGitCommand(sprintf('git worktree remove %s --force', escapeshellarg($this->toRelativeProjectPath($path))));
+            $this->git->removeWorktreeForce($path);
         }
     }
 
@@ -848,7 +773,7 @@ final class BacklogWorktreeManager
      */
     private function gitWorktreeBlocks(): array
     {
-        $output = trim($this->captureGitOutput('git worktree list --porcelain'));
+        $output = $this->git->listWorktreesPorcelain();
         if ($output === '') {
             return [];
         }
@@ -898,31 +823,6 @@ final class BacklogWorktreeManager
             return false;
         }
 
-        return trim($this->captureGitOutput($this->gitInPath($path, 'status --short'))) !== '';
-    }
-
-    private function runGitCommand(string $command): void
-    {
-        $this->git->run($command);
-    }
-
-    private function captureGitOutput(string $command): string
-    {
-        return $this->git->capture($command);
-    }
-
-    private function gitCommandSucceeds(string $command): bool
-    {
-        return $this->git->succeeds($command);
-    }
-
-    private function gitInPath(string $path, string $subCommand): string
-    {
-        return $this->git->inPath($path, $subCommand);
-    }
-
-    private function toRelativeProjectPath(string $path): string
-    {
-        return $this->console->toRelativeProjectPath($path);
+        return $this->git->hasLocalChanges($path);
     }
 }

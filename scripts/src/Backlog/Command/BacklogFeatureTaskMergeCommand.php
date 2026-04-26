@@ -14,6 +14,8 @@ use SoManAgent\Script\Backlog\BacklogEntryService;
 use SoManAgent\Script\Backlog\BacklogGitWorkflow;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
 use SoManAgent\Script\Backlog\BoardEntry;
+use SoManAgent\Script\Backlog\PullRequestService;
+use SoManAgent\Script\Backlog\BacklogPresenter;
 
 /**
  * Command for merging a task into its parent feature locally.
@@ -28,13 +30,20 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
 
     private BacklogGitWorkflow $gitWorkflow;
 
-    public function __construct(BacklogCommandContext $context)
-    {
-        parent::__construct($context);
-        $this->entryResolver = $context->getEntryResolver();
-        $this->entryService = $context->getEntryService();
-        $this->worktreeManager = $context->getWorktreeManager();
-        $this->gitWorkflow = $context->getGitWorkflow();
+    public function __construct(
+        BacklogPresenter $presenter,
+        bool $dryRun,
+        string $projectRoot,
+        BacklogEntryResolver $entryResolver,
+        BacklogEntryService $entryService,
+        BacklogWorktreeManager $worktreeManager,
+        BacklogGitWorkflow $gitWorkflow
+    ) {
+        parent::__construct($presenter, $dryRun, $projectRoot);
+        $this->entryResolver = $entryResolver;
+        $this->entryService = $entryService;
+        $this->worktreeManager = $worktreeManager;
+        $this->gitWorkflow = $gitWorkflow;
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -105,6 +114,6 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
 
         $this->gitWorkflow->deleteLocalBranchIfExists($taskBranch);
 
-        $this->console->ok(sprintf('Merged task %s into feature %s locally', $task, $feature));
+        $this->presenter->displaySuccess(sprintf('Merged task %s into feature %s locally', $task, $feature));
     }
 }

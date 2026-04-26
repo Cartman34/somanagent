@@ -51,10 +51,7 @@ final class BacklogGitWorkflow
 
     public function branchHead(string $branch): string
     {
-        return trim($this->git->capture(sprintf(
-            'git rev-parse %s',
-            escapeshellarg($branch),
-        )));
+        return $this->git->branchHead($branch);
     }
 
     public function localBranchExists(?string $branch): bool
@@ -64,18 +61,12 @@ final class BacklogGitWorkflow
             return false;
         }
 
-        return $this->git->succeeds(sprintf(
-            'git show-ref --verify --quiet %s',
-            escapeshellarg('refs/heads/' . $branch),
-        ));
+        return $this->git->localBranchExists($branch);
     }
 
     public function remoteBranchExists(string $branch): bool
     {
-        return $this->git->succeeds(sprintf(
-            'git show-ref --verify --quiet %s',
-            escapeshellarg('refs/remotes/' . self::ORIGIN_REMOTE . '/' . $branch),
-        ));
+        return $this->git->remoteBranchExists(self::ORIGIN_REMOTE, $branch);
     }
 
     public function deleteLocalBranchIfExists(?string $branch): void
@@ -84,39 +75,22 @@ final class BacklogGitWorkflow
             return;
         }
 
-        $this->git->run(sprintf('git branch -D %s', escapeshellarg((string) $branch)));
+        $this->git->deleteLocalBranch((string) $branch);
     }
 
     public function deleteRemoteBranch(string $branch): void
     {
-        $this->git->run(sprintf(
-            'git push %s --delete %s',
-            self::ORIGIN_REMOTE,
-            escapeshellarg($branch),
-        ));
+        $this->git->deleteRemoteBranch(self::ORIGIN_REMOTE, $branch);
     }
 
     public function mergeBranchInPath(string $path, string $branch, string $message): void
     {
-        $this->git->run($this->git->inPath(
-            $path,
-            sprintf(
-                'merge --no-ff %s -m %s',
-                escapeshellarg($branch),
-                escapeshellarg($message),
-            ),
-        ));
+        $this->git->mergeBranchInPath($path, $branch, $message);
     }
 
     public function branchHasNoDevelopment(string $base, string $branch): bool
     {
-        $ahead = trim($this->git->capture(sprintf(
-            'git rev-list --count %s..%s',
-            escapeshellarg($base),
-            escapeshellarg($branch),
-        )));
-
-        return $ahead === '0';
+        return $this->git->countCommitsAhead($base, $branch) === 0;
     }
 
     public function pushBranchIfAhead(string $branch): void
@@ -131,13 +105,9 @@ final class BacklogGitWorkflow
             return;
         }
 
-        $ahead = trim($this->git->capture(sprintf(
-            'git rev-list --count %s..%s',
-            escapeshellarg(self::ORIGIN_REMOTE . '/' . $branch),
-            escapeshellarg($branch),
-        )));
+        $ahead = $this->git->countCommitsAhead(self::ORIGIN_REMOTE . '/' . $branch, $branch);
 
-        if ($ahead !== '0') {
+        if ($ahead !== 0) {
             $this->pullRequestService->pushBranchAndWaitForRemoteVisibility($branch);
         }
     }
@@ -145,28 +115,30 @@ final class BacklogGitWorkflow
     public function workspaceHasLocalChanges(): bool
     {
         if ($this->dryRun) {
-            $this->logVerbose('[dry-run] Inspect workspace changes: git status --short');
+            $this->logVerbose('[dry-run] Inspect workspace changes');
 
             return trim($this->consoleClient->capture('git status --short')) !== '';
         }
 
-        return trim($this->git->capture('git status --short')) !== '';
+        return $this->git->hasLocalChanges();
     }
 
     public function workspaceCurrentBranch(): string
     {
         if ($this->dryRun) {
-            $this->logVerbose('[dry-run] Inspect workspace branch: git branch --show-current');
+            $this->logVerbose('[dry-run] Inspect workspace branch');
 
             return trim($this->consoleClient->capture('git branch --show-current'));
         }
 
-        return trim($this->git->capture('git branch --show-current'));
+        return $this->git->currentBranch();
     }
 
     public function updateMainBeforeFeatureStart(): void
     {
         if ($this->workspaceCurrentBranch() !== self::MAIN_BRANCH) {
+            // Complex refspec fetch, easier to keep as runNetwork or add a specific method.
+            // Using runNetwork here is acceptable for a specific refspec.
             $this->git->runNetwork(sprintf(
                 'git fetch %s %s:%s',
                 self::ORIGIN_REMOTE,
@@ -210,8 +182,7 @@ final class BacklogGitWorkflow
             return true;
         }
 
-        $this->git->run('git checkout ' . self::MAIN_BRANCH);
-        $this->git->run('git pull');
+        $this->git->checkoutAndPull(self::MAIN_BRANCH);
 
         return false;
     }
@@ -221,17 +192,13 @@ final class BacklogGitWorkflow
      */
     public function changedFiles(string $base, string $branch): array
     {
-        return array_values(array_filter(explode("\n", trim($this->git->capture(sprintf(
-            'git diff --name-only %s..%s',
-            escapeshellarg($base),
-            escapeshellarg($branch),
-        ))))));
+        return $this->git->getChangedFiles($base, $branch);
     }
 
     private function updateLocalMainInWorkspaceWithWarning(string $context): void
     {
         try {
-            $this->git->runNetwork('git pull --ff-only');
+            $this->git->pullFastForwardOnly();
         } catch (\RuntimeException $exception) {
             $this->console->warn(sprintf(
                 'Unable to update local main in WP during %s; continuing with the current local main.',

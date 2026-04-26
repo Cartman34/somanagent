@@ -14,6 +14,7 @@ use SoManAgent\Script\Backlog\BacklogEntryService;
 use SoManAgent\Script\Backlog\BacklogGitWorkflow;
 use SoManAgent\Script\Backlog\PullRequestService;
 use SoManAgent\Script\Backlog\PullRequestTag;
+use SoManAgent\Script\Backlog\BacklogPresenter;
 
 /**
  * Command for blocking a feature.
@@ -28,13 +29,20 @@ final class BacklogFeatureBlockCommand extends AbstractBacklogCommand
 
     private PullRequestService $pullRequestService;
 
-    public function __construct(BacklogCommandContext $context)
-    {
-        parent::__construct($context);
-        $this->entryResolver = $context->getEntryResolver();
-        $this->entryService = $context->getEntryService();
-        $this->gitWorkflow = $context->getGitWorkflow();
-        $this->pullRequestService = $context->getPullRequestService();
+    public function __construct(
+        BacklogPresenter $presenter,
+        bool $dryRun,
+        string $projectRoot,
+        BacklogEntryResolver $entryResolver,
+        BacklogEntryService $entryService,
+        BacklogGitWorkflow $gitWorkflow,
+        PullRequestService $pullRequestService
+    ) {
+        parent::__construct($presenter, $dryRun, $projectRoot);
+        $this->entryResolver = $entryResolver;
+        $this->entryService = $entryService;
+        $this->gitWorkflow = $gitWorkflow;
+        $this->pullRequestService = $pullRequestService;
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -64,6 +72,6 @@ final class BacklogFeatureBlockCommand extends AbstractBacklogCommand
             $this->pullRequestService->editPrTitle($prNumber, $title);
         }
 
-        $this->console->ok(sprintf('Marked feature %s as blocked', $feature));
+        $this->presenter->displaySuccess(sprintf('Marked feature %s as blocked', $feature));
     }
 }

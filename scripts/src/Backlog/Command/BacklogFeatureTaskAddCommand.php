@@ -17,6 +17,7 @@ use SoManAgent\Script\Backlog\BacklogMetaValue;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
 use SoManAgent\Script\Backlog\BoardEntry;
 use SoManAgent\Script\Backlog\PullRequestService;
+use SoManAgent\Script\Backlog\BacklogPresenter;
 
 /**
  * Command for adding a task to an active feature.
@@ -33,14 +34,22 @@ final class BacklogFeatureTaskAddCommand extends AbstractBacklogCommand
 
     private PullRequestService $pullRequestService;
 
-    public function __construct(BacklogCommandContext $context)
-    {
-        parent::__construct($context);
-        $this->entryResolver = $context->getEntryResolver();
-        $this->entryService = $context->getEntryService();
-        $this->worktreeManager = $context->getWorktreeManager();
-        $this->gitWorkflow = $context->getGitWorkflow();
-        $this->pullRequestService = $context->getPullRequestService();
+    public function __construct(
+        BacklogPresenter $presenter,
+        bool $dryRun,
+        string $projectRoot,
+        BacklogEntryResolver $entryResolver,
+        BacklogEntryService $entryService,
+        BacklogWorktreeManager $worktreeManager,
+        BacklogGitWorkflow $gitWorkflow,
+        PullRequestService $pullRequestService
+    ) {
+        parent::__construct($presenter, $dryRun, $projectRoot);
+        $this->entryResolver = $entryResolver;
+        $this->entryService = $entryService;
+        $this->worktreeManager = $worktreeManager;
+        $this->gitWorkflow = $gitWorkflow;
+        $this->pullRequestService = $pullRequestService;
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -146,6 +155,6 @@ final class BacklogFeatureTaskAddCommand extends AbstractBacklogCommand
             $this->pullRequestService->updatePrBodyIfExists($entry->getBranch() ?? '', $bodyFile);
         }
 
-        $this->console->ok(sprintf('Added queued task to feature %s', $feature));
+        $this->presenter->displaySuccess(sprintf('Added queued task to feature %s', $feature));
     }
 }

@@ -10,6 +10,7 @@ namespace SoManAgent\Script\Backlog\Command;
 use SoManAgent\Script\Backlog\BacklogBoard;
 use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogEntryService;
+use SoManAgent\Script\Backlog\BacklogPresenter;
 
 /**
  * Command for creating a new task in the todo section.
@@ -22,10 +23,14 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
 
     private BacklogEntryService $entryService;
 
-    public function __construct(BacklogCommandContext $context)
-    {
-        parent::__construct($context);
-        $this->entryService = $context->getEntryService();
+    public function __construct(
+        BacklogPresenter $presenter,
+        bool $dryRun,
+        string $projectRoot,
+        BacklogEntryService $entryService
+    ) {
+        parent::__construct($presenter, $dryRun, $projectRoot);
+        $this->entryService = $entryService;
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -42,7 +47,7 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
         $board->setEntries(BacklogBoard::SECTION_TODO, $entries);
         $this->saveBoard($board, BacklogCommandName::TASK_CREATE->value);
 
-        $this->console->ok(sprintf('Added task to the todo section at position %d', $position + 1));
+        $this->presenter->displaySuccess(sprintf('Added task to the todo section at position %d', $position + 1));
     }
 
     /**

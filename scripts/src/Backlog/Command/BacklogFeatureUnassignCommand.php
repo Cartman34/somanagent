@@ -9,8 +9,9 @@ namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
-use SoManAgent\Script\Backlog\BacklogPermissionService;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
+use SoManAgent\Script\Backlog\BacklogPresenter;
+use SoManAgent\Script\Backlog\BacklogPermissionService;
 
 /**
  * Command for unassigning a feature from an agent.
@@ -23,12 +24,18 @@ final class BacklogFeatureUnassignCommand extends AbstractBacklogCommand
 
     private BacklogPermissionService $permissionService;
 
-    public function __construct(BacklogCommandContext $context)
-    {
-        parent::__construct($context);
-        $this->entryResolver = $context->getEntryResolver();
-        $this->worktreeManager = $context->getWorktreeManager();
-        $this->permissionService = $context->getPermissionService();
+    public function __construct(
+        BacklogPresenter $presenter,
+        bool $dryRun,
+        string $projectRoot,
+        BacklogEntryResolver $entryResolver,
+        BacklogWorktreeManager $worktreeManager,
+        BacklogPermissionService $permissionService
+    ) {
+        parent::__construct($presenter, $dryRun, $projectRoot);
+        $this->entryResolver = $entryResolver;
+        $this->worktreeManager = $worktreeManager;
+        $this->permissionService = $permissionService;
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -45,7 +52,7 @@ final class BacklogFeatureUnassignCommand extends AbstractBacklogCommand
         
         $entry = $match->getEntry();
         $feature = $entry->getFeature() ?? '';
-        $actorAgent = $actorRole === AbstractBacklogCommand::ROLE_DEVELOPER ? $this->permissionService->requireWorkflowAgent() : null;
+        $actorAgent = $actorRole === BacklogPermissionService::ROLE_DEVELOPER ? $this->permissionService->requireWorkflowAgent() : null;
 
         $this->permissionService->assertCanUnassignFeature($actorRole, $actorAgent, $agent, $feature, $entry);
         if ($entry->getAgent() !== $agent) {
@@ -56,9 +63,9 @@ final class BacklogFeatureUnassignCommand extends AbstractBacklogCommand
         $this->saveBoard($board, BacklogCommandName::FEATURE_UNASSIGN->value);
         $cleaned = $this->worktreeManager->cleanupAbandonedManagedWorktrees($board);
 
-        $this->console->ok(sprintf('Unassigned feature %s from %s', $feature, $agent));
+        $this->presenter->displaySuccess(sprintf('Unassigned feature %s from %s', $feature, $agent));
         if ($cleaned > 0) {
-            $this->console->line(sprintf('Cleaned %d abandoned managed worktree%s.', $cleaned, $cleaned > 1 ? 's' : ''));
+            $this->presenter->displayLine(sprintf('Cleaned %d abandoned managed worktree%s.', $cleaned, $cleaned > 1 ? 's' : ''));
         }
     }
 }

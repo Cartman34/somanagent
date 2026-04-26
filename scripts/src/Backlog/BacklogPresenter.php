@@ -7,7 +7,6 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog;
 
-use SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
 use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Console;
 
@@ -27,6 +26,21 @@ final class BacklogPresenter
         $this->console = $console;
         $this->consoleClient = $consoleClient;
         $this->entryService = $entryService;
+    }
+
+    public function displaySuccess(string $message): void
+    {
+        $this->console->ok($message);
+    }
+
+    public function displayInfo(string $message): void
+    {
+        $this->console->info($message);
+    }
+
+    public function displayLine(string $message): void
+    {
+        $this->console->line($message);
     }
 
     public function displayEntryStatus(BoardEntry $entry): void

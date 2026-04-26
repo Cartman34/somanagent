@@ -15,6 +15,7 @@ use SoManAgent\Script\Backlog\BacklogGitWorkflow;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
 use SoManAgent\Script\Backlog\BoardEntry;
 use SoManAgent\Script\Backlog\PullRequestService;
+use SoManAgent\Script\Backlog\BacklogPresenter;
 
 /**
  * Command for merging a feature into the base branch.
@@ -31,14 +32,22 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
 
     private PullRequestService $pullRequestService;
 
-    public function __construct(BacklogCommandContext $context)
-    {
-        parent::__construct($context);
-        $this->entryResolver = $context->getEntryResolver();
-        $this->entryService = $context->getEntryService();
-        $this->worktreeManager = $context->getWorktreeManager();
-        $this->gitWorkflow = $context->getGitWorkflow();
-        $this->pullRequestService = $context->getPullRequestService();
+    public function __construct(
+        BacklogPresenter $presenter,
+        bool $dryRun,
+        string $projectRoot,
+        BacklogEntryResolver $entryResolver,
+        BacklogEntryService $entryService,
+        BacklogWorktreeManager $worktreeManager,
+        BacklogGitWorkflow $gitWorkflow,
+        PullRequestService $pullRequestService
+    ) {
+        parent::__construct($presenter, $dryRun, $projectRoot);
+        $this->entryResolver = $entryResolver;
+        $this->entryService = $entryService;
+        $this->worktreeManager = $worktreeManager;
+        $this->gitWorkflow = $gitWorkflow;
+        $this->pullRequestService = $pullRequestService;
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -78,9 +87,9 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         $this->gitWorkflow->deleteRemoteBranch($branch);
         $this->gitWorkflow->deleteLocalBranchIfExists($branch);
 
-        $this->console->ok(sprintf('Merged feature %s', $feature));
+        $this->presenter->displaySuccess(sprintf('Merged feature %s', $feature));
         if ($cleaned > 0) {
-            $this->console->line(sprintf('Cleaned %d abandoned managed worktree%s.', $cleaned, $cleaned > 1 ? 's' : ''));
+            $this->presenter->displayLine(sprintf('Cleaned %d abandoned managed worktree%s.', $cleaned, $cleaned > 1 ? 's' : ''));
         }
     }
 }

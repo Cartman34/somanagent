@@ -9,15 +9,16 @@ namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\BacklogBoard;
 use SoManAgent\Script\Backlog\BacklogCommandName;
+use SoManAgent\Script\Backlog\BacklogPresenter;
 
 /**
  * Command for removing a task from the todo section.
  */
 final class BacklogTaskRemoveCommand extends AbstractBacklogCommand
 {
-    public function __construct(BacklogCommandContext $context)
+    public function __construct(BacklogPresenter $presenter, bool $dryRun, string $projectRoot)
     {
-        parent::__construct($context);
+        parent::__construct($presenter, $dryRun, $projectRoot);
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -40,7 +41,7 @@ final class BacklogTaskRemoveCommand extends AbstractBacklogCommand
         $board->setEntries(BacklogBoard::SECTION_TODO, array_values($entries));
         $this->saveBoard($board, BacklogCommandName::TASK_REMOVE->value);
 
-        $this->console->ok(sprintf('Removed queued task %d', $position));
-        $this->console->info($removed->getText());
+        $this->presenter->displaySuccess(sprintf('Removed queued task %d', $position));
+        $this->presenter->displayInfo($removed->getText());
     }
 }

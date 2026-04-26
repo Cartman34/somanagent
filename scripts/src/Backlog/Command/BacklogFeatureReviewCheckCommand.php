@@ -13,7 +13,7 @@ use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
 use SoManAgent\Script\Backlog\BacklogEntryService;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
-use SoManAgent\Script\Console;
+use SoManAgent\Script\Backlog\BacklogPresenter;
 
 /**
  * Command for checking a feature review.
@@ -29,7 +29,7 @@ final class BacklogFeatureReviewCheckCommand extends AbstractBacklogCommand
     private BacklogCommandFactory $commandFactory;
 
     public function __construct(
-        Console $console,
+        BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
         BacklogEntryResolver $entryResolver,
@@ -37,7 +37,7 @@ final class BacklogFeatureReviewCheckCommand extends AbstractBacklogCommand
         BacklogWorktreeManager $worktreeManager,
         BacklogCommandFactory $commandFactory
     ) {
-        parent::__construct($console, $dryRun, $projectRoot);
+        parent::__construct($presenter, $dryRun, $projectRoot);
         $this->entryResolver = $entryResolver;
         $this->entryService = $entryService;
         $this->worktreeManager = $worktreeManager;
@@ -80,6 +80,6 @@ final class BacklogFeatureReviewCheckCommand extends AbstractBacklogCommand
             throw $exception;
         }
 
-        $this->console->ok(sprintf('Mechanical review passed for feature %s', $feature));
+        $this->presenter->displaySuccess(sprintf('Mechanical review passed for feature %s', $feature));
     }
 }

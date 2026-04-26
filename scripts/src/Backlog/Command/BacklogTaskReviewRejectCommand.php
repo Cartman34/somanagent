@@ -12,6 +12,7 @@ use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
 use SoManAgent\Script\Backlog\BacklogEntryService;
 use SoManAgent\Script\Backlog\BacklogReviewBodyFormatter;
+use SoManAgent\Script\Backlog\BacklogPresenter;
 
 /**
  * Command for rejecting a task review.
@@ -24,12 +25,18 @@ final class BacklogTaskReviewRejectCommand extends AbstractBacklogCommand
 
     private BacklogReviewBodyFormatter $reviewBodyFormatter;
 
-    public function __construct(BacklogCommandContext $context)
-    {
-        parent::__construct($context);
-        $this->entryResolver = $context->getEntryResolver();
-        $this->entryService = $context->getEntryService();
-        $this->reviewBodyFormatter = $context->getReviewBodyFormatter();
+    public function __construct(
+        BacklogPresenter $presenter,
+        bool $dryRun,
+        string $projectRoot,
+        BacklogEntryResolver $entryResolver,
+        BacklogEntryService $entryService,
+        BacklogReviewBodyFormatter $reviewBodyFormatter
+    ) {
+        parent::__construct($presenter, $dryRun, $projectRoot);
+        $this->entryResolver = $entryResolver;
+        $this->entryService = $entryService;
+        $this->reviewBodyFormatter = $reviewBodyFormatter;
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -57,7 +64,7 @@ final class BacklogTaskReviewRejectCommand extends AbstractBacklogCommand
         $this->saveBoard($board, BacklogCommandName::TASK_REVIEW_REJECT->value);
         $this->saveReviewFile($review, BacklogCommandName::TASK_REVIEW_REJECT->value);
 
-        $this->console->ok(sprintf(
+        $this->presenter->displaySuccess(sprintf(
             'Rejected task %s, moved to %s',
             $this->entryService->taskReviewKey($entry),
             BacklogBoard::stageLabel(BacklogBoard::STAGE_REJECTED),

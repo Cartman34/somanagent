@@ -77,7 +77,7 @@ final class BacklogFeatureReviewApproveCommand extends AbstractBacklogCommand
         $this->saveBoard($board, BacklogCommandName::FEATURE_REVIEW_APPROVE->value);
         $this->saveReviewFile($review, BacklogCommandName::FEATURE_REVIEW_APPROVE->value);
 
-        $this->console->ok(sprintf('Approved feature %s with [%s] PR title', $feature, $type));
+        $this->presenter->displaySuccess(sprintf('Approved feature %s with [%s] PR title', $feature, $type));
     }
 
     private function prBaseBranch(array $options): string

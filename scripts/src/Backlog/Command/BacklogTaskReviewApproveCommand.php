@@ -11,6 +11,7 @@ use SoManAgent\Script\Backlog\BacklogBoard;
 use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
 use SoManAgent\Script\Backlog\BacklogEntryService;
+use SoManAgent\Script\Backlog\BacklogPresenter;
 
 /**
  * Command for approving a task review.
@@ -21,11 +22,16 @@ final class BacklogTaskReviewApproveCommand extends AbstractBacklogCommand
 
     private BacklogEntryService $entryService;
 
-    public function __construct(BacklogCommandContext $context)
-    {
-        parent::__construct($context);
-        $this->entryResolver = $context->getEntryResolver();
-        $this->entryService = $context->getEntryService();
+    public function __construct(
+        BacklogPresenter $presenter,
+        bool $dryRun,
+        string $projectRoot,
+        BacklogEntryResolver $entryResolver,
+        BacklogEntryService $entryService
+    ) {
+        parent::__construct($presenter, $dryRun, $projectRoot);
+        $this->entryResolver = $entryResolver;
+        $this->entryService = $entryService;
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -48,6 +54,6 @@ final class BacklogTaskReviewApproveCommand extends AbstractBacklogCommand
         $this->saveBoard($board, BacklogCommandName::TASK_REVIEW_APPROVE->value);
         $this->saveReviewFile($review, BacklogCommandName::TASK_REVIEW_APPROVE->value);
 
-        $this->console->ok(sprintf('Approved task %s', $this->entryService->taskReviewKey($entry)));
+        $this->presenter->displaySuccess(sprintf('Approved task %s', $this->entryService->taskReviewKey($entry)));
     }
 }

@@ -15,6 +15,7 @@ use SoManAgent\Script\Backlog\BacklogGitWorkflow;
 use SoManAgent\Script\Backlog\BacklogMetaValue;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
 use SoManAgent\Script\Backlog\BoardEntry;
+use SoManAgent\Script\Backlog\BacklogPresenter;
 
 /**
  * Command for starting a feature from a queued task.
@@ -29,13 +30,20 @@ final class BacklogFeatureStartCommand extends AbstractBacklogCommand
 
     private BacklogGitWorkflow $gitWorkflow;
 
-    public function __construct(BacklogCommandContext $context)
-    {
-        parent::__construct($context);
-        $this->entryResolver = $context->getEntryResolver();
-        $this->entryService = $context->getEntryService();
-        $this->worktreeManager = $context->getWorktreeManager();
-        $this->gitWorkflow = $context->getGitWorkflow();
+    public function __construct(
+        BacklogPresenter $presenter,
+        bool $dryRun,
+        string $projectRoot,
+        BacklogEntryResolver $entryResolver,
+        BacklogEntryService $entryService,
+        BacklogWorktreeManager $worktreeManager,
+        BacklogGitWorkflow $gitWorkflow
+    ) {
+        parent::__construct($presenter, $dryRun, $projectRoot);
+        $this->entryResolver = $entryResolver;
+        $this->entryService = $entryService;
+        $this->worktreeManager = $worktreeManager;
+        $this->gitWorkflow = $gitWorkflow;
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -75,7 +83,7 @@ final class BacklogFeatureStartCommand extends AbstractBacklogCommand
                 $featureBase = $this->gitWorkflow->originMainHead();
                 $this->worktreeManager->ensureLocalBranchExists($featureBranch, BacklogGitWorkflow::ORIGIN_REMOTE . '/' . BacklogGitWorkflow::MAIN_BRANCH);
 
-                $featureEntry = new BoardEntry($scopedTask['text'], [], [
+                $featureEntry = new BoardEntry($scopedTask['featureGroup'], [], [
                     BoardEntry::META_KIND => BacklogEntryService::ENTRY_KIND_FEATURE,
                     BoardEntry::META_STAGE => BacklogBoard::STAGE_IN_PROGRESS,
                     BoardEntry::META_FEATURE => $scopedTask['featureGroup'],
@@ -149,7 +157,7 @@ final class BacklogFeatureStartCommand extends AbstractBacklogCommand
         
         $this->saveBoard($board, BacklogCommandName::FEATURE_START->value);
 
-        $this->console->ok(sprintf(
+        $this->presenter->displaySuccess(sprintf(
             'Started %s %s on %s',
             $this->entryService->entryKind($featureEntry),
             $featureEntry->getTask() ?? $featureEntry->getFeature() ?? '-',

@@ -150,6 +150,165 @@ final class GitClient
         return trim($output) !== '';
     }
 
+    public function addWorktreeDetach(string $path): void
+    {
+        $this->run(sprintf(
+            'git worktree add --detach %s HEAD',
+            escapeshellarg($this->toRelativeProjectPath($path))
+        ));
+    }
+
+    public function addWorktree(string $path, string $branch): void
+    {
+        $this->run(sprintf(
+            'git worktree add %s %s',
+            escapeshellarg($this->toRelativeProjectPath($path)),
+            escapeshellarg($branch)
+        ));
+    }
+
+    public function removeWorktreeForce(string $path): void
+    {
+        $this->run(sprintf(
+            'git worktree remove %s --force',
+            escapeshellarg($this->toRelativeProjectPath($path))
+        ));
+    }
+
+    public function createBranch(string $branch, string $startPoint): void
+    {
+        $this->run(sprintf(
+            'git branch %s %s',
+            escapeshellarg($branch),
+            escapeshellarg($startPoint)
+        ));
+    }
+
+    public function checkoutBranch(string $path, string $branch): void
+    {
+        $this->run($this->inPath(
+            $path,
+            sprintf('checkout %s', escapeshellarg($branch))
+        ));
+    }
+
+    public function checkoutBranchCreate(string $path, string $branch, string $startPoint): void
+    {
+        $this->run($this->inPath(
+            $path,
+            sprintf('checkout -B %s %s', escapeshellarg($branch), escapeshellarg($startPoint))
+        ));
+    }
+
+    public function updateIndexAssumeUnchanged(string $path, array $files): void
+    {
+        if ($files === []) {
+            return;
+        }
+
+        $this->run($this->inPath(
+            $path,
+            'update-index --assume-unchanged -- ' . implode(' ', array_map('escapeshellarg', $files))
+        ));
+    }
+
+    public function branchHead(string $branch): string
+    {
+        return trim($this->capture(sprintf('git rev-parse %s', escapeshellarg($branch))));
+    }
+
+    public function localBranchExists(string $branch): bool
+    {
+        return $this->succeeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/heads/' . $branch)));
+    }
+
+    public function remoteBranchExists(string $remote, string $branch): bool
+    {
+        return $this->succeeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/remotes/' . $remote . '/' . $branch)));
+    }
+
+    public function deleteLocalBranch(string $branch): void
+    {
+        $this->run(sprintf('git branch -D %s', escapeshellarg($branch)));
+    }
+
+    public function deleteRemoteBranch(string $remote, string $branch): void
+    {
+        $this->runNetwork(sprintf('git push %s --delete %s', escapeshellarg($remote), escapeshellarg($branch)));
+    }
+
+    public function mergeBranchInPath(string $path, string $branch, string $message): void
+    {
+        $this->run($this->inPath(
+            $path,
+            sprintf('merge --no-ff %s -m %s', escapeshellarg($branch), escapeshellarg($message))
+        ));
+    }
+
+    public function countCommitsAhead(string $base, string $branch): int
+    {
+        return (int) trim($this->capture(sprintf('git rev-list --count %s..%s', escapeshellarg($base), escapeshellarg($branch))));
+    }
+
+    public function hasLocalChanges(string $path = '.'): bool
+    {
+        if ($path === '.') {
+            return trim($this->capture('git status --short')) !== '';
+        }
+        return trim($this->capture($this->inPath($path, 'status --short'))) !== '';
+    }
+
+    public function currentBranch(string $path = '.'): string
+    {
+        if ($path === '.') {
+            return trim($this->capture('git branch --show-current'));
+        }
+        
+        if ($this->succeeds($this->inPath($path, 'symbolic-ref --quiet --short HEAD'))) {
+            return trim($this->capture($this->inPath($path, 'symbolic-ref --quiet --short HEAD')));
+        }
+        
+        return '';
+    }
+
+    public function pullFastForwardOnly(): void
+    {
+        $this->runNetwork('git pull --ff-only');
+    }
+
+    public function checkoutAndPull(string $branch): void
+    {
+        $this->run(sprintf('git checkout %s', escapeshellarg($branch)));
+        $this->runNetwork('git pull');
+    }
+
+    public function getChangedFiles(string $base, string $branch): array
+    {
+        return array_values(array_filter(explode("\n", trim($this->capture(sprintf(
+            'git diff --name-only %s..%s',
+            escapeshellarg($base),
+            escapeshellarg($branch)
+        ))))));
+    }
+
+    public function listWorktreesPorcelain(): string
+    {
+        return trim($this->capture('git worktree list --porcelain'));
+    }
+
+    public function getGitPath(string $path, string $subPath): string
+    {
+        return trim($this->capture($this->inPath($path, sprintf('rev-parse --git-path %s', escapeshellarg($subPath)))));
+    }
+
+    public function getTrackedFiles(string $path, string $dir): array
+    {
+        return array_values(array_filter(explode("\n", trim($this->capture($this->inPath(
+            $path,
+            sprintf('ls-files %s', escapeshellarg($dir))
+        ))))));
+    }
+
     public function toRelativeProjectPath(string $path): string
     {
         return $this->console->toRelativeProjectPath($path);

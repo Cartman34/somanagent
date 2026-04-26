@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
+use SoManAgent\Script\Backlog\BacklogPresenter;
 
 /**
  * Command for cleaning abandoned managed worktrees.
@@ -16,10 +17,14 @@ final class BacklogWorktreeCleanCommand extends AbstractBacklogCommand
 {
     private BacklogWorktreeManager $worktreeManager;
 
-    public function __construct(BacklogCommandContext $context)
-    {
-        parent::__construct($context);
-        $this->worktreeManager = $context->getWorktreeManager();
+    public function __construct(
+        BacklogPresenter $presenter,
+        bool $dryRun,
+        string $projectRoot,
+        BacklogWorktreeManager $worktreeManager
+    ) {
+        parent::__construct($presenter, $dryRun, $projectRoot);
+        $this->worktreeManager = $worktreeManager;
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -28,9 +33,9 @@ final class BacklogWorktreeCleanCommand extends AbstractBacklogCommand
         $cleaned = $this->worktreeManager->cleanupAbandonedManagedWorktrees($board);
 
         if ($cleaned === 0) {
-            $this->console->line('No abandoned managed worktree to clean.');
+            $this->presenter->displayLine('No abandoned managed worktree to clean.');
         } else {
-            $this->console->ok(sprintf(
+            $this->presenter->displaySuccess(sprintf(
                 '%s %d abandoned managed worktree%s',
                 $this->dryRun ? 'Would clean' : 'Cleaned',
                 $cleaned,
@@ -41,7 +46,7 @@ final class BacklogWorktreeCleanCommand extends AbstractBacklogCommand
         $classification = $this->worktreeManager->classifyWorktrees($board);
         $skipped = count($classification->getManaged());
         if ($skipped > 0) {
-            $this->console->line(sprintf('Skipped %d managed worktree%s that require manual attention.', $skipped, $skipped > 1 ? 's' : ''));
+            $this->presenter->displayLine(sprintf('Skipped %d managed worktree%s that require manual attention.', $skipped, $skipped > 1 ? 's' : ''));
         }
     }
 }

@@ -9,6 +9,7 @@ namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
+use SoManAgent\Script\Backlog\BacklogPresenter;
 use SoManAgent\Script\Backlog\BoardEntry;
 
 /**
@@ -20,11 +21,16 @@ final class BacklogWorktreeRestoreCommand extends AbstractBacklogCommand
 
     private BacklogEntryResolver $entryResolver;
 
-    public function __construct(BacklogCommandContext $context)
-    {
-        parent::__construct($context);
-        $this->worktreeManager = $context->getWorktreeManager();
-        $this->entryResolver = $context->getEntryResolver();
+    public function __construct(
+        BacklogPresenter $presenter,
+        bool $dryRun,
+        string $projectRoot,
+        BacklogWorktreeManager $worktreeManager,
+        BacklogEntryResolver $entryResolver
+    ) {
+        parent::__construct($presenter, $dryRun, $projectRoot);
+        $this->worktreeManager = $worktreeManager;
+        $this->entryResolver = $entryResolver;
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -51,6 +57,6 @@ final class BacklogWorktreeRestoreCommand extends AbstractBacklogCommand
         $worktree = $this->worktreeManager->prepareAgentWorktree($agent);
         $this->worktreeManager->checkoutBranchInWorktree($worktree, $branch, false);
 
-        $this->console->ok(sprintf('Restored worktree for agent %s on branch %s', $agent, $branch));
+        $this->presenter->displaySuccess(sprintf('Restored worktree for agent %s on branch %s', $agent, $branch));
     }
 }

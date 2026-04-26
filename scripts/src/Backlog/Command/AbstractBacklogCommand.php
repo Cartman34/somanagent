@@ -8,18 +8,15 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\BacklogBoard;
+use SoManAgent\Script\Backlog\BacklogPresenter;
 use SoManAgent\Script\Backlog\BacklogReviewFile;
-use SoManAgent\Script\Console;
 
 /**
  * Base class for all backlog commands.
  */
 abstract class AbstractBacklogCommand
 {
-    public const ROLE_MANAGER = 'manager';
-    public const ROLE_DEVELOPER = 'developer';
-
-    protected Console $console;
+    protected BacklogPresenter $presenter;
 
     protected bool $dryRun;
 
@@ -29,14 +26,11 @@ abstract class AbstractBacklogCommand
 
     protected ?string $reviewFilePath = null;
 
-    protected BacklogCommandContext $context;
-
-    public function __construct(BacklogCommandContext $context)
+    public function __construct(BacklogPresenter $presenter, bool $dryRun, string $projectRoot)
     {
-        $this->context = $context;
-        $this->console = $context->getConsole();
-        $this->dryRun = $context->isDryRun();
-        $this->projectRoot = $context->getProjectRoot();
+        $this->presenter = $presenter;
+        $this->dryRun = $dryRun;
+        $this->projectRoot = $projectRoot;
     }
 
     public function setBoardPath(string $boardPath): void
@@ -66,7 +60,7 @@ abstract class AbstractBacklogCommand
     protected function saveBoard(BacklogBoard $board, string $reason): void
     {
         if ($this->dryRun) {
-            $this->console->line(sprintf('[dry-run] Would save board: %s', $reason));
+            $this->presenter->displayLine(sprintf('[dry-run] Would save board: %s', $reason));
 
             return;
         }
@@ -82,7 +76,7 @@ abstract class AbstractBacklogCommand
     protected function saveReviewFile(BacklogReviewFile $review, string $reason): void
     {
         if ($this->dryRun) {
-            $this->console->line(sprintf('[dry-run] Would save review file: %s', $reason));
+            $this->presenter->displayLine(sprintf('[dry-run] Would save review file: %s', $reason));
 
             return;
         }

@@ -10,6 +10,7 @@ namespace SoManAgent\Script\Backlog\Command;
 use SoManAgent\Script\Backlog\BacklogBoard;
 use SoManAgent\Script\Backlog\BacklogEntryService;
 use SoManAgent\Script\Backlog\BoardEntry;
+use SoManAgent\Script\Backlog\BacklogPresenter;
 
 /**
  * Command for listing active features.
@@ -18,10 +19,14 @@ final class BacklogFeatureListCommand extends AbstractBacklogCommand
 {
     private BacklogEntryService $entryService;
 
-    public function __construct(BacklogCommandContext $context)
-    {
-        parent::__construct($context);
-        $this->entryService = $context->getEntryService();
+    public function __construct(
+        BacklogPresenter $presenter,
+        bool $dryRun,
+        string $projectRoot,
+        BacklogEntryService $entryService
+    ) {
+        parent::__construct($presenter, $dryRun, $projectRoot);
+        $this->entryService = $entryService;
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -38,27 +43,14 @@ final class BacklogFeatureListCommand extends AbstractBacklogCommand
             }
 
             $printed = true;
-            $this->console->line('[' . BacklogBoard::stageLabel($stage) . ']');
+            $this->presenter->displayStageHeader($stage);
             foreach ($entries as $entry) {
-                $parts = [
-                    'kind=' . $this->entryService->entryKind($entry),
-                    $entry->getFeature() ?? '-',
-                    'branch=' . ($entry->getBranch() ?? '-'),
-                    'agent=' . ($entry->getAgent() ?? '-'),
-                ];
-                if ($this->entryService->isTaskEntry($entry)) {
-                    $parts[] = 'task=' . ($entry->getTask() ?? '-');
-                    $parts[] = 'feature-branch=' . ($entry->getFeatureBranch() ?? '-');
-                }
-                if ($entry->isBlocked()) {
-                    $parts[] = 'blocked=yes';
-                }
-                $this->console->line('- ' . implode(' ', $parts));
+                $this->presenter->displayEntryLine($entry);
             }
         }
 
         if (!$printed) {
-            $this->console->line('No active feature.');
+            $this->presenter->displayLine('No active feature.');
         }
     }
 }

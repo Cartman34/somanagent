@@ -17,13 +17,14 @@ final class BacklogWorktreeListCommand extends AbstractBacklogCommand
 {
     private BacklogWorktreeManager $worktreeManager;
 
-    private BacklogPresenter $presenter;
-
-    public function __construct(BacklogCommandContext $context)
-    {
-        parent::__construct($context);
-        $this->worktreeManager = $context->getWorktreeManager();
-        $this->presenter = $context->getPresenter();
+    public function __construct(
+        BacklogPresenter $presenter,
+        bool $dryRun,
+        string $projectRoot,
+        BacklogWorktreeManager $worktreeManager
+    ) {
+        parent::__construct($presenter, $dryRun, $projectRoot);
+        $this->worktreeManager = $worktreeManager;
     }
 
     public function handle(array $commandArgs, array $options): void

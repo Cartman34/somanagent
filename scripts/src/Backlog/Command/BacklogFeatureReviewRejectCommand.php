@@ -12,7 +12,7 @@ use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
 use SoManAgent\Script\Backlog\BacklogEntryService;
 use SoManAgent\Script\Backlog\BacklogReviewBodyFormatter;
-use SoManAgent\Script\Console;
+use SoManAgent\Script\Backlog\BacklogPresenter;
 
 /**
  * Command for rejecting a feature review.
@@ -26,14 +26,14 @@ final class BacklogFeatureReviewRejectCommand extends AbstractBacklogCommand
     private BacklogReviewBodyFormatter $reviewBodyFormatter;
 
     public function __construct(
-        Console $console,
+        BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
         BacklogEntryResolver $entryResolver,
         BacklogEntryService $entryService,
         BacklogReviewBodyFormatter $reviewBodyFormatter
     ) {
-        parent::__construct($console, $dryRun, $projectRoot);
+        parent::__construct($presenter, $dryRun, $projectRoot);
         $this->entryResolver = $entryResolver;
         $this->entryService = $entryService;
         $this->reviewBodyFormatter = $reviewBodyFormatter;
@@ -65,7 +65,7 @@ final class BacklogFeatureReviewRejectCommand extends AbstractBacklogCommand
         $this->saveBoard($board, BacklogCommandName::FEATURE_REVIEW_REJECT->value);
         $this->saveReviewFile($review, BacklogCommandName::FEATURE_REVIEW_REJECT->value);
 
-        $this->console->ok(sprintf(
+        $this->presenter->displaySuccess(sprintf(
             'Rejected feature %s, moved to %s',
             $feature,
             BacklogBoard::stageLabel(BacklogBoard::STAGE_REJECTED),
