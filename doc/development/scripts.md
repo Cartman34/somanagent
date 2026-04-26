@@ -24,6 +24,7 @@ php scripts/help.php migrate.php
 | `check-php.sh` | Bash | Check that PHP 8.4+ is installed |
 | `help.php` | PHP | Display help for all scripts |
 | `backlog.php` | PHP | Run the local backlog workflow for features, child tasks, reviews, and merges |
+| `test-backlog-workflow.php` | PHP | Run reusable sequential validation campaigns for `backlog.php` on temporary backlog files |
 | `setup.php` | PHP | Full installation (first time) |
 | `dev.php` | PHP | Start / stop the environment |
 | `migrate.php` | PHP | Run Doctrine migrations |
@@ -70,6 +71,10 @@ php scripts/help.php migrate.php  # detail for one script
 Runs the documented local backlog workflow from `WP` only, including feature start/review/merge and local child task submit/review/merge flows.
 
 ```bash
+php scripts/backlog.php
+php scripts/backlog.php help
+php scripts/backlog.php help feature-start
+php scripts/backlog.php feature-start --help
 php scripts/backlog.php feature-start --agent agent-01
 php scripts/backlog.php task-review-request --agent agent-01
 php scripts/backlog.php task-review-approve my-feature/my-task
@@ -78,10 +83,34 @@ php scripts/backlog.php feature-task-merge my-feature/my-task
 ```
 
 Notes:
+- run `php scripts/backlog.php` for the global backlog help
+- use `php scripts/backlog.php help <command>` or `php scripts/backlog.php <command> --help` for one command
 - developer commands require `--agent=<code>`
 - reviewer commands never use `--agent`
-- `feature-start` reads branch type from queued task prefixes such as `[feat]` or `[fix]`
+- `feature-start` reads the next queued board entry and accepts plain text, optional `[feat]` / `[fix]` prefixes, and scoped entries like `[feature-slug][task-slug] Task text`
 - child task review stays local; only the parent feature uses the remote PR flow
+
+---
+
+### `test-backlog-workflow.php`
+Runs reusable sequential validation campaigns for `php scripts/backlog.php` against temporary backlog and review files under `local/tmp/`.
+
+```bash
+php scripts/test-backlog-workflow.php
+php scripts/test-backlog-workflow.php --campaign help
+php scripts/test-backlog-workflow.php --campaign scoped-task-lifecycle
+php scripts/test-backlog-workflow.php --allow-remote --campaign feature-review-lifecycle
+php scripts/test-backlog-workflow.php --keep-artifacts
+```
+
+Notes:
+- the script never uses `local/backlog-board.md` or `local/backlog-review.md` directly
+- it passes `--test-mode`, `--board-file`, and `--review-file` to `backlog.php` with temporary files under `local/tmp/`
+- `feature-review-lifecycle` is skipped unless `--allow-remote` is enabled
+- the remote campaign creates a temporary PR base branch instead of targeting `main`
+- cleanup always runs in best effort and only acts on resources recorded by the test context
+- use `--keep-artifacts` to inspect temporary backlog and review files after the run
+- detailed reusable campaign intent is documented in `doc/development/script-backlog-test-scenarios.md`
 
 ---
 
@@ -270,25 +299,28 @@ php scripts/health.php --url http://my-server:8080
 ---
 
 ### `review.php`
-Runs mechanical pre-commit checks on modified and untracked files. Designed to be used by AI agents during the `review` command, before manual inspection.
+Runs mechanical checks on modified and untracked files. With `--base=<ref>`, it also checks files changed by commits between that base and `HEAD`. Designed to be used by AI agents during the `review` command, before manual inspection.
 
 Blockers (exit code 1):
 - French strings (accented characters) in `backend/src/` `.php` and `frontend/src/` `.ts/.tsx`
 - Missing PHPDoc on `public function` declarations in `backend/src/` (migrations excluded)
 - Missing JSDoc on export declarations in `frontend/src/` `.ts/.tsx`
+- Failing frontend TypeScript type-check when modified files include `frontend/src/` `.ts/.tsx`
 - Failing dedicated PHPUnit tests mapped from modified `backend/src/Service/...` files
 
 Informational (no exit code impact):
 - List of modified files
 - List of untracked files
+- List of committed files since `--base`, when provided
 - Modified backend services without a dedicated mapped PHPUnit test
 
 Limitations: only detects accented characters as French strings — complement with a manual diff review for unaccented French words (`Valider`, `Commenter`, etc.). JSDoc check covers export declarations only, not re-exports.
 
-The review flow intentionally skips container-backed validations that depend on local uncommitted environment files such as `.env`. Those checks are outside the commit diff scope and must not block review from a developer worktree.
+The review flow skips container-backed validations that depend on local uncommitted environment files such as `.env`. Frontend TypeScript checking remains part of review through `php scripts/validate-files.php --with-types --review-scope ...`, which runs the local `frontend` package script instead of raw `npx tsc`.
 
 ```bash
 php scripts/review.php
+php scripts/review.php --base=HEAD~1
 ```
 
 ---
@@ -317,8 +349,9 @@ Rules:
 ---
 
 ### `validate-files.php`
-Runs targeted backend/frontend validations (PHP syntax, Symfony container lint, Doctrine schema, ESLint) for an explicit list of files.
-Use `--review-scope` when the command is executed from the mechanical review flow. In that mode, container-backed checks are skipped because they depend on local runtime state and uncommitted files such as `.env`, which are outside the review diff scope.
+Runs targeted backend/frontend validations (PHP syntax, Symfony container lint, OpenAPI consistency, ESLint, and optional TypeScript type-checking) for an explicit list of files.
+Use `--with-types` for frontend changes instead of raw `npx tsc`; it runs the project type-check wrapper.
+Use `--review-scope` when the command is executed from the mechanical review flow. In that mode, container-backed checks are skipped because they depend on local runtime state and uncommitted files such as `.env`, which are outside the review diff scope, but frontend TypeScript type-checking still runs through the local `frontend` package script.
 
 ```bash
 php scripts/validate-files.php backend/src/Controller/TaskController.php frontend/src/api/tickets.ts

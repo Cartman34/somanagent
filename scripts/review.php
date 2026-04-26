@@ -3,8 +3,8 @@
 /**
  * @author Florent HAZARD <f.hazard@sowapps.com>
  */
-// Description: Run mechanical review checks on modified and untracked files
-// Usage: php scripts/review.php
+// Description: Run mechanical review checks on modified, untracked, and optional committed files
+// Usage: php scripts/review.php [--base=<ref>]
 
 require_once __DIR__ . '/src/bootstrap.php';
 

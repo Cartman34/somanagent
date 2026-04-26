@@ -1,0 +1,15 @@
+description: 'Submit one local task for reviewer action after a clean mechanical review'
+arguments:
+  -
+    name: '[<task>|<feature/task>]'
+    description: 'Optional explicit child task identifier'
+options:
+  -
+    name: '--agent'
+    description: 'Developer agent code owning the task'
+examples:
+  - 'php scripts/backlog.php task-review-request --agent agent-01'
+  - 'php scripts/backlog.php task-review-request --agent agent-01 onboarding/task-copy-review'
+notes:
+  - 'Without an explicit task reference, resolves the single active child task assigned to the provided agent.'
+  - 'Runs `php scripts/review.php` in the task worktree before moving the task to review.'

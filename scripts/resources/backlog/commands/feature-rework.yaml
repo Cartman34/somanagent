@@ -1,0 +1,15 @@
+description: 'Move a rejected feature back to development'
+arguments:
+  -
+    name: '[<feature>]'
+    description: 'Optional explicit feature slug'
+options:
+  -
+    name: '--agent'
+    description: 'Developer agent code owning the feature'
+examples:
+  - 'php scripts/backlog.php feature-rework --agent agent-01'
+  - 'php scripts/backlog.php feature-rework delete-question-reply --agent agent-01'
+notes:
+  - 'Without an explicit feature argument, resolves the single rejected feature assigned to the provided agent.'
+  - 'Reopens the feature branch in the agent worktree.'

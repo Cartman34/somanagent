@@ -7,6 +7,7 @@ Read this file only when the active task requires developer workflow details.
 ## Allowed Commands
 
 - `task-create`
+- `status`
 - `task-todo-list`
 - `task-remove`
 - `task-review-request`
@@ -23,8 +24,7 @@ Read this file only when the active task requires developer workflow details.
 - `feature-list`
 - `worktree-list`
 - `worktree-clean`
-- `feature-review-next`
-- `feature-status`
+- `review-next`
 - `feature-review-request`
 
 ## Responsibilities
@@ -44,6 +44,7 @@ Read this file only when the active task requires developer workflow details.
 - When one step is prefixed with `WP:`, the working directory must be `WP`.
 - When one step is prefixed with `WA:`, the working directory must be the active agent `WA`.
 - Forbidden for `Developer`: `php scripts/console.php`, `php scripts/node.php`, `php scripts/db.php`, `php scripts/dev.php`, `php scripts/health.php`, `php scripts/github.php`, and any script that talks to containers, runtime, database, network, or GitHub.
+- For frontend TypeScript validation, do not run raw `npx tsc`; use `php scripts/validate-files.php --with-types <changed-frontend-files>` so the same check is available to mechanical review.
 - If a command is not explicitly allowed for `Developer`, do not run it.
 
 ## Do Not
@@ -176,11 +177,11 @@ Read this file only when the active task requires developer workflow details.
 2. The script removes only abandoned managed worktrees under `.worktrees/` when they are safe to delete.
 3. Dirty, blocked, or external worktrees are left untouched and must be handled manually.
 
-### `feature-status`
+### `status`
 
-1. Run `php scripts/backlog.php feature-status [--agent=<code>] [<feature>]`.
-2. The script prints `Feature`, `Branch`, `Base`, `Stage`, `PR`, `Summary`, `Next`, and `Blocker`.
-3. When the active entry contains nested backlog bullets, the script also prints them under `Details:` for both `kind=feature` and `kind=task`.
+1. Run `php scripts/backlog.php status --agent=<code>` or `php scripts/backlog.php status <feature>`.
+2. The script prints the agent worktree state, the active task if any, the parent feature if any, and separate next actions for task and feature workflow.
+3. Use this command before choosing between `task-review-request` and `feature-review-request`.
 
 ### `feature-review-request`
 

@@ -1,0 +1,15 @@
+description: 'Approve a feature and update its PR'
+arguments:
+  -
+    name: '<feature>'
+    description: 'Feature slug to approve'
+options:
+  -
+    name: '--body-file'
+    description: 'Local file used for the PR update body'
+examples:
+  - 'php scripts/backlog.php feature-review-approve delete-question-reply --body-file local/tmp/pr_body.md'
+notes:
+  - 'The feature must already be in the review stage.'
+  - 'Blocked while local child tasks remain active for the feature.'
+  - 'Pushes the branch, creates or updates the PR, then records the PR number in the backlog metadata.'

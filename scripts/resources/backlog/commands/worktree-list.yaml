@@ -1,0 +1,3 @@
+description: 'List managed and external git worktrees with cleanup guidance'
+examples:
+  - 'php scripts/backlog.php worktree-list'

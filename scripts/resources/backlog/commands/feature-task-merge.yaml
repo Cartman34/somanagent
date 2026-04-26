@@ -1,0 +1,16 @@
+description: 'Merge one local task branch into its parent feature branch'
+arguments:
+  -
+    name: '[<feature/task>]'
+    description: 'Optional explicit child task identifier'
+options:
+  -
+    name: '--agent'
+    description: 'Developer agent code for the current task merge flow'
+examples:
+  - 'php scripts/backlog.php feature-task-merge --agent agent-01'
+  - 'php scripts/backlog.php feature-task-merge onboarding/task-copy-review'
+notes:
+  - 'Without an explicit task reference, resolves the single active child task assigned to the provided agent.'
+  - 'Without `--agent`, an explicit `<feature/task>` reference is required.'
+  - 'Runs `php scripts/review.php` again before merging and then deletes the merged local task branch.'

@@ -1,6 +1,9 @@
 {
     "name": "somanagent/scripts",
     "type": "project",
+    "require": {
+        "symfony/yaml": "^7.2"
+    },
     "autoload": {
         "psr-4": {
             "SoManAgent\\Script\\": "src/"
