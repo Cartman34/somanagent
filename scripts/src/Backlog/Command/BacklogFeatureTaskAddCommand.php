@@ -16,7 +16,7 @@ use SoManAgent\Script\Backlog\BacklogGitWorkflow;
 use SoManAgent\Script\Backlog\BacklogMetaValue;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
 use SoManAgent\Script\Backlog\BoardEntry;
-use SoManAgent\Script\Backlog\PullRequestManager;
+use SoManAgent\Script\Backlog\PullRequestService;
 
 /**
  * Command for adding a task to an active feature.
@@ -31,7 +31,7 @@ final class BacklogFeatureTaskAddCommand extends AbstractBacklogCommand
 
     private BacklogGitWorkflow $gitWorkflow;
 
-    private PullRequestManager $pullRequestManager;
+    private PullRequestService $pullRequestService;
 
     public function __construct(BacklogCommandContext $context)
     {
@@ -40,7 +40,7 @@ final class BacklogFeatureTaskAddCommand extends AbstractBacklogCommand
         $this->entryService = $context->getEntryService();
         $this->worktreeManager = $context->getWorktreeManager();
         $this->gitWorkflow = $context->getGitWorkflow();
-        $this->pullRequestManager = $context->getPullRequestManager();
+        $this->pullRequestService = $context->getPullRequestService();
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -143,7 +143,7 @@ final class BacklogFeatureTaskAddCommand extends AbstractBacklogCommand
             ? (string) $options[BacklogCliOption::BODY_FILE->value]
             : null;
         if ($bodyFile !== null) {
-            $this->pullRequestManager->updatePrBodyIfExists($entry->getBranch() ?? '', $bodyFile);
+            $this->pullRequestService->updatePrBodyIfExists($entry->getBranch() ?? '', $bodyFile);
         }
 
         $this->console->ok(sprintf('Added queued task to feature %s', $feature));

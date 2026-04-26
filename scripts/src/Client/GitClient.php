@@ -110,6 +110,46 @@ final class GitClient
         );
     }
 
+    public function pushUpstream(string $branch, string $remote = 'origin', ?string $worktree = null): void
+    {
+        $command = sprintf('push -u %s %s', escapeshellarg($remote), escapeshellarg($branch));
+        if ($worktree !== null) {
+            $command = $this->inPath($worktree, $command);
+        } else {
+            $command = 'git ' . $command;
+        }
+
+        $this->runNetwork($command);
+    }
+
+    public function fetchRemoteBranch(string $branch, string $remote = 'origin', ?string $worktree = null): void
+    {
+        $command = sprintf(
+            'fetch %s %s:%s',
+            escapeshellarg($remote),
+            escapeshellarg($branch),
+            escapeshellarg('refs/remotes/' . $remote . '/' . $branch)
+        );
+        if ($worktree !== null) {
+            $command = $this->inPath($worktree, $command);
+        } else {
+            $command = 'git ' . $command;
+        }
+
+        $this->runNetwork($command);
+    }
+
+    public function isRemoteBranchVisible(string $branch, string $remote = 'origin'): bool
+    {
+        $output = $this->captureNetwork(sprintf(
+            'git ls-remote --heads %s %s',
+            escapeshellarg($remote),
+            escapeshellarg($branch),
+        ));
+
+        return trim($output) !== '';
+    }
+
     public function toRelativeProjectPath(string $path): string
     {
         return $this->console->toRelativeProjectPath($path);

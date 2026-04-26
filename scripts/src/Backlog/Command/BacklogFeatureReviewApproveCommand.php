@@ -12,11 +12,7 @@ use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
 use SoManAgent\Script\Backlog\BacklogEntryService;
 use SoManAgent\Script\Backlog\BacklogGitWorkflow;
-use SoManAgent\Script\Backlog\BacklogMetaValue;
-use SoManAgent\Script\Backlog\BoardEntry;
-use SoManAgent\Script\Backlog\PullRequestManager;
-use SoManAgent\Script\Backlog\PullRequestTag;
-use SoManAgent\Script\Console;
+use SoManAgent\Script\Backlog\PullRequestService;
 
 /**
  * Command for approving a feature review.
@@ -29,22 +25,15 @@ final class BacklogFeatureReviewApproveCommand extends AbstractBacklogCommand
 
     private BacklogGitWorkflow $gitWorkflow;
 
-    private PullRequestManager $pullRequestManager;
+    private PullRequestService $pullRequestService;
 
-    public function __construct(
-        Console $console,
-        bool $dryRun,
-        string $projectRoot,
-        BacklogEntryResolver $entryResolver,
-        BacklogEntryService $entryService,
-        BacklogGitWorkflow $gitWorkflow,
-        PullRequestManager $pullRequestManager
-    ) {
-        parent::__construct($console, $dryRun, $projectRoot);
-        $this->entryResolver = $entryResolver;
-        $this->entryService = $entryService;
-        $this->gitWorkflow = $gitWorkflow;
-        $this->pullRequestManager = $pullRequestManager;
+    public function __construct(BacklogCommandContext $context)
+    {
+        parent::__construct($context);
+        $this->entryResolver = $context->getEntryResolver();
+        $this->entryService = $context->getEntryService();
+        $this->gitWorkflow = $context->getGitWorkflow();
+        $this->pullRequestService = $context->getPullRequestService();
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -73,12 +62,12 @@ final class BacklogFeatureReviewApproveCommand extends AbstractBacklogCommand
             throw new \RuntimeException('Feature has no branch metadata.');
         }
 
-        $type = $this->determinePrType($entry, $this->gitWorkflow);
-        $title = $this->buildPrTitle($type, $entry);
+        $type = $this->pullRequestService->determinePrType($entry, $this->gitWorkflow);
+        $title = $this->pullRequestService->buildPrTitle($type, $entry);
 
-        $this->pullRequestManager->pushBranchAndWaitForRemoteVisibility($branch);
-        $this->pullRequestManager->createOrUpdatePr($branch, $title, $bodyFile, $this->prBaseBranch($options));
-        $prNumber = $this->pullRequestManager->findPrNumberByBranch($branch);
+        $this->pullRequestService->pushBranchAndWaitForRemoteVisibility($branch);
+        $this->pullRequestService->createOrUpdatePr($branch, $title, $bodyFile, $this->prBaseBranch($options));
+        $prNumber = $this->pullRequestService->findPrNumberByBranch($branch);
         if ($prNumber !== null) {
             $entry->setPr((string) $prNumber);
         }
@@ -95,6 +84,4 @@ final class BacklogFeatureReviewApproveCommand extends AbstractBacklogCommand
     {
         return is_string($options['pr-base-branch'] ?? null) ? $options['pr-base-branch'] : BacklogGitWorkflow::MAIN_BRANCH;
     }
-
-}
 }

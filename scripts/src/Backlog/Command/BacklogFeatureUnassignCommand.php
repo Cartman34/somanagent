@@ -9,6 +9,7 @@ namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
+use SoManAgent\Script\Backlog\BacklogPermissionService;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
 
 /**
@@ -20,16 +21,19 @@ final class BacklogFeatureUnassignCommand extends AbstractBacklogCommand
 
     private BacklogWorktreeManager $worktreeManager;
 
+    private BacklogPermissionService $permissionService;
+
     public function __construct(BacklogCommandContext $context)
     {
         parent::__construct($context);
         $this->entryResolver = $context->getEntryResolver();
         $this->worktreeManager = $context->getWorktreeManager();
+        $this->permissionService = $context->getPermissionService();
     }
 
     public function handle(array $commandArgs, array $options): void
     {
-        $actorRole = $this->requireWorkflowRole();
+        $actorRole = $this->permissionService->requireWorkflowRole();
         $agent = $options['agent'] ?? null;
         if (!is_string($agent)) {
             throw new \RuntimeException('Option --agent is required.');
@@ -41,9 +45,9 @@ final class BacklogFeatureUnassignCommand extends AbstractBacklogCommand
         
         $entry = $match->getEntry();
         $feature = $entry->getFeature() ?? '';
-        $actorAgent = $actorRole === self::ROLE_DEVELOPER ? $this->requireWorkflowAgent() : null;
+        $actorAgent = $actorRole === AbstractBacklogCommand::ROLE_DEVELOPER ? $this->permissionService->requireWorkflowAgent() : null;
 
-        $this->assertCanUnassignFeature($actorRole, $actorAgent, $agent, $feature, $entry);
+        $this->permissionService->assertCanUnassignFeature($actorRole, $actorAgent, $agent, $feature, $entry);
         if ($entry->getAgent() !== $agent) {
             throw new \RuntimeException("Feature {$feature} is not assigned to agent {$agent}.");
         }

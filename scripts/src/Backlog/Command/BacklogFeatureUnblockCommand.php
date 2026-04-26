@@ -12,8 +12,7 @@ use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
 use SoManAgent\Script\Backlog\BacklogEntryService;
 use SoManAgent\Script\Backlog\BacklogGitWorkflow;
-use SoManAgent\Script\Backlog\PullRequestManager;
-use SoManAgent\Script\Backlog\PullRequestTag;
+use SoManAgent\Script\Backlog\PullRequestService;
 
 /**
  * Command for unblocking a feature.
@@ -26,16 +25,15 @@ final class BacklogFeatureUnblockCommand extends AbstractBacklogCommand
 
     private BacklogGitWorkflow $gitWorkflow;
 
-    private PullRequestManager $pullRequestManager;
+    private PullRequestService $pullRequestService;
 
-    public function __construct(
-        BacklogCommandContext $context
-    ) {
+    public function __construct(BacklogCommandContext $context)
+    {
         parent::__construct($context);
         $this->entryResolver = $context->getEntryResolver();
         $this->entryService = $context->getEntryService();
         $this->gitWorkflow = $context->getGitWorkflow();
-        $this->pullRequestManager = $context->getPullRequestManager();
+        $this->pullRequestService = $context->getPullRequestService();
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -61,10 +59,10 @@ final class BacklogFeatureUnblockCommand extends AbstractBacklogCommand
         $match->getEntry()->setBlocked(false);
         $this->saveBoard($board, BacklogCommandName::FEATURE_UNBLOCK->value);
 
-        $prNumber = $this->storedPrNumber($match->getEntry());
+        $prNumber = $this->pullRequestService->findPrNumberByBranch($match->getEntry()->getBranch() ?? '');
         if ($prNumber !== null) {
-            $title = $this->buildCurrentTitle($match->getEntry(), $this->entryService, $this->gitWorkflow);
-            $this->pullRequestManager->editPrTitle($prNumber, $title);
+            $title = $this->pullRequestService->buildCurrentTitle($match->getEntry(), $this->gitWorkflow);
+            $this->pullRequestService->editPrTitle($prNumber, $title);
         }
 
         $this->console->ok(sprintf('Removed blocked flag from feature %s', $feature));

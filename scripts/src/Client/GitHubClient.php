@@ -101,6 +101,47 @@ final class GitHubClient
         return $result;
     }
 
+    public function createPr(string $title, string $headBranch, string $baseBranch, string $bodyFilePath): array
+    {
+        $arguments = sprintf(
+            'pr create --title %s --head %s --base %s --body-file %s',
+            escapeshellarg($title),
+            escapeshellarg($headBranch),
+            escapeshellarg($baseBranch),
+            escapeshellarg($bodyFilePath)
+        );
+
+        return $this->captureArgumentsWithExitCode($arguments);
+    }
+
+    public function editPr(int $prNumber, ?string $title = null, ?string $bodyFilePath = null): void
+    {
+        $arguments = sprintf('pr edit %d', $prNumber);
+        if ($title !== null) {
+            $arguments .= sprintf(' --title %s', escapeshellarg($title));
+        }
+        if ($bodyFilePath !== null) {
+            $arguments .= sprintf(' --body-file %s', escapeshellarg($bodyFilePath));
+        }
+
+        $this->run($arguments);
+    }
+
+    public function closePr(int $prNumber): void
+    {
+        $this->run(sprintf('pr close %d', $prNumber));
+    }
+
+    public function mergePr(int $prNumber): void
+    {
+        $this->run(sprintf('pr merge %d', $prNumber));
+    }
+
+    public function listPrs(): string
+    {
+        return $this->capture('pr list');
+    }
+
     private function isRetryableNetworkError(string $output): bool
     {
         foreach ($this->networkErrorNeedles as $needle) {

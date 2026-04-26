@@ -12,14 +12,15 @@ use SoManAgent\Script\Client\GitHubClient;
 use SoManAgent\Script\RetryHelper;
 
 /**
- * Handles backlog pull-request orchestration above Git and GitHub clients.
+ * Service for orchestrating Pull Request lifecycles and formatting.
  */
-final class PullRequestManager
+final class PullRequestService
 {
     private bool $dryRun;
     private string $headInvalidNeedle;
     private GitClient $git;
     private GitHubClient $github;
+    private BacklogEntryService $entryService;
     private int $retryCount;
     private int $retryBaseDelay;
     private int $retryFactor;
@@ -29,14 +30,16 @@ final class PullRequestManager
         string $headInvalidNeedle,
         GitClient $git,
         GitHubClient $github,
-        int $retryCount,
-        int $retryBaseDelay,
-        int $retryFactor,
+        BacklogEntryService $entryService,
+        int $retryCount = 0,
+        int $retryBaseDelay = 0,
+        int $retryFactor = 0,
     ) {
         $this->dryRun = $dryRun;
         $this->headInvalidNeedle = $headInvalidNeedle;
         $this->git = $git;
         $this->github = $github;
+        $this->entryService = $entryService;
         $this->retryCount = $retryCount;
         $this->retryBaseDelay = $retryBaseDelay;
         $this->retryFactor = $retryFactor;
@@ -52,33 +55,13 @@ final class PullRequestManager
             return;
         }
 
-        $this->github->run(sprintf(
-            'pr edit %d --title %s --body-file %s',
-            $prNumber,
-            escapeshellarg($title),
-            escapeshellarg($bodyFile),
-        ));
+        $this->github->editPr($prNumber, $title, $bodyFile);
     }
 
     public function pushBranchAndWaitForRemoteVisibility(string $branch, ?string $worktree = null): void
     {
-        $gitPrefix = $worktree !== null
-            ? sprintf('git -C %s', escapeshellarg($this->git->toRelativeProjectPath($worktree)))
-            : 'git';
-
-        $this->git->runNetwork(sprintf(
-            '%s push -u origin %s',
-            $gitPrefix,
-            escapeshellarg($branch),
-        ));
-
-        $this->git->runNetwork(sprintf(
-            '%s fetch origin %s:%s',
-            $gitPrefix,
-            escapeshellarg($branch),
-            escapeshellarg('refs/remotes/origin/' . $branch),
-        ));
-
+        $this->git->pushUpstream($branch, 'origin', $worktree);
+        $this->git->fetchRemoteBranch($branch, 'origin', $worktree);
         $this->waitForRemoteBranchVisibility($branch);
     }
 
@@ -89,11 +72,7 @@ final class PullRequestManager
             throw new \RuntimeException("No open PR found for branch {$branch}.");
         }
 
-        $this->github->run(sprintf(
-            'pr edit %d --body-file %s',
-            $prNumber,
-            escapeshellarg($bodyFile),
-        ));
+        $this->github->editPr($prNumber, null, $bodyFile);
     }
 
     public function updatePrBodyIfExists(string $branch, string $bodyFile): void
@@ -103,30 +82,22 @@ final class PullRequestManager
             return;
         }
 
-        $this->github->run(sprintf(
-            'pr edit %d --body-file %s',
-            $prNumber,
-            escapeshellarg($bodyFile),
-        ));
+        $this->github->editPr($prNumber, null, $bodyFile);
     }
 
     public function closePr(int $prNumber): void
     {
-        $this->github->run(sprintf('pr close %d', $prNumber));
+        $this->github->closePr($prNumber);
     }
 
     public function mergePr(int $prNumber): void
     {
-        $this->github->run(sprintf('pr merge %d', $prNumber));
+        $this->github->mergePr($prNumber);
     }
 
     public function editPrTitle(int $prNumber, string $title): void
     {
-        $this->github->run(sprintf(
-            'pr edit %d --title %s',
-            $prNumber,
-            escapeshellarg($title),
-        ));
+        $this->github->editPr($prNumber, $title);
     }
 
     public function findPrNumberByBranch(string $branch): ?int
@@ -135,7 +106,7 @@ final class PullRequestManager
             return null;
         }
 
-        $output = $this->github->capture('pr list');
+        $output = $this->github->listPrs();
         foreach (explode("\n", trim($output)) as $line) {
             if (preg_match('/^\s*#(\d+)\s+.*\[(.+?) → (.+?)\]$/u', $line, $matches) === 1) {
                 if ($matches[2] === $branch) {
@@ -147,34 +118,93 @@ final class PullRequestManager
         return null;
     }
 
+    public function determinePrType(BoardEntry $entry, BacklogGitWorkflow $gitWorkflow): string
+    {
+        $base = $entry->getBase();
+        $branch = $entry->getBranch();
+        if ($base === null || $branch === null) {
+            throw new \RuntimeException('Cannot determine PR type without base and branch metadata.');
+        }
+
+        $files = $gitWorkflow->changedFiles($base, $branch);
+
+        if ($files === []) {
+            return str_starts_with($branch, 'fix/') ? PullRequestTag::FIX->value : PullRequestTag::FEAT->value;
+        }
+
+        $docOnly = true;
+        $techOnly = true;
+
+        foreach ($files as $file) {
+            if (!str_starts_with($file, 'doc/') && $file !== 'AGENTS.md') {
+                $docOnly = false;
+            }
+
+            if (
+                !str_starts_with($file, 'scripts/')
+                && !str_starts_with($file, '.github/')
+                && !in_array($file, ['AGENTS.md', 'composer.json', 'composer.lock', 'package.json', 'package-lock.json', 'pnpm-lock.yaml'], true)
+            ) {
+                $techOnly = false;
+            }
+        }
+
+        if ($docOnly) {
+            return PullRequestTag::DOC->value;
+        }
+
+        if ($techOnly) {
+            return PullRequestTag::TECH->value;
+        }
+
+        return str_starts_with($branch, 'fix/') ? PullRequestTag::FIX->value : PullRequestTag::FEAT->value;
+    }
+
+    public function buildPrTitle(string $type, BoardEntry $entry): string
+    {
+        $title = sprintf('[%s] %s', $type, $entry->getText());
+
+        return $entry->isBlocked()
+            ? $this->ensureBlockedTitle($title)
+            : $title;
+    }
+
+    public function buildCurrentTitle(BoardEntry $entry, BacklogGitWorkflow $gitWorkflow): string
+    {
+        $type = $this->entryService->featureStage($entry) === BacklogBoard::STAGE_APPROVED
+            ? $this->determinePrType($entry, $gitWorkflow)
+            : PullRequestTag::WIP->value;
+
+        return $this->buildPrTitle($type, $entry);
+    }
+
+    public function ensureBlockedTitle(string $title): string
+    {
+        $tag = '[' . PullRequestTag::BLOCKED->value . ']';
+
+        return str_contains($title, $tag)
+            ? $title
+            : $tag . ' ' . $title;
+    }
+
     private function createPrWithRetry(string $branch, string $title, string $bodyFile, string $baseBranch): void
     {
-        $arguments = sprintf(
-            'pr create --title %s --head %s --base %s --body-file %s',
-            escapeshellarg($title),
-            escapeshellarg($branch),
-            escapeshellarg($baseBranch),
-            escapeshellarg($bodyFile),
-        );
-        $command = sprintf('github.php %s', $arguments);
-
         [$code, $output] = $this->networkRetryHelper()->run(
-            function () use ($branch, $arguments): array {
-                [$code, $output] = $this->github->captureArgumentsWithExitCode($arguments);
-                if ($code !== 0 && $this->isHeadInvalidCreateError($output)) {
+            function () use ($title, $branch, $baseBranch, $bodyFile): array {
+                $result = $this->github->createPr($title, $branch, $baseBranch, $bodyFile);
+                if ($result[0] !== 0 && $this->isHeadInvalidCreateError($result[1])) {
                     $this->waitForRemoteBranchVisibility($branch);
                 }
 
-                return [$code, $output];
+                return $result;
             },
             fn(array $result): bool => $result[0] !== 0 && $this->isHeadInvalidCreateError($result[1]),
         );
 
         if ($code !== 0) {
             throw new \RuntimeException(sprintf(
-                "Command failed with exit code %d: %s\n%s",
+                "Command failed with exit code %d:\n%s",
                 $code,
-                $command,
                 $output,
             ));
         }
@@ -187,7 +217,7 @@ final class PullRequestManager
         }
 
         $isVisible = $this->networkRetryHelper()->run(
-            fn(): bool => $this->isRemoteBranchVisible($branch),
+            fn(): bool => $this->git->isRemoteBranchVisible($branch),
             fn(bool $result): bool => !$result,
         );
 
@@ -196,16 +226,6 @@ final class PullRequestManager
         }
 
         throw new \RuntimeException("Remote branch did not become visible in time: {$branch}");
-    }
-
-    private function isRemoteBranchVisible(string $branch): bool
-    {
-        $output = $this->git->captureNetwork(sprintf(
-            'git ls-remote --heads origin %s',
-            escapeshellarg($branch),
-        ));
-
-        return trim($output) !== '';
     }
 
     private function isHeadInvalidCreateError(string $output): bool

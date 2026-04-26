@@ -23,6 +23,8 @@ use SoManAgent\Script\Backlog\Command\BacklogFeatureReworkCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureStartCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureTaskAddCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureTaskMergeCommand;
+use SoManAgent\Script\Backlog\Command\BacklogFeatureUnassignCommand;
+use SoManAgent\Script\Backlog\Command\BacklogFeatureUnblockCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewNextCommand;
 use SoManAgent\Script\Backlog\Command\BacklogStatusCommand;
 use SoManAgent\Script\Backlog\Command\BacklogTaskCreateCommand;
@@ -62,7 +64,7 @@ final class BacklogCommandFactory
         TextSlugger $featureSlugger,
         BacklogReviewBodyFormatter $reviewBodyFormatter,
         BacklogGitWorkflow $gitWorkflow,
-        PullRequestManager $pullRequestManager,
+        PullRequestService $pullRequestService,
         string $boardPath,
         string $reviewFilePath
     ) {
@@ -77,8 +79,10 @@ final class BacklogCommandFactory
             $featureSlugger,
             $reviewBodyFormatter,
             $gitWorkflow,
-            $pullRequestManager,
-            $this
+            $pullRequestService,
+            $this,
+            new BacklogPresenter($console, $consoleClient, $entryService),
+            new BacklogPermissionService()
         );
         $this->boardPath = $boardPath;
         $this->reviewFilePath = $reviewFilePath;
@@ -87,35 +91,35 @@ final class BacklogCommandFactory
     public function createHandler(string $commandName): AbstractBacklogCommand
     {
         $map = [
-            BacklogCommandName::STATUS->value => Command\BacklogStatusCommand::class,
-            BacklogCommandName::WORKTREE_LIST->value => Command\BacklogWorktreeListCommand::class,
-            BacklogCommandName::WORKTREE_CLEAN->value => Command\BacklogWorktreeCleanCommand::class,
-            BacklogCommandName::WORKTREE_RESTORE->value => Command\BacklogWorktreeRestoreCommand::class,
-            BacklogCommandName::TASK_CREATE->value => Command\BacklogTaskCreateCommand::class,
-            BacklogCommandName::TASK_TODO_LIST->value => Command\BacklogTaskTodoListCommand::class,
-            BacklogCommandName::TASK_REMOVE->value => Command\BacklogTaskRemoveCommand::class,
-            BacklogCommandName::TASK_REVIEW_REQUEST->value => Command\BacklogTaskReviewRequestCommand::class,
-            BacklogCommandName::TASK_REVIEW_CHECK->value => Command\BacklogTaskReviewCheckCommand::class,
-            BacklogCommandName::TASK_REVIEW_REJECT->value => Command\BacklogTaskReviewRejectCommand::class,
-            BacklogCommandName::TASK_REVIEW_APPROVE->value => Command\BacklogTaskReviewApproveCommand::class,
-            BacklogCommandName::TASK_REWORK->value => Command\BacklogTaskReworkCommand::class,
-            BacklogCommandName::REVIEW_NEXT->value => Command\BacklogReviewNextCommand::class,
-            BacklogCommandName::FEATURE_START->value => Command\BacklogFeatureStartCommand::class,
-            BacklogCommandName::FEATURE_RELEASE->value => Command\BacklogFeatureReleaseCommand::class,
-            BacklogCommandName::FEATURE_TASK_ADD->value => Command\BacklogFeatureTaskAddCommand::class,
-            BacklogCommandName::FEATURE_TASK_MERGE->value => Command\BacklogFeatureTaskMergeCommand::class,
-            BacklogCommandName::FEATURE_ASSIGN->value => Command\BacklogFeatureAssignCommand::class,
-            BacklogCommandName::FEATURE_UNASSIGN->value => Command\BacklogFeatureUnassignCommand::class,
-            BacklogCommandName::FEATURE_REWORK->value => Command\BacklogFeatureReworkCommand::class,
-            BacklogCommandName::FEATURE_BLOCK->value => Command\BacklogFeatureBlockCommand::class,
-            BacklogCommandName::FEATURE_UNBLOCK->value => Command\BacklogFeatureUnblockCommand::class,
-            BacklogCommandName::FEATURE_LIST->value => Command\BacklogFeatureListCommand::class,
-            BacklogCommandName::FEATURE_REVIEW_REQUEST->value => Command\BacklogFeatureReviewRequestCommand::class,
-            BacklogCommandName::FEATURE_REVIEW_CHECK->value => Command\BacklogFeatureReviewCheckCommand::class,
-            BacklogCommandName::FEATURE_REVIEW_REJECT->value => Command\BacklogFeatureReviewRejectCommand::class,
-            BacklogCommandName::FEATURE_REVIEW_APPROVE->value => Command\BacklogFeatureReviewApproveCommand::class,
-            BacklogCommandName::FEATURE_CLOSE->value => Command\BacklogFeatureCloseCommand::class,
-            BacklogCommandName::FEATURE_MERGE->value => Command\BacklogFeatureMergeCommand::class,
+            BacklogCommandName::STATUS->value => BacklogStatusCommand::class,
+            BacklogCommandName::WORKTREE_LIST->value => BacklogWorktreeListCommand::class,
+            BacklogCommandName::WORKTREE_CLEAN->value => BacklogWorktreeCleanCommand::class,
+            BacklogCommandName::WORKTREE_RESTORE->value => BacklogWorktreeRestoreCommand::class,
+            BacklogCommandName::TASK_CREATE->value => BacklogTaskCreateCommand::class,
+            BacklogCommandName::TASK_TODO_LIST->value => BacklogTaskTodoListCommand::class,
+            BacklogCommandName::TASK_REMOVE->value => BacklogTaskRemoveCommand::class,
+            BacklogCommandName::TASK_REVIEW_REQUEST->value => BacklogTaskReviewRequestCommand::class,
+            BacklogCommandName::TASK_REVIEW_CHECK->value => BacklogTaskReviewCheckCommand::class,
+            BacklogCommandName::TASK_REVIEW_REJECT->value => BacklogTaskReviewRejectCommand::class,
+            BacklogCommandName::TASK_REVIEW_APPROVE->value => BacklogTaskReviewApproveCommand::class,
+            BacklogCommandName::TASK_REWORK->value => BacklogTaskReworkCommand::class,
+            BacklogCommandName::REVIEW_NEXT->value => BacklogReviewNextCommand::class,
+            BacklogCommandName::FEATURE_START->value => BacklogFeatureStartCommand::class,
+            BacklogCommandName::FEATURE_RELEASE->value => BacklogFeatureReleaseCommand::class,
+            BacklogCommandName::FEATURE_TASK_ADD->value => BacklogFeatureTaskAddCommand::class,
+            BacklogCommandName::FEATURE_TASK_MERGE->value => BacklogFeatureTaskMergeCommand::class,
+            BacklogCommandName::FEATURE_ASSIGN->value => BacklogFeatureAssignCommand::class,
+            BacklogCommandName::FEATURE_UNASSIGN->value => BacklogFeatureUnassignCommand::class,
+            BacklogCommandName::FEATURE_REWORK->value => BacklogFeatureReworkCommand::class,
+            BacklogCommandName::FEATURE_BLOCK->value => BacklogFeatureBlockCommand::class,
+            BacklogCommandName::FEATURE_UNBLOCK->value => BacklogFeatureUnblockCommand::class,
+            BacklogCommandName::FEATURE_LIST->value => BacklogFeatureListCommand::class,
+            BacklogCommandName::FEATURE_REVIEW_REQUEST->value => BacklogFeatureReviewRequestCommand::class,
+            BacklogCommandName::FEATURE_REVIEW_CHECK->value => BacklogFeatureReviewCheckCommand::class,
+            BacklogCommandName::FEATURE_REVIEW_REJECT->value => BacklogFeatureReviewRejectCommand::class,
+            BacklogCommandName::FEATURE_REVIEW_APPROVE->value => BacklogFeatureReviewApproveCommand::class,
+            BacklogCommandName::FEATURE_CLOSE->value => BacklogFeatureCloseCommand::class,
+            BacklogCommandName::FEATURE_MERGE->value => BacklogFeatureMergeCommand::class,
         ];
 
         $class = $map[$commandName] ?? null;

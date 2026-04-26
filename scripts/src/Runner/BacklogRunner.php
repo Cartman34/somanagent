@@ -17,11 +17,12 @@ use SoManAgent\Script\Backlog\BacklogGitWorkflow;
 use SoManAgent\Script\Backlog\BacklogReviewBodyFormatter;
 use SoManAgent\Script\Backlog\BacklogReviewFile;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
-use SoManAgent\Script\Backlog\PullRequestManager;
+use SoManAgent\Script\Backlog\PullRequestService;
 use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Client\GitClient;
 use SoManAgent\Script\Client\GitHubClient;
 use SoManAgent\Script\Client\ProjectScriptClient;
+use SoManAgent\Script\Environment;
 use SoManAgent\Script\TextSlugger;
 
 /**
@@ -50,7 +51,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private ?GitHubClient $gitHubClient = null;
     private ?BacklogWorktreeManager $worktreeManager = null;
     private ?BacklogGitWorkflow $gitWorkflow = null;
-    private ?PullRequestManager $pullRequestManager = null;
+    private ?PullRequestService $pullRequestService = null;
     private ?BacklogReviewBodyFormatter $reviewBodyFormatter = null;
 
     protected function getDescription(): string
@@ -203,7 +204,7 @@ final class BacklogRunner extends AbstractScriptRunner
                 $this->featureSlugger(),
                 $this->reviewBodyFormatter(),
                 $this->gitWorkflow(),
-                $this->pullRequestManager(),
+                $this->pullRequestService(),
                 $this->boardPath(),
                 $this->reviewFilePath()
             );
@@ -300,7 +301,7 @@ final class BacklogRunner extends AbstractScriptRunner
             $this->worktreeManager = new BacklogWorktreeManager(
                 $this->projectRoot,
                 $this->dryRun,
-                'DATABASE_URL="mysql://root:root@localhost:3306/somanagent"',
+                (string) getenv('DATABASE_URL'),
                 $this->entryResolver(),
                 $this->consoleClient(),
                 $this->gitClient(),
@@ -319,7 +320,7 @@ final class BacklogRunner extends AbstractScriptRunner
                 $this->consoleClient(),
                 $this->console,
                 $this->gitClient(),
-                $this->pullRequestManager(),
+                $this->pullRequestService(),
                 function (string $message): void {
                     $this->logVerbose($message);
                 }
@@ -329,21 +330,22 @@ final class BacklogRunner extends AbstractScriptRunner
         return $this->gitWorkflow;
     }
 
-    private function pullRequestManager(): PullRequestManager
+    private function pullRequestService(): PullRequestService
     {
-        if ($this->pullRequestManager === null) {
-            $this->pullRequestManager = new PullRequestManager(
+        if ($this->pullRequestService === null) {
+            $this->pullRequestService = new PullRequestService(
                 $this->dryRun,
                 'Head branch is invalid',
                 $this->gitClient(),
                 $this->gitHubClient(),
+                $this->entryService(),
                 0,
                 0,
                 0
             );
         }
 
-        return $this->pullRequestManager;
+        return $this->pullRequestService;
     }
 
     private function reviewBodyFormatter(): BacklogReviewBodyFormatter

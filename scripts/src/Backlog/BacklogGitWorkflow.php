@@ -23,7 +23,7 @@ final class BacklogGitWorkflow
     private ConsoleClient $consoleClient;
     private Console $console;
     private GitClient $git;
-    private PullRequestManager $pullRequests;
+    private PullRequestService $pullRequestService;
 
     /** @var callable(string): void */
     private $verboseLogger;
@@ -33,14 +33,14 @@ final class BacklogGitWorkflow
         ConsoleClient $consoleClient,
         Console $console,
         GitClient $git,
-        PullRequestManager $pullRequests,
-        callable $verboseLogger,
+        PullRequestService $pullRequestService,
+        callable $verboseLogger
     ) {
         $this->dryRun = $dryRun;
         $this->consoleClient = $consoleClient;
         $this->console = $console;
         $this->git = $git;
-        $this->pullRequests = $pullRequests;
+        $this->pullRequestService = $pullRequestService;
         $this->verboseLogger = $verboseLogger;
     }
 
@@ -126,7 +126,7 @@ final class BacklogGitWorkflow
         }
 
         if (!$this->remoteBranchExists($branch)) {
-            $this->pullRequests->pushBranchAndWaitForRemoteVisibility($branch);
+            $this->pullRequestService->pushBranchAndWaitForRemoteVisibility($branch);
 
             return;
         }
@@ -138,7 +138,7 @@ final class BacklogGitWorkflow
         )));
 
         if ($ahead !== '0') {
-            $this->pullRequests->pushBranchAndWaitForRemoteVisibility($branch);
+            $this->pullRequestService->pushBranchAndWaitForRemoteVisibility($branch);
         }
     }
 

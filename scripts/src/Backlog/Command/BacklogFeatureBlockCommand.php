@@ -12,9 +12,7 @@ use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
 use SoManAgent\Script\Backlog\BacklogEntryService;
 use SoManAgent\Script\Backlog\BacklogGitWorkflow;
-use SoManAgent\Script\Backlog\BacklogMetaValue;
-use SoManAgent\Script\Backlog\BoardEntry;
-use SoManAgent\Script\Backlog\PullRequestManager;
+use SoManAgent\Script\Backlog\PullRequestService;
 use SoManAgent\Script\Backlog\PullRequestTag;
 
 /**
@@ -28,16 +26,15 @@ final class BacklogFeatureBlockCommand extends AbstractBacklogCommand
 
     private BacklogGitWorkflow $gitWorkflow;
 
-    private PullRequestManager $pullRequestManager;
+    private PullRequestService $pullRequestService;
 
-    public function __construct(
-        BacklogCommandContext $context
-    ) {
+    public function __construct(BacklogCommandContext $context)
+    {
         parent::__construct($context);
         $this->entryResolver = $context->getEntryResolver();
         $this->entryService = $context->getEntryService();
         $this->gitWorkflow = $context->getGitWorkflow();
-        $this->pullRequestManager = $context->getPullRequestManager();
+        $this->pullRequestService = $context->getPullRequestService();
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -60,11 +57,11 @@ final class BacklogFeatureBlockCommand extends AbstractBacklogCommand
         $entry->setBlocked(true);
         $this->saveBoard($board, BacklogCommandName::FEATURE_BLOCK->value);
 
-        $prNumber = $this->storedPrNumber($entry);
+        $prNumber = $this->pullRequestService->findPrNumberByBranch($entry->getBranch() ?? '');
         if ($prNumber !== null) {
-            $type = $this->entryService->featureStage($entry) === BacklogBoard::STAGE_APPROVED ? $this->determinePrType($entry, $this->gitWorkflow) : PullRequestTag::WIP->value;
-            $title = $this->ensureBlockedTitle($this->buildPrTitle($type, $entry));
-            $this->pullRequestManager->editPrTitle($prNumber, $title);
+            $type = $this->entryService->featureStage($entry) === BacklogBoard::STAGE_APPROVED ? $this->pullRequestService->determinePrType($entry, $this->gitWorkflow) : PullRequestTag::WIP->value;
+            $title = $this->pullRequestService->ensureBlockedTitle($this->pullRequestService->buildPrTitle($type, $entry));
+            $this->pullRequestService->editPrTitle($prNumber, $title);
         }
 
         $this->console->ok(sprintf('Marked feature %s as blocked', $feature));

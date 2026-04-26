@@ -8,15 +8,11 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\BacklogBoard;
-use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
 use SoManAgent\Script\Backlog\BacklogEntryService;
-use SoManAgent\Script\Backlog\BacklogMetaValue;
+use SoManAgent\Script\Backlog\BacklogPresenter;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
-use SoManAgent\Script\Backlog\BoardEntry;
-use SoManAgent\Script\Backlog\WorktreeAction;
-use SoManAgent\Script\Backlog\WorktreeState;
-use SoManAgent\Script\Client\ConsoleClient;
+use SoManAgent\Script\Backlog\BacklogMetaValue;
 
 /**
  * Command for displaying the backlog status.
@@ -29,7 +25,7 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
 
     private BacklogWorktreeManager $worktreeManager;
 
-    private ConsoleClient $consoleClient;
+    private BacklogPresenter $presenter;
 
     public function __construct(BacklogCommandContext $context)
     {
@@ -37,7 +33,7 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
         $this->entryResolver = $context->getEntryResolver();
         $this->entryService = $context->getEntryService();
         $this->worktreeManager = $context->getWorktreeManager();
-        $this->consoleClient = $context->getConsoleClient();
+        $this->presenter = $context->getPresenter();
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -67,22 +63,13 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
     private function statusGeneral(BacklogBoard $board): void
     {
         foreach (BacklogBoard::activeStages() as $stage) {
-            $this->console->line('[' . BacklogBoard::stageLabel($stage) . ']');
+            $this->presenter->displayStageHeader($stage);
             $matches = $board->findFeaturesByStage($stage);
             if ($matches === []) {
                 $this->console->line('  none');
             } else {
                 foreach ($matches as $match) {
-                    $entry = $match->getEntry();
-                    $parts = [
-                        $entry->getFeature() ?? '-',
-                        'agent=' . ($entry->getAgent() ?? '-'),
-                        'pr=' . $this->describePrStatus($entry),
-                    ];
-                    if ($entry->isBlocked()) {
-                        $parts[] = 'blocked=' . BacklogMetaValue::YES->value;
-                    }
-                    $this->console->line('- ' . implode(' ', $parts));
+                    $this->presenter->displayEntryLine($match->getEntry());
                 }
             }
             $this->console->line('');
@@ -94,18 +81,7 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
             $this->console->line('  none');
         } else {
             foreach ($reserved as $match) {
-                $entry = $match->getEntry();
-                $parts = [
-                    'agent=' . ($entry->getAgent() ?? '-'),
-                ];
-                if ($this->entryService->isTaskEntry($entry)) {
-                    $parts[] = 'task=' . ($entry->getTask() ?? '-');
-                    $parts[] = 'feature-branch=' . ($entry->getFeatureBranch() ?? '-');
-                }
-                if ($entry->isBlocked()) {
-                    $parts[] = 'blocked=' . BacklogMetaValue::YES->value;
-                }
-                $this->console->line('- ' . implode(' ', $parts));
+                $this->presenter->displayTodoEntryLine($match->getEntry());
             }
         }
     }
@@ -115,75 +91,39 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
         $taskEntry = $this->entryResolver->findTaskEntriesByAgent($board, $agent)[0] ?? null;
         $featureEntry = $this->entryResolver->findFeatureEntriesByAgent($board, $agent)[0] ?? null;
 
+        $this->console->line('[Task]');
         if ($taskEntry !== null) {
-            $taskEntry = $taskEntry->getEntry();
-            $this->console->line('[Task]');
-            $this->printStatusEntry($taskEntry);
-            $this->console->line('Next: ' . $this->nextStepForEntry($taskEntry, $this->entryService->featureStage($taskEntry)));
+            $this->presenter->displayEntryStatus($taskEntry->getEntry());
         } else {
-            $this->console->line('[Task]');
             $this->console->line('Active: ' . BacklogMetaValue::NONE->value);
         }
 
+        $this->console->line('');
+        $this->console->line('[Feature]');
         if ($featureEntry !== null) {
-            $featureEntry = $featureEntry->getEntry();
-            $this->console->line('[Feature]');
-            $this->printStatusEntry($featureEntry);
-            $this->console->line('Next: ' . $this->nextStepForEntry($featureEntry, $this->entryService->featureStage($featureEntry)));
+            $this->presenter->displayEntryStatus($featureEntry->getEntry());
         } else {
-            $this->console->line('[Feature]');
             $this->console->line('Active: ' . BacklogMetaValue::NONE->value);
         }
 
-        $this->printStatusWorktree($board, $agent);
+        $this->console->line('');
+        $this->statusWorktree($board, $agent);
     }
 
     private function statusForFeature(BacklogBoard $board, string $requestedTarget): void
     {
         $target = $this->entryService->normalizeFeatureSlug($requestedTarget);
         $match = $this->entryResolver->requireFeature($board, $target);
-
         $entry = $match->getEntry();
-        $stage = $this->entryService->featureStage($entry);
 
         $this->console->line('[Feature]');
-        $this->console->line('Feature: ' . ($entry->getFeature() ?? '-'));
-        $this->console->line('Agent: ' . ($entry->getAgent() ?? '-'));
-        $this->console->line('Stage: ' . BacklogBoard::stageLabel($stage));
-        $this->console->line('PR: ' . $this->describePrStatus($entry));
-        $this->console->line('Summary: ' . $entry->getText());
-        $this->printEntryStatusDetails($entry);
-        $this->console->line('Next: ' . $this->nextStepForEntry($entry, $stage));
-        $this->console->line('Blocker: ' . ($entry->isBlocked() ? 'blocked' : '-'));
+        $this->presenter->displayEntryStatus($entry);
 
-        $this->printStatusWorktree($board, $entry->getAgent());
+        $this->console->line('');
+        $this->statusWorktree($board, $entry->getAgent());
     }
 
-    private function printStatusEntry(BoardEntry $entry): void
-    {
-        $this->console->line('Kind: ' . $this->entryService->entryKind($entry));
-        $this->console->line('Feature: ' . ($entry->getFeature() ?? '-'));
-        if ($this->entryService->isTaskEntry($entry)) {
-            $this->console->line('Task: ' . ($entry->getTask() ?? '-'));
-        }
-        $this->console->line('Stage: ' . BacklogBoard::stageLabel($this->entryService->featureStage($entry)));
-        $this->console->line('PR: ' . $this->describePrStatus($entry));
-        $this->console->line('Summary: ' . $entry->getText());
-        $this->printEntryStatusDetails($entry);
-    }
-
-    private function printEntryStatusDetails(BoardEntry $entry): void
-    {
-        $extraLines = $entry->getExtraLines();
-        if ($extraLines !== []) {
-            $this->console->line('Details:');
-            foreach ($extraLines as $line) {
-                $this->console->line($line);
-            }
-        }
-    }
-
-    private function printStatusWorktree(BacklogBoard $board, ?string $agent): void
+    private function statusWorktree(BacklogBoard $board, ?string $agent): void
     {
         $this->console->line('[Worktree]');
         if ($agent === null) {
@@ -194,7 +134,6 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
         }
 
         $expectedPath = $this->projectRoot . '/.worktrees/' . $agent;
-        $expectedRelativePath = $this->consoleClient->toRelativeProjectPath($expectedPath);
         $worktree = null;
         foreach ($this->worktreeManager->classifyWorktrees($board)->getManaged() as $item) {
             if ($item->getPath() === $expectedPath) {
@@ -205,65 +144,11 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
 
         if ($worktree === null) {
             $this->console->line('State: absent');
-            $this->console->line('Path: ' . $expectedRelativePath);
+            $this->console->line('Path: ' . $expectedPath);
 
             return;
         }
 
-        $this->console->line('State: ' . $this->statusWorktreeStateLabel($worktree->getState()));
-        $this->console->line('Path: ' . $expectedRelativePath);
-        $this->console->line('Branch: ' . ($worktree->getBranch() ?? '-'));
-        $this->console->line('Action: ' . $worktree->getAction()->value);
-    }
-
-    private function statusWorktreeStateLabel(WorktreeState $state): string
-    {
-        return match ($state) {
-            WorktreeState::ACTIVE => WorktreeAction::CLEAN->value,
-            WorktreeState::DIRTY => WorktreeState::DIRTY->value,
-            WorktreeState::BLOCKED => 'inconsistent',
-            WorktreeState::DETACHED_MANAGED => 'detached',
-            WorktreeState::PRUNABLE => WorktreeState::PRUNABLE->value,
-            WorktreeState::ORPHAN => WorktreeState::ORPHAN->value,
-        };
-    }
-
-    private function describePrStatus(BoardEntry $entry): string
-    {
-        $storedPrNumber = $this->storedPrNumber($entry);
-        if ($storedPrNumber !== null) {
-            return '#' . $storedPrNumber;
-        }
-
-        return BacklogMetaValue::NONE->value;
-    }
-
-    private function nextStepForEntry(BoardEntry $entry, string $stage): string
-    {
-        return $this->entryService->isTaskEntry($entry)
-            ? $this->nextStepForTaskStage($stage)
-            : $this->nextStepForStage($stage);
-    }
-
-    private function nextStepForStage(string $stage): string
-    {
-        return match ($stage) {
-            BacklogBoard::STAGE_IN_PROGRESS => BacklogCommandName::FEATURE_REVIEW_REQUEST->value,
-            BacklogBoard::STAGE_IN_REVIEW => BacklogCommandName::FEATURE_REVIEW_CHECK->value . ' or ' . BacklogCommandName::FEATURE_REVIEW_APPROVE->value,
-            BacklogBoard::STAGE_REJECTED => BacklogCommandName::FEATURE_REWORK->value,
-            BacklogBoard::STAGE_APPROVED => BacklogCommandName::FEATURE_MERGE->value,
-            default => '-',
-        };
-    }
-
-    private function nextStepForTaskStage(string $stage): string
-    {
-        return match ($stage) {
-            BacklogBoard::STAGE_IN_PROGRESS => BacklogCommandName::TASK_REVIEW_REQUEST->value,
-            BacklogBoard::STAGE_IN_REVIEW => BacklogCommandName::TASK_REVIEW_CHECK->value . ' or ' . BacklogCommandName::TASK_REVIEW_APPROVE->value,
-            BacklogBoard::STAGE_REJECTED => BacklogCommandName::TASK_REWORK->value,
-            BacklogBoard::STAGE_APPROVED => BacklogCommandName::FEATURE_TASK_MERGE->value,
-            default => '-',
-        };
+        $this->presenter->displayManagedWorktreeStatus($worktree);
     }
 }

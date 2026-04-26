@@ -14,7 +14,7 @@ use SoManAgent\Script\Backlog\BacklogEntryService;
 use SoManAgent\Script\Backlog\BacklogGitWorkflow;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
 use SoManAgent\Script\Backlog\BoardEntry;
-use SoManAgent\Script\Backlog\PullRequestManager;
+use SoManAgent\Script\Backlog\PullRequestService;
 
 /**
  * Command for merging a feature into the base branch.
@@ -29,7 +29,7 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
 
     private BacklogGitWorkflow $gitWorkflow;
 
-    private PullRequestManager $pullRequestManager;
+    private PullRequestService $pullRequestService;
 
     public function __construct(BacklogCommandContext $context)
     {
@@ -38,7 +38,7 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         $this->entryService = $context->getEntryService();
         $this->worktreeManager = $context->getWorktreeManager();
         $this->gitWorkflow = $context->getGitWorkflow();
-        $this->pullRequestManager = $context->getPullRequestManager();
+        $this->pullRequestService = $context->getPullRequestService();
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -64,7 +64,7 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         $prNumber = $this->storedPrNumber($entry);
 
         if ($prNumber !== null) {
-            $this->pullRequestManager->mergePr($prNumber);
+            $this->pullRequestService->mergePr($prNumber);
         } else {
             $this->gitWorkflow->mergeBranchInPath($this->projectRoot, $branch, "Merge feature {$feature}");
         }

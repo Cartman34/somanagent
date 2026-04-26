@@ -11,9 +11,11 @@ use SoManAgent\Script\Backlog\BacklogCommandFactory;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
 use SoManAgent\Script\Backlog\BacklogEntryService;
 use SoManAgent\Script\Backlog\BacklogGitWorkflow;
+use SoManAgent\Script\Backlog\BacklogPermissionService;
+use SoManAgent\Script\Backlog\BacklogPresenter;
 use SoManAgent\Script\Backlog\BacklogReviewBodyFormatter;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
-use SoManAgent\Script\Backlog\PullRequestManager;
+use SoManAgent\Script\Backlog\PullRequestService;
 use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Console;
 use SoManAgent\Script\TextSlugger;
@@ -43,9 +45,13 @@ final class BacklogCommandContext
 
     private BacklogGitWorkflow $gitWorkflow;
 
-    private PullRequestManager $pullRequestManager;
+    private PullRequestService $pullRequestService;
 
     private BacklogCommandFactory $commandFactory;
+
+    private BacklogPresenter $presenter;
+
+    private BacklogPermissionService $permissionService;
 
     public function __construct(
         Console $console,
@@ -58,8 +64,10 @@ final class BacklogCommandContext
         TextSlugger $featureSlugger,
         BacklogReviewBodyFormatter $reviewBodyFormatter,
         BacklogGitWorkflow $gitWorkflow,
-        PullRequestManager $pullRequestManager,
-        BacklogCommandFactory $commandFactory
+        PullRequestService $pullRequestService,
+        BacklogCommandFactory $commandFactory,
+        BacklogPresenter $presenter,
+        BacklogPermissionService $permissionService
     ) {
         $this->console = $console;
         $this->dryRun = $dryRun;
@@ -71,8 +79,10 @@ final class BacklogCommandContext
         $this->featureSlugger = $featureSlugger;
         $this->reviewBodyFormatter = $reviewBodyFormatter;
         $this->gitWorkflow = $gitWorkflow;
-        $this->pullRequestManager = $pullRequestManager;
+        $this->pullRequestService = $pullRequestService;
         $this->commandFactory = $commandFactory;
+        $this->presenter = $presenter;
+        $this->permissionService = $permissionService;
     }
 
     public function getConsole(): Console
@@ -125,13 +135,23 @@ final class BacklogCommandContext
         return $this->gitWorkflow;
     }
 
-    public function getPullRequestManager(): PullRequestManager
+    public function getPullRequestService(): PullRequestService
     {
-        return $this->pullRequestManager;
+        return $this->pullRequestService;
     }
 
     public function getCommandFactory(): BacklogCommandFactory
     {
         return $this->commandFactory;
+    }
+
+    public function getPresenter(): BacklogPresenter
+    {
+        return $this->presenter;
+    }
+
+    public function getPermissionService(): BacklogPermissionService
+    {
+        return $this->permissionService;
     }
 }
