@@ -109,8 +109,16 @@ MD);
 
     public function startNextFeature(string $agent): void
     {
+        $worktreePath = $this->managedWorktreePath($agent);
+        if ((is_dir($worktreePath) || is_file($worktreePath)) && !$this->context->hasWorktree($worktreePath)) {
+            throw new \RuntimeException(sprintf(
+                'Refusing to use pre-existing unmanaged test worktree: %s',
+                $this->relativePath($worktreePath),
+            ));
+        }
+
         $this->runBacklog(['feature-start', '--agent', $agent]);
-        $this->context->recordWorktree($this->managedWorktreePath($agent));
+        $this->context->recordWorktree($worktreePath);
     }
 
     public function assignFeatureAsManager(string $feature, string $agent): void
@@ -326,6 +334,13 @@ MD);
     public function removeManagedWorktree(string $agent): void
     {
         $path = $this->managedWorktreePath($agent);
+        if (!$this->context->hasWorktree($path)) {
+            throw new \RuntimeException(sprintf(
+                'Refusing to remove unmanaged test worktree: %s',
+                $this->relativePath($path),
+            ));
+        }
+
         if (!is_dir($path) && !is_file($path)) {
             return;
         }

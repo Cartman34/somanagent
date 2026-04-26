@@ -62,6 +62,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
         $requestedCampaign = trim((string) ($options['campaign'] ?? 'all'));
         $allowRemote = isset($options['allow-remote']);
         $keepArtifacts = isset($options['keep-artifacts']);
+        $runToken = sprintf('%s-%04d', date('YmdHis'), random_int(1000, 9999));
 
         $context = new BacklogScriptTestContext(
             projectRoot: $this->projectRoot,
@@ -72,6 +73,8 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
             keepArtifacts: $keepArtifacts,
             dryRun: $this->dryRun,
             verbose: $this->verbose,
+            agentPrimary: 'test-d01-' . $runToken,
+            agentSecondary: 'test-d02-' . $runToken,
         );
         $driver = new BacklogScriptTestDriver(
             $context,

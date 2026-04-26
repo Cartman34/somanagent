@@ -89,6 +89,11 @@ final class BacklogScriptTestContext
         $this->worktrees[$path] = true;
     }
 
+    public function hasWorktree(string $path): bool
+    {
+        return isset($this->worktrees[$path]);
+    }
+
     /**
      * @return array<string>
      */
