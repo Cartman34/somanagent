@@ -88,6 +88,7 @@ MD);
     {
         $this->assertOutputContains($this->runBacklog([]), 'Commands:');
         $this->assertOutputContains($this->runBacklog(['help']), 'Commands:');
+        $this->assertOutputContains($this->runBacklog(['help', 'status']), 'status');
         $this->assertOutputContains($this->runBacklog(['help', 'feature-start']), 'feature-start');
         $this->assertOutputContains($this->runBacklog(['feature-start', '--help']), 'feature-start');
     }

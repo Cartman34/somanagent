@@ -1,0 +1,16 @@
+description: 'Print the current backlog and worktree status for one agent or feature'
+arguments:
+  -
+    name: '[<feature>]'
+    description: 'Optional explicit feature slug'
+options:
+  -
+    name: '--agent'
+    description: 'Resolve the active task or feature owned by this agent'
+examples:
+  - 'php scripts/backlog.php status --agent agent-01'
+  - 'php scripts/backlog.php status delete-question-reply'
+notes:
+  - 'With `--agent`, prints the active task separately from the parent feature.'
+  - 'The worktree section reports absent, clean, dirty, detached, inconsistent, orphan, or prunable.'
+  - 'Task and feature next actions are printed separately so agents do not confuse task review with feature review.'

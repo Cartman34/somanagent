@@ -22,6 +22,7 @@ options:
     name: '--force'
     description: 'Allow taking a task that is already reserved'
 examples:
+  - 'php scripts/backlog.php status --agent agent-01'
   - 'php scripts/backlog.php task-create "Add toast notifications on success and error flows"'
   - 'php scripts/backlog.php task-todo-list'
   - 'php scripts/backlog.php task-remove 8'

@@ -135,6 +135,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         return match ($command) {
+            BacklogCommandName::STATUS->value => $this->status($commandArgs, $options),
             BacklogCommandName::TASK_CREATE->value => $this->createTask($commandArgs, $options),
             BacklogCommandName::TASK_TODO_LIST->value => $this->taskTodoList(),
             BacklogCommandName::TASK_REMOVE->value => $this->taskRemove($commandArgs),
@@ -1447,6 +1448,124 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         return 0;
+    }
+
+    /**
+     * @param array<string> $commandArgs
+     * @param array<string, string|bool> $options
+     */
+    private function status(array $commandArgs, array $options): int
+    {
+        $board = $this->board();
+        $agent = BoardEntry::parseEmptyString((string) ($options[self::OPTION_AGENT] ?? ''));
+        $feature = isset($commandArgs[0]) ? $this->entryService()->normalizeFeatureSlug($commandArgs[0]) : null;
+
+        if ($agent === null && $feature === null) {
+            throw new \RuntimeException('status requires --agent=<code> or <feature>.');
+        }
+
+        $taskEntry = $agent !== null
+            ? $this->entryResolver()->getSingleTaskForAgent($board, $agent, false)
+            : null;
+        $featureEntry = null;
+        if ($feature !== null) {
+            $featureEntry = $this->entryResolver()->requireFeature($board, $feature)->getEntry();
+        } elseif ($taskEntry !== null && $taskEntry->getFeature() !== null) {
+            $featureEntry = $this->entryResolver()->requireFeature($board, $taskEntry->getFeature())->getEntry();
+        } elseif ($agent !== null) {
+            $featureEntry = $this->entryResolver()->getSingleFeatureForAgent($board, $agent, false);
+        }
+
+        $this->console->line('[Agent]');
+        $this->console->line('Agent: ' . ($agent ?? ($featureEntry?->getAgent() ?? '-')));
+
+        $this->printStatusWorktree($board, $agent);
+
+        if ($taskEntry !== null) {
+            $this->console->line('[Task]');
+            $this->printStatusEntry($taskEntry);
+            $this->console->line('Next: ' . $this->nextStepForEntry($taskEntry, $this->entryService()->featureStage($taskEntry)));
+        } else {
+            $this->console->line('[Task]');
+            $this->console->line('Active: none');
+        }
+
+        if ($featureEntry !== null) {
+            $this->console->line('[Feature]');
+            $this->printStatusEntry($featureEntry);
+            $this->console->line('Next: ' . $this->nextStepForEntry($featureEntry, $this->entryService()->featureStage($featureEntry)));
+        } else {
+            $this->console->line('[Feature]');
+            $this->console->line('Active: none');
+        }
+
+        return 0;
+    }
+
+    private function printStatusWorktree(BacklogBoard $board, ?string $agent): void
+    {
+        $this->console->line('[Worktree]');
+        if ($agent === null) {
+            $this->console->line('State: unknown');
+            $this->console->line('Path: -');
+
+            return;
+        }
+
+        $expectedPath = $this->projectRoot . '/.worktrees/' . $agent;
+        $expectedRelativePath = $this->consoleClient()->toRelativeProjectPath($expectedPath);
+        $worktree = null;
+        foreach ($this->worktreeManager()->classifyWorktrees($board)['managed'] as $item) {
+            if ($item['path'] === $expectedPath) {
+                $worktree = $item;
+                break;
+            }
+        }
+
+        if ($worktree === null) {
+            $this->console->line('State: absent');
+            $this->console->line('Path: ' . $expectedRelativePath);
+
+            return;
+        }
+
+        $this->console->line('State: ' . $this->statusWorktreeStateLabel($worktree['state']));
+        $this->console->line('Path: ' . $expectedRelativePath);
+        $this->console->line('Branch: ' . ($worktree['branch'] ?? '-'));
+        $this->console->line('Action: ' . $worktree['action']);
+    }
+
+    /**
+     * @param array{path: string, branch: string|null, feature: string|null, agent: string|null, state: string, action: string} $worktree
+     */
+    private function statusWorktreeStateLabel(string $state): string
+    {
+        return match ($state) {
+            'active' => 'clean',
+            'dirty' => 'dirty',
+            'blocked' => 'inconsistent',
+            'detached-managed' => 'detached',
+            'prunable' => 'prunable',
+            'orphan' => 'orphan',
+            default => $state,
+        };
+    }
+
+    private function printStatusEntry(BoardEntry $entry): void
+    {
+        $this->console->line('Kind: ' . $this->entryService()->entryKind($entry));
+        $this->console->line('Feature: ' . ($entry->getFeature() ?? '-'));
+        if ($this->entryService()->isTaskEntry($entry)) {
+            $this->console->line('Task: ' . ($entry->getTask() ?? '-'));
+            $this->console->line('Ref: ' . $this->entryService()->taskReviewKey($entry));
+            $this->console->line('Feature Branch: ' . ($entry->getFeatureBranch() ?? '-'));
+        }
+        $this->console->line('Branch: ' . ($entry->getBranch() ?? '-'));
+        $this->console->line('Base: ' . ($entry->getBase() ?? '-'));
+        $this->console->line('Stage: ' . BacklogBoard::stageLabel($this->entryService()->featureStage($entry)));
+        $this->console->line('PR: ' . $this->describePrStatus($entry));
+        $this->console->line('Blocker: ' . ($entry->isBlocked() ? 'blocked' : '-'));
+        $this->console->line('Summary: ' . $entry->getText());
     }
 
     /**

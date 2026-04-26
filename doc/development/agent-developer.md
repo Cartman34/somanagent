@@ -7,6 +7,7 @@ Read this file only when the active task requires developer workflow details.
 ## Allowed Commands
 
 - `task-create`
+- `status`
 - `task-todo-list`
 - `task-remove`
 - `task-review-request`
@@ -176,6 +177,12 @@ Read this file only when the active task requires developer workflow details.
 1. Run `php scripts/backlog.php worktree-clean`.
 2. The script removes only abandoned managed worktrees under `.worktrees/` when they are safe to delete.
 3. Dirty, blocked, or external worktrees are left untouched and must be handled manually.
+
+### `status`
+
+1. Run `php scripts/backlog.php status --agent=<code>` or `php scripts/backlog.php status <feature>`.
+2. The script prints the agent worktree state, the active task if any, the parent feature if any, and separate next actions for task and feature workflow.
+3. Use this command before choosing between `task-review-request` and `feature-review-request`.
 
 ### `feature-status`
 
