@@ -1,3 +1,0 @@
-description: 'Print the next local task currently waiting in review'
-examples:
-  - 'php scripts/backlog.php task-review-next'

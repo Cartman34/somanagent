@@ -89,6 +89,7 @@ MD);
         $this->assertOutputContains($this->runBacklog([]), 'Commands:');
         $this->assertOutputContains($this->runBacklog(['help']), 'Commands:');
         $this->assertOutputContains($this->runBacklog(['help', 'status']), 'status');
+        $this->assertOutputContains($this->runBacklog(['help', 'review-next']), 'review-next');
         $this->assertOutputContains($this->runBacklog(['help', 'feature-start']), 'feature-start');
         $this->assertOutputContains($this->runBacklog(['feature-start', '--help']), 'feature-start');
     }
@@ -157,6 +158,11 @@ MD);
     public function requestTaskReview(string $agent, string $reference): void
     {
         $this->runBacklog(['task-review-request', '--agent', $agent, $reference]);
+    }
+
+    public function reviewNext(): string
+    {
+        return $this->runBacklog(['review-next']);
     }
 
     public function checkTaskReview(string $reference): void

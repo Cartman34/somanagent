@@ -139,7 +139,7 @@ final class BacklogRunner extends AbstractScriptRunner
             BacklogCommandName::TASK_CREATE->value => $this->createTask($commandArgs, $options),
             BacklogCommandName::TASK_TODO_LIST->value => $this->taskTodoList(),
             BacklogCommandName::TASK_REMOVE->value => $this->taskRemove($commandArgs),
-            BacklogCommandName::TASK_REVIEW_NEXT->value => $this->taskReviewNext(),
+            BacklogCommandName::REVIEW_NEXT->value => $this->reviewNext(),
             BacklogCommandName::TASK_REVIEW_REQUEST->value => $this->taskReviewRequest($commandArgs, $options),
             BacklogCommandName::TASK_REVIEW_CHECK->value => $this->taskReviewCheck($commandArgs),
             BacklogCommandName::TASK_REVIEW_REJECT->value => $this->taskReviewReject($commandArgs, $options),
@@ -158,7 +158,6 @@ final class BacklogRunner extends AbstractScriptRunner
             BacklogCommandName::WORKTREE_LIST->value => $this->worktreeList(),
             BacklogCommandName::WORKTREE_CLEAN->value => $this->worktreeClean(),
             BacklogCommandName::WORKTREE_RESTORE->value => $this->worktreeRestore($commandArgs, $options),
-            BacklogCommandName::FEATURE_REVIEW_NEXT->value => $this->featureReviewNext(),
             BacklogCommandName::FEATURE_REVIEW_REQUEST->value => $this->featureReviewRequest($commandArgs, $options),
             BacklogCommandName::FEATURE_REVIEW_CHECK->value => $this->featureReviewCheck($commandArgs),
             BacklogCommandName::FEATURE_REVIEW_REJECT->value => $this->featureReviewReject($commandArgs, $options),
@@ -820,11 +819,11 @@ final class BacklogRunner extends AbstractScriptRunner
         return 0;
     }
 
-    private function taskReviewNext(): int
+    private function reviewNext(): int
     {
         $board = $this->board();
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-            if (!$this->entryService()->isTaskEntry($entry) || $this->entryService()->featureStage($entry) !== BacklogBoard::STAGE_IN_REVIEW) {
+            if ($this->entryService()->featureStage($entry) !== BacklogBoard::STAGE_IN_REVIEW) {
                 continue;
             }
 
@@ -833,7 +832,7 @@ final class BacklogRunner extends AbstractScriptRunner
             return 0;
         }
 
-        throw new \RuntimeException('No task available in ' . BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_REVIEW) . '.');
+        throw new \RuntimeException('No task or feature available in ' . BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_REVIEW) . '.');
     }
 
     /**
@@ -1599,28 +1598,6 @@ final class BacklogRunner extends AbstractScriptRunner
             $this->consoleClient()->toRelativeProjectPath($worktree),
             $branch,
         ));
-
-        return 0;
-    }
-
-    private function featureReviewNext(): int
-    {
-        $board = $this->board();
-        $entries = array_map(
-            static fn(\SoManAgent\Script\Backlog\BoardEntryMatch $match): BoardEntry => $match->getEntry(),
-            $board->findFeaturesByStage(BacklogBoard::STAGE_IN_REVIEW),
-        );
-        if ($entries === []) {
-            throw new \RuntimeException('No feature available in ' . BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_REVIEW) . '.');
-        }
-
-        $entry = $entries[0];
-        $feature = $entry->getFeature();
-        if ($feature === null) {
-            throw new \RuntimeException('Next review feature has no feature metadata.');
-        }
-
-        $this->printEntryStatus($entry);
 
         return 0;
     }

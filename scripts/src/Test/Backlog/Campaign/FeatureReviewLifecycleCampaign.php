@@ -30,6 +30,9 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $mergeBody = $driver->createBodyFile('test-feature-merge.md', ['1. Merge feature for workflow coverage.']);
 
         $driver->requestFeatureReview($context->agentPrimary, $context->fixFeature);
+        if (!str_contains($driver->reviewNext(), $context->fixFeature)) {
+            throw new \RuntimeException('Expected review-next to return the active feature review.');
+        }
         $driver->checkFeatureReview($context->fixFeature);
         $driver->rejectFeatureReview($context->fixFeature, $rejectBody);
         $driver->assertReviewContains($context->fixFeature);

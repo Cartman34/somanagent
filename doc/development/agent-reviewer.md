@@ -7,10 +7,9 @@ Read this file only when the active task requires reviewer workflow details.
 ## Allowed Commands
 
 - `feature-review-check`
-- `feature-review-next`
 - `feature-review-reject`
 - `feature-review-approve`
-- `task-review-next`
+- `review-next`
 - `task-review-check`
 - `task-review-reject`
 - `task-review-approve`
@@ -69,10 +68,11 @@ Rules:
 1. Run `php scripts/backlog.php task-remove <number>`.
 2. The script removes the queued task at the given 1-based position from `## À faire`.
 
-### `task-review-next`
+### `review-next`
 
-1. Run `php scripts/backlog.php task-review-next`.
-2. The script prints the first visible child task with `meta.stage=review` without changing its backlog state.
+1. Run `php scripts/backlog.php review-next`.
+2. The script prints the first visible task or feature with `meta.stage=review` without changing its backlog state.
+3. Use `Kind` and `Ref`/`Feature` in the output to choose the matching review check command.
 
 ### `task-review-check`
 
@@ -111,12 +111,6 @@ Rules:
 2. The script removes only abandoned managed worktrees under `.worktrees/` when they are safe to delete.
 3. Dirty, blocked, or external worktrees are left untouched and must be handled manually.
 4. In the normal workflow, this command is mainly triggered automatically after `feature-close` and `feature-merge`, or manually through `cleanup`.
-
-### `feature-review-next`
-
-1. Run `php scripts/backlog.php feature-review-next`.
-2. The script prints the first visible feature with `meta.stage=review` without changing its backlog state.
-3. The output includes `Feature`, `Branch`, `Base`, `Stage`, `PR`, `Last`, `Next`, and `Blocker`.
 
 ### `feature-review-check`
 
@@ -190,11 +184,12 @@ Also check:
 
 ### `review`
 
-1. For a feature review, run `php scripts/backlog.php feature-review-next`, then `php scripts/backlog.php feature-review-check <feature>`.
-2. For a task review, run `php scripts/backlog.php task-review-next`, then `php scripts/backlog.php task-review-check <feature/task>`.
-3. If the mechanical review fails, stop: the command rejects the current target automatically.
-4. If the mechanical review passes, continue the technical and functional review manually.
-5. End the review by running either the matching `approve` or `reject` command for that target.
+1. Run `php scripts/backlog.php review-next`.
+2. If the output is `Kind: feature`, run `php scripts/backlog.php feature-review-check <feature>`.
+3. If the output is `Kind: task`, run `php scripts/backlog.php task-review-check <feature/task>`.
+4. If the mechanical review fails, stop: the command rejects the current target automatically.
+5. If the mechanical review passes, continue the technical and functional review manually.
+6. End the review by running either the matching `approve` or `reject` command for that target.
 
 ### `approve`
 

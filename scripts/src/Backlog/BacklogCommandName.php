@@ -14,7 +14,7 @@ enum BacklogCommandName: string
     case TASK_CREATE = 'task-create';
     case TASK_TODO_LIST = 'task-todo-list';
     case TASK_REMOVE = 'task-remove';
-    case TASK_REVIEW_NEXT = 'task-review-next';
+    case REVIEW_NEXT = 'review-next';
     case TASK_REVIEW_REQUEST = 'task-review-request';
     case TASK_REVIEW_CHECK = 'task-review-check';
     case TASK_REVIEW_REJECT = 'task-review-reject';
@@ -33,7 +33,6 @@ enum BacklogCommandName: string
     case WORKTREE_LIST = 'worktree-list';
     case WORKTREE_CLEAN = 'worktree-clean';
     case WORKTREE_RESTORE = 'worktree-restore';
-    case FEATURE_REVIEW_NEXT = 'feature-review-next';
     case FEATURE_REVIEW_REQUEST = 'feature-review-request';
     case FEATURE_REVIEW_CHECK = 'feature-review-check';
     case FEATURE_REVIEW_REJECT = 'feature-review-reject';

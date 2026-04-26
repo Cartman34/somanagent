@@ -253,7 +253,7 @@ Validate local child task review commands.
 1. Submit a child task:
    - `php scripts/backlog.php task-review-request --agent d01 test-scoped-feature/test-child-a`
 2. Inspect next review:
-   - `php scripts/backlog.php task-review-next`
+   - `php scripts/backlog.php review-next`
 3. Check mechanical review:
    - `php scripts/backlog.php task-review-check test-scoped-feature/test-child-a`
 4. Reject it:
@@ -305,7 +305,7 @@ Validate remote feature review transitions.
 1. Request feature review:
    - `php scripts/backlog.php feature-review-request --agent d01 test-scoped-feature`
 2. Inspect:
-   - `php scripts/backlog.php feature-review-next`
+   - `php scripts/backlog.php review-next`
    - `php scripts/backlog.php status test-scoped-feature`
 3. Run mechanical check:
    - `php scripts/backlog.php feature-review-check test-scoped-feature`

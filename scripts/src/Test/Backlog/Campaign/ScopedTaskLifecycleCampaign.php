@@ -29,6 +29,9 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
 
         $rejectBody = $driver->createBodyFile('test-task-review-reject.md', ['1. Reject child task for test workflow.']);
         $driver->requestTaskReview($context->agentPrimary, $taskARef);
+        if (!str_contains($driver->reviewNext(), $taskARef)) {
+            throw new \RuntimeException('Expected review-next to return the active task review.');
+        }
         $driver->checkTaskReview($taskARef);
         $driver->rejectTaskReview($taskARef, $rejectBody);
         $driver->assertReviewContains($taskARef);
