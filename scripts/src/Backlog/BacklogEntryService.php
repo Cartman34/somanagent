@@ -357,7 +357,7 @@ final class BacklogEntryService
     public function invalidateFeatureReviewState(BoardEntry $featureEntry): void
     {
         if ($this->featureStage($featureEntry) !== BacklogBoard::STAGE_IN_PROGRESS) {
-            $featureEntry->setMeta('stage', BacklogBoard::STAGE_IN_PROGRESS);
+            $featureEntry->setStage(BacklogBoard::STAGE_IN_PROGRESS);
         }
     }
 

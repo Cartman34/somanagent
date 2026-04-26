@@ -184,7 +184,7 @@ final class BacklogBoard
             throw new \RuntimeException("Unknown feature stage: {$stage}");
         }
 
-        $match->getEntry()->setMeta(BoardEntry::META_STAGE, $normalizedStage);
+        $match->getEntry()->setStage($normalizedStage);
     }
 
     /**
@@ -218,8 +218,8 @@ final class BacklogBoard
                 continue;
             }
 
-            $entry->unsetMeta(BoardEntry::META_AGENT);
-            $entry->unsetMeta(BoardEntry::META_FEATURE);
+            $entry->setAgent(null);
+            $entry->setFeature(null);
         }
 
         $this->setEntries(self::SECTION_TODO, $entries);
@@ -388,15 +388,13 @@ final class BacklogBoard
         $entries = [];
 
         foreach ($this->parseEntries($this->rawSections[self::SECTION_ACTIVE] ?? []) as $entry) {
-            $entry->setMeta('stage', self::entryStage($entry) ?? self::STAGE_IN_PROGRESS);
-            $entry->unsetMeta('deps');
+            $entry->setStage(self::entryStage($entry) ?? self::STAGE_IN_PROGRESS);
             $entries[] = $entry;
         }
 
         foreach ($this->legacyStageSections() as $section => $stage) {
             foreach ($this->parseEntries($this->rawSections[$section] ?? []) as $entry) {
-                $entry->setMeta('stage', self::entryStage($entry) ?? $stage);
-                $entry->unsetMeta('deps');
+                $entry->setStage(self::entryStage($entry) ?? $stage);
                 $entries[] = $entry;
             }
         }

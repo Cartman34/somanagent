@@ -1449,8 +1449,8 @@ final class BacklogRunner extends AbstractScriptRunner
             $cleaned > 1 ? 's' : '',
         ));
 
-        ['managed' => $managed] = $this->worktreeManager()->classifyWorktrees($board);
-        $skipped = count($managed);
+        $classification = $this->worktreeManager()->classifyWorktrees($board);
+        $skipped = count($classification->getManaged());
         if ($skipped > 0) {
             $this->console->line(sprintf('Skipped %d managed worktree%s that require manual attention.', $skipped, $skipped > 1 ? 's' : ''));
         }

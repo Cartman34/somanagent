@@ -29,8 +29,30 @@ final class BoardEntry
     private const META_BLOCK_PREFIX = '  meta:';
     private const META_LINE_PREFIX = '    ';
 
+    private ?string $agent = null;
+
+    private ?string $base = null;
+
+    private bool $blocked = false;
+
+    private ?string $branch = null;
+
+    private ?string $feature = null;
+
+    private ?string $featureBranch = null;
+
+    private ?string $kind = null;
+
+    private ?string $pr = null;
+
+    private ?string $stage = null;
+
+    private ?string $task = null;
+
+    private ?string $type = null;
+
     /** @var array<string, string> */
-    private array $metadata = [];
+    private array $extraMetadata = [];
 
     /** @var array<string> */
     private array $extraLines;
@@ -45,7 +67,7 @@ final class BoardEntry
     {
         $this->text = $text;
         $this->extraLines = $extraLines;
-        $this->metadata = $metadata;
+        $this->importMetadata($metadata);
     }
 
     /**
@@ -118,153 +140,114 @@ final class BoardEntry
         }
     }
 
-    public function getMeta(string $key): ?string
-    {
-        return self::parseEmptyString($this->metadata[$key] ?? null);
-    }
-
-    public function setMeta(string $key, ?string $value): void
-    {
-        $value = self::parseEmptyString($value);
-        if ($value === null) {
-            $this->unsetMeta($key);
-
-            return;
-        }
-
-        $this->metadata[$key] = $value;
-    }
-
-    public function unsetMeta(string $key): void
-    {
-        unset($this->metadata[$key]);
-    }
-
-    public function hasMeta(string $key): bool
-    {
-        return $this->getMeta($key) !== null;
-    }
-
     public function getAgent(): ?string
     {
-        return $this->getMeta(self::META_AGENT);
+        return $this->agent;
     }
 
     public function setAgent(?string $agent): void
     {
-        $this->setMeta(self::META_AGENT, $agent);
+        $this->agent = self::parseEmptyString($agent);
     }
 
     public function getBase(): ?string
     {
-        return $this->getMeta(self::META_BASE);
+        return $this->base;
     }
 
     public function setBase(?string $base): void
     {
-        $this->setMeta(self::META_BASE, $base);
+        $this->base = self::parseEmptyString($base);
     }
 
     public function getBranch(): ?string
     {
-        return $this->getMeta(self::META_BRANCH);
+        return $this->branch;
     }
 
     public function setBranch(?string $branch): void
     {
-        $this->setMeta(self::META_BRANCH, $branch);
+        $this->branch = self::parseEmptyString($branch);
     }
 
     public function getFeature(): ?string
     {
-        return $this->getMeta(self::META_FEATURE);
+        return $this->feature;
     }
 
     public function setFeature(?string $feature): void
     {
-        $this->setMeta(self::META_FEATURE, $feature);
+        $this->feature = self::parseEmptyString($feature);
     }
 
     public function getFeatureBranch(): ?string
     {
-        return $this->getMeta(self::META_FEATURE_BRANCH);
+        return $this->featureBranch;
     }
 
     public function setFeatureBranch(?string $featureBranch): void
     {
-        $this->setMeta(self::META_FEATURE_BRANCH, $featureBranch);
+        $this->featureBranch = self::parseEmptyString($featureBranch);
     }
 
     public function getKind(): ?string
     {
-        return $this->getMeta(self::META_KIND);
+        return $this->kind;
     }
 
     public function setKind(?string $kind): void
     {
-        $this->setMeta(self::META_KIND, $kind);
+        $this->kind = self::parseEmptyString($kind);
     }
 
     public function getPr(): ?string
     {
-        return $this->getMeta(self::META_PR);
+        return $this->pr;
     }
 
     public function setPr(?string $pr): void
     {
-        $this->setMeta(self::META_PR, $pr);
+        $this->pr = self::parseEmptyString($pr);
     }
 
     public function getStage(): ?string
     {
-        return $this->getMeta(self::META_STAGE);
+        return $this->stage;
     }
 
     public function setStage(?string $stage): void
     {
-        $this->setMeta(self::META_STAGE, $stage);
+        $this->stage = self::parseEmptyString($stage);
     }
 
     public function getTask(): ?string
     {
-        return $this->getMeta(self::META_TASK);
+        return $this->task;
     }
 
     public function setTask(?string $task): void
     {
-        $this->setMeta(self::META_TASK, $task);
+        $this->task = self::parseEmptyString($task);
     }
 
     public function getType(): ?string
     {
-        return $this->getMeta(self::META_TYPE);
+        return $this->type;
     }
 
     public function setType(?string $type): void
     {
-        $this->setMeta(self::META_TYPE, $type);
+        $this->type = self::parseEmptyString($type);
     }
 
     public function isBlocked(): bool
     {
-        return $this->hasMeta(self::META_BLOCKED);
+        return $this->blocked;
     }
 
     public function setBlocked(bool $blocked): void
     {
-        if ($blocked) {
-            $this->setMeta(self::META_BLOCKED, BacklogMetaValue::YES->value);
-        } else {
-            $this->unsetMeta(self::META_BLOCKED);
-        }
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public function getMetadata(): array
-    {
-        return $this->metadata;
+        $this->blocked = $blocked;
     }
 
     /**
@@ -273,15 +256,16 @@ final class BoardEntry
      */
     public function toLines(array $metadataOrder = []): array
     {
+        $metadata = $this->exportMetadata();
         $ordered = [];
 
         foreach ($metadataOrder as $key) {
-            if (isset($this->metadata[$key])) {
-                $ordered[$key] = $this->metadata[$key];
+            if (isset($metadata[$key])) {
+                $ordered[$key] = $metadata[$key];
             }
         }
 
-        foreach ($this->metadata as $key => $value) {
+        foreach ($metadata as $key => $value) {
             if (!isset($ordered[$key])) {
                 $ordered[$key] = $value;
             }
@@ -300,6 +284,91 @@ final class BoardEntry
         }
 
         return $lines;
+    }
+
+    /**
+     * @param array<string, string> $metadata
+     */
+    private function importMetadata(array $metadata): void
+    {
+        foreach ($metadata as $key => $value) {
+            $value = self::parseEmptyString($value);
+            if ($value === null) {
+                continue;
+            }
+
+            switch ($key) {
+                case self::META_AGENT:
+                    $this->agent = $value;
+                    break;
+                case self::META_BASE:
+                    $this->base = $value;
+                    break;
+                case self::META_BLOCKED:
+                    $this->blocked = ($value === BacklogMetaValue::YES->value);
+                    break;
+                case self::META_BRANCH:
+                    $this->branch = $value;
+                    break;
+                case self::META_FEATURE:
+                    $this->feature = $value;
+                    break;
+                case self::META_FEATURE_BRANCH:
+                    $this->featureBranch = $value;
+                    break;
+                case self::META_KIND:
+                    $this->kind = $value;
+                    break;
+                case self::META_PR:
+                    $this->pr = $value;
+                    break;
+                case self::META_STAGE:
+                    $this->stage = $value;
+                    break;
+                case self::META_TASK:
+                    $this->task = $value;
+                    break;
+                case self::META_TYPE:
+                    $this->type = $value;
+                    break;
+                default:
+                    $this->extraMetadata[$key] = $value;
+                    break;
+            }
+        }
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function exportMetadata(): array
+    {
+        $metadata = $this->extraMetadata;
+
+        $mappings = [
+            self::META_AGENT => $this->agent,
+            self::META_BASE => $this->base,
+            self::META_BRANCH => $this->branch,
+            self::META_FEATURE => $this->feature,
+            self::META_FEATURE_BRANCH => $this->featureBranch,
+            self::META_KIND => $this->kind,
+            self::META_PR => $this->pr,
+            self::META_STAGE => $this->stage,
+            self::META_TASK => $this->task,
+            self::META_TYPE => $this->type,
+        ];
+
+        foreach ($mappings as $key => $value) {
+            if ($value !== null) {
+                $metadata[$key] = $value;
+            }
+        }
+
+        if ($this->blocked) {
+            $metadata[self::META_BLOCKED] = BacklogMetaValue::YES->value;
+        }
+
+        return $metadata;
     }
 
     /**
