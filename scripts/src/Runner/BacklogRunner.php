@@ -18,6 +18,7 @@ use SoManAgent\Script\Backlog\BacklogReviewBodyFormatter;
 use SoManAgent\Script\Backlog\BacklogReviewFile;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
 use SoManAgent\Script\Backlog\BoardEntry;
+use SoManAgent\Script\Backlog\BacklogMetaValue;
 use SoManAgent\Script\Backlog\PullRequestTag;
 use SoManAgent\Script\Backlog\PullRequestManager;
 use SoManAgent\Script\Client\ConsoleClient;
@@ -539,7 +540,7 @@ final class BacklogRunner extends AbstractScriptRunner
                     BoardEntry::META_AGENT => $agent,
                     BoardEntry::META_BRANCH => $featureBranch,
                     BoardEntry::META_BASE => $featureBase,
-                    BoardEntry::META_PR => 'none',
+                    BoardEntry::META_PR => BacklogMetaValue::NONE->value,
                 ]);
                 $activeEntries = $board->getEntries(BacklogBoard::SECTION_ACTIVE);
                 $activeEntries[] = $featureEntry;
@@ -566,7 +567,7 @@ final class BacklogRunner extends AbstractScriptRunner
                 BoardEntry::META_BRANCH => $branch,
                 BoardEntry::META_FEATURE_BRANCH => $featureBranch,
                 BoardEntry::META_BASE => $taskBase,
-                BoardEntry::META_PR => 'none',
+                BoardEntry::META_PR => BacklogMetaValue::NONE->value,
             ]);
             $this->entryService()->appendTaskContribution($parent->getEntry(), $taskEntry);
             $featureEntry = $taskEntry;
@@ -585,7 +586,7 @@ final class BacklogRunner extends AbstractScriptRunner
                 BoardEntry::META_AGENT => $agent,
                 BoardEntry::META_BRANCH => $branch,
                 BoardEntry::META_BASE => $base,
-                BoardEntry::META_PR => 'none',
+                BoardEntry::META_PR => BacklogMetaValue::NONE->value,
             ]);
         }
 
@@ -1047,7 +1048,7 @@ final class BacklogRunner extends AbstractScriptRunner
                     BoardEntry::META_BRANCH => $taskBranch,
                     BoardEntry::META_FEATURE_BRANCH => $featureBranch,
                     BoardEntry::META_BASE => $taskBase,
-                    BoardEntry::META_PR => 'none',
+                    BoardEntry::META_PR => BacklogMetaValue::NONE->value,
                 ]);
                 $this->entryService()->appendTaskContribution($entry, $taskEntry);
 
@@ -1294,7 +1295,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $match = $this->entryResolver()->requireFeature($board, $feature);
-        $match->getEntry()->setMeta(BoardEntry::META_BLOCKED, 'yes');
+        $match->getEntry()->setMeta(BoardEntry::META_BLOCKED, BacklogMetaValue::YES->value);
         $this->saveBoard($board, BacklogCommandName::FEATURE_BLOCK->value);
 
         $prNumber = $this->storedPrNumber($match->getEntry());
@@ -1490,7 +1491,7 @@ final class BacklogRunner extends AbstractScriptRunner
             $this->console->line('Next: ' . $this->nextStepForEntry($taskEntry, $this->entryService()->featureStage($taskEntry)));
         } else {
             $this->console->line('[Task]');
-            $this->console->line('Active: none');
+            $this->console->line('Active: ' . BacklogMetaValue::NONE->value);
         }
 
         if ($featureEntry !== null) {
@@ -1499,7 +1500,7 @@ final class BacklogRunner extends AbstractScriptRunner
             $this->console->line('Next: ' . $this->nextStepForEntry($featureEntry, $this->entryService()->featureStage($featureEntry)));
         } else {
             $this->console->line('[Feature]');
-            $this->console->line('Active: none');
+            $this->console->line('Active: ' . BacklogMetaValue::NONE->value);
         }
 
         return 0;
@@ -2163,16 +2164,16 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $branch = $entry->getBranch();
         if ($branch === null) {
-            return 'none';
+            return BacklogMetaValue::NONE->value;
         }
 
-        return 'none';
+        return BacklogMetaValue::NONE->value;
     }
 
     private function storedPrNumber(BoardEntry $entry): ?int
     {
         $pr = $entry->getPr();
-        if ($pr === null || $pr === 'none') {
+        if ($pr === null || $pr === BacklogMetaValue::NONE->value) {
             return null;
         }
 
