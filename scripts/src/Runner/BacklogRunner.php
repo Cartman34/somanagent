@@ -13,6 +13,7 @@ use SoManAgent\Script\Backlog\BacklogCommandName;
 use SoManAgent\Script\Backlog\BacklogEntryService;
 use SoManAgent\Script\Backlog\BacklogEntryResolver;
 use SoManAgent\Script\Backlog\BacklogGitWorkflow;
+use SoManAgent\Script\Backlog\BacklogReviewBodyFormatter;
 use SoManAgent\Script\Backlog\BacklogReviewFile;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
 use SoManAgent\Script\Backlog\BoardEntry;
@@ -72,6 +73,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private ?BacklogGitWorkflow $gitWorkflow = null;
     private ?BacklogWorktreeManager $worktreeManager = null;
     private ?PullRequestManager $pullRequestManager = null;
+    private ?BacklogReviewBodyFormatter $reviewBodyFormatter = null;
     private ?string $boardPath = null;
     private ?string $reviewFilePath = null;
     private ?string $prBaseBranchOverride = null;
@@ -370,6 +372,15 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         return $this->pullRequestManager;
+    }
+
+    private function reviewBodyFormatter(): BacklogReviewBodyFormatter
+    {
+        if ($this->reviewBodyFormatter === null) {
+            $this->reviewBodyFormatter = new BacklogReviewBodyFormatter();
+        }
+
+        return $this->reviewBodyFormatter;
     }
 
     /**
@@ -890,7 +901,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $entry->setMeta(BoardEntry::META_STAGE, BacklogBoard::STAGE_REJECTED);
-        $review->setReview($this->entryService()->taskReviewKey($entry), $this->reviewBodyItems($bodyFile));
+        $review->setReview($this->entryService()->taskReviewKey($entry), $this->reviewBodyFormatter()->fromFile($bodyFile));
         $this->saveBoard($board, BacklogCommandName::TASK_REVIEW_REJECT->value);
         $this->saveReviewFile($review, BacklogCommandName::TASK_REVIEW_REJECT->value);
 
@@ -1721,7 +1732,7 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         $match->getEntry()->setMeta(BoardEntry::META_STAGE, BacklogBoard::STAGE_REJECTED);
-        $review->setReview($feature, $this->reviewBodyItems($bodyFile));
+        $review->setReview($feature, $this->reviewBodyFormatter()->fromFile($bodyFile));
         $this->saveBoard($board, BacklogCommandName::FEATURE_REVIEW_REJECT->value);
         $this->saveReviewFile($review, BacklogCommandName::FEATURE_REVIEW_REJECT->value);
 
@@ -2064,40 +2075,6 @@ final class BacklogRunner extends AbstractScriptRunner
         return str_contains($title, '[BLOCKED]')
             ? $title
             : '[BLOCKED] ' . $title;
-    }
-
-    /**
-     * @return array<string>
-     */
-    private function reviewBodyItems(string $bodyFile): array
-    {
-        $contents = trim((string) file_get_contents($bodyFile));
-        if ($contents === '') {
-            return ['1. No details provided.'];
-        }
-
-        $lines = array_values(array_filter(array_map('trim', preg_split('/\R/', $contents) ?: [])));
-        $items = [];
-
-        foreach ($lines as $line) {
-            $item = preg_replace('/^\d+\.\s+/', '', $line);
-            $item = preg_replace('/^[-*]\s+/', '', is_string($item) ? $item : $line);
-            $item = trim(is_string($item) ? $item : $line);
-            if ($item === '') {
-                continue;
-            }
-            if (preg_match('/^#{1,6}\s+/', $item) === 1) {
-                throw new \RuntimeException('Review body items must be plain findings. Remove Markdown headings from --body-file.');
-            }
-
-            $items[] = sprintf('%d. %s', count($items) + 1, $item);
-        }
-
-        if ($items === []) {
-            return ['1. No details provided.'];
-        }
-
-        return $items;
     }
 
     /**
