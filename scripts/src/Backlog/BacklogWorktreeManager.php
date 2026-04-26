@@ -11,6 +11,8 @@ use SoManAgent\Script\Client\AppScript;
 use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Client\GitClient;
 use SoManAgent\Script\Client\ProjectScriptClient;
+use SoManAgent\Script\Backlog\WorktreeAction;
+use SoManAgent\Script\Backlog\WorktreeState;
 
 /**
  * Handles managed backlog worktrees and local git orchestration.
@@ -369,20 +371,20 @@ final class BacklogWorktreeManager
                 $external[] = [
                     'path' => $path,
                     'branch' => $worktree['branch'],
-                    'action' => $worktree['prunable'] ? 'manual-prune' : 'manual-remove',
+                    'action' => $worktree['prunable'] ? WorktreeAction::MANUAL_PRUNE->value : WorktreeAction::MANUAL_REMOVE->value,
                 ];
                 continue;
             }
 
             $feature = null;
             $agent = null;
-            $state = 'orphan';
-            $action = 'clean';
+            $state = WorktreeState::ORPHAN->value;
+            $action = WorktreeAction::CLEAN->value;
             $branch = $worktree['branch'];
 
             if ($worktree['prunable']) {
-                $state = 'prunable';
-                $action = 'manual-prune';
+                $state = WorktreeState::PRUNABLE->value;
+                $action = WorktreeAction::MANUAL_PRUNE->value;
             } elseif ($branch !== null && isset($activeEntriesByBranch[$branch])) {
                 $feature = $activeEntriesByBranch[$branch]['feature'];
                 $agent = $activeEntriesByBranch[$branch]['agent'];
@@ -390,27 +392,27 @@ final class BacklogWorktreeManager
                 $dirty = $this->worktreeIsDirty($path);
 
                 if ($path !== $expectedPath) {
-                    $state = 'blocked';
-                    $action = 'manual-review';
+                    $state = WorktreeState::BLOCKED->value;
+                    $action = WorktreeAction::MANUAL_REVIEW->value;
                 } elseif ($dirty) {
-                    $state = 'dirty';
-                    $action = 'manual-review';
+                    $state = WorktreeState::DIRTY->value;
+                    $action = WorktreeAction::MANUAL_REVIEW->value;
                 } else {
-                    $state = 'active';
-                    $action = 'keep';
+                    $state = WorktreeState::ACTIVE->value;
+                    $action = WorktreeAction::KEEP->value;
                 }
             } else {
                 $agent = basename($path);
                 if (isset($activeEntriesByAgent[$agent])) {
                     $feature = $activeEntriesByAgent[$agent]['feature'];
-                    $state = 'blocked';
-                    $action = 'manual-review';
+                    $state = WorktreeState::BLOCKED->value;
+                    $action = WorktreeAction::MANUAL_REVIEW->value;
                 } elseif ($this->worktreeIsDirty($path)) {
-                    $state = 'dirty';
-                    $action = 'manual-review';
+                    $state = WorktreeState::DIRTY->value;
+                    $action = WorktreeAction::MANUAL_REVIEW->value;
                 } elseif ($branch === null) {
-                    $state = 'detached-managed';
-                    $action = 'clean';
+                    $state = WorktreeState::DETACHED_MANAGED->value;
+                    $action = WorktreeAction::CLEAN->value;
                 }
             }
 
@@ -436,7 +438,7 @@ final class BacklogWorktreeManager
 
         $cleanable = array_values(array_filter(
             $managed,
-            static fn(array $item): bool => in_array($item['state'], ['orphan', 'detached-managed'], true),
+            static fn(array $item): bool => in_array($item['state'], [WorktreeState::ORPHAN->value, WorktreeState::DETACHED_MANAGED->value], true),
         ));
 
         foreach ($cleanable as $item) {
@@ -463,7 +465,7 @@ final class BacklogWorktreeManager
             if (($item['branch'] ?? null) !== $branch) {
                 continue;
             }
-            if (!in_array($item['state'], ['orphan', 'detached-managed'], true)) {
+            if (!in_array($item['state'], [WorktreeState::ORPHAN->value, WorktreeState::DETACHED_MANAGED->value], true)) {
                 continue;
             }
 

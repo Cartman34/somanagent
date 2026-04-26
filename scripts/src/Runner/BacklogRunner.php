@@ -18,6 +18,8 @@ use SoManAgent\Script\Backlog\BacklogReviewBodyFormatter;
 use SoManAgent\Script\Backlog\BacklogReviewFile;
 use SoManAgent\Script\Backlog\BacklogWorktreeManager;
 use SoManAgent\Script\Backlog\BoardEntry;
+use SoManAgent\Script\Backlog\WorktreeAction;
+use SoManAgent\Script\Backlog\WorktreeState;
 use SoManAgent\Script\Backlog\BacklogMetaValue;
 use SoManAgent\Script\Backlog\PullRequestTag;
 use SoManAgent\Script\Backlog\PullRequestManager;
@@ -1545,12 +1547,12 @@ final class BacklogRunner extends AbstractScriptRunner
     private function statusWorktreeStateLabel(string $state): string
     {
         return match ($state) {
-            'active' => 'clean',
-            'dirty' => 'dirty',
-            'blocked' => 'inconsistent',
-            'detached-managed' => 'detached',
-            'prunable' => 'prunable',
-            'orphan' => 'orphan',
+            WorktreeState::ACTIVE->value => WorktreeAction::CLEAN->value,
+            WorktreeState::DIRTY->value => WorktreeState::DIRTY->value,
+            WorktreeState::BLOCKED->value => 'inconsistent',
+            WorktreeState::DETACHED_MANAGED->value => 'detached',
+            WorktreeState::PRUNABLE->value => WorktreeState::PRUNABLE->value,
+            WorktreeState::ORPHAN->value => WorktreeState::ORPHAN->value,
             default => $state,
         };
     }
