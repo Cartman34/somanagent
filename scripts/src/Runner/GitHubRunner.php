@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Runner;
 
+use SoManAgent\Script\Backlog\BacklogGitWorkflow;
+
 /**
  * GitHub CLI helper script runner.
  *
@@ -46,7 +48,7 @@ final class GitHubRunner extends AbstractScriptRunner
         return array_merge([
             ['name' => '--title', 'description' => 'PR title (create, edit)'],
             ['name' => '--head', 'description' => 'Source branch (create)'],
-            ['name' => '--base', 'description' => 'Target branch, defaults to main (create)'],
+            ['name' => '--base', 'description' => 'Target branch, defaults to ' . BacklogGitWorkflow::MAIN_BRANCH . ' (create)'],
             ['name' => '--body', 'description' => 'PR body text (create, edit)'],
             ['name' => '--body-file', 'description' => 'Path to a file for PR body (create, edit)'],
             ['name' => '--squash', 'description' => 'Squash merge (merge)'],
@@ -111,7 +113,7 @@ final class GitHubRunner extends AbstractScriptRunner
     {
         $title    = $flags['title']     ?? null;
         $head     = $flags['head']      ?? null;
-        $base     = $flags['base']      ?? 'main';
+        $base     = $flags['base']      ?? BacklogGitWorkflow::MAIN_BRANCH;
         $bodyFile = $flags['body-file'] ?? null;
 
         if ($bodyFile !== null) {

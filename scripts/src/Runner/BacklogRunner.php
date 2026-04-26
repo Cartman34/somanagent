@@ -229,7 +229,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
     private function prBaseBranch(): string
     {
-        return $this->prBaseBranchOverride ?? 'main';
+        return $this->prBaseBranchOverride ?? BacklogGitWorkflow::MAIN_BRANCH;
     }
 
     private function commandHelp(): BacklogCommandHelp
@@ -533,7 +533,7 @@ final class BacklogRunner extends AbstractScriptRunner
                 $branch = $branchType . '/' . $scopedTask['featureGroup'] . '--' . $task;
                 $this->gitWorkflow()->updateMainBeforeFeatureStart();
                 $featureBase = $this->gitWorkflow()->originMainHead();
-                $this->worktreeManager()->ensureLocalBranchExists($featureBranch, 'origin/main');
+                $this->worktreeManager()->ensureLocalBranchExists($featureBranch, BacklogGitWorkflow::ORIGIN_REMOTE . '/' . BacklogGitWorkflow::MAIN_BRANCH);
 
                 $featureEntry = new BoardEntry($scopedTask['text'], [], [
                     BoardEntry::META_KIND => BacklogEntryService::ENTRY_KIND_FEATURE,
@@ -1874,7 +1874,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
         $this->console->ok(sprintf('Merged feature %s', $feature));
         if ($skippedMainCheckout) {
-            $this->console->line(sprintf('%s was handled without checkout in WP.', $targetBaseBranch === 'main' ? 'Main' : $targetBaseBranch));
+            $this->console->line(sprintf('%s was handled without checkout in WP.', $targetBaseBranch === BacklogGitWorkflow::MAIN_BRANCH ? ucfirst(BacklogGitWorkflow::MAIN_BRANCH) : $targetBaseBranch));
         }
         if ($cleaned > 0) {
             $this->console->line(sprintf('Cleaned %d abandoned managed worktree%s.', $cleaned, $cleaned > 1 ? 's' : ''));

@@ -42,7 +42,7 @@ final class PullRequestManager
         $this->retryFactor = $retryFactor;
     }
 
-    public function createOrUpdatePr(string $branch, string $title, string $bodyFile, string $baseBranch = 'main'): void
+    public function createOrUpdatePr(string $branch, string $title, string $bodyFile, string $baseBranch = BacklogGitWorkflow::MAIN_BRANCH): void
     {
         $prNumber = $this->findPrNumberByBranch($branch);
 

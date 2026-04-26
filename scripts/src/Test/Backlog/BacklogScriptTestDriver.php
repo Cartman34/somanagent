@@ -10,6 +10,7 @@ namespace SoManAgent\Script\Test\Backlog;
 use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Console;
 use SoManAgent\Script\Backlog\BacklogBoard;
+use SoManAgent\Script\Backlog\BacklogGitWorkflow;
 
 final class BacklogScriptTestDriver
 {
@@ -292,11 +293,11 @@ MD);
     public function createRemoteTestBaseBranch(): string
     {
         $branch = sprintf('test/backlog-workflow-%s-%04d', date('Ymd-His'), random_int(1000, 9999));
-        $this->runGitRoot('fetch origin main:main');
+        $this->runGitRoot(sprintf('fetch origin %1$s:%1$s', BacklogGitWorkflow::MAIN_BRANCH));
         $this->runGitRoot(sprintf(
             'branch %s %s',
             escapeshellarg($branch),
-            escapeshellarg('main'),
+            escapeshellarg(BacklogGitWorkflow::MAIN_BRANCH),
         ));
         $this->context->recordLocalBranch($branch);
         $this->runGitRoot(sprintf('push -u origin %s', escapeshellarg($branch)));
