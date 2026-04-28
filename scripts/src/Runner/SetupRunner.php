@@ -79,9 +79,13 @@ final class SetupRunner extends AbstractScriptRunner
             $run('docker compose up -d --build');
             $this->console->ok('Containers started');
 
-            $this->console->step('Installing PHP dependencies (composer)');
+            $this->console->step('Installing local PHP dependencies (composer)');
+            $run('composer install --working-dir=backend');
+            $this->console->ok('Local composer dependencies installed');
+
+            $this->console->step('Installing container PHP dependencies (composer)');
             $run('docker compose exec -T php composer install');
-            $this->console->ok('Composer dependencies installed');
+            $this->console->ok('Container composer dependencies installed');
 
             $this->console->step('Waiting for PostgreSQL');
             $this->waitForPostgreSQL();
