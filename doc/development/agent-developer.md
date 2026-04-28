@@ -25,7 +25,6 @@ Read this file only when the active task requires developer workflow details.
 - `worktree-list`
 - `worktree-clean`
 - `worktree-restore`
-- `review-next`
 - `feature-review-request`
 
 ## Responsibilities

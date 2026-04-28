@@ -146,7 +146,10 @@ final class BacklogCommandFactory
         $constructor = $reflection->getConstructor();
         
         if ($constructor === null) {
-            return new $class($this->getPresenter(), $this->dryRun, $this->projectRoot);
+            throw new \RuntimeException(sprintf(
+                'Command class %s must define its own constructor to support dependency injection.',
+                $class
+            ));
         }
 
         $arguments = [];
@@ -158,8 +161,14 @@ final class BacklogCommandFactory
 
             $arguments[] = match ($type->getName()) {
                 BacklogPresenter::class => $this->getPresenter(),
-                'bool' => $this->dryRun,
-                'string' => $this->projectRoot,
+                'bool' => match ($parameter->getName()) {
+                    'dryRun' => $this->dryRun,
+                    default => throw new \RuntimeException('Unable to inject bool parameter: ' . $parameter->getName()),
+                },
+                'string' => match ($parameter->getName()) {
+                    'projectRoot' => $this->projectRoot,
+                    default => throw new \RuntimeException('Unable to inject string parameter: ' . $parameter->getName()),
+                },
                 BacklogBoardService::class => $this->getBoardService(),
                 BacklogWorktreeService::class => $this->getWorktreeService(),
                 BacklogPermissionService::class => $this->getPermissionService(),
