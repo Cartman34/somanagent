@@ -190,7 +190,9 @@ final class GitService
             return;
         }
 
-        // We use the git client's visibility check which is already a retry loop
+        // fetchRemoteBranch already succeeded before this call, so the branch is guaranteed to exist
+        // on the remote at this point. This check is a defensive assertion, not a propagation wait.
+        // No retry is needed: if ls-remote returns empty here it indicates a real error, not lag.
         if ($this->git->isRemoteBranchVisible($branch, $remote)) {
             return;
         }
