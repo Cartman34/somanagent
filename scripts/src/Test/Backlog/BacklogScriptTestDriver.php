@@ -230,6 +230,11 @@ MD);
         $this->assertBacklogFails(['feature-review-reject', $feature, '--body-file', $bodyFile], $needle);
     }
 
+    public function assertFeatureReviewApproveFails(string $feature, string $bodyFile, string $needle): void
+    {
+        $this->assertBacklogFails(['feature-review-approve', $feature, '--body-file', $bodyFile], $needle);
+    }
+
     public function reworkFeature(string $agent, string $feature): void
     {
         $this->runBacklog(['feature-rework', '--agent', $agent, $feature]);
