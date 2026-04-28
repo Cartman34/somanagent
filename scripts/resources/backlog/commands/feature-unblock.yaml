@@ -1,0 +1,15 @@
+description: 'Remove the blocked flag from one feature'
+arguments:
+  -
+    name: '[<feature>]'
+    description: 'Optional explicit feature slug'
+options:
+  -
+    name: '--agent'
+    description: 'Developer agent code owning the feature'
+examples:
+  - 'php scripts/backlog.php feature-unblock --agent agent-01'
+  - 'php scripts/backlog.php feature-unblock delete-question-reply --agent agent-01'
+notes:
+  - 'Without an explicit feature argument, resolves the single active feature assigned to the provided agent.'
+  - 'If the feature already has a PR, the command restores the current non-blocked PR title.'

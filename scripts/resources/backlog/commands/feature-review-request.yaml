@@ -1,0 +1,16 @@
+description: 'Request reviewer action after a clean mechanical review'
+arguments:
+  -
+    name: '[<feature>]'
+    description: 'Optional explicit feature slug'
+options:
+  -
+    name: '--agent'
+    description: 'Developer agent code owning the feature'
+examples:
+  - 'php scripts/backlog.php feature-review-request --agent agent-01'
+  - 'php scripts/backlog.php feature-review-request delete-question-reply --agent agent-01'
+notes:
+  - 'Without an explicit feature argument, resolves the single active feature assigned to the provided agent.'
+  - 'Runs `php scripts/review.php` in the feature worktree before moving the feature to review.'
+  - 'Blocked while local child tasks remain active for the feature.'

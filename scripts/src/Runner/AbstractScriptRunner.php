@@ -14,7 +14,7 @@ use SoManAgent\Script\Console;
  * Abstract base class for all SoManAgent CLI scripts.
  *
  * Provides:
- *  - Automatic help display for `-h` / `--help`
+ *  - Automatic help display for bare `help` / `-h` / `--help`
  *  - Standardized bootstrap (Application + Console)
  *  - Consistent error handling and exit codes
  *
@@ -165,7 +165,10 @@ abstract class AbstractScriptRunner
     {
         $args = array_slice($argv, 1);
 
-        if (($args[0] ?? null) === '-h' || ($args[0] ?? null) === '--help') {
+        if (
+            count($args) === 1
+            && (($args[0] ?? null) === 'help' || ($args[0] ?? null) === '-h' || ($args[0] ?? null) === '--help')
+        ) {
             $this->printHelp();
             exit(0);
         }

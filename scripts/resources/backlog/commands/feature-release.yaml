@@ -1,0 +1,12 @@
+description: 'Return one untouched active feature back to the todo section'
+options:
+  -
+    name: '--agent'
+    description: 'Developer agent code owning the feature'
+examples:
+  - 'php scripts/backlog.php feature-release --agent agent-01'
+  - 'php scripts/backlog.php feature-release delete-question-reply --agent agent-01'
+notes:
+  - 'Without an explicit argument, resolves the current active task or feature owned by the provided agent.'
+  - 'Only works when the active entry has no development work yet.'
+  - 'A parent feature cannot be released while local child tasks are still active under it.'

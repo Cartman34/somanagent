@@ -1,0 +1,14 @@
+description: 'Remove abandoned managed worktrees under .worktrees/ when safe'
+options:
+  -
+    name: '--dry-run'
+    description: 'Preview cleanup without mutating anything'
+  -
+    name: '--verbose'
+    description: 'Print detailed cleanup steps'
+examples:
+  - 'php scripts/backlog.php worktree-clean'
+  - 'php scripts/backlog.php worktree-clean --dry-run --verbose'
+notes:
+  - 'Only managed worktrees under `.worktrees/` are auto-cleaned.'
+  - 'External worktrees are reported by `worktree-list` and must be cleaned manually.'

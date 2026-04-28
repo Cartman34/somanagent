@@ -1,0 +1,10 @@
+description: 'Close one active feature without merging it'
+arguments:
+  -
+    name: '<feature>'
+    description: 'Feature slug to close'
+examples:
+  - 'php scripts/backlog.php feature-close delete-question-reply'
+notes:
+  - 'Blocked while local child tasks remain active for the feature.'
+  - 'Closes the remote PR when one exists, then removes the feature from the local backlog state.'

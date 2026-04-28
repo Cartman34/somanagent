@@ -1,0 +1,10 @@
+description: 'Approve a local task without changing merge permissions'
+arguments:
+  -
+    name: '<feature/task>'
+    description: 'Child task identifier to approve'
+examples:
+  - 'php scripts/backlog.php task-review-approve onboarding/task-copy-review'
+notes:
+  - 'The task must already be in the review stage.'
+  - 'Approval stays local and does not create or update any GitHub PR.'

@@ -1,0 +1,19 @@
+description: 'Append one new task at the end of the todo section'
+arguments:
+  -
+    name: '<text>'
+    description: 'Task text to append to the todo section'
+options:
+  -
+    name: '--position'
+    description: 'Insert at start, index, or end (default: end)'
+  -
+    name: '--index'
+    description: '1-based insert position used with --position=index'
+examples:
+  - 'php scripts/backlog.php task-create "Add toast notifications on success and error flows"'
+  - 'php scripts/backlog.php task-create "[feat] Add audit trail view" --position=start'
+  - 'php scripts/backlog.php task-create "[workspace-worktree][wws-init] Verify gitignore setup" --position=index --index=2'
+notes:
+  - 'Supports optional task type prefixes such as [feat] or [fix].'
+  - 'Supports optional scoped task prefixes such as [feature-slug][task-slug].'

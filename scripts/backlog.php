@@ -4,7 +4,10 @@
  * @author Florent HAZARD <f.hazard@sowapps.com>
  */
 // Description: Local backlog workflow helper for developer and reviewer commands
-// Usage: php scripts/backlog.php task-book-next --agent agent-01
+// Usage: php scripts/backlog.php
+// Usage: php scripts/backlog.php help
+// Usage: php scripts/backlog.php help feature-start
+// Usage: php scripts/backlog.php task-todo-list
 // Usage: php scripts/backlog.php feature-start --agent agent-01
 // Usage: php scripts/backlog.php feature-review-approve my-feature --body-file local/tmp/pr_body.md
 // Usage: php scripts/backlog.php task-review-request --agent agent-01

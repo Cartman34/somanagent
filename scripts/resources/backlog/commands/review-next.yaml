@@ -1,0 +1,6 @@
+description: 'Print the next task or feature currently waiting in review'
+examples:
+  - 'php scripts/backlog.php review-next'
+notes:
+  - 'Prints the first active backlog entry currently in the review stage, preserving board order.'
+  - 'The output includes Kind, Feature, Task or Ref when relevant, Branch, Base, Stage, PR, Summary, Next, and Blocker.'

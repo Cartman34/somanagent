@@ -38,9 +38,10 @@
       "Bash(gh *)",
       "Bash(python3 *)",
       "Bash(wc:*)",
-      "Read(//home/sowapps/.local/share/**)",
       "Bash(opencode --help)",
-      "Bash(sort *)"
+      "Bash(sort *)",
+      "Bash(grep *)",
+      "Bash(awk *)"
     ]
   }
 }

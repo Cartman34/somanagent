@@ -1,0 +1,11 @@
+description: 'Run reviewer mechanical checks on a feature'
+arguments:
+  -
+    name: '<feature>'
+    description: 'Feature slug to inspect'
+examples:
+  - 'php scripts/backlog.php feature-review-check delete-question-reply'
+notes:
+  - 'The feature must already be in the review stage.'
+  - 'Blocked while local child tasks remain active for the feature.'
+  - 'On mechanical review failure, the feature is automatically rejected with generated review notes.'

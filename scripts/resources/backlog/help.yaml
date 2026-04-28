@@ -1,0 +1,40 @@
+description: 'Backlog workflow helper for local developer and reviewer procedures'
+options:
+  -
+    name: '--agent'
+    description: 'Developer agent code (required on developer commands)'
+  -
+    name: '--body-file'
+    description: 'Path to a local file used for PR or review body content when required'
+  -
+    name: '--branch-type'
+    description: 'Override branch type for feature-start: feat or fix'
+  -
+    name: '--feature-text'
+    description: 'Replacement feature text for the active backlog entry'
+  -
+    name: '--position'
+    description: 'Insertion position for task-create: start, index, end (default: end)'
+  -
+    name: '--index'
+    description: '1-based target position used when --position=index'
+  -
+    name: '--force'
+    description: 'Allow taking a task that is already reserved'
+examples:
+  - 'php scripts/backlog.php status --agent agent-01'
+  - 'php scripts/backlog.php task-create "Add toast notifications on success and error flows"'
+  - 'php scripts/backlog.php task-todo-list'
+  - 'php scripts/backlog.php task-remove 8'
+  - 'php scripts/backlog.php task-review-request --agent agent-01'
+  - 'php scripts/backlog.php task-review-approve onboarding/task-copy-review'
+  - 'php scripts/backlog.php task-rework --agent agent-01 onboarding/task-copy-review'
+  - 'php scripts/backlog.php feature-start --agent agent-01'
+  - 'php scripts/backlog.php feature-release --agent agent-01'
+  - 'php scripts/backlog.php feature-task-merge --agent agent-01'
+  - 'php scripts/backlog.php feature-list'
+  - 'php scripts/backlog.php worktree-list'
+  - 'php scripts/backlog.php worktree-clean --dry-run'
+  - 'php scripts/backlog.php worktree-restore --agent agent-01'
+  - 'php scripts/backlog.php review-next'
+  - 'php scripts/backlog.php feature-review-approve delete-question-reply --body-file local/tmp/pr_body.md'

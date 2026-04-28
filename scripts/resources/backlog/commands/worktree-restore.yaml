@@ -1,0 +1,15 @@
+description: 'Recreate the managed worktree for an active feature or task without changing backlog state'
+arguments:
+  -
+    name: '<feature>'
+    description: 'Feature slug to restore when --agent is not used'
+options:
+  -
+    name: '--agent'
+    description: 'Restore the worktree for the active feature or task assigned to this agent'
+examples:
+  - 'php scripts/backlog.php worktree-restore --agent agent-01'
+  - 'php scripts/backlog.php worktree-restore my-feature-slug'
+notes:
+  - 'Use this when `.worktrees/<agent>` was removed while the backlog still has active development.'
+  - 'The command checks out the branch recorded in backlog metadata and does not change the workflow stage.'

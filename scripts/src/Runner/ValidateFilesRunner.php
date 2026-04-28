@@ -155,7 +155,13 @@ final class ValidateFilesRunner extends AbstractScriptRunner
                 || str_contains($joined, 'env file')
                 || str_contains($joined, 'couldn\'t find env file')
                 || str_contains($joined, 'failed to load')
-                || str_contains($joined, '.env');
+                || str_contains($joined, '.env')
+                || str_contains($joined, 'npm: command not found')
+                || str_contains($joined, 'node: not found')
+                || str_contains($joined, 'sh: npm: not found')
+                || str_contains($joined, 'tsc: not found')
+                || str_contains($joined, 'missing script')
+                || str_contains($joined, 'cannot find module');
         };
 
         if ($backendPhpFiles !== []) {
@@ -276,21 +282,20 @@ final class ValidateFilesRunner extends AbstractScriptRunner
         }
 
         if ($withTypes && $frontendLintFiles !== []) {
-            if ($reviewScope) {
-                $results[] = 'Frontend type-check: SKIP (out of review scope)';
+            $output = [];
+            $command = $reviewScope
+                ? 'npm --prefix frontend run type-check'
+                : 'php scripts/node.php type-check';
+            $code = $runQuiet($command, $output);
+            if ($code === 0) {
+                $results[] = 'Frontend type-check: OK';
+            } elseif ($isEnvironmentUnavailable($output)) {
+                $results[] = 'Frontend type-check: UNAVAILABLE';
             } else {
-                $output = [];
-                $code = $runQuiet('php scripts/node.php type-check', $output);
-                if ($code === 0) {
-                    $results[] = 'Frontend type-check: OK';
-                } elseif ($isEnvironmentUnavailable($output)) {
-                    $results[] = 'Frontend type-check: UNAVAILABLE';
-                } else {
-                    $failed = true;
-                    $results[] = 'Frontend type-check: FAIL';
-                    foreach (array_slice($output, -12) as $line) {
-                        $results[] = '  ' . $line;
-                    }
+                $failed = true;
+                $results[] = 'Frontend type-check: FAIL';
+                foreach (array_slice($output, -12) as $line) {
+                    $results[] = '  ' . $line;
                 }
             }
         } else {
