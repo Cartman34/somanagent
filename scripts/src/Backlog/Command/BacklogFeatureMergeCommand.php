@@ -8,7 +8,6 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
-use SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
@@ -46,6 +45,11 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
     {
         $board = $this->loadBoard();
         $review = $this->loadReviewFile();
+        $bodyFile = $options['body-file'] ?? null;
+        if (!is_string($bodyFile)) {
+            throw new \RuntimeException('Option --body-file is required.');
+        }
+
         $feature = $this->resolveFeatureReferenceArgument($board, $commandArgs, BacklogCommandName::FEATURE_MERGE->value);
 
         $match = $this->boardService->resolveFeature($board, $feature);
@@ -60,15 +64,24 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
                 $this->boardService->getStageLabel(BacklogBoard::STAGE_APPROVED),
             ));
         }
+        if ($entry->checkIsBlocked()) {
+            throw new \RuntimeException("Feature {$feature} is blocked and cannot be merged.");
+        }
 
         $branch = $entry->getBranch() ?? '';
-        $prNumber = $this->storedPrNumber($entry);
-
-        if ($prNumber !== null) {
-            $this->pullRequestService->mergePr($prNumber);
-        } else {
-            $this->gitService->mergeBranchInPath($this->projectRoot, $branch, "Merge feature {$feature}");
+        if ($branch === '') {
+            throw new \RuntimeException("Feature {$feature} has no branch metadata.");
         }
+
+        $prNumber = $this->pullRequestService->findPrNumberByBranch($branch);
+        if ($prNumber === null) {
+            throw new \RuntimeException("No open PR found for branch {$branch}.");
+        }
+
+        $tag = $this->pullRequestService->getPrTypeFromChanges($entry->getBase() ?? '', $branch);
+        $title = $this->pullRequestService->buildPrTitle($tag, $entry->getText());
+        $this->pullRequestService->createOrUpdatePr($branch, $title, $bodyFile);
+        $this->pullRequestService->mergePr($prNumber);
 
         $this->boardService->deleteFeature($board, $feature);
         $review->clearReview($feature);
@@ -92,15 +105,5 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         }
 
         return $this->boardService->normalizeFeatureSlug($commandArgs[0]);
-    }
-
-    private function storedPrNumber(BoardEntry $entry): ?int
-    {
-        $pr = $entry->getPr();
-        if ($pr === null || $pr === BacklogMetaValue::NONE->value) {
-            return null;
-        }
-
-        return (int) $pr;
     }
 }
