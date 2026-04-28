@@ -244,6 +244,10 @@ MD);
             $this->context->recordRemoteBranch($branch);
         }
         $prNumber = $entry->getPr();
+        if (!$this->context->dryRun && $prNumber === null) {
+            throw new \RuntimeException('Expected feature-review-approve to record the pull request number.');
+        }
+
         $this->context->setPullRequestNumber($prNumber !== null ? (int) $prNumber : null);
     }
 

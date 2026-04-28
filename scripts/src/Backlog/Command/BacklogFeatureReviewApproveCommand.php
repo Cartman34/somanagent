@@ -40,9 +40,16 @@ final class BacklogFeatureReviewApproveCommand extends AbstractBacklogCommand
     {
         $board = $this->loadBoard();
         $review = $this->loadReviewFile();
+        $bodyFile = $options['body-file'] ?? null;
+        if (!is_string($bodyFile)) {
+            throw new \RuntimeException('Option --body-file is required.');
+        }
+
         $feature = $this->resolveFeatureReferenceArgument($board, $commandArgs, BacklogCommandName::FEATURE_REVIEW_APPROVE->value);
         $match = $this->boardService->resolveFeature($board, $feature);
         $entry = $match->getEntry();
+        $this->boardService->checkIsFeatureEntry($entry) || throw new \RuntimeException('feature-review-approve only applies to kind=feature entries.');
+        $this->boardService->assertNoActiveTasksForFeature($board, $feature, BacklogCommandName::FEATURE_REVIEW_APPROVE->value);
 
         if ($this->boardService->getFeatureStage($entry) !== BacklogBoard::STAGE_IN_REVIEW) {
             throw new \RuntimeException(sprintf(
@@ -52,19 +59,29 @@ final class BacklogFeatureReviewApproveCommand extends AbstractBacklogCommand
             ));
         }
 
+        $branch = $entry->getBranch() ?? '';
+        if ($branch === '') {
+            throw new \RuntimeException("Feature {$feature} has no branch metadata.");
+        }
+
+        $tag = $this->pullRequestService->getPrTypeFromChanges($entry->getBase() ?? '', $branch);
+        $title = $this->pullRequestService->buildPrTitle($tag, $entry->getText(), $entry->checkIsBlocked());
+        $this->gitService->pushBranchAndAwaitVisibility($branch);
+        $this->pullRequestService->createOrUpdatePr($branch, $title, $bodyFile);
+        $prNumber = $this->pullRequestService->findPrNumberByBranch($branch);
+        if ($prNumber === null && !$this->dryRun) {
+            throw new \RuntimeException("No open PR found for branch {$branch} after approval update.");
+        }
+
+        if ($prNumber !== null) {
+            $entry->setPr((string) $prNumber);
+        }
         $entry->setStage(BacklogBoard::STAGE_APPROVED);
         $review->clearReview($feature);
         $this->saveBoard($board, BacklogCommandName::FEATURE_REVIEW_APPROVE->value);
         $this->saveReviewFile($review, BacklogCommandName::FEATURE_REVIEW_APPROVE->value);
 
-        $prNumber = $this->pullRequestService->findPrNumberByBranch($entry->getBranch() ?? '');
-        if ($prNumber !== null) {
-            $tag = $this->pullRequestService->getPrTypeFromChanges($entry->getBase() ?? '', $entry->getBranch() ?? '');
-            $title = $this->pullRequestService->buildPrTitle($tag, $entry->getText(), $entry->checkIsBlocked());
-            $this->pullRequestService->editPrTitle($prNumber, $title);
-        }
-
-        $this->presenter->displaySuccess(sprintf('Approved feature %s', $feature));
+        $this->presenter->displaySuccess(sprintf('Approved feature %s with [%s] PR title', $feature, $tag->value));
     }
 
     private function resolveFeatureReferenceArgument(BacklogBoard $board, array $commandArgs, string $command): string
