@@ -8,39 +8,34 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Client;
 
 use SoManAgent\Script\RetryHelper;
+use SoManAgent\Script\RetryPolicy;
 
 /**
  * GitHub platform client backed by the local github.php project script.
  */
 final class GitHubClient
 {
+    private const NETWORK_ERROR_NEEDLES = [
+        'GitHub API transport error:',
+        'Could not resolve host:',
+        'Connection timed out',
+        'Failed to connect',
+        'Operation timed out',
+        'Temporary failure in name resolution',
+    ];
+
     private bool $dryRun;
     private ProjectScriptClient $scripts;
+    private RetryPolicy $retryPolicy;
 
-    /** @var array<string> */
-    private array $networkErrorNeedles;
-
-    private int $retryCount;
-    private int $retryBaseDelay;
-    private int $retryFactor;
-
-    /**
-     * @param array<string> $networkErrorNeedles
-     */
     public function __construct(
         bool $dryRun,
         ProjectScriptClient $scripts,
-        array $networkErrorNeedles,
-        int $retryCount,
-        int $retryBaseDelay,
-        int $retryFactor,
+        RetryPolicy $retryPolicy,
     ) {
         $this->dryRun = $dryRun;
         $this->scripts = $scripts;
-        $this->networkErrorNeedles = $networkErrorNeedles;
-        $this->retryCount = $retryCount;
-        $this->retryBaseDelay = $retryBaseDelay;
-        $this->retryFactor = $retryFactor;
+        $this->retryPolicy = $retryPolicy;
     }
 
     public function run(string $arguments): void
@@ -92,7 +87,7 @@ final class GitHubClient
         if ($result[0] !== 0 && $this->isRetryableNetworkError($result[1])) {
             throw new \RuntimeException(sprintf(
                 "GitHub network error after %d retries. Safe to rerun the same command.\nCommand: %s\n%s",
-                $this->retryCount,
+                $this->retryPolicy->getRetryCount(),
                 $command,
                 $result[1],
             ));
@@ -144,7 +139,7 @@ final class GitHubClient
 
     private function isRetryableNetworkError(string $output): bool
     {
-        foreach ($this->networkErrorNeedles as $needle) {
+        foreach (self::NETWORK_ERROR_NEEDLES as $needle) {
             if (str_contains($output, $needle)) {
                 return true;
             }
@@ -155,10 +150,6 @@ final class GitHubClient
 
     private function networkRetryHelper(): RetryHelper
     {
-        return new RetryHelper(
-            $this->retryCount,
-            $this->retryBaseDelay,
-            $this->retryFactor,
-        );
+        return $this->retryPolicy->createHelper();
     }
 }

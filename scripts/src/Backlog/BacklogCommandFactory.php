@@ -55,6 +55,7 @@ use SoManAgent\Script\Service\GitService;
 use SoManAgent\Script\Service\PullRequestService;
 use SoManAgent\Script\TextSlugger;
 use SoManAgent\Script\Application;
+use SoManAgent\Script\RetryPolicy;
 
 /**
  * Factory for creating backlog commands with their specific dependencies.
@@ -83,6 +84,7 @@ final class BacklogCommandFactory
     private ?ProjectScriptClient $projectScriptClient = null;
     private ?TextSlugger $textSlugger = null;
     private ?FilesystemClientInterface $filesystemClient = null;
+    private ?RetryPolicy $retryPolicy = null;
 
     public function __construct(
         Application $app,
@@ -232,7 +234,7 @@ final class BacklogCommandFactory
     public function getPullRequestService(): PullRequestService
     {
         if ($this->pullRequestService === null) {
-            $this->pullRequestService = new PullRequestService($this->getGitHubClient(), $this->getGitService());
+            $this->pullRequestService = new PullRequestService($this->getGitHubClient(), $this->getGitService(), $this->getRetryPolicy());
         }
         return $this->pullRequestService;
     }
@@ -264,7 +266,7 @@ final class BacklogCommandFactory
     public function getGitClient(): GitClient
     {
         if ($this->gitClient === null) {
-            $this->gitClient = new GitClient($this->dryRun, $this->getConsoleClient());
+            $this->gitClient = new GitClient($this->dryRun, $this->getConsoleClient(), $this->getRetryPolicy());
         }
         return $this->gitClient;
     }
@@ -272,7 +274,7 @@ final class BacklogCommandFactory
     public function getGitHubClient(): GitHubClient
     {
         if ($this->gitHubClient === null) {
-            $this->gitHubClient = new GitHubClient($this->dryRun, $this->getProjectScriptClient(), [], 0, 0, 0);
+            $this->gitHubClient = new GitHubClient($this->dryRun, $this->getProjectScriptClient(), $this->getRetryPolicy());
         }
         return $this->gitHubClient;
     }
@@ -291,5 +293,14 @@ final class BacklogCommandFactory
             $this->textSlugger = new TextSlugger();
         }
         return $this->textSlugger;
+    }
+
+    public function getRetryPolicy(): RetryPolicy
+    {
+        if ($this->retryPolicy === null) {
+            $this->retryPolicy = new RetryPolicy();
+        }
+
+        return $this->retryPolicy;
     }
 }

@@ -11,6 +11,7 @@ use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Enum\PullRequestTag;
 use SoManAgent\Script\Client\GitHubClient;
 use SoManAgent\Script\RetryHelper;
+use SoManAgent\Script\RetryPolicy;
 
 /**
  * Service for orchestrating Pull Request lifecycles.
@@ -21,24 +22,16 @@ final class PullRequestService
 
     private GitService $gitService;
 
-    private int $retryCount;
-
-    private int $retryBaseDelay;
-
-    private int $retryFactor;
+    private RetryPolicy $retryPolicy;
 
     public function __construct(
         GitHubClient $github,
         GitService $gitService,
-        int $retryCount = 0,
-        int $retryBaseDelay = 0,
-        int $retryFactor = 0
+        RetryPolicy $retryPolicy
     ) {
         $this->github = $github;
         $this->gitService = $gitService;
-        $this->retryCount = $retryCount;
-        $this->retryBaseDelay = $retryBaseDelay;
-        $this->retryFactor = $retryFactor;
+        $this->retryPolicy = $retryPolicy;
     }
 
     public function createOrUpdatePr(string $branch, string $title, string $bodyFile, string $baseBranch = GitService::MAIN_BRANCH): void
@@ -189,10 +182,6 @@ final class PullRequestService
 
     private function networkRetryHelper(): RetryHelper
     {
-        return new RetryHelper(
-            $this->retryCount,
-            $this->retryBaseDelay,
-            $this->retryFactor,
-        );
+        return $this->retryPolicy->createHelper();
     }
 }
