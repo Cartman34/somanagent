@@ -86,6 +86,23 @@ final class GitService
         $this->waitForRemoteBranchVisibility($branch, $remote);
     }
 
+    public function pushBranchIfAhead(string $branch, string $remote = self::ORIGIN_REMOTE): void
+    {
+        if (!$this->git->localBranchExists($branch)) {
+            return;
+        }
+
+        if (!$this->git->remoteBranchExists($remote, $branch)) {
+            $this->pushBranchAndAwaitVisibility($branch, $remote);
+
+            return;
+        }
+
+        if ($this->git->countCommitsAhead($remote . '/' . $branch, $branch) > 0) {
+            $this->pushBranchAndAwaitVisibility($branch, $remote);
+        }
+    }
+
     public function checkWorkspaceHasLocalChanges(): bool
     {
         if ($this->dryRun) {
