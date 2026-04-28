@@ -98,10 +98,15 @@ final class ReviewRunner extends AbstractScriptRunner
         $backendTestsExitCode = $this->printBackendTestsValidation($allFiles);
         echo "\n";
 
+        echo "=== PHPStan static analysis ===\n";
+        $phpstanExitCode = $this->printPhpstanValidation($phpFiles);
+        echo "\n";
+
         $hasBlockers = $frenchHits !== [] || $missingPhpdoc !== [] || $missingJsdoc !== []
             || $validateExitCode !== 0
             || $translationExitCode !== 0
-            || $backendTestsExitCode !== 0;
+            || $backendTestsExitCode !== 0
+            || $phpstanExitCode !== 0;
 
         return $hasBlockers ? 1 : 0;
     }
@@ -381,6 +386,34 @@ final class ReviewRunner extends AbstractScriptRunner
     private function printTranslationValidation(): int
     {
         [$exitCode, $lines] = $this->runCommand('php scripts/validate-translations.php');
+
+        foreach ($lines as $line) {
+            echo $line . "\n";
+        }
+
+        return $exitCode;
+    }
+
+    /**
+     * @param string[] $phpFiles
+     */
+    private function printPhpstanValidation(array $phpFiles): int
+    {
+        $backendPhpFiles = array_filter($phpFiles, static fn(string $path): bool => str_starts_with($path, 'backend/'));
+
+        if ($backendPhpFiles === []) {
+            echo "(no backend PHP files modified)\n";
+            return 0;
+        }
+
+        if (!is_file($this->projectRoot . '/backend/vendor/bin/phpstan')) {
+            echo "PHPStan: UNAVAILABLE (run composer install in the backend container)\n";
+            return 0;
+        }
+
+        [$exitCode, $lines] = $this->runCommand(
+            'php backend/vendor/bin/phpstan analyse --configuration backend/phpstan.neon'
+        );
 
         foreach ($lines as $line) {
             echo $line . "\n";
