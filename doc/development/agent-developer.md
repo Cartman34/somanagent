@@ -24,6 +24,7 @@ Read this file only when the active task requires developer workflow details.
 - `feature-list`
 - `worktree-list`
 - `worktree-clean`
+- `worktree-restore`
 - `review-next`
 - `feature-review-request`
 
@@ -176,6 +177,12 @@ Read this file only when the active task requires developer workflow details.
 1. Run `php scripts/backlog.php worktree-clean`.
 2. The script removes only abandoned managed worktrees under `.worktrees/` when they are safe to delete.
 3. Dirty, blocked, or external worktrees are left untouched and must be handled manually.
+
+### `worktree-restore`
+
+1. Run `php scripts/backlog.php worktree-restore --agent=<code>` or `php scripts/backlog.php worktree-restore <feature>`.
+2. The script recreates the managed worktree for the active feature or task recorded in backlog metadata without changing the workflow stage.
+3. Use this command when `.worktrees/<agent>` was removed while the backlog still has active development.
 
 ### `status`
 
