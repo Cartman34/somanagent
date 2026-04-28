@@ -20,5 +20,6 @@ final class HelpCampaign implements CampaignInterface
     public function run(BacklogScriptTestDriver $driver, BacklogScriptTestContext $context): void
     {
         $driver->runHelpChecks();
+        $driver->runOptionEqualsChecks();
     }
 }

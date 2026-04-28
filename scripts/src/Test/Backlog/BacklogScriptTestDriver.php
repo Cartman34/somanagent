@@ -98,6 +98,17 @@ MD);
         $this->assertOutputContains($this->runBacklog(['feature-start', '--help']), 'feature-start');
     }
 
+    public function runOptionEqualsChecks(): void
+    {
+        $this->assertOutputContains($this->runBacklog(['status', '--agent=' . $this->context->agentPrimary]), '[Task]');
+
+        $bodyFile = $this->createBodyFile('test-option-equals-body.md', ['Missing task should fail after parsing body-file.']);
+        $this->assertBacklogFails(
+            ['task-review-reject', 'missing-feature/missing-task', '--body-file=' . $bodyFile],
+            'Task not found: missing-feature/missing-task',
+        );
+    }
+
     public function createTodoTask(string $text): void
     {
         $this->runBacklog(['task-create', $text]);

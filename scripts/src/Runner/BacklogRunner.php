@@ -108,7 +108,15 @@ final class BacklogRunner extends AbstractScriptRunner
         for ($i = 0, $c = count($args); $i < $c; $i++) {
             $arg = $args[$i];
             if (str_starts_with($arg, '--')) {
-                $key = ltrim($arg, '-');
+                $option = substr($arg, 2);
+                if (str_contains($option, '=')) {
+                    [$key, $val] = explode('=', $option, 2);
+                    $options[$key] = $val;
+
+                    continue;
+                }
+
+                $key = $option;
                 $val = $args[$i + 1] ?? true;
                 if ($val !== true && str_starts_with((string) $val, '--')) {
                     $val = true;
