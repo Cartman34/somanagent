@@ -25,6 +25,7 @@ final class SetupRunner extends AbstractScriptRunner
     {
         return [
             ['name' => '--skip-frontend', 'description' => 'Skip frontend dependency installation'],
+            ['name' => '--update', 'description' => 'Update dependencies instead of installing'],
         ];
     }
 
@@ -33,6 +34,7 @@ final class SetupRunner extends AbstractScriptRunner
         return [
             'php scripts/setup.php',
             'php scripts/setup.php --skip-frontend',
+            'php scripts/setup.php --update',
         ];
     }
 
@@ -42,6 +44,8 @@ final class SetupRunner extends AbstractScriptRunner
     public function run(array $args): int
     {
         $skipFrontend = in_array('--skip-frontend', $args, true);
+        $update = in_array('--update', $args, true);
+        $composerAction = $update ? 'update' : 'install';
 
         $run = function (string $cmd): void {
             $code = $this->app->runCommand($cmd);
@@ -79,13 +83,13 @@ final class SetupRunner extends AbstractScriptRunner
             $run('docker compose up -d --build');
             $this->console->ok('Containers started');
 
-            $this->console->step('Installing local PHP dependencies (composer)');
-            $run('composer install --working-dir=backend');
-            $this->console->ok('Local composer dependencies installed');
+            $this->console->step(sprintf('Installing local PHP dependencies (composer %s)', $composerAction));
+            $run(sprintf('composer %s --working-dir=backend', $composerAction));
+            $this->console->ok(sprintf('Local composer dependencies %sed', $composerAction));
 
-            $this->console->step('Installing container PHP dependencies (composer)');
-            $run('docker compose exec -T php composer install');
-            $this->console->ok('Container composer dependencies installed');
+            $this->console->step(sprintf('Installing container PHP dependencies (composer %s)', $composerAction));
+            $run(sprintf('docker compose exec -T php composer %s', $composerAction));
+            $this->console->ok(sprintf('Container composer dependencies %sed', $composerAction));
 
             $this->console->step('Waiting for PostgreSQL');
             $this->waitForPostgreSQL();
