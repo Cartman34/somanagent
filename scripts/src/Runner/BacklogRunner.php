@@ -8,22 +8,9 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Runner;
 
 use SoManAgent\Script\Backlog\BacklogCommandFactory;
-use SoManAgent\Script\Backlog\BacklogCommandHelp;
-use SoManAgent\Script\Backlog\BacklogCliOption;
-use SoManAgent\Script\Backlog\BacklogCommandName;
-use SoManAgent\Script\Backlog\BacklogEntryService;
-use SoManAgent\Script\Backlog\BacklogEntryResolver;
-use SoManAgent\Script\Backlog\BacklogGitWorkflow;
-use SoManAgent\Script\Backlog\BacklogReviewBodyFormatter;
-use SoManAgent\Script\Backlog\BacklogReviewFile;
-use SoManAgent\Script\Backlog\BacklogWorktreeManager;
-use SoManAgent\Script\Backlog\PullRequestService;
-use SoManAgent\Script\Client\ConsoleClient;
-use SoManAgent\Script\Client\GitClient;
-use SoManAgent\Script\Client\GitHubClient;
-use SoManAgent\Script\Client\ProjectScriptClient;
-use SoManAgent\Script\Environment;
-use SoManAgent\Script\TextSlugger;
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Service\BacklogHelpService;
 
 /**
  * Local backlog workflow orchestrator.
@@ -36,23 +23,8 @@ final class BacklogRunner extends AbstractScriptRunner
     private ?string $boardPath = null;
     private ?string $reviewFilePath = null;
 
-    private array $ignoredExceptions = [
-        'Operation timed out',
-        'Temporary failure in name resolution',
-    ];
-
-    private ?BacklogCommandHelp $commandHelp = null;
+    private ?BacklogHelpService $helpService = null;
     private ?BacklogCommandFactory $commandFactory = null;
-    private ?BacklogEntryResolver $entryResolver = null;
-    private ?BacklogEntryService $entryService = null;
-    private ?ConsoleClient $consoleClient = null;
-    private ?GitClient $gitClient = null;
-    private ?ProjectScriptClient $projectScriptClient = null;
-    private ?GitHubClient $gitHubClient = null;
-    private ?BacklogWorktreeManager $worktreeManager = null;
-    private ?BacklogGitWorkflow $gitWorkflow = null;
-    private ?PullRequestService $pullRequestService = null;
-    private ?BacklogReviewBodyFormatter $reviewBodyFormatter = null;
 
     protected function getDescription(): string
     {
@@ -61,17 +33,17 @@ final class BacklogRunner extends AbstractScriptRunner
 
     protected function getCommands(): array
     {
-        return $this->commandHelp()->getCommands();
+        return $this->helpService()->getCommands();
     }
 
     protected function getOptions(): array
     {
-        return $this->commandHelp()->getOptions($this->getExecutionModeOptions());
+        return $this->helpService()->getOptions($this->getExecutionModeOptions());
     }
 
     protected function getUsageExamples(): array
     {
-        return $this->commandHelp()->getUsageExamples();
+        return $this->helpService()->getUsageExamples();
     }
 
     /**
@@ -178,33 +150,26 @@ final class BacklogRunner extends AbstractScriptRunner
 
     private function printCommandHelp(string $command): void
     {
-        echo $this->commandHelp()->renderCommandHelp($command);
+        echo $this->helpService()->renderCommandHelp($command);
     }
 
-    private function commandHelp(): BacklogCommandHelp
+    private function helpService(): BacklogHelpService
     {
-        if ($this->commandHelp === null) {
-            $this->commandHelp = new BacklogCommandHelp();
+        if ($this->helpService === null) {
+            $this->helpService = new BacklogHelpService($this->commandFactory()->getFilesystemClient());
         }
 
-        return $this->commandHelp;
+        return $this->helpService;
     }
 
     private function commandFactory(): BacklogCommandFactory
     {
         if ($this->commandFactory === null) {
             $this->commandFactory = new BacklogCommandFactory(
+                $this->app,
                 $this->console,
                 $this->dryRun,
                 $this->projectRoot,
-                $this->worktreeManager(),
-                $this->entryService(),
-                $this->entryResolver(),
-                $this->consoleClient(),
-                $this->featureSlugger(),
-                $this->reviewBodyFormatter(),
-                $this->gitWorkflow(),
-                $this->pullRequestService(),
                 $this->boardPath(),
                 $this->reviewFilePath()
             );
@@ -221,151 +186,5 @@ final class BacklogRunner extends AbstractScriptRunner
     private function reviewFilePath(): string
     {
         return $this->reviewFilePath ?? ($this->projectRoot . '/' . self::DEFAULT_REVIEW_FILE_PATH);
-    }
-
-    private function entryResolver(): BacklogEntryResolver
-    {
-        if ($this->entryResolver === null) {
-            $this->entryResolver = new BacklogEntryResolver($this->featureSlugger());
-        }
-
-        return $this->entryResolver;
-    }
-
-    private function entryService(): BacklogEntryService
-    {
-        if ($this->entryService === null) {
-            $this->entryService = new BacklogEntryService($this->featureSlugger(), $this->entryResolver());
-        }
-
-        return $this->entryService;
-    }
-
-    private function consoleClient(): ConsoleClient
-    {
-        if ($this->consoleClient === null) {
-            $this->consoleClient = new ConsoleClient(
-                $this->projectRoot,
-                $this->dryRun,
-                $this->app,
-                function (string $message): void {
-                    $this->logVerbose($message);
-                }
-            );
-        }
-
-        return $this->consoleClient;
-    }
-
-    private function gitClient(): GitClient
-    {
-        if ($this->gitClient === null) {
-            $this->gitClient = new GitClient(
-                $this->dryRun,
-                $this->consoleClient(),
-                $this->ignoredExceptions
-            );
-        }
-
-        return $this->gitClient;
-    }
-
-    private function projectScriptClient(): ProjectScriptClient
-    {
-        if ($this->projectScriptClient === null) {
-            $this->projectScriptClient = new ProjectScriptClient($this->consoleClient());
-        }
-
-        return $this->projectScriptClient;
-    }
-
-    private function gitHubClient(): GitHubClient
-    {
-        if ($this->gitHubClient === null) {
-            $this->gitHubClient = new GitHubClient(
-                $this->dryRun,
-                $this->projectScriptClient(),
-                $this->ignoredExceptions,
-                0,
-                0,
-                0
-            );
-        }
-
-        return $this->gitHubClient;
-    }
-
-    private function worktreeManager(): BacklogWorktreeManager
-    {
-        if ($this->worktreeManager === null) {
-            $this->worktreeManager = new BacklogWorktreeManager(
-                $this->projectRoot,
-                $this->dryRun,
-                (string) getenv('DATABASE_URL'),
-                $this->entryResolver(),
-                $this->consoleClient(),
-                $this->gitClient(),
-                $this->projectScriptClient()
-            );
-        }
-
-        return $this->worktreeManager;
-    }
-
-    private function gitWorkflow(): BacklogGitWorkflow
-    {
-        if ($this->gitWorkflow === null) {
-            $this->gitWorkflow = new BacklogGitWorkflow(
-                $this->dryRun,
-                $this->consoleClient(),
-                $this->console,
-                $this->gitClient(),
-                $this->pullRequestService(),
-                function (string $message): void {
-                    $this->logVerbose($message);
-                }
-            );
-        }
-
-        return $this->gitWorkflow;
-    }
-
-    private function pullRequestService(): PullRequestService
-    {
-        if ($this->pullRequestService === null) {
-            $this->pullRequestService = new PullRequestService(
-                $this->dryRun,
-                'Head branch is invalid',
-                $this->gitClient(),
-                $this->gitHubClient(),
-                $this->entryService(),
-                0,
-                0,
-                0
-            );
-        }
-
-        return $this->pullRequestService;
-    }
-
-    private function reviewBodyFormatter(): BacklogReviewBodyFormatter
-    {
-        if ($this->reviewBodyFormatter === null) {
-            $this->reviewBodyFormatter = new BacklogReviewBodyFormatter($this->projectRoot);
-        }
-
-        return $this->reviewBodyFormatter;
-    }
-
-    private function featureSlugger(): TextSlugger
-    {
-        return new TextSlugger();
-    }
-
-    private function logVerbose(string $message): void
-    {
-        if ($this->verbose) {
-            $this->console->line('  [debug] ' . $message);
-        }
     }
 }

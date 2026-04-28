@@ -5,7 +5,12 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog;
+namespace SoManAgent\Script\Backlog\Service;
+
+use RuntimeException;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Model\BoardEntry;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 
 /**
  * Handles role-based permissions and workflow restrictions.
@@ -22,7 +27,7 @@ final class BacklogPermissionService
     {
         $role = strtolower(trim((string) getenv(self::ENV_ACTIVE_ROLE)));
         if (!in_array($role, [self::ROLE_MANAGER, self::ROLE_DEVELOPER], true)) {
-            throw new \RuntimeException(sprintf(
+            throw new RuntimeException(sprintf(
                 'Assignment commands require %s=manager or %s=developer.',
                 self::ENV_ACTIVE_ROLE,
                 self::ENV_ACTIVE_ROLE,
@@ -36,7 +41,7 @@ final class BacklogPermissionService
     {
         $agent = trim((string) getenv(self::ENV_ACTIVE_AGENT));
         if ($agent === '') {
-            throw new \RuntimeException(sprintf(
+            throw new RuntimeException(sprintf(
                 'Developer assignment commands require %s=<code>.',
                 self::ENV_ACTIVE_AGENT,
             ));
@@ -51,23 +56,23 @@ final class BacklogPermissionService
         string $targetAgent,
         string $feature,
         BacklogBoard $board,
-        BacklogEntryResolver $entryResolver
+        BacklogBoardService $boardService
     ): void {
         if ($actorRole === self::ROLE_MANAGER) {
             return;
         }
 
         if ($actorAgent !== $targetAgent) {
-            throw new \RuntimeException(sprintf(
+            throw new RuntimeException(sprintf(
                 'Developer role can only assign itself. %s must match --agent.',
                 self::ENV_ACTIVE_AGENT,
             ));
         }
 
-        $match = $entryResolver->requireFeature($board, $feature);
+        $match = $boardService->resolveFeature($board, $feature);
         $assignedAgent = $match->getEntry()->getAgent();
         if ($assignedAgent !== null && $assignedAgent !== $actorAgent) {
-            throw new \RuntimeException(sprintf(
+            throw new RuntimeException(sprintf(
                 'Feature %s is already assigned to %s. Only manager can reassign it.',
                 $feature,
                 $assignedAgent,
@@ -87,7 +92,7 @@ final class BacklogPermissionService
         }
 
         if ($actorAgent !== $targetAgent) {
-            throw new \RuntimeException(sprintf(
+            throw new RuntimeException(sprintf(
                 'Developer role can only unassign itself. %s must match --agent.',
                 self::ENV_ACTIVE_AGENT,
             ));
@@ -95,7 +100,7 @@ final class BacklogPermissionService
 
         $assignedAgent = $entry->getAgent();
         if ($assignedAgent !== $actorAgent) {
-            throw new \RuntimeException(sprintf(
+            throw new RuntimeException(sprintf(
                 'Feature %s is assigned to %s. Developer role can only unassign its own feature.',
                 $feature,
                 $assignedAgent === null ? 'no agent' : $assignedAgent,

@@ -5,56 +5,54 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog;
+namespace SoManAgent\Script\Backlog\Service;
 
+use SoManAgent\Script\Backlog\Enum\WorktreeAction;
+use SoManAgent\Script\Backlog\Enum\WorktreeState;
+use SoManAgent\Script\Backlog\Model\ActiveEntryReference;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Model\BoardEntry;
+use SoManAgent\Script\Backlog\Model\ExternalWorktree;
+use SoManAgent\Script\Backlog\Model\ManagedWorktree;
+use SoManAgent\Script\Backlog\Model\WorktreeClassification;
 use SoManAgent\Script\Client\AppScript;
 use SoManAgent\Script\Client\ConsoleClient;
+use SoManAgent\Script\Client\FilesystemClientInterface;
 use SoManAgent\Script\Client\GitClient;
 use SoManAgent\Script\Client\ProjectScriptClient;
-use SoManAgent\Script\Backlog\ActiveEntryReference;
-use SoManAgent\Script\Backlog\ExternalWorktree;
-use SoManAgent\Script\Backlog\ManagedWorktree;
-use SoManAgent\Script\Backlog\WorktreeAction;
-use SoManAgent\Script\Backlog\WorktreeClassification;
-use SoManAgent\Script\Backlog\WorktreeState;
 
 /**
  * Handles managed backlog worktrees and local git orchestration.
  */
-final class BacklogWorktreeManager
+final class BacklogWorktreeService
 {
     private string $projectRoot;
     private bool $dryRun;
     private string $backendEnvLocalFallback;
-    private BacklogEntryResolver $entryResolver;
+    private BacklogBoardService $boardService;
     private ConsoleClient $console;
     private GitClient $git;
     private ProjectScriptClient $scripts;
+    private FilesystemClientInterface $fs;
 
-    /**
-     * Creates the managed worktree service.
-     */
     public function __construct(
         string $projectRoot,
         bool $dryRun,
         string $backendEnvLocalFallback,
-        BacklogEntryResolver $entryResolver,
+        BacklogBoardService $boardService,
         ConsoleClient $console,
         GitClient $git,
         ProjectScriptClient $scripts,
+        FilesystemClientInterface $fs
     ) {
         $this->projectRoot = $projectRoot;
         $this->dryRun = $dryRun;
         $this->backendEnvLocalFallback = $backendEnvLocalFallback;
-        $this->entryResolver = $entryResolver;
+        $this->boardService = $boardService;
         $this->console = $console;
         $this->git = $git;
         $this->scripts = $scripts;
-    }
-
-    private function logVerbose(string $message): void
-    {
-        $this->console->logVerbose($message);
+        $this->fs = $fs;
     }
 
     /**
@@ -64,7 +62,7 @@ final class BacklogWorktreeManager
     {
         $path = $this->projectRoot . '/.worktrees/' . $agent;
         $relativePath = $this->git->toRelativeProjectPath($path);
-        $exists = is_dir($path . '/.git') || is_file($path . '/.git');
+        $exists = $this->fs->checkPathExists($path . '/.git');
         $created = false;
 
         if (!$exists) {
@@ -127,7 +125,7 @@ final class BacklogWorktreeManager
         }
 
         $path = $this->projectRoot . '/.worktrees/merge-' . $feature;
-        if (is_dir($path) || is_file($path)) {
+        if ($this->fs->checkPathExists($path)) {
             throw new \RuntimeException(sprintf(
                 'Temporary merge worktree path already exists: %s',
                 $path,
@@ -140,12 +138,9 @@ final class BacklogWorktreeManager
         return ['path' => $path, 'temporary' => true];
     }
 
-    /**
-     * Removes a temporary merge worktree after verifying it is clean.
-     */
     public function removeTemporaryMergeWorktree(string $path): void
     {
-        if (!is_dir($path) && !is_file($path)) {
+        if (!$this->fs->checkPathExists($path)) {
             return;
         }
 
@@ -159,17 +154,14 @@ final class BacklogWorktreeManager
         $this->git->removeWorktreeForce($path);
     }
 
-    /**
-     * Removes a merged task worktree when no active task still uses that agent.
-     */
     public function cleanupMergedTaskWorktree(string $agent, string $taskBranch, BacklogBoard $board): void
     {
-        if ($this->entryResolver->findTaskEntriesByAgent($board, $agent) !== []) {
+        if ($this->boardService->findTaskEntriesByAgent($board, $agent) !== []) {
             return;
         }
 
         $path = $this->projectRoot . '/.worktrees/' . $agent;
-        if (!is_dir($path) && !is_file($path)) {
+        if (!$this->fs->checkPathExists($path)) {
             return;
         }
 
@@ -189,9 +181,6 @@ final class BacklogWorktreeManager
         $this->git->removeWorktreeForce($path);
     }
 
-    /**
-     * Creates a local branch when it is missing.
-     */
     public function ensureLocalBranchExists(string $branch, string $startPoint): void
     {
         if ($this->git->localBranchExists($branch)) {
@@ -201,9 +190,6 @@ final class BacklogWorktreeManager
         $this->git->createBranch($branch, $startPoint);
     }
 
-    /**
-     * Fails when a required local branch is missing.
-     */
     public function requireLocalBranchExists(string $branch, string $context): void
     {
         if ($this->dryRun) {
@@ -227,9 +213,6 @@ final class BacklogWorktreeManager
         ));
     }
 
-    /**
-     * Checks out an existing or newly created branch in a managed worktree.
-     */
     public function checkoutBranchInWorktree(string $worktree, string $branch, bool $create, string $startPoint = 'origin/main'): void
     {
         if ($branch === '') {
@@ -238,7 +221,7 @@ final class BacklogWorktreeManager
 
         $this->releaseBranchFromOtherWorktrees($branch, $worktree);
 
-        if ($this->dryRun && !is_dir($worktree . '/.git') && !is_file($worktree . '/.git')) {
+        if ($this->dryRun && !$this->fs->checkPathExists($worktree . '/.git')) {
             $this->logVerbose('[dry-run] Skipping worktree-local git inspection for non-created path: ' . $this->git->toRelativeProjectPath($worktree));
             if ($create) {
                 $this->git->checkoutBranchCreate($worktree, $branch, $startPoint);
@@ -273,10 +256,7 @@ final class BacklogWorktreeManager
         $this->git->checkoutBranchCreate($worktree, $branch, 'origin/' . $branch);
     }
 
-    /**
-     * Fails when the branch is checked out in a dirty managed worktree.
-     */
-    public function ensureBranchHasNoDirtyManagedWorktree(string $branch): void
+    public function assertBranchHasNoDirtyManagedWorktree(string $branch): void
     {
         foreach ($this->listWorktreeBranchBindings() as $binding) {
             if ($binding['branch'] !== $branch) {
@@ -297,16 +277,16 @@ final class BacklogWorktreeManager
     {
         $managed = [];
         $external = [];
-        $activeEntriesByBranch = $this->activeEntriesByBranch($board);
-        $activeEntriesByAgent = $this->activeEntriesByAgent($board);
+        $activeEntriesByBranch = $this->fetchActiveEntriesByBranch($board);
+        $activeEntriesByAgent = $this->fetchActiveEntriesByAgent($board);
 
-        foreach ($this->gitWorktreeBlocks() as $worktree) {
+        foreach ($this->fetchGitWorktreeBlocks() as $worktree) {
             $path = $worktree['path'];
             if ($path === $this->projectRoot) {
                 continue;
             }
 
-            if (!$this->isManagedAgentWorktree($path)) {
+            if (!$this->checkIsManagedAgentWorktree($path)) {
                 $external[] = new ExternalWorktree(
                     $path,
                     $worktree['branch'],
@@ -328,7 +308,7 @@ final class BacklogWorktreeManager
                 $feature = $activeEntriesByBranch[$branch]->getFeature();
                 $agent = $activeEntriesByBranch[$branch]->getAgent();
                 $expectedPath = $this->projectRoot . '/.worktrees/' . $agent;
-                $dirty = $this->worktreeIsDirty($path);
+                $dirty = $this->git->hasLocalChanges($path);
 
                 if ($path !== $expectedPath) {
                     $state = WorktreeState::BLOCKED;
@@ -341,12 +321,13 @@ final class BacklogWorktreeManager
                     $action = WorktreeAction::KEEP;
                 }
             } else {
-                $agent = basename($path);
+                // Agent is the last folder of the path
+                $agent = preg_replace('/^.*\/([^\/]+)$/', '$1', $path);
                 if (isset($activeEntriesByAgent[$agent])) {
                     $feature = $activeEntriesByAgent[$agent]->getFeature();
                     $state = WorktreeState::BLOCKED;
                     $action = WorktreeAction::MANUAL_REVIEW;
-                } elseif ($this->worktreeIsDirty($path)) {
+                } elseif ($this->git->hasLocalChanges($path)) {
                     $state = WorktreeState::DIRTY;
                     $action = WorktreeAction::MANUAL_REVIEW;
                 } elseif ($branch === null) {
@@ -368,9 +349,6 @@ final class BacklogWorktreeManager
         return new WorktreeClassification($managed, $external);
     }
 
-    /**
-     * Removes managed worktrees that are no longer tied to active backlog entries.
-     */
     public function cleanupAbandonedManagedWorktrees(BacklogBoard $board): int
     {
         $managed = $this->classifyWorktrees($board)->getManaged();
@@ -387,9 +365,6 @@ final class BacklogWorktreeManager
         return count($cleanable);
     }
 
-    /**
-     * Removes abandoned managed worktrees still bound to the given branch.
-     */
     public function cleanupManagedWorktreesForBranch(string $branch, BacklogBoard $board): int
     {
         if ($branch === '') {
@@ -412,9 +387,6 @@ final class BacklogWorktreeManager
         return $count;
     }
 
-    /**
-     * Runs the mechanical review script inside a worktree.
-     */
     public function runReviewScript(string $worktree, ?string $base = null): void
     {
         $this->logVerbose(($this->dryRun ? '[dry-run] Would run review in ' : 'Run review in ') . $this->git->toRelativeProjectPath($worktree));
@@ -431,22 +403,22 @@ final class BacklogWorktreeManager
     private function ensureWorktreeRuntimeState(string $worktree, bool $created): void
     {
         $this->ensureWorktreeRuntimeIgnores($worktree);
-        foreach ($this->copiedWorktreePaths() as $relativePath => $sourcePath) {
-            if (!file_exists($sourcePath) && !is_link($sourcePath)) {
+        foreach ($this->fetchCopiedWorktreePaths() as $relativePath => $sourcePath) {
+            if (!$this->fs->checkPathExists($sourcePath)) {
                 throw new \RuntimeException("Missing dependency source in WP: {$sourcePath}");
             }
 
             $targetPath = $worktree . '/' . $relativePath;
-            $parent = dirname($targetPath);
-            if (!is_dir($parent)) {
+            $parent = preg_replace('/\/[^\/]+$/', '', $targetPath);
+            if (!$this->fs->isDirectory($parent)) {
                 if ($this->dryRun) {
                     $this->logVerbose('[dry-run] Would create directory: ' . $this->git->toRelativeProjectPath($parent));
                     continue;
                 }
-                mkdir($parent, 0777, true);
+                $this->fs->makeDirectory($parent);
             }
 
-            if (!$created && (file_exists($targetPath) || is_link($targetPath))) {
+            if (!$created && $this->fs->checkPathExists($targetPath)) {
                 continue;
             }
 
@@ -472,15 +444,15 @@ final class BacklogWorktreeManager
             $excludePath = $worktree . '/' . $excludePath;
         }
 
-        $parent = dirname($excludePath);
-        if (!is_dir($parent) && !mkdir($parent, 0777, true) && !is_dir($parent)) {
-            throw new \RuntimeException("Unable to create git exclude directory: {$parent}");
+        $parent = preg_replace('/\/[^\/]+$/', '', $excludePath);
+        if (!$this->fs->isDirectory($parent)) {
+            $this->fs->makeDirectory($parent);
         }
 
-        $contents = is_file($excludePath) ? (string) file_get_contents($excludePath) : '';
+        $contents = $this->fs->isFile($excludePath) ? $this->fs->getFileContents($excludePath) : '';
         $lines = preg_split('/\R/', $contents) ?: [];
 
-        foreach (array_keys($this->copiedWorktreePaths()) as $relativePath) {
+        foreach (array_keys($this->fetchCopiedWorktreePaths()) as $relativePath) {
             $pattern = '/' . trim($relativePath, '/') . '/';
             if (in_array($pattern, $lines, true)) {
                 $this->hideTrackedRuntimePathChanges($worktree, $relativePath);
@@ -492,9 +464,7 @@ final class BacklogWorktreeManager
             $this->hideTrackedRuntimePathChanges($worktree, $relativePath);
         }
 
-        if (file_put_contents($excludePath, ltrim($contents)) === false) {
-            throw new \RuntimeException("Unable to update git exclude file: {$excludePath}");
-        }
+        $this->fs->writeFilePath($excludePath, ltrim($contents));
     }
 
     private function hideTrackedRuntimePathChanges(string $worktree, string $relativePath): void
@@ -512,7 +482,7 @@ final class BacklogWorktreeManager
     /**
      * @return array<string, string>
      */
-    private function copiedWorktreePaths(): array
+    private function fetchCopiedWorktreePaths(): array
     {
         return [
             'scripts/vendor' => $this->projectRoot . '/scripts/vendor',
@@ -523,18 +493,21 @@ final class BacklogWorktreeManager
 
     private function replacePathWithCopy(string $sourcePath, string $targetPath): void
     {
-        $this->removeFilesystemPath($targetPath);
+        if ($this->fs->checkPathExists($targetPath)) {
+            $this->fs->removePath($targetPath);
+        }
+
         if ($this->dryRun) {
             $this->logVerbose('[dry-run] Would copy path: ' . $this->git->toRelativeProjectPath($sourcePath) . ' -> ' . $this->git->toRelativeProjectPath($targetPath));
             return;
         }
-        $this->copyFilesystemPath($sourcePath, $targetPath);
+        $this->fs->copyPath($sourcePath, $targetPath);
     }
 
     private function syncWorktreeRootEnv(string $worktree): void
     {
         $sourcePath = $this->projectRoot . '/.env';
-        if (!is_file($sourcePath)) {
+        if (!$this->fs->isFile($sourcePath)) {
             throw new \RuntimeException('Missing root .env in WP.');
         }
 
@@ -550,16 +523,15 @@ final class BacklogWorktreeManager
             return;
         }
 
-        if (file_put_contents($targetPath, $contents) === false) {
-            throw new \RuntimeException("Unable to write file: {$targetPath}");
-        }
+        $this->fs->writeFilePath($targetPath, $contents);
     }
 
     private function buildBackendWorktreeEnvLocalContents(): string
     {
         $envFile = $this->projectRoot . '/.env';
-        $content = @file_get_contents($envFile);
-        if ($content === false) {
+        try {
+            $content = $this->fs->getFileContents($envFile);
+        } catch (\Exception $e) {
             return $this->backendEnvLocalFallback;
         }
 
@@ -574,77 +546,6 @@ final class BacklogWorktreeManager
         }
 
         return sprintf("DATABASE_URL=\"%s\"\n", $localUrl);
-    }
-
-    private function removeFilesystemPath(string $path): void
-    {
-        if (!file_exists($path) && !is_link($path)) {
-            return;
-        }
-
-        if ($this->dryRun) {
-            $this->logVerbose('[dry-run] Would remove path: ' . $this->git->toRelativeProjectPath($path));
-            return;
-        }
-
-        if (is_file($path) || is_link($path)) {
-            if (!unlink($path)) {
-                throw new \RuntimeException("Unable to remove path: {$path}");
-            }
-
-            return;
-        }
-
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST,
-        );
-
-        foreach ($iterator as $item) {
-            if ($item->isDir() && !$item->isLink()) {
-                if (!rmdir($item->getPathname())) {
-                    throw new \RuntimeException("Unable to remove directory: {$item->getPathname()}");
-                }
-                continue;
-            }
-
-            if (!unlink($item->getPathname())) {
-                throw new \RuntimeException("Unable to remove path: {$item->getPathname()}");
-            }
-        }
-
-        if (!rmdir($path)) {
-            throw new \RuntimeException("Unable to remove directory: {$path}");
-        }
-    }
-
-    private function copyFilesystemPath(string $sourcePath, string $targetPath): void
-    {
-        if (is_link($sourcePath)) {
-            $linkTarget = readlink($sourcePath);
-            if ($linkTarget === false || !symlink($linkTarget, $targetPath)) {
-                throw new \RuntimeException("Unable to copy symlink: {$sourcePath}");
-            }
-
-            return;
-        }
-
-        if (is_file($sourcePath)) {
-            if (!copy($sourcePath, $targetPath)) {
-                throw new \RuntimeException("Unable to copy file: {$sourcePath}");
-            }
-
-            return;
-        }
-
-        if (!is_dir($targetPath) && !mkdir($targetPath, 0777, true) && !is_dir($targetPath)) {
-            throw new \RuntimeException("Unable to create directory: {$targetPath}");
-        }
-
-        $iterator = new \FilesystemIterator($sourcePath, \FilesystemIterator::SKIP_DOTS);
-        foreach ($iterator as $item) {
-            $this->copyFilesystemPath($item->getPathname(), $targetPath . '/' . $item->getBasename());
-        }
     }
 
     private function releaseBranchFromOtherWorktrees(string $branch, string $keepWorktree): void
@@ -665,7 +566,7 @@ final class BacklogWorktreeManager
                 }
             }
 
-            if ($path === null || $ref !== $branch || realpath($path) === realpath($keepWorktree)) {
+            if ($path === null || $ref !== $branch || $path === $keepWorktree) {
                 continue;
             }
 
@@ -686,7 +587,7 @@ final class BacklogWorktreeManager
      */
     private function listWorktreeBranchBindings(): array
     {
-        $blocks = $this->gitWorktreeBlocks();
+        $blocks = $this->fetchGitWorktreeBlocks();
         $bindings = [];
 
         foreach ($blocks as $block) {
@@ -716,10 +617,8 @@ final class BacklogWorktreeManager
 
     private function findBranchForWorktreePath(string $path): ?string
     {
-        $realPath = realpath($path);
         foreach ($this->listWorktreeBranchBindings() as $binding) {
-            $bindingPath = realpath($binding['path']);
-            if ($bindingPath === false || $realPath === false || $bindingPath !== $realPath) {
+            if ($binding['path'] !== $path) {
                 continue;
             }
 
@@ -732,7 +631,7 @@ final class BacklogWorktreeManager
     /**
      * @return array<string, ActiveEntryReference>
      */
-    private function activeEntriesByBranch(BacklogBoard $board): array
+    private function fetchActiveEntriesByBranch(BacklogBoard $board): array
     {
         $features = [];
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
@@ -752,7 +651,7 @@ final class BacklogWorktreeManager
     /**
      * @return array<string, ActiveEntryReference>
      */
-    private function activeEntriesByAgent(BacklogBoard $board): array
+    private function fetchActiveEntriesByAgent(BacklogBoard $board): array
     {
         $entries = [];
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
@@ -771,7 +670,7 @@ final class BacklogWorktreeManager
     /**
      * @return array<int, array{path: string, branch: string|null, prunable: bool}>
      */
-    private function gitWorktreeBlocks(): array
+    private function fetchGitWorktreeBlocks(): array
     {
         $output = $this->git->listWorktreesPorcelain();
         if ($output === '') {
@@ -812,17 +711,13 @@ final class BacklogWorktreeManager
         return $worktrees;
     }
 
-    private function isManagedAgentWorktree(string $path): bool
+    private function checkIsManagedAgentWorktree(string $path): bool
     {
         return str_starts_with($path, $this->projectRoot . '/.worktrees/');
     }
 
-    private function worktreeIsDirty(string $path): bool
+    private function logVerbose(string $message): void
     {
-        if (!is_dir($path) && !is_file($path)) {
-            return false;
-        }
-
-        return $this->git->hasLocalChanges($path);
+        $this->console->logVerbose($message);
     }
 }

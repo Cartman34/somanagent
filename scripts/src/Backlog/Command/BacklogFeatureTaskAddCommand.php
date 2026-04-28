@@ -7,30 +7,25 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogBoard;
-use SoManAgent\Script\Backlog\BacklogCliOption;
-use SoManAgent\Script\Backlog\BacklogCommandName;
-use SoManAgent\Script\Backlog\BacklogEntryResolver;
-use SoManAgent\Script\Backlog\BacklogEntryService;
-use SoManAgent\Script\Backlog\BacklogGitWorkflow;
-use SoManAgent\Script\Backlog\BacklogMetaValue;
-use SoManAgent\Script\Backlog\BacklogWorktreeManager;
-use SoManAgent\Script\Backlog\BoardEntry;
-use SoManAgent\Script\Backlog\PullRequestService;
-use SoManAgent\Script\Backlog\BacklogPresenter;
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Model\BoardEntry;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
+use SoManAgent\Script\Service\GitService;
+use SoManAgent\Script\Service\PullRequestService;
 
 /**
  * Command for adding a task to an active feature.
  */
 final class BacklogFeatureTaskAddCommand extends AbstractBacklogCommand
 {
-    private BacklogEntryResolver $entryResolver;
+    private BacklogWorktreeService $worktreeService;
 
-    private BacklogEntryService $entryService;
-
-    private BacklogWorktreeManager $worktreeManager;
-
-    private BacklogGitWorkflow $gitWorkflow;
+    private GitService $gitService;
 
     private PullRequestService $pullRequestService;
 
@@ -38,17 +33,14 @@ final class BacklogFeatureTaskAddCommand extends AbstractBacklogCommand
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
-        BacklogEntryResolver $entryResolver,
-        BacklogEntryService $entryService,
-        BacklogWorktreeManager $worktreeManager,
-        BacklogGitWorkflow $gitWorkflow,
+        BacklogBoardService $boardService,
+        BacklogWorktreeService $worktreeService,
+        GitService $gitService,
         PullRequestService $pullRequestService
     ) {
-        parent::__construct($presenter, $dryRun, $projectRoot);
-        $this->entryResolver = $entryResolver;
-        $this->entryService = $entryService;
-        $this->worktreeManager = $worktreeManager;
-        $this->gitWorkflow = $gitWorkflow;
+        parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
+        $this->worktreeService = $worktreeService;
+        $this->gitService = $gitService;
         $this->pullRequestService = $pullRequestService;
     }
 
@@ -58,30 +50,30 @@ final class BacklogFeatureTaskAddCommand extends AbstractBacklogCommand
         if (!is_string($agent)) {
             throw new \RuntimeException('Option --agent is required.');
         }
-        $featureText = BoardEntry::parseEmptyString((string) ($options[BacklogCliOption::FEATURE_TEXT->value] ?? ''));
+        $featureText = $this->boardService->sanitizeString((string) ($options[BacklogCliOption::FEATURE_TEXT->value] ?? ''));
         if ($featureText === null) {
             throw new \RuntimeException('feature-task-add requires --feature-text.');
         }
 
         $board = $this->loadBoard();
-        $current = $this->entryResolver->requireSingleFeatureForAgent($board, $agent);
+        $current = $this->boardService->resolveSingleFeatureForAgent($board, $agent);
         $feature = $current->getEntry()->getFeature();
-        $target = $this->entryService->nextTodoTask($board);
+        $target = $this->boardService->fetchNextTodoTask($board);
         if ($target === null) {
             throw new \RuntimeException('No queued task available to add to the current feature.');
         }
         $reserved = [$target];
 
         $entry = $current->getEntry();
-        $this->entryService->assertFeatureEntry($entry, BacklogCommandName::FEATURE_TASK_ADD->value);
+        $this->boardService->checkIsFeatureEntry($entry) || throw new \RuntimeException('feature-task-add only applies to kind=feature entries.');
         $entry->setText($featureText);
-        $this->entryService->invalidateFeatureReviewState($entry);
+        $this->invalidateFeatureReviewState($entry);
 
         foreach ($reserved as $task) {
             $reservedEntry = $task->getEntry();
             $reservedEntry->setFeature(null);
             $reservedEntry->setAgent(null);
-            $scopedTask = $this->entryService->extractScopedTaskMetadata($reservedEntry->getText());
+            $scopedTask = $this->boardService->extractScopedTaskMetadata($reservedEntry->getText());
 
             if ($scopedTask !== null) {
                 if ($scopedTask['featureGroup'] !== $feature) {
@@ -91,7 +83,7 @@ final class BacklogFeatureTaskAddCommand extends AbstractBacklogCommand
                         $feature,
                     ));
                 }
-                if ($this->entryResolver->getSingleTaskForAgent($board, $agent, false) !== null) {
+                if ($this->boardService->findTaskEntriesByAgent($board, $agent) !== []) {
                     throw new \RuntimeException(sprintf(
                         'Agent %s already owns an active task. Merge or release it before feature-task-add.',
                         $agent,
@@ -99,20 +91,20 @@ final class BacklogFeatureTaskAddCommand extends AbstractBacklogCommand
                 }
 
                 $featureBranch = $entry->getBranch();
-                $branchType = $this->entryService->detectBranchType($featureBranch);
+                $branchType = $this->detectBranchType($featureBranch);
                 if ($featureBranch === null || $branchType === '') {
                     throw new \RuntimeException('Current feature metadata is incomplete: missing branch information.');
                 }
-                $this->entryService->assertTaskSlugAvailableForFeature($board, $entry, (string) $feature, $scopedTask['task'], BacklogCommandName::FEATURE_TASK_ADD->value);
+                $this->boardService->assertTaskSlugAvailableForFeature($board, $entry, (string) $feature, $scopedTask['task'], BacklogCommandName::FEATURE_TASK_ADD->value);
 
                 $taskBranch = $branchType . '/' . $feature . '--' . $scopedTask['task'];
-                $taskBase = $this->gitWorkflow->branchHead($featureBranch);
+                $taskBase = $this->gitService->getBranchHead($featureBranch);
 
-                $worktree = $this->worktreeManager->prepareAgentWorktree($agent);
-                $this->worktreeManager->checkoutBranchInWorktree($worktree, $taskBranch, true, $featureBranch);
+                $worktree = $this->worktreeService->prepareAgentWorktree($agent);
+                $this->worktreeService->checkoutBranchInWorktree($worktree, $taskBranch, true, $featureBranch);
 
-                $taskEntry = new BoardEntry($scopedTask['text'], $reservedEntry->getExtraLines(), [
-                    BoardEntry::META_KIND => BacklogEntryService::ENTRY_KIND_TASK,
+                $metadata = [
+                    BoardEntry::META_KIND => BacklogBoardService::ENTRY_KIND_TASK,
                     BoardEntry::META_STAGE => BacklogBoard::STAGE_IN_PROGRESS,
                     BoardEntry::META_FEATURE => $feature,
                     BoardEntry::META_TASK => $scopedTask['task'],
@@ -121,8 +113,10 @@ final class BacklogFeatureTaskAddCommand extends AbstractBacklogCommand
                     BoardEntry::META_FEATURE_BRANCH => $featureBranch,
                     BoardEntry::META_BASE => $taskBase,
                     BoardEntry::META_PR => BacklogMetaValue::NONE->value,
-                ]);
-                $this->entryService->appendTaskContribution($entry, $taskEntry);
+                ];
+                $taskEntry = new BoardEntry($scopedTask['text'], $reservedEntry->getExtraLines());
+                $this->boardService->hydrateEntryFromMetadata($taskEntry, $metadata);
+                $this->boardService->appendTaskContribution($entry, $taskEntry);
 
                 $entries = $board->getEntries(BacklogBoard::SECTION_ACTIVE);
                 $entries[] = $taskEntry;
@@ -131,7 +125,7 @@ final class BacklogFeatureTaskAddCommand extends AbstractBacklogCommand
                 continue;
             }
 
-            if ($this->entryService->featureContributionBlocks($entry) !== [] || $this->entryResolver->findTaskEntriesByFeature($board, (string) $feature) !== []) {
+            if ($this->boardService->findTaskEntriesByFeature($board, (string) $feature) !== []) {
                 throw new \RuntimeException(sprintf(
                     'Current feature %s already uses local child tasks. The next queued task must use [%s][task] to be attached safely.',
                     $feature,
@@ -145,7 +139,7 @@ final class BacklogFeatureTaskAddCommand extends AbstractBacklogCommand
             }
         }
 
-        $this->entryService->removeReservedTasks($board, $reserved);
+        $this->boardService->removeReservedTasks($board, $reserved);
 
         $this->saveBoard($board, BacklogCommandName::FEATURE_TASK_ADD->value);
         $bodyFile = isset($options[BacklogCliOption::BODY_FILE->value])
@@ -156,5 +150,24 @@ final class BacklogFeatureTaskAddCommand extends AbstractBacklogCommand
         }
 
         $this->presenter->displaySuccess(sprintf('Added queued task to feature %s', $feature));
+    }
+
+    private function detectBranchType(?string $branch): string
+    {
+        if ($branch === null) {
+            return '';
+        }
+        if (preg_match('/^(feat|fix)\//', $branch, $matches) === 1) {
+            return $matches[1];
+        }
+
+        return '';
+    }
+
+    private function invalidateFeatureReviewState(BoardEntry $featureEntry): void
+    {
+        if ($this->boardService->getFeatureStage($featureEntry) !== BacklogBoard::STAGE_IN_PROGRESS) {
+            $featureEntry->setStage(BacklogBoard::STAGE_IN_PROGRESS);
+        }
     }
 }

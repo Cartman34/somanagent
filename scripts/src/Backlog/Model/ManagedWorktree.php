@@ -5,7 +5,10 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog;
+namespace SoManAgent\Script\Backlog\Model;
+
+use SoManAgent\Script\Backlog\Enum\WorktreeAction;
+use SoManAgent\Script\Backlog\Enum\WorktreeState;
 
 /**
  * Data object for a worktree managed by a backlog agent.

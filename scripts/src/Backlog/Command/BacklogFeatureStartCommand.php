@@ -7,43 +7,35 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogBoard;
-use SoManAgent\Script\Backlog\BacklogCommandName;
-use SoManAgent\Script\Backlog\BacklogEntryResolver;
-use SoManAgent\Script\Backlog\BacklogEntryService;
-use SoManAgent\Script\Backlog\BacklogGitWorkflow;
-use SoManAgent\Script\Backlog\BacklogMetaValue;
-use SoManAgent\Script\Backlog\BacklogWorktreeManager;
-use SoManAgent\Script\Backlog\BoardEntry;
-use SoManAgent\Script\Backlog\BacklogPresenter;
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Model\BoardEntry;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
+use SoManAgent\Script\Service\GitService;
 
 /**
  * Command for starting a feature from a queued task.
  */
 final class BacklogFeatureStartCommand extends AbstractBacklogCommand
 {
-    private BacklogEntryResolver $entryResolver;
+    private BacklogWorktreeService $worktreeService;
 
-    private BacklogEntryService $entryService;
-
-    private BacklogWorktreeManager $worktreeManager;
-
-    private BacklogGitWorkflow $gitWorkflow;
+    private GitService $gitService;
 
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
-        BacklogEntryResolver $entryResolver,
-        BacklogEntryService $entryService,
-        BacklogWorktreeManager $worktreeManager,
-        BacklogGitWorkflow $gitWorkflow
+        BacklogBoardService $boardService,
+        BacklogWorktreeService $worktreeService,
+        GitService $gitService
     ) {
-        parent::__construct($presenter, $dryRun, $projectRoot);
-        $this->entryResolver = $entryResolver;
-        $this->entryService = $entryService;
-        $this->worktreeManager = $worktreeManager;
-        $this->gitWorkflow = $gitWorkflow;
+        parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
+        $this->worktreeService = $worktreeService;
+        $this->gitService = $gitService;
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -56,35 +48,36 @@ final class BacklogFeatureStartCommand extends AbstractBacklogCommand
 
         $board = $this->loadBoard();
 
-        if ($this->entryResolver->getSingleTaskForAgent($board, $agent, false) !== null) {
+        if ($this->boardService->findTaskEntriesByAgent($board, $agent) !== []) {
             throw new \RuntimeException("Agent {$agent} already owns an active task.");
         }
 
-        $target = $this->entryService->nextTodoTask($board);
+        $target = $this->boardService->fetchNextTodoTask($board);
         if ($target === null) {
             throw new \RuntimeException('No backlog task available to start.');
         }
         $reserved = [$target];
 
-        $worktree = $this->worktreeManager->prepareAgentWorktree($agent);
+        $worktree = $this->worktreeService->prepareAgentWorktree($agent);
         $first = $reserved[0]->getEntry();
         $first->setFeature(null);
         $first->setAgent(null);
-        $scopedTask = $this->entryService->extractScopedTaskMetadata($first->getText());
+        $scopedTask = $this->boardService->extractScopedTaskMetadata($first->getText());
         if ($scopedTask !== null) {
             $task = $scopedTask['task'];
-            $parent = $this->entryResolver->findParentFeatureEntry($board, $scopedTask['featureGroup']);
+            $parent = $this->boardService->findParentFeatureEntry($board, $scopedTask['featureGroup']);
 
             if ($parent === null) {
-                $branchType = $this->entryService->resolveFeatureStartBranchType($first, null, $branchTypeOverride);
+                $branchType = $this->boardService->resolveFeatureStartBranchType($first, null, $branchTypeOverride);
                 $featureBranch = $branchType . '/' . $scopedTask['featureGroup'];
                 $branch = $branchType . '/' . $scopedTask['featureGroup'] . '--' . $task;
-                $this->gitWorkflow->updateMainBeforeFeatureStart();
-                $featureBase = $this->gitWorkflow->originMainHead();
-                $this->worktreeManager->ensureLocalBranchExists($featureBranch, BacklogGitWorkflow::ORIGIN_REMOTE . '/' . BacklogGitWorkflow::MAIN_BRANCH);
+                $this->gitService->updateMainBranch();
+                $featureBase = $this->gitService->getBranchHead(GitService::ORIGIN_REMOTE . '/' . GitService::MAIN_BRANCH);
+                $this->worktreeService->ensureLocalBranchExists($featureBranch, GitService::ORIGIN_REMOTE . '/' . GitService::MAIN_BRANCH);
 
-                $featureEntry = new BoardEntry($scopedTask['featureGroup'], [], [
-                    BoardEntry::META_KIND => BacklogEntryService::ENTRY_KIND_FEATURE,
+                $featureEntry = new BoardEntry($scopedTask['featureGroup'], []);
+                $this->boardService->hydrateEntryFromMetadata($featureEntry, [
+                    BoardEntry::META_KIND => BacklogBoardService::ENTRY_KIND_FEATURE,
                     BoardEntry::META_STAGE => BacklogBoard::STAGE_IN_PROGRESS,
                     BoardEntry::META_FEATURE => $scopedTask['featureGroup'],
                     BoardEntry::META_AGENT => $agent,
@@ -95,21 +88,22 @@ final class BacklogFeatureStartCommand extends AbstractBacklogCommand
                 $activeEntries = $board->getEntries(BacklogBoard::SECTION_ACTIVE);
                 $activeEntries[] = $featureEntry;
                 $board->setEntries(BacklogBoard::SECTION_ACTIVE, $activeEntries);
-                $parent = $this->entryResolver->requireParentFeature($board, $scopedTask['featureGroup']);
+                $parent = $this->boardService->resolveFeature($board, $scopedTask['featureGroup']);
             } else {
-                $branchType = $this->entryService->resolveFeatureStartBranchType($first, $parent->getEntry(), $branchTypeOverride);
+                $branchType = $this->boardService->resolveFeatureStartBranchType($first, $parent->getEntry(), $branchTypeOverride);
                 $featureBranch = $parent->getEntry()->getBranch() ?: ($branchType . '/' . $scopedTask['featureGroup']);
                 $branch = $branchType . '/' . $scopedTask['featureGroup'] . '--' . $task;
-                $this->entryService->invalidateFeatureReviewState($parent->getEntry());
+                $this->boardService->invalidateFeatureReviewState($parent->getEntry());
             }
-            $this->entryService->assertTaskSlugAvailableForFeature($board, $parent->getEntry(), $scopedTask['featureGroup'], $task, BacklogCommandName::FEATURE_START->value);
+            $this->boardService->assertTaskSlugAvailableForFeature($board, $parent->getEntry(), $scopedTask['featureGroup'], $task, BacklogCommandName::FEATURE_START->value);
 
-            $taskBase = $this->gitWorkflow->branchHead($featureBranch);
-            $this->worktreeManager->requireLocalBranchExists($featureBranch, BacklogCommandName::FEATURE_START->value);
-            $this->worktreeManager->checkoutBranchInWorktree($worktree, $branch, true, $featureBranch);
+            $taskBase = $this->gitService->getBranchHead($featureBranch);
+            $this->worktreeService->requireLocalBranchExists($featureBranch, BacklogCommandName::FEATURE_START->value);
+            $this->worktreeService->checkoutBranchInWorktree($worktree, $branch, true, $featureBranch);
 
-            $taskEntry = new BoardEntry($scopedTask['text'], $first->getExtraLines(), [
-                BoardEntry::META_KIND => BacklogEntryService::ENTRY_KIND_TASK,
+            $taskEntry = new BoardEntry($scopedTask['text'], $first->getExtraLines());
+            $this->boardService->hydrateEntryFromMetadata($taskEntry, [
+                BoardEntry::META_KIND => BacklogBoardService::ENTRY_KIND_TASK,
                 BoardEntry::META_STAGE => BacklogBoard::STAGE_IN_PROGRESS,
                 BoardEntry::META_FEATURE => $scopedTask['featureGroup'],
                 BoardEntry::META_TASK => $task,
@@ -119,18 +113,19 @@ final class BacklogFeatureStartCommand extends AbstractBacklogCommand
                 BoardEntry::META_BASE => $taskBase,
                 BoardEntry::META_PR => BacklogMetaValue::NONE->value,
             ]);
-            $this->entryService->appendTaskContribution($parent->getEntry(), $taskEntry);
+            $this->boardService->appendTaskContribution($parent->getEntry(), $taskEntry);
             $featureEntry = $taskEntry;
         } else {
-            $branchType = $this->entryService->resolveFeatureStartBranchType($first, null, $branchTypeOverride);
-            $feature = $this->entryService->normalizeFeatureSlug($first->getText());
-            $this->gitWorkflow->updateMainBeforeFeatureStart();
-            $base = $this->gitWorkflow->originMainHead();
+            $branchType = $this->boardService->resolveFeatureStartBranchType($first, null, $branchTypeOverride);
+            $feature = $this->boardService->normalizeFeatureSlug($first->getText());
+            $this->gitService->updateMainBranch();
+            $base = $this->gitService->getBranchHead(GitService::ORIGIN_REMOTE . '/' . GitService::MAIN_BRANCH);
             $branch = $branchType . '/' . $feature;
-            $this->worktreeManager->checkoutBranchInWorktree($worktree, $branch, true);
+            $this->worktreeService->checkoutBranchInWorktree($worktree, $branch, true);
 
-            $featureEntry = new BoardEntry($first->getText(), $first->getExtraLines(), [
-                BoardEntry::META_KIND => BacklogEntryService::ENTRY_KIND_FEATURE,
+            $featureEntry = new BoardEntry($first->getText(), $first->getExtraLines());
+            $this->boardService->hydrateEntryFromMetadata($featureEntry, [
+                BoardEntry::META_KIND => BacklogBoardService::ENTRY_KIND_FEATURE,
                 BoardEntry::META_STAGE => BacklogBoard::STAGE_IN_PROGRESS,
                 BoardEntry::META_FEATURE => $feature,
                 BoardEntry::META_AGENT => $agent,
@@ -150,7 +145,7 @@ final class BacklogFeatureStartCommand extends AbstractBacklogCommand
             }
         }
 
-        $this->entryService->removeReservedTasks($board, $reserved);
+        $this->boardService->removeReservedTasks($board, $reserved);
         $entries = $board->getEntries(BacklogBoard::SECTION_ACTIVE);
         $entries[] = $featureEntry;
         $board->setEntries(BacklogBoard::SECTION_ACTIVE, $entries);
@@ -159,7 +154,7 @@ final class BacklogFeatureStartCommand extends AbstractBacklogCommand
 
         $this->presenter->displaySuccess(sprintf(
             'Started %s %s on %s',
-            $this->entryService->entryKind($featureEntry),
+            $this->boardService->getEntryKind($featureEntry),
             $featureEntry->getTask() ?? $featureEntry->getFeature() ?? '-',
             $branch,
         ));

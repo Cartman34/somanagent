@@ -5,8 +5,16 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog;
+namespace SoManAgent\Script\Backlog\Service;
 
+use SoManAgent\Script\Backlog\Model\BoardEntry;
+use SoManAgent\Script\Backlog\Model\WorktreeClassification;
+use SoManAgent\Script\Backlog\Model\ManagedWorktree;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Enum\WorktreeState;
+use SoManAgent\Script\Backlog\Enum\WorktreeAction;
+use SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Console;
 
@@ -19,13 +27,13 @@ final class BacklogPresenter
 
     private ConsoleClient $consoleClient;
 
-    private BacklogEntryService $entryService;
+    private BacklogBoardService $boardService;
 
-    public function __construct(Console $console, ConsoleClient $consoleClient, BacklogEntryService $entryService)
+    public function __construct(Console $console, ConsoleClient $consoleClient, BacklogBoardService $boardService)
     {
         $this->console = $console;
         $this->consoleClient = $consoleClient;
-        $this->entryService = $entryService;
+        $this->boardService = $boardService;
     }
 
     public function displaySuccess(string $message): void
@@ -45,24 +53,24 @@ final class BacklogPresenter
 
     public function displayEntryStatus(BoardEntry $entry): void
     {
-        $stage = $this->entryService->featureStage($entry);
-        $this->console->line('Kind: ' . $this->entryService->entryKind($entry));
-        if ($this->entryService->isTaskEntry($entry)) {
+        $stage = $this->boardService->getFeatureStage($entry);
+        $this->console->line('Kind: ' . $this->boardService->getEntryKind($entry));
+        if ($this->boardService->checkIsTaskEntry($entry)) {
             $this->console->line('Feature: ' . ($entry->getFeature() ?? '-'));
             $this->console->line('Task: ' . ($entry->getTask() ?? '-'));
-            $this->console->line('Ref: ' . $this->entryService->taskReviewKey($entry));
+            $this->console->line('Ref: ' . $this->boardService->getTaskReviewKey($entry));
             $this->console->line('Feature Branch: ' . ($entry->getFeatureBranch() ?? '-'));
         } else {
             $this->console->line('Feature: ' . ($entry->getFeature() ?? '-'));
         }
         $this->console->line('Branch: ' . ($entry->getBranch() ?? '-'));
         $this->console->line('Base: ' . ($entry->getBase() ?? '-'));
-        $this->console->line('Stage: ' . BacklogBoard::stageLabel($stage));
+        $this->console->line('Stage: ' . $this->boardService->getStageLabel($stage));
         $this->console->line('PR: ' . $this->describePrStatus($entry));
         $this->console->line('Summary: ' . $entry->getText());
         $this->displayEntryDetails($entry);
         $this->console->line('Next: ' . $this->nextStepForEntry($entry, $stage));
-        $this->console->line('Blocker: ' . ($entry->isBlocked() ? 'blocked' : '-'));
+        $this->console->line('Blocker: ' . ($entry->checkIsBlocked() ? 'blocked' : '-'));
     }
 
     public function displayEntryDetails(BoardEntry $entry): void
@@ -123,7 +131,7 @@ final class BacklogPresenter
 
     public function displayStageHeader(string $stage): void
     {
-        $this->console->line('[' . BacklogBoard::stageLabel($stage) . ']');
+        $this->console->line('[' . $this->boardService->getStageLabel($stage) . ']');
     }
 
     public function displayEntryLine(BoardEntry $entry): void
@@ -133,7 +141,7 @@ final class BacklogPresenter
             'agent=' . ($entry->getAgent() ?? '-'),
             'pr=' . $this->describePrStatus($entry),
         ];
-        if ($entry->isBlocked()) {
+        if ($entry->checkIsBlocked()) {
             $parts[] = 'blocked=' . BacklogMetaValue::YES->value;
         }
         $this->console->line('- ' . implode(' ', $parts));
@@ -144,11 +152,11 @@ final class BacklogPresenter
         $parts = [
             'agent=' . ($entry->getAgent() ?? '-'),
         ];
-        if ($this->entryService->isTaskEntry($entry)) {
+        if ($this->boardService->checkIsTaskEntry($entry)) {
             $parts[] = 'task=' . ($entry->getTask() ?? '-');
             $parts[] = 'feature-branch=' . ($entry->getFeatureBranch() ?? '-');
         }
-        if ($entry->isBlocked()) {
+        if ($entry->checkIsBlocked()) {
             $parts[] = 'blocked=' . BacklogMetaValue::YES->value;
         }
         $this->console->line('- ' . implode(' ', $parts));
@@ -178,7 +186,7 @@ final class BacklogPresenter
 
     private function nextStepForEntry(BoardEntry $entry, string $stage): string
     {
-        return $this->entryService->isTaskEntry($entry)
+        return $this->boardService->checkIsTaskEntry($entry)
             ? $this->nextStepForTaskStage($stage)
             : $this->nextStepForStage($stage);
     }

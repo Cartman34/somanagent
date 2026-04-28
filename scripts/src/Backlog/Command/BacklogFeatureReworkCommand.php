@@ -7,29 +7,28 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogBoard;
-use SoManAgent\Script\Backlog\BacklogCommandName;
-use SoManAgent\Script\Backlog\BacklogEntryResolver;
-use SoManAgent\Script\Backlog\BacklogEntryService;
-use SoManAgent\Script\Backlog\BacklogWorktreeManager;
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 
 /**
  * Command for reworking a rejected feature.
  */
 final class BacklogFeatureReworkCommand extends AbstractBacklogCommand
 {
-    private BacklogEntryResolver $entryResolver;
+    private BacklogWorktreeService $worktreeService;
 
-    private BacklogEntryService $entryService;
-
-    private BacklogWorktreeManager $worktreeManager;
-
-    public function __construct(BacklogCommandContext $context)
-    {
-        parent::__construct($context);
-        $this->entryResolver = $context->getEntryResolver();
-        $this->entryService = $context->getEntryService();
-        $this->worktreeManager = $context->getWorktreeManager();
+    public function __construct(
+        BacklogPresenter $presenter,
+        bool $dryRun,
+        string $projectRoot,
+        BacklogBoardService $boardService,
+        BacklogWorktreeService $worktreeService
+    ) {
+        parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
+        $this->worktreeService = $worktreeService;
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -40,22 +39,32 @@ final class BacklogFeatureReworkCommand extends AbstractBacklogCommand
         }
         $board = $this->loadBoard();
         $match = isset($commandArgs[0])
-            ? $this->entryResolver->requireFeature($board, $this->entryService->normalizeFeatureSlug($commandArgs[0]))
-            : $this->entryResolver->requireSingleFeatureForAgent($board, $agent);
-
+            ? $this->boardService->resolveFeature($board, $this->boardService->normalizeFeatureSlug($commandArgs[0]))
+            : $this->boardService->resolveSingleFeatureForAgent($board, $agent);
         $entry = $match->getEntry();
-        $feature = $entry->getFeature() ?? '';
-        if ($this->entryService->featureStage($entry) !== BacklogBoard::STAGE_REJECTED) {
-            throw new \RuntimeException("Feature {$feature} is not in the rejected stage.");
+        $this->boardService->checkIsFeatureEntry($entry) || throw new \RuntimeException('feature-rework only applies to kind=feature entries.');
+
+        if ($entry->getAgent() !== $agent) {
+            throw new \RuntimeException('feature-rework requires the feature to be assigned to the provided agent.');
         }
 
-        $entry->setAgent($agent);
+        if ($this->boardService->getFeatureStage($entry) !== BacklogBoard::STAGE_REJECTED) {
+            throw new \RuntimeException(sprintf(
+                'Feature %s is not in the rejected stage.',
+                $entry->getFeature() ?? '-',
+            ));
+        }
+
         $entry->setStage(BacklogBoard::STAGE_IN_PROGRESS);
         $this->saveBoard($board, BacklogCommandName::FEATURE_REWORK->value);
 
-        $worktree = $this->worktreeManager->prepareAgentWorktree($agent);
-        $this->worktreeManager->checkoutBranchInWorktree($worktree, $entry->getBranch() ?? '', false);
+        $worktree = $this->worktreeService->prepareAgentWorktree($agent);
+        $this->worktreeService->checkoutBranchInWorktree($worktree, $entry->getBranch() ?? '', false);
 
-        $this->presenter->displaySuccess(sprintf('Moved feature %s back to %s', $feature, BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_PROGRESS)));
+        $this->presenter->displaySuccess(sprintf(
+            'Feature %s moved back to %s',
+            $entry->getFeature() ?? '-',
+            $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_PROGRESS),
+        ));
     }
 }

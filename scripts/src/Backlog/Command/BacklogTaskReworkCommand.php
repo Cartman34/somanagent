@@ -7,72 +7,64 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogBoard;
-use SoManAgent\Script\Backlog\BacklogCommandName;
-use SoManAgent\Script\Backlog\BacklogEntryResolver;
-use SoManAgent\Script\Backlog\BacklogEntryService;
-use SoManAgent\Script\Backlog\BacklogWorktreeManager;
-use SoManAgent\Script\Backlog\BacklogPresenter;
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
+use RuntimeException;
 
 /**
  * Command for reworking a rejected task.
  */
 final class BacklogTaskReworkCommand extends AbstractBacklogCommand
 {
-    private BacklogEntryResolver $entryResolver;
-
-    private BacklogEntryService $entryService;
-
-    private BacklogWorktreeManager $worktreeManager;
+    private BacklogWorktreeService $worktreeService;
 
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
-        BacklogEntryResolver $entryResolver,
-        BacklogEntryService $entryService,
-        BacklogWorktreeManager $worktreeManager
+        BacklogBoardService $boardService,
+        BacklogWorktreeService $worktreeService
     ) {
-        parent::__construct($presenter, $dryRun, $projectRoot);
-        $this->entryResolver = $entryResolver;
-        $this->entryService = $entryService;
-        $this->worktreeManager = $worktreeManager;
+        parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
+        $this->worktreeService = $worktreeService;
     }
 
     public function handle(array $commandArgs, array $options): void
     {
         $agent = $options['agent'] ?? null;
         if (!is_string($agent)) {
-            throw new \RuntimeException('Option --agent is required.');
+            throw new RuntimeException('Option --agent is required.');
         }
         $board = $this->loadBoard();
         $match = isset($commandArgs[0])
-            ? $this->entryResolver->requireTaskByReference($board, $commandArgs[0], BacklogCommandName::TASK_REWORK->value)
-            : $this->entryResolver->requireSingleTaskForAgent($board, $agent);
+            ? $this->boardService->resolveTaskByReference($board, $commandArgs[0], BacklogCommandName::TASK_REWORK->value)
+            : $this->boardService->resolveSingleTaskForAgent($board, $agent);
         $entry = $match->getEntry();
-        $this->entryService->assertTaskEntry($entry, BacklogCommandName::TASK_REWORK->value);
 
         if ($entry->getAgent() !== $agent) {
-            throw new \RuntimeException('task-rework requires the task to be assigned to the provided agent.');
+            throw new RuntimeException('task-rework requires the task to be assigned to the provided agent.');
         }
 
-        if ($this->entryService->featureStage($entry) !== BacklogBoard::STAGE_REJECTED) {
-            throw new \RuntimeException(sprintf(
+        if ($this->boardService->getFeatureStage($entry) !== BacklogBoard::STAGE_REJECTED) {
+            throw new RuntimeException(sprintf(
                 'Task %s is not in the rejected stage.',
-                $this->entryService->taskReviewKey($entry),
+                $this->boardService->getTaskReviewKey($entry),
             ));
         }
 
         $entry->setStage(BacklogBoard::STAGE_IN_PROGRESS);
         $this->saveBoard($board, BacklogCommandName::TASK_REWORK->value);
 
-        $worktree = $this->worktreeManager->prepareAgentWorktree($agent);
-        $this->worktreeManager->checkoutBranchInWorktree($worktree, $entry->getBranch() ?? '', false);
+        $worktree = $this->worktreeService->prepareAgentWorktree($agent);
+        $this->worktreeService->checkoutBranchInWorktree($worktree, $entry->getBranch() ?? '', false);
 
         $this->presenter->displaySuccess(sprintf(
             'Task %s moved back to %s',
-            $this->entryService->taskReviewKey($entry),
-            BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_PROGRESS),
+            $this->boardService->getTaskReviewKey($entry),
+            $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_PROGRESS),
         ));
     }
 }

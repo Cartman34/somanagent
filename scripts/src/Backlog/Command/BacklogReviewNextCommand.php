@@ -7,32 +7,30 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogBoard;
-use SoManAgent\Script\Backlog\BacklogEntryService;
-use SoManAgent\Script\Backlog\BacklogPresenter;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use RuntimeException;
 
 /**
  * Command for displaying the next item to review.
  */
 final class BacklogReviewNextCommand extends AbstractBacklogCommand
 {
-    private BacklogEntryService $entryService;
-
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
-        BacklogEntryService $entryService
+        BacklogBoardService $boardService
     ) {
-        parent::__construct($presenter, $dryRun, $projectRoot);
-        $this->entryService = $entryService;
+        parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
     }
 
     public function handle(array $commandArgs, array $options): void
     {
         $board = $this->loadBoard();
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-            if ($this->entryService->featureStage($entry) !== BacklogBoard::STAGE_IN_REVIEW) {
+            if ($this->boardService->getFeatureStage($entry) !== BacklogBoard::STAGE_IN_REVIEW) {
                 continue;
             }
 
@@ -41,6 +39,6 @@ final class BacklogReviewNextCommand extends AbstractBacklogCommand
             return;
         }
 
-        throw new \RuntimeException('No task or feature available in ' . BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_REVIEW) . '.');
+        throw new RuntimeException('No task or feature available in ' . $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_REVIEW) . '.');
     }
 }

@@ -7,36 +7,28 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogBoard;
-use SoManAgent\Script\Backlog\BacklogEntryResolver;
-use SoManAgent\Script\Backlog\BacklogEntryService;
-use SoManAgent\Script\Backlog\BacklogPresenter;
-use SoManAgent\Script\Backlog\BacklogWorktreeManager;
-use SoManAgent\Script\Backlog\BacklogMetaValue;
+use SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 
 /**
  * Command for displaying the backlog status.
  */
 final class BacklogStatusCommand extends AbstractBacklogCommand
 {
-    private BacklogEntryResolver $entryResolver;
-
-    private BacklogEntryService $entryService;
-
-    private BacklogWorktreeManager $worktreeManager;
+    private BacklogWorktreeService $worktreeService;
 
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
-        BacklogEntryResolver $entryResolver,
-        BacklogEntryService $entryService,
-        BacklogWorktreeManager $worktreeManager
+        BacklogBoardService $boardService,
+        BacklogWorktreeService $worktreeService
     ) {
-        parent::__construct($presenter, $dryRun, $projectRoot);
-        $this->entryResolver = $entryResolver;
-        $this->entryService = $entryService;
-        $this->worktreeManager = $worktreeManager;
+        parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
+        $this->worktreeService = $worktreeService;
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -65,9 +57,9 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
 
     private function statusGeneral(BacklogBoard $board): void
     {
-        foreach (BacklogBoard::activeStages() as $stage) {
+        foreach ($this->boardService->getActiveStages() as $stage) {
             $this->presenter->displayStageHeader($stage);
-            $matches = $board->findFeaturesByStage($stage);
+            $matches = $this->boardService->fetchFeaturesByStage($board, $stage);
             if ($matches === []) {
                 $this->presenter->displayLine('  none');
             } else {
@@ -79,7 +71,7 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
         }
 
         $this->presenter->displayLine('[' . BacklogBoard::SECTION_TODO . ']');
-        $reserved = $board->findReservedTasks();
+        $reserved = $this->boardService->fetchReservedTasks($board);
         if ($reserved === []) {
             $this->presenter->displayLine('  none');
         } else {
@@ -91,8 +83,8 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
 
     private function statusForAgent(BacklogBoard $board, string $agent): void
     {
-        $taskEntry = $this->entryResolver->findTaskEntriesByAgent($board, $agent)[0] ?? null;
-        $featureEntry = $this->entryResolver->findFeatureEntriesByAgent($board, $agent)[0] ?? null;
+        $taskEntry = $this->boardService->findTaskEntriesByAgent($board, $agent)[0] ?? null;
+        $featureEntry = $this->boardService->findFeatureEntriesByAgent($board, $agent)[0] ?? null;
 
         $this->presenter->displayLine('[Task]');
         if ($taskEntry !== null) {
@@ -115,8 +107,8 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
 
     private function statusForFeature(BacklogBoard $board, string $requestedTarget): void
     {
-        $target = $this->entryService->normalizeFeatureSlug($requestedTarget);
-        $match = $this->entryResolver->requireFeature($board, $target);
+        $target = $this->boardService->normalizeFeatureSlug($requestedTarget);
+        $match = $this->boardService->resolveFeature($board, $target);
         $entry = $match->getEntry();
 
         $this->presenter->displayLine('[Feature]');
@@ -138,7 +130,7 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
 
         $expectedPath = $this->projectRoot . '/.worktrees/' . $agent;
         $worktree = null;
-        foreach ($this->worktreeManager->classifyWorktrees($board)->getManaged() as $item) {
+        foreach ($this->worktreeService->classifyWorktrees($board)->getManaged() as $item) {
             if ($item->getPath() === $expectedPath) {
                 $worktree = $item;
                 break;

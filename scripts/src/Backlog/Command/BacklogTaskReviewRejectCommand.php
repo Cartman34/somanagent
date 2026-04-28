@@ -7,35 +7,27 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogBoard;
-use SoManAgent\Script\Backlog\BacklogCommandName;
-use SoManAgent\Script\Backlog\BacklogEntryResolver;
-use SoManAgent\Script\Backlog\BacklogEntryService;
-use SoManAgent\Script\Backlog\BacklogReviewBodyFormatter;
-use SoManAgent\Script\Backlog\BacklogPresenter;
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use SoManAgent\Script\Backlog\Service\BacklogReviewBodyFormatter;
 
 /**
  * Command for rejecting a task review.
  */
 final class BacklogTaskReviewRejectCommand extends AbstractBacklogCommand
 {
-    private BacklogEntryResolver $entryResolver;
-
-    private BacklogEntryService $entryService;
-
     private BacklogReviewBodyFormatter $reviewBodyFormatter;
 
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
-        BacklogEntryResolver $entryResolver,
-        BacklogEntryService $entryService,
+        BacklogBoardService $boardService,
         BacklogReviewBodyFormatter $reviewBodyFormatter
     ) {
-        parent::__construct($presenter, $dryRun, $projectRoot);
-        $this->entryResolver = $entryResolver;
-        $this->entryService = $entryService;
+        parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
         $this->reviewBodyFormatter = $reviewBodyFormatter;
     }
 
@@ -48,26 +40,26 @@ final class BacklogTaskReviewRejectCommand extends AbstractBacklogCommand
 
         $board = $this->loadBoard();
         $review = $this->loadReviewFile();
-        $match = $this->entryResolver->requireTaskByReferenceArgument($board, $commandArgs, BacklogCommandName::TASK_REVIEW_REJECT->value);
+        $match = $this->boardService->resolveTaskByReference($board, $commandArgs[0] ?? '', BacklogCommandName::TASK_REVIEW_REJECT->value);
         $entry = $match->getEntry();
 
-        if ($this->entryService->featureStage($entry) !== BacklogBoard::STAGE_IN_REVIEW) {
+        if ($this->boardService->getFeatureStage($entry) !== BacklogBoard::STAGE_IN_REVIEW) {
             throw new \RuntimeException(sprintf(
                 'Task %s must be in %s to be rejected.',
-                $this->entryService->taskReviewKey($entry),
-                BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_REVIEW),
+                $this->boardService->getTaskReviewKey($entry),
+                $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_REVIEW),
             ));
         }
 
         $entry->setStage(BacklogBoard::STAGE_REJECTED);
-        $review->setReview($this->entryService->taskReviewKey($entry), $this->reviewBodyFormatter->fromFile($bodyFile));
+        $review->setReview($this->boardService->getTaskReviewKey($entry), $this->reviewBodyFormatter->fromFile($bodyFile));
         $this->saveBoard($board, BacklogCommandName::TASK_REVIEW_REJECT->value);
         $this->saveReviewFile($review, BacklogCommandName::TASK_REVIEW_REJECT->value);
 
         $this->presenter->displaySuccess(sprintf(
             'Rejected task %s, moved to %s',
-            $this->entryService->taskReviewKey($entry),
-            BacklogBoard::stageLabel(BacklogBoard::STAGE_REJECTED),
+            $this->boardService->getTaskReviewKey($entry),
+            $this->boardService->getStageLabel(BacklogBoard::STAGE_REJECTED),
         ));
     }
 }

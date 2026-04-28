@@ -8,9 +8,12 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Test\Backlog;
 
 use SoManAgent\Script\Client\ConsoleClient;
+use SoManAgent\Script\Client\FilesystemClient;
 use SoManAgent\Script\Console;
-use SoManAgent\Script\Backlog\BacklogBoard;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\BacklogGitWorkflow;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\TextSlugger;
 
 final class BacklogScriptTestDriver
 {
@@ -310,7 +313,7 @@ MD);
     public function assertActiveFeatureExists(string $feature): void
     {
         $board = $this->board();
-        if ($board->findFeature($feature) === null) {
+        if ($this->boardService()->findParentFeatureEntry($board, $feature) === null) {
             throw new \RuntimeException("Expected active feature not found in test backlog: {$feature}");
         }
     }
@@ -318,7 +321,7 @@ MD);
     public function assertActiveFeatureMissing(string $feature): void
     {
         $board = $this->board();
-        if ($board->findFeature($feature) !== null) {
+        if ($this->boardService()->findParentFeatureEntry($board, $feature) !== null) {
             throw new \RuntimeException("Unexpected active feature still present in test backlog: {$feature}");
         }
     }
@@ -461,14 +464,19 @@ MD);
         return implode(' ', $parts);
     }
 
-    private function board(): BacklogBoard
+    private function boardService(): BacklogBoardService
     {
-        return new BacklogBoard($this->context->boardPath);
+        return new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
     }
 
-    private function requireFeatureEntry(string $feature): \SoManAgent\Script\Backlog\BoardEntry
+    private function board(): BacklogBoard
     {
-        $match = $this->board()->findFeature($feature);
+        return $this->boardService()->loadBoard($this->context->boardPath);
+    }
+
+    private function requireFeatureEntry(string $feature): \SoManAgent\Script\Backlog\Model\BoardEntry
+    {
+        $match = $this->boardService()->findParentFeatureEntry($this->board(), $feature);
         if ($match === null) {
             throw new \RuntimeException("Expected active feature not found in test backlog: {$feature}");
         }

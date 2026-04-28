@@ -7,67 +7,58 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogBoard;
-use SoManAgent\Script\Backlog\BacklogCommandName;
-use SoManAgent\Script\Backlog\BacklogEntryResolver;
-use SoManAgent\Script\Backlog\BacklogEntryService;
-use SoManAgent\Script\Backlog\BacklogGitWorkflow;
-use SoManAgent\Script\Backlog\BacklogWorktreeManager;
-use SoManAgent\Script\Backlog\BoardEntry;
-use SoManAgent\Script\Backlog\PullRequestService;
-use SoManAgent\Script\Backlog\BacklogPresenter;
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Model\BoardEntry;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
+use SoManAgent\Script\Service\GitService;
 
 /**
  * Command for merging a task into its parent feature locally.
  */
 final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
 {
-    private BacklogEntryResolver $entryResolver;
+    private BacklogWorktreeService $worktreeService;
 
-    private BacklogEntryService $entryService;
-
-    private BacklogWorktreeManager $worktreeManager;
-
-    private BacklogGitWorkflow $gitWorkflow;
+    private GitService $gitService;
 
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
-        BacklogEntryResolver $entryResolver,
-        BacklogEntryService $entryService,
-        BacklogWorktreeManager $worktreeManager,
-        BacklogGitWorkflow $gitWorkflow
+        BacklogBoardService $boardService,
+        BacklogWorktreeService $worktreeService,
+        GitService $gitService
     ) {
-        parent::__construct($presenter, $dryRun, $projectRoot);
-        $this->entryResolver = $entryResolver;
-        $this->entryService = $entryService;
-        $this->worktreeManager = $worktreeManager;
-        $this->gitWorkflow = $gitWorkflow;
+        parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
+        $this->worktreeService = $worktreeService;
+        $this->gitService = $gitService;
     }
 
     public function handle(array $commandArgs, array $options): void
     {
         $board = $this->loadBoard();
         $review = $this->loadReviewFile();
-        $agent = BoardEntry::parseEmptyString((string) ($options['agent'] ?? ''));
+        $agent = $this->boardService->sanitizeString((string) ($options['agent'] ?? ''));
         if ($agent !== null) {
             $match = isset($commandArgs[0])
-                ? $this->entryResolver->requireTaskByReference($board, $commandArgs[0], BacklogCommandName::FEATURE_TASK_MERGE->value)
-                : $this->entryResolver->requireSingleTaskForAgent($board, $agent);
+                ? $this->boardService->resolveTaskByReference($board, $commandArgs[0], BacklogCommandName::FEATURE_TASK_MERGE->value)
+                : $this->boardService->resolveSingleTaskForAgent($board, $agent);
         } else {
-            if (BoardEntry::parseEmptyString($commandArgs[0] ?? null) === null) {
+            if ($this->boardService->sanitizeString($commandArgs[0] ?? null) === null) {
                 throw new \RuntimeException('feature-task-merge requires <feature/task> when used without --agent.');
             }
 
-            $match = $this->entryResolver->requireTaskByReference($board, $commandArgs[0], BacklogCommandName::FEATURE_TASK_MERGE->value);
+            $match = $this->boardService->resolveTaskByReference($board, $commandArgs[0], BacklogCommandName::FEATURE_TASK_MERGE->value);
         }
         if ($match === null) {
             throw new \RuntimeException('No task available for feature-task-merge.');
         }
 
         $entry = $match->getEntry();
-        $this->entryService->assertTaskEntry($entry, BacklogCommandName::FEATURE_TASK_MERGE->value);
+        $this->boardService->checkIsTaskEntry($entry) || throw new \RuntimeException('feature-task-merge only applies to kind=task entries.');
         if ($agent !== null && $entry->getAgent() !== $agent) {
             throw new \RuntimeException('feature-task-merge requires the task to be assigned to the provided agent.');
         }
@@ -77,43 +68,50 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
         $task = $entry->getTask() ?? '';
         $featureBranch = $entry->getFeatureBranch() ?? '';
         $taskBranch = $entry->getBranch() ?? '';
-        $parent = $this->entryResolver->requireParentFeature($board, $feature);
-        $taskWorktree = $this->worktreeManager->prepareFeatureAgentWorktree($entry);
-        $this->worktreeManager->runReviewScript($taskWorktree, $entry->getBase());
-        $this->worktreeManager->ensureBranchHasNoDirtyManagedWorktree($taskBranch);
-        $mergeContext = $this->worktreeManager->prepareFeatureMergeWorktree($featureBranch, $feature);
+        $parent = $this->boardService->resolveFeature($board, $feature);
+        $taskWorktree = $this->worktreeService->prepareFeatureAgentWorktree($entry);
+        $this->worktreeService->runReviewScript($taskWorktree, $entry->getBase());
+        $this->worktreeService->assertBranchHasNoDirtyManagedWorktree($taskBranch);
+        $mergeContext = $this->worktreeService->prepareFeatureMergeWorktree($featureBranch, $feature);
 
         try {
-            $this->gitWorkflow->mergeBranchInPath(
+            $this->gitService->mergeBranchInPath(
                 $mergeContext['path'],
                 $taskBranch,
                 sprintf('Merge task %s into feature %s', $task, $feature),
             );
         } catch (\Throwable $exception) {
             if ($mergeContext['temporary']) {
-                $this->worktreeManager->removeTemporaryMergeWorktree($mergeContext['path']);
+                $this->worktreeService->removeTemporaryMergeWorktree($mergeContext['path']);
             }
 
             throw $exception;
         }
 
-        $this->entryService->removeActiveEntryAt($board, $match->getIndex());
+        $this->boardService->removeActiveEntryAt($board, $match->getIndex());
         if ($parent->getEntry()->getAgent() === null) {
             $parent->getEntry()->setAgent($taskAgent);
         }
-        $this->entryService->invalidateFeatureReviewState($parent->getEntry());
-        $review->clearReview($this->entryService->taskReviewKey($entry));
+        $this->invalidateFeatureReviewState($parent->getEntry());
+        $review->clearReview($this->boardService->getTaskReviewKey($entry));
         $this->saveBoard($board, BacklogCommandName::FEATURE_TASK_MERGE->value);
         $this->saveReviewFile($review, BacklogCommandName::FEATURE_TASK_MERGE->value);
 
         if ($mergeContext['temporary']) {
-            $this->worktreeManager->removeTemporaryMergeWorktree($mergeContext['path']);
+            $this->worktreeService->removeTemporaryMergeWorktree($mergeContext['path']);
         }
 
-        $this->worktreeManager->cleanupMergedTaskWorktree($taskAgent, $taskBranch, $board);
+        $this->worktreeService->cleanupMergedTaskWorktree($taskAgent, $taskBranch, $board);
 
-        $this->gitWorkflow->deleteLocalBranchIfExists($taskBranch);
+        $this->gitService->deleteLocalBranch($taskBranch);
 
         $this->presenter->displaySuccess(sprintf('Merged task %s into feature %s locally', $task, $feature));
+    }
+
+    private function invalidateFeatureReviewState(BoardEntry $featureEntry): void
+    {
+        if ($this->boardService->getFeatureStage($featureEntry) !== BacklogBoard::STAGE_IN_PROGRESS) {
+            $featureEntry->setStage(BacklogBoard::STAGE_IN_PROGRESS);
+        }
     }
 }

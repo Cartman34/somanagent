@@ -7,24 +7,18 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogBoard;
-use SoManAgent\Script\Backlog\BacklogCommandName;
-use SoManAgent\Script\Backlog\BacklogEntryResolver;
-use SoManAgent\Script\Backlog\BacklogEntryService;
-use SoManAgent\Script\Backlog\BacklogGitWorkflow;
-use SoManAgent\Script\Backlog\PullRequestService;
-use SoManAgent\Script\Backlog\BacklogPresenter;
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use SoManAgent\Script\Service\GitService;
+use SoManAgent\Script\Service\PullRequestService;
 
 /**
  * Command for unblocking a feature.
  */
 final class BacklogFeatureUnblockCommand extends AbstractBacklogCommand
 {
-    private BacklogEntryResolver $entryResolver;
-
-    private BacklogEntryService $entryService;
-
-    private BacklogGitWorkflow $gitWorkflow;
+    private GitService $gitService;
 
     private PullRequestService $pullRequestService;
 
@@ -32,15 +26,12 @@ final class BacklogFeatureUnblockCommand extends AbstractBacklogCommand
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
-        BacklogEntryResolver $entryResolver,
-        BacklogEntryService $entryService,
-        BacklogGitWorkflow $gitWorkflow,
+        BacklogBoardService $boardService,
+        GitService $gitService,
         PullRequestService $pullRequestService
     ) {
-        parent::__construct($presenter, $dryRun, $projectRoot);
-        $this->entryResolver = $entryResolver;
-        $this->entryService = $entryService;
-        $this->gitWorkflow = $gitWorkflow;
+        parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
+        $this->gitService = $gitService;
         $this->pullRequestService = $pullRequestService;
     }
 
@@ -51,25 +42,23 @@ final class BacklogFeatureUnblockCommand extends AbstractBacklogCommand
             throw new \RuntimeException('Option --agent is required.');
         }
         $board = $this->loadBoard();
-        $feature = isset($commandArgs[0])
-            ? $this->entryService->normalizeFeatureSlug($commandArgs[0])
-            : $this->entryResolver->requireSingleFeatureForAgent($board, $agent)->getEntry()->getFeature();
-
-        if ($feature === null) {
-            throw new \RuntimeException('No feature available for feature-unblock.');
-        }
-
-        $match = $this->entryResolver->requireFeature($board, $feature);
-        if ($match->getEntry()->getAgent() !== $agent) {
+        $match = isset($commandArgs[0])
+            ? $this->boardService->resolveFeature($board, $this->boardService->normalizeFeatureSlug($commandArgs[0]))
+            : $this->boardService->resolveSingleFeatureForAgent($board, $agent);
+        
+        $entry = $match->getEntry();
+        $feature = $entry->getFeature() ?? '-';
+        if ($entry->getAgent() !== $agent) {
             throw new \RuntimeException("Feature {$feature} is not assigned to agent {$agent}.");
         }
 
-        $match->getEntry()->setBlocked(false);
+        $entry->setBlocked(false);
         $this->saveBoard($board, BacklogCommandName::FEATURE_UNBLOCK->value);
 
-        $prNumber = $this->pullRequestService->findPrNumberByBranch($match->getEntry()->getBranch() ?? '');
+        $prNumber = $this->pullRequestService->findPrNumberByBranch($entry->getBranch() ?? '');
         if ($prNumber !== null) {
-            $title = $this->pullRequestService->buildCurrentTitle($match->getEntry(), $this->gitWorkflow);
+            $tag = $this->pullRequestService->getPrTypeFromChanges($entry->getBase() ?? '', $entry->getBranch() ?? '');
+            $title = $this->pullRequestService->buildPrTitle($tag, $entry->getText(), false);
             $this->pullRequestService->editPrTitle($prNumber, $title);
         }
 

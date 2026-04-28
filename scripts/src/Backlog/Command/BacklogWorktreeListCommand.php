@@ -7,30 +7,32 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogWorktreeManager;
-use SoManAgent\Script\Backlog\BacklogPresenter;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 
 /**
  * Command for listing managed and external worktrees.
  */
 final class BacklogWorktreeListCommand extends AbstractBacklogCommand
 {
-    private BacklogWorktreeManager $worktreeManager;
+    private BacklogWorktreeService $worktreeService;
 
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
-        BacklogWorktreeManager $worktreeManager
+        BacklogBoardService $boardService,
+        BacklogWorktreeService $worktreeService
     ) {
-        parent::__construct($presenter, $dryRun, $projectRoot);
-        $this->worktreeManager = $worktreeManager;
+        parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
+        $this->worktreeService = $worktreeService;
     }
 
     public function handle(array $commandArgs, array $options): void
     {
         $board = $this->loadBoard();
-        $classification = $this->worktreeManager->classifyWorktrees($board);
+        $classification = $this->worktreeService->classifyWorktrees($board);
 
         $this->presenter->displayWorktreeList($classification);
     }

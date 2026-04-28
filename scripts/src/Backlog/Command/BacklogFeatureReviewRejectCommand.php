@@ -7,35 +7,27 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogBoard;
-use SoManAgent\Script\Backlog\BacklogCommandName;
-use SoManAgent\Script\Backlog\BacklogEntryResolver;
-use SoManAgent\Script\Backlog\BacklogEntryService;
-use SoManAgent\Script\Backlog\BacklogReviewBodyFormatter;
-use SoManAgent\Script\Backlog\BacklogPresenter;
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use SoManAgent\Script\Backlog\Service\BacklogReviewBodyFormatter;
 
 /**
  * Command for rejecting a feature review.
  */
 final class BacklogFeatureReviewRejectCommand extends AbstractBacklogCommand
 {
-    private BacklogEntryResolver $entryResolver;
-
-    private BacklogEntryService $entryService;
-
     private BacklogReviewBodyFormatter $reviewBodyFormatter;
 
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
-        BacklogEntryResolver $entryResolver,
-        BacklogEntryService $entryService,
+        BacklogBoardService $boardService,
         BacklogReviewBodyFormatter $reviewBodyFormatter
     ) {
-        parent::__construct($presenter, $dryRun, $projectRoot);
-        $this->entryResolver = $entryResolver;
-        $this->entryService = $entryService;
+        parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
         $this->reviewBodyFormatter = $reviewBodyFormatter;
     }
 
@@ -48,15 +40,15 @@ final class BacklogFeatureReviewRejectCommand extends AbstractBacklogCommand
 
         $board = $this->loadBoard();
         $review = $this->loadReviewFile();
-        $feature = $this->entryResolver->requireFeatureByReferenceArgument($board, $commandArgs, BacklogCommandName::FEATURE_REVIEW_REJECT->value);
-        $match = $this->entryResolver->requireFeature($board, $feature);
+        $feature = $this->resolveFeatureReferenceArgument($board, $commandArgs, BacklogCommandName::FEATURE_REVIEW_REJECT->value);
+        $match = $this->boardService->resolveFeature($board, $feature);
         $entry = $match->getEntry();
 
-        if ($this->entryService->featureStage($entry) !== BacklogBoard::STAGE_IN_REVIEW) {
+        if ($this->boardService->getFeatureStage($entry) !== BacklogBoard::STAGE_IN_REVIEW) {
             throw new \RuntimeException(sprintf(
                 'Feature %s must be in %s to be rejected.',
                 $feature,
-                BacklogBoard::stageLabel(BacklogBoard::STAGE_IN_REVIEW),
+                $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_REVIEW),
             ));
         }
 
@@ -68,7 +60,16 @@ final class BacklogFeatureReviewRejectCommand extends AbstractBacklogCommand
         $this->presenter->displaySuccess(sprintf(
             'Rejected feature %s, moved to %s',
             $feature,
-            BacklogBoard::stageLabel(BacklogBoard::STAGE_REJECTED),
+            $this->boardService->getStageLabel(BacklogBoard::STAGE_REJECTED),
         ));
+    }
+
+    private function resolveFeatureReferenceArgument(BacklogBoard $board, array $commandArgs, string $command): string
+    {
+        if (!isset($commandArgs[0]) || trim($commandArgs[0]) === '') {
+            throw new \RuntimeException(sprintf('%s requires <feature>.', $command));
+        }
+
+        return $this->boardService->normalizeFeatureSlug($commandArgs[0]);
     }
 }

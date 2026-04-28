@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog;
+namespace SoManAgent\Script\Backlog\Enum;
 
 /**
  * Stable CLI option names accepted by scripts/backlog.php.

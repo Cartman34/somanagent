@@ -7,25 +7,20 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogBoard;
-use SoManAgent\Script\Backlog\BacklogCommandName;
-use SoManAgent\Script\Backlog\BacklogEntryResolver;
-use SoManAgent\Script\Backlog\BacklogEntryService;
-use SoManAgent\Script\Backlog\BacklogGitWorkflow;
-use SoManAgent\Script\Backlog\PullRequestService;
-use SoManAgent\Script\Backlog\PullRequestTag;
-use SoManAgent\Script\Backlog\BacklogPresenter;
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Enum\PullRequestTag;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use SoManAgent\Script\Service\GitService;
+use SoManAgent\Script\Service\PullRequestService;
 
 /**
  * Command for blocking a feature.
  */
 final class BacklogFeatureBlockCommand extends AbstractBacklogCommand
 {
-    private BacklogEntryResolver $entryResolver;
-
-    private BacklogEntryService $entryService;
-
-    private BacklogGitWorkflow $gitWorkflow;
+    private GitService $gitService;
 
     private PullRequestService $pullRequestService;
 
@@ -33,15 +28,12 @@ final class BacklogFeatureBlockCommand extends AbstractBacklogCommand
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
-        BacklogEntryResolver $entryResolver,
-        BacklogEntryService $entryService,
-        BacklogGitWorkflow $gitWorkflow,
+        BacklogBoardService $boardService,
+        GitService $gitService,
         PullRequestService $pullRequestService
     ) {
-        parent::__construct($presenter, $dryRun, $projectRoot);
-        $this->entryResolver = $entryResolver;
-        $this->entryService = $entryService;
-        $this->gitWorkflow = $gitWorkflow;
+        parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
+        $this->gitService = $gitService;
         $this->pullRequestService = $pullRequestService;
     }
 
@@ -52,23 +44,21 @@ final class BacklogFeatureBlockCommand extends AbstractBacklogCommand
             throw new \RuntimeException('Option --agent is required.');
         }
         $board = $this->loadBoard();
-        $feature = isset($commandArgs[0])
-            ? $this->entryService->normalizeFeatureSlug($commandArgs[0])
-            : $this->entryResolver->requireSingleFeatureForAgent($board, $agent)->getEntry()->getFeature();
-
-        if ($feature === null) {
-            throw new \RuntimeException('No feature available for feature-block.');
-        }
-
-        $match = $this->entryResolver->requireFeature($board, $feature);
+        $match = isset($commandArgs[0])
+            ? $this->boardService->resolveFeature($board, $this->boardService->normalizeFeatureSlug($commandArgs[0]))
+            : $this->boardService->resolveSingleFeatureForAgent($board, $agent);
+        
         $entry = $match->getEntry();
+        $feature = $entry->getFeature() ?? '-';
         $entry->setBlocked(true);
         $this->saveBoard($board, BacklogCommandName::FEATURE_BLOCK->value);
 
         $prNumber = $this->pullRequestService->findPrNumberByBranch($entry->getBranch() ?? '');
         if ($prNumber !== null) {
-            $type = $this->entryService->featureStage($entry) === BacklogBoard::STAGE_APPROVED ? $this->pullRequestService->determinePrType($entry, $this->gitWorkflow) : PullRequestTag::WIP->value;
-            $title = $this->pullRequestService->ensureBlockedTitle($this->pullRequestService->buildPrTitle($type, $entry));
+            $tag = $this->boardService->getFeatureStage($entry) === BacklogBoard::STAGE_APPROVED 
+                ? $this->pullRequestService->getPrTypeFromChanges($entry->getBase() ?? '', $entry->getBranch() ?? '') 
+                : PullRequestTag::WIP;
+            $title = $this->pullRequestService->buildPrTitle($tag, $entry->getText(), true);
             $this->pullRequestService->editPrTitle($prNumber, $title);
         }
 

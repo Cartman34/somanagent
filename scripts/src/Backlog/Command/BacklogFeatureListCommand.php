@@ -7,36 +7,33 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogBoard;
-use SoManAgent\Script\Backlog\BacklogEntryService;
-use SoManAgent\Script\Backlog\BoardEntry;
-use SoManAgent\Script\Backlog\BacklogPresenter;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Model\BoardEntry;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 
 /**
  * Command for listing active features.
  */
 final class BacklogFeatureListCommand extends AbstractBacklogCommand
 {
-    private BacklogEntryService $entryService;
-
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
-        BacklogEntryService $entryService
+        BacklogBoardService $boardService
     ) {
-        parent::__construct($presenter, $dryRun, $projectRoot);
-        $this->entryService = $entryService;
+        parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
     }
 
     public function handle(array $commandArgs, array $options): void
     {
         $board = $this->loadBoard();
         $printed = false;
-        foreach (BacklogBoard::activeStages() as $stage) {
+        foreach ($this->boardService->getActiveStages() as $stage) {
             $entries = array_values(array_filter(
                 $board->getEntries(BacklogBoard::SECTION_ACTIVE),
-                fn(BoardEntry $entry): bool => $this->entryService->featureStage($entry) === $stage
+                fn(BoardEntry $entry): bool => $this->boardService->getFeatureStage($entry) === $stage
             ));
             if ($entries === []) {
                 continue;

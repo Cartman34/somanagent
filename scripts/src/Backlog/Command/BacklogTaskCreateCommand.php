@@ -7,10 +7,10 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogBoard;
-use SoManAgent\Script\Backlog\BacklogCommandName;
-use SoManAgent\Script\Backlog\BacklogEntryService;
-use SoManAgent\Script\Backlog\BacklogPresenter;
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 
 /**
  * Command for creating a new task in the todo section.
@@ -21,16 +21,13 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
     private const POSITION_INDEX = 'index';
     private const POSITION_END = 'end';
 
-    private BacklogEntryService $entryService;
-
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
-        BacklogEntryService $entryService
+        BacklogBoardService $boardService
     ) {
-        parent::__construct($presenter, $dryRun, $projectRoot);
-        $this->entryService = $entryService;
+        parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
     }
 
     public function handle(array $commandArgs, array $options): void
@@ -43,7 +40,7 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
         $board = $this->loadBoard();
         $entries = $board->getEntries(BacklogBoard::SECTION_TODO);
         $position = $this->resolveTaskCreatePosition($options, count($entries));
-        array_splice($entries, $position, 0, [$this->entryService->createTaskEntryFromInput($text)]);
+        array_splice($entries, $position, 0, [$this->boardService->createEntryFromInput($text)]);
         $board->setEntries(BacklogBoard::SECTION_TODO, $entries);
         $this->saveBoard($board, BacklogCommandName::TASK_CREATE->value);
 

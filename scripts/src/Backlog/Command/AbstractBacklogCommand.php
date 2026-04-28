@@ -7,9 +7,10 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogBoard;
-use SoManAgent\Script\Backlog\BacklogPresenter;
-use SoManAgent\Script\Backlog\BacklogReviewFile;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use SoManAgent\Script\Backlog\Model\BacklogReviewFile;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 
 /**
  * Base class for all backlog commands.
@@ -17,6 +18,8 @@ use SoManAgent\Script\Backlog\BacklogReviewFile;
 abstract class AbstractBacklogCommand
 {
     protected BacklogPresenter $presenter;
+
+    protected BacklogBoardService $boardService;
 
     protected bool $dryRun;
 
@@ -26,11 +29,12 @@ abstract class AbstractBacklogCommand
 
     protected ?string $reviewFilePath = null;
 
-    public function __construct(BacklogPresenter $presenter, bool $dryRun, string $projectRoot)
+    public function __construct(BacklogPresenter $presenter, bool $dryRun, string $projectRoot, BacklogBoardService $boardService)
     {
         $this->presenter = $presenter;
         $this->dryRun = $dryRun;
         $this->projectRoot = $projectRoot;
+        $this->boardService = $boardService;
     }
 
     public function setBoardPath(string $boardPath): void
@@ -54,7 +58,7 @@ abstract class AbstractBacklogCommand
 
     protected function loadBoard(?string $boardFile = null): BacklogBoard
     {
-        return new BacklogBoard($boardFile ?? $this->boardPath ?? ($this->projectRoot . '/local/backlog-board.md'));
+        return $this->boardService->loadBoard($boardFile ?? $this->boardPath ?? ($this->projectRoot . '/local/backlog-board.md'));
     }
 
     protected function saveBoard(BacklogBoard $board, string $reason): void
@@ -65,12 +69,12 @@ abstract class AbstractBacklogCommand
             return;
         }
 
-        $board->save();
+        $this->boardService->saveBoard($board);
     }
 
     protected function loadReviewFile(?string $reviewFile = null): BacklogReviewFile
     {
-        return new BacklogReviewFile($reviewFile ?? $this->reviewFilePath ?? ($this->projectRoot . '/local/backlog-review.md'));
+        return $this->boardService->loadReviewFile($reviewFile ?? $this->reviewFilePath ?? ($this->projectRoot . '/local/backlog-review.md'));
     }
 
     protected function saveReviewFile(BacklogReviewFile $review, string $reason): void
@@ -81,6 +85,6 @@ abstract class AbstractBacklogCommand
             return;
         }
 
-        $review->save();
+        $this->boardService->saveReviewFile($review);
     }
 }

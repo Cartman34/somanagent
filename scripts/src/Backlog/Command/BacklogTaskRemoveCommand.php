@@ -7,18 +7,19 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogBoard;
-use SoManAgent\Script\Backlog\BacklogCommandName;
-use SoManAgent\Script\Backlog\BacklogPresenter;
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 
 /**
  * Command for removing a task from the todo section.
  */
 final class BacklogTaskRemoveCommand extends AbstractBacklogCommand
 {
-    public function __construct(BacklogPresenter $presenter, bool $dryRun, string $projectRoot)
+    public function __construct(BacklogPresenter $presenter, bool $dryRun, string $projectRoot, BacklogBoardService $boardService)
     {
-        parent::__construct($presenter, $dryRun, $projectRoot);
+        parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
     }
 
     public function handle(array $commandArgs, array $options): void

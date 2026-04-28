@@ -5,8 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog;
+namespace SoManAgent\Script\Backlog\Service;
 
+use SoManAgent\Script\Client\FilesystemClientInterface;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
 
@@ -17,8 +18,10 @@ use Symfony\Component\Yaml\Yaml;
  * - help.yaml for global help
  * - commands/<command>.yaml for one specific command
  */
-final class BacklogCommandHelp
+final class BacklogHelpService
 {
+    private FilesystemClientInterface $fs;
+
     private string $resourceDir;
 
     /** @var array<string, mixed>|null */
@@ -27,9 +30,10 @@ final class BacklogCommandHelp
     /** @var array<string, array<string, mixed>> */
     private array $commandHelp = [];
 
-    public function __construct(?string $resourceDir = null)
+    public function __construct(FilesystemClientInterface $fs, ?string $resourceDir = null)
     {
-        $this->resourceDir = $resourceDir ?? dirname(__DIR__, 2) . '/resources/backlog';
+        $this->fs = $fs;
+        $this->resourceDir = $resourceDir ?? (dirname(__DIR__, 3) . '/resources/backlog');
     }
 
     /**
@@ -171,7 +175,7 @@ final class BacklogCommandHelp
         }
 
         $path = $this->resourceDir . '/commands/' . $command . '.yaml';
-        if (!is_file($path)) {
+        if (!$this->fs->isFile($path)) {
             throw new \RuntimeException(sprintf(
                 'Unknown backlog command: %s. Run `php scripts/backlog.php help` for the available commands.',
                 $command,
@@ -196,7 +200,7 @@ final class BacklogCommandHelp
      */
     private function parseYamlFile(string $path, string $label): array
     {
-        if (!is_file($path)) {
+        if (!$this->fs->isFile($path)) {
             throw new \RuntimeException(sprintf(
                 'Missing %s file: %s',
                 $label,

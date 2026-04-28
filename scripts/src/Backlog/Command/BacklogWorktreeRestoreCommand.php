@@ -7,55 +7,52 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogEntryResolver;
-use SoManAgent\Script\Backlog\BacklogWorktreeManager;
-use SoManAgent\Script\Backlog\BacklogPresenter;
-use SoManAgent\Script\Backlog\BoardEntry;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 
 /**
  * Command for restoring an agent worktree.
  */
 final class BacklogWorktreeRestoreCommand extends AbstractBacklogCommand
 {
-    private BacklogWorktreeManager $worktreeManager;
-
-    private BacklogEntryResolver $entryResolver;
+    private BacklogWorktreeService $worktreeService;
 
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
-        BacklogWorktreeManager $worktreeManager,
-        BacklogEntryResolver $entryResolver
+        BacklogBoardService $boardService,
+        BacklogWorktreeService $worktreeService
     ) {
-        parent::__construct($presenter, $dryRun, $projectRoot);
-        $this->worktreeManager = $worktreeManager;
-        $this->entryResolver = $entryResolver;
+        parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
+        $this->worktreeService = $worktreeService;
     }
 
     public function handle(array $commandArgs, array $options): void
     {
         $board = $this->loadBoard();
-        $agent = BoardEntry::parseEmptyString((string) ($options['agent'] ?? ''));
+        $agent = $this->boardService->sanitizeString((string) ($options['agent'] ?? ''));
         if ($agent === null) {
             throw new \RuntimeException('worktree-restore requires --agent=<code>.');
         }
 
-        $taskEntry = $this->entryResolver->getSingleTaskForAgent($board, $agent, false);
-        $featureEntry = $this->entryResolver->getSingleFeatureForAgent($board, $agent, false);
+        $taskMatch = $this->boardService->findTaskEntriesByAgent($board, $agent)[0] ?? null;
+        $featureMatch = $this->boardService->findFeatureEntriesByAgent($board, $agent)[0] ?? null;
+        $match = $taskMatch ?? $featureMatch;
 
-        if ($taskEntry === null && $featureEntry === null) {
+        if ($match === null) {
             throw new \RuntimeException("Agent {$agent} has no active task or feature.");
         }
 
-        $entry = $taskEntry ?? $featureEntry;
+        $entry = $match->getEntry();
         $branch = $entry->getBranch();
         if ($branch === null) {
             throw new \RuntimeException("Agent {$agent} has an active entry but no branch metadata.");
         }
 
-        $worktree = $this->worktreeManager->prepareAgentWorktree($agent);
-        $this->worktreeManager->checkoutBranchInWorktree($worktree, $branch, false);
+        $worktree = $this->worktreeService->prepareAgentWorktree($agent);
+        $this->worktreeService->checkoutBranchInWorktree($worktree, $branch, false);
 
         $this->presenter->displaySuccess(sprintf('Restored worktree for agent %s on branch %s', $agent, $branch));
     }

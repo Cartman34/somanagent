@@ -7,30 +7,32 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogWorktreeManager;
-use SoManAgent\Script\Backlog\BacklogPresenter;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 
 /**
  * Command for cleaning abandoned managed worktrees.
  */
 final class BacklogWorktreeCleanCommand extends AbstractBacklogCommand
 {
-    private BacklogWorktreeManager $worktreeManager;
+    private BacklogWorktreeService $worktreeService;
 
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
-        BacklogWorktreeManager $worktreeManager
+        BacklogBoardService $boardService,
+        BacklogWorktreeService $worktreeService
     ) {
-        parent::__construct($presenter, $dryRun, $projectRoot);
-        $this->worktreeManager = $worktreeManager;
+        parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
+        $this->worktreeService = $worktreeService;
     }
 
     public function handle(array $commandArgs, array $options): void
     {
         $board = $this->loadBoard();
-        $cleaned = $this->worktreeManager->cleanupAbandonedManagedWorktrees($board);
+        $cleaned = $this->worktreeService->cleanupAbandonedManagedWorktrees($board);
 
         if ($cleaned === 0) {
             $this->presenter->displayLine('No abandoned managed worktree to clean.');
@@ -43,7 +45,7 @@ final class BacklogWorktreeCleanCommand extends AbstractBacklogCommand
             ));
         }
 
-        $classification = $this->worktreeManager->classifyWorktrees($board);
+        $classification = $this->worktreeService->classifyWorktrees($board);
         $skipped = count($classification->getManaged());
         if ($skipped > 0) {
             $this->presenter->displayLine(sprintf('Skipped %d managed worktree%s that require manual attention.', $skipped, $skipped > 1 ? 's' : ''));

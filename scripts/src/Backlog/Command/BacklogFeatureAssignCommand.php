@@ -7,20 +7,19 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogCommandName;
-use SoManAgent\Script\Backlog\BacklogEntryResolver;
-use SoManAgent\Script\Backlog\BacklogWorktreeManager;
-use SoManAgent\Script\Backlog\BacklogPresenter;
-use SoManAgent\Script\Backlog\BacklogPermissionService;
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Backlog\Service\BacklogPermissionService;
+use SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 
 /**
  * Command for assigning a feature to an agent.
  */
 final class BacklogFeatureAssignCommand extends AbstractBacklogCommand
 {
-    private BacklogEntryResolver $entryResolver;
-
-    private BacklogWorktreeManager $worktreeManager;
+    private BacklogWorktreeService $worktreeService;
 
     private BacklogPermissionService $permissionService;
 
@@ -28,13 +27,12 @@ final class BacklogFeatureAssignCommand extends AbstractBacklogCommand
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
-        BacklogEntryResolver $entryResolver,
-        BacklogWorktreeManager $worktreeManager,
+        BacklogBoardService $boardService,
+        BacklogWorktreeService $worktreeService,
         BacklogPermissionService $permissionService
     ) {
-        parent::__construct($presenter, $dryRun, $projectRoot);
-        $this->entryResolver = $entryResolver;
-        $this->worktreeManager = $worktreeManager;
+        parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
+        $this->worktreeService = $worktreeService;
         $this->permissionService = $permissionService;
     }
 
@@ -52,21 +50,21 @@ final class BacklogFeatureAssignCommand extends AbstractBacklogCommand
         $board = $this->loadBoard();
         $actorAgent = $actorRole === BacklogPermissionService::ROLE_DEVELOPER ? $this->permissionService->requireWorkflowAgent() : null;
 
-        $this->permissionService->assertCanAssignFeature($actorRole, $actorAgent, $agent, $feature, $board, $this->entryResolver);
+        $this->permissionService->assertCanAssignFeature($actorRole, $actorAgent, $agent, $feature, $board, $this->boardService);
 
-        if ($this->entryResolver->getSingleFeatureForAgent($board, $agent, false) !== null) {
+        if ($this->boardService->findFeatureEntriesByAgent($board, $agent) !== []) {
             throw new \RuntimeException("Agent {$agent} already owns an active feature.");
         }
 
-        $match = $this->entryResolver->requireFeature($board, $feature);
+        $match = $this->boardService->resolveFeature($board, $feature);
         $previousAgent = $match->getEntry()->getAgent();
         $match->getEntry()->setAgent($agent);
         $this->saveBoard($board, BacklogCommandName::FEATURE_ASSIGN->value);
 
-        $worktree = $this->worktreeManager->prepareAgentWorktree($agent);
-        $this->worktreeManager->checkoutBranchInWorktree($worktree, $match->getEntry()->getBranch() ?? '', false);
+        $worktree = $this->worktreeService->prepareAgentWorktree($agent);
+        $this->worktreeService->checkoutBranchInWorktree($worktree, $match->getEntry()->getBranch() ?? '', false);
         $cleaned = $previousAgent !== null && $previousAgent !== $agent
-            ? $this->worktreeManager->cleanupAbandonedManagedWorktrees($board)
+            ? $this->worktreeService->cleanupAbandonedManagedWorktrees($board)
             : 0;
 
         $this->presenter->displaySuccess(sprintf('Assigned feature %s to %s', $feature, $agent));

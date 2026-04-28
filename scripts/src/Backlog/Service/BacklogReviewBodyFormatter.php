@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog;
+namespace SoManAgent\Script\Backlog\Service;
 
 /**
  * Normalizes reviewer body files before they are stored in the backlog review file.

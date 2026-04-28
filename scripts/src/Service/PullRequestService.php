@@ -5,47 +5,43 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog;
+namespace SoManAgent\Script\Service;
 
-use SoManAgent\Script\Client\GitClient;
+use SoManAgent\Script\Backlog\Model\BoardEntry;
+use SoManAgent\Script\Backlog\Enum\PullRequestTag;
 use SoManAgent\Script\Client\GitHubClient;
 use SoManAgent\Script\RetryHelper;
 
 /**
- * Service for orchestrating Pull Request lifecycles and formatting.
+ * Service for orchestrating Pull Request lifecycles.
  */
 final class PullRequestService
 {
-    private bool $dryRun;
-    private string $headInvalidNeedle;
-    private GitClient $git;
     private GitHubClient $github;
-    private BacklogEntryService $entryService;
+
+    private GitService $gitService;
+
     private int $retryCount;
+
     private int $retryBaseDelay;
+
     private int $retryFactor;
 
     public function __construct(
-        bool $dryRun,
-        string $headInvalidNeedle,
-        GitClient $git,
         GitHubClient $github,
-        BacklogEntryService $entryService,
+        GitService $gitService,
         int $retryCount = 0,
         int $retryBaseDelay = 0,
-        int $retryFactor = 0,
+        int $retryFactor = 0
     ) {
-        $this->dryRun = $dryRun;
-        $this->headInvalidNeedle = $headInvalidNeedle;
-        $this->git = $git;
         $this->github = $github;
-        $this->entryService = $entryService;
+        $this->gitService = $gitService;
         $this->retryCount = $retryCount;
         $this->retryBaseDelay = $retryBaseDelay;
         $this->retryFactor = $retryFactor;
     }
 
-    public function createOrUpdatePr(string $branch, string $title, string $bodyFile, string $baseBranch = BacklogGitWorkflow::MAIN_BRANCH): void
+    public function createOrUpdatePr(string $branch, string $title, string $bodyFile, string $baseBranch = GitService::MAIN_BRANCH): void
     {
         $prNumber = $this->findPrNumberByBranch($branch);
 
@@ -56,13 +52,6 @@ final class PullRequestService
         }
 
         $this->github->editPr($prNumber, $title, $bodyFile);
-    }
-
-    public function pushBranchAndWaitForRemoteVisibility(string $branch, ?string $worktree = null): void
-    {
-        $this->git->pushUpstream($branch, 'origin', $worktree);
-        $this->git->fetchRemoteBranch($branch, 'origin', $worktree);
-        $this->waitForRemoteBranchVisibility($branch);
     }
 
     public function updatePrBody(string $branch, string $bodyFile): void
@@ -118,18 +107,12 @@ final class PullRequestService
         return null;
     }
 
-    public function determinePrType(BoardEntry $entry, BacklogGitWorkflow $gitWorkflow): string
+    public function getPrTypeFromChanges(string $base, string $branch): PullRequestTag
     {
-        $base = $entry->getBase();
-        $branch = $entry->getBranch();
-        if ($base === null || $branch === null) {
-            throw new \RuntimeException('Cannot determine PR type without base and branch metadata.');
-        }
-
-        $files = $gitWorkflow->changedFiles($base, $branch);
+        $files = $this->gitService->getChangedFiles($base, $branch);
 
         if ($files === []) {
-            return str_starts_with($branch, 'fix/') ? PullRequestTag::FIX->value : PullRequestTag::FEAT->value;
+            return str_starts_with($branch, 'fix/') ? PullRequestTag::FIX : PullRequestTag::FEAT;
         }
 
         $docOnly = true;
@@ -150,35 +133,24 @@ final class PullRequestService
         }
 
         if ($docOnly) {
-            return PullRequestTag::DOC->value;
+            return PullRequestTag::DOC;
         }
 
         if ($techOnly) {
-            return PullRequestTag::TECH->value;
+            return PullRequestTag::TECH;
         }
 
-        return str_starts_with($branch, 'fix/') ? PullRequestTag::FIX->value : PullRequestTag::FEAT->value;
+        return str_starts_with($branch, 'fix/') ? PullRequestTag::FIX : PullRequestTag::FEAT;
     }
 
-    public function buildPrTitle(string $type, BoardEntry $entry): string
+    public function buildPrTitle(PullRequestTag $tag, string $text, bool $blocked = false): string
     {
-        $title = sprintf('[%s] %s', $type, $entry->getText());
+        $title = sprintf('[%s] %s', $tag->value, $text);
 
-        return $entry->isBlocked()
-            ? $this->ensureBlockedTitle($title)
-            : $title;
+        return $blocked ? $this->getFormattedBlockedTitle($title) : $title;
     }
 
-    public function buildCurrentTitle(BoardEntry $entry, BacklogGitWorkflow $gitWorkflow): string
-    {
-        $type = $this->entryService->featureStage($entry) === BacklogBoard::STAGE_APPROVED
-            ? $this->determinePrType($entry, $gitWorkflow)
-            : PullRequestTag::WIP->value;
-
-        return $this->buildPrTitle($type, $entry);
-    }
-
-    public function ensureBlockedTitle(string $title): string
+    public function getFormattedBlockedTitle(string $title): string
     {
         $tag = '[' . PullRequestTag::BLOCKED->value . ']';
 
@@ -193,7 +165,7 @@ final class PullRequestService
             function () use ($title, $branch, $baseBranch, $bodyFile): array {
                 $result = $this->github->createPr($title, $branch, $baseBranch, $bodyFile);
                 if ($result[0] !== 0 && $this->isHeadInvalidCreateError($result[1])) {
-                    $this->waitForRemoteBranchVisibility($branch);
+                    $this->gitService->pushBranchAndAwaitVisibility($branch);
                 }
 
                 return $result;
@@ -210,27 +182,9 @@ final class PullRequestService
         }
     }
 
-    private function waitForRemoteBranchVisibility(string $branch): void
-    {
-        if ($this->dryRun) {
-            return;
-        }
-
-        $isVisible = $this->networkRetryHelper()->run(
-            fn(): bool => $this->git->isRemoteBranchVisible($branch),
-            fn(bool $result): bool => !$result,
-        );
-
-        if ($isVisible) {
-            return;
-        }
-
-        throw new \RuntimeException("Remote branch did not become visible in time: {$branch}");
-    }
-
     private function isHeadInvalidCreateError(string $output): bool
     {
-        return str_contains($output, $this->headInvalidNeedle);
+        return str_contains($output, 'Head branch is invalid');
     }
 
     private function networkRetryHelper(): RetryHelper
