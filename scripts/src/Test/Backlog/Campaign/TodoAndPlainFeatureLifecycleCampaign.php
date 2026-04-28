@@ -43,5 +43,17 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
         $driver->assignFeatureAsManager($context->assignFeature, $context->agentSecondary);
         $driver->releaseFeature($context->agentSecondary, $context->assignFeature);
         $driver->assertTodoContains($context->assignFeature);
+        $driver->removeFirstTodoTask();
+
+        $committedFeature = $context->plainFeature . '-committed-release';
+        $driver->createTodoTask($committedFeature);
+        $driver->startNextFeature($context->agentPrimary);
+        $driver->trackFeatureBranch($committedFeature);
+        $driver->commitAndRevertFeatureChange($context->agentPrimary, $committedFeature, 'test-release-commit-history.txt');
+        $driver->assertReleaseFeatureFails(
+            $context->agentPrimary,
+            $committedFeature,
+            'Active entry already has development work and cannot be released back to todo.',
+        );
     }
 }

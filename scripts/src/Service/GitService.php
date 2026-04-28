@@ -76,7 +76,17 @@ final class GitService
 
     public function checkBranchHasNoDevelopment(string $base, string $branch): bool
     {
-        return $this->git->countCommitsAhead($base, $branch) === 0;
+        return !$this->hasCommitsSince($base, $branch);
+    }
+
+    public function hasChangesSince(string $base, string $branch): bool
+    {
+        return $this->git->getChangedFiles($base, $branch) !== [];
+    }
+
+    public function hasCommitsSince(string $base, string $branch): bool
+    {
+        return $this->git->countCommitsAhead($base, $branch) > 0;
     }
 
     public function pushBranchAndAwaitVisibility(string $branch, string $remote = self::ORIGIN_REMOTE, ?string $worktree = null): void

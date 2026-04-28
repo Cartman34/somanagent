@@ -151,6 +151,6 @@ final class BacklogFeatureReleaseCommand extends AbstractBacklogCommand
             throw new \RuntimeException('Feature metadata is incomplete: missing branch or base.');
         }
 
-        return $this->gitService->getChangedFiles($base, $branch) === [];
+        return !$this->gitService->hasCommitsSince($base, $branch);
     }
 }

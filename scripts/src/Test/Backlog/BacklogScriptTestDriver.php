@@ -153,6 +153,11 @@ MD);
         $this->runBacklog(['feature-release', $feature, '--agent', $agent]);
     }
 
+    public function assertReleaseFeatureFails(string $agent, string $feature, string $needle): void
+    {
+        $this->assertBacklogFails(['feature-release', $feature, '--agent', $agent], $needle);
+    }
+
     public function closeFeature(string $feature): void
     {
         $this->runBacklog(['feature-close', $feature]);
@@ -297,6 +302,26 @@ MD);
         $this->runGitInWorktree($worktreePath, sprintf(
             'commit -m %s',
             escapeshellarg(sprintf('[%s] Add workflow test artifact', $feature)),
+        ));
+    }
+
+    public function commitAndRevertFeatureChange(string $agent, string $feature, string $fileName): void
+    {
+        $this->commitFeatureChange($agent, $feature, $fileName);
+
+        $worktreePath = $this->managedWorktreePath($agent);
+        $absoluteFilePath = $worktreePath . '/' . $fileName;
+        if (!is_file($absoluteFilePath)) {
+            throw new \RuntimeException("Expected worktree test file not found: {$absoluteFilePath}");
+        }
+        if (!unlink($absoluteFilePath)) {
+            throw new \RuntimeException("Unable to remove worktree test file: {$absoluteFilePath}");
+        }
+
+        $this->runGitInWorktree($worktreePath, sprintf('add -A %s', escapeshellarg($fileName)));
+        $this->runGitInWorktree($worktreePath, sprintf(
+            'commit -m %s',
+            escapeshellarg(sprintf('[%s] Revert workflow test artifact', $feature)),
         ));
     }
 
