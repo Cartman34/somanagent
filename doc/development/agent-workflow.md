@@ -85,7 +85,7 @@ Rules:
 ## Command Policy
 
 1. Use `php scripts/backlog.php` for the full local workflow.
-2. Use `php scripts/backlog.php` for the global backlog help.
+2. Use `php scripts/backlog.php --help` for the global backlog help.
 3. Use `php scripts/backlog.php help <command>` or `php scripts/backlog.php <command> --help` for one command.
 4. Every developer command on `backlog.php` requires `--agent=<code>`.
 5. Reviewer commands on `backlog.php` never use `--agent`.
