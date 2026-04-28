@@ -139,6 +139,7 @@ Also check:
 1. Prepare the review body file under `local/tmp/`: one plain finding per line, optional leading numbers or bullets, no Markdown headings.
 2. Run `php scripts/backlog.php feature-review-reject <feature> --body-file=<path>`.
 3. The script sets `meta.stage=rejected` and overwrites the `### <feature>` section in `local/backlog-review.md`.
+4. Developers resume corrections through `php scripts/backlog.php feature-rework --agent=<code> [<feature>]`.
 
 ### `feature-review-approve`
 
