@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog;
 
 use SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
+use SoManAgent\Script\Backlog\Command\BacklogBaseUpdateCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureAssignCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureBlockCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureCloseCommand;
@@ -105,6 +106,7 @@ final class BacklogCommandFactory
     public function createHandler(string $commandName): AbstractBacklogCommand
     {
         $map = [
+            BacklogCommandName::BASE_UPDATE->value => BacklogBaseUpdateCommand::class,
             BacklogCommandName::STATUS->value => BacklogStatusCommand::class,
             BacklogCommandName::WORKTREE_LIST->value => BacklogWorktreeListCommand::class,
             BacklogCommandName::WORKTREE_CLEAN->value => BacklogWorktreeCleanCommand::class,

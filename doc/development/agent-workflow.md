@@ -106,8 +106,9 @@ Rules:
 20. `feature-task-merge --agent=<code> [<task>]` is the developer form for merging the current agent task after an explicit user merge instruction.
 21. `feature-task-merge <feature>/<task>` is the reviewer form for merging one explicit child task locally.
 22. The remote review, approval, and merge flow applies only to `kind=feature` entries and is blocked while child `kind=task` entries remain active for that feature.
-23. Any backlog state change covered by `backlog.php` must go through `backlog.php`, never through a manual file edit.
-24. Manual edits to `local/backlog-board.md` or `local/backlog-review.md` are forbidden unless the user explicitly asks for a manual edit outside the scripted workflow.
-25. `--dry-run` simulates backlog, git, GitHub, and filesystem mutations without executing them.
-26. `--verbose` prints detailed execution steps and simulated commands.
-27. When the user invokes a documented workflow keyword or command sequence, agents must rerun that documented procedure each time unless the user cancels it. Repetition is not a reason to switch to advisory mode or rely on remembered state instead of the workflow result.
+23. After a rebase, `base-update <feature|feature/task>` refreshes the recorded Git base without editing backlog files manually. Features update `origin/main` before using the merge base with it; local child tasks default to the merge base with their parent feature branch.
+24. Any backlog state change covered by `backlog.php` must go through `backlog.php`, never through a manual file edit.
+25. Manual edits to `local/backlog-board.md` or `local/backlog-review.md` are forbidden unless the user explicitly asks for a manual edit outside the scripted workflow.
+26. `--dry-run` simulates backlog, git, GitHub, and filesystem mutations without executing them.
+27. `--verbose` prints detailed execution steps and simulated commands.
+28. When the user invokes a documented workflow keyword or command sequence, agents must rerun that documented procedure each time unless the user cancels it. Repetition is not a reason to switch to advisory mode or rely on remembered state instead of the workflow result.

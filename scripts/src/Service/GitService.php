@@ -44,6 +44,21 @@ final class GitService
         return $this->git->branchHead($branch);
     }
 
+    public function checkRefExists(string $ref): bool
+    {
+        return $this->git->refExists($ref);
+    }
+
+    public function getMergeBase(string $left, string $right): string
+    {
+        return $this->git->mergeBase($left, $right);
+    }
+
+    public function checkIsAncestor(string $ancestor, string $descendant): bool
+    {
+        return $this->git->isAncestor($ancestor, $descendant);
+    }
+
     public function checkLocalBranchExists(string $branch): bool
     {
         return $this->git->localBranchExists($branch);

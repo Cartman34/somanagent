@@ -74,6 +74,7 @@ Runs the documented local backlog workflow from `WP` only, including feature sta
 php scripts/backlog.php
 php scripts/backlog.php help
 php scripts/backlog.php help feature-start
+php scripts/backlog.php base-update my-feature
 php scripts/backlog.php feature-start --help
 php scripts/backlog.php feature-start --agent agent-01
 php scripts/backlog.php task-review-request --agent agent-01
@@ -87,6 +88,7 @@ Notes:
 - use `php scripts/backlog.php help <command>` or `php scripts/backlog.php <command> --help` for one command
 - developer commands require `--agent=<code>`
 - reviewer commands never use `--agent`
+- `base-update` refreshes the recorded Git base after a rebase; features update `origin/main` before using the merge base with it, and local child tasks default to the merge base with their parent feature branch
 - `feature-start` reads the next queued board entry and accepts plain text, optional `[feat]` / `[fix]` prefixes, and scoped entries like `[feature-slug][task-slug] Task text`
 - child task review stays local; only the parent feature uses the remote PR flow
 

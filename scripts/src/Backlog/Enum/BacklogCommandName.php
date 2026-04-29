@@ -10,6 +10,7 @@ namespace SoManAgent\Script\Backlog\Enum;
 enum BacklogCommandName: string
 {
     case HELP = 'help';
+    case BASE_UPDATE = 'base-update';
     case STATUS = 'status';
     case TASK_CREATE = 'task-create';
     case TASK_TODO_LIST = 'task-todo-list';
