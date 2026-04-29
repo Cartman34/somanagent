@@ -38,8 +38,8 @@ class TokenUsage
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?WorkflowStep $workflowStep = null;
 
-    #[ORM\Column(length: 100)]
-    private string $model;
+    #[ORM\Column(length: 100, nullable: true)]
+    private ?string $model;
 
     #[ORM\Column(type: 'integer')]
     private int $inputTokens;
@@ -58,7 +58,7 @@ class TokenUsage
      */
     public function __construct(
         ?Agent        $agent,
-        string        $model,
+        ?string       $model,
         int           $inputTokens,
         int           $outputTokens,
         ?int          $durationMs   = null,
@@ -89,7 +89,7 @@ class TokenUsage
     /** Returns the related workflow step, if any. */
     public function getWorkflowStep(): ?WorkflowStep   { return $this->workflowStep; }
     /** Returns the model name used for the call. */
-    public function getModel(): string                 { return $this->model; }
+    public function getModel(): ?string                { return $this->model; }
     /** Returns the input token count. */
     public function getInputTokens(): int              { return $this->inputTokens; }
     /** Returns the output token count. */
