@@ -75,8 +75,6 @@ final class CodeRefactoRunner extends AbstractScriptRunner
             default:
                 $this->console->fail(sprintf('Unknown command: %s', $command));
         }
-
-        return 0;
     }
 
     private function parseOptions(array &$args): array
@@ -211,7 +209,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
                 $this->updateFile($file, implode('', $lines), implode('', $newLines));
             }
         }
-        $this->console->ok(sprintf('Updated %d files with missing array types.', $count));
+        $this->console->ok(sprintf('Added @return to %d method(s).', $count));
 
         return 0;
     }
