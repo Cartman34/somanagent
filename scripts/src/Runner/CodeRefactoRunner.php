@@ -46,6 +46,11 @@ final class CodeRefactoRunner extends AbstractScriptRunner
         ];
     }
 
+    /**
+     * Executes the refactoring command.
+     *
+     * @param array<string> $args
+     */
     public function run(array $args): int
     {
         if ($args === []) {
