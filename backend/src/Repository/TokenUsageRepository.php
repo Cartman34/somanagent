@@ -20,13 +20,16 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class TokenUsageRepository extends ServiceEntityRepository
 {
+    /**
+     * Initialises the repository for the TokenUsage entity.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, TokenUsage::class);
     }
 
     /**
-     * Totaux de tokens par agent sur une période.
+     * Aggregates token totals per agent over an optional time window.
      *
      * @return array<int, array<string, mixed>>
      */

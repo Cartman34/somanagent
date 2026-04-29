@@ -8,8 +8,7 @@ declare(strict_types=1);
 namespace App\ValueObject;
 
 /**
- * Prompt final envoyé à un agent.
- * Construit en assemblant le contenu du skill + le contexte de la tâche.
+ * Final prompt sent to an agent, built by assembling the skill content and the task context.
  */
 final class Prompt
 {
@@ -34,7 +33,7 @@ final class Prompt
     }
 
     /**
-     * Construit le texte final du prompt.
+     * Builds and returns the final prompt text.
      */
     public function build(): string
     {
@@ -53,9 +52,19 @@ final class Prompt
         return implode("\n\n---\n\n", $parts);
     }
 
+    /**
+     * Returns the skill content used in this prompt.
+     */
     public function getSkillContent(): string    { return $this->skillContent; }
+
+    /**
+     * Returns the task instruction used in this prompt.
+     */
     public function getTaskInstruction(): string { return $this->taskInstruction; }
-    /** @return array<string, mixed> */
+
+    /**
+     * @return array<string, mixed>
+     */
     public function getContext(): array          { return $this->context; }
 
     private function formatContext(): string
