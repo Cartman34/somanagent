@@ -4,9 +4,7 @@ use Symfony\Component\Dotenv\Dotenv;
 
 require dirname(__DIR__).'/vendor/autoload.php';
 
-if (method_exists(Dotenv::class, 'bootEnv')) {
-    (new Dotenv())->bootEnv(dirname(__DIR__).'/.env');
-}
+(new Dotenv())->bootEnv(dirname(__DIR__).'/.env');
 
 if (($_SERVER['SOMANAGENT_PHPUNIT_LOCAL'] ?? $_ENV['SOMANAGENT_PHPUNIT_LOCAL'] ?? getenv('SOMANAGENT_PHPUNIT_LOCAL')) === '1') {
     foreach (['http', 'https'] as $scheme) {

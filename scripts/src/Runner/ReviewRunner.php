@@ -411,8 +411,9 @@ final class ReviewRunner extends AbstractScriptRunner
             return 0;
         }
 
+        // --debug forces single-threaded mode, required on WSL2 where parallel worker IPC fails
         [$exitCode, $lines] = $this->runCommand(
-            'php backend/vendor/bin/phpstan analyse --configuration backend/phpstan.neon'
+            'php backend/vendor/bin/phpstan analyse --configuration backend/phpstan.neon --debug'
         );
 
         foreach ($lines as $line) {

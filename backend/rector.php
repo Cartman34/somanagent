@@ -13,4 +13,6 @@ return RectorConfig::configure()
     ->withPhpStanConfigs([__DIR__ . '/phpstan.neon'])
     ->withSets([
         SetList::TYPE_DECLARATION,
+        SetList::CODE_QUALITY,
+        SetList::DEAD_CODE,
     ]);
