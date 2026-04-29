@@ -369,6 +369,7 @@ Validate final feature closure and merge behavior.
 
 - active feature disappears after the terminal action
 - PR is closed or merged according to the command
+- feature merge can reuse the existing PR body when `--body-file` is omitted
 - managed worktree cleanup is coherent
 
 ## Scenario 13 - Worktree Helpers

@@ -158,8 +158,8 @@ Also check:
 
 ### `feature-merge`
 
-1. Prepare the final PR body file under `local/tmp/`.
-2. Run `php scripts/backlog.php feature-merge <feature> --body-file=<path>`.
+1. Run `php scripts/backlog.php feature-merge <feature>`.
+2. Add `--body-file=<path>` only when the existing PR body must be replaced before merging.
 3. The script requires the feature to be in `meta.stage=approved`, merges the PR, removes the feature from the backlog, runs `worktree-clean`, deletes the branches, and frees the agent.
 
 ### `feature-task-merge`
@@ -199,7 +199,7 @@ Also check:
 
 ### `merge`
 
-1. For a feature merge, prepare the final PR body file under `local/tmp/`, then run `php scripts/backlog.php feature-merge <feature> --body-file=<path>`.
+1. For a feature merge, run `php scripts/backlog.php feature-merge <feature>`. Prepare a final PR body file under `local/tmp/` and pass `--body-file=<path>` only when the PR body must be updated before merge.
 2. For a task merge, run `php scripts/backlog.php feature-task-merge <feature/task>`.
 
 ### `cleanup`

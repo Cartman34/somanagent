@@ -28,7 +28,6 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $rejectBody = $driver->createBodyFile('test-feature-review-reject.md', ['1. Reject feature review for workflow coverage.']);
         $invalidRejectBody = $driver->createBodyFile('test-feature-review-invalid.md', ['1. ### Revue de la feature']);
         $approveBody = $driver->createBodyFile('test-feature-review-approve.md', ['1. Approve feature review for workflow coverage.']);
-        $mergeBody = $driver->createBodyFile('test-feature-merge.md', ['1. Merge feature for workflow coverage.']);
 
         $driver->requestFeatureReview($context->agentPrimary, $context->fixFeature);
         if (!str_contains($driver->reviewNext(), $context->fixFeature)) {
@@ -44,7 +43,8 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $driver->blockFeature($context->agentPrimary, $context->fixFeature);
         $driver->assertStatusContains($context->fixFeature, 'Blocker: blocked');
         $driver->unblockFeature($context->agentPrimary, $context->fixFeature);
-        $driver->mergeFeature($context->fixFeature, $mergeBody);
+        $driver->assertFeatureMergeBodyFileWithoutValueFails($context->fixFeature);
+        $driver->mergeFeature($context->fixFeature);
         $driver->assertActiveFeatureMissing($context->fixFeature);
     }
 }

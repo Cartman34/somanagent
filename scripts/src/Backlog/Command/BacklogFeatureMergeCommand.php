@@ -45,9 +45,13 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
     {
         $board = $this->loadBoard();
         $review = $this->loadReviewFile();
-        $bodyFile = $options['body-file'] ?? null;
-        if (!is_string($bodyFile)) {
-            throw new \RuntimeException('Option --body-file is required.');
+        $bodyFile = null;
+        if (array_key_exists('body-file', $options)) {
+            $bodyFileOption = $options['body-file'];
+            if (!is_string($bodyFileOption) || trim($bodyFileOption) === '') {
+                throw new \RuntimeException('Option --body-file requires a non-empty path when provided.');
+            }
+            $bodyFile = $bodyFileOption;
         }
 
         $feature = $this->resolveFeatureReferenceArgument($board, $commandArgs, BacklogCommandName::FEATURE_MERGE->value);
@@ -78,9 +82,11 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
             throw new \RuntimeException("No open PR found for branch {$branch}.");
         }
 
-        $tag = $this->pullRequestService->getPrTypeFromChanges($entry->getBase() ?? '', $branch);
-        $title = $this->pullRequestService->buildPrTitle($tag, $entry->getText());
-        $this->pullRequestService->createOrUpdatePr($branch, $title, $bodyFile);
+        if ($bodyFile !== null) {
+            $tag = $this->pullRequestService->getPrTypeFromChanges($entry->getBase() ?? '', $branch);
+            $title = $this->pullRequestService->buildPrTitle($tag, $entry->getText());
+            $this->pullRequestService->createOrUpdatePr($branch, $title, $bodyFile);
+        }
         $this->pullRequestService->mergePr($prNumber);
 
         $this->boardService->deleteFeature($board, $feature);

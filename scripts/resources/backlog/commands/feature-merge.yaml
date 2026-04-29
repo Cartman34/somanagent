@@ -6,10 +6,12 @@ arguments:
 options:
   -
     name: '--body-file'
-    description: 'Local file used for the merge PR body when required'
+    description: 'Optional local file used to update the PR body before merge'
 examples:
+  - 'php scripts/backlog.php feature-merge delete-question-reply'
   - 'php scripts/backlog.php feature-merge delete-question-reply --body-file local/tmp/pr_body.md'
 notes:
   - 'The feature must already be approved, unblocked, and have no active local child tasks.'
   - 'Requires an open PR for the feature branch.'
+  - 'When --body-file is omitted, the existing PR title and body are left unchanged.'
   - 'After the remote merge, removes the feature from backlog state and deletes the local and remote feature branches.'
