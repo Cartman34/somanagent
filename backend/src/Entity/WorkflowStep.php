@@ -38,6 +38,8 @@ class WorkflowStep
 
     /**
      * Input configuration including source (vcs, previous_step, manual) and parameters.
+     *
+     * @var array<string, mixed>
      */
     #[ORM\Column(type: 'json')]
     private array $inputConfig = [];
@@ -101,7 +103,10 @@ class WorkflowStep
     public function getName(): string                  { return $this->name; }
     /** Returns the output key alias of the step. */
     public function getKey(): string                   { return $this->outputKey; }
-    /** Returns the input configuration payload. */
+    /**
+     * Returns the input configuration payload.
+     * @return array<string, mixed>
+     */
     public function getInputConfig(): array            { return $this->inputConfig; }
     /** Returns the output key of the step. */
     public function getOutputKey(): string             { return $this->outputKey; }
@@ -122,7 +127,10 @@ class WorkflowStep
     public function setStepOrder(int $order): static              { $this->stepOrder = $order; return $this; }
     /** Updates the step display name. */
     public function setName(string $name): static                 { $this->name = $name; return $this; }
-    /** Replaces the input configuration payload. */
+    /**
+     * Replaces the input configuration payload.
+     * @param array<string, mixed> $config
+     */
     public function setInputConfig(array $config): static         { $this->inputConfig = $config; return $this; }
     /** Updates the output key. */
     public function setOutputKey(string $key): static             { $this->outputKey = $key; return $this; }

@@ -22,8 +22,8 @@ class GitLabAdapter implements VCSPort
      * Initializes the GitLab API client with the configured token and base URL.
      */
     public function __construct(
-        private readonly string $token,
-        private readonly string $baseUrl = 'https://gitlab.com',
+        string $token,
+        string $baseUrl = 'https://gitlab.com',
     ) {
         $this->http = new Client([
             'base_uri' => rtrim($baseUrl, '/') . '/api/v4',
@@ -36,6 +36,8 @@ class GitLabAdapter implements VCSPort
 
     /**
      * Fetches repository metadata from GitLab.
+     *
+     * @return array<string, mixed>
      */
     public function getRepository(string $owner, string $repo): array
     {
@@ -57,6 +59,8 @@ class GitLabAdapter implements VCSPort
 
     /**
      * Opens a merge request from the source branch into the target base branch.
+     *
+     * @return array<string, mixed>
      */
     public function openPullRequest(string $owner, string $repo, string $title, string $body, string $head, string $base = 'main'): array
     {

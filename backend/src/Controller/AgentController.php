@@ -254,6 +254,8 @@ class AgentController extends AbstractApiController
 
     /**
      * Serializes an AgentTaskExecution for API response, including business context.
+     *
+     * @return array<string, mixed>
      */
     private function serializeExecution(AgentTaskExecution $execution): array
     {

@@ -48,11 +48,11 @@ final class ListAgentAdaptersCommand extends Command
                     $descriptor->connector->label(),
                     $descriptor->connectorClass,
                     $descriptor->isOverallHealthy() ? 'healthy' : 'degraded',
-                    $descriptor->authentication?->status ?? 'n/a',
-                    $descriptor->authentication?->method ?? 'n/a',
+                    $descriptor->authentication->status,
+                    $descriptor->authentication->method ?? 'n/a',
                     match (true) {
-                        $descriptor->authentication?->supportsAccountUsage !== true => 'n/a',
-                        $descriptor->authentication?->usesAccountUsage === true => 'yes',
+                        $descriptor->authentication->supportsAccountUsage !== true => 'n/a',
+                        $descriptor->authentication->usesAccountUsage === true => 'yes',
                         default => 'no',
                     },
                     $descriptor->supportsModelDiscovery ? 'yes' : 'no',
@@ -62,7 +62,7 @@ final class ListAgentAdaptersCommand extends Command
         );
 
         foreach ($descriptors as $descriptor) {
-            if ($descriptor->authentication?->summary === null) {
+            if ($descriptor->authentication->summary === null) {
                 continue;
             }
 

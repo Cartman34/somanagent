@@ -16,14 +16,15 @@ interface SkillPort
      * Imports a skill from the registry (for example: "anthropics/code-reviewer").
      * Returns the parsed metadata extracted from SKILL.md.
      *
-     * @return array{slug: string, name: string, description: string, content: string, filePath: string}
+     * @return array{slug: string, name: string, description: string, content: string, filePath: string, originalSource: string}
      */
     public function import(string $ownerAndName): array;
 
     /**
      * Lists the skills available from the registry.
+     * The return format depends on the adapter implementation.
      *
-     * @return array<array{slug: string, name: string, description: string}>
+     * @return array<mixed>
      */
     public function search(string $query = ''): array;
 }

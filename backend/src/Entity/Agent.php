@@ -38,6 +38,8 @@ class Agent
 
     /**
      * Serialized JSON agent configuration: model, max_tokens, temperature, timeout, and extra options.
+     *
+     * @var array<string, mixed>
      */
     #[ORM\Column(type: 'json')]
     private array $config;

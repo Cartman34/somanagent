@@ -48,6 +48,7 @@ class Workflow
     #[ORM\Column]
     private \DateTimeImmutable $updatedAt;
 
+    /** @var Collection<int, WorkflowStep> */
     #[ORM\OneToMany(targetEntity: WorkflowStep::class, mappedBy: 'workflow', cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[ORM\OrderBy(['stepOrder' => 'ASC'])]
     private Collection $steps;

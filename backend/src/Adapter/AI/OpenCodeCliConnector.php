@@ -300,7 +300,7 @@ class OpenCodeCliConnector extends AbstractConnector
         $index = 0;
 
         while ($index < count($lines)) {
-            $modelReference = trim($lines[$index] ?? '');
+            $modelReference = trim($lines[$index]);
             ++$index;
 
             if ($modelReference === '' || str_starts_with($modelReference, 'opencode models')) {

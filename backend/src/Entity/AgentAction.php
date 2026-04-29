@@ -92,7 +92,9 @@ class AgentAction
     public function getRole(): ?Role { return $this->role; }
     /** Returns the skill associated with this action. */
     public function getSkill(): ?Skill { return $this->skill; }
-    /** Returns the allowed backend effects. @return string[] */
+    /**
+     * @return string[]
+     */
     public function getAllowedEffects(): array { return $this->allowedEffects; }
     /** Indicates whether the action is enabled. */
     public function isActive(): bool { return $this->isActive; }
@@ -109,7 +111,9 @@ class AgentAction
     public function setRole(?Role $role): static { $this->role = $role; return $this; }
     /** Assigns or clears the skill linked to this action. */
     public function setSkill(?Skill $skill): static { $this->skill = $skill; return $this; }
-    /** Updates the allowed backend effects. @param string[] $effects */
+    /**
+     * @param string[] $effects
+     */
     public function setAllowedEffects(array $effects): static { $this->allowedEffects = $effects; return $this; }
     /** Enables or disables the action. */
     public function setIsActive(bool $isActive): static { $this->isActive = $isActive; return $this; }

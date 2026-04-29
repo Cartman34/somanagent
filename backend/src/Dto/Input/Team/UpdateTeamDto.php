@@ -22,7 +22,7 @@ final class UpdateTeamDto
     ) {}
 
     /**
-     * Creates an instance from raw request data. No required fields.
+     * @param array<string, mixed> $data
      */
     public static function fromArray(array $data): self
     {

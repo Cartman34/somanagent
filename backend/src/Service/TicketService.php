@@ -306,10 +306,6 @@ final class TicketService
         }
 
         foreach ($this->workflowStepActionRepository->findCreateWithTicketByWorkflow($workflow) as $workflowStepAction) {
-            if (!$workflowStepAction instanceof WorkflowStepAction) {
-                continue;
-            }
-
             $this->ticketTaskService->ensureCreateWithTicketTask($ticket, $workflowStepAction);
         }
     }

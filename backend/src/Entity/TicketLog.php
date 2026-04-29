@@ -51,6 +51,7 @@ class TicketLog
     #[ORM\Column(type: 'uuid', nullable: true)]
     private ?Uuid $replyToLogId = null;
 
+    /** @var ?array<string, mixed> */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $metadata = null;
 
@@ -90,7 +91,10 @@ class TicketLog
     public function requiresAnswer(): bool { return $this->requiresAnswer; }
     /** Returns the referenced parent log entry identifier, if any. */
     public function getReplyToLogId(): ?Uuid { return $this->replyToLogId; }
-    /** Returns structured metadata attached to the log entry, if any. */
+    /**
+     * Returns structured metadata attached to the log entry, if any.
+     * @return ?array<string, mixed>
+     */
     public function getMetadata(): ?array { return $this->metadata; }
     /** Returns when the log entry was created. */
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
@@ -109,6 +113,9 @@ class TicketLog
     public function setRequiresAnswer(bool $requiresAnswer): static { $this->requiresAnswer = $requiresAnswer; return $this; }
     /** Stores the replied log entry identifier. */
     public function setReplyToLogId(?Uuid $replyToLogId): static { $this->replyToLogId = $replyToLogId; return $this; }
-    /** Stores structured metadata for the log entry. */
+    /**
+     * Stores structured metadata for the log entry.
+     * @param ?array<string, mixed> $metadata
+     */
     public function setMetadata(?array $metadata): static { $this->metadata = $metadata; return $this; }
 }

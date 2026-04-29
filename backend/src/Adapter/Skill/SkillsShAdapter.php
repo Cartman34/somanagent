@@ -23,6 +23,8 @@ class SkillsShAdapter implements SkillPort
 
     /**
      * Imports a skill from the marketplace and returns the parsed SKILL.md payload.
+     *
+     * @return array{slug: string, name: string, description: string, content: string, filePath: string, originalSource: string}
      */
     public function import(string $ownerAndName): array
     {
@@ -54,6 +56,8 @@ class SkillsShAdapter implements SkillPort
 
     /**
      * Searches the marketplace and returns the raw CLI output for display.
+     *
+     * @return array{output: string}
      */
     public function search(string $query = ''): array
     {
@@ -69,6 +73,8 @@ class SkillsShAdapter implements SkillPort
 
     /**
      * Parses a SKILL.md file containing YAML frontmatter followed by Markdown content.
+     *
+     * @return array{slug: string, name: string, description: string, content: string, filePath: string, originalSource: string}
      */
     public function parseSkillMd(string $absolutePath, string $originalSource = ''): array
     {

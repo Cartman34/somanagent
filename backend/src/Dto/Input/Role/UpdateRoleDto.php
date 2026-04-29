@@ -24,6 +24,7 @@ final class UpdateRoleDto
     ) {}
 
     /**
+     * @param array<string, mixed> $data
      * Creates an instance from raw request data. No required fields.
      */
     public static function fromArray(array $data): self

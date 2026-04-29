@@ -27,7 +27,8 @@ class TokenUsageRepository extends ServiceEntityRepository
 
     /**
      * Totaux de tokens par agent sur une période.
-     * Retourne ['agentId' => string, 'agentName' => string, 'totalInput' => int, 'totalOutput' => int][]
+     *
+     * @return array<int, array<string, mixed>>
      */
     public function sumByAgent(?\DateTimeImmutable $from = null, ?\DateTimeImmutable $to = null): array
     {
@@ -72,7 +73,8 @@ class TokenUsageRepository extends ServiceEntityRepository
 
     /**
      * Aggregates token usage by agent for the given project.
-     * Returns ['agentId' => string, 'totalInput' => int, 'totalOutput' => int, 'calls' => int][]
+     *
+     * @return array<int, array<string, mixed>>
      */
     public function sumByProjectAndAgent(Project $project): array
     {

@@ -130,8 +130,8 @@ class SeedWebTeamCommand extends Command
 
         foreach (self::ACTIONS as $def) {
             $action = new AgentAction($def['key'], $def['label']);
-            $action->setRole($roles[$def['role']] ?? null);
-            $action->setSkill($def['skill'] !== null ? ($skills[$def['skill']] ?? null) : null);
+            $action->setRole($roles[$def['role']]);
+            $action->setSkill(null);
             $action->setAllowedEffects($def['effects']);
             $this->em->persist($action);
             $io->text("  Action: <fg=cyan>{$def['key']}</>");

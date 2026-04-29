@@ -40,6 +40,7 @@ class ExternalReference
     #[ORM\Column(length: 512, nullable: true)]
     private ?string $externalUrl = null;
 
+    /** @var ?array<string, mixed> */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $metadata = null;
 
@@ -67,10 +68,12 @@ class ExternalReference
     public function getSystem(): ExternalSystem         { return $this->system; }
     public function getExternalId(): string             { return $this->externalId; }
     public function getExternalUrl(): ?string           { return $this->externalUrl; }
+    /** @return ?array<string, mixed> */
     public function getMetadata(): ?array               { return $this->metadata; }
     public function getSyncedAt(): ?\DateTimeImmutable  { return $this->syncedAt; }
 
     public function setExternalUrl(?string $url): static    { $this->externalUrl = $url; return $this; }
+    /** @param ?array<string, mixed> $data */
     public function setMetadata(?array $data): static       { $this->metadata = $data; return $this; }
 
     public function markSynced(): static

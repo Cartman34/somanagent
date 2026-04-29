@@ -43,6 +43,7 @@ class LogOccurrenceRepository extends ServiceEntityRepository
      *   from?: \DateTimeImmutable|null,
      *   to?: \DateTimeImmutable|null
      * } $filters
+     * @return LogOccurrence[]
      */
     public function findFiltered(array $filters, int $limit, int $offset): array
     {

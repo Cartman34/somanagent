@@ -51,6 +51,7 @@ class LogEvent
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $titleKey = null;
 
+    /** @var ?array<string, mixed> */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $titleParameters = null;
 
@@ -63,6 +64,7 @@ class LogEvent
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $messageKey = null;
 
+    /** @var ?array<string, mixed> */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $messageParameters = null;
 
@@ -87,6 +89,7 @@ class LogEvent
     #[ORM\Column(length: 64, nullable: true)]
     private ?string $traceRef = null;
 
+    /** @var ?array<string, mixed> */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $context = null;
 
@@ -96,6 +99,7 @@ class LogEvent
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $origin = null;
 
+    /** @var ?array<string, mixed> */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $rawPayload = null;
 
@@ -130,7 +134,10 @@ class LogEvent
     public function getTitleDomain(): ?string { return $this->titleDomain; }
     /** Returns the translation key used for the title, if any. */
     public function getTitleKey(): ?string { return $this->titleKey; }
-    /** Returns translation parameters used for the title, if any. */
+    /**
+     * Returns translation parameters used for the title, if any.
+     * @return ?array<string, mixed>
+     */
     public function getTitleParameters(): ?array { return $this->titleParameters; }
     /** Returns the fallback event message. */
     public function getMessage(): string { return $this->message; }
@@ -138,7 +145,10 @@ class LogEvent
     public function getMessageDomain(): ?string { return $this->messageDomain; }
     /** Returns the translation key used for the message, if any. */
     public function getMessageKey(): ?string { return $this->messageKey; }
-    /** Returns translation parameters used for the message, if any. */
+    /**
+     * Returns translation parameters used for the message, if any.
+     * @return ?array<string, mixed>
+     */
     public function getMessageParameters(): ?array { return $this->messageParameters; }
     /** Returns the deduplication fingerprint, if any. */
     public function getFingerprint(): ?string { return $this->fingerprint; }
@@ -154,13 +164,19 @@ class LogEvent
     public function getRequestRef(): ?string { return $this->requestRef; }
     /** Returns the trace reference, if any. */
     public function getTraceRef(): ?string { return $this->traceRef; }
-    /** Returns structured context attached to the event, if any. */
+    /**
+     * Returns structured context attached to the event, if any.
+     * @return ?array<string, mixed>
+     */
     public function getContext(): ?array { return $this->context; }
     /** Returns the stack trace attached to the event, if any. */
     public function getStack(): ?string { return $this->stack; }
     /** Returns the origin of the event, if any. */
     public function getOrigin(): ?string { return $this->origin; }
-    /** Returns the raw provider payload, if any. */
+    /**
+     * Returns the raw provider payload, if any.
+     * @return ?array<string, mixed>
+     */
     public function getRawPayload(): ?array { return $this->rawPayload; }
     /** Returns when the event occurred. */
     public function getOccurredAt(): \DateTimeImmutable { return $this->occurredAt; }
@@ -179,13 +195,19 @@ class LogEvent
     public function setRequestRef(?string $requestRef): static { $this->requestRef = $requestRef; return $this; }
     /** Stores the trace reference. */
     public function setTraceRef(?string $traceRef): static { $this->traceRef = $traceRef; return $this; }
-    /** Stores structured context for the event. */
+    /**
+     * Stores structured context for the event.
+     * @param ?array<string, mixed> $context
+     */
     public function setContext(?array $context): static { $this->context = $context; return $this; }
     /** Stores the stack trace for the event. */
     public function setStack(?string $stack): static { $this->stack = $stack; return $this; }
     /** Stores the event origin label. */
     public function setOrigin(?string $origin): static { $this->origin = $origin; return $this; }
-    /** Stores the raw provider payload. */
+    /**
+     * Stores the raw provider payload.
+     * @param ?array<string, mixed> $rawPayload
+     */
     public function setRawPayload(?array $rawPayload): static { $this->rawPayload = $rawPayload; return $this; }
 
     /**

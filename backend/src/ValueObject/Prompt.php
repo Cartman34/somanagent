@@ -13,12 +13,18 @@ namespace App\ValueObject;
  */
 final class Prompt
 {
+    /**
+     * @param array<string, mixed> $context
+     */
     private function __construct(
         private readonly string $skillContent,
         private readonly string $taskInstruction,
         private readonly array  $context = [],
     ) {}
 
+    /**
+     * @param array<string, mixed> $context
+     */
     public static function create(
         string $skillContent,
         string $taskInstruction,
@@ -49,6 +55,7 @@ final class Prompt
 
     public function getSkillContent(): string    { return $this->skillContent; }
     public function getTaskInstruction(): string { return $this->taskInstruction; }
+    /** @return array<string, mixed> */
     public function getContext(): array          { return $this->context; }
 
     private function formatContext(): string

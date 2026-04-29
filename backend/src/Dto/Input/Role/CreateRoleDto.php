@@ -28,6 +28,7 @@ final class CreateRoleDto
     /**
      * Creates an instance from raw request data.
      *
+     * @param array<string, mixed> $data
      * @throws ValidationException if validation errors occur
      */
     public static function fromArray(array $data): self

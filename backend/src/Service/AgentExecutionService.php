@@ -527,10 +527,6 @@ final class AgentExecutionService
         $removed = 0;
 
         foreach ($tasks as $task) {
-            if (!$task instanceof TicketTask) {
-                continue;
-            }
-
             if ($task === $planningTask) {
                 continue;
             }

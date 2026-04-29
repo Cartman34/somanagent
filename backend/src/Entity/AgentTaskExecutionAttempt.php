@@ -107,7 +107,10 @@ class AgentTaskExecutionAttempt
     public function getErrorMessage(): ?string { return $this->errorMessage; }
     /** Returns the scope associated with the last error. */
     public function getErrorScope(): ?string { return $this->errorScope; }
-    /** Returns the runtime resource snapshot captured for this attempt, if any. */
+    /**
+     * Returns the runtime resource snapshot captured for this attempt, if any.
+     * @return ?array<string, mixed>
+     */
     public function getResourceSnapshot(): ?array { return $this->resourceSnapshot; }
     /** Returns when the attempt record was created. */
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
@@ -130,6 +133,9 @@ class AgentTaskExecutionAttempt
     public function setErrorMessage(?string $errorMessage): static { $this->errorMessage = $errorMessage; return $this; }
     /** Stores the scope associated with the last error. */
     public function setErrorScope(?string $errorScope): static { $this->errorScope = $errorScope; return $this; }
-    /** Stores the immutable runtime resource snapshot for this attempt. */
+    /**
+     * Stores the immutable runtime resource snapshot for this attempt.
+     * @param ?array<string, mixed> $resourceSnapshot
+     */
     public function setResourceSnapshot(?array $resourceSnapshot): static { $this->resourceSnapshot = $resourceSnapshot; return $this; }
 }

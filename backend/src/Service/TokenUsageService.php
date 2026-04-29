@@ -50,6 +50,8 @@ class TokenUsageService
 
     /**
      * Global summary: total tokens, total calls, breakdown by agent.
+     *
+     * @return array<string, mixed>
      */
     public function getSummary(?\DateTimeImmutable $from = null, ?\DateTimeImmutable $to = null): array
     {

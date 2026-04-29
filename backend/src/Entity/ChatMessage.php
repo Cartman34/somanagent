@@ -46,6 +46,7 @@ class ChatMessage
     #[ORM\Column(type: 'boolean')]
     private bool $isError = false;
 
+    /** @var ?array<string, mixed> */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $metadata = null;
 
@@ -54,6 +55,7 @@ class ChatMessage
 
     /**
      * Creates a chat message linked to a project, agent, and exchange thread.
+     * @param ?array<string, mixed> $metadata
      */
     public function __construct(
         Project    $project,
@@ -95,9 +97,15 @@ class ChatMessage
     public function setReplyToMessageId(?Uuid $replyToMessageId): static { $this->replyToMessageId = $replyToMessageId; return $this; }
     /** Indicates whether the message represents an error response. */
     public function isError(): bool                    { return $this->isError; }
-    /** Returns optional structured metadata attached to the message. */
+    /**
+     * Returns optional structured metadata attached to the message.
+     * @return ?array<string, mixed>
+     */
     public function getMetadata(): ?array              { return $this->metadata; }
-    /** Replaces structured metadata attached to the message. */
+    /**
+     * Replaces structured metadata attached to the message.
+     * @param ?array<string, mixed> $metadata
+     */
     public function setMetadata(?array $metadata): static { $this->metadata = $metadata; return $this; }
     /** Returns when the message was created. */
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }

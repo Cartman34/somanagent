@@ -23,7 +23,7 @@ class GitHubAdapter implements VCSPort
     /**
      * Initializes the GitHub API client with the provided personal access token.
      */
-    public function __construct(private readonly string $token)
+    public function __construct(string $token)
     {
         $this->http = new Client([
             'base_uri' => self::BASE_URL,
@@ -37,6 +37,8 @@ class GitHubAdapter implements VCSPort
 
     /**
      * Fetches repository metadata from GitHub.
+     *
+     * @return array<string, mixed>
      */
     public function getRepository(string $owner, string $repo): array
     {
@@ -60,6 +62,8 @@ class GitHubAdapter implements VCSPort
 
     /**
      * Opens a pull request from the source branch into the target base branch.
+     *
+     * @return array<string, mixed>
      */
     public function openPullRequest(string $owner, string $repo, string $title, string $body, string $head, string $base = 'main'): array
     {

@@ -184,7 +184,7 @@ final class AuthDiagnoseCommand extends Command
 
             if (function_exists('posix_getpwuid') && function_exists('fileowner')) {
                 $ownerInfo = posix_getpwuid((int) fileowner($path));
-                $owner     = is_array($ownerInfo) ? ($ownerInfo['name'] ?? '?') : '?';
+                $owner     = is_array($ownerInfo) ? $ownerInfo['name'] : '?';
             }
 
             if (is_dir($path)) {

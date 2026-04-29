@@ -31,54 +31,6 @@ class DevTeamFixture extends Fixture
 {
     private const SKILLS_BASE_PATH = '/var/www/skills/custom';
     private const TRANSLATION_DOMAIN = 'fixtures';
-    private const FIXTURE_LABEL_KEYS = [
-        'role' => [
-            'product_owner_name' => 'fixtures.role.product_owner.name',
-            'product_owner_description' => 'fixtures.role.product_owner.description',
-            'lead_tech_name' => 'fixtures.role.lead_tech.name',
-            'lead_tech_description' => 'fixtures.role.lead_tech.description',
-            'php_dev_name' => 'fixtures.role.php_dev.name',
-            'php_dev_description' => 'fixtures.role.php_dev.description',
-            'frontend_dev_name' => 'fixtures.role.frontend_dev.name',
-            'frontend_dev_description' => 'fixtures.role.frontend_dev.description',
-            'ui_ux_designer_name' => 'fixtures.role.ui_ux_designer.name',
-            'ui_ux_designer_description' => 'fixtures.role.ui_ux_designer.description',
-            'tester_name' => 'fixtures.role.tester.name',
-            'tester_description' => 'fixtures.role.tester.description',
-            'scrum_master_name' => 'fixtures.role.scrum_master.name',
-            'scrum_master_description' => 'fixtures.role.scrum_master.description',
-            'tech_writer_name' => 'fixtures.role.tech_writer.name',
-            'tech_writer_description' => 'fixtures.role.tech_writer.description',
-            'devops_name' => 'fixtures.role.devops.name',
-            'devops_description' => 'fixtures.role.devops.description',
-        ],
-        'agent' => [
-            'po_alice_name' => 'fixtures.agent.po_alice.name',
-            'lt_bob_name' => 'fixtures.agent.lt_bob.name',
-            'php_charlie_name' => 'fixtures.agent.php_charlie.name',
-            'front_diana_name' => 'fixtures.agent.front_diana.name',
-            'design_eve_name' => 'fixtures.agent.design_eve.name',
-            'qa_frank_name' => 'fixtures.agent.qa_frank.name',
-            'sm_grace_name' => 'fixtures.agent.sm_grace.name',
-            'doc_henry_name' => 'fixtures.agent.doc_henry.name',
-            'ops_iris_name' => 'fixtures.agent.ops_iris.name',
-        ],
-        'team' => [
-            'web_dev_name' => 'fixtures.team.web_dev.name',
-            'web_dev_description' => 'fixtures.team.web_dev.description',
-        ],
-        'workflow' => [
-            'standard_name' => 'fixtures.workflow.standard.name',
-            'standard_description' => 'fixtures.workflow.standard.description',
-            'standard_step_new_name' => 'fixtures.workflow.standard.step.new.name',
-            'standard_step_ready_name' => 'fixtures.workflow.standard.step.ready.name',
-            'standard_step_planning_name' => 'fixtures.workflow.standard.step.planning.name',
-            'standard_step_graphic_design_name' => 'fixtures.workflow.standard.step.graphic_design.name',
-            'standard_step_development_name' => 'fixtures.workflow.standard.step.development.name',
-            'standard_step_code_review_name' => 'fixtures.workflow.standard.step.code_review.name',
-            'standard_step_done_name' => 'fixtures.workflow.standard.step.done.name',
-        ],
-    ];
 
     /**
      * Injects the translator used to resolve fixture-specific labels.
@@ -125,7 +77,10 @@ class DevTeamFixture extends Fixture
         return $skills;
     }
 
-    /** @return array<string, Role> */
+    /**
+     * @param array<string, Skill> $skills
+     * @return array<string, Role>
+     */
     private function createRoles(ObjectManager $manager, array $skills): array
     {
         $definitions = [
@@ -158,6 +113,7 @@ class DevTeamFixture extends Fixture
     /**
      * @param array<string, Role> $roles
      * @param array<string, Skill> $skills
+     * @return array<string, AgentAction>
      */
     private function createAgentActions(ObjectManager $manager, array $roles, array $skills): array
     {
@@ -192,7 +148,10 @@ class DevTeamFixture extends Fixture
         return $actions;
     }
 
-    /** @return array<string, Agent> */
+    /**
+     * @param array<string, Role> $roles
+     * @return array<string, Agent>
+     */
     private function createAgents(ObjectManager $manager, array $roles): array
     {
         $config = ConnectorConfig::default();
@@ -220,6 +179,7 @@ class DevTeamFixture extends Fixture
         return $agents;
     }
 
+    /** @param array<string, Agent> $agents */
     private function createTeam(ObjectManager $manager, array $agents): Team
     {
         $team = new Team(
@@ -233,6 +193,7 @@ class DevTeamFixture extends Fixture
         return $team;
     }
 
+    /** @param array<string, AgentAction> $actions */
     private function createWorkflowTemplate(ObjectManager $manager, array $actions): Workflow
     {
         $workflow = new Workflow(

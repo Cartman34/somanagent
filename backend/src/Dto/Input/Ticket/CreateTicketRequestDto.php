@@ -27,6 +27,7 @@ final class CreateTicketRequestDto
     ) {}
 
     /**
+     * @param array<string, mixed> $data
      * @throws ValidationException with accumulated validation errors
      */
     public static function fromArray(array $data): self

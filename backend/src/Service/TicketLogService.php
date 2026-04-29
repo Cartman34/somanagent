@@ -30,6 +30,8 @@ final class TicketLogService
 
     /**
      * Persists a generic activity log entry on a ticket.
+     *
+     * @param ?array<string, mixed> $metadata
      */
     public function log(
         Ticket      $ticket,
@@ -56,6 +58,8 @@ final class TicketLogService
 
     /**
      * Adds a comment log entry to a ticket, optionally as a reply to an existing log entry.
+     *
+     * @param ?array<string, mixed> $metadata
      */
     public function addComment(
         Ticket      $ticket,
