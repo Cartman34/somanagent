@@ -51,6 +51,10 @@ final class BacklogWorktreeRestoreCommand extends AbstractBacklogCommand
             throw new \RuntimeException("Agent {$agent} has an active entry but no branch metadata.");
         }
 
+        if (isset($options['force'])) {
+            $this->worktreeService->removeAgentWorktreeForRestore($agent);
+        }
+
         $worktree = $this->worktreeService->prepareAgentWorktree($agent);
         $this->worktreeService->checkoutBranchInWorktree($worktree, $branch, false);
 
