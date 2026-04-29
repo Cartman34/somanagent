@@ -23,7 +23,13 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $taskBRef = $context->scopedFeature . '/' . $context->childB;
 
         $driver->createTodoTask(sprintf('[%s][%s] Implement test child task A', $context->scopedFeature, $context->childA));
-        $driver->startNextFeature($context->agentPrimary);
+        $startOutput = $driver->startNextFeature($context->agentPrimary);
+        $driver->assertFeatureStartOutputContains($startOutput, '[Task]');
+        $driver->assertFeatureStartOutputContains($startOutput, 'Task: ' . $context->childA);
+        $driver->assertFeatureStartOutputContains($startOutput, '[Feature]');
+        $driver->assertFeatureStartOutputContains($startOutput, 'Feature: ' . $context->scopedFeature);
+        $driver->assertFeatureStartOutputContains($startOutput, '[Worktree]');
+        $driver->assertFeatureStartOutputContains($startOutput, '.worktrees/' . $context->agentPrimary);
         $driver->assertActiveFeatureExists($context->scopedFeature);
         $driver->assertStatusContains($context->scopedFeature, $context->childA);
 

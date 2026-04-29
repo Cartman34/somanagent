@@ -11,6 +11,7 @@ use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
+use SoManAgent\Script\Backlog\Model\ManagedWorktree;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
@@ -62,6 +63,8 @@ final class BacklogFeatureStartCommand extends AbstractBacklogCommand
         $first = $reserved[0]->getEntry();
         $first->setFeature(null);
         $first->setAgent(null);
+        $startedTaskEntry = null;
+        $startedFeatureEntry = null;
         $scopedTask = $this->boardService->extractScopedTaskMetadata($first->getText());
         if ($scopedTask !== null) {
             $task = $scopedTask['task'];
@@ -115,6 +118,8 @@ final class BacklogFeatureStartCommand extends AbstractBacklogCommand
             ]);
             $this->boardService->appendTaskContribution($parent->getEntry(), $taskEntry);
             $featureEntry = $taskEntry;
+            $startedTaskEntry = $taskEntry;
+            $startedFeatureEntry = $parent->getEntry();
         } else {
             $branchType = $this->boardService->resolveFeatureStartBranchType($first, null, $branchTypeOverride);
             $feature = $this->boardService->normalizeFeatureSlug($first->getText());
@@ -133,6 +138,7 @@ final class BacklogFeatureStartCommand extends AbstractBacklogCommand
                 BoardEntry::META_BASE => $base,
                 BoardEntry::META_PR => BacklogMetaValue::NONE->value,
             ]);
+            $startedFeatureEntry = $featureEntry;
         }
 
         foreach (array_slice($reserved, 1) as $task) {
@@ -158,5 +164,53 @@ final class BacklogFeatureStartCommand extends AbstractBacklogCommand
             $featureEntry->getTask() ?? $featureEntry->getFeature() ?? '-',
             $branch,
         ));
+        $this->displayStartedStatus($board, $worktree, $startedTaskEntry, $startedFeatureEntry);
+    }
+
+    private function displayStartedStatus(
+        BacklogBoard $board,
+        string $worktreePath,
+        ?BoardEntry $taskEntry,
+        ?BoardEntry $featureEntry
+    ): void
+    {
+        $this->presenter->displayLine('');
+        $this->presenter->displayLine('[Task]');
+        if ($taskEntry !== null) {
+            $this->presenter->displayEntryStatus($taskEntry);
+        } else {
+            $this->presenter->displayLine('Active: ' . BacklogMetaValue::NONE->value);
+        }
+
+        $this->presenter->displayLine('');
+        $this->presenter->displayLine('[Feature]');
+        if ($featureEntry !== null) {
+            $this->presenter->displayEntryStatus($featureEntry);
+        } else {
+            $this->presenter->displayLine('Active: ' . BacklogMetaValue::NONE->value);
+        }
+
+        $this->presenter->displayLine('');
+        $this->presenter->displayLine('[Worktree]');
+        $worktree = $this->findManagedWorktree($board, $worktreePath);
+        if ($worktree === null) {
+            $this->presenter->displayLine('State: absent');
+            $this->presenter->displayLine('Path: ' . $worktreePath);
+
+            return;
+        }
+
+        $this->presenter->displayManagedWorktreeStatus($worktree);
+    }
+
+    private function findManagedWorktree(BacklogBoard $board, string $worktreePath): ?ManagedWorktree
+    {
+        foreach ($this->worktreeService->classifyWorktrees($board)->getManaged() as $worktree) {
+            if ($worktree->getPath() === $worktreePath) {
+                return $worktree;
+            }
+        }
+
+        return null;
     }
 }

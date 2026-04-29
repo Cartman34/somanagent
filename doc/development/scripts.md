@@ -91,7 +91,7 @@ Notes:
 - reviewer commands never use `--agent`
 - `base-update` refreshes the recorded Git base after a rebase; features update `origin/main` before using the merge base with it, and local child tasks default to the merge base with their parent feature branch
 - `worktree-restore` validates copied PHP vendors with `autoload.php` witnesses and can recreate a clean managed worktree with `--force`
-- `feature-start` reads the next queued board entry and accepts plain text, optional `[feat]` / `[fix]` prefixes, and scoped entries like `[feature-slug][task-slug] Task text`
+- `feature-start` reads the next queued board entry, accepts plain text, optional `[feat]` / `[fix]` prefixes, and scoped entries like `[feature-slug][task-slug] Task text`, then prints the started task or feature details with the assigned worktree
 - child task review stays local; only the parent feature uses the remote PR flow
 
 ---

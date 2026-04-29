@@ -25,7 +25,11 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
 
         $driver->createTodoTask($context->plainFeature);
         $driver->assertTodoContains($context->plainFeature);
-        $driver->startNextFeature($context->agentPrimary);
+        $startOutput = $driver->startNextFeature($context->agentPrimary);
+        $driver->assertFeatureStartOutputContains($startOutput, '[Feature]');
+        $driver->assertFeatureStartOutputContains($startOutput, 'Summary: ' . $context->plainFeature);
+        $driver->assertFeatureStartOutputContains($startOutput, '[Worktree]');
+        $driver->assertFeatureStartOutputContains($startOutput, '.worktrees/' . $context->agentPrimary);
         $driver->assertStatusContains($context->agentPrimary, $context->plainFeature, true);
         $driver->assertWorktreeListContains($context->agentPrimary);
         $driver->removeManagedWorktree($context->agentPrimary);
