@@ -164,7 +164,7 @@ class OpenCodeCliConnector extends AbstractConnector
         }
 
         $result = shell_exec('which opencode 2>/dev/null');
-        if ($result === null || trim($result) === '') {
+        if (!is_string($result) || trim($result) === '') {
             return new ConnectorHealthCheckResult(
                 name: 'runtime',
                 status: 'degraded',

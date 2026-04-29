@@ -78,7 +78,10 @@ class SkillsShAdapter implements SkillPort
      */
     public function parseSkillMd(string $absolutePath, string $originalSource = ''): array
     {
-        $raw     = file_get_contents($absolutePath);
+        $raw = file_get_contents($absolutePath);
+        if ($raw === false) {
+            throw new \RuntimeException(sprintf('Cannot read skill file: %s', $absolutePath));
+        }
         $slug    = basename(dirname($absolutePath));
         $name    = $slug;
         $description = '';
