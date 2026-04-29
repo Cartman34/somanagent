@@ -50,34 +50,14 @@ final class GitClient
 
     public function capture(string $command): string
     {
-        $this->console->logVerbose(($this->dryRun ? '[dry-run] Would capture git output: ' : 'Capture git output: ') . $command);
-        if ($this->dryRun) {
-            return '';
-        }
+        $this->console->logVerbose('Capture git output: ' . $command);
 
         return $this->console->capture($command);
     }
 
     public function succeeds(string $command): bool
     {
-        $this->console->logVerbose(($this->dryRun ? '[dry-run] Would check git command success: ' : 'Check git command success: ') . $command);
-        if ($this->dryRun) {
-            return false;
-        }
-
-        return $this->console->succeeds($command);
-    }
-
-    public function inspectCapture(string $command): string
-    {
-        $this->console->logVerbose('Inspect git output: ' . $command);
-
-        return $this->console->capture($command);
-    }
-
-    public function inspectSucceeds(string $command): bool
-    {
-        $this->console->logVerbose('Inspect git command success: ' . $command);
+        $this->console->logVerbose('Check git command success: ' . $command);
 
         return $this->console->succeeds($command);
     }
@@ -226,19 +206,14 @@ final class GitClient
         return trim($this->capture(sprintf('git rev-parse %s', escapeshellarg($branch))));
     }
 
-    public function inspectBranchHead(string $branch): string
-    {
-        return trim($this->inspectCapture(sprintf('git rev-parse %s', escapeshellarg($branch))));
-    }
-
     public function refExists(string $ref): bool
     {
-        return $this->inspectSucceeds(sprintf('git rev-parse --verify --quiet %s', escapeshellarg($ref . '^{commit}')));
+        return $this->succeeds(sprintf('git rev-parse --verify --quiet %s', escapeshellarg($ref . '^{commit}')));
     }
 
     public function mergeBase(string $left, string $right): string
     {
-        return trim($this->inspectCapture(sprintf(
+        return trim($this->capture(sprintf(
             'git merge-base %s %s',
             escapeshellarg($left),
             escapeshellarg($right)
@@ -247,7 +222,7 @@ final class GitClient
 
     public function isAncestor(string $ancestor, string $descendant): bool
     {
-        return $this->inspectSucceeds(sprintf(
+        return $this->succeeds(sprintf(
             'git merge-base --is-ancestor %s %s',
             escapeshellarg($ancestor),
             escapeshellarg($descendant)

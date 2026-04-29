@@ -44,11 +44,6 @@ final class GitService
         return $this->git->branchHead($branch);
     }
 
-    public function inspectBranchHead(string $branch): string
-    {
-        return $this->git->inspectBranchHead($branch);
-    }
-
     public function checkRefExists(string $ref): bool
     {
         return $this->git->refExists($ref);
