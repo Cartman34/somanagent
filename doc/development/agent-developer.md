@@ -180,8 +180,10 @@ Read this file only when the active task requires developer workflow details.
 ### `worktree-restore`
 
 1. Run `php scripts/backlog.php worktree-restore --agent=<code>` or `php scripts/backlog.php worktree-restore <feature>`.
-2. The script recreates the managed worktree for the active feature or task recorded in backlog metadata without changing the workflow stage.
-3. Use this command when `.worktrees/<agent>` was removed while the backlog still has active development.
+2. The script recreates or refreshes the managed worktree for the active feature or task recorded in backlog metadata without changing the workflow stage.
+3. Existing PHP vendors are validated with `scripts/vendor/autoload.php` and `backend/vendor/autoload.php`; when a witness is missing, the whole matching vendor directory is replaced from `WP`.
+4. Run `php scripts/backlog.php worktree-restore --agent=<code> --force` to recreate the managed worktree completely; the script refuses `--force` when the existing worktree has local changes.
+5. Use this command when `.worktrees/<agent>` was removed or when copied PHP runtime dependencies are incomplete while the backlog still has active development.
 
 ### `status`
 
