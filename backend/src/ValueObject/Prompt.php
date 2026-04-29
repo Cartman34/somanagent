@@ -40,14 +40,14 @@ final class Prompt
         $parts = [];
 
         if ($this->skillContent !== '') {
-            $parts[] = "# Instructions du skill\n\n" . $this->skillContent;
+            $parts[] = "# Skill instructions\n\n" . $this->skillContent;
         }
 
         if (!empty($this->context)) {
-            $parts[] = "# Contexte\n\n" . $this->formatContext();
+            $parts[] = "# Context\n\n" . $this->formatContext();
         }
 
-        $parts[] = "# Tâche\n\n" . $this->taskInstruction;
+        $parts[] = "# Task\n\n" . $this->taskInstruction;
 
         return implode("\n\n---\n\n", $parts);
     }
