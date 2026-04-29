@@ -41,7 +41,8 @@
       "Bash(opencode --help)",
       "Bash(sort *)",
       "Bash(grep *)",
-      "Bash(awk *)"
+      "Bash(awk *)",
+      "Bash(composer install *)"
     ]
   }
 }

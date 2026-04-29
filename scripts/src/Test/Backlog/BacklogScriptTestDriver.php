@@ -278,10 +278,24 @@ MD);
         $this->runBacklog(['feature-unblock', '--agent', $agent, $feature]);
     }
 
-    public function mergeFeature(string $feature, string $bodyFile): void
+    public function mergeFeature(string $feature, ?string $bodyFile = null): void
     {
-        $this->runBacklog(['feature-merge', $feature, '--body-file', $bodyFile]);
+        $arguments = ['feature-merge', $feature];
+        if ($bodyFile !== null) {
+            $arguments[] = '--body-file';
+            $arguments[] = $bodyFile;
+        }
+
+        $this->runBacklog($arguments);
         $this->context->markPullRequestMerged();
+    }
+
+    public function assertFeatureMergeBodyFileWithoutValueFails(string $feature): void
+    {
+        $this->assertBacklogFails(
+            ['feature-merge', $feature, '--body-file'],
+            'Option --body-file requires a non-empty path when provided.',
+        );
     }
 
     public function commitFeatureChange(string $agent, string $feature, string $fileName): void
