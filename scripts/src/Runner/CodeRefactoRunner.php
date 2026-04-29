@@ -130,12 +130,11 @@ final class CodeRefactoRunner extends AbstractScriptRunner
             // Fix /* @var to /** @var
             $newContent = str_replace('/* @var', '/** @var', $content);
             if ($newContent !== $content) {
-                // Count occurrences
-                $count += (strlen($content) - strlen($newContent)) / (strlen('/* @var') - strlen('/** @var'));
+                $count += substr_count($content, '/* @var');
                 $this->updateFile($file, $content, $newContent);
             }
         }
-        $this->console->ok(sprintf('Fixed %d inline PHPDoc blocks.', (int) abs($count)));
+        $this->console->ok(sprintf('Fixed %d inline PHPDoc blocks.', $count));
 
         return 0;
     }
@@ -289,11 +288,29 @@ final class CodeRefactoRunner extends AbstractScriptRunner
 
     private function updateFile(string $file, string $oldContent, string $newContent): void
     {
-        if ($this->dryRun) {
+        if ($this->verbose) {
             $relativePath = str_replace($this->projectRoot . '/', '', $file);
-            if ($this->verbose) {
-                $this->console->info(sprintf('File: %s', $relativePath));
+            $this->console->info(sprintf('File: %s', $relativePath));
+
+            $tmpOld = tempnam(sys_get_temp_dir(), 'somanagent_old_');
+            $tmpNew = tempnam(sys_get_temp_dir(), 'somanagent_new_');
+            if ($tmpOld !== false && $tmpNew !== false) {
+                file_put_contents($tmpOld, $oldContent);
+                file_put_contents($tmpNew, $newContent);
+
+                $output = [];
+                exec(sprintf('diff -u --label a/%1$s --label b/%1$s %2$s %3$s', escapeshellarg($relativePath), escapeshellarg($tmpOld), escapeshellarg($tmpNew)), $output);
+
+                foreach ($output as $line) {
+                    $this->console->line($line);
+                }
+
+                unlink($tmpOld);
+                unlink($tmpNew);
             }
+        }
+
+        if ($this->dryRun) {
             return;
         }
 
