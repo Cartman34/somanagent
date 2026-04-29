@@ -77,8 +77,8 @@ final class HelpRunner extends AbstractScriptRunner
             if ($meta['description']) {
                 echo "         {$meta['description']}\n";
             }
-            if ($meta['usages']) {
-                echo '         ' . $this->ansi('→ ', 'cyan') . $meta['usages'][0] . "\n";
+            foreach ($meta['usages'] as $usage) {
+                echo '         ' . $this->ansi('→ ', 'cyan') . $usage . "\n";
             }
             echo "\n";
         }
