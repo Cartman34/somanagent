@@ -40,7 +40,9 @@ class ExternalReference
     #[ORM\Column(length: 512, nullable: true)]
     private ?string $externalUrl = null;
 
-    /** @var ?array<string, mixed> */
+    /**
+     * @var ?array<string, mixed>
+     */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $metadata = null;
 

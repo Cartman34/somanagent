@@ -21,7 +21,9 @@ class ConnectorRegistry
 {
     private const PROMPT_TEST_CACHE_TTL = 300;
 
-    /** @var ConnectorInterface[] */
+    /**
+     * @var ConnectorInterface[]
+     */
     private array $connectors;
 
     /**

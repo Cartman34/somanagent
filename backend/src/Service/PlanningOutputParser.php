@@ -117,7 +117,9 @@ final class PlanningOutputParser
         return $updates;
     }
 
-    /** @param array<string, mixed> $data */
+    /**
+     * @param array<string, mixed> $data
+     */
     private function requireString(array $data, string $key, string $context = 'root'): string
     {
         if (!isset($data[$key]) || !is_string($data[$key]) || trim($data[$key]) === '') {

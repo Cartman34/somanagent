@@ -12,7 +12,9 @@ namespace App\Service;
  */
 final class MessengerExecutionContext
 {
-    /** @var array{attempt: int, isRetry: bool, receiverName: string}|null */
+    /**
+     * @var array{attempt: int, isRetry: bool, receiverName: string}|null
+     */
     private ?array $current = null;
 
     /**

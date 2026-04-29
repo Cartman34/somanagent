@@ -46,7 +46,9 @@ class LogOccurrence
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $titleKey = null;
 
-    /** @var ?array<string, mixed> */
+    /**
+     * @var ?array<string, mixed>
+     */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $titleParameters = null;
 
@@ -59,7 +61,9 @@ class LogOccurrence
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $messageKey = null;
 
-    /** @var ?array<string, mixed> */
+    /**
+     * @var ?array<string, mixed>
+     */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $messageParameters = null;
 
@@ -90,7 +94,9 @@ class LogOccurrence
     #[ORM\Column(type: 'uuid', nullable: true)]
     private ?Uuid $lastLogEventId = null;
 
-    /** @var ?array<string, mixed> */
+    /**
+     * @var ?array<string, mixed>
+     */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $contextSnapshot = null;
 

@@ -440,7 +440,9 @@ final class AgentExecutionService
             );
         }
 
-        /** @var TicketTask[] $createdTasks */
+        /**
+         * @var TicketTask[] $createdTasks
+         */
         $createdTasks = [];
         foreach ($plan->tasks as $planTask) {
             $action = $this->agentActionRepository->findOneByKey($planTask->actionKey);

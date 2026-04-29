@@ -49,7 +49,9 @@ class TokenUsageRepository extends ServiceEntityRepository
         return $qb->getQuery()->getArrayResult();
     }
 
-    /** @return TokenUsage[] */
+    /**
+     * @return TokenUsage[]
+     */
     public function findByAgent(Agent $agent, int $limit = 100): array
     {
         return $this->findBy(['agent' => $agent], ['createdAt' => 'DESC'], $limit);
@@ -93,7 +95,9 @@ class TokenUsageRepository extends ServiceEntityRepository
             ->getArrayResult();
     }
 
-    /** @return TokenUsage[] */
+    /**
+     * @return TokenUsage[]
+     */
     public function findByTicket(Ticket $ticket, int $limit = 50): array
     {
         return $this->createQueryBuilder('tu')
@@ -106,7 +110,9 @@ class TokenUsageRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    /** @return TokenUsage[] */
+    /**
+     * @return TokenUsage[]
+     */
     public function findByTicketTask(TicketTask $ticketTask, int $limit = 50): array
     {
         return $this->findBy(['ticketTask' => $ticketTask], ['createdAt' => 'DESC'], $limit);

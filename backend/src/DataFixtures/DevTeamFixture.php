@@ -54,7 +54,9 @@ class DevTeamFixture extends Fixture
         $manager->flush();
     }
 
-    /** @return array<string, Skill> */
+    /**
+     * @return array<string, Skill>
+     */
     private function loadSkills(ObjectManager $manager): array
     {
         $definitions = [
@@ -179,7 +181,9 @@ class DevTeamFixture extends Fixture
         return $agents;
     }
 
-    /** @param array<string, Agent> $agents */
+    /**
+     * @param array<string, Agent> $agents
+     */
     private function createTeam(ObjectManager $manager, array $agents): Team
     {
         $team = new Team(
@@ -193,7 +197,9 @@ class DevTeamFixture extends Fixture
         return $team;
     }
 
-    /** @param array<string, AgentAction> $actions */
+    /**
+     * @param array<string, AgentAction> $actions
+     */
     private function createWorkflowTemplate(ObjectManager $manager, array $actions): Workflow
     {
         $workflow = new Workflow(

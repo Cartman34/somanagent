@@ -89,12 +89,16 @@ class AgentTaskExecution
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?Agent $effectiveAgent = null;
 
-    /** @var Collection<int, AgentTaskExecutionAttempt> */
+    /**
+     * @var Collection<int, AgentTaskExecutionAttempt>
+     */
     #[ORM\OneToMany(mappedBy: 'execution', targetEntity: AgentTaskExecutionAttempt::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[ORM\OrderBy(['attemptNumber' => 'ASC'])]
     private Collection $attempts;
 
-    /** @var Collection<int, TicketTask> */
+    /**
+     * @var Collection<int, TicketTask>
+     */
     #[ORM\ManyToMany(targetEntity: TicketTask::class, mappedBy: 'executions')]
     private Collection $ticketTasks;
 
@@ -164,13 +168,17 @@ class AgentTaskExecution
     /** Returns the effective agent that handled the execution. */
     public function getEffectiveAgent(): ?Agent { return $this->effectiveAgent; }
 
-    /** @return Collection<int, AgentTaskExecutionAttempt> */
+    /**
+     * @return Collection<int, AgentTaskExecutionAttempt>
+     */
     public function getAttempts(): Collection
     {
         return $this->attempts;
     }
 
-    /** @return Collection<int, TicketTask> */
+    /**
+     * @return Collection<int, TicketTask>
+     */
     public function getTicketTasks(): Collection
     {
         return $this->ticketTasks;

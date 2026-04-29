@@ -162,7 +162,9 @@ final class LogService
         return in_array($event->getLevel(), self::OCCURRENCE_LEVELS, true);
     }
 
-    /** @param array<string, mixed> $options */
+    /**
+     * @param array<string, mixed> $options
+     */
     private function buildFingerprint(string $source, string $category, string $level, string $title, string $message, array $options): string
     {
         $seed = implode('|', [

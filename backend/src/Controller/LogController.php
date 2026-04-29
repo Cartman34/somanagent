@@ -215,7 +215,9 @@ final class LogController extends AbstractApiController
         ], 201);
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     */
     private function serializeOccurrence(LogOccurrence $occurrence): array
     {
         return [
@@ -239,7 +241,9 @@ final class LogController extends AbstractApiController
         ];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     */
     private function serializeEvent(LogEvent $event): array
     {
         return [

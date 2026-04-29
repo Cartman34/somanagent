@@ -23,7 +23,9 @@ class ChatMessageRepository extends ServiceEntityRepository
         parent::__construct($registry, ChatMessage::class);
     }
 
-    /** @return ChatMessage[] */
+    /**
+     * @return ChatMessage[]
+     */
     public function findConversation(Project $project, Agent $agent, int $limit = 200): array
     {
         return $this->findBy(

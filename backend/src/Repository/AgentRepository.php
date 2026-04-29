@@ -148,7 +148,9 @@ class AgentRepository extends ServiceEntityRepository
     {
         $actions = array_merge(self::RUNTIME_ERROR_ACTIONS, self::RUNTIME_RECOVERY_ACTIONS);
 
-        /** @var array{action: string, createdAt: \DateTimeImmutable}|null $signal */
+        /**
+         * @var array{action: string, createdAt: \DateTimeImmutable}|null $signal
+         */
         $signal = $this->getEntityManager()
             ->createQuery(
                 'SELECT l.action AS action, l.createdAt AS createdAt

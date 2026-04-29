@@ -26,13 +26,17 @@ final class TicketTaskRepository extends ServiceEntityRepository
         parent::__construct($registry, TicketTask::class);
     }
 
-    /** @return TicketTask[] */
+    /**
+     * @return TicketTask[]
+     */
     public function findByTicket(Ticket $ticket): array
     {
         return $this->findBy(['ticket' => $ticket], ['createdAt' => 'ASC']);
     }
 
-    /** @return TicketTask[] */
+    /**
+     * @return TicketTask[]
+     */
     public function findRootsByTicket(Ticket $ticket): array
     {
         return $this->createQueryBuilder('tt')
@@ -44,7 +48,9 @@ final class TicketTaskRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    /** @return TicketTask[] */
+    /**
+     * @return TicketTask[]
+     */
     public function findChildren(TicketTask $ticketTask): array
     {
         return $this->findBy(['parent' => $ticketTask], ['createdAt' => 'ASC']);
@@ -99,19 +105,25 @@ final class TicketTaskRepository extends ServiceEntityRepository
         return $qb->getQuery()->getOneOrNullResult();
     }
 
-    /** @return TicketTask[] */
+    /**
+     * @return TicketTask[]
+     */
     public function findByAssignedAgent(Agent $agent): array
     {
         return $this->findBy(['assignedAgent' => $agent], ['updatedAt' => 'DESC']);
     }
 
-    /** @return TicketTask[] */
+    /**
+     * @return TicketTask[]
+     */
     public function findByStatus(TaskStatus $status): array
     {
         return $this->findBy(['status' => $status], ['updatedAt' => 'ASC']);
     }
 
-    /** @return TicketTask[] */
+    /**
+     * @return TicketTask[]
+     */
     public function findRecent(int $limit = 10): array
     {
         return $this->createQueryBuilder('tt')
@@ -121,7 +133,9 @@ final class TicketTaskRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    /** @return TicketTask[] */
+    /**
+     * @return TicketTask[]
+     */
     public function findByTitleLike(string $query, int $limit = 10): array
     {
         return $this->createQueryBuilder('tt')

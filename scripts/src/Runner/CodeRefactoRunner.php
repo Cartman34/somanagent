@@ -125,10 +125,29 @@ final class CodeRefactoRunner extends AbstractScriptRunner
         $count = 0;
         foreach ($files as $file) {
             $content = file_get_contents($file);
+            $newContent = $content;
+
             // Fix /* @var to /** @var
-            $newContent = str_replace('/* @var', '/** @var', $content);
+            $fixed = str_replace('/* @var', '/** @var', $newContent);
+            if ($fixed !== $newContent) {
+                $count += substr_count($newContent, '/* @var');
+                $newContent = $fixed;
+            }
+
+            // Fix single-line /** @tag … */ to multi-line
+            $fixed = preg_replace_callback(
+                '/^([ \t]*)\/\*\* (@(?:return|param|var|throws)[^*\n]+?) \*\/$/m',
+                function (array $m) use (&$count): string {
+                    $count++;
+                    return $m[1] . "/**\n" . $m[1] . " * " . rtrim($m[2]) . "\n" . $m[1] . " */";
+                },
+                $newContent
+            );
+            if ($fixed !== $newContent) {
+                $newContent = $fixed;
+            }
+
             if ($newContent !== $content) {
-                $count += substr_count($content, '/* @var');
                 $this->updateFile($file, $content, $newContent);
             }
         }

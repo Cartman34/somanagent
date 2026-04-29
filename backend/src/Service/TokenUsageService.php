@@ -143,7 +143,9 @@ class TokenUsageService
         );
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     */
     private function serializeEntry(TokenUsage $u): array
     {
         return [

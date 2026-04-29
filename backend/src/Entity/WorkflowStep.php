@@ -71,7 +71,9 @@ class WorkflowStep
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $lastOutput = null;
 
-    /** @var Collection<int, WorkflowStepAction> */
+    /**
+     * @var Collection<int, WorkflowStepAction>
+     */
     #[ORM\OneToMany(targetEntity: WorkflowStepAction::class, mappedBy: 'workflowStep', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $actions;
 
@@ -118,7 +120,9 @@ class WorkflowStep
     public function getStatus(): WorkflowStepStatus    { return $this->status; }
     /** Returns the latest execution output, if any. */
     public function getLastOutput(): ?string            { return $this->lastOutput; }
-    /** @return Collection<int, WorkflowStepAction> */
+    /**
+     * @return Collection<int, WorkflowStepAction>
+     */
     public function getActions(): Collection           { return $this->actions; }
 
     /** Reassigns the owning workflow. */

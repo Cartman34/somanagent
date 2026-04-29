@@ -136,7 +136,9 @@ final class AgentContextBuilder
         return $context;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     */
     private function buildProjectAgentContext(Project $project, Agent $agent): array
     {
         $roleSlug = $agent->getRole()?->getSlug();

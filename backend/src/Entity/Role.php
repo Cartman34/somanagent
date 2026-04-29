@@ -64,7 +64,9 @@ class Role
     /** Returns the optional role description. */
     public function getDescription(): ?string { return $this->description; }
 
-    /** @return Collection<int, Skill> */
+    /**
+     * @return Collection<int, Skill>
+     */
     public function getSkills(): Collection { return $this->skills; }
 
     /** Updates the unique role slug. */

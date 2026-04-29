@@ -46,7 +46,9 @@ class ChatMessage
     #[ORM\Column(type: 'boolean')]
     private bool $isError = false;
 
-    /** @var ?array<string, mixed> */
+    /**
+     * @var ?array<string, mixed>
+     */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $metadata = null;
 

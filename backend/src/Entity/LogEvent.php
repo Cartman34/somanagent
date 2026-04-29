@@ -51,7 +51,9 @@ class LogEvent
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $titleKey = null;
 
-    /** @var ?array<string, mixed> */
+    /**
+     * @var ?array<string, mixed>
+     */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $titleParameters = null;
 
@@ -64,7 +66,9 @@ class LogEvent
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $messageKey = null;
 
-    /** @var ?array<string, mixed> */
+    /**
+     * @var ?array<string, mixed>
+     */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $messageParameters = null;
 
@@ -89,7 +93,9 @@ class LogEvent
     #[ORM\Column(length: 64, nullable: true)]
     private ?string $traceRef = null;
 
-    /** @var ?array<string, mixed> */
+    /**
+     * @var ?array<string, mixed>
+     */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $context = null;
 
@@ -99,7 +105,9 @@ class LogEvent
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $origin = null;
 
-    /** @var ?array<string, mixed> */
+    /**
+     * @var ?array<string, mixed>
+     */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $rawPayload = null;
 

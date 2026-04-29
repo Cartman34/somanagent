@@ -22,7 +22,9 @@ class FeatureRepository extends ServiceEntityRepository
         parent::__construct($registry, Feature::class);
     }
 
-    /** @return Feature[] */
+    /**
+     * @return Feature[]
+     */
     public function findByProject(Project $project): array
     {
         return $this->findBy(['project' => $project], ['createdAt' => 'ASC']);

@@ -32,7 +32,9 @@ class ExternalReferenceRepository extends ServiceEntityRepository
         ]);
     }
 
-    /** @return ExternalReference[] */
+    /**
+     * @return ExternalReference[]
+     */
     public function findForEntity(string $entityType, Uuid $entityId): array
     {
         return $this->findBy(['entityType' => $entityType, 'entityId' => $entityId]);

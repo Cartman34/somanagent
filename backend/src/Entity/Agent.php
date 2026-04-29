@@ -114,7 +114,9 @@ class Agent
     /** Returns when the agent was last updated. */
     public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
 
-    /** @return Collection<int, Team> */
+    /**
+     * @return Collection<int, Team>
+     */
     public function getTeams(): Collection { return $this->teams; }
 
     /**

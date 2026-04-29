@@ -85,11 +85,15 @@ class Ticket
     #[ORM\Column]
     private \DateTimeImmutable $updatedAt;
 
-    /** @var Collection<int, TicketTask> */
+    /**
+     * @var Collection<int, TicketTask>
+     */
     #[ORM\OneToMany(mappedBy: 'ticket', targetEntity: TicketTask::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $tasks;
 
-    /** @var Collection<int, TicketLog> */
+    /**
+     * @var Collection<int, TicketLog>
+     */
     #[ORM\OneToMany(mappedBy: 'ticket', targetEntity: TicketLog::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $logs;
 
@@ -165,13 +169,17 @@ class Ticket
     /** Returns when the ticket was last updated. */
     public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
 
-    /** @return Collection<int, TicketTask> */
+    /**
+     * @return Collection<int, TicketTask>
+     */
     public function getTasks(): Collection
     {
         return $this->tasks;
     }
 
-    /** @return Collection<int, TicketLog> */
+    /**
+     * @return Collection<int, TicketLog>
+     */
     public function getLogs(): Collection
     {
         return $this->logs;

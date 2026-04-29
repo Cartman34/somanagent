@@ -51,7 +51,9 @@ class TicketLog
     #[ORM\Column(type: 'uuid', nullable: true)]
     private ?Uuid $replyToLogId = null;
 
-    /** @var ?array<string, mixed> */
+    /**
+     * @var ?array<string, mixed>
+     */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $metadata = null;
 
