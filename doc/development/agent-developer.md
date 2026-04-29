@@ -101,7 +101,8 @@ Read this file only when the active task requires developer workflow details.
 3. If no type prefix is present, the script falls back to `feat`.
 4. The script takes the next task from `## À faire`, updates local `main` when possible, creates the feature branch from `origin/main` in the agent worktree, moves the feature to `## Traitement en cours`, sets `meta.stage=development`, and authorizes development.
 5. If the queued task starts with `[feature-slug][task-slug]`, the script creates or reuses the parent `kind=feature` entry for `<feature-slug>`, keeps the shared parent branch `<type>/<feature-slug>`, then creates the child `kind=task` entry and local child branch `<type>/<feature-slug>--<task-slug>` from that local parent branch in the agent worktree.
-6. `feature-start` is local-only: it does not push and it does not create a PR.
+6. The command output includes the started task when applicable, the parent feature summary and details, and the assigned worktree path and branch.
+7. `feature-start` is local-only: it does not push and it does not create a PR.
 
 ### `feature-release`
 

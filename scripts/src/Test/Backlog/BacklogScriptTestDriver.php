@@ -124,7 +124,7 @@ MD);
         $this->assertOutputContains($this->runBacklog(['task-todo-list']), $needle);
     }
 
-    public function startNextFeature(string $agent): void
+    public function startNextFeature(string $agent): string
     {
         $worktreePath = $this->managedWorktreePath($agent);
         if ((is_dir($worktreePath) || is_file($worktreePath)) && !$this->context->hasWorktree($worktreePath)) {
@@ -134,8 +134,15 @@ MD);
             ));
         }
 
-        $this->runBacklog(['feature-start', '--agent', $agent]);
+        $output = $this->runBacklog(['feature-start', '--agent', $agent]);
         $this->context->recordWorktree($worktreePath);
+
+        return $output;
+    }
+
+    public function assertFeatureStartOutputContains(string $output, string $needle): void
+    {
+        $this->assertOutputContains($output, $needle);
     }
 
     public function assignFeatureAsManager(string $feature, string $agent): void

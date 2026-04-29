@@ -137,6 +137,7 @@ Validate `feature-start` on a plain queued task.
 - feature has `stage=development`
 - branch is created with the expected type
 - managed worktree exists for `d01`
+- `feature-start` output includes the feature summary and assigned worktree
 - the created feature slug corresponds to `test-plain-feature-alpha`
 
 ## Scenario 4 - Release Plain Feature Without Development
@@ -216,6 +217,7 @@ Validate `feature-start` on scoped queued tasks.
 - child task branch follows `<type>/<feature>--<task>`
 - parent feature branch exists separately
 - parent contribution block contains `[task:test-child-a]`
+- `feature-start` output includes the child task, parent feature, and assigned worktree
 
 ## Scenario 7 - Add Second Child Task To Existing Feature
 
