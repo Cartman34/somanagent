@@ -38,6 +38,12 @@ final class GitClient
         $this->retryPolicy = $retryPolicy;
     }
 
+    /**
+     * Runs a local Git mutation command.
+     *
+     * Use this for commands that can change the repository or worktree state.
+     * In dry-run mode the command is logged but not executed.
+     */
     public function run(string $command): void
     {
         $this->console->logVerbose(($this->dryRun ? '[dry-run] Would run git command: ' : 'Run git command: ') . $command);
@@ -48,20 +54,41 @@ final class GitClient
         $this->console->run($command);
     }
 
-    public function capture(string $command): string
+    /**
+     * Captures output from a read-only Git command.
+     *
+     * Use this only for inspections that do not modify repository, worktree,
+     * index, remotes, or configuration state. Read-only commands still run in
+     * dry-run mode because dry-run only suppresses mutations.
+     */
+    public function captureReadonly(string $command): string
     {
         $this->console->logVerbose('Capture git output: ' . $command);
 
         return $this->console->capture($command);
     }
 
-    public function succeeds(string $command): bool
+    /**
+     * Checks whether a read-only Git command succeeds.
+     *
+     * Use this only for inspections that do not modify repository, worktree,
+     * index, remotes, or configuration state. Read-only checks still run in
+     * dry-run mode because dry-run only suppresses mutations.
+     */
+    public function checkReadonly(string $command): bool
     {
         $this->console->logVerbose('Check git command success: ' . $command);
 
         return $this->console->succeeds($command);
     }
 
+    /**
+     * Runs a network Git mutation command with retry handling.
+     *
+     * Use this for network commands that can change local refs, remote refs, or
+     * worktree state, such as fetch, pull, and push. In dry-run mode the command
+     * is logged but not executed.
+     */
     public function runNetwork(string $command): void
     {
         [$code, $output] = $this->captureNetworkWithExitCode($command);
@@ -203,17 +230,17 @@ final class GitClient
 
     public function branchHead(string $branch): string
     {
-        return trim($this->capture(sprintf('git rev-parse %s', escapeshellarg($branch))));
+        return trim($this->captureReadonly(sprintf('git rev-parse %s', escapeshellarg($branch))));
     }
 
     public function refExists(string $ref): bool
     {
-        return $this->succeeds(sprintf('git rev-parse --verify --quiet %s', escapeshellarg($ref . '^{commit}')));
+        return $this->checkReadonly(sprintf('git rev-parse --verify --quiet %s', escapeshellarg($ref . '^{commit}')));
     }
 
     public function mergeBase(string $left, string $right): string
     {
-        return trim($this->capture(sprintf(
+        return trim($this->captureReadonly(sprintf(
             'git merge-base %s %s',
             escapeshellarg($left),
             escapeshellarg($right)
@@ -222,7 +249,7 @@ final class GitClient
 
     public function isAncestor(string $ancestor, string $descendant): bool
     {
-        return $this->succeeds(sprintf(
+        return $this->checkReadonly(sprintf(
             'git merge-base --is-ancestor %s %s',
             escapeshellarg($ancestor),
             escapeshellarg($descendant)
@@ -231,12 +258,12 @@ final class GitClient
 
     public function localBranchExists(string $branch): bool
     {
-        return $this->succeeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/heads/' . $branch)));
+        return $this->checkReadonly(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/heads/' . $branch)));
     }
 
     public function remoteBranchExists(string $remote, string $branch): bool
     {
-        return $this->succeeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/remotes/' . $remote . '/' . $branch)));
+        return $this->checkReadonly(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/remotes/' . $remote . '/' . $branch)));
     }
 
     public function deleteLocalBranch(string $branch): void
@@ -259,25 +286,25 @@ final class GitClient
 
     public function countCommitsAhead(string $base, string $branch): int
     {
-        return (int) trim($this->capture(sprintf('git rev-list --count %s..%s', escapeshellarg($base), escapeshellarg($branch))));
+        return (int) trim($this->captureReadonly(sprintf('git rev-list --count %s..%s', escapeshellarg($base), escapeshellarg($branch))));
     }
 
     public function hasLocalChanges(string $path = '.'): bool
     {
         if ($path === '.') {
-            return trim($this->capture('git status --short')) !== '';
+            return trim($this->captureReadonly('git status --short')) !== '';
         }
-        return trim($this->capture($this->inPath($path, 'status --short'))) !== '';
+        return trim($this->captureReadonly($this->inPath($path, 'status --short'))) !== '';
     }
 
     public function currentBranch(string $path = '.'): string
     {
         if ($path === '.') {
-            return trim($this->capture('git branch --show-current'));
+            return trim($this->captureReadonly('git branch --show-current'));
         }
         
-        if ($this->succeeds($this->inPath($path, 'symbolic-ref --quiet --short HEAD'))) {
-            return trim($this->capture($this->inPath($path, 'symbolic-ref --quiet --short HEAD')));
+        if ($this->checkReadonly($this->inPath($path, 'symbolic-ref --quiet --short HEAD'))) {
+            return trim($this->captureReadonly($this->inPath($path, 'symbolic-ref --quiet --short HEAD')));
         }
         
         return '';
@@ -296,7 +323,7 @@ final class GitClient
 
     public function getChangedFiles(string $base, string $branch): array
     {
-        return array_values(array_filter(explode("\n", trim($this->capture(sprintf(
+        return array_values(array_filter(explode("\n", trim($this->captureReadonly(sprintf(
             'git diff --name-only %s..%s',
             escapeshellarg($base),
             escapeshellarg($branch)
@@ -305,17 +332,17 @@ final class GitClient
 
     public function listWorktreesPorcelain(): string
     {
-        return trim($this->capture('git worktree list --porcelain'));
+        return trim($this->captureReadonly('git worktree list --porcelain'));
     }
 
     public function getGitPath(string $path, string $subPath): string
     {
-        return trim($this->capture($this->inPath($path, sprintf('rev-parse --git-path %s', escapeshellarg($subPath)))));
+        return trim($this->captureReadonly($this->inPath($path, sprintf('rev-parse --git-path %s', escapeshellarg($subPath)))));
     }
 
     public function getTrackedFiles(string $path, string $dir): array
     {
-        return array_values(array_filter(explode("\n", trim($this->capture($this->inPath(
+        return array_values(array_filter(explode("\n", trim($this->captureReadonly($this->inPath(
             $path,
             sprintf('ls-files %s', escapeshellarg($dir))
         ))))));
