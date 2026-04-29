@@ -81,6 +81,7 @@ php scripts/backlog.php task-review-request --agent agent-01
 php scripts/backlog.php task-review-approve my-feature/my-task
 php scripts/backlog.php task-rework --agent agent-01 my-feature/my-task
 php scripts/backlog.php feature-task-merge my-feature/my-task
+php scripts/backlog.php worktree-restore --agent agent-01 --force
 ```
 
 Notes:
@@ -89,6 +90,7 @@ Notes:
 - developer commands require `--agent=<code>`
 - reviewer commands never use `--agent`
 - `base-update` refreshes the recorded Git base after a rebase; features update `origin/main` before using the merge base with it, and local child tasks default to the merge base with their parent feature branch
+- `worktree-restore` validates copied PHP vendors with `autoload.php` witnesses and can recreate a clean managed worktree with `--force`
 - `feature-start` reads the next queued board entry and accepts plain text, optional `[feat]` / `[fix]` prefixes, and scoped entries like `[feature-slug][task-slug] Task text`
 - child task review stays local; only the parent feature uses the remote PR flow
 

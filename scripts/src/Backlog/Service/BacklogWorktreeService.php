@@ -181,6 +181,23 @@ final class BacklogWorktreeService
         $this->git->removeWorktreeForce($path);
     }
 
+    public function removeAgentWorktreeForRestore(string $agent): void
+    {
+        $path = $this->projectRoot . '/.worktrees/' . $agent;
+        if (!$this->fs->checkPathExists($path)) {
+            return;
+        }
+
+        if ($this->git->hasLocalChanges($path)) {
+            throw new \RuntimeException(sprintf(
+                'Agent worktree %s is dirty. Commit or clean local changes before running worktree-restore --force.',
+                $this->git->toRelativeProjectPath($path),
+            ));
+        }
+
+        $this->git->removeWorktreeForce($path);
+    }
+
     public function ensureLocalBranchExists(string $branch, string $startPoint): void
     {
         if ($this->git->localBranchExists($branch)) {
@@ -407,6 +424,10 @@ final class BacklogWorktreeService
             if (!$this->fs->checkPathExists($sourcePath)) {
                 throw new \RuntimeException("Missing dependency source in WP: {$sourcePath}");
             }
+            $witness = $this->fetchRuntimeWitnessPaths()[$relativePath] ?? null;
+            if ($witness !== null && !$this->fs->isFile($sourcePath . '/' . $witness)) {
+                throw new \RuntimeException("Missing dependency witness in WP: {$sourcePath}/{$witness}");
+            }
 
             $targetPath = $worktree . '/' . $relativePath;
             $parent = preg_replace('/\/[^\/]+$/', '', $targetPath);
@@ -419,7 +440,14 @@ final class BacklogWorktreeService
             }
 
             if (!$created && $this->fs->checkPathExists($targetPath)) {
-                continue;
+                if ($this->checkRuntimePathIsValid($worktree, $relativePath)) {
+                    continue;
+                }
+
+                $this->logVerbose(sprintf(
+                    'Runtime dependency path is incomplete, replacing it: %s',
+                    $this->git->toRelativeProjectPath($targetPath),
+                ));
             }
 
             $this->replacePathWithCopy($sourcePath, $targetPath);
@@ -491,16 +519,38 @@ final class BacklogWorktreeService
         ];
     }
 
-    private function replacePathWithCopy(string $sourcePath, string $targetPath): void
+    /**
+     * @return array<string, string>
+     */
+    private function fetchRuntimeWitnessPaths(): array
     {
-        if ($this->fs->checkPathExists($targetPath)) {
-            $this->fs->removePath($targetPath);
+        return [
+            'scripts/vendor' => 'autoload.php',
+            'backend/vendor' => 'autoload.php',
+        ];
+    }
+
+    private function checkRuntimePathIsValid(string $worktree, string $relativePath): bool
+    {
+        $witness = $this->fetchRuntimeWitnessPaths()[$relativePath] ?? null;
+        if ($witness === null) {
+            return true;
         }
 
+        return $this->fs->isFile($worktree . '/' . $relativePath . '/' . $witness);
+    }
+
+    private function replacePathWithCopy(string $sourcePath, string $targetPath): void
+    {
         if ($this->dryRun) {
             $this->logVerbose('[dry-run] Would copy path: ' . $this->git->toRelativeProjectPath($sourcePath) . ' -> ' . $this->git->toRelativeProjectPath($targetPath));
             return;
         }
+
+        if ($this->fs->checkPathExists($targetPath)) {
+            $this->fs->removePath($targetPath);
+        }
+
         $this->fs->copyPath($sourcePath, $targetPath);
     }
 
