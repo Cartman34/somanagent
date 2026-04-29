@@ -83,7 +83,7 @@ class ChatService
 
             $usage = new TokenUsage(
                 agent: $agent,
-                model: $config->model,
+                model: $config->model ?? '',
                 inputTokens: $response->inputTokens,
                 outputTokens: $response->outputTokens,
                 durationMs: (int) $response->durationMs,
