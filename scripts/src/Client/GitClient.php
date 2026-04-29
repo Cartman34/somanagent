@@ -68,6 +68,20 @@ final class GitClient
         return $this->console->succeeds($command);
     }
 
+    public function inspectCapture(string $command): string
+    {
+        $this->console->logVerbose('Inspect git output: ' . $command);
+
+        return $this->console->capture($command);
+    }
+
+    public function inspectSucceeds(string $command): bool
+    {
+        $this->console->logVerbose('Inspect git command success: ' . $command);
+
+        return $this->console->succeeds($command);
+    }
+
     public function runNetwork(string $command): void
     {
         [$code, $output] = $this->captureNetworkWithExitCode($command);
@@ -212,14 +226,19 @@ final class GitClient
         return trim($this->capture(sprintf('git rev-parse %s', escapeshellarg($branch))));
     }
 
+    public function inspectBranchHead(string $branch): string
+    {
+        return trim($this->inspectCapture(sprintf('git rev-parse %s', escapeshellarg($branch))));
+    }
+
     public function refExists(string $ref): bool
     {
-        return $this->succeeds(sprintf('git rev-parse --verify --quiet %s', escapeshellarg($ref . '^{commit}')));
+        return $this->inspectSucceeds(sprintf('git rev-parse --verify --quiet %s', escapeshellarg($ref . '^{commit}')));
     }
 
     public function mergeBase(string $left, string $right): string
     {
-        return trim($this->capture(sprintf(
+        return trim($this->inspectCapture(sprintf(
             'git merge-base %s %s',
             escapeshellarg($left),
             escapeshellarg($right)
@@ -228,7 +247,7 @@ final class GitClient
 
     public function isAncestor(string $ancestor, string $descendant): bool
     {
-        return $this->succeeds(sprintf(
+        return $this->inspectSucceeds(sprintf(
             'git merge-base --is-ancestor %s %s',
             escapeshellarg($ancestor),
             escapeshellarg($descendant)

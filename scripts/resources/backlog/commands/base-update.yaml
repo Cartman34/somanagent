@@ -12,6 +12,6 @@ examples:
   - 'php scripts/backlog.php base-update onboarding/task-copy-review'
   - 'php scripts/backlog.php base-update onboarding/task-copy-review --base=HEAD~3'
 notes:
-  - 'Without --base, features use the merge base between origin/main and their branch.'
+  - 'Without --base, features update origin/main first, then use the merge base between origin/main and their branch.'
   - 'Without --base, local child tasks use the merge base between their parent feature branch and their task branch.'
   - 'The selected base must resolve to a commit and be an ancestor of the entry branch.'

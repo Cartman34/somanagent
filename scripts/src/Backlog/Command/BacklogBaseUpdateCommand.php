@@ -68,7 +68,7 @@ final class BacklogBaseUpdateCommand extends AbstractBacklogCommand
             throw new \RuntimeException(sprintf('Cannot update base: ref %s is not an ancestor of %s.', $base, $branch));
         }
 
-        $baseCommit = $this->gitService->getBranchHead($base);
+        $baseCommit = $this->gitService->inspectBranchHead($base);
         $previousBase = $entry->getBase() ?? '-';
         $entry->setBase($baseCommit);
         $this->saveBoard($board, BacklogCommandName::BASE_UPDATE->value);
@@ -89,6 +89,8 @@ final class BacklogBaseUpdateCommand extends AbstractBacklogCommand
 
             return $this->gitService->getMergeBase($featureBranch, $branch);
         }
+
+        $this->gitService->updateMainBranch();
 
         return $this->gitService->getMergeBase(GitService::ORIGIN_REMOTE . '/' . GitService::MAIN_BRANCH, $branch);
     }

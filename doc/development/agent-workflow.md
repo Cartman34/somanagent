@@ -106,7 +106,7 @@ Rules:
 20. `feature-task-merge --agent=<code> [<task>]` is the developer form for merging the current agent task after an explicit user merge instruction.
 21. `feature-task-merge <feature>/<task>` is the reviewer form for merging one explicit child task locally.
 22. The remote review, approval, and merge flow applies only to `kind=feature` entries and is blocked while child `kind=task` entries remain active for that feature.
-23. After a rebase, `base-update <feature|feature/task>` refreshes the recorded Git base without editing backlog files manually. Features default to the merge base with `origin/main`; local child tasks default to the merge base with their parent feature branch.
+23. After a rebase, `base-update <feature|feature/task>` refreshes the recorded Git base without editing backlog files manually. Features update `origin/main` before using the merge base with it; local child tasks default to the merge base with their parent feature branch.
 24. Any backlog state change covered by `backlog.php` must go through `backlog.php`, never through a manual file edit.
 25. Manual edits to `local/backlog-board.md` or `local/backlog-review.md` are forbidden unless the user explicitly asks for a manual edit outside the scripted workflow.
 26. `--dry-run` simulates backlog, git, GitHub, and filesystem mutations without executing them.
