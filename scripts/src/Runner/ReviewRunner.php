@@ -42,6 +42,7 @@ final class ReviewRunner extends AbstractScriptRunner
     public function run(array $args): int
     {
         $base = $this->parseBaseOption($args);
+        $baseCommit = $base !== null ? $this->resolveBaseCommit($base) : null;
         [$modifiedFiles, $untrackedFiles] = $this->collectGitStatusFiles();
         $committedFiles = $base !== null ? $this->collectCommittedFiles($base) : [];
         $allFiles = $this->filterExistingFiles(array_values(array_unique(array_merge($modifiedFiles, $untrackedFiles, $committedFiles))));
@@ -57,6 +58,9 @@ final class ReviewRunner extends AbstractScriptRunner
         echo "\n";
 
         if ($base !== null) {
+            echo "=== Review base ===\n";
+            echo "{$base} => {$baseCommit}\n\n";
+
             echo "=== Committed files since {$base} ===\n";
             $this->printPrefixedList($committedFiles, 'C  ');
             echo "\n";
@@ -184,6 +188,27 @@ final class ReviewRunner extends AbstractScriptRunner
         }
 
         return array_values(array_filter(array_map('trim', $lines), static fn(string $line): bool => $line !== ''));
+    }
+
+    private function resolveBaseCommit(string $base): string
+    {
+        [$resolveExitCode, $resolveLines] = $this->runCommand(sprintf(
+            'git rev-parse --verify %s',
+            escapeshellarg($base . '^{commit}'),
+        ));
+        if ($resolveExitCode !== 0) {
+            throw new \RuntimeException(sprintf('Review base ref does not resolve to a commit: %s.', $base));
+        }
+
+        [$ancestorExitCode] = $this->runCommand(sprintf(
+            'git merge-base --is-ancestor %s HEAD',
+            escapeshellarg($base),
+        ));
+        if ($ancestorExitCode !== 0) {
+            throw new \RuntimeException(sprintf('Review base ref is not an ancestor of HEAD: %s.', $base));
+        }
+
+        return trim($resolveLines[0] ?? '');
     }
 
     /**
