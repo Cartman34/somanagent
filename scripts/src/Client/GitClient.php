@@ -212,6 +212,29 @@ final class GitClient
         return trim($this->capture(sprintf('git rev-parse %s', escapeshellarg($branch))));
     }
 
+    public function refExists(string $ref): bool
+    {
+        return $this->succeeds(sprintf('git rev-parse --verify --quiet %s', escapeshellarg($ref . '^{commit}')));
+    }
+
+    public function mergeBase(string $left, string $right): string
+    {
+        return trim($this->capture(sprintf(
+            'git merge-base %s %s',
+            escapeshellarg($left),
+            escapeshellarg($right)
+        )));
+    }
+
+    public function isAncestor(string $ancestor, string $descendant): bool
+    {
+        return $this->succeeds(sprintf(
+            'git merge-base --is-ancestor %s %s',
+            escapeshellarg($ancestor),
+            escapeshellarg($descendant)
+        ));
+    }
+
     public function localBranchExists(string $branch): bool
     {
         return $this->succeeds(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/heads/' . $branch)));
