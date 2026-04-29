@@ -19,18 +19,23 @@ final class CodeSearchRunner extends AbstractScriptRunner
     private const SCOPE_ALL = 'all';
     private const SCOPE_BACKEND = 'backend';
     private const SCOPE_FRONTEND = 'frontend';
+    private const SCOPE_SCRIPTS = 'scripts';
 
     /** @var array<string, array<int, array{path: string, exts: array<int, string>, globs: array<int, string>}>> */
     private const SCOPE_DIRECTORIES = [
         self::SCOPE_ALL => [
             ['path' => 'backend/src', 'exts' => ['php'], 'globs' => ['*.php']],
             ['path' => 'frontend/src', 'exts' => ['ts', 'tsx'], 'globs' => ['*.ts', '*.tsx']],
+            ['path' => 'scripts/src', 'exts' => ['php'], 'globs' => ['*.php']],
         ],
         self::SCOPE_BACKEND => [
             ['path' => 'backend/src', 'exts' => ['php'], 'globs' => ['*.php']],
         ],
         self::SCOPE_FRONTEND => [
             ['path' => 'frontend/src', 'exts' => ['ts', 'tsx'], 'globs' => ['*.ts', '*.tsx']],
+        ],
+        self::SCOPE_SCRIPTS => [
+            ['path' => 'scripts/src', 'exts' => ['php'], 'globs' => ['*.php']],
         ],
     ];
 
@@ -52,6 +57,7 @@ final class CodeSearchRunner extends AbstractScriptRunner
             ['name' => '--engine', 'description' => 'Search engine to use: rg (default) or php'],
             ['name' => '--backend', 'description' => 'Search only in backend/src/'],
             ['name' => '--frontend', 'description' => 'Search only in frontend/src/'],
+            ['name' => '--scripts', 'description' => 'Search only in scripts/src/'],
             ['name' => '--context', 'description' => 'Show N lines of context before/after each match (default: 0)'],
         ];
     }
@@ -64,6 +70,7 @@ final class CodeSearchRunner extends AbstractScriptRunner
             'php scripts/code-search.php UserRepository --engine php',
             'php scripts/code-search.php --backend AgentController',
             'php scripts/code-search.php --frontend useAgent --context 2',
+            'php scripts/code-search.php --scripts CodeSearchRunner',
         ];
     }
 
@@ -75,7 +82,7 @@ final class CodeSearchRunner extends AbstractScriptRunner
     public function run(array $args): int
     {
         if ($args === []) {
-            $this->console->fail('Missing search term. Usage: php scripts/code-search.php <term> [--backend|--frontend] [--context N]');
+            $this->console->fail('Missing search term. Usage: php scripts/code-search.php <term> [--backend|--frontend|--scripts] [--context N]');
         }
 
         $term    = null;
@@ -90,6 +97,10 @@ final class CodeSearchRunner extends AbstractScriptRunner
             }
             if ($args[$i] === '--frontend') {
                 $scope = self::SCOPE_FRONTEND;
+                continue;
+            }
+            if ($args[$i] === '--scripts') {
+                $scope = self::SCOPE_SCRIPTS;
                 continue;
             }
             if ($args[$i] === '--engine' && isset($args[$i + 1])) {
