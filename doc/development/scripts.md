@@ -35,9 +35,11 @@ php scripts/help.php migrate.php
 | `github.php` | PHP | GitHub CLI helper for PR creation, listing, view and merge |
 | `logs.php` | PHP | Display Docker logs |
 | `health.php` | PHP | Check application status |
-| `review.php` | PHP | Run mechanical review checks (French strings, PHPDoc, JSDoc) |
+| `review.php` | PHP | Run mechanical review checks (French strings, PHPDoc, JSDoc, translations, targeted validation, PHPStan) |
 | `validate-files.php` | PHP | Run targeted backend/frontend validations for an explicit file list |
 | `validate-backend-tests.php` | PHP | Run isolated local PHPUnit checks for backend unit tests from WSL without Docker services |
+| `phpstan.php` | PHP | Run PHPStan static analysis on backend PHP sources |
+| `rector.php` | PHP | Apply automated code fixes to backend PHP sources via Rector |
 | `claude-auth.php` | PHP | Sync Claude CLI auth from WSL to the Docker runtime |
 | `codex-auth.php` | PHP | Sync Codex CLI ChatGPT auth from WSL to the Docker runtime |
 | `opencode-auth.php` | PHP | Sync OpenCode provider credentials from WSL to the Docker runtime |
@@ -311,7 +313,10 @@ Blockers (exit code 1):
 - Missing PHPDoc on `public function` declarations in `backend/src/` (migrations excluded)
 - Missing JSDoc on export declarations in `frontend/src/` `.ts/.tsx`
 - Failing frontend TypeScript type-check when modified files include `frontend/src/` `.ts/.tsx`
+- Failing file validation for the review scope
+- Missing or unused translation keys
 - Failing dedicated PHPUnit tests mapped from modified `backend/src/Service/...` files
+- Failing PHPStan analysis when backend PHP source files are in scope
 
 Informational (no exit code impact):
 - List of modified files
@@ -327,6 +332,35 @@ The review flow skips container-backed validations that depend on local uncommit
 php scripts/review.php
 php scripts/review.php --base=HEAD~1
 ```
+
+---
+
+### `phpstan.php`
+Runs PHPStan static analysis with `backend/phpstan.neon`. Use this wrapper instead of calling `vendor/bin/phpstan` directly so the project configuration and WSL-compatible single-threaded mode are applied consistently.
+
+```bash
+php scripts/phpstan.php
+php scripts/phpstan.php backend/src/Controller/AgentController.php
+```
+
+Notes:
+- without file arguments, the full configured backend scope is analysed
+- file arguments restrict analysis to the provided backend PHP files
+- the wrapper injects `--configuration backend/phpstan.neon --debug`
+
+---
+
+### `rector.php`
+Runs Rector with `backend/rector.php`. Use `--dry-run` before applying automated refactors when reviewing the planned changes.
+
+```bash
+php scripts/rector.php --dry-run
+php scripts/rector.php
+```
+
+Notes:
+- the wrapper injects `--config backend/rector.php`
+- additional Rector arguments are passed through after the project config
 
 ---
 
