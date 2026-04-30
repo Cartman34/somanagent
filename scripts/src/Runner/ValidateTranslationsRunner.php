@@ -315,7 +315,7 @@ final class ValidateTranslationsRunner extends AbstractScriptRunner
         preg_match_all('/\b(?:t|tt|tc)\(\s*([\'"])(?<key>' . self::KEY_PATTERN . ')\1/u', $content, $allMatches, PREG_OFFSET_CAPTURE);
 
         $result = [];
-        foreach ($allMatches['key'] ?? [] as $match) {
+        foreach ($allMatches['key'] as $match) {
             [$key, $offset] = $match;
             $result[$key][] = $this->lineNumberForOffset($content, $offset);
         }
@@ -331,7 +331,7 @@ final class ValidateTranslationsRunner extends AbstractScriptRunner
         preg_match_all('/(?:->trans|\btrans)\(\s*([\'"])(?<key>' . self::KEY_PATTERN . ')\1/u', $content, $matches, PREG_OFFSET_CAPTURE);
 
         $result = [];
-        foreach ($matches['key'] ?? [] as $match) {
+        foreach ($matches['key'] as $match) {
             [$key, $offset] = $match;
             $result[$key][] = $this->lineNumberForOffset($content, $offset);
         }
@@ -352,7 +352,7 @@ final class ValidateTranslationsRunner extends AbstractScriptRunner
         );
 
         $result = [];
-        foreach ($matches['key'] ?? [] as $match) {
+        foreach ($matches['key'] as $match) {
             [$key, $offset] = $match;
             $result[$key][] = $this->lineNumberForOffset($content, $offset);
         }
@@ -375,7 +375,7 @@ final class ValidateTranslationsRunner extends AbstractScriptRunner
         );
 
         foreach (['key', 'field_key'] as $group) {
-            foreach ($matches[$group] ?? [] as $match) {
+            foreach ($matches[$group] as $match) {
                 [$key, $offset] = $match;
                 if ($key === '') {
                     continue;
@@ -396,7 +396,7 @@ final class ValidateTranslationsRunner extends AbstractScriptRunner
         $result = [];
         preg_match_all('/const\s+[A-Z][A-Z0-9_]*_(?:TRANSLATION_KEYS|KEYS)\b[^=]*=\s*\[/u', $content, $matches, PREG_OFFSET_CAPTURE);
 
-        foreach ($matches[0] ?? [] as $match) {
+        foreach ($matches[0] as $match) {
             [$declaration, $offset] = $match;
             $openBracket = strpos($declaration, '[');
             if ($openBracket === false) {
@@ -410,7 +410,7 @@ final class ValidateTranslationsRunner extends AbstractScriptRunner
             }
 
             preg_match_all('/([\'"])(?<key>' . self::KEY_PATTERN . ')\1/u', $body['content'], $keyMatches, PREG_OFFSET_CAPTURE);
-            foreach ($keyMatches['key'] ?? [] as $keyMatch) {
+            foreach ($keyMatches['key'] as $keyMatch) {
                 [$key, $keyOffset] = $keyMatch;
                 $absoluteOffset = $body['start'] + $keyOffset;
                 $result[$key][] = $this->lineNumberForOffset($content, $absoluteOffset);
@@ -428,7 +428,7 @@ final class ValidateTranslationsRunner extends AbstractScriptRunner
         $result = [];
         preg_match_all('/const\s+[A-Z][A-Z0-9_]*_(?:LABEL_KEYS|KEY_MAP|TRANSLATION_KEYS)\b[^=]*=\s*\{/u', $content, $matches, PREG_OFFSET_CAPTURE);
 
-        foreach ($matches[0] ?? [] as $match) {
+        foreach ($matches[0] as $match) {
             [$declaration, $offset] = $match;
             $openBrace = strpos($declaration, '{');
             if ($openBrace === false) {
@@ -442,7 +442,7 @@ final class ValidateTranslationsRunner extends AbstractScriptRunner
             }
 
             preg_match_all('/:\s*([\'"])(?<key>' . self::KEY_PATTERN . ')\1/u', $body['content'], $valueMatches, PREG_OFFSET_CAPTURE);
-            foreach ($valueMatches['key'] ?? [] as $valueMatch) {
+            foreach ($valueMatches['key'] as $valueMatch) {
                 [$key, $keyOffset] = $valueMatch;
                 $absoluteOffset = $body['start'] + $keyOffset;
                 $result[$key][] = $this->lineNumberForOffset($content, $absoluteOffset);
@@ -460,7 +460,7 @@ final class ValidateTranslationsRunner extends AbstractScriptRunner
         $result = [];
         preg_match_all('/(?:private|public|protected)?\s*const\s+[A-Z][A-Z0-9_]*_(?:TRANSLATION_KEYS|KEYS|LABEL_KEYS)\b[^=]*=\s*\[/u', $content, $matches, PREG_OFFSET_CAPTURE);
 
-        foreach ($matches[0] ?? [] as $match) {
+        foreach ($matches[0] as $match) {
             [$declaration, $offset] = $match;
             $openBracket = strpos($declaration, '[');
             if ($openBracket === false) {
@@ -474,12 +474,8 @@ final class ValidateTranslationsRunner extends AbstractScriptRunner
             }
 
             preg_match_all('/=>\s*[\'"](?<key>' . self::KEY_PATTERN . ')[\'"]/u', $body['content'], $keyMatches, PREG_OFFSET_CAPTURE);
-            foreach ($keyMatches['key'] ?? [] as $valueMatch) {
+            foreach ($keyMatches['key'] as $valueMatch) {
                 [$key, $keyOffset] = $valueMatch;
-                if ($key === '') {
-                    continue;
-                }
-
                 $absoluteOffset = $body['start'] + $keyOffset;
                 $result[$key][] = $this->lineNumberForOffset($content, $absoluteOffset);
             }
@@ -496,7 +492,7 @@ final class ValidateTranslationsRunner extends AbstractScriptRunner
         preg_match_all('/\bkey\s*:\s*[\'"](?<key>' . self::KEY_PATTERN . ')[\'"]/u', $content, $matches, PREG_OFFSET_CAPTURE);
 
         $result = [];
-        foreach ($matches['key'] ?? [] as $match) {
+        foreach ($matches['key'] as $match) {
             [$key, $offset] = $match;
             $result[$key][] = $this->lineNumberForOffset($content, $offset);
         }
@@ -512,7 +508,7 @@ final class ValidateTranslationsRunner extends AbstractScriptRunner
         $violations = [];
         preg_match_all('/\b(?:t|tt|tc)\(\s*`[^`]*\$\{[^`]*`\s*\)/u', $content, $matches, PREG_OFFSET_CAPTURE);
 
-        foreach ($matches[0] ?? [] as $match) {
+        foreach ($matches[0] as $match) {
             [$expression, $offset] = $match;
             $line = $this->lineNumberForOffset($content, $offset);
             $violations[] = sprintf('%s:%d  %s', $path, $line, trim($expression));
@@ -578,7 +574,7 @@ final class ValidateTranslationsRunner extends AbstractScriptRunner
         preg_match_all('/[\'"]code[\'"]\s*=>\s*[\'"](?<key>' . self::KEY_PATTERN . ')[\'"]/', $content, $matches, PREG_OFFSET_CAPTURE);
 
         $result = [];
-        foreach ($matches['key'] ?? [] as $match) {
+        foreach ($matches['key'] as $match) {
             [$key, $offset] = $match;
             $result[$key][] = $this->lineNumberForOffset($content, $offset);
         }

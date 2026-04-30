@@ -26,6 +26,7 @@ final class AgentContextBuilder
 
     /**
      * @param TicketLog[] $ticketComments
+     * @return array<string, mixed>
      */
     public function buildForTicketTask(TicketTask $task, Agent $agent, string $skillSlug, array $ticketComments = []): array
     {
@@ -113,6 +114,7 @@ final class AgentContextBuilder
 
     /**
      * @param ChatMessage[] $conversation
+     * @return array<string, mixed>
      */
     public function buildForProjectChat(Project $project, Agent $agent, array $conversation = []): array
     {
@@ -134,6 +136,9 @@ final class AgentContextBuilder
         return $context;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function buildProjectAgentContext(Project $project, Agent $agent): array
     {
         $roleSlug = $agent->getRole()?->getSlug();

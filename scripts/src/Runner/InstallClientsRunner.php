@@ -134,11 +134,6 @@ final class InstallClientsRunner extends AbstractScriptRunner
             ));
         }
 
-        if ($clients === []) {
-            $this->console->warn('No clients selected and none are enabled by default.');
-            return 0;
-        }
-
         $targets = [];
         if ($local) {
             $targets[] = 'local';
@@ -249,7 +244,7 @@ final class InstallClientsRunner extends AbstractScriptRunner
     {
         $result = shell_exec(sprintf('which %s 2>/dev/null', escapeshellarg($binary)));
 
-        return $result !== null && trim($result) !== '';
+        return is_string($result) && trim($result) !== '';
     }
 
     /**
@@ -264,6 +259,6 @@ final class InstallClientsRunner extends AbstractScriptRunner
         );
         $result = shell_exec($cmd);
 
-        return $result !== null && trim($result) !== '';
+        return is_string($result) && trim($result) !== '';
     }
 }

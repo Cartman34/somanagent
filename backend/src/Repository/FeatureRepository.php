@@ -17,12 +17,17 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class FeatureRepository extends ServiceEntityRepository
 {
+    /**
+     * @param ManagerRegistry $registry
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Feature::class);
     }
 
-    /** @return Feature[] */
+    /**
+     * @return Feature[]
+     */
     public function findByProject(Project $project): array
     {
         return $this->findBy(['project' => $project], ['createdAt' => 'ASC']);

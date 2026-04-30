@@ -48,6 +48,9 @@ class Workflow
     #[ORM\Column]
     private \DateTimeImmutable $updatedAt;
 
+    /**
+     * @var Collection<int, WorkflowStep>
+     */
     #[ORM\OneToMany(targetEntity: WorkflowStep::class, mappedBy: 'workflow', cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[ORM\OrderBy(['stepOrder' => 'ASC'])]
     private Collection $steps;
@@ -99,7 +102,9 @@ class Workflow
     /** Returns when the workflow was last updated. */
     public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
 
-    /** @return Collection<int, WorkflowStep> */
+    /**
+     * @return Collection<int, WorkflowStep>
+     */
     public function getSteps(): Collection { return $this->steps; }
 
     /**

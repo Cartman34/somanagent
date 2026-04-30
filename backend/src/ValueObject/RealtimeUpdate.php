@@ -55,7 +55,9 @@ final class RealtimeUpdate
         return $this->id;
     }
 
-    /** @return list<string> */
+    /**
+     * @return list<string>
+     */
     public function getTopics(): array
     {
         return $this->topics;
@@ -69,7 +71,9 @@ final class RealtimeUpdate
         return $this->type;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     */
     public function getPayload(): array
     {
         return $this->payload;

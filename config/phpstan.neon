@@ -1,18 +1,24 @@
+# PHPStan configuration for the entire SoManAgent project.
+#
+# Covers both the backend (Symfony app) and the scripts tooling.
+# The binary and all extensions live in scripts/vendor so that a single
+# `php scripts/scripts-install.php` is enough to get static analysis running,
+# without requiring the backend Docker environment.
+#
+# To run: php scripts/phpstan.php
+# To restrict scope: php scripts/phpstan.php --scope=backend  |  php scripts/phpstan.php --scope=scripts
+
 includes:
-    - ../backend/vendor/phpstan/phpstan/conf/bleedingEdge.neon
+    - ../scripts/vendor/phpstan/phpstan-symfony/extension.neon
+    - ../scripts/vendor/phpstan/phpstan-doctrine/extension.neon
+    - ../scripts/vendor/phpstan/phpstan-phpunit/extension.neon
 
 parameters:
-    level: 6
+    level: 8
     paths:
         - ../backend/src
         - ../backend/tests
         - ../scripts/src
-
-    excludePaths:
-        - ../backend/vendor/*
-        - ../scripts/vendor/*
-
-    treatPhpDocTypesAsCertain: false
-
     bootstrapFiles:
         - ../backend/vendor/autoload.php
+        - ../scripts/vendor/autoload.php

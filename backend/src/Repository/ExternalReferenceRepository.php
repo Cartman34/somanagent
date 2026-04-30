@@ -18,11 +18,17 @@ use Symfony\Component\Uid\Uuid;
  */
 class ExternalReferenceRepository extends ServiceEntityRepository
 {
+    /**
+     * Initializes the repository with the Doctrine ManagerRegistry.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, ExternalReference::class);
     }
 
+    /**
+     * Finds a single external reference matching the given entity and system.
+     */
     public function findOne(string $entityType, Uuid $entityId, ExternalSystem $system): ?ExternalReference
     {
         return $this->findOneBy([
@@ -32,7 +38,9 @@ class ExternalReferenceRepository extends ServiceEntityRepository
         ]);
     }
 
-    /** @return ExternalReference[] */
+    /**
+     * @return ExternalReference[]
+     */
     public function findForEntity(string $entityType, Uuid $entityId): array
     {
         return $this->findBy(['entityType' => $entityType, 'entityId' => $entityId]);

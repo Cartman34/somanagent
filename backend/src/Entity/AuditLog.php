@@ -43,7 +43,11 @@ class AuditLog
     #[ORM\Column(length: 36, nullable: true)]
     private ?string $entityId = null;
 
-    /** Contextual snapshot: before/after values, relevant parameters. Shape varies by action. */
+    /**
+     * Contextual snapshot: before/after values, relevant parameters. Shape varies by action.
+     *
+     * @var ?array<string, mixed>
+     */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $data = null;
 
@@ -91,6 +95,7 @@ class AuditLog
 
     /**
      * @see AuditLog::$data
+     * @return ?array<string, mixed>
      */
     public function getData(): ?array           { return $this->data; }
 

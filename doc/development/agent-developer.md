@@ -65,8 +65,8 @@ Read this file only when the active task requires developer workflow details.
 ### `task-create`
 
 1. Run `php scripts/backlog.php task-create <description> [--position=<start|index|end>] [--index=<n>]`.
-2. By default the script appends the task to the end of `## À faire`.
-3. `--position=start` inserts at the start of `## À faire`.
+2. By default the script appends the task to the end of `## To do`.
+3. `--position=start` inserts at the start of `## To do`.
 4. `--position=index --index=<n>` inserts at the requested 1-based position and clamps out-of-range values to the start or the end.
 5. When you create a queued task, prefix the description with `[feat]` or `[fix]` so `feature-start` can derive the branch type from the backlog entry.
 
@@ -78,7 +78,7 @@ Read this file only when the active task requires developer workflow details.
 ### `task-remove`
 
 1. Run `php scripts/backlog.php task-remove <number>`.
-2. The script removes the queued task at the given 1-based position from `## À faire`.
+2. The script removes the queued task at the given 1-based position from `## To do`.
 
 ### `task-review-request`
 
@@ -99,7 +99,7 @@ Read this file only when the active task requires developer workflow details.
 1. Run `php scripts/backlog.php feature-start --agent=<code>`.
 2. The script reads the branch type from the queued task prefix `[feat]` or `[fix]`.
 3. If no type prefix is present, the script falls back to `feat`.
-4. The script takes the next task from `## À faire`, updates local `main` when possible, creates the feature branch from `origin/main` in the agent worktree, moves the feature to `## Traitement en cours`, sets `meta.stage=development`, and authorizes development.
+4. The script takes the next task from `## To do`, updates local `main` when possible, creates the feature branch from `origin/main` in the agent worktree, moves the feature to `## In progress`, sets `meta.stage=development`, and authorizes development.
 5. If the queued task starts with `[feature-slug][task-slug]`, the script creates or reuses the parent `kind=feature` entry for `<feature-slug>`, keeps the shared parent branch `<type>/<feature-slug>`, then creates the child `kind=task` entry and local child branch `<type>/<feature-slug>--<task-slug>` from that local parent branch in the agent worktree.
 6. The command output includes the started task when applicable, the parent feature summary and details, and the assigned worktree path and branch.
 7. `feature-start` is local-only: it does not push and it does not create a PR.
@@ -107,14 +107,14 @@ Read this file only when the active task requires developer workflow details.
 ### `feature-release`
 
 1. Run `php scripts/backlog.php feature-release --agent=<code> [<feature>]`.
-2. The script returns the active feature to the start of `## À faire` only when the branch is still clean and has no commit ahead of its recorded `base`.
+2. The script returns the active feature to the start of `## To do` only when the branch is still clean and has no commit ahead of its recorded `base`.
 3. A parent `kind=feature` cannot be released while child `kind=task` entries are still active for that feature.
 4. The script then removes the managed worktree and deletes the untouched local branch.
 
 ### `feature-task-add`
 
 1. Run `php scripts/backlog.php feature-task-add --agent=<code> --feature-text=<text> [--body-file=<path>]`.
-2. The script updates the current parent feature summary text, then absorbs the next task from `## À faire` into that feature.
+2. The script updates the current parent feature summary text, then absorbs the next task from `## To do` into that feature.
 3. If the queued task is prefixed as `[feature-slug][task-slug]`, it must target the current feature, it creates a new `kind=task` child entry and a local child branch `<type>/<feature-slug>--<task-slug>`.
 4. A child `task-slug` must be unique inside its feature.
 5. A feature that already uses local child tasks cannot absorb a plain queued task without a `[feature-slug][task-slug]` prefix.
@@ -126,7 +126,7 @@ Read this file only when the active task requires developer workflow details.
 2. The script targets the agent's active `kind=task` entry, or the explicit task reference when provided.
 3. The script requires a green mechanical review in the task worktree, then merges the child branch into the parent feature branch locally from the parent feature worktree or from a temporary merge worktree.
 4. The current task review stage does not gate this merge. `development`, `review`, `rejected`, and `approved` are all mergeable when the user explicitly asks for `merge`.
-5. The child task entry is removed from `## Traitement en cours` after the local merge. The child task worktree is removed when that agent no longer owns any active task.
+5. The child task entry is removed from `## In progress` after the local merge. The child task worktree is removed when that agent no longer owns any active task.
 6. The parent `kind=feature` entry remains, keeps the merged task content in its aggregated lines, and is moved back to `development` so the remote review flow must be requested again on the parent branch.
 
 ### `feature-assign`

@@ -79,7 +79,9 @@ class TicketTask
     #[ORM\Column]
     private \DateTimeImmutable $updatedAt;
 
-    /** @var Collection<int, AgentTaskExecution> */
+    /**
+     * @var Collection<int, AgentTaskExecution>
+     */
     #[ORM\ManyToMany(targetEntity: AgentTaskExecution::class, inversedBy: 'ticketTasks')]
     #[ORM\JoinTable(name: 'ticket_task_agent_task_execution')]
     private Collection $executions;
@@ -147,7 +149,9 @@ class TicketTask
     /** Returns when the task was last updated. */
     public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
 
-    /** @return Collection<int, AgentTaskExecution> */
+    /**
+     * @return Collection<int, AgentTaskExecution>
+     */
     public function getExecutions(): Collection
     {
         return $this->executions;

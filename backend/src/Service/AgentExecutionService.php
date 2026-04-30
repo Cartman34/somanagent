@@ -91,7 +91,7 @@ final class AgentExecutionService
 
         $usage = new TokenUsage(
             agent: $agent,
-            model: $config->model,
+            model: $config->model ?? 'default',
             inputTokens: $response->inputTokens,
             outputTokens: $response->outputTokens,
             durationMs: (int) $response->durationMs,
@@ -310,7 +310,10 @@ final class AgentExecutionService
         $existingLogs = $this->ticketLogRepository->findAgentQuestionsByTicket($ticket);
         $existingNormalized = [];
         foreach ($existingLogs as $log) {
-            $existingNormalized[self::normalizeQuestion($log->getContent())] = true;
+            $content = $log->getContent();
+            if ($content !== null) {
+                $existingNormalized[self::normalizeQuestion($content)] = true;
+            }
         }
 
         $filtered = array_values(array_filter(
@@ -440,7 +443,9 @@ final class AgentExecutionService
             );
         }
 
-        /** @var TicketTask[] $createdTasks */
+        /**
+         * @var TicketTask[] $createdTasks
+         */
         $createdTasks = [];
         foreach ($plan->tasks as $planTask) {
             $action = $this->agentActionRepository->findOneByKey($planTask->actionKey);
@@ -527,10 +532,6 @@ final class AgentExecutionService
         $removed = 0;
 
         foreach ($tasks as $task) {
-            if (!$task instanceof TicketTask) {
-                continue;
-            }
-
             if ($task === $planningTask) {
                 continue;
             }

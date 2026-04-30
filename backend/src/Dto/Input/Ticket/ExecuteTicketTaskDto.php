@@ -20,6 +20,7 @@ final class ExecuteTicketTaskDto
     ) {}
 
     /**
+     * @param array<string, mixed> $data
      * Creates an instance from raw request data.
      */
     public static function fromArray(array $data): self

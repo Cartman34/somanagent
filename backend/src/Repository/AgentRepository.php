@@ -33,6 +33,11 @@ class AgentRepository extends ServiceEntityRepository
         'assigned',
     ];
 
+    /**
+     * Initializes the repository with the Doctrine entity manager.
+     *
+     * @param ManagerRegistry $registry The doctrine registry
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Agent::class);
@@ -148,7 +153,9 @@ class AgentRepository extends ServiceEntityRepository
     {
         $actions = array_merge(self::RUNTIME_ERROR_ACTIONS, self::RUNTIME_RECOVERY_ACTIONS);
 
-        /** @var array{action: string, createdAt: \DateTimeImmutable}|null $signal */
+        /**
+         * @var array{action: string, createdAt: \DateTimeImmutable}|null $signal
+         */
         $signal = $this->getEntityManager()
             ->createQuery(
                 'SELECT l.action AS action, l.createdAt AS createdAt

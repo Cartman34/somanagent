@@ -140,7 +140,9 @@ class ChatController extends AbstractApiController
         return $this->json($this->serializeMessage($message));
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     */
     private function serializeMessage(ChatMessage $message): array
     {
         return [

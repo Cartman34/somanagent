@@ -65,6 +65,9 @@ class Project
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?Role $defaultTicketRole = null;
 
+    /**
+     * @var Collection<int, Module>
+     */
     #[ORM\OneToMany(targetEntity: Module::class, mappedBy: 'project', cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[ORM\OrderBy(['name' => 'ASC'])]
     private Collection $modules;
@@ -112,7 +115,9 @@ class Project
     /** Returns the latest update timestamp. */
     public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
 
-    /** @return Collection<int, Module> */
+    /**
+     * @return Collection<int, Module>
+     */
     public function getModules(): Collection { return $this->modules; }
 
     /** Updates the project name. */

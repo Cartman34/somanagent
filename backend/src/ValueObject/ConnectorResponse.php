@@ -27,6 +27,7 @@ class ConnectorResponse
 
     /**
      * @param array<string, mixed> $usage
+     * @param array<string, mixed> $metadata
      */
     public static function fromApi(string $content, array $usage = [], float $durationMs = 0, array $metadata = [], ?string $rawOutput = null): self
     {

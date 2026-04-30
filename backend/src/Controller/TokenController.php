@@ -65,7 +65,7 @@ class TokenController extends AbstractApiController
             'outputTokens' => $u->getOutputTokens(),
             'totalTokens'  => $u->getTotalTokens(),
             'durationMs'   => $u->getDurationMs(),
-            'task'         => $u->getTask() ? ['id' => (string) $u->getTask()->getId(), 'title' => $u->getTask()->getTitle()] : null,
+            'task'         => $u->getTicketTask() ? ['id' => (string) $u->getTicketTask()->getId(), 'title' => $u->getTicketTask()->getTitle()] : null,
             'createdAt'    => $u->getCreatedAt()->format(\DateTimeInterface::ATOM),
         ], $usages));
     }

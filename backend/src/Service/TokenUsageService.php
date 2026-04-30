@@ -50,6 +50,8 @@ class TokenUsageService
 
     /**
      * Global summary: total tokens, total calls, breakdown by agent.
+     *
+     * @return array<string, mixed>
      */
     public function getSummary(?\DateTimeImmutable $from = null, ?\DateTimeImmutable $to = null): array
     {
@@ -105,7 +107,7 @@ class TokenUsageService
             }
 
             $byAgent[] = [
-                'agentId'     => $agentId,
+                'agentId'     => (string) $agentId,
                 'agentName'   => $agentName ?? '—',
                 'totalInput'  => (int) $row['totalInput'],
                 'totalOutput' => (int) $row['totalOutput'],
@@ -115,7 +117,7 @@ class TokenUsageService
 
         return [
             'summary' => ['total' => $total, 'byAgent' => $byAgent],
-            'entries' => array_map(fn(TokenUsage $u) => $this->serializeEntry($u), $entries),
+            'entries' => array_values(array_map(fn(TokenUsage $u) => $this->serializeEntry($u), $entries)),
         ];
     }
 
@@ -124,10 +126,10 @@ class TokenUsageService
      */
     public function findByTicket(Ticket $ticket): array
     {
-        return array_map(
+        return array_values(array_map(
             fn(TokenUsage $u) => $this->serializeEntry($u),
             $this->tokenUsageRepository->findByTicket($ticket),
-        );
+        ));
     }
 
     /**
@@ -135,13 +137,15 @@ class TokenUsageService
      */
     public function findByTicketTask(TicketTask $ticketTask): array
     {
-        return array_map(
+        return array_values(array_map(
             fn(TokenUsage $u) => $this->serializeEntry($u),
             $this->tokenUsageRepository->findByTicketTask($ticketTask),
-        );
+        ));
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     */
     private function serializeEntry(TokenUsage $u): array
     {
         return [

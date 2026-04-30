@@ -70,7 +70,7 @@ class HealthController extends AbstractController
                 'ok'         => $ok,
                 'reason'     => $descriptor->overallReason(),
                 'fixCommand' => $descriptor->overallFixCommand(),
-                'authMethod' => $descriptor->authentication?->method,
+                'authMethod' => $descriptor->authentication->method,
                 'checks'     => $descriptor->health->checks->toArray(),
             ];
         }

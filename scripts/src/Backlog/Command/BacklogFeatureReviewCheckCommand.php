@@ -26,6 +26,15 @@ final class BacklogFeatureReviewCheckCommand extends AbstractBacklogCommand
 
     private FilesystemClientInterface $fs;
 
+    /**
+     * @param BacklogPresenter $presenter
+     * @param bool $dryRun
+     * @param string $projectRoot
+     * @param BacklogBoardService $boardService
+     * @param BacklogWorktreeService $worktreeService
+     * @param BacklogCommandFactory $commandFactory
+     * @param FilesystemClientInterface $fs
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
@@ -41,6 +50,11 @@ final class BacklogFeatureReviewCheckCommand extends AbstractBacklogCommand
         $this->fs = $fs;
     }
 
+    /**
+     * @param list<string> $commandArgs
+     * @param array<string, bool|string> $options
+     * @return void
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $board = $this->loadBoard();
@@ -80,6 +94,9 @@ final class BacklogFeatureReviewCheckCommand extends AbstractBacklogCommand
         $this->presenter->displaySuccess(sprintf('Mechanical review passed for feature %s', $feature));
     }
 
+    /**
+     * @param array<string> $commandArgs
+     */
     private function resolveFeatureReferenceArgument(BacklogBoard $board, array $commandArgs, string $command): string
     {
         if (!isset($commandArgs[0]) || trim($commandArgs[0]) === '') {

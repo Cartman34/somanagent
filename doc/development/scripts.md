@@ -35,9 +35,12 @@ php scripts/help.php migrate.php
 | `github.php` | PHP | GitHub CLI helper for PR creation, listing, view and merge |
 | `logs.php` | PHP | Display Docker logs |
 | `health.php` | PHP | Check application status |
-| `review.php` | PHP | Run mechanical review checks (French strings, PHPDoc, JSDoc) |
+| `review.php` | PHP | Run mechanical review checks (French strings, PHPDoc, JSDoc, translations, targeted validation, PHPStan) |
 | `validate-files.php` | PHP | Run targeted backend/frontend validations for an explicit file list |
 | `validate-backend-tests.php` | PHP | Run isolated local PHPUnit checks for backend unit tests from WSL without Docker services |
+| `phpstan.php` | PHP | Run PHPStan static analysis on backend and/or scripts PHP sources |
+| `rector.php` | PHP | Apply automated code fixes to backend and/or scripts PHP sources via Rector |
+| `code-refacto.php` | PHP | Local code refactoring tools for backend and scripts source files |
 | `claude-auth.php` | PHP | Sync Claude CLI auth from WSL to the Docker runtime |
 | `codex-auth.php` | PHP | Sync Codex CLI ChatGPT auth from WSL to the Docker runtime |
 | `opencode-auth.php` | PHP | Sync OpenCode provider credentials from WSL to the Docker runtime |
@@ -311,7 +314,10 @@ Blockers (exit code 1):
 - Missing PHPDoc on `public function` declarations in `backend/src/` (migrations excluded)
 - Missing JSDoc on export declarations in `frontend/src/` `.ts/.tsx`
 - Failing frontend TypeScript type-check when modified files include `frontend/src/` `.ts/.tsx`
+- Failing file validation for the review scope
+- Missing or unused translation keys
 - Failing dedicated PHPUnit tests mapped from modified `backend/src/Service/...` files
+- Failing PHPStan analysis for the backend and/or scripts scope when matching PHP source files are in review scope
 
 Informational (no exit code impact):
 - List of modified files
@@ -321,12 +327,57 @@ Informational (no exit code impact):
 
 Limitations: only detects accented characters as French strings — complement with a manual diff review for unaccented French words (`Valider`, `Commenter`, etc.). JSDoc check covers export declarations only, not re-exports.
 
+Rules:
+- PHPDoc checks ignore unit-test support code under `backend/tests/` and backlog workflow tests under `scripts/src/Test/`
+- French strings are blocked in source files; backlog file-format labels must be written in English, for example `To do` and `Usage rules`
+
 The review flow skips container-backed validations that depend on local uncommitted environment files such as `.env`. Frontend TypeScript checking remains part of review through `php scripts/validate-files.php --with-types --review-scope ...`, which runs the local `frontend` package script instead of raw `npx tsc`.
 
 ```bash
 php scripts/review.php
 php scripts/review.php --base=HEAD~1
 ```
+
+---
+
+### `phpstan.php`
+Runs PHPStan static analysis using `config/phpstan.neon`. By default all configured scopes are analysed. Use `--scope=<name>` to restrict the scope; repeat `--scope` to analyse several explicit scopes.
+
+The PHPStan binary and all extensions (`phpstan-symfony`, `phpstan-doctrine`, `phpstan-phpunit`) are installed in `scripts/vendor` so that `php scripts/scripts-install.php` is the only prerequisite — no backend Docker environment needed.
+
+```bash
+php scripts/phpstan.php
+php scripts/phpstan.php --scope=backend
+php scripts/phpstan.php --scope=scripts
+php scripts/phpstan.php --scope=backend --scope=scripts
+php scripts/phpstan.php backend/src/Controller/AgentController.php
+```
+
+Notes:
+- available scopes are `backend` and `scripts`
+- explicit file arguments bypass scope selection and analyse only those files
+- the wrapper injects `--configuration config/phpstan.neon --debug`
+- `--debug` forces single-threaded mode, required on WSL2
+
+---
+
+### `rector.php`
+Runs Rector using `config/rector.php`. By default all configured scopes are processed. Use `--scope=<name>` to restrict the scope; repeat `--scope` to process several explicit scopes. Always prefer `--dry-run` first to review planned changes.
+
+The Rector binary is installed in `scripts/vendor` alongside PHPStan.
+
+```bash
+php scripts/rector.php --dry-run
+php scripts/rector.php
+php scripts/rector.php --scope=backend --dry-run
+php scripts/rector.php --scope=scripts
+php scripts/rector.php --scope=backend --scope=scripts --dry-run
+```
+
+Notes:
+- available scopes are `backend` and `scripts`
+- `--scope` is consumed by the wrapper; remaining arguments are forwarded to Rector
+- the wrapper injects `--config config/rector.php` followed by the scope paths as positional arguments
 
 ---
 

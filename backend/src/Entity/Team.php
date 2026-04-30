@@ -80,7 +80,9 @@ class Team
     /** Returns when the team was last updated. */
     public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
 
-    /** @return Collection<int, Agent> */
+    /**
+     * @return Collection<int, Agent>
+     */
     public function getAgents(): Collection { return $this->agents; }
 
     /** Updates the display name of the team. */

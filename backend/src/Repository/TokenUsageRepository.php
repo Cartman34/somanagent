@@ -20,14 +20,18 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class TokenUsageRepository extends ServiceEntityRepository
 {
+    /**
+     * Initialises the repository for the TokenUsage entity.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, TokenUsage::class);
     }
 
     /**
-     * Totaux de tokens par agent sur une période.
-     * Retourne ['agentId' => string, 'agentName' => string, 'totalInput' => int, 'totalOutput' => int][]
+     * Aggregates token totals per agent over an optional time window.
+     *
+     * @return array<int, array<string, mixed>>
      */
     public function sumByAgent(?\DateTimeImmutable $from = null, ?\DateTimeImmutable $to = null): array
     {
@@ -45,7 +49,9 @@ class TokenUsageRepository extends ServiceEntityRepository
         return $qb->getQuery()->getArrayResult();
     }
 
-    /** @return TokenUsage[] */
+    /**
+     * @return TokenUsage[]
+     */
     public function findByAgent(Agent $agent, int $limit = 100): array
     {
         return $this->findBy(['agent' => $agent], ['createdAt' => 'DESC'], $limit);
@@ -72,7 +78,8 @@ class TokenUsageRepository extends ServiceEntityRepository
 
     /**
      * Aggregates token usage by agent for the given project.
-     * Returns ['agentId' => string, 'totalInput' => int, 'totalOutput' => int, 'calls' => int][]
+     *
+     * @return array<int, array<string, mixed>>
      */
     public function sumByProjectAndAgent(Project $project): array
     {
@@ -88,7 +95,9 @@ class TokenUsageRepository extends ServiceEntityRepository
             ->getArrayResult();
     }
 
-    /** @return TokenUsage[] */
+    /**
+     * @return TokenUsage[]
+     */
     public function findByTicket(Ticket $ticket, int $limit = 50): array
     {
         return $this->createQueryBuilder('tu')
@@ -101,7 +110,9 @@ class TokenUsageRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    /** @return TokenUsage[] */
+    /**
+     * @return TokenUsage[]
+     */
     public function findByTicketTask(TicketTask $ticketTask, int $limit = 50): array
     {
         return $this->findBy(['ticketTask' => $ticketTask], ['createdAt' => 'DESC'], $limit);

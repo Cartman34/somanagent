@@ -15,7 +15,6 @@ use App\Enum\ConnectorType;
 use App\Exception\ValidationException;
 use App\Repository\AgentRepository;
 use App\Repository\RoleRepository;
-use App\Repository\TeamRepository;
 use App\ValueObject\ConnectorConfig;
 use Symfony\Component\Uid\Uuid;
 
@@ -31,7 +30,6 @@ class AgentService
         private readonly EntityService   $entityService,
         private readonly AgentRepository $agentRepository,
         private readonly RoleRepository  $roleRepository,
-        private readonly TeamRepository  $teamRepository,
     ) {}
 
     /**

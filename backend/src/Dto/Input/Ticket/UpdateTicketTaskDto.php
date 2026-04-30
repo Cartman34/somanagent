@@ -33,6 +33,7 @@ final class UpdateTicketTaskDto
     /**
      * Creates an instance from raw request data. No required fields.
      *
+     * @param array<string, mixed> $data
      * @throws ValidationException with accumulated validation errors
      */
     public static function fromArray(array $data): self

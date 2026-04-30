@@ -635,7 +635,9 @@ class TicketController extends AbstractApiController
         return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 
-    /** @return AgentTaskExecution[] */
+    /**
+     * @return AgentTaskExecution[]
+     */
     private function collectTicketExecutions(Ticket $ticket): array
     {
         $seen = [];
@@ -648,6 +650,9 @@ class TicketController extends AbstractApiController
         return array_values($seen);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function serializeExecution(AgentTaskExecution $execution): array
     {
         return [
@@ -699,6 +704,9 @@ class TicketController extends AbstractApiController
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function serializeApiTicket(
         Ticket $ticket,
         bool $includeActiveStepTasks = false,
@@ -798,6 +806,9 @@ class TicketController extends AbstractApiController
         return $payload;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function serializeApiTicketTask(
         TicketTask $task,
         bool $includeChildren = false,
@@ -931,6 +942,9 @@ class TicketController extends AbstractApiController
         return $this->ticketLogService->countPendingAnswersForTask($task);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function serializeApiLog(TicketLog $log): array
     {
         return [

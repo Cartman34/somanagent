@@ -17,18 +17,25 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 final class TicketRepository extends ServiceEntityRepository
 {
+    /**
+     * @param ManagerRegistry $registry
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Ticket::class);
     }
 
-    /** @return Ticket[] */
+    /**
+     * @return Ticket[]
+     */
     public function findByProject(Project $project): array
     {
         return $this->findBy(['project' => $project], ['createdAt' => 'DESC']);
     }
 
-    /** @return Ticket[] */
+    /**
+     * @return Ticket[]
+     */
     public function findRecentStories(int $limit = 10): array
     {
         return $this->createQueryBuilder('t')
@@ -38,7 +45,9 @@ final class TicketRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    /** @return Ticket[] */
+    /**
+     * @return Ticket[]
+     */
     public function findStoriesByTitleLike(string $query, int $limit = 10): array
     {
         return $this->createQueryBuilder('t')

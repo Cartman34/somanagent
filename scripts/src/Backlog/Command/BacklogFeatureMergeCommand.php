@@ -26,6 +26,15 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
 
     private PullRequestService $pullRequestService;
 
+    /**
+     * @param BacklogPresenter $presenter
+     * @param bool $dryRun
+     * @param string $projectRoot
+     * @param BacklogBoardService $boardService
+     * @param BacklogWorktreeService $worktreeService
+     * @param GitService $gitService
+     * @param PullRequestService $pullRequestService
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
@@ -41,6 +50,11 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         $this->pullRequestService = $pullRequestService;
     }
 
+    /**
+     * @param list<string> $commandArgs
+     * @param array<string, bool|string> $options
+     * @return void
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $board = $this->loadBoard();
@@ -104,6 +118,9 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         }
     }
 
+    /**
+     * @param array<string> $commandArgs
+     */
     private function resolveFeatureReferenceArgument(BacklogBoard $board, array $commandArgs, string $command): string
     {
         if (!isset($commandArgs[0]) || trim($commandArgs[0]) === '') {

@@ -148,7 +148,7 @@ final class Application
      */
     private function toCrlf(string $text): string
     {
-        return preg_replace('/(?<!\r)\n/', "\r\n", $text);
+        return preg_replace('/(?<!\r)\n/', "\r\n", $text) ?? $text;
     }
 
     /** @throws WslRequiredException */

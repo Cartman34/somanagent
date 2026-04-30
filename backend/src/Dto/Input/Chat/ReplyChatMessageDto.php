@@ -24,6 +24,7 @@ final class ReplyChatMessageDto
     ) {}
 
     /**
+     * @param array<string, mixed> $data
      * @throws ValidationException with validation errors
      */
     public static function fromArray(array $data): self

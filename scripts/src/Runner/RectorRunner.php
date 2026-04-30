@@ -8,11 +8,11 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Runner;
 
 /**
- * PHPStan script runner.
+ * Rector script runner.
  *
- * Runs PHPStan static analysis on backend and/or scripts PHP sources.
+ * Applies automated code fixes to backend and/or scripts PHP sources.
  */
-final class PhpstanRunner extends AbstractScriptRunner
+final class RectorRunner extends AbstractScriptRunner
 {
     private const SCOPE_BACKEND = 'backend';
     private const SCOPE_SCRIPTS = 'scripts';
@@ -25,56 +25,54 @@ final class PhpstanRunner extends AbstractScriptRunner
 
     protected function getDescription(): string
     {
-        return 'Run PHPStan static analysis on backend and/or scripts PHP sources';
-    }
-
-    protected function getArguments(): array
-    {
-        return [
-            ['name' => '[file...]', 'description' => 'Optional files to analyse instead of the full project'],
-        ];
+        return 'Apply automated code fixes to backend and/or scripts PHP sources via Rector';
     }
 
     protected function getOptions(): array
     {
         return [
-            ['name' => '--scope', 'description' => 'Analyse one scope; repeat --scope=backend --scope=scripts for multiple scopes'],
+            ['name' => '--dry-run', 'description' => 'Show what would be changed without applying fixes'],
+            ['name' => '--scope', 'description' => 'Process one scope; repeat --scope=backend --scope=scripts for multiple scopes'],
         ];
     }
 
     protected function getUsageExamples(): array
     {
         return [
-            'php scripts/phpstan.php',
-            'php scripts/phpstan.php --scope=backend',
-            'php scripts/phpstan.php --scope=scripts',
-            'php scripts/phpstan.php backend/src/Controller/AgentController.php',
+            'php scripts/rector.php',
+            'php scripts/rector.php --dry-run',
+            'php scripts/rector.php --scope=backend',
+            'php scripts/rector.php --scope=scripts --dry-run',
         ];
     }
 
     /**
-     * Runs PHPStan analyse on backend and/or scripts sources.
-     * By default all configured scopes are analysed; use --scope to restrict.
+     * Runs Rector process on backend and/or scripts sources.
+     * By default all configured scopes are processed; use --scope to restrict.
      *
      * @param array<string> $args
      */
     public function run(array $args): int
     {
-        $files = array_values(array_filter(
+        $passthrough = array_values(array_filter(
             $args,
             static fn(string $a) => !str_starts_with($a, '--scope=')
         ));
-
-        if ($files !== []) {
-            return $this->analyse($files);
-        }
 
         $paths = [];
         foreach ($this->resolveScopes($args) as $scope) {
             array_push($paths, ...self::SCOPES[$scope]['paths']);
         }
 
-        return $this->analyse($paths);
+        $commandArgs = array_merge(
+            ['process', '--config', 'config/rector.php'],
+            $paths,
+            $passthrough
+        );
+
+        $escaped = implode(' ', array_map('escapeshellarg', $commandArgs));
+
+        return $this->app->runCommand("php scripts/vendor/bin/rector $escaped");
     }
 
     /**
@@ -102,21 +100,5 @@ final class PhpstanRunner extends AbstractScriptRunner
         }
 
         return array_values(array_unique($scopes));
-    }
-
-    /**
-     * @param list<string> $paths
-     */
-    private function analyse(array $paths): int
-    {
-        // --debug forces single-threaded mode, required on WSL2 where parallel worker IPC fails
-        $commandArgs = array_merge(
-            ['analyse', '--configuration', 'config/phpstan.neon', '--debug'],
-            $paths
-        );
-
-        $escaped = implode(' ', array_map('escapeshellarg', $commandArgs));
-
-        return $this->app->runCommand("php scripts/vendor/bin/phpstan $escaped");
     }
 }

@@ -164,7 +164,7 @@ class OpenCodeCliConnector extends AbstractConnector
         }
 
         $result = shell_exec('which opencode 2>/dev/null');
-        if ($result === null || trim($result) === '') {
+        if (!is_string($result) || trim($result) === '') {
             return new ConnectorHealthCheckResult(
                 name: 'runtime',
                 status: 'degraded',
@@ -300,7 +300,7 @@ class OpenCodeCliConnector extends AbstractConnector
         $index = 0;
 
         while ($index < count($lines)) {
-            $modelReference = trim($lines[$index] ?? '');
+            $modelReference = trim($lines[$index]);
             ++$index;
 
             if ($modelReference === '' || str_starts_with($modelReference, 'opencode models')) {

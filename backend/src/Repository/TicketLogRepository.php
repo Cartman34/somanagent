@@ -26,13 +26,17 @@ final class TicketLogRepository extends ServiceEntityRepository
         parent::__construct($registry, TicketLog::class);
     }
 
-    /** @return TicketLog[] */
+    /**
+     * @return TicketLog[]
+     */
     public function findByTicket(Ticket $ticket): array
     {
         return $this->findBy(['ticket' => $ticket], ['createdAt' => 'ASC']);
     }
 
-    /** @return TicketLog[] */
+    /**
+     * @return TicketLog[]
+     */
     public function findByTicketTask(TicketTask $ticketTask): array
     {
         return $this->findBy(['ticketTask' => $ticketTask], ['createdAt' => 'ASC']);
@@ -67,7 +71,9 @@ final class TicketLogRepository extends ServiceEntityRepository
         return (int) $qb->getQuery()->getSingleScalarResult() > 0;
     }
 
-    /** @return TicketLog[] */
+    /**
+     * @return TicketLog[]
+     */
     public function findAgentQuestionsByTicket(Ticket $ticket): array
     {
         return $this->findBy(['ticket' => $ticket, 'action' => 'agent_question'], ['createdAt' => 'ASC']);

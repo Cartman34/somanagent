@@ -12,9 +12,9 @@ use App\ValueObject\PlanningOutput;
 use App\ValueObject\PlanningTask;
 
 /**
- * Parse la sortie JSON structurée du skill tech-planning.
+ * Parses the structured JSON output produced by the tech-planning skill.
  *
- * Format attendu :
+ * Expected format:
  * ```json
  * {
  *   "branch": "feature/us-xxx-slug",
@@ -32,7 +32,7 @@ use App\ValueObject\PlanningTask;
 final class PlanningOutputParser
 {
     /**
-     * @throws \InvalidArgumentException si le JSON est invalide ou manque de champs requis
+     * @throws \InvalidArgumentException if the JSON is invalid or missing required fields
      */
     public function parse(string $rawContent): PlanningOutput
     {
@@ -117,6 +117,9 @@ final class PlanningOutputParser
         return $updates;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     private function requireString(array $data, string $key, string $context = 'root'): string
     {
         if (!isset($data[$key]) || !is_string($data[$key]) || trim($data[$key]) === '') {

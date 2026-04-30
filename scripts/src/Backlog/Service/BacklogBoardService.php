@@ -33,17 +33,15 @@ final class BacklogBoardService
     private const META_BLOCK_PREFIX = '  meta:';
     private const META_LINE_PREFIX = '    ';
 
-    private const LEGACY_SECTION_IN_PROGRESS = "En développement";
-    private const LEGACY_SECTION_IN_REVIEW = "À relire";
-    private const LEGACY_SECTION_REJECTED = "Rejetées";
-    private const LEGACY_SECTION_APPROVED = "Approuvées";
-
     private TextSlugger $featureSlugger;
 
     private FilesystemClientInterface $fs;
 
     private bool $dryRun;
 
+    /**
+     * Initializes the service with required dependencies.
+     */
     public function __construct(TextSlugger $featureSlugger, FilesystemClientInterface $fs, bool $dryRun)
     {
         $this->featureSlugger = $featureSlugger;
@@ -53,6 +51,10 @@ final class BacklogBoardService
 
     /* --- Board Persistence Operations --- */
 
+    /**
+     * Loads and parses a backlog board from a markdown file.
+     * @return BacklogBoard
+     */
     public function loadBoard(string $path): BacklogBoard
     {
         $content = $this->fs->getFileContents($path);
@@ -71,8 +73,10 @@ final class BacklogBoardService
         foreach ($lines as $line) {
             if (preg_match('/^## (.+)$/', $line, $matches) === 1) {
                 $currentSection = $matches[1];
-                $sectionOrder[] = $currentSection;
-                $rawSections[$currentSection] = [];
+                if (!in_array($currentSection, $sectionOrder, true)) {
+                    $sectionOrder[] = $currentSection;
+                }
+                $rawSections[$currentSection] ??= [];
                 continue;
             }
 
@@ -98,6 +102,10 @@ final class BacklogBoardService
         return $board;
     }
 
+    /**
+     * Persists a backlog board to its markdown file.
+     * @param BacklogBoard $board
+     */
     public function saveBoard(BacklogBoard $board): void
     {
         if ($this->dryRun) {
@@ -139,6 +147,10 @@ final class BacklogBoardService
 
     /* --- Review File Persistence Operations --- */
 
+    /**
+     * Loads and parses a backlog review file.
+     * @return BacklogReviewFile
+     */
     public function loadReviewFile(string $path): BacklogReviewFile
     {
         $content = $this->fs->getFileContents($path);
@@ -159,7 +171,7 @@ final class BacklogBoardService
             if (preg_match('/^## (.+)$/', $line, $matches) === 1) {
                 $currentSection = $matches[1];
                 $currentFeature = null;
-                $sections[$currentSection] = [];
+                $sections[$currentSection] ??= [];
                 continue;
             }
 
@@ -197,6 +209,10 @@ final class BacklogBoardService
         return $reviewFile;
     }
 
+    /**
+     * Persists a backlog review file to disk.
+     * @param BacklogReviewFile $reviewFile
+     */
     public function saveReviewFile(BacklogReviewFile $reviewFile): void
     {
         if ($this->dryRun) {
@@ -243,11 +259,20 @@ final class BacklogBoardService
 
     /* --- Entry Normalization & Classification --- */
 
+    /**
+     * Normalizes text into a URL-safe slug using the feature slugger.
+     * @return string
+     */
     public function normalizeFeatureSlug(string $text): string
     {
         return $this->featureSlugger->slugify($text);
     }
 
+    /**
+     * Returns the entry kind (feature or task) based on its properties.
+     * @param BoardEntry $entry
+     * @return string
+     */
     public function getEntryKind(BoardEntry $entry): string
     {
         $kind = $entry->getKind();
@@ -258,16 +283,31 @@ final class BacklogBoardService
         return $entry->getTask() !== null ? self::ENTRY_KIND_TASK : self::ENTRY_KIND_FEATURE;
     }
 
+    /**
+     * Checks whether an entry is a feature entry.
+     * @param BoardEntry $entry
+     * @return bool
+     */
     public function checkIsFeatureEntry(BoardEntry $entry): bool
     {
         return $this->getEntryKind($entry) === self::ENTRY_KIND_FEATURE;
     }
 
+    /**
+     * Checks whether an entry is a task entry.
+     * @param BoardEntry $entry
+     * @return bool
+     */
     public function checkIsTaskEntry(BoardEntry $entry): bool
     {
         return $this->getEntryKind($entry) === self::ENTRY_KIND_TASK;
     }
 
+    /**
+     * Returns the stage for a feature entry, defaulting to in-progress if not set.
+     * @param BoardEntry $entry
+     * @return string
+     */
     public function getFeatureStage(BoardEntry $entry): string
     {
         return $this->getEntryStage($entry) ?? BacklogBoard::STAGE_IN_PROGRESS;
@@ -275,6 +315,11 @@ final class BacklogBoardService
 
     /* --- Entry Resolution (from Board) --- */
 
+    /**
+     * Resolves a feature entry by its slug, throwing if not found.
+     * @param BacklogBoard $board, string $feature
+     * @return BoardEntryMatch
+     */
     public function resolveFeature(BacklogBoard $board, string $feature): BoardEntryMatch
     {
         $match = $this->findParentFeatureEntry($board, $feature);
@@ -285,6 +330,11 @@ final class BacklogBoardService
         return $match;
     }
 
+    /**
+     * Finds a parent feature entry in the active section.
+     * @param BacklogBoard $board, string $feature
+     * @return ?BoardEntryMatch
+     */
     public function findParentFeatureEntry(BacklogBoard $board, string $feature): ?BoardEntryMatch
     {
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $index => $entry) {
@@ -301,6 +351,11 @@ final class BacklogBoardService
         return null;
     }
 
+    /**
+     * Resolves a task entry from a reference string (feature/task or task-only).
+     * @param BacklogBoard $board, string $reference, string $command
+     * @return BoardEntryMatch
+     */
     public function resolveTaskByReference(BacklogBoard $board, string $reference, string $command): BoardEntryMatch
     {
         $normalizedReference = trim($reference);
@@ -404,6 +459,11 @@ final class BacklogBoardService
         return $matches;
     }
 
+    /**
+     * Resolves the single active task for an agent, throwing on none or multiple.
+     * @param BacklogBoard $board, string $agent
+     * @return BoardEntryMatch
+     */
     public function resolveSingleTaskForAgent(BacklogBoard $board, string $agent): BoardEntryMatch
     {
         $matches = $this->findTaskEntriesByAgent($board, $agent);
@@ -434,6 +494,11 @@ final class BacklogBoardService
         return $matches;
     }
 
+    /**
+     * Resolves the single active feature for an agent, throwing on none or multiple.
+     * @param BacklogBoard $board, string $agent
+     * @return BoardEntryMatch
+     */
     public function resolveSingleFeatureForAgent(BacklogBoard $board, string $agent): BoardEntryMatch
     {
         $matches = $this->findFeatureEntriesByAgent($board, $agent);
@@ -490,6 +555,11 @@ final class BacklogBoardService
         return $matches;
     }
 
+    /**
+     * Returns the first unassigned task in the TODO section, or null if force is false and all are assigned.
+     * @param BacklogBoard $board, bool $force
+     * @return ?BoardEntryMatch
+     */
     public function fetchNextBookableTask(BacklogBoard $board, bool $force = false): ?BoardEntryMatch
     {
         foreach ($board->getEntries(BacklogBoard::SECTION_TODO) as $index => $entry) {
@@ -667,6 +737,7 @@ final class BacklogBoardService
         }
 
         $metadata = [];
+        $metaStartIndex = (int) $metaStartIndex;
         $metaLines = array_slice($lines, $metaStartIndex + 1);
         if ($metaLines === []) {
             return [$lines, []];
@@ -688,6 +759,11 @@ final class BacklogBoardService
         return [array_slice($lines, 0, $metaStartIndex), $metadata];
     }
 
+    /**
+     * Trims whitespace from a string, returning null if empty.
+     * @param ?string $value
+     * @return ?string
+     */
     public function sanitizeString(?string $value): ?string
     {
         $value = trim((string) $value);
@@ -697,24 +773,36 @@ final class BacklogBoardService
 
     /* --- Stage Logic --- */
 
+    /**
+     * Normalizes a stage string to a known constant, or returns null if invalid.
+     * @param ?string $stage
+     * @return ?string
+     */
     public function getNormalizedStage(?string $stage): ?string
     {
-        return match (trim((string) $stage)) {
-            BacklogBoard::STAGE_IN_PROGRESS, self::LEGACY_SECTION_IN_PROGRESS => BacklogBoard::STAGE_IN_PROGRESS,
-            BacklogBoard::STAGE_IN_REVIEW, self::LEGACY_SECTION_IN_REVIEW => BacklogBoard::STAGE_IN_REVIEW,
-            BacklogBoard::STAGE_REJECTED, self::LEGACY_SECTION_REJECTED => BacklogBoard::STAGE_REJECTED,
-            BacklogBoard::STAGE_APPROVED, self::LEGACY_SECTION_APPROVED => BacklogBoard::STAGE_APPROVED,
+        $stage = trim((string) $stage);
+
+        return match ($stage) {
+            BacklogBoard::STAGE_IN_PROGRESS => BacklogBoard::STAGE_IN_PROGRESS,
+            BacklogBoard::STAGE_IN_REVIEW => BacklogBoard::STAGE_IN_REVIEW,
+            BacklogBoard::STAGE_REJECTED => BacklogBoard::STAGE_REJECTED,
+            BacklogBoard::STAGE_APPROVED => BacklogBoard::STAGE_APPROVED,
             default => null,
         };
     }
 
+    /**
+     * Returns a human-readable label for a stage constant.
+     * @param string $stage
+     * @return string
+     */
     public function getStageLabel(string $stage): string
     {
         return match ($this->getNormalizedStage($stage)) {
-            BacklogBoard::STAGE_IN_PROGRESS => self::LEGACY_SECTION_IN_PROGRESS,
-            BacklogBoard::STAGE_IN_REVIEW => self::LEGACY_SECTION_IN_REVIEW,
-            BacklogBoard::STAGE_REJECTED => self::LEGACY_SECTION_REJECTED,
-            BacklogBoard::STAGE_APPROVED => self::LEGACY_SECTION_APPROVED,
+            BacklogBoard::STAGE_IN_PROGRESS => 'In development',
+            BacklogBoard::STAGE_IN_REVIEW => 'In review',
+            BacklogBoard::STAGE_REJECTED => 'Rejected',
+            BacklogBoard::STAGE_APPROVED => 'Approved',
             default => $stage,
         };
     }
@@ -732,6 +820,11 @@ final class BacklogBoardService
         ];
     }
 
+    /**
+     * Returns the normalized stage for an entry, or null if not set.
+     * @param BoardEntry $entry
+     * @return ?string
+     */
     public function getEntryStage(BoardEntry $entry): ?string
     {
         return $this->getNormalizedStage($entry->getStage());
@@ -739,6 +832,11 @@ final class BacklogBoardService
 
     /* --- Mutations & Complex Logic --- */
 
+    /**
+     * Creates a board entry from raw input text (short prefix or markdown format).
+     * @param string $text
+     * @return BoardEntry
+     */
     public function createEntryFromInput(string $text): BoardEntry
     {
         $normalizedText = trim($text);
@@ -752,6 +850,11 @@ final class BacklogBoardService
         return $this->parseEntryFromLines(['- ' . $normalizedText]);
     }
 
+    /**
+     * Returns the first entry in the TODO section, or null if empty.
+     * @param BacklogBoard $board
+     * @return ?BoardEntryMatch
+     */
     public function fetchNextTodoTask(BacklogBoard $board): ?BoardEntryMatch
     {
         $entries = $board->getEntries(BacklogBoard::SECTION_TODO);
@@ -762,6 +865,9 @@ final class BacklogBoardService
         return new BoardEntryMatch(BacklogBoard::SECTION_TODO, 0, $entries[0]);
     }
 
+    /**
+     * @param list<BoardEntryMatch> $reserved
+     */
     public function removeReservedTasks(BacklogBoard $board, array $reserved): void
     {
         $entries = $board->getEntries(BacklogBoard::SECTION_TODO);
@@ -775,6 +881,10 @@ final class BacklogBoardService
         $board->setEntries(BacklogBoard::SECTION_TODO, array_values($entries));
     }
 
+    /**
+     * Removes an entry from the active section at the specified index.
+     * @param BacklogBoard $board, int $index
+     */
     public function removeActiveEntryAt(BacklogBoard $board, int $index): void
     {
         $entries = $board->getEntries(BacklogBoard::SECTION_ACTIVE);
@@ -782,6 +892,10 @@ final class BacklogBoardService
         $board->setEntries(BacklogBoard::SECTION_ACTIVE, array_values($entries));
     }
 
+    /**
+     * Updates the stage of a feature entry.
+     * @param BacklogBoard $board, string $feature, string $stage
+     */
     public function updateFeatureStage(BacklogBoard $board, string $feature, string $stage): void
     {
         $match = $this->resolveFeature($board, $feature);
@@ -793,6 +907,10 @@ final class BacklogBoardService
         $match->getEntry()->setStage($normalizedStage);
     }
 
+    /**
+     * Deletes a feature and all its associated entries from the board.
+     * @param BacklogBoard $board, string $feature
+     */
     public function deleteFeature(BacklogBoard $board, string $feature): void
     {
         $match = $this->findParentFeatureEntry($board, $feature);
@@ -805,6 +923,10 @@ final class BacklogBoardService
         $board->setEntries($match->getSection(), array_values($entries));
     }
 
+    /**
+     * Clears agent reservations from TODO entries, optionally filtered by feature.
+     * @param BacklogBoard $board, string $agent, ?string $feature
+     */
     public function clearAgentReservations(BacklogBoard $board, string $agent, ?string $feature = null): void
     {
         $entries = $board->getEntries(BacklogBoard::SECTION_TODO);
@@ -825,6 +947,10 @@ final class BacklogBoardService
         $board->setEntries(BacklogBoard::SECTION_TODO, $entries);
     }
 
+    /**
+     * Adds a task entry as a contribution block to a feature entry.
+     * @param BoardEntry $featureEntry, BoardEntry $taskEntry
+     */
     public function appendTaskContribution(BoardEntry $featureEntry, BoardEntry $taskEntry): void
     {
         $blocks = $this->getFeatureContributionBlocks($featureEntry);
@@ -838,11 +964,16 @@ final class BacklogBoardService
         $blocks[] = [
             'task' => $task,
             'text' => $taskEntry->getText(),
-            'extraLines' => $taskEntry->getExtraLines(),
+            'extraLines' => array_values($taskEntry->getExtraLines()),
         ];
         $this->rebuildFeatureFromContributionBlocks($featureEntry, $blocks);
     }
 
+    /**
+     * Removes a task contribution from a feature entry, returning true if removed and others remain.
+     * @param BoardEntry $featureEntry, BoardEntry $taskEntry
+     * @return bool
+     */
     public function removeTaskContribution(BoardEntry $featureEntry, BoardEntry $taskEntry): bool
     {
         $blocks = $this->getFeatureContributionBlocks($featureEntry);
@@ -870,6 +1001,10 @@ final class BacklogBoardService
 
     /* --- Validations & Helpers --- */
 
+    /**
+     * Throws if the feature has any active task branches.
+     * @param BacklogBoard $board, string $feature, string $command
+     */
     public function assertNoActiveTasksForFeature(BacklogBoard $board, string $feature, string $command): void
     {
         if ($this->findTaskEntriesByFeature($board, $feature) !== []) {
@@ -898,10 +1033,11 @@ final class BacklogBoardService
     }
 
     /**
-     * @return array<int, array{task: string, text: string, extraLines: array<string>}>
+     * @return list<array{task: string, text: string, extraLines: list<string>}>
      */
     public function getFeatureContributionBlocks(BoardEntry $featureEntry): array
     {
+        /** @var list<array{task: string, text: string, extraLines: list<string>}> $blocks */
         $blocks = [];
         $currentIndex = null;
 
@@ -916,12 +1052,17 @@ final class BacklogBoardService
                 continue;
             }
 
-            $blocks[$currentIndex]['extraLines'][] = '  ' . ltrim($line);
+            $block = $blocks[$currentIndex];
+            $block['extraLines'][] = '  ' . ltrim($line);
+            $blocks[$currentIndex] = $block;
         }
 
         return $blocks;
     }
 
+    /**
+     * @param list<array{task: string, text: string, extraLines: list<string>}> $blocks
+     */
     private function rebuildFeatureFromContributionBlocks(BoardEntry $featureEntry, array $blocks): void
     {
         $lines = [];
@@ -935,6 +1076,11 @@ final class BacklogBoardService
         $featureEntry->setExtraLines($lines);
     }
 
+    /**
+     * Generates a review key string from feature and task slugs.
+     * @param BoardEntry $entry
+     * @return string
+     */
     public function getTaskReviewKey(BoardEntry $entry): string
     {
         return sprintf(
@@ -944,6 +1090,11 @@ final class BacklogBoardService
         );
     }
 
+    /**
+     * Resolves the branch type for a new feature, respecting override, first entry, and parent.
+     * @param BoardEntry $first, ?BoardEntry $parent, string $override
+     * @return string
+     */
     public function resolveFeatureStartBranchType(BoardEntry $first, ?BoardEntry $parent, string $override): string
     {
         if ($override !== '') {
@@ -958,6 +1109,10 @@ final class BacklogBoardService
         return self::BRANCH_TYPE_FEAT;
     }
 
+    /**
+     * Resets a feature entry to in-progress if it is in review.
+     * @param BoardEntry $featureEntry
+     */
     public function invalidateFeatureReviewState(BoardEntry $featureEntry): void
     {
         if ($this->getFeatureStage($featureEntry) !== BacklogBoard::STAGE_IN_PROGRESS) {
@@ -965,6 +1120,10 @@ final class BacklogBoardService
         }
     }
 
+    /**
+     * Throws if a task slug is already used for the feature.
+     * @param BacklogBoard $board, BoardEntry $featureEntry, string $feature, string $task, string $command
+     */
     public function assertTaskSlugAvailableForFeature(BacklogBoard $board, BoardEntry $featureEntry, string $feature, string $task, string $command): void
     {
         foreach ($this->findTaskEntriesByFeature($board, $feature) as $match) {
@@ -1021,45 +1180,15 @@ final class BacklogBoardService
             $entries[] = $entry;
         }
 
-        foreach ($this->getLegacyStageSections() as $section => $stage) {
-            foreach ($this->parseEntriesFromSectionLines($rawSections[$section] ?? []) as $entry) {
-                $entry->setStage($this->getEntryStage($entry) ?? $stage);
-                $entries[] = $entry;
-            }
-        }
-
         return $entries;
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private function getLegacyStageSections(): array
-    {
-        return [
-            self::LEGACY_SECTION_IN_PROGRESS => BacklogBoard::STAGE_IN_PROGRESS,
-            self::LEGACY_SECTION_IN_REVIEW => BacklogBoard::STAGE_IN_REVIEW,
-            self::LEGACY_SECTION_REJECTED => BacklogBoard::STAGE_REJECTED,
-            self::LEGACY_SECTION_APPROVED => BacklogBoard::STAGE_APPROVED,
-        ];
     }
 
     private function updateManagedSectionOrder(BacklogBoard $board): void
     {
-        $legacySections = array_keys($this->getLegacyStageSections());
         $newOrder = [];
         $activeInserted = false;
 
         foreach ($board->getSectionOrder() as $section) {
-            if (in_array($section, $legacySections, true)) {
-                if (!$activeInserted) {
-                    $newOrder[] = BacklogBoard::SECTION_ACTIVE;
-                    $activeInserted = true;
-                }
-
-                continue;
-            }
-
             $newOrder[] = $section;
             if ($section === BacklogBoard::SECTION_ACTIVE) {
                 $activeInserted = true;
@@ -1117,7 +1246,7 @@ final class BacklogBoardService
             array_pop($normalized);
         }
 
-        return array_values($normalized);
+        return $normalized;
     }
 
     /**

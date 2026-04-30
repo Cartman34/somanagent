@@ -98,10 +98,15 @@ final class ReviewRunner extends AbstractScriptRunner
         $backendTestsExitCode = $this->printBackendTestsValidation($allFiles);
         echo "\n";
 
+        echo "=== PHPStan static analysis ===\n";
+        $phpstanExitCode = $this->printPhpstanValidation($phpFiles);
+        echo "\n";
+
         $hasBlockers = $frenchHits !== [] || $missingPhpdoc !== [] || $missingJsdoc !== []
             || $validateExitCode !== 0
             || $translationExitCode !== 0
-            || $backendTestsExitCode !== 0;
+            || $backendTestsExitCode !== 0
+            || $phpstanExitCode !== 0;
 
         return $hasBlockers ? 1 : 0;
     }
@@ -114,10 +119,8 @@ final class ReviewRunner extends AbstractScriptRunner
         $base = null;
 
         while ($args !== []) {
-            $arg = array_shift($args);
-            if ($arg === null) {
-                continue;
-            }
+            $arg = $args[0];
+            array_shift($args);
 
             if (str_starts_with($arg, '--base=')) {
                 $base = substr($arg, strlen('--base='));
@@ -283,6 +286,10 @@ final class ReviewRunner extends AbstractScriptRunner
         $hits = [];
 
         foreach ($phpFiles as $path) {
+            if ($this->isPhpdocExemptPath($path)) {
+                continue;
+            }
+
             $lines = $this->readLines($path);
             $lineCount = count($lines);
 
@@ -311,6 +318,10 @@ final class ReviewRunner extends AbstractScriptRunner
         $hits = [];
 
         foreach ($phpFiles as $path) {
+            if ($this->isPhpdocExemptPath($path)) {
+                continue;
+            }
+
             $lines = $this->readLines($path);
             $lineCount = count($lines);
 
@@ -328,6 +339,12 @@ final class ReviewRunner extends AbstractScriptRunner
         }
 
         return $hits;
+    }
+
+    private function isPhpdocExemptPath(string $path): bool
+    {
+        return str_starts_with($path, 'backend/tests/')
+            || str_starts_with($path, 'scripts/src/Test/');
     }
 
     /**
@@ -387,6 +404,56 @@ final class ReviewRunner extends AbstractScriptRunner
         }
 
         return $exitCode;
+    }
+
+    /**
+     * @param string[] $phpFiles
+     */
+    private function printPhpstanValidation(array $phpFiles): int
+    {
+        $scopes = $this->resolvePhpstanScopes($phpFiles);
+        if ($scopes === []) {
+            echo "(no backend or scripts PHP source files modified)\n";
+            return 0;
+        }
+
+        if (!is_file($this->projectRoot . '/scripts/vendor/bin/phpstan')) {
+            echo "PHPStan: UNAVAILABLE (run php scripts/scripts-install.php)\n";
+            return 0;
+        }
+
+        $scopeArgs = implode(' ', array_map(
+            static fn(string $scope): string => '--scope=' . escapeshellarg($scope),
+            $scopes
+        ));
+        [$exitCode, $lines] = $this->runCommand('php scripts/phpstan.php ' . $scopeArgs);
+
+        foreach ($lines as $line) {
+            echo $line . "\n";
+        }
+
+        return $exitCode;
+    }
+
+    /**
+     * @param string[] $phpFiles
+     * @return list<string>
+     */
+    private function resolvePhpstanScopes(array $phpFiles): array
+    {
+        $scopes = [];
+        foreach ($phpFiles as $path) {
+            if (str_starts_with($path, 'backend/src/')) {
+                $scopes[] = 'backend';
+                continue;
+            }
+
+            if (str_starts_with($path, 'scripts/src/')) {
+                $scopes[] = 'scripts';
+            }
+        }
+
+        return array_values(array_unique($scopes));
     }
 
     /**

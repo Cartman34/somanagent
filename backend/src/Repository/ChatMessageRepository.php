@@ -18,12 +18,17 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class ChatMessageRepository extends ServiceEntityRepository
 {
+    /**
+     * @param ManagerRegistry $registry
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, ChatMessage::class);
     }
 
-    /** @return ChatMessage[] */
+    /**
+     * @return ChatMessage[]
+     */
     public function findConversation(Project $project, Agent $agent, int $limit = 200): array
     {
         return $this->findBy(

@@ -25,7 +25,12 @@ final class ControllerRouteCatalog
 
         $routes = [];
 
-        foreach (glob($controllerDirectory . '/*.php') as $file) {
+        $files = glob($controllerDirectory . '/*.php');
+        if ($files === false) {
+            throw new \RuntimeException("Unable to list controller directory: $controllerDirectory");
+        }
+
+        foreach ($files as $file) {
             $content         = file_get_contents($file);
             $controllerClass = basename($file, '.php');
 

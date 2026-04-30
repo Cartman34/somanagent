@@ -10,6 +10,11 @@ namespace SoManAgent\Script\Test\Backlog\Campaign;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
 
+/**
+ * Scoped task lifecycle campaign
+ *
+ * Tests the workflow of scoped tasks within a feature, including child task review and approval.
+ */
 final class ScopedTaskLifecycleCampaign implements CampaignInterface
 {
     public function getName(): string
@@ -34,7 +39,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->assertStatusContains($context->scopedFeature, $context->childA);
 
         $rejectBody = $driver->createBodyFile('test-task-review-reject.md', ['1. Reject child task for test workflow.']);
-        $invalidRejectBody = $driver->createBodyFile('test-task-review-invalid.md', ['1. ### Revue de la tâche']);
+        $invalidRejectBody = $driver->createBodyFile('test-task-review-invalid.md', ['1. ### Task review']);
         $driver->requestTaskReview($context->agentPrimary, $taskARef);
         if (!str_contains($driver->reviewNext(), $taskARef)) {
             throw new \RuntimeException('Expected review-next to return the active task review.');

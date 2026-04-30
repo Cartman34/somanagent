@@ -12,7 +12,6 @@ use SoManAgent\Script\Backlog\Enum\PullRequestTag;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
-use SoManAgent\Script\Service\GitService;
 use SoManAgent\Script\Service\PullRequestService;
 
 /**
@@ -20,23 +19,33 @@ use SoManAgent\Script\Service\PullRequestService;
  */
 final class BacklogFeatureBlockCommand extends AbstractBacklogCommand
 {
-    private GitService $gitService;
-
     private PullRequestService $pullRequestService;
 
+    /**
+     * @param BacklogPresenter $presenter
+     * @param bool $dryRun
+     * @param string $projectRoot
+     * @param BacklogBoardService $boardService
+     * @param PullRequestService $pullRequestService
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
         BacklogBoardService $boardService,
-        GitService $gitService,
         PullRequestService $pullRequestService
     ) {
         parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
-        $this->gitService = $gitService;
         $this->pullRequestService = $pullRequestService;
     }
 
+    /**
+     * Block a feature in the backlog board.
+     *
+     * @param list<string> $commandArgs Feature slug (optional, auto-detect if not provided)
+     * @param array<string, bool|string> $options Command options (--agent required)
+     * @return void
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $agent = $options['agent'] ?? null;

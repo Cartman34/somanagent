@@ -24,6 +24,7 @@ final class CreateFeatureDto
     ) {}
 
     /**
+     * @param array<string, mixed> $data
      * @throws ValidationException with collected validation errors
      */
     public static function fromArray(array $data): self

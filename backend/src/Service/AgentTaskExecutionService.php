@@ -217,10 +217,10 @@ final class AgentTaskExecutionService
             task: $task,
             execution: $execution,
             reason: $reason,
-            taskIds: array_map(
+            taskIds: array_values(array_map(
                 static fn(TicketTask $linkedTask): string => (string) $linkedTask->getId(),
                 $ticketTasks,
-            ),
+            )),
         );
     }
 }

@@ -12,9 +12,9 @@ namespace SoManAgent\Script\Backlog\Model;
  */
 final class BacklogReviewFile
 {
-    public const SECTION_RULES = "Règles d'usage";
-    public const SECTION_CURRENT_REVIEW = "Revue en cours";
-    public const EMPTY_REVIEW_TEXT = 'Aucune review en cours.';
+    public const SECTION_RULES = 'Usage rules';
+    public const SECTION_CURRENT_REVIEW = 'Current review';
+    public const EMPTY_REVIEW_TEXT = 'No review in progress.';
 
     private string $path;
 
@@ -26,22 +26,36 @@ final class BacklogReviewFile
     /** @var array<string, array<string>> */
     private array $reviews = [];
 
+    /**
+     * @param string $path
+     * @param string $header
+     */
     public function __construct(string $path, string $header)
     {
         $this->path = $path;
         $this->header = $header;
     }
 
+    /**
+     * @return string
+     */
     public function getPath(): string
     {
         return $this->path;
     }
 
+    /**
+     * @return string
+     */
     public function getHeader(): string
     {
         return $this->header;
     }
 
+    /**
+     * @param string $header
+     * @return void
+     */
     public function setHeader(string $header): void
     {
         $this->header = $header;
@@ -57,6 +71,7 @@ final class BacklogReviewFile
 
     /**
      * @param array<string, array<string>> $sections
+     * @return void
      */
     public function setSections(array $sections): void
     {
@@ -73,6 +88,7 @@ final class BacklogReviewFile
 
     /**
      * @param array<string, array<string>> $reviews
+     * @return void
      */
     public function setReviews(array $reviews): void
     {
@@ -87,6 +103,10 @@ final class BacklogReviewFile
         $this->reviews[$key] = $items;
     }
 
+    /**
+     * @param string $key
+     * @return void
+     */
     public function clearReview(string $key): void
     {
         unset($this->reviews[$key]);

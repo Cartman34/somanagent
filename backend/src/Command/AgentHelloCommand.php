@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Dto\Input\Chat\SendChatMessageDto;
 use App\Service\AgentService;
 use App\Service\ChatService;
 use App\Service\ProjectService;
@@ -78,7 +79,7 @@ final class AgentHelloCommand extends Command
             return Command::INVALID;
         }
 
-        $exchange = $this->chatService->sendAndReceive($project, $agent, $message);
+        $exchange = $this->chatService->sendAndReceive($project, $agent, new SendChatMessageDto($message));
         $reply    = $exchange['agent'];
 
         $io->title('SoManAgent - Agent Test');

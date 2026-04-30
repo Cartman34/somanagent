@@ -18,7 +18,7 @@ final class UpdateAgentDto
     /**
      * @param ?string  $name           Updated name or null to keep current
      * @param ?string  $connectorValue Raw connector string value or null to keep current
-     * @param ?array   $configData     Raw config array or null to keep current
+     * @param ?array<string, mixed> $configData Raw config array or null to keep current
      * @param ?string  $description    Updated description or null to keep current
      * @param ?string  $roleId         Updated role UUID or null to keep current
      */
@@ -31,6 +31,7 @@ final class UpdateAgentDto
     ) {}
 
     /**
+     * @param array<string, mixed> $data
      * @throws ValidationException when the connector value is provided but invalid
      */
     public static function fromArray(array $data): self

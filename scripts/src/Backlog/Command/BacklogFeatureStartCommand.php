@@ -26,6 +26,14 @@ final class BacklogFeatureStartCommand extends AbstractBacklogCommand
 
     private GitService $gitService;
 
+    /**
+     * @param BacklogPresenter $presenter
+     * @param bool $dryRun
+     * @param string $projectRoot
+     * @param BacklogBoardService $boardService
+     * @param BacklogWorktreeService $worktreeService
+     * @param GitService $gitService
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
@@ -39,6 +47,11 @@ final class BacklogFeatureStartCommand extends AbstractBacklogCommand
         $this->gitService = $gitService;
     }
 
+    /**
+     * @param list<string> $commandArgs
+     * @param array<string, bool|string> $options
+     * @return void
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $agent = $options['agent'] ?? null;
@@ -139,16 +152,6 @@ final class BacklogFeatureStartCommand extends AbstractBacklogCommand
                 BoardEntry::META_PR => BacklogMetaValue::NONE->value,
             ]);
             $startedFeatureEntry = $featureEntry;
-        }
-
-        foreach (array_slice($reserved, 1) as $task) {
-            $reservedEntry = $task->getEntry();
-            $reservedEntry->setFeature(null);
-            $reservedEntry->setAgent(null);
-            $featureEntry->appendExtraLines(['  - ' . $reservedEntry->getText()]);
-            foreach ($reservedEntry->getExtraLines() as $line) {
-                $featureEntry->appendExtraLines(['  ' . ltrim($line)]);
-            }
         }
 
         $this->boardService->removeReservedTasks($board, $reserved);

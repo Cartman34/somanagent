@@ -132,7 +132,7 @@ Validate `feature-start` on a plain queued task.
 
 ### Expected checks
 
-- the first queued plain task leaves `À faire`
+- the first queued plain task leaves `To do`
 - one active `kind=feature` entry is created
 - feature has `stage=development`
 - branch is created with the expected type
@@ -157,7 +157,7 @@ Validate `feature-release` on a feature with no actual development ahead of base
 
 ### Expected checks
 
-- feature returns to the top of `À faire`
+- feature returns to the top of `To do`
 - no active feature remains for `d01`
 - branch/worktree cleanup behavior matches the documented workflow
 

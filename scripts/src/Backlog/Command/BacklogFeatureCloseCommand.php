@@ -28,6 +28,9 @@ final class BacklogFeatureCloseCommand extends AbstractBacklogCommand
 
     private PullRequestService $pullRequestService;
 
+    /**
+     * @return void
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
@@ -43,6 +46,11 @@ final class BacklogFeatureCloseCommand extends AbstractBacklogCommand
         $this->pullRequestService = $pullRequestService;
     }
 
+    /**
+     * @param list<string> $commandArgs
+     * @param array<string, bool|string> $options
+     * @return void
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $board = $this->loadBoard();
@@ -81,6 +89,9 @@ final class BacklogFeatureCloseCommand extends AbstractBacklogCommand
         }
     }
 
+    /**
+     * @param array<string> $commandArgs
+     */
     private function resolveFeatureReferenceArgument(BacklogBoard $board, array $commandArgs, string $command): string
     {
         if (!isset($commandArgs[0]) || trim($commandArgs[0]) === '') {

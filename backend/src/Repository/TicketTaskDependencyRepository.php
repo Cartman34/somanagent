@@ -17,18 +17,25 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 final class TicketTaskDependencyRepository extends ServiceEntityRepository
 {
+    /**
+     * Constructor.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, TicketTaskDependency::class);
     }
 
-    /** @return TicketTaskDependency[] */
+    /**
+     * @return TicketTaskDependency[]
+     */
     public function findByTicketTask(TicketTask $ticketTask): array
     {
         return $this->findBy(['ticketTask' => $ticketTask]);
     }
 
-    /** @return TicketTaskDependency[] */
+    /**
+     * @return TicketTaskDependency[]
+     */
     public function findByDependsOn(TicketTask $ticketTask): array
     {
         return $this->findBy(['dependsOn' => $ticketTask]);

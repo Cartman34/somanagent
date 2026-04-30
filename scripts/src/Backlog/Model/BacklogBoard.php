@@ -12,8 +12,8 @@ namespace SoManAgent\Script\Backlog\Model;
  */
 final class BacklogBoard
 {
-    public const SECTION_TODO = "À faire";
-    public const SECTION_ACTIVE = 'Traitement en cours';
+    public const SECTION_TODO = 'To do';
+    public const SECTION_ACTIVE = 'In progress';
 
     public const STAGE_IN_PROGRESS = 'development';
     public const STAGE_IN_REVIEW = 'review';
@@ -33,22 +33,36 @@ final class BacklogBoard
     /** @var array<string, array<BoardEntry>> */
     private array $taskSections = [];
 
+    /**
+     * @param string $path
+     * @param string $title
+     */
     public function __construct(string $path, string $title)
     {
         $this->path = $path;
         $this->title = $title;
     }
 
+    /**
+     * @return string
+     */
     public function getPath(): string
     {
         return $this->path;
     }
 
+    /**
+     * @return string
+     */
     public function getTitle(): string
     {
         return $this->title;
     }
 
+    /**
+     * @param string $title
+     * @return void
+     */
     public function setTitle(string $title): void
     {
         $this->title = $title;
@@ -64,6 +78,7 @@ final class BacklogBoard
 
     /**
      * @param array<int, string> $sectionOrder
+     * @return void
      */
     public function setSectionOrder(array $sectionOrder): void
     {
@@ -80,6 +95,7 @@ final class BacklogBoard
 
     /**
      * @param array<string, array<string>> $rawSections
+     * @return void
      */
     public function setRawSections(array $rawSections): void
     {
@@ -87,6 +103,7 @@ final class BacklogBoard
     }
 
     /**
+     * @param string $section
      * @return array<BoardEntry>
      */
     public function getEntries(string $section): array
@@ -95,7 +112,9 @@ final class BacklogBoard
     }
 
     /**
+     * @param string $section
      * @param array<BoardEntry> $entries
+     * @return void
      */
     public function setEntries(string $section, array $entries): void
     {

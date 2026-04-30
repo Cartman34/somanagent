@@ -42,7 +42,7 @@ final class StatusRunner extends AbstractScriptRunner
 
         $psRaw = shell_exec('docker compose ps --format "table {{.Name}}\t{{.Status}}\t{{.Service}}" 2>&1');
 
-        if ($psRaw === null || str_contains($psRaw, 'error') || str_contains($psRaw, 'Error')) {
+        if (!is_string($psRaw) || str_contains($psRaw, 'error') || str_contains($psRaw, 'Error')) {
             $fail("Docker Compose unavailable or not started.");
             $dockerUp = false;
         } else {
@@ -67,7 +67,7 @@ final class StatusRunner extends AbstractScriptRunner
                 'docker compose exec -T php php bin/console doctrine:migrations:status --no-ansi 2>&1'
             );
 
-            if ($migStatus === null) {
+            if (!is_string($migStatus)) {
                 $fail("Could not run doctrine:migrations:status.");
             } else {
                 foreach (explode("\n", $migStatus) as $line) {
@@ -99,7 +99,7 @@ final class StatusRunner extends AbstractScriptRunner
                 'docker compose exec -T php php bin/console doctrine:schema:validate --no-ansi 2>&1'
             );
 
-            if ($schemaStatus === null) {
+            if (!is_string($schemaStatus)) {
                 $fail("Could not run doctrine:schema:validate.");
             } else {
                 $inSync = str_contains($schemaStatus, '[OK]') && !str_contains($schemaStatus, 'differences');
@@ -120,7 +120,7 @@ final class StatusRunner extends AbstractScriptRunner
         echo "\n── Git ──\n";
 
         $gitStatus = shell_exec('git status --short 2>&1');
-        if (empty(trim($gitStatus ?? ''))) {
+        if (!is_string($gitStatus) || trim($gitStatus) === '') {
             $ok("Working tree clean.");
         } else {
             $count = count(array_filter(explode("\n", trim($gitStatus))));

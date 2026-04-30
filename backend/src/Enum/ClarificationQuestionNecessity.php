@@ -18,6 +18,8 @@ enum ClarificationQuestionNecessity: string
 
     /**
      * Resolves one necessity level from untrusted log metadata.
+     *
+     * @param ?array<string, mixed> $metadata
      */
     public static function tryFromMetadata(?array $metadata): ?self
     {

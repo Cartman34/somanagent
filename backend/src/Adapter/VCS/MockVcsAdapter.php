@@ -16,6 +16,8 @@ final class MockVcsAdapter implements VCSPort
 {
     /**
      * Returns a mock repository payload for the requested repository coordinates.
+     *
+     * @return array<string, mixed>
      */
     public function getRepository(string $owner, string $repo): array
     {
@@ -37,6 +39,8 @@ final class MockVcsAdapter implements VCSPort
 
     /**
      * Returns a mock pull request payload for future integration flows.
+     *
+     * @return array<string, mixed>
      */
     public function openPullRequest(string $owner, string $repo, string $title, string $body, string $head, string $base = 'main'): array
     {

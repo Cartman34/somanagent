@@ -40,10 +40,10 @@ final class LogService
      *   exchange_ref?: string|null,
      *   request_ref?: string|null,
      *   trace_ref?: string|null,
-     *   context?: array|null,
+     *   context?: array<string, mixed>|null,
      *   stack?: string|null,
      *   origin?: string|null,
-     *   raw_payload?: array|null,
+     *   raw_payload?: array<string, mixed>|null,
      *   title_i18n?: array{domain: string, key: string, parameters?: array<string, scalar|null>}|null,
      *   message_i18n?: array{domain: string, key: string, parameters?: array<string, scalar|null>}|null
      * } $options
@@ -112,10 +112,10 @@ final class LogService
      *   exchange_ref?: string|null,
      *   request_ref?: string|null,
      *   trace_ref?: string|null,
-     *   context?: array|null,
+     *   context?: array<string, mixed>|null,
      *   stack?: string|null,
      *   origin?: string|null,
-     *   raw_payload?: array|null,
+     *   raw_payload?: array<string, mixed>|null,
      *   title_i18n?: array{domain: string, key: string, parameters?: array<string, scalar|null>}|null
      * } $options
      */
@@ -162,6 +162,9 @@ final class LogService
         return in_array($event->getLevel(), self::OCCURRENCE_LEVELS, true);
     }
 
+    /**
+     * @param array<string, mixed> $options
+     */
     private function buildFingerprint(string $source, string $category, string $level, string $title, string $message, array $options): string
     {
         $seed = implode('|', [

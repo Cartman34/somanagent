@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Enum;
 
 /**
- * Enum representing backlog command names.
+ * Stable command names recognized by scripts/backlog.php for backlog management operations.
  */
 enum BacklogCommandName: string
 {

@@ -22,6 +22,9 @@ final class OpenApiConsistencyValidator
 {
     private const DOCUMENTED_METHODS = ['get', 'post', 'put', 'patch', 'delete'];
 
+    /**
+     * Initializes the validator with a controller route catalog.
+     */
     public function __construct(
         private readonly ControllerRouteCatalog $controllerRouteCatalog = new ControllerRouteCatalog(),
     ) {}
@@ -133,7 +136,7 @@ final class OpenApiConsistencyValidator
         $errors = [];
 
         foreach ($paths as $path => $pathItem) {
-            if (!is_string($path) || !is_array($pathItem)) {
+            if (!is_array($pathItem)) {
                 $errors[] = 'OpenAPI "paths" entries must use string keys and object values.';
                 continue;
             }

@@ -14,6 +14,8 @@ interface VCSPort
 {
     /**
      * Fetches repository metadata from the VCS provider.
+     *
+     * @return array<string, mixed>
      */
     public function getRepository(string $owner, string $repo): array;
 
@@ -24,6 +26,8 @@ interface VCSPort
 
     /**
      * Opens a pull or merge request from the source branch into the target base branch.
+     *
+     * @return array<string, mixed>
      */
     public function openPullRequest(string $owner, string $repo, string $title, string $body, string $head, string $base = 'main'): array;
 

@@ -46,6 +46,9 @@ class LogOccurrence
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $titleKey = null;
 
+    /**
+     * @var ?array<string, mixed>
+     */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $titleParameters = null;
 
@@ -58,6 +61,9 @@ class LogOccurrence
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $messageKey = null;
 
+    /**
+     * @var ?array<string, mixed>
+     */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $messageParameters = null;
 
@@ -88,6 +94,9 @@ class LogOccurrence
     #[ORM\Column(type: 'uuid', nullable: true)]
     private ?Uuid $lastLogEventId = null;
 
+    /**
+     * @var ?array<string, mixed>
+     */
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $contextSnapshot = null;
 
@@ -121,7 +130,10 @@ class LogOccurrence
     public function getTitleDomain(): ?string { return $this->titleDomain; }
     /** Returns the translation key used for the title, if any. */
     public function getTitleKey(): ?string { return $this->titleKey; }
-    /** Returns translation parameters used for the title, if any. */
+    /**
+     * Returns translation parameters used for the title, if any.
+     * @return ?array<string, mixed>
+     */
     public function getTitleParameters(): ?array { return $this->titleParameters; }
     /** Returns the fallback occurrence message. */
     public function getMessage(): string { return $this->message; }
@@ -129,7 +141,10 @@ class LogOccurrence
     public function getMessageDomain(): ?string { return $this->messageDomain; }
     /** Returns the translation key used for the message, if any. */
     public function getMessageKey(): ?string { return $this->messageKey; }
-    /** Returns translation parameters used for the message, if any. */
+    /**
+     * Returns translation parameters used for the message, if any.
+     * @return ?array<string, mixed>
+     */
     public function getMessageParameters(): ?array { return $this->messageParameters; }
     /** Returns the latest event source represented by the occurrence. */
     public function getSource(): string { return $this->source; }
@@ -149,7 +164,10 @@ class LogOccurrence
     public function getStatus(): string { return $this->status; }
     /** Returns the latest aggregated log event identifier, if any. */
     public function getLastLogEventId(): ?Uuid { return $this->lastLogEventId; }
-    /** Returns a snapshot of the last event context, if any. */
+    /**
+     * Returns a snapshot of the last event context, if any.
+     * @return ?array<string, mixed>
+     */
     public function getContextSnapshot(): ?array { return $this->contextSnapshot; }
 
     /** Stores the related project identifier. */
@@ -162,7 +180,10 @@ class LogOccurrence
     public function setStatus(string $status): static { $this->status = $status; return $this; }
     /** Stores the latest aggregated log event identifier. */
     public function setLastLogEventId(?Uuid $lastLogEventId): static { $this->lastLogEventId = $lastLogEventId; return $this; }
-    /** Stores a snapshot of the latest event context. */
+    /**
+     * Stores a snapshot of the latest event context.
+     * @param ?array<string, mixed> $contextSnapshot
+     */
     public function setContextSnapshot(?array $contextSnapshot): static { $this->contextSnapshot = $contextSnapshot; return $this; }
 
     /**

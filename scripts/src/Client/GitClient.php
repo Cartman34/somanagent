@@ -28,6 +28,13 @@ final class GitClient
     private ConsoleClient $console;
     private RetryPolicy $retryPolicy;
 
+    /**
+     * Initializes the Git client with console and retry policy.
+     *
+     * @param bool $dryRun If true, commands are logged but not executed
+     * @param ConsoleClient $console Console client for command execution
+     * @param RetryPolicy $retryPolicy Retry policy for network operations
+     */
     public function __construct(
         bool $dryRun,
         ConsoleClient $console,
@@ -102,6 +109,13 @@ final class GitClient
         }
     }
 
+    /**
+     * Executes a network Git command and returns its output.
+     *
+     * @param string $command The git command to execute
+     * @return string The command output
+     * @throws \RuntimeException If the command fails
+     */
     public function captureNetwork(string $command): string
     {
         [$code, $output] = $this->captureNetworkWithExitCode($command);
@@ -117,6 +131,13 @@ final class GitClient
         return $output;
     }
 
+    /**
+     * Builds a git command that operates on a specific repository path.
+     *
+     * @param string $path Repository path
+     * @param string $subCommand Git subcommand to run
+     * @return string The complete git command with -C flag
+     */
     public function inPath(string $path, string $subCommand): string
     {
         return sprintf(
@@ -126,6 +147,13 @@ final class GitClient
         );
     }
 
+    /**
+     * Pushes a branch to the remote with upstream tracking.
+     *
+     * @param string $branch Branch name to push
+     * @param string $remote Remote name (default: origin)
+     * @param string|null $worktree Optional worktree path to run command in
+     */
     public function pushUpstream(string $branch, string $remote = 'origin', ?string $worktree = null): void
     {
         $command = sprintf('push -u %s %s', escapeshellarg($remote), escapeshellarg($branch));
@@ -138,6 +166,13 @@ final class GitClient
         $this->runNetwork($command);
     }
 
+    /**
+     * Fetches a specific branch from a remote repository.
+     *
+     * @param string $branch Branch name to fetch
+     * @param string $remote Remote name (default: origin)
+     * @param string|null $worktree Optional worktree path to run command in
+     */
     public function fetchRemoteBranch(string $branch, string $remote = 'origin', ?string $worktree = null): void
     {
         $command = sprintf(
@@ -155,6 +190,13 @@ final class GitClient
         $this->runNetwork($command);
     }
 
+    /**
+     * Checks if a remote branch exists and is visible.
+     *
+     * @param string $branch Branch name to check
+     * @param string $remote Remote name (default: origin)
+     * @return bool True if the branch exists on the remote
+     */
     public function isRemoteBranchVisible(string $branch, string $remote = 'origin'): bool
     {
         $output = $this->captureNetwork(sprintf(
@@ -166,6 +208,11 @@ final class GitClient
         return trim($output) !== '';
     }
 
+    /**
+     * Creates a detached worktree at the specified path.
+     *
+     * @param string $path Path where the worktree will be created
+     */
     public function addWorktreeDetach(string $path): void
     {
         $this->run(sprintf(
@@ -174,6 +221,12 @@ final class GitClient
         ));
     }
 
+    /**
+     * Creates a new worktree for a specific branch.
+     *
+     * @param string $path Path where the worktree will be created
+     * @param string $branch Branch name for the worktree
+     */
     public function addWorktree(string $path, string $branch): void
     {
         $this->run(sprintf(
@@ -183,6 +236,11 @@ final class GitClient
         ));
     }
 
+    /**
+     * Force removes a worktree at the specified path.
+     *
+     * @param string $path Path of the worktree to remove
+     */
     public function removeWorktreeForce(string $path): void
     {
         $this->run(sprintf(
@@ -191,6 +249,12 @@ final class GitClient
         ));
     }
 
+    /**
+     * Creates a new branch at the specified start point.
+     *
+     * @param string $branch Name of the branch to create
+     * @param string $startPoint Commit or branch to start from
+     */
     public function createBranch(string $branch, string $startPoint): void
     {
         $this->run(sprintf(
@@ -200,6 +264,12 @@ final class GitClient
         ));
     }
 
+    /**
+     * Checks out an existing branch in the specified path.
+     *
+     * @param string $path Repository path
+     * @param string $branch Branch name to checkout
+     */
     public function checkoutBranch(string $path, string $branch): void
     {
         $this->run($this->inPath(
@@ -208,6 +278,13 @@ final class GitClient
         ));
     }
 
+    /**
+     * Creates and checks out a new branch from a start point.
+     *
+     * @param string $path Repository path
+     * @param string $branch Name of the new branch
+     * @param string $startPoint Commit or branch to start from
+     */
     public function checkoutBranchCreate(string $path, string $branch, string $startPoint): void
     {
         $this->run($this->inPath(
@@ -216,6 +293,9 @@ final class GitClient
         ));
     }
 
+    /**
+     * @param list<string> $files
+     */
     public function updateIndexAssumeUnchanged(string $path, array $files): void
     {
         if ($files === []) {
@@ -228,16 +308,35 @@ final class GitClient
         ));
     }
 
+    /**
+     * Gets the commit hash (HEAD) of a local branch.
+     *
+     * @param string $branch Branch name
+     * @return string The commit hash
+     */
     public function branchHead(string $branch): string
     {
         return trim($this->captureReadonly(sprintf('git rev-parse %s', escapeshellarg($branch))));
     }
 
+    /**
+     * Checks if a Git reference (branch, tag, or commit) exists.
+     *
+     * @param string $ref The reference to check
+     * @return bool True if the reference exists
+     */
     public function refExists(string $ref): bool
     {
         return $this->checkReadonly(sprintf('git rev-parse --verify --quiet %s', escapeshellarg($ref . '^{commit}')));
     }
 
+    /**
+     * Finds the merge base between two Git references.
+     *
+     * @param string $left First reference
+     * @param string $right Second reference
+     * @return string The merge base commit hash
+     */
     public function mergeBase(string $left, string $right): string
     {
         return trim($this->captureReadonly(sprintf(
@@ -247,6 +346,13 @@ final class GitClient
         )));
     }
 
+    /**
+     * Checks if one commit is an ancestor of another.
+     *
+     * @param string $ancestor Potential ancestor commit
+     * @param string $descendant Potential descendant commit
+     * @return bool True if ancestor is indeed an ancestor of descendant
+     */
     public function isAncestor(string $ancestor, string $descendant): bool
     {
         return $this->checkReadonly(sprintf(
@@ -256,26 +362,57 @@ final class GitClient
         ));
     }
 
+    /**
+     * Checks if a local branch exists.
+     *
+     * @param string $branch Branch name
+     * @return bool True if the local branch exists
+     */
     public function localBranchExists(string $branch): bool
     {
         return $this->checkReadonly(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/heads/' . $branch)));
     }
 
+    /**
+     * Checks if a remote branch exists.
+     *
+     * @param string $remote Remote name
+     * @param string $branch Branch name
+     * @return bool True if the remote branch exists
+     */
     public function remoteBranchExists(string $remote, string $branch): bool
     {
         return $this->checkReadonly(sprintf('git show-ref --verify --quiet %s', escapeshellarg('refs/remotes/' . $remote . '/' . $branch)));
     }
 
+    /**
+     * Deletes a local branch (force delete).
+     *
+     * @param string $branch Branch name to delete
+     */
     public function deleteLocalBranch(string $branch): void
     {
         $this->run(sprintf('git branch -D %s', escapeshellarg($branch)));
     }
 
+    /**
+     * Deletes a remote branch.
+     *
+     * @param string $remote Remote name
+     * @param string $branch Branch name to delete
+     */
     public function deleteRemoteBranch(string $remote, string $branch): void
     {
         $this->runNetwork(sprintf('git push %s --delete %s', escapeshellarg($remote), escapeshellarg($branch)));
     }
 
+    /**
+     * Merges a branch into the current branch in a repository path.
+     *
+     * @param string $path Repository path
+     * @param string $branch Branch to merge
+     * @param string $message Merge commit message
+     */
     public function mergeBranchInPath(string $path, string $branch, string $message): void
     {
         $this->run($this->inPath(
@@ -284,11 +421,24 @@ final class GitClient
         ));
     }
 
+    /**
+     * Counts the number of commits between base and branch.
+     *
+     * @param string $base Base commit or branch
+     * @param string $branch Branch to compare
+     * @return int Number of commits ahead of base
+     */
     public function countCommitsAhead(string $base, string $branch): int
     {
         return (int) trim($this->captureReadonly(sprintf('git rev-list --count %s..%s', escapeshellarg($base), escapeshellarg($branch))));
     }
 
+    /**
+     * Checks if there are uncommitted changes in the repository.
+     *
+     * @param string $path Repository path (default: current directory)
+     * @return bool True if there are local changes
+     */
     public function hasLocalChanges(string $path = '.'): bool
     {
         if ($path === '.') {
@@ -297,6 +447,12 @@ final class GitClient
         return trim($this->captureReadonly($this->inPath($path, 'status --short'))) !== '';
     }
 
+    /**
+     * Gets the name of the current branch.
+     *
+     * @param string $path Repository path (default: current directory)
+     * @return string Current branch name, or empty string if not on a branch
+     */
     public function currentBranch(string $path = '.'): string
     {
         if ($path === '.') {
@@ -310,17 +466,28 @@ final class GitClient
         return '';
     }
 
+    /**
+     * Pulls changes using fast-forward only strategy.
+     */
     public function pullFastForwardOnly(): void
     {
         $this->runNetwork('git pull --ff-only');
     }
 
+    /**
+     * Checks out a branch and pulls the latest changes.
+     *
+     * @param string $branch Branch to checkout and pull
+     */
     public function checkoutAndPull(string $branch): void
     {
         $this->run(sprintf('git checkout %s', escapeshellarg($branch)));
         $this->runNetwork('git pull');
     }
 
+    /**
+     * @return list<string>
+     */
     public function getChangedFiles(string $base, string $branch): array
     {
         return array_values(array_filter(explode("\n", trim($this->captureReadonly(sprintf(
@@ -330,16 +497,31 @@ final class GitClient
         ))))));
     }
 
+    /**
+     * Lists all worktrees in porcelain format.
+     *
+     * @return string Worktree list in porcelain format
+     */
     public function listWorktreesPorcelain(): string
     {
         return trim($this->captureReadonly('git worktree list --porcelain'));
     }
 
+    /**
+     * Gets the Git internal path for a subpath in a repository.
+     *
+     * @param string $path Repository path
+     * @param string $subPath Subpath to resolve (e.g., "hooks", "info")
+     * @return string The resolved git path
+     */
     public function getGitPath(string $path, string $subPath): string
     {
         return trim($this->captureReadonly($this->inPath($path, sprintf('rev-parse --git-path %s', escapeshellarg($subPath)))));
     }
 
+    /**
+     * @return list<string>
+     */
     public function getTrackedFiles(string $path, string $dir): array
     {
         return array_values(array_filter(explode("\n", trim($this->captureReadonly($this->inPath(
@@ -348,6 +530,12 @@ final class GitClient
         ))))));
     }
 
+    /**
+     * Converts an absolute path to a path relative to the project root.
+     *
+     * @param string $path The path to convert
+     * @return string Relative path from project root
+     */
     public function toRelativeProjectPath(string $path): string
     {
         return $this->console->toRelativeProjectPath($path);

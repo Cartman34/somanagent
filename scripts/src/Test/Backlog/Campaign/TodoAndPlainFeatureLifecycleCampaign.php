@@ -10,6 +10,11 @@ namespace SoManAgent\Script\Test\Backlog\Campaign;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
 
+/**
+ * Todo and plain feature lifecycle campaign
+ *
+ * Tests basic todo operations and plain feature lifecycle (create, start, release, assign).
+ */
 final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
 {
     public function getName(): string

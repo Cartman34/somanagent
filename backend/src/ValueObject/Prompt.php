@@ -8,17 +8,22 @@ declare(strict_types=1);
 namespace App\ValueObject;
 
 /**
- * Prompt final envoyé à un agent.
- * Construit en assemblant le contenu du skill + le contexte de la tâche.
+ * Final prompt sent to an agent, built by assembling the skill content and the task context.
  */
 final class Prompt
 {
+    /**
+     * @param array<string, mixed> $context
+     */
     private function __construct(
         private readonly string $skillContent,
         private readonly string $taskInstruction,
         private readonly array  $context = [],
     ) {}
 
+    /**
+     * @param array<string, mixed> $context
+     */
     public static function create(
         string $skillContent,
         string $taskInstruction,
@@ -28,27 +33,38 @@ final class Prompt
     }
 
     /**
-     * Construit le texte final du prompt.
+     * Builds and returns the final prompt text.
      */
     public function build(): string
     {
         $parts = [];
 
         if ($this->skillContent !== '') {
-            $parts[] = "# Instructions du skill\n\n" . $this->skillContent;
+            $parts[] = "# Skill instructions\n\n" . $this->skillContent;
         }
 
         if (!empty($this->context)) {
-            $parts[] = "# Contexte\n\n" . $this->formatContext();
+            $parts[] = "# Context\n\n" . $this->formatContext();
         }
 
-        $parts[] = "# Tâche\n\n" . $this->taskInstruction;
+        $parts[] = "# Task\n\n" . $this->taskInstruction;
 
         return implode("\n\n---\n\n", $parts);
     }
 
+    /**
+     * Returns the skill content used in this prompt.
+     */
     public function getSkillContent(): string    { return $this->skillContent; }
+
+    /**
+     * Returns the task instruction used in this prompt.
+     */
     public function getTaskInstruction(): string { return $this->taskInstruction; }
+
+    /**
+     * @return array<string, mixed>
+     */
     public function getContext(): array          { return $this->context; }
 
     private function formatContext(): string

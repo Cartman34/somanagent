@@ -50,6 +50,10 @@ final class NodeRunner extends AbstractScriptRunner
         ];
     }
 
+    /**
+     * @param list<string> $args
+     * @return int
+     */
     public function run(array $args): int
     {
         if ($args === []) {

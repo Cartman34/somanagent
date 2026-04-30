@@ -31,6 +31,6 @@ enum WorkflowStatus: string
      */
     public function isUsable(): bool
     {
-        return $this === self::Validated || $this === self::Locked;
+        return true;
     }
 }

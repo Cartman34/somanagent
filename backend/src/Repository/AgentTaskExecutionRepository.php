@@ -26,7 +26,9 @@ final class AgentTaskExecutionRepository extends ServiceEntityRepository
         parent::__construct($registry, AgentTaskExecution::class);
     }
 
-    /** @return AgentTaskExecution[] */
+    /**
+     * @return AgentTaskExecution[]
+     */
     public function findByTicketTask(TicketTask $ticketTask): array
     {
         return $this->createQueryBuilder('e')

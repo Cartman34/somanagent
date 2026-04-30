@@ -53,7 +53,7 @@ final class BacklogRunner extends AbstractScriptRunner
      */
     public function run(array $args): int
     {
-        [$parsedArgs, $options] = $this->parseArgs($args);
+        [$parsedArgs, $options] = $this->parseArgs(array_values($args));
         $command = array_shift($parsedArgs) ?? '';
         $commandArgs = $parsedArgs;
         $this->configureExecutionModes($options);
@@ -88,11 +88,13 @@ final class BacklogRunner extends AbstractScriptRunner
             return $this->handleCommand($command, $commandArgs, $options);
         } catch (\Exception $e) {
             $this->console->fail($e->getMessage());
-
-            return 1;
         }
     }
 
+    /**
+     * @param list<string> $commandArgs
+     * @param array<string, bool|string> $options
+     */
     private function handleCommand(string $command, array $commandArgs, array $options): int
     {
         $this->commandFactory()->createHandler($command)->handle($commandArgs, $options);
@@ -100,6 +102,10 @@ final class BacklogRunner extends AbstractScriptRunner
         return 0;
     }
 
+    /**
+     * @param list<string> $args
+     * @return array{0: list<string>, 1: array<string, bool|string>}
+     */
     private function parseArgs(array $args): array
     {
         $parsedArgs = [];
@@ -132,6 +138,9 @@ final class BacklogRunner extends AbstractScriptRunner
         return [$parsedArgs, $options];
     }
 
+    /**
+     * @param array<string, bool|string> $options
+     */
     private function configureTestFileOverrides(array $options): void
     {
         if (!($options[BacklogCliOption::TEST_MODE->value] ?? false)) {

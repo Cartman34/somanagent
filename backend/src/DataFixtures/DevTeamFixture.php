@@ -31,54 +31,6 @@ class DevTeamFixture extends Fixture
 {
     private const SKILLS_BASE_PATH = '/var/www/skills/custom';
     private const TRANSLATION_DOMAIN = 'fixtures';
-    private const FIXTURE_LABEL_KEYS = [
-        'role' => [
-            'product_owner_name' => 'fixtures.role.product_owner.name',
-            'product_owner_description' => 'fixtures.role.product_owner.description',
-            'lead_tech_name' => 'fixtures.role.lead_tech.name',
-            'lead_tech_description' => 'fixtures.role.lead_tech.description',
-            'php_dev_name' => 'fixtures.role.php_dev.name',
-            'php_dev_description' => 'fixtures.role.php_dev.description',
-            'frontend_dev_name' => 'fixtures.role.frontend_dev.name',
-            'frontend_dev_description' => 'fixtures.role.frontend_dev.description',
-            'ui_ux_designer_name' => 'fixtures.role.ui_ux_designer.name',
-            'ui_ux_designer_description' => 'fixtures.role.ui_ux_designer.description',
-            'tester_name' => 'fixtures.role.tester.name',
-            'tester_description' => 'fixtures.role.tester.description',
-            'scrum_master_name' => 'fixtures.role.scrum_master.name',
-            'scrum_master_description' => 'fixtures.role.scrum_master.description',
-            'tech_writer_name' => 'fixtures.role.tech_writer.name',
-            'tech_writer_description' => 'fixtures.role.tech_writer.description',
-            'devops_name' => 'fixtures.role.devops.name',
-            'devops_description' => 'fixtures.role.devops.description',
-        ],
-        'agent' => [
-            'po_alice_name' => 'fixtures.agent.po_alice.name',
-            'lt_bob_name' => 'fixtures.agent.lt_bob.name',
-            'php_charlie_name' => 'fixtures.agent.php_charlie.name',
-            'front_diana_name' => 'fixtures.agent.front_diana.name',
-            'design_eve_name' => 'fixtures.agent.design_eve.name',
-            'qa_frank_name' => 'fixtures.agent.qa_frank.name',
-            'sm_grace_name' => 'fixtures.agent.sm_grace.name',
-            'doc_henry_name' => 'fixtures.agent.doc_henry.name',
-            'ops_iris_name' => 'fixtures.agent.ops_iris.name',
-        ],
-        'team' => [
-            'web_dev_name' => 'fixtures.team.web_dev.name',
-            'web_dev_description' => 'fixtures.team.web_dev.description',
-        ],
-        'workflow' => [
-            'standard_name' => 'fixtures.workflow.standard.name',
-            'standard_description' => 'fixtures.workflow.standard.description',
-            'standard_step_new_name' => 'fixtures.workflow.standard.step.new.name',
-            'standard_step_ready_name' => 'fixtures.workflow.standard.step.ready.name',
-            'standard_step_planning_name' => 'fixtures.workflow.standard.step.planning.name',
-            'standard_step_graphic_design_name' => 'fixtures.workflow.standard.step.graphic_design.name',
-            'standard_step_development_name' => 'fixtures.workflow.standard.step.development.name',
-            'standard_step_code_review_name' => 'fixtures.workflow.standard.step.code_review.name',
-            'standard_step_done_name' => 'fixtures.workflow.standard.step.done.name',
-        ],
-    ];
 
     /**
      * Injects the translator used to resolve fixture-specific labels.
@@ -102,7 +54,9 @@ class DevTeamFixture extends Fixture
         $manager->flush();
     }
 
-    /** @return array<string, Skill> */
+    /**
+     * @return array<string, Skill>
+     */
     private function loadSkills(ObjectManager $manager): array
     {
         $definitions = [
@@ -125,19 +79,22 @@ class DevTeamFixture extends Fixture
         return $skills;
     }
 
-    /** @return array<string, Role> */
+    /**
+     * @param array<string, Skill> $skills
+     * @return array<string, Role>
+     */
     private function createRoles(ObjectManager $manager, array $skills): array
     {
         $definitions = [
-            'product-owner'  => ['name' => $this->tr('fixtures.role.product_owner.name'),  'desc' => $this->tr('fixtures.role.product_owner.description'),  'skills' => ['product-owner', 'bug-reporting']],
-            'lead-tech'      => ['name' => $this->tr('fixtures.role.lead_tech.name'),      'desc' => $this->tr('fixtures.role.lead_tech.description'),      'skills' => ['tech-planning', 'spec-writer', 'code-reviewer']],
-            'php-dev'        => ['name' => $this->tr('fixtures.role.php_dev.name'),        'desc' => $this->tr('fixtures.role.php_dev.description'),        'skills' => ['php-backend-dev']],
-            'frontend-dev'   => ['name' => $this->tr('fixtures.role.frontend_dev.name'),   'desc' => $this->tr('fixtures.role.frontend_dev.description'),   'skills' => ['js-frontend-dev']],
-            'ui-ux-designer' => ['name' => $this->tr('fixtures.role.ui_ux_designer.name'), 'desc' => $this->tr('fixtures.role.ui_ux_designer.description'), 'skills' => ['ui-design']],
-            'tester'         => ['name' => $this->tr('fixtures.role.tester.name'),         'desc' => $this->tr('fixtures.role.tester.description'),         'skills' => ['test-writing', 'bug-reporting']],
-            'scrum-master'   => ['name' => $this->tr('fixtures.role.scrum_master.name'),   'desc' => $this->tr('fixtures.role.scrum_master.description'),   'skills' => []],
-            'tech-writer'    => ['name' => $this->tr('fixtures.role.tech_writer.name'),    'desc' => $this->tr('fixtures.role.tech_writer.description'),    'skills' => ['documentation-writing']],
-            'devops'         => ['name' => $this->tr('fixtures.role.devops.name'),         'desc' => $this->tr('fixtures.role.devops.description'),         'skills' => ['ci-cd-setup']],
+            'product-owner'  => ['name' => $this->translator->trans('fixtures.role.product_owner.name', [], self::TRANSLATION_DOMAIN),  'desc' => $this->translator->trans('fixtures.role.product_owner.description', [], self::TRANSLATION_DOMAIN),  'skills' => ['product-owner', 'bug-reporting']],
+            'lead-tech'      => ['name' => $this->translator->trans('fixtures.role.lead_tech.name', [], self::TRANSLATION_DOMAIN),      'desc' => $this->translator->trans('fixtures.role.lead_tech.description', [], self::TRANSLATION_DOMAIN),      'skills' => ['tech-planning', 'spec-writer', 'code-reviewer']],
+            'php-dev'        => ['name' => $this->translator->trans('fixtures.role.php_dev.name', [], self::TRANSLATION_DOMAIN),        'desc' => $this->translator->trans('fixtures.role.php_dev.description', [], self::TRANSLATION_DOMAIN),        'skills' => ['php-backend-dev']],
+            'frontend-dev'   => ['name' => $this->translator->trans('fixtures.role.frontend_dev.name', [], self::TRANSLATION_DOMAIN),   'desc' => $this->translator->trans('fixtures.role.frontend_dev.description', [], self::TRANSLATION_DOMAIN),   'skills' => ['js-frontend-dev']],
+            'ui-ux-designer' => ['name' => $this->translator->trans('fixtures.role.ui_ux_designer.name', [], self::TRANSLATION_DOMAIN), 'desc' => $this->translator->trans('fixtures.role.ui_ux_designer.description', [], self::TRANSLATION_DOMAIN), 'skills' => ['ui-design']],
+            'tester'         => ['name' => $this->translator->trans('fixtures.role.tester.name', [], self::TRANSLATION_DOMAIN),         'desc' => $this->translator->trans('fixtures.role.tester.description', [], self::TRANSLATION_DOMAIN),         'skills' => ['test-writing', 'bug-reporting']],
+            'scrum-master'   => ['name' => $this->translator->trans('fixtures.role.scrum_master.name', [], self::TRANSLATION_DOMAIN),   'desc' => $this->translator->trans('fixtures.role.scrum_master.description', [], self::TRANSLATION_DOMAIN),   'skills' => []],
+            'tech-writer'    => ['name' => $this->translator->trans('fixtures.role.tech_writer.name', [], self::TRANSLATION_DOMAIN),    'desc' => $this->translator->trans('fixtures.role.tech_writer.description', [], self::TRANSLATION_DOMAIN),    'skills' => ['documentation-writing']],
+            'devops'         => ['name' => $this->translator->trans('fixtures.role.devops.name', [], self::TRANSLATION_DOMAIN),         'desc' => $this->translator->trans('fixtures.role.devops.description', [], self::TRANSLATION_DOMAIN),         'skills' => ['ci-cd-setup']],
         ];
 
         $roles = [];
@@ -158,6 +115,7 @@ class DevTeamFixture extends Fixture
     /**
      * @param array<string, Role> $roles
      * @param array<string, Skill> $skills
+     * @return array<string, AgentAction>
      */
     private function createAgentActions(ObjectManager $manager, array $roles, array $skills): array
     {
@@ -192,21 +150,24 @@ class DevTeamFixture extends Fixture
         return $actions;
     }
 
-    /** @return array<string, Agent> */
+    /**
+     * @param array<string, Role> $roles
+     * @return array<string, Agent>
+     */
     private function createAgents(ObjectManager $manager, array $roles): array
     {
         $config = ConnectorConfig::default();
 
         $definitions = [
-            'po-alice'    => ['name' => $this->tr('fixtures.agent.po_alice.name'),    'role' => 'product-owner'],
-            'lt-bob'      => ['name' => $this->tr('fixtures.agent.lt_bob.name'),      'role' => 'lead-tech'],
-            'php-charlie' => ['name' => $this->tr('fixtures.agent.php_charlie.name'), 'role' => 'php-dev'],
-            'front-diana' => ['name' => $this->tr('fixtures.agent.front_diana.name'), 'role' => 'frontend-dev'],
-            'design-eve'  => ['name' => $this->tr('fixtures.agent.design_eve.name'),  'role' => 'ui-ux-designer'],
-            'qa-frank'    => ['name' => $this->tr('fixtures.agent.qa_frank.name'),    'role' => 'tester'],
-            'sm-grace'    => ['name' => $this->tr('fixtures.agent.sm_grace.name'),    'role' => 'scrum-master'],
-            'doc-henry'   => ['name' => $this->tr('fixtures.agent.doc_henry.name'),   'role' => 'tech-writer'],
-            'ops-iris'    => ['name' => $this->tr('fixtures.agent.ops_iris.name'),    'role' => 'devops'],
+            'po-alice'    => ['name' => $this->translator->trans('fixtures.agent.po_alice.name', [], self::TRANSLATION_DOMAIN),    'role' => 'product-owner'],
+            'lt-bob'      => ['name' => $this->translator->trans('fixtures.agent.lt_bob.name', [], self::TRANSLATION_DOMAIN),      'role' => 'lead-tech'],
+            'php-charlie' => ['name' => $this->translator->trans('fixtures.agent.php_charlie.name', [], self::TRANSLATION_DOMAIN), 'role' => 'php-dev'],
+            'front-diana' => ['name' => $this->translator->trans('fixtures.agent.front_diana.name', [], self::TRANSLATION_DOMAIN), 'role' => 'frontend-dev'],
+            'design-eve'  => ['name' => $this->translator->trans('fixtures.agent.design_eve.name', [], self::TRANSLATION_DOMAIN),  'role' => 'ui-ux-designer'],
+            'qa-frank'    => ['name' => $this->translator->trans('fixtures.agent.qa_frank.name', [], self::TRANSLATION_DOMAIN),    'role' => 'tester'],
+            'sm-grace'    => ['name' => $this->translator->trans('fixtures.agent.sm_grace.name', [], self::TRANSLATION_DOMAIN),    'role' => 'scrum-master'],
+            'doc-henry'   => ['name' => $this->translator->trans('fixtures.agent.doc_henry.name', [], self::TRANSLATION_DOMAIN),   'role' => 'tech-writer'],
+            'ops-iris'    => ['name' => $this->translator->trans('fixtures.agent.ops_iris.name', [], self::TRANSLATION_DOMAIN),    'role' => 'devops'],
         ];
 
         $agents = [];
@@ -220,11 +181,14 @@ class DevTeamFixture extends Fixture
         return $agents;
     }
 
+    /**
+     * @param array<string, Agent> $agents
+     */
     private function createTeam(ObjectManager $manager, array $agents): Team
     {
         $team = new Team(
-            $this->tr('fixtures.team.web_dev.name'),
-            $this->tr('fixtures.team.web_dev.description'),
+            $this->translator->trans('fixtures.team.web_dev.name', [], self::TRANSLATION_DOMAIN),
+            $this->translator->trans('fixtures.team.web_dev.description', [], self::TRANSLATION_DOMAIN),
         );
         foreach ($agents as $agent) {
             $team->addAgent($agent);
@@ -233,23 +197,26 @@ class DevTeamFixture extends Fixture
         return $team;
     }
 
+    /**
+     * @param array<string, AgentAction> $actions
+     */
     private function createWorkflowTemplate(ObjectManager $manager, array $actions): Workflow
     {
         $workflow = new Workflow(
-            $this->tr('fixtures.workflow.standard.name'),
+            $this->translator->trans('fixtures.workflow.standard.name', [], self::TRANSLATION_DOMAIN),
             WorkflowTrigger::Manual,
-            $this->tr('fixtures.workflow.standard.description'),
+            $this->translator->trans('fixtures.workflow.standard.description', [], self::TRANSLATION_DOMAIN),
         );
         foreach ([
-            [1, 'fixtures.workflow.standard.step.new.name',            'new',            WorkflowStepTransitionMode::Automatic, [['product.specify', true]]],
-            [2, 'fixtures.workflow.standard.step.ready.name',          'ready',          WorkflowStepTransitionMode::Manual,    []],
-            [3, 'fixtures.workflow.standard.step.planning.name',       'planning',       WorkflowStepTransitionMode::Automatic, [['tech.plan', true]]],
-            [4, 'fixtures.workflow.standard.step.graphic_design.name', 'graphic_design', WorkflowStepTransitionMode::Automatic, [['design.ui_mockup', false]]],
-            [5, 'fixtures.workflow.standard.step.development.name',    'development',    WorkflowStepTransitionMode::Automatic, [['dev.backend.implement', false], ['dev.frontend.implement', false]]],
-            [6, 'fixtures.workflow.standard.step.code_review.name',    'code_review',    WorkflowStepTransitionMode::Automatic, [['review.code', false]]],
-            [7, 'fixtures.workflow.standard.step.done.name',           'done',           WorkflowStepTransitionMode::Manual,    []],
-        ] as [$order, $nameKey, $key, $transitionMode, $stepActions]) {
-            $step = new WorkflowStep($workflow, $order, $this->tr($nameKey), $key);
+            [1, $this->translator->trans('fixtures.workflow.standard.step.new.name', [], self::TRANSLATION_DOMAIN),            'new',            WorkflowStepTransitionMode::Automatic, [['product.specify', true]]],
+            [2, $this->translator->trans('fixtures.workflow.standard.step.ready.name', [], self::TRANSLATION_DOMAIN),          'ready',          WorkflowStepTransitionMode::Manual,    []],
+            [3, $this->translator->trans('fixtures.workflow.standard.step.planning.name', [], self::TRANSLATION_DOMAIN),       'planning',       WorkflowStepTransitionMode::Automatic, [['tech.plan', true]]],
+            [4, $this->translator->trans('fixtures.workflow.standard.step.graphic_design.name', [], self::TRANSLATION_DOMAIN), 'graphic_design', WorkflowStepTransitionMode::Automatic, [['design.ui_mockup', false]]],
+            [5, $this->translator->trans('fixtures.workflow.standard.step.development.name', [], self::TRANSLATION_DOMAIN),    'development',    WorkflowStepTransitionMode::Automatic, [['dev.backend.implement', false], ['dev.frontend.implement', false]]],
+            [6, $this->translator->trans('fixtures.workflow.standard.step.code_review.name', [], self::TRANSLATION_DOMAIN),    'code_review',    WorkflowStepTransitionMode::Automatic, [['review.code', false]]],
+            [7, $this->translator->trans('fixtures.workflow.standard.step.done.name', [], self::TRANSLATION_DOMAIN),           'done',           WorkflowStepTransitionMode::Manual,    []],
+        ] as [$order, $name, $key, $transitionMode, $stepActions]) {
+            $step = new WorkflowStep($workflow, $order, $name, $key);
             $step->setTransitionMode($transitionMode);
 
             foreach ($stepActions as [$actionKey, $createWithTicket]) {
@@ -279,8 +246,4 @@ class DevTeamFixture extends Fixture
         return null;
     }
 
-    private function tr(string $key): string
-    {
-        return $this->translator->trans($key, [], self::TRANSLATION_DOMAIN);
-    }
 }

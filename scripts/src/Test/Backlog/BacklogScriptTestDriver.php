@@ -15,12 +15,22 @@ use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\TextSlugger;
 use SoManAgent\Script\Service\GitService;
 
+/**
+ * Test driver for backlog script workflow testing
+ *
+ * Provides a fluent interface to execute backlog commands and verify test outcomes.
+ */
 final class BacklogScriptTestDriver
 {
     private BacklogScriptTestContext $context;
     private ConsoleClient $consoleClient;
     private Console $console;
 
+    /**
+     * @param BacklogScriptTestContext $context Test context containing configuration
+     * @param ConsoleClient $consoleClient Console client for command execution
+     * @param Console $console Console instance for output
+     */
     public function __construct(BacklogScriptTestContext $context, ConsoleClient $consoleClient, Console $console)
     {
         $this->context = $context;
@@ -28,44 +38,53 @@ final class BacklogScriptTestDriver
         $this->console = $console;
     }
 
+    /**
+     * Initialize test artifacts
+     */
     public function initializeArtifacts(): void
     {
         $this->resetArtifacts();
     }
 
+    /**
+     * Reset test artifacts to clean state
+     */
     public function resetArtifacts(): void
     {
         $this->writeFile($this->context->boardPath, <<<MD
-# Tableau du backlog
+# Backlog board
 
-## Règles d'usage
+## Usage rules
 
-- Fichier de test temporaire pour scripts/test-backlog-workflow.php.
-- Ne pas utiliser ce fichier comme backlog de production.
+- Temporary test file for scripts/test-backlog-workflow.php.
+- Do not use this file as a production backlog.
 
-## À faire
+## To do
 
-## Traitement en cours
+## In progress
 
 ## Suggestions
 
 MD);
 
         $this->writeFile($this->context->reviewPath, <<<MD
-# Revue en cours
+# Current review
 
-## Règles d'usage
+## Usage rules
 
-- Fichier de test temporaire pour scripts/test-backlog-workflow.php.
-- Ne pas utiliser ce fichier comme review de production.
+- Temporary test file for scripts/test-backlog-workflow.php.
+- Do not use this file as a production review.
 
-## Revue en cours
+## Current review
 
-Aucune review en cours.
+No review in progress.
 
 MD);
     }
 
+    /**
+     * Finalize and cleanup test artifacts
+     */
     public function finalizeArtifacts(): void
     {
         $this->cleanupTrackedResources();
@@ -88,6 +107,9 @@ MD);
         }
     }
 
+    /**
+     * Run help command checks
+     */
     public function runHelpChecks(): void
     {
         $this->assertOutputContains($this->runBacklog([]), 'Commands:');
@@ -98,6 +120,9 @@ MD);
         $this->assertOutputContains($this->runBacklog(['feature-start', '--help']), 'feature-start');
     }
 
+    /**
+     * Run option equals syntax checks
+     */
     public function runOptionEqualsChecks(): void
     {
         $this->assertOutputContains($this->runBacklog(['status', '--agent=' . $this->context->agentPrimary]), '[Task]');
@@ -109,21 +134,34 @@ MD);
         );
     }
 
+    /**
+     * @param string $text Task text to create
+     */
     public function createTodoTask(string $text): void
     {
         $this->runBacklog(['task-create', $text]);
     }
 
+    /**
+     * Remove the first todo task
+     */
     public function removeFirstTodoTask(): void
     {
         $this->runBacklog(['task-remove', '1']);
     }
 
+    /**
+     * @param string $needle String that should be present in todo list output
+     */
     public function assertTodoContains(string $needle): void
     {
         $this->assertOutputContains($this->runBacklog(['task-todo-list']), $needle);
     }
 
+    /**
+     * @param string $agent Agent identifier for the worktree
+     * @return string Command output from feature-start
+     */
     public function startNextFeature(string $agent): string
     {
         $worktreePath = $this->managedWorktreePath($agent);
@@ -140,36 +178,65 @@ MD);
         return $output;
     }
 
+    /**
+     * @param string $output Feature start output to check
+     * @param string $needle String that should be present in output
+     */
     public function assertFeatureStartOutputContains(string $output, string $needle): void
     {
         $this->assertOutputContains($output, $needle);
     }
 
+    /**
+     * @param string $feature Feature name to assign
+     * @param string $agent Agent to assign the feature to
+     */
     public function assignFeatureAsManager(string $feature, string $agent): void
     {
         $this->runBacklog(['feature-assign', $feature, '--agent', $agent], ['SOMANAGER_ROLE' => 'manager']);
     }
 
+    /**
+     * @param string $feature Feature name to unassign
+     * @param string $agent Agent to unassign the feature from
+     */
     public function unassignFeatureAsManager(string $feature, string $agent): void
     {
         $this->runBacklog(['feature-unassign', $feature, '--agent', $agent], ['SOMANAGER_ROLE' => 'manager']);
     }
 
+    /**
+     * @param string $agent Agent releasing the feature
+     * @param string $feature Feature name to release
+     */
     public function releaseFeature(string $agent, string $feature): void
     {
         $this->runBacklog(['feature-release', $feature, '--agent', $agent]);
     }
 
+    /**
+     * @param string $agent Agent attempting the release
+     * @param string $feature Feature name to release
+     * @param string $needle Expected error message
+     */
     public function assertReleaseFeatureFails(string $agent, string $feature, string $needle): void
     {
         $this->assertBacklogFails(['feature-release', $feature, '--agent', $agent], $needle);
     }
 
+    /**
+     * @param string $feature Feature name to close
+     */
     public function closeFeature(string $feature): void
     {
         $this->runBacklog(['feature-close', $feature]);
     }
 
+    /**
+     * @param string $featureOrAgent Feature name or agent identifier
+     * @param bool $isAgent Whether the first parameter is an agent
+     * @return string Status command output
+     */
     public function status(string $featureOrAgent, bool $isAgent = false): string
     {
         return $isAgent
@@ -177,81 +244,143 @@ MD);
             : $this->runBacklog(['status', $featureOrAgent]);
     }
 
+    /**
+     * @param string $agent Agent performing the operation
+     * @param string $featureText Feature text to add to queue
+     */
     public function addQueuedTaskToCurrentFeature(string $agent, string $featureText): void
     {
         $this->runBacklog(['feature-task-add', '--agent', $agent, '--feature-text', $featureText]);
     }
 
+    /**
+     * @param string $agent Agent requesting the review
+     * @param string $reference Task reference (feature/task)
+     */
     public function requestTaskReview(string $agent, string $reference): void
     {
         $this->runBacklog(['task-review-request', '--agent', $agent, $reference]);
     }
 
+    /**
+     * @return string Output from review-next command
+     */
     public function reviewNext(): string
     {
         return $this->runBacklog(['review-next']);
     }
 
+    /**
+     * @param string $reference Task reference to check
+     */
     public function checkTaskReview(string $reference): void
     {
         $this->runBacklog(['task-review-check', $reference]);
     }
 
+    /**
+     * @param string $reference Task reference to reject
+     * @param string $bodyFile Path to reject body file
+     */
     public function rejectTaskReview(string $reference, string $bodyFile): void
     {
         $this->runBacklog(['task-review-reject', $reference, '--body-file', $bodyFile]);
     }
 
+    /**
+     * @param string $reference Task reference to reject
+     * @param string $bodyFile Path to reject body file
+     * @param string $needle Expected error message
+     */
     public function assertTaskReviewRejectFails(string $reference, string $bodyFile, string $needle): void
     {
         $this->assertBacklogFails(['task-review-reject', $reference, '--body-file', $bodyFile], $needle);
     }
 
+    /**
+     * @param string $agent Agent performing the rework
+     * @param string $reference Task reference to rework
+     */
     public function reworkTask(string $agent, string $reference): void
     {
         $this->runBacklog(['task-rework', '--agent', $agent, $reference]);
     }
 
+    /**
+     * @param string $reference Task reference to approve
+     */
     public function approveTask(string $reference): void
     {
         $this->runBacklog(['task-review-approve', $reference]);
     }
 
+    /**
+     * @param string $reference Task reference to merge
+     */
     public function mergeTask(string $reference): void
     {
         $this->runBacklog(['feature-task-merge', $reference]);
     }
 
+    /**
+     * @param string $agent Agent requesting the review
+     * @param string $feature Feature name to review
+     */
     public function requestFeatureReview(string $agent, string $feature): void
     {
         $this->runBacklog(['feature-review-request', '--agent', $agent, $feature]);
     }
 
+    /**
+     * @param string $feature Feature name to check
+     */
     public function checkFeatureReview(string $feature): void
     {
         $this->runBacklog(['feature-review-check', $feature]);
     }
 
+    /**
+     * @param string $feature Feature name to reject
+     * @param string $bodyFile Path to reject body file
+     */
     public function rejectFeatureReview(string $feature, string $bodyFile): void
     {
         $this->runBacklog(['feature-review-reject', $feature, '--body-file', $bodyFile]);
     }
 
+    /**
+     * @param string $feature Feature name to reject
+     * @param string $bodyFile Path to reject body file
+     * @param string $needle Expected error message
+     */
     public function assertFeatureReviewRejectFails(string $feature, string $bodyFile, string $needle): void
     {
         $this->assertBacklogFails(['feature-review-reject', $feature, '--body-file', $bodyFile], $needle);
     }
 
+    /**
+     * @param string $feature Feature name to approve
+     * @param string $bodyFile Path to approve body file
+     * @param string $needle Expected error message
+     */
     public function assertFeatureReviewApproveFails(string $feature, string $bodyFile, string $needle): void
     {
         $this->assertBacklogFails(['feature-review-approve', $feature, '--body-file', $bodyFile], $needle);
     }
 
+    /**
+     * @param string $agent Agent performing the rework
+     * @param string $feature Feature name to rework
+     */
     public function reworkFeature(string $agent, string $feature): void
     {
         $this->runBacklog(['feature-rework', '--agent', $agent, $feature]);
     }
 
+    /**
+     * @param string $feature Feature name to approve
+     * @param string $bodyFile Path to approve body file
+     */
     public function approveFeature(string $feature, string $bodyFile): void
     {
         $this->runBacklog(['feature-review-approve', $feature, '--body-file', $bodyFile]);
@@ -268,16 +397,28 @@ MD);
         $this->context->setPullRequestNumber($prNumber !== null ? (int) $prNumber : null);
     }
 
+    /**
+     * @param string $agent Agent blocking the feature
+     * @param string $feature Feature name to block
+     */
     public function blockFeature(string $agent, string $feature): void
     {
         $this->runBacklog(['feature-block', '--agent', $agent, $feature]);
     }
 
+    /**
+     * @param string $agent Agent unblocking the feature
+     * @param string $feature Feature name to unblock
+     */
     public function unblockFeature(string $agent, string $feature): void
     {
         $this->runBacklog(['feature-unblock', '--agent', $agent, $feature]);
     }
 
+    /**
+     * @param string $feature Feature name to merge
+     * @param string|null $bodyFile Path to merge body file
+     */
     public function mergeFeature(string $feature, ?string $bodyFile = null): void
     {
         $arguments = ['feature-merge', $feature];
@@ -298,6 +439,11 @@ MD);
         );
     }
 
+    /**
+     * @param string $agent Agent committing the change
+     * @param string $feature Feature name
+     * @param string $fileName Name of the file to create
+     */
     public function commitFeatureChange(string $agent, string $feature, string $fileName): void
     {
         $worktreePath = $this->managedWorktreePath($agent);
@@ -326,6 +472,11 @@ MD);
         ));
     }
 
+    /**
+     * @param string $agent Agent committing the change
+     * @param string $feature Feature name
+     * @param string $fileName Name of the file to create and revert
+     */
     public function commitAndRevertFeatureChange(string $agent, string $feature, string $fileName): void
     {
         $this->commitFeatureChange($agent, $feature, $fileName);
@@ -346,6 +497,10 @@ MD);
         ));
     }
 
+    /**
+     * @param string $feature Feature name to track
+     * @return string Branch name
+     */
     public function trackFeatureBranch(string $feature): string
     {
         $entry = $this->requireFeatureEntry($feature);
@@ -359,6 +514,9 @@ MD);
         return $branch;
     }
 
+    /**
+     * @return string Created branch name
+     */
     public function createRemoteTestBaseBranch(): string
     {
         $branch = sprintf('test/backlog-workflow-%s-%04d', date('Ymd-His'), random_int(1000, 9999));
@@ -376,6 +534,9 @@ MD);
         return $branch;
     }
 
+    /**
+     * @param string $feature Feature name that should exist
+     */
     public function assertActiveFeatureExists(string $feature): void
     {
         $board = $this->board();
@@ -384,6 +545,9 @@ MD);
         }
     }
 
+    /**
+     * @param string $feature Feature name that should not exist
+     */
     public function assertActiveFeatureMissing(string $feature): void
     {
         $board = $this->board();
@@ -392,6 +556,9 @@ MD);
         }
     }
 
+    /**
+     * @param string $needle String that should be present in review content
+     */
     public function assertReviewContains(string $needle): void
     {
         $contents = (string) file_get_contents($this->context->reviewPath);
@@ -400,6 +567,9 @@ MD);
         }
     }
 
+    /**
+     * @param string $needle String that should not be present in review content
+     */
     public function assertReviewMissing(string $needle): void
     {
         $contents = (string) file_get_contents($this->context->reviewPath);
@@ -408,16 +578,27 @@ MD);
         }
     }
 
+    /**
+     * @param string $featureOrAgent Feature name or agent identifier
+     * @param string $needle String that should be present in status output
+     * @param bool $isAgent Whether the first parameter is an agent
+     */
     public function assertStatusContains(string $featureOrAgent, string $needle, bool $isAgent = false): void
     {
         $this->assertOutputContains($this->status($featureOrAgent, $isAgent), $needle);
     }
 
+    /**
+     * @param string $needle String that should be present in worktree list output
+     */
     public function assertWorktreeListContains(string $needle): void
     {
         $this->assertOutputContains($this->runBacklog(['worktree-list']), $needle);
     }
 
+    /**
+     * @param string $agent Agent whose worktree to remove
+     */
     public function removeManagedWorktree(string $agent): void
     {
         $path = $this->managedWorktreePath($agent);
@@ -438,6 +619,9 @@ MD);
         ));
     }
 
+    /**
+     * @param string $agent Agent whose worktree to restore
+     */
     public function restoreWorktree(string $agent): void
     {
         $this->runBacklog(['worktree-restore', '--agent', $agent]);
@@ -450,7 +634,9 @@ MD);
     }
 
     /**
-     * @param array<string> $lines
+     * @param string $name File name for the body file
+     * @param list<string> $lines Lines to write to the body file
+     * @return string Path to the created body file
      */
     public function createBodyFile(string $name, array $lines): string
     {
@@ -462,8 +648,9 @@ MD);
     }
 
     /**
-     * @param array<string> $arguments
-     * @param array<string, string> $env
+     * @param list<string> $arguments Backlog command arguments
+     * @param array<string, string> $env Environment variables
+     * @return string Command output
      */
     public function runBacklog(array $arguments, array $env = []): string
     {
@@ -482,7 +669,7 @@ MD);
     }
 
     /**
-     * @param array<string> $arguments
+     * @param list<string> $arguments Backlog command arguments
      */
     private function assertBacklogFails(array $arguments, string $needle): void
     {
@@ -495,8 +682,8 @@ MD);
     }
 
     /**
-     * @param array<string> $arguments
-     * @param array<string, string> $env
+     * @param list<string> $arguments Backlog command arguments
+     * @param array<string, string> $env Environment variables
      */
     private function buildBacklogCommand(array $arguments, array $env = []): string
     {
@@ -653,7 +840,7 @@ MD);
     }
 
     /**
-     * @param array<string> $expectedMissingNeedles
+     * @param list<string> $expectedMissingNeedles
      */
     private function cleanupCommand(string $label, string $command, array $expectedMissingNeedles = []): void
     {

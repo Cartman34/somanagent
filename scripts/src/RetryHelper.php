@@ -32,8 +32,6 @@ final class RetryHelper
      */
     public function run(callable $operation, callable $shouldRetry): mixed
     {
-        $result = null;
-
         for ($attempt = 0; $attempt <= $this->retryCount; $attempt++) {
             $result = $operation();
             if (!$shouldRetry($result) || $attempt === $this->retryCount) {
@@ -43,6 +41,6 @@ final class RetryHelper
             usleep($this->initialDelayMicroseconds * ($this->backoffFactor ** $attempt));
         }
 
-        return $result;
+        throw new \LogicException('Retry loop ended unexpectedly.');
     }
 }

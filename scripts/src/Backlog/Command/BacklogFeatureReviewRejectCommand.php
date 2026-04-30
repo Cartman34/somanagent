@@ -20,6 +20,13 @@ final class BacklogFeatureReviewRejectCommand extends AbstractBacklogCommand
 {
     private BacklogReviewBodyFormatter $reviewBodyFormatter;
 
+    /**
+     * @param BacklogPresenter $presenter
+     * @param bool $dryRun
+     * @param string $projectRoot
+     * @param BacklogBoardService $boardService
+     * @param BacklogReviewBodyFormatter $reviewBodyFormatter
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
@@ -31,6 +38,11 @@ final class BacklogFeatureReviewRejectCommand extends AbstractBacklogCommand
         $this->reviewBodyFormatter = $reviewBodyFormatter;
     }
 
+    /**
+     * @param list<string> $commandArgs
+     * @param array<string, bool|string> $options
+     * @return void
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $bodyFile = $options['body-file'] ?? null;
@@ -64,6 +76,9 @@ final class BacklogFeatureReviewRejectCommand extends AbstractBacklogCommand
         ));
     }
 
+    /**
+     * @param array<string> $commandArgs
+     */
     private function resolveFeatureReferenceArgument(BacklogBoard $board, array $commandArgs, string $command): string
     {
         if (!isset($commandArgs[0]) || trim($commandArgs[0]) === '') {

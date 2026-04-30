@@ -17,11 +17,17 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class LogOccurrenceRepository extends ServiceEntityRepository
 {
+    /**
+     * Initialises the repository for the LogOccurrence entity.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, LogOccurrence::class);
     }
 
+    /**
+     * Finds the occurrence matching the given category, level, and deduplication fingerprint.
+     */
     public function findOneByFingerprint(string $category, string $level, string $fingerprint): ?LogOccurrence
     {
         return $this->findOneBy([
@@ -43,6 +49,7 @@ class LogOccurrenceRepository extends ServiceEntityRepository
      *   from?: \DateTimeImmutable|null,
      *   to?: \DateTimeImmutable|null
      * } $filters
+     * @return LogOccurrence[]
      */
     public function findFiltered(array $filters, int $limit, int $offset): array
     {
