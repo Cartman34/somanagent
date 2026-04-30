@@ -16,6 +16,6 @@ examples:
   - 'php scripts/backlog.php feature-task-add --agent agent-01 --feature-text "Workspace worktree"'
   - 'php scripts/backlog.php feature-task-add --agent agent-01 --feature-text "Workspace worktree" --body-file local/tmp/pr_body.md'
 notes:
-  - 'Consumes the next queued entry from the board `À faire` section.'
+  - 'Consumes the next queued entry from the board `To do` section.'
   - 'A plain queued task is appended to the current feature details only when that feature does not already use local child tasks.'
   - 'A scoped queued task `[feature-slug][task-slug] Task text` creates a dedicated local child task branch for the current feature.'

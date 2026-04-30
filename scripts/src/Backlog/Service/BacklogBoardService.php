@@ -33,11 +33,6 @@ final class BacklogBoardService
     private const META_BLOCK_PREFIX = '  meta:';
     private const META_LINE_PREFIX = '    ';
 
-    private const LEGACY_SECTION_IN_PROGRESS = "En développement";
-    private const LEGACY_SECTION_IN_REVIEW = "À relire";
-    private const LEGACY_SECTION_REJECTED = "Rejetées";
-    private const LEGACY_SECTION_APPROVED = "Approuvées";
-
     private TextSlugger $featureSlugger;
 
     private FilesystemClientInterface $fs;
@@ -71,8 +66,10 @@ final class BacklogBoardService
         foreach ($lines as $line) {
             if (preg_match('/^## (.+)$/', $line, $matches) === 1) {
                 $currentSection = $matches[1];
-                $sectionOrder[] = $currentSection;
-                $rawSections[$currentSection] = [];
+                if (!in_array($currentSection, $sectionOrder, true)) {
+                    $sectionOrder[] = $currentSection;
+                }
+                $rawSections[$currentSection] ??= [];
                 continue;
             }
 
@@ -159,7 +156,7 @@ final class BacklogBoardService
             if (preg_match('/^## (.+)$/', $line, $matches) === 1) {
                 $currentSection = $matches[1];
                 $currentFeature = null;
-                $sections[$currentSection] = [];
+                $sections[$currentSection] ??= [];
                 continue;
             }
 
@@ -700,11 +697,13 @@ final class BacklogBoardService
 
     public function getNormalizedStage(?string $stage): ?string
     {
-        return match (trim((string) $stage)) {
-            BacklogBoard::STAGE_IN_PROGRESS, self::LEGACY_SECTION_IN_PROGRESS => BacklogBoard::STAGE_IN_PROGRESS,
-            BacklogBoard::STAGE_IN_REVIEW, self::LEGACY_SECTION_IN_REVIEW => BacklogBoard::STAGE_IN_REVIEW,
-            BacklogBoard::STAGE_REJECTED, self::LEGACY_SECTION_REJECTED => BacklogBoard::STAGE_REJECTED,
-            BacklogBoard::STAGE_APPROVED, self::LEGACY_SECTION_APPROVED => BacklogBoard::STAGE_APPROVED,
+        $stage = trim((string) $stage);
+
+        return match ($stage) {
+            BacklogBoard::STAGE_IN_PROGRESS => BacklogBoard::STAGE_IN_PROGRESS,
+            BacklogBoard::STAGE_IN_REVIEW => BacklogBoard::STAGE_IN_REVIEW,
+            BacklogBoard::STAGE_REJECTED => BacklogBoard::STAGE_REJECTED,
+            BacklogBoard::STAGE_APPROVED => BacklogBoard::STAGE_APPROVED,
             default => null,
         };
     }
@@ -712,10 +711,10 @@ final class BacklogBoardService
     public function getStageLabel(string $stage): string
     {
         return match ($this->getNormalizedStage($stage)) {
-            BacklogBoard::STAGE_IN_PROGRESS => self::LEGACY_SECTION_IN_PROGRESS,
-            BacklogBoard::STAGE_IN_REVIEW => self::LEGACY_SECTION_IN_REVIEW,
-            BacklogBoard::STAGE_REJECTED => self::LEGACY_SECTION_REJECTED,
-            BacklogBoard::STAGE_APPROVED => self::LEGACY_SECTION_APPROVED,
+            BacklogBoard::STAGE_IN_PROGRESS => 'In development',
+            BacklogBoard::STAGE_IN_REVIEW => 'In review',
+            BacklogBoard::STAGE_REJECTED => 'Rejected',
+            BacklogBoard::STAGE_APPROVED => 'Approved',
             default => $stage,
         };
     }
@@ -1031,45 +1030,15 @@ final class BacklogBoardService
             $entries[] = $entry;
         }
 
-        foreach ($this->getLegacyStageSections() as $section => $stage) {
-            foreach ($this->parseEntriesFromSectionLines($rawSections[$section] ?? []) as $entry) {
-                $entry->setStage($this->getEntryStage($entry) ?? $stage);
-                $entries[] = $entry;
-            }
-        }
-
         return $entries;
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private function getLegacyStageSections(): array
-    {
-        return [
-            self::LEGACY_SECTION_IN_PROGRESS => BacklogBoard::STAGE_IN_PROGRESS,
-            self::LEGACY_SECTION_IN_REVIEW => BacklogBoard::STAGE_IN_REVIEW,
-            self::LEGACY_SECTION_REJECTED => BacklogBoard::STAGE_REJECTED,
-            self::LEGACY_SECTION_APPROVED => BacklogBoard::STAGE_APPROVED,
-        ];
     }
 
     private function updateManagedSectionOrder(BacklogBoard $board): void
     {
-        $legacySections = array_keys($this->getLegacyStageSections());
         $newOrder = [];
         $activeInserted = false;
 
         foreach ($board->getSectionOrder() as $section) {
-            if (in_array($section, $legacySections, true)) {
-                if (!$activeInserted) {
-                    $newOrder[] = BacklogBoard::SECTION_ACTIVE;
-                    $activeInserted = true;
-                }
-
-                continue;
-            }
-
             $newOrder[] = $section;
             if ($section === BacklogBoard::SECTION_ACTIVE) {
                 $activeInserted = true;

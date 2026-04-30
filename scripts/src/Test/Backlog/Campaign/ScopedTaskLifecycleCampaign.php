@@ -34,7 +34,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->assertStatusContains($context->scopedFeature, $context->childA);
 
         $rejectBody = $driver->createBodyFile('test-task-review-reject.md', ['1. Reject child task for test workflow.']);
-        $invalidRejectBody = $driver->createBodyFile('test-task-review-invalid.md', ['1. ### Revue de la tâche']);
+        $invalidRejectBody = $driver->createBodyFile('test-task-review-invalid.md', ['1. ### Task review']);
         $driver->requestTaskReview($context->agentPrimary, $taskARef);
         if (!str_contains($driver->reviewNext(), $taskARef)) {
             throw new \RuntimeException('Expected review-next to return the active task review.');

@@ -36,32 +36,32 @@ final class BacklogScriptTestDriver
     public function resetArtifacts(): void
     {
         $this->writeFile($this->context->boardPath, <<<MD
-# Tableau du backlog
+# Backlog board
 
-## Règles d'usage
+## Usage rules
 
-- Fichier de test temporaire pour scripts/test-backlog-workflow.php.
-- Ne pas utiliser ce fichier comme backlog de production.
+- Temporary test file for scripts/test-backlog-workflow.php.
+- Do not use this file as a production backlog.
 
-## À faire
+## To do
 
-## Traitement en cours
+## In progress
 
 ## Suggestions
 
 MD);
 
         $this->writeFile($this->context->reviewPath, <<<MD
-# Revue en cours
+# Current review
 
-## Règles d'usage
+## Usage rules
 
-- Fichier de test temporaire pour scripts/test-backlog-workflow.php.
-- Ne pas utiliser ce fichier comme review de production.
+- Temporary test file for scripts/test-backlog-workflow.php.
+- Do not use this file as a production review.
 
-## Revue en cours
+## Current review
 
-Aucune review en cours.
+No review in progress.
 
 MD);
     }

@@ -12,8 +12,8 @@ namespace SoManAgent\Script\Backlog\Model;
  */
 final class BacklogBoard
 {
-    public const SECTION_TODO = "À faire";
-    public const SECTION_ACTIVE = 'Traitement en cours';
+    public const SECTION_TODO = 'To do';
+    public const SECTION_ACTIVE = 'In progress';
 
     public const STAGE_IN_PROGRESS = 'development';
     public const STAGE_IN_REVIEW = 'review';

@@ -286,6 +286,10 @@ final class ReviewRunner extends AbstractScriptRunner
         $hits = [];
 
         foreach ($phpFiles as $path) {
+            if ($this->isPhpdocExemptPath($path)) {
+                continue;
+            }
+
             $lines = $this->readLines($path);
             $lineCount = count($lines);
 
@@ -314,6 +318,10 @@ final class ReviewRunner extends AbstractScriptRunner
         $hits = [];
 
         foreach ($phpFiles as $path) {
+            if ($this->isPhpdocExemptPath($path)) {
+                continue;
+            }
+
             $lines = $this->readLines($path);
             $lineCount = count($lines);
 
@@ -331,6 +339,12 @@ final class ReviewRunner extends AbstractScriptRunner
         }
 
         return $hits;
+    }
+
+    private function isPhpdocExemptPath(string $path): bool
+    {
+        return str_starts_with($path, 'backend/tests/')
+            || str_starts_with($path, 'scripts/src/Test/');
     }
 
     /**

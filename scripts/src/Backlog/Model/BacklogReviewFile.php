@@ -12,9 +12,9 @@ namespace SoManAgent\Script\Backlog\Model;
  */
 final class BacklogReviewFile
 {
-    public const SECTION_RULES = "Règles d'usage";
-    public const SECTION_CURRENT_REVIEW = "Revue en cours";
-    public const EMPTY_REVIEW_TEXT = 'Aucune review en cours.';
+    public const SECTION_RULES = 'Usage rules';
+    public const SECTION_CURRENT_REVIEW = 'Current review';
+    public const EMPTY_REVIEW_TEXT = 'No review in progress.';
 
     private string $path;
 

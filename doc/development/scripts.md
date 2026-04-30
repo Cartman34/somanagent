@@ -327,6 +327,10 @@ Informational (no exit code impact):
 
 Limitations: only detects accented characters as French strings — complement with a manual diff review for unaccented French words (`Valider`, `Commenter`, etc.). JSDoc check covers export declarations only, not re-exports.
 
+Rules:
+- PHPDoc checks ignore unit-test support code under `backend/tests/` and backlog workflow tests under `scripts/src/Test/`
+- French strings are blocked in source files; backlog file-format labels must be written in English, for example `To do` and `Usage rules`
+
 The review flow skips container-backed validations that depend on local uncommitted environment files such as `.env`. Frontend TypeScript checking remains part of review through `php scripts/validate-files.php --with-types --review-scope ...`, which runs the local `frontend` package script instead of raw `npx tsc`.
 
 ```bash

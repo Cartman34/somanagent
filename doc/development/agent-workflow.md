@@ -12,10 +12,10 @@ Read this file only when a task needs backlog, worktree, feature, or command beh
 Rules:
 
 - Files under `local/` are local-only and must not be committed.
-- For `local/backlog-board.md` and `local/backlog-review.md`, always follow the `## Règles d'usage` section in each file.
+- For `local/backlog-board.md` and `local/backlog-review.md`, always follow the `## Usage rules` section in each file.
 - The backlog board uses these working sections:
-  `À faire` = queued priorities,
-  `Traitement en cours` = active features with workflow state in `meta.stage`,
+  `To do` = queued priorities,
+  `In progress` = active features with workflow state in `meta.stage`,
   `Suggestions` = non-committed ideas and future directions.
 - Local backlog files are not edited manually.
 - If a needed backlog transition or backlog mutation is not covered by an existing command, stop and ask the user before proceeding.
@@ -45,7 +45,7 @@ Rules:
 1. Every active task is attached to one feature.
 2. For a plain task, the canonical identifier is the feature slug.
 3. For a queued task prefixed as `[feature-slug][task-slug]`, the parent feature keeps `meta.kind=feature` and `meta.feature=<feature-slug>`, while the child task uses `meta.kind=task`, `meta.feature=<feature-slug>`, and `meta.task=<task-slug>`.
-4. Active entries in `Traitement en cours` must keep the task line and its sub-tasks together, then end with a trailing `meta:` block, for example:
+4. Active entries in `In progress` must keep the task line and its sub-tasks together, then end with a trailing `meta:` block, for example:
    `- Task text`
    `  - sub-task`
    `  meta:`
@@ -90,9 +90,9 @@ Rules:
 4. Every developer command on `backlog.php` requires `--agent=<code>`.
 5. Reviewer commands on `backlog.php` never use `--agent`.
 6. The agent code must never leave local backlog files.
-7. `feature-start` takes the next queued task directly from `## À faire`; no separate reservation step is part of the standard workflow.
+7. `feature-start` takes the next queued task directly from `## To do`; no separate reservation step is part of the standard workflow.
 8. Queued tasks may declare their branch type with a prefix `[feat]` or `[fix]`.
-9. `feature-release` returns the active feature to `## À faire` only when no development was done on its branch. A parent `kind=feature` cannot be released while child `kind=task` entries still exist for that feature.
+9. `feature-release` returns the active feature to `## To do` only when no development was done on its branch. A parent `kind=feature` cannot be released while child `kind=task` entries still exist for that feature.
 10. When `feature-start` consumes a queued task prefixed as `[feature-slug][task-slug]`, it creates or reuses the local parent feature branch from `origin/main`, ensures one active `kind=feature` entry exists for that feature, and creates the active child `kind=task` entry from that local parent branch.
 11. Starting a new child task or merging a child task locally invalidates any parent feature review state and moves the parent `kind=feature` back to `development`.
 12. `kind=task` entries are local-only delivery units: they are never pushed and never get GitHub PRs.

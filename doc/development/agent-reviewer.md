@@ -47,8 +47,8 @@ Read this file only when the active task requires reviewer workflow details.
 ### `task-create <description>`
 
 1. Run `php scripts/backlog.php task-create <description> [--position=<start|index|end>] [--index=<n>]`.
-2. By default the script appends the task to the end of the `## À faire` section in `local/backlog-board.md`.
-3. `--position=start` inserts at the start of `## À faire`.
+2. By default the script appends the task to the end of the `## To do` section in `local/backlog-board.md`.
+3. `--position=start` inserts at the start of `## To do`.
 4. `--position=index --index=<n>` inserts at the requested 1-based position and clamps out-of-range values to the start or the end.
 5. Prefix the description with `[feat]` or `[fix]` so `feature-start` can derive the branch type from the backlog entry.
 
@@ -66,7 +66,7 @@ Rules:
 ### `task-remove`
 
 1. Run `php scripts/backlog.php task-remove <number>`.
-2. The script removes the queued task at the given 1-based position from `## À faire`.
+2. The script removes the queued task at the given 1-based position from `## To do`.
 
 ### `review-next`
 
