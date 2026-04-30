@@ -1,0 +1,18 @@
+includes:
+    - ../backend/vendor/phpstan/phpstan/conf/bleedingEdge.neon
+
+parameters:
+    level: 6
+    paths:
+        - ../backend/src
+        - ../backend/tests
+        - ../scripts/src
+
+    excludePaths:
+        - ../backend/vendor/*
+        - ../scripts/vendor/*
+
+    treatPhpDocTypesAsCertain: false
+
+    bootstrapFiles:
+        - ../backend/vendor/autoload.php

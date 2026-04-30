@@ -7,6 +7,9 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Enum;
 
+/**
+ * Enum representing backlog command names.
+ */
 enum BacklogCommandName: string
 {
     case HELP = 'help';

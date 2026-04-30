@@ -1,0 +1,472 @@
+# Available Scripts
+
+> See also: [Installation](installation.md) · [Symfony Commands](commands.md) · [Script Conventions](scripts-conventions.md)
+
+Scripts are located in `scripts/`. All PHP scripts follow this convention: a **commented header** just after the shebang, with `Description:` and `Usage:` tags.
+
+Project rule:
+- always use a script from `scripts/` first when it already covers the operation
+- only fall back to direct `docker exec`, raw `bin/console`, or container-specific commands when no script exists
+- this keeps commands shorter, more consistent, and cheaper to use during day-to-day work
+
+```bash
+# See all available scripts
+php scripts/help.php
+
+# See the help for a specific script
+php scripts/help.php migrate.php
+```
+
+## Overview
+
+| Script | Type | Role |
+|---|---|---|
+| `check-php.sh` | Bash | Check that PHP 8.4+ is installed |
+| `help.php` | PHP | Display help for all scripts |
+| `backlog.php` | PHP | Run the local backlog workflow for features, child tasks, reviews, and merges |
+| `test-backlog-workflow.php` | PHP | Run reusable sequential validation campaigns for `backlog.php` on temporary backlog files |
+| `setup.php` | PHP | Full installation (first time) |
+| `dev.php` | PHP | Start / stop the environment |
+| `migrate.php` | PHP | Run Doctrine migrations |
+| `console.php` | PHP | Run a Symfony command |
+| `node.php` | PHP | Run reusable commands inside the Node container |
+| `db.php` | PHP | Run database commands (PostgreSQL + Doctrine reset) |
+| `code-search.php` | PHP | Search a term across backend, frontend and scripts source files |
+| `github.php` | PHP | GitHub CLI helper for PR creation, listing, view and merge |
+| `logs.php` | PHP | Display Docker logs |
+| `health.php` | PHP | Check application status |
+| `review.php` | PHP | Run mechanical review checks (French strings, PHPDoc, JSDoc, translations, targeted validation, PHPStan) |
+| `validate-files.php` | PHP | Run targeted backend/frontend validations for an explicit file list |
+| `validate-backend-tests.php` | PHP | Run isolated local PHPUnit checks for backend unit tests from WSL without Docker services |
+| `phpstan.php` | PHP | Run PHPStan static analysis on backend and/or scripts PHP sources |
+| `rector.php` | PHP | Apply automated code fixes to backend and/or scripts PHP sources via Rector |
+| `code-refacto.php` | PHP | Local code refactoring tools for backend and scripts source files |
+| `claude-auth.php` | PHP | Sync Claude CLI auth from WSL to the Docker runtime |
+| `codex-auth.php` | PHP | Sync Codex CLI ChatGPT auth from WSL to the Docker runtime |
+| `opencode-auth.php` | PHP | Sync OpenCode provider credentials from WSL to the Docker runtime |
+| `wsl-claude-install.sh` | Bash | Install Claude CLI inside the configured WSL distro |
+| `wsl-codex-install.sh` | Bash | Install or upgrade OpenAI Codex CLI inside WSL |
+| `wsl-migrate.sh` | Bash | Copy the project to the WSL native filesystem for faster Docker I/O |
+
+## Script Details
+
+### `check-php.sh`
+Checks that PHP >= 8.4 is available in the PATH.
+
+```bash
+bash scripts/check-php.sh
+# ✓ PHP 8.4.5 detected
+```
+
+---
+
+### `help.php`
+Displays the list of all scripts with their description and usage examples. Automatically parses the header of each script file.
+
+```bash
+php scripts/help.php              # list all scripts
+php scripts/help.php migrate.php  # detail for one script
+```
+
+---
+
+### `backlog.php`
+Runs the documented local backlog workflow from `WP` only, including feature start/review/merge and local child task submit/review/merge flows.
+
+```bash
+php scripts/backlog.php
+php scripts/backlog.php help
+php scripts/backlog.php help feature-start
+php scripts/backlog.php base-update my-feature
+php scripts/backlog.php feature-start --help
+php scripts/backlog.php feature-start --agent agent-01
+php scripts/backlog.php task-review-request --agent agent-01
+php scripts/backlog.php task-review-approve my-feature/my-task
+php scripts/backlog.php task-rework --agent agent-01 my-feature/my-task
+php scripts/backlog.php feature-task-merge my-feature/my-task
+php scripts/backlog.php worktree-restore --agent agent-01 --force
+```
+
+Notes:
+- run `php scripts/backlog.php` for the global backlog help
+- use `php scripts/backlog.php help <command>` or `php scripts/backlog.php <command> --help` for one command
+- developer commands require `--agent=<code>`
+- reviewer commands never use `--agent`
+- `base-update` refreshes the recorded Git base after a rebase; features update `origin/main` before using the merge base with it, and local child tasks default to the merge base with their parent feature branch
+- `worktree-restore` validates copied PHP vendors with `autoload.php` witnesses and can recreate a clean managed worktree with `--force`
+- `feature-start` reads the next queued board entry, accepts plain text, optional `[feat]` / `[fix]` prefixes, and scoped entries like `[feature-slug][task-slug] Task text`, then prints the started task or feature details with the assigned worktree
+- child task review stays local; only the parent feature uses the remote PR flow
+
+---
+
+### `test-backlog-workflow.php`
+Runs reusable sequential validation campaigns for `php scripts/backlog.php` against temporary backlog and review files under `local/tmp/`.
+
+```bash
+php scripts/test-backlog-workflow.php
+php scripts/test-backlog-workflow.php --campaign help
+php scripts/test-backlog-workflow.php --campaign scoped-task-lifecycle
+php scripts/test-backlog-workflow.php --allow-remote --campaign feature-review-lifecycle
+php scripts/test-backlog-workflow.php --keep-artifacts
+```
+
+Notes:
+- the script never uses `local/backlog-board.md` or `local/backlog-review.md` directly
+- it passes `--test-mode`, `--board-file`, and `--review-file` to `backlog.php` with temporary files under `local/tmp/`
+- `feature-review-lifecycle` is skipped unless `--allow-remote` is enabled
+- the remote campaign creates a temporary PR base branch instead of targeting `main`
+- cleanup always runs in best effort and only acts on resources recorded by the test context
+- use `--keep-artifacts` to inspect temporary backlog and review files after the run
+- detailed reusable campaign intent is documented in `doc/development/script-backlog-test-scenarios.md`
+
+---
+
+### `setup.php`
+Full project installation. Run once after cloning.
+
+```bash
+php scripts/setup.php
+php scripts/setup.php --skip-frontend  # without npm install
+```
+
+---
+
+### `dev.php`
+Starts or stops the Docker environment.
+
+```bash
+php scripts/dev.php           # start
+php scripts/dev.php --stop    # stop
+```
+
+---
+
+### `migrate.php`
+Runs Doctrine migrations in the PHP container.
+
+```bash
+php scripts/migrate.php             # run migrations
+php scripts/migrate.php --dry-run   # simulate without applying
+```
+
+---
+
+### `claude-auth.php`
+Manages Claude CLI auth with WSL as the source of truth, then synchronizes the Docker shared copy used by the containers.
+
+```bash
+php scripts/claude-auth.php status
+php scripts/claude-auth.php sync
+php scripts/claude-auth.php login
+php scripts/claude-auth.php sync --force
+```
+
+Use `login` to authenticate in WSL, then sync the resulting auth files to `./.docker/claude/shared/`.
+
+---
+
+### `codex-auth.php`
+Manages Codex CLI auth with WSL as the source of truth, then synchronizes the Docker shared copy used by the containers.
+
+```bash
+php scripts/codex-auth.php status
+php scripts/codex-auth.php sync
+php scripts/codex-auth.php login
+php scripts/codex-auth.php sync --force
+```
+
+Important rule:
+- the script only accepts a ChatGPT-based Codex login
+- if Codex is logged in with an API key, `sync` fails on purpose because `codex_cli` must consume account usage limits, not API credits
+
+Use `login` to authenticate with ChatGPT in WSL, then sync the resulting auth directory to `./.docker/codex/shared/`.
+
+---
+
+### `opencode-auth.php`
+Manages OpenCode provider credentials with WSL as the source of truth, then synchronizes the Docker shared copy used by the containers.
+
+```bash
+php scripts/opencode-auth.php status
+php scripts/opencode-auth.php sync
+php scripts/opencode-auth.php login
+php scripts/opencode-auth.php login openrouter
+```
+
+Important rule:
+- OpenCode currently authenticates through provider credentials
+- no subscription-based account usage mode has been detected, so this connector cannot currently satisfy the same “use plan limits instead of API credits” constraint as `codex_cli`
+
+Use `login [provider]` to configure a provider in WSL, then sync the resulting auth file to `./.docker/opencode/shared/`.
+
+---
+
+### `console.php`
+Runs any `bin/console` command in the PHP container.
+
+```bash
+php scripts/console.php cache:clear
+php scripts/console.php doctrine:migrations:status
+php scripts/console.php somanagent:seed:web-team
+```
+
+---
+
+### `node.php`
+Runs reusable developer commands in the Node container without repeating raw `docker compose exec`.
+
+```bash
+php scripts/node.php type-check
+php scripts/node.php run build
+php scripts/node.php exec npm install
+php scripts/node.php shell
+```
+
+Use this script in priority for repeated frontend container actions such as type-checking, builds, linting, tests, or an interactive shell.
+
+---
+
+### `db.php`
+Runs database-related commands (PostgreSQL psql + Doctrine operations).
+
+```bash
+# PostgreSQL commands
+php scripts/db.php query "SELECT 1"
+php scripts/db.php exec -c "\\dt"
+php scripts/db.php shell
+
+# Database reset (recreate + migrations)
+php scripts/db.php reset
+php scripts/db.php reset --fixtures
+php scripts/db.php reset --fixtures --force
+```
+
+Use this script in priority for repeated local database inspection instead of raw `docker exec ... psql ...`.
+
+---
+
+### `code-search.php`
+Searches a term across `backend/src/` PHP files, `frontend/src/` TS/TSX files, and `scripts/src/` PHP files.
+Uses `rg` by default when available, with the legacy PHP scanner kept as an explicit alternative via `--engine php`.
+
+```bash
+php scripts/code-search.php UserRepository
+php scripts/code-search.php UserRepository --engine rg
+php scripts/code-search.php UserRepository --engine php
+php scripts/code-search.php AgentController --backend
+php scripts/code-search.php useAgent --frontend --context 2
+php scripts/code-search.php CodeSearchRunner --scripts
+```
+
+Use this script in priority for source lookup and usage discovery instead of ad hoc `grep` commands.
+
+---
+
+### `github.php`
+Wraps a few common GitHub CLI/API flows used during delivery work, especially around pull requests.
+
+```bash
+php scripts/github.php pr list
+php scripts/github.php pr view 42
+php scripts/github.php pr create --title "My PR" --head <branch> --body-file /tmp/pr_body.md
+php scripts/github.php pr merge 42
+php scripts/github.php pr close 42
+php scripts/github.php pr edit 42 --title "Updated title" --body-file /tmp/pr_body.md
+```
+
+Notes:
+- `--head <branch>` is required for `pr create`
+- `--body-file <file>` is preferred over `--body` to avoid shell quoting issues; the script reads and deletes the file automatically
+- Requires `GITHUB_TOKEN` in `.env` and a detectable `origin` remote pointing to GitHub.
+- For backlog tasks started from a `[feature-slug][task-slug]` prefix, the local merge between the child task branch and the parent feature branch happens before any GitHub PR flow; `github.php` is only relevant once work is promoted back to a branch meant for remote review.
+
+---
+
+### `logs.php`
+Displays a Docker container's logs in real time (tail -f).
+
+```bash
+php scripts/logs.php          # logs from the php container (default)
+php scripts/logs.php db       # PostgreSQL logs
+php scripts/logs.php node     # Vite logs
+php scripts/logs.php nginx    # Nginx logs
+```
+
+Use this script in priority instead of raw `docker logs` when the target container is supported.
+
+---
+
+### `health.php`
+Checks API reachability, then runs `somanagent:health` for the detailed connector battery.
+
+```bash
+php scripts/health.php
+php scripts/health.php --url http://my-server:8080
+```
+
+---
+
+### `review.php`
+Runs mechanical checks on modified and untracked files. With `--base=<ref>`, it also checks files changed by commits between that base and `HEAD`. Designed to be used by AI agents during the `review` command, before manual inspection.
+
+Blockers (exit code 1):
+- French strings (accented characters) in `backend/src/` `.php` and `frontend/src/` `.ts/.tsx`
+- Missing PHPDoc on `public function` declarations in `backend/src/` (migrations excluded)
+- Missing JSDoc on export declarations in `frontend/src/` `.ts/.tsx`
+- Failing frontend TypeScript type-check when modified files include `frontend/src/` `.ts/.tsx`
+- Failing file validation for the review scope
+- Missing or unused translation keys
+- Failing dedicated PHPUnit tests mapped from modified `backend/src/Service/...` files
+- Failing PHPStan analysis when backend PHP source files are in scope
+
+Informational (no exit code impact):
+- List of modified files
+- List of untracked files
+- List of committed files since `--base`, when provided
+- Modified backend services without a dedicated mapped PHPUnit test
+
+Limitations: only detects accented characters as French strings — complement with a manual diff review for unaccented French words (`Valider`, `Commenter`, etc.). JSDoc check covers export declarations only, not re-exports.
+
+The review flow skips container-backed validations that depend on local uncommitted environment files such as `.env`. Frontend TypeScript checking remains part of review through `php scripts/validate-files.php --with-types --review-scope ...`, which runs the local `frontend` package script instead of raw `npx tsc`.
+
+```bash
+php scripts/review.php
+php scripts/review.php --base=HEAD~1
+```
+
+---
+
+### `phpstan.php`
+Runs PHPStan static analysis using `config/phpstan.neon`. By default both the backend and the scripts tooling are analysed. Use `--backend` or `--scripts` to restrict the scope.
+
+The PHPStan binary and all extensions (`phpstan-symfony`, `phpstan-doctrine`, `phpstan-phpunit`) are installed in `scripts/vendor` so that `php scripts/scripts-install.php` is the only prerequisite — no backend Docker environment needed.
+
+```bash
+php scripts/phpstan.php
+php scripts/phpstan.php --backend
+php scripts/phpstan.php --scripts
+php scripts/phpstan.php backend/src/Controller/AgentController.php
+```
+
+Notes:
+- explicit file arguments bypass the scope flags and analyse only those files
+- the wrapper injects `--configuration config/phpstan.neon --debug`
+- `--debug` forces single-threaded mode, required on WSL2
+
+---
+
+### `rector.php`
+Runs Rector using `config/rector.php`. By default both the backend and the scripts tooling are processed. Use `--backend` or `--scripts` to restrict the scope. Always prefer `--dry-run` first to review planned changes.
+
+The Rector binary is installed in `scripts/vendor` alongside PHPStan.
+
+```bash
+php scripts/rector.php --dry-run
+php scripts/rector.php
+php scripts/rector.php --backend --dry-run
+php scripts/rector.php --scripts
+```
+
+Notes:
+- `--backend` and `--scripts` are consumed by the wrapper; remaining arguments are forwarded to Rector
+- the wrapper injects `--config config/rector.php --paths <scope>`
+
+---
+
+### `validate-backend-tests.php`
+Runs isolated local PHPUnit from WSL for backend unit tests that must stay independent from Docker services, databases, Redis, and real external APIs.
+
+For service-driven validation, the dedicated test mapping is `backend/src/Service/...` -> `backend/tests/Unit/Service/...Test.php`.
+
+```bash
+php scripts/validate-backend-tests.php backend/src/Service/AgentModelRecommendationPolicyResolver.php
+php scripts/validate-backend-tests.php backend/src/Service/VcsRepositoryUrlService.php scripts/review.php
+php scripts/validate-backend-tests.php --all
+```
+
+Rules:
+- modified service files are detected only from the explicit file list passed to the script
+- `--all` runs the `local-unit` testsuite only
+- the dedicated mapping preserves subdirectories under `Service/`
+- local unit tests must live under `backend/tests/Unit/`
+- local unit tests must extend `App\Tests\Support\LocalUnitTestCase`
+- local unit tests must not boot the Symfony kernel, access DB/Redis, or instantiate real external HTTP/API clients
+- a missing dedicated test is reported but does not fail validation
+- an existing dedicated test must pass with no PHPUnit warning, notice, or deprecation
+
+---
+
+### `validate-files.php`
+Runs targeted backend/frontend validations (PHP syntax, Symfony container lint, OpenAPI consistency, ESLint, and optional TypeScript type-checking) for an explicit list of files.
+Use `--with-types` for frontend changes instead of raw `npx tsc`; it runs the project type-check wrapper.
+Use `--review-scope` when the command is executed from the mechanical review flow. In that mode, container-backed checks are skipped because they depend on local runtime state and uncommitted files such as `.env`, which are outside the review diff scope, but frontend TypeScript type-checking still runs through the local `frontend` package script.
+
+```bash
+php scripts/validate-files.php backend/src/Controller/TaskController.php frontend/src/api/tickets.ts
+php scripts/validate-files.php --with-types backend/src/Service/StoryExecutionService.php
+php scripts/validate-files.php --with-types --review-scope backend/src/Service/StoryExecutionService.php
+```
+
+---
+
+### `wsl-claude-install.sh`
+Installs Claude CLI inside the configured WSL distro so it can be used from the project in a native Linux environment.
+
+```bash
+bash scripts/wsl-claude-install.sh
+```
+
+This script currently targets a configured WSL distro name internally.
+
+---
+
+### `wsl-codex-install.sh`
+Installs or upgrades the OpenAI Codex CLI directly inside WSL, so it can later be started from a native Linux shell in the project.
+
+```bash
+bash scripts/wsl-codex-install.sh
+bash scripts/wsl-codex-install.sh --skip-login
+```
+
+After installation:
+
+```bash
+codex login
+php scripts/codex-auth.php sync
+cd ~/projects/somanagent
+codex
+```
+
+---
+
+### `wsl-migrate.sh`
+Copies the project from `/mnt/...` to the WSL native filesystem to avoid slow Docker bind mounts on Windows-backed filesystems.
+
+```bash
+bash scripts/wsl-migrate.sh
+bash scripts/wsl-migrate.sh --dest ~/projects/somanagent
+```
+
+Use this when the repository was cloned under `/mnt/c/...` and local Docker I/O is too slow.
+
+## Script Header Convention
+
+Each script must start with this block (after the shebang):
+
+**PHP:**
+```php
+#!/usr/bin/env php
+<?php
+// Description: Short one-line description
+// Usage: php scripts/script-name.php [options]
+// Usage: php scripts/script-name.php --flag value
+```
+
+**Bash:**
+```bash
+#!/usr/bin/env bash
+# Description: Short one-line description
+# Usage: bash scripts/script-name.sh [options]
+```
+
+`help.php` automatically parses these headers to generate its display.
