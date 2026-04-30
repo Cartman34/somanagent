@@ -117,6 +117,6 @@ final class PhpstanRunner extends AbstractScriptRunner
 
         $escaped = implode(' ', array_map('escapeshellarg', $commandArgs));
 
-        return $this->app->runCommand("php backend/vendor/bin/phpstan $escaped");
+        return $this->app->runCommand("php scripts/vendor/bin/phpstan $escaped");
     }
 }

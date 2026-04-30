@@ -38,8 +38,8 @@ php scripts/help.php migrate.php
 | `review.php` | PHP | Run mechanical review checks (French strings, PHPDoc, JSDoc, translations, targeted validation, PHPStan) |
 | `validate-files.php` | PHP | Run targeted backend/frontend validations for an explicit file list |
 | `validate-backend-tests.php` | PHP | Run isolated local PHPUnit checks for backend unit tests from WSL without Docker services |
-| `phpstan.php` | PHP | Run PHPStan static analysis on backend PHP sources |
-| `rector.php` | PHP | Apply automated code fixes to backend PHP sources via Rector |
+| `phpstan.php` | PHP | Run PHPStan static analysis on backend and/or scripts PHP sources |
+| `rector.php` | PHP | Apply automated code fixes to backend and/or scripts PHP sources via Rector |
 | `claude-auth.php` | PHP | Sync Claude CLI auth from WSL to the Docker runtime |
 | `codex-auth.php` | PHP | Sync Codex CLI ChatGPT auth from WSL to the Docker runtime |
 | `opencode-auth.php` | PHP | Sync OpenCode provider credentials from WSL to the Docker runtime |
@@ -336,31 +336,39 @@ php scripts/review.php --base=HEAD~1
 ---
 
 ### `phpstan.php`
-Runs PHPStan static analysis with `backend/phpstan.neon`. Use this wrapper instead of calling `vendor/bin/phpstan` directly so the project configuration and WSL-compatible single-threaded mode are applied consistently.
+Runs PHPStan static analysis using `config/phpstan.neon`. By default both the backend and the scripts tooling are analysed. Use `--backend` or `--scripts` to restrict the scope.
+
+The PHPStan binary and all extensions (`phpstan-symfony`, `phpstan-doctrine`, `phpstan-phpunit`) are installed in `scripts/vendor` so that `php scripts/scripts-install.php` is the only prerequisite — no backend Docker environment needed.
 
 ```bash
 php scripts/phpstan.php
+php scripts/phpstan.php --backend
+php scripts/phpstan.php --scripts
 php scripts/phpstan.php backend/src/Controller/AgentController.php
 ```
 
 Notes:
-- without file arguments, the full configured backend scope is analysed
-- file arguments restrict analysis to the provided backend PHP files
-- the wrapper injects `--configuration backend/phpstan.neon --debug`
+- explicit file arguments bypass the scope flags and analyse only those files
+- the wrapper injects `--configuration config/phpstan.neon --debug`
+- `--debug` forces single-threaded mode, required on WSL2
 
 ---
 
 ### `rector.php`
-Runs Rector with `backend/rector.php`. Use `--dry-run` before applying automated refactors when reviewing the planned changes.
+Runs Rector using `config/rector.php`. By default both the backend and the scripts tooling are processed. Use `--backend` or `--scripts` to restrict the scope. Always prefer `--dry-run` first to review planned changes.
+
+The Rector binary is installed in `scripts/vendor` alongside PHPStan.
 
 ```bash
 php scripts/rector.php --dry-run
 php scripts/rector.php
+php scripts/rector.php --backend --dry-run
+php scripts/rector.php --scripts
 ```
 
 Notes:
-- the wrapper injects `--config backend/rector.php`
-- additional Rector arguments are passed through after the project config
+- `--backend` and `--scripts` are consumed by the wrapper; remaining arguments are forwarded to Rector
+- the wrapper injects `--config config/rector.php --paths <scope>`
 
 ---
 
