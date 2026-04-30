@@ -397,7 +397,8 @@ final class ReviewRunner extends AbstractScriptRunner
      */
     private function printPhpstanValidation(array $phpFiles): int
     {
-        if ($phpFiles === []) {
+        $scopes = $this->resolvePhpstanScopes($phpFiles);
+        if ($scopes === []) {
             echo "(no backend or scripts PHP source files modified)\n";
             return 0;
         }
@@ -407,13 +408,38 @@ final class ReviewRunner extends AbstractScriptRunner
             return 0;
         }
 
-        [$exitCode, $lines] = $this->runCommand('php scripts/phpstan.php');
+        $scopeArgs = implode(' ', array_map(
+            static fn(string $scope): string => '--scope=' . escapeshellarg($scope),
+            $scopes
+        ));
+        [$exitCode, $lines] = $this->runCommand('php scripts/phpstan.php ' . $scopeArgs);
 
         foreach ($lines as $line) {
             echo $line . "\n";
         }
 
         return $exitCode;
+    }
+
+    /**
+     * @param string[] $phpFiles
+     * @return list<string>
+     */
+    private function resolvePhpstanScopes(array $phpFiles): array
+    {
+        $scopes = [];
+        foreach ($phpFiles as $path) {
+            if (str_starts_with($path, 'backend/src/')) {
+                $scopes[] = 'backend';
+                continue;
+            }
+
+            if (str_starts_with($path, 'scripts/src/')) {
+                $scopes[] = 'scripts';
+            }
+        }
+
+        return array_values(array_unique($scopes));
     }
 
     /**
