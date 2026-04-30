@@ -66,7 +66,7 @@ final class RectorRunner extends AbstractScriptRunner
 
         $commandArgs = array_merge(
             ['process', '--config', 'config/rector.php'],
-            array_values($paths),
+            $paths,
             $passthrough
         );
 
