@@ -377,7 +377,7 @@ php scripts/rector.php --scope=backend --scope=scripts --dry-run
 Notes:
 - available scopes are `backend` and `scripts`
 - `--scope` is consumed by the wrapper; remaining arguments are forwarded to Rector
-- the wrapper injects `--config config/rector.php --paths <scope>`
+- the wrapper injects `--config config/rector.php` followed by the scope paths as positional arguments
 
 ---
 
