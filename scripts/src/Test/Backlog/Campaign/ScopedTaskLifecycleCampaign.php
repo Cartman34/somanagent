@@ -34,7 +34,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->assertFeatureStartOutputContains($startOutput, '[Feature]');
         $driver->assertFeatureStartOutputContains($startOutput, 'Feature: ' . $context->scopedFeature);
         $driver->assertFeatureStartOutputContains($startOutput, '[Worktree]');
-        $driver->assertFeatureStartOutputContains($startOutput, '.worktrees/' . $context->agentPrimary);
+        $driver->assertFeatureStartOutputContains($startOutput, $context->agentPrimary);
         $driver->assertActiveFeatureExists($context->scopedFeature);
         $driver->assertStatusContains($context->scopedFeature, $context->childA);
 

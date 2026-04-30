@@ -21,6 +21,9 @@ options:
   -
     name: '--force'
     description: 'Allow taking a task that is already reserved'
+  -
+    name: '--worktree-dir'
+    description: 'Override managed worktrees root directory (test mode only, must be in local/tmp/)'
 examples:
   - 'php scripts/backlog.php status --agent agent-01'
   - 'php scripts/backlog.php base-update my-feature'

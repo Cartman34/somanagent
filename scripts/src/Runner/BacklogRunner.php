@@ -19,9 +19,12 @@ final class BacklogRunner extends AbstractScriptRunner
 {
     private const DEFAULT_BOARD_PATH = 'local/backlog-board.md';
     private const DEFAULT_REVIEW_FILE_PATH = 'local/backlog-review.md';
+    private const DEFAULT_WORKTREES_DIR = '.agent-worktrees';
+    private const LEGACY_WORKTREES_DIR = '.worktrees';
 
     private ?string $boardPath = null;
     private ?string $reviewFilePath = null;
+    private ?string $worktreesRoot = null;
 
     private ?BacklogHelpService $helpService = null;
     private ?BacklogCommandFactory $commandFactory = null;
@@ -154,6 +157,10 @@ final class BacklogRunner extends AbstractScriptRunner
         if (isset($options[BacklogCliOption::REVIEW_FILE->value])) {
             $this->reviewFilePath = $this->validateTestFileOverride((string) $options[BacklogCliOption::REVIEW_FILE->value], BacklogCliOption::REVIEW_FILE->value);
         }
+
+        if (isset($options[BacklogCliOption::WORKTREE_DIR->value])) {
+            $this->worktreesRoot = $this->validateTestFileOverride((string) $options[BacklogCliOption::WORKTREE_DIR->value], BacklogCliOption::WORKTREE_DIR->value);
+        }
     }
 
     private function validateTestFileOverride(string $path, string $option): string
@@ -187,6 +194,7 @@ final class BacklogRunner extends AbstractScriptRunner
                 $this->console,
                 $this->dryRun,
                 $this->projectRoot,
+                $this->resolvedWorktreesRoot(),
                 $this->boardPath(),
                 $this->reviewFilePath()
             );
@@ -203,5 +211,40 @@ final class BacklogRunner extends AbstractScriptRunner
     private function reviewFilePath(): string
     {
         return $this->reviewFilePath ?? ($this->projectRoot . '/' . self::DEFAULT_REVIEW_FILE_PATH);
+    }
+
+    private function resolvedWorktreesRoot(): string
+    {
+        if ($this->worktreesRoot !== null) {
+            return $this->worktreesRoot;
+        }
+
+        $legacy = $this->projectRoot . '/' . self::LEGACY_WORKTREES_DIR;
+        $new = $this->projectRoot . '/' . self::DEFAULT_WORKTREES_DIR;
+
+        if (!is_dir($legacy)) {
+            return $new;
+        }
+
+        if (is_dir($new)) {
+            return $new;
+        }
+
+        // Check for active git worktrees still under the legacy root
+        $porcelain = (string) shell_exec('git worktree list --porcelain 2>/dev/null');
+        if (str_contains($porcelain, $legacy . '/')) {
+            return $legacy;
+        }
+
+        // Safe to rename: no active git worktrees remain under legacy root
+        if (@rename($legacy, $new)) {
+            $this->console->info('Migrated ' . self::LEGACY_WORKTREES_DIR . '/ to ' . self::DEFAULT_WORKTREES_DIR . '/');
+
+            return $new;
+        }
+
+        $this->console->warn('Could not rename ' . self::LEGACY_WORKTREES_DIR . '/ to ' . self::DEFAULT_WORKTREES_DIR . '/ (rename failed, continuing with legacy path)');
+
+        return $legacy;
     }
 }

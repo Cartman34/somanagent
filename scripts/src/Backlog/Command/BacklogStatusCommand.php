@@ -128,7 +128,7 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
             return;
         }
 
-        $expectedPath = $this->projectRoot . '/.worktrees/' . $agent;
+        $expectedPath = $this->worktreeService->getAgentWorktreePath($agent);
         $worktree = null;
         foreach ($this->worktreeService->classifyWorktrees($board)->getManaged() as $item) {
             if ($item->getPath() === $expectedPath) {

@@ -689,6 +689,8 @@ MD);
         $parts[] = escapeshellarg($this->relativePath($this->context->boardPath));
         $parts[] = '--review-file';
         $parts[] = escapeshellarg($this->relativePath($this->context->reviewPath));
+        $parts[] = '--worktree-dir';
+        $parts[] = escapeshellarg($this->relativePath($this->context->worktreesRoot));
         if ($this->context->prBaseBranch() !== null) {
             $parts[] = '--pr-base-branch';
             $parts[] = escapeshellarg($this->context->prBaseBranch());
@@ -852,9 +854,9 @@ MD);
         }
     }
 
-    private function managedWorktreePath(string $agent): string
+    public function managedWorktreePath(string $agent): string
     {
-        return $this->context->projectRoot . '/.worktrees/' . $agent;
+        return $this->context->worktreesRoot . '/' . $agent;
     }
 
     private function relativePath(string $path): string

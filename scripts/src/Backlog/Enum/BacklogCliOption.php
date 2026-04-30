@@ -20,4 +20,5 @@ enum BacklogCliOption: string
     case PR_BASE_BRANCH = 'pr-base-branch';
     case REVIEW_FILE = 'review-file';
     case TEST_MODE = 'test-mode';
+    case WORKTREE_DIR = 'worktree-dir';
 }

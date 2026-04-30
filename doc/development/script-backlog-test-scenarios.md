@@ -25,7 +25,7 @@ Before running the scenarios:
    - `php scripts/scripts-install.php`
 3. Ensure the repository is in a controlled local test state:
    - no uncommitted user work in `WP`
-   - no accidental worktrees to preserve under `.worktrees/`
+   - no accidental worktrees to preserve under `.agent-worktrees/`
 4. Back up the local-only workflow files if needed:
    - `local/backlog-board.md`
    - `local/backlog-review.md`
@@ -412,7 +412,7 @@ After validation:
 
 1. Restore the original local backlog files if they were backed up.
 2. Remove temporary files created under `local/tmp/`.
-3. Inspect `.worktrees/` and clean any leftover managed worktrees.
+3. Inspect `.agent-worktrees/` and clean any leftover managed worktrees.
 4. Confirm final local state with:
    - `php scripts/backlog.php feature-list`
    - `php scripts/backlog.php worktree-list`

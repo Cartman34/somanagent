@@ -15,7 +15,7 @@ examples:
   - 'php scripts/backlog.php worktree-restore --agent agent-01 --force'
   - 'php scripts/backlog.php worktree-restore my-feature-slug'
 notes:
-  - 'Use this when `.worktrees/<agent>` was removed while the backlog still has active development.'
+  - 'Use this when `.agent-worktrees/<agent>` was removed while the backlog still has active development.'
   - 'The command checks out the branch recorded in backlog metadata and does not change the workflow stage.'
   - 'Existing PHP vendor directories are kept when their `autoload.php` witness exists, and replaced from WP when that witness is missing.'
   - '`--force` recreates the managed worktree only after confirming it has no local changes.'

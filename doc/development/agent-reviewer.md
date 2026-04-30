@@ -102,13 +102,13 @@ Rules:
 ### `worktree-list`
 
 1. Run `php scripts/backlog.php worktree-list`.
-2. The script lists worktrees under `.worktrees/` with their cleanup state and recommended action.
-3. Worktrees outside `.worktrees/` are reported separately for manual cleanup only.
+2. The script lists worktrees under `.agent-worktrees/` with their cleanup state and recommended action.
+3. Worktrees outside `.agent-worktrees/` are reported separately for manual cleanup only.
 
 ### `worktree-clean`
 
 1. Run `php scripts/backlog.php worktree-clean`.
-2. The script removes only abandoned managed worktrees under `.worktrees/` when they are safe to delete.
+2. The script removes only abandoned managed worktrees under `.agent-worktrees/` when they are safe to delete.
 3. Dirty, blocked, or external worktrees are left untouched and must be handled manually.
 4. In the normal workflow, this command is mainly triggered automatically after `feature-close` and `feature-merge`, or manually through `cleanup`.
 

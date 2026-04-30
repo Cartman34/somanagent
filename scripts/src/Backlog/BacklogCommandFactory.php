@@ -68,6 +68,7 @@ final class BacklogCommandFactory
     private Console $console;
     private bool $dryRun;
     private string $projectRoot;
+    private string $worktreesRoot;
     private string $boardPath;
     private string $reviewFilePath;
 
@@ -101,6 +102,7 @@ final class BacklogCommandFactory
         Console $console,
         bool $dryRun,
         string $projectRoot,
+        string $worktreesRoot,
         string $boardPath,
         string $reviewFilePath
     ) {
@@ -108,6 +110,7 @@ final class BacklogCommandFactory
         $this->console = $console;
         $this->dryRun = $dryRun;
         $this->projectRoot = $projectRoot;
+        $this->worktreesRoot = $worktreesRoot;
         $this->boardPath = $boardPath;
         $this->reviewFilePath = $reviewFilePath;
     }
@@ -231,6 +234,7 @@ final class BacklogCommandFactory
         if ($this->worktreeService === null) {
             $this->worktreeService = new BacklogWorktreeService(
                 $this->projectRoot,
+                $this->worktreesRoot,
                 $this->dryRun,
                 (string) getenv('DATABASE_URL'),
                 $this->getBoardService(),

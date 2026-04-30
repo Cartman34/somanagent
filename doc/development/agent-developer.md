@@ -141,7 +141,7 @@ Read this file only when the active task requires developer workflow details.
 2. Export `SOMANAGER_ROLE=developer` and `SOMANAGER_AGENT=<code>` before running the command.
 3. Developer can only remove its own assignment from its own feature.
 4. The script removes the current agent assignment from the target feature and keeps the feature in its current backlog section.
-5. If this leaves behind an abandoned managed worktree under `.worktrees/`, the script runs `worktree-clean` automatically.
+5. If this leaves behind an abandoned managed worktree under `.agent-worktrees/`, the script runs `worktree-clean` automatically.
 
 ### `feature-block`
 
@@ -161,14 +161,14 @@ Read this file only when the active task requires developer workflow details.
 ### `worktree-list`
 
 1. Run `php scripts/backlog.php worktree-list`.
-2. The script lists worktrees under `.worktrees/` with their cleanup state and recommended action.
-3. Worktrees outside `.worktrees/` are reported separately for manual cleanup only.
+2. The script lists worktrees under `.agent-worktrees/` with their cleanup state and recommended action.
+3. Worktrees outside `.agent-worktrees/` are reported separately for manual cleanup only.
 4. Use this command only when there is a cleanup need outside the normal workflow procedure.
 
 ### `worktree-clean`
 
 1. Run `php scripts/backlog.php worktree-clean`.
-2. The script removes only abandoned managed worktrees under `.worktrees/` when they are safe to delete.
+2. The script removes only abandoned managed worktrees under `.agent-worktrees/` when they are safe to delete.
 3. Dirty, blocked, or external worktrees are left untouched and must be handled manually.
 
 ### `worktree-restore`
@@ -177,7 +177,7 @@ Read this file only when the active task requires developer workflow details.
 2. The script recreates or refreshes the managed worktree for the active feature or task recorded in backlog metadata without changing the workflow stage.
 3. Existing PHP vendors are validated with `scripts/vendor/autoload.php` and `backend/vendor/autoload.php`; when a witness is missing, the whole matching vendor directory is replaced from `WP`.
 4. Run `php scripts/backlog.php worktree-restore --agent=<code> --force` to recreate the managed worktree completely; the script refuses `--force` when the existing worktree has local changes.
-5. Use this command when `.worktrees/<agent>` was removed or when copied PHP runtime dependencies are incomplete while the backlog still has active development.
+5. Use this command when `.agent-worktrees/<agent>` was removed or when copied PHP runtime dependencies are incomplete while the backlog still has active development.
 
 ### `status`
 

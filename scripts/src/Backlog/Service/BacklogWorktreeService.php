@@ -27,6 +27,7 @@ use SoManAgent\Script\Client\ProjectScriptClient;
 final class BacklogWorktreeService
 {
     private string $projectRoot;
+    private string $worktreesRoot;
     private bool $dryRun;
     private string $backendEnvLocalFallback;
     private BacklogBoardService $boardService;
@@ -47,6 +48,7 @@ final class BacklogWorktreeService
      */
     public function __construct(
         string $projectRoot,
+        string $worktreesRoot,
         bool $dryRun,
         string $backendEnvLocalFallback,
         BacklogBoardService $boardService,
@@ -56,6 +58,7 @@ final class BacklogWorktreeService
         FilesystemClientInterface $fs
     ) {
         $this->projectRoot = $projectRoot;
+        $this->worktreesRoot = $worktreesRoot;
         $this->dryRun = $dryRun;
         $this->backendEnvLocalFallback = $backendEnvLocalFallback;
         $this->boardService = $boardService;
@@ -63,6 +66,11 @@ final class BacklogWorktreeService
         $this->git = $git;
         $this->scripts = $scripts;
         $this->fs = $fs;
+    }
+
+    public function getAgentWorktreePath(string $agent): string
+    {
+        return $this->worktreesRoot . '/' . $agent;
     }
 
     /**
@@ -73,7 +81,7 @@ final class BacklogWorktreeService
      */
     public function prepareAgentWorktree(string $agent): string
     {
-        $path = $this->projectRoot . '/.worktrees/' . $agent;
+        $path = $this->worktreesRoot . '/' . $agent;
         $relativePath = $this->git->toRelativeProjectPath($path);
         $exists = $this->fs->checkPathExists($path . '/.git');
         $created = false;
@@ -142,7 +150,7 @@ final class BacklogWorktreeService
             return ['path' => $existingPath, 'temporary' => false];
         }
 
-        $path = $this->projectRoot . '/.worktrees/merge-' . $feature;
+        $path = $this->worktreesRoot . '/merge-' . $feature;
         if ($this->fs->checkPathExists($path)) {
             throw new \RuntimeException(sprintf(
                 'Temporary merge worktree path already exists: %s',
@@ -188,7 +196,7 @@ final class BacklogWorktreeService
             return;
         }
 
-        $path = $this->projectRoot . '/.worktrees/' . $agent;
+        $path = $this->worktreesRoot . '/' . $agent;
         if (!$this->fs->checkPathExists($path)) {
             return;
         }
@@ -215,7 +223,7 @@ final class BacklogWorktreeService
      */
     public function removeAgentWorktreeForRestore(string $agent): void
     {
-        $path = $this->projectRoot . '/.worktrees/' . $agent;
+        $path = $this->worktreesRoot . '/' . $agent;
         if (!$this->fs->checkPathExists($path)) {
             return;
         }
@@ -381,7 +389,7 @@ final class BacklogWorktreeService
             } elseif ($branch !== null && isset($activeEntriesByBranch[$branch])) {
                 $feature = $activeEntriesByBranch[$branch]->getFeature();
                 $agent = $activeEntriesByBranch[$branch]->getAgent();
-                $expectedPath = $this->projectRoot . '/.worktrees/' . $agent;
+                $expectedPath = $this->worktreesRoot . '/' . $agent;
                 $dirty = $this->git->hasLocalChanges($path);
 
                 if ($path !== $expectedPath) {
@@ -701,7 +709,7 @@ final class BacklogWorktreeService
                 throw new \RuntimeException("Branch {$branch} is still active in a dirty worktree: {$path}");
             }
 
-            if (!str_starts_with($path, $this->projectRoot . '/.worktrees/')) {
+            if (!str_starts_with($path, $this->worktreesRoot . '/')) {
                 throw new \RuntimeException("Branch {$branch} is active in a non-managed worktree: {$path}");
             }
 
@@ -838,7 +846,7 @@ final class BacklogWorktreeService
 
     private function checkIsManagedAgentWorktree(string $path): bool
     {
-        return str_starts_with($path, $this->projectRoot . '/.worktrees/');
+        return str_starts_with($path, $this->worktreesRoot . '/');
     }
 
     private function logVerbose(string $message): void
