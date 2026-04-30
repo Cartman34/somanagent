@@ -166,6 +166,16 @@ final class GitClient
         $this->runNetwork($command);
     }
 
+    public function fetchLocalBranch(string $branch, string $remote = 'origin'): void
+    {
+        $this->runNetwork(sprintf(
+            'git fetch %s %s:%s',
+            escapeshellarg($remote),
+            escapeshellarg($branch),
+            escapeshellarg($branch),
+        ));
+    }
+
     /**
      * Fetches a specific branch from a remote repository.
      *

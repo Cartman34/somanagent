@@ -266,12 +266,7 @@ final class GitService
     public function updateMainBranch(): void
     {
         if ($this->getWorkspaceCurrentBranch() !== self::MAIN_BRANCH) {
-            $this->git->runNetwork(sprintf(
-                'git fetch %s %s:%s',
-                self::ORIGIN_REMOTE,
-                self::MAIN_BRANCH,
-                self::MAIN_BRANCH,
-            ));
+            $this->git->fetchRemoteBranch(self::MAIN_BRANCH, self::ORIGIN_REMOTE);
 
             return;
         }
@@ -305,12 +300,7 @@ final class GitService
      */
     public function fetchBranch(string $branch, string $remote = self::ORIGIN_REMOTE): void
     {
-        $this->git->runNetwork(sprintf(
-            'git fetch %s %s:%s',
-            $remote,
-            escapeshellarg($branch),
-            escapeshellarg($branch),
-        ));
+        $this->git->fetchLocalBranch($branch, $remote);
     }
 
     private function updateLocalMainBranchWithWarning(): void

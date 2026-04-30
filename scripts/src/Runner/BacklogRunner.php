@@ -230,21 +230,14 @@ final class BacklogRunner extends AbstractScriptRunner
             return $new;
         }
 
-        // Check for active git worktrees still under the legacy root
+        // Use legacy root as long as it still contains active git worktrees
         $porcelain = (string) shell_exec('git worktree list --porcelain 2>/dev/null');
         if (str_contains($porcelain, $legacy . '/')) {
             return $legacy;
         }
 
-        // Safe to rename: no active git worktrees remain under legacy root
-        if (@rename($legacy, $new)) {
-            $this->console->info('Migrated ' . self::LEGACY_WORKTREES_DIR . '/ to ' . self::DEFAULT_WORKTREES_DIR . '/');
-
-            return $new;
-        }
-
-        $this->console->warn('Could not rename ' . self::LEGACY_WORKTREES_DIR . '/ to ' . self::DEFAULT_WORKTREES_DIR . '/ (rename failed, continuing with legacy path)');
-
-        return $legacy;
+        // No active worktrees remain in legacy root: new worktrees go to the new directory.
+        // The legacy directory is left untouched.
+        return $new;
     }
 }
