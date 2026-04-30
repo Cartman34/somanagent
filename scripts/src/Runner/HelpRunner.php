@@ -35,8 +35,6 @@ final class HelpRunner extends AbstractScriptRunner
     }
 
     /**
-     * Run the help command.
-     *
      * @param list<string> $args
      * @return int
      */

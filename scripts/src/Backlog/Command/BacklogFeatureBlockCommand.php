@@ -21,6 +21,13 @@ final class BacklogFeatureBlockCommand extends AbstractBacklogCommand
 {
     private PullRequestService $pullRequestService;
 
+    /**
+     * @param BacklogPresenter $presenter
+     * @param bool $dryRun
+     * @param string $projectRoot
+     * @param BacklogBoardService $boardService
+     * @param PullRequestService $pullRequestService
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
@@ -32,6 +39,13 @@ final class BacklogFeatureBlockCommand extends AbstractBacklogCommand
         $this->pullRequestService = $pullRequestService;
     }
 
+    /**
+     * Block a feature in the backlog board.
+     *
+     * @param list<string> $commandArgs Feature slug (optional, auto-detect if not provided)
+     * @param array<string, bool|string> $options Command options (--agent required)
+     * @return void
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $agent = $options['agent'] ?? null;

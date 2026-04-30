@@ -41,6 +41,11 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         $this->pullRequestService = $pullRequestService;
     }
 
+    /**
+     * @param list<string> $commandArgs
+     * @param array<string, bool|string> $options
+     * @return void
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $board = $this->loadBoard();

@@ -17,6 +17,9 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 final class TicketTaskDependencyRepository extends ServiceEntityRepository
 {
+    /**
+     * Constructor.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, TicketTaskDependency::class);

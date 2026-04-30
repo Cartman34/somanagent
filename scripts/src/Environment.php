@@ -5,16 +5,19 @@
 
 declare(strict_types=1);
 
+namespace SoManAgent\Script;
+
 /**
  * Detects the current runtime environment (Windows, WSL, Linux, macOS)
  * and provides path conversion utilities.
  */
-namespace SoManAgent\Script;
-
 final class Environment
 {
     // ── OS detection ──────────────────────────────────────────────────────────
 
+    /**
+     * Returns true when the current operating system is Windows.
+     */
     public static function isWindows(): bool
     {
         return PHP_OS_FAMILY === 'Windows';

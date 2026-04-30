@@ -16,6 +16,9 @@ use SoManAgent\Script\Test\Backlog\Campaign\HelpCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\ScopedTaskLifecycleCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\TodoAndPlainFeatureLifecycleCampaign;
 
+/**
+ * Runs sequential validation campaigns to test the backlog workflow script.
+ */
 final class TestBacklogWorkflowRunner extends AbstractScriptRunner
 {
     /** @var array<string, CampaignInterface>|null */

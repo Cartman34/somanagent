@@ -10,6 +10,11 @@ namespace SoManAgent\Script\Test\Backlog\Campaign;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
 
+/**
+ * Feature review lifecycle campaign
+ *
+ * Tests the complete workflow of feature reviews including reject, rework, approve, block, and merge.
+ */
 final class FeatureReviewLifecycleCampaign implements CampaignInterface
 {
     public function getName(): string

@@ -35,6 +35,16 @@ final class BacklogWorktreeService
     private ProjectScriptClient $scripts;
     private FilesystemClientInterface $fs;
 
+    /**
+     * @param string $projectRoot
+     * @param bool $dryRun
+     * @param string $backendEnvLocalFallback
+     * @param BacklogBoardService $boardService
+     * @param ConsoleClient $console
+     * @param GitClient $git
+     * @param ProjectScriptClient $scripts
+     * @param FilesystemClientInterface $fs
+     */
     public function __construct(
         string $projectRoot,
         bool $dryRun,
@@ -57,6 +67,9 @@ final class BacklogWorktreeService
 
     /**
      * Ensures the managed worktree for an agent exists and is clean.
+     *
+     * @param string $agent The agent name
+     * @return string The worktree path
      */
     public function prepareAgentWorktree(string $agent): string
     {
@@ -87,6 +100,9 @@ final class BacklogWorktreeService
 
     /**
      * Ensures the worktree for an active backlog entry is ready on its branch.
+     *
+     * @param BoardEntry $entry The board entry
+     * @return string The worktree path
      */
     public function prepareFeatureAgentWorktree(BoardEntry $entry): string
     {
@@ -107,6 +123,8 @@ final class BacklogWorktreeService
     }
 
     /**
+     * @param string $featureBranch The feature branch name
+     * @param string $feature The feature identifier
      * @return array{path: string, temporary: bool}
      */
     public function prepareFeatureMergeWorktree(string $featureBranch, string $feature): array
@@ -138,6 +156,10 @@ final class BacklogWorktreeService
         return ['path' => $path, 'temporary' => true];
     }
 
+    /**
+     * @param string $path The worktree path to remove
+     * @return void
+     */
     public function removeTemporaryMergeWorktree(string $path): void
     {
         if (!$this->fs->checkPathExists($path)) {
@@ -154,6 +176,12 @@ final class BacklogWorktreeService
         $this->git->removeWorktreeForce($path);
     }
 
+    /**
+     * @param string $agent The agent name
+     * @param string $taskBranch The task branch name
+     * @param BacklogBoard $board The backlog board
+     * @return void
+     */
     public function cleanupMergedTaskWorktree(string $agent, string $taskBranch, BacklogBoard $board): void
     {
         if ($this->boardService->findTaskEntriesByAgent($board, $agent) !== []) {
@@ -181,6 +209,10 @@ final class BacklogWorktreeService
         $this->git->removeWorktreeForce($path);
     }
 
+    /**
+     * @param string $agent The agent name
+     * @return void
+     */
     public function removeAgentWorktreeForRestore(string $agent): void
     {
         $path = $this->projectRoot . '/.worktrees/' . $agent;
@@ -198,6 +230,11 @@ final class BacklogWorktreeService
         $this->git->removeWorktreeForce($path);
     }
 
+    /**
+     * @param string $branch The branch name
+     * @param string $startPoint The branch start point
+     * @return void
+     */
     public function ensureLocalBranchExists(string $branch, string $startPoint): void
     {
         if ($this->git->localBranchExists($branch)) {
@@ -207,6 +244,11 @@ final class BacklogWorktreeService
         $this->git->createBranch($branch, $startPoint);
     }
 
+    /**
+     * @param string $branch The branch name
+     * @param string $context The context for the requirement
+     * @return void
+     */
     public function requireLocalBranchExists(string $branch, string $context): void
     {
         if ($this->dryRun) {
@@ -230,6 +272,13 @@ final class BacklogWorktreeService
         ));
     }
 
+    /**
+     * @param string $worktree The worktree path
+     * @param string $branch The branch name
+     * @param bool $create Whether to create the branch if it doesn't exist
+     * @param string $startPoint The branch start point (default: origin/main)
+     * @return void
+     */
     public function checkoutBranchInWorktree(string $worktree, string $branch, bool $create, string $startPoint = 'origin/main'): void
     {
         if ($branch === '') {
@@ -273,6 +322,10 @@ final class BacklogWorktreeService
         $this->git->checkoutBranchCreate($worktree, $branch, 'origin/' . $branch);
     }
 
+    /**
+     * @param string $branch The branch name
+     * @return void
+     */
     public function assertBranchHasNoDirtyManagedWorktree(string $branch): void
     {
         foreach ($this->listWorktreeBranchBindings() as $binding) {
@@ -290,6 +343,10 @@ final class BacklogWorktreeService
         }
     }
 
+    /**
+     * @param BacklogBoard $board The backlog board
+     * @return WorktreeClassification
+     */
     public function classifyWorktrees(BacklogBoard $board): WorktreeClassification
     {
         $managed = [];
@@ -366,6 +423,10 @@ final class BacklogWorktreeService
         return new WorktreeClassification($managed, $external);
     }
 
+    /**
+     * @param BacklogBoard $board The backlog board
+     * @return int The number of cleaned worktrees
+     */
     public function cleanupAbandonedManagedWorktrees(BacklogBoard $board): int
     {
         $managed = $this->classifyWorktrees($board)->getManaged();
@@ -382,6 +443,11 @@ final class BacklogWorktreeService
         return count($cleanable);
     }
 
+    /**
+     * @param string $branch The branch name
+     * @param BacklogBoard $board The backlog board
+     * @return int The number of cleaned worktrees
+     */
     public function cleanupManagedWorktreesForBranch(string $branch, BacklogBoard $board): int
     {
         if ($branch === '') {
@@ -404,6 +470,11 @@ final class BacklogWorktreeService
         return $count;
     }
 
+    /**
+     * @param string $worktree The worktree path
+     * @param string|null $base The base branch for review
+     * @return void
+     */
     public function runReviewScript(string $worktree, ?string $base = null): void
     {
         $this->logVerbose(($this->dryRun ? '[dry-run] Would run review in ' : 'Run review in ') . $this->git->toRelativeProjectPath($worktree));

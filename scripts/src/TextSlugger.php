@@ -19,6 +19,9 @@ final class TextSlugger
     /** @var non-empty-string */
     private string $separator;
 
+    /**
+     * Initializes the TextSlugger with configurable limits.
+     */
     public function __construct(
         int $maxWords = 8,
         int $maxLength = 64,
@@ -34,6 +37,11 @@ final class TextSlugger
         $this->separator = $separator;
     }
 
+    /**
+     * Converts a text into a URL-friendly slug.
+     *
+     * @return string The generated slug
+     */
     public function slugify(string $text): string
     {
         $text = $this->extractRelevantLabel($text);

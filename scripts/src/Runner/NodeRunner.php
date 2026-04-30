@@ -50,6 +50,10 @@ final class NodeRunner extends AbstractScriptRunner
         ];
     }
 
+    /**
+     * @param list<string> $args
+     * @return int
+     */
     public function run(array $args): int
     {
         if ($args === []) {
@@ -62,7 +66,7 @@ final class NodeRunner extends AbstractScriptRunner
 
         try {
             $runner = new NodeCommandRunner($this->app);
-            return $runner->run(array_values($args));
+            return $runner->run($args);
         } catch (\InvalidArgumentException $e) {
             $this->console->fail($e->getMessage());
         }

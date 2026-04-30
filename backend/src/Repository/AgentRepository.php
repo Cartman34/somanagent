@@ -33,6 +33,11 @@ class AgentRepository extends ServiceEntityRepository
         'assigned',
     ];
 
+    /**
+     * Initializes the repository with the Doctrine entity manager.
+     *
+     * @param ManagerRegistry $registry The doctrine registry
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Agent::class);

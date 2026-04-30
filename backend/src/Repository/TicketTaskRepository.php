@@ -21,6 +21,9 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 final class TicketTaskRepository extends ServiceEntityRepository
 {
+    /**
+     * Constructor.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, TicketTask::class);
@@ -86,6 +89,9 @@ final class TicketTaskRepository extends ServiceEntityRepository
         return $grouped;
     }
 
+    /**
+     * Finds the most recent task for a given ticket, workflow step and agent action.
+     */
     public function findOneLatestByTicketAndWorkflowStepAndAction(Ticket $ticket, ?WorkflowStep $workflowStep, AgentAction $agentAction): ?TicketTask
     {
         $qb = $this->createQueryBuilder('tt')

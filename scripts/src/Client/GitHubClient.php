@@ -28,6 +28,11 @@ final class GitHubClient
     private ProjectScriptClient $scripts;
     private RetryPolicy $retryPolicy;
 
+    /**
+     * @param bool $dryRun Whether to run in dry-run mode (no actual commands executed)
+     * @param ProjectScriptClient $scripts The project scripts client
+     * @param RetryPolicy $retryPolicy The retry policy for network operations
+     */
     public function __construct(
         bool $dryRun,
         ProjectScriptClient $scripts,
@@ -38,6 +43,13 @@ final class GitHubClient
         $this->retryPolicy = $retryPolicy;
     }
 
+    /**
+     * Runs a GitHub CLI command and throws on failure.
+     *
+     * @param string $arguments The GitHub CLI arguments to execute
+     * @return void
+     * @throws \RuntimeException If the command exits with a non-zero code
+     */
     public function run(string $arguments): void
     {
         $command = $this->scripts->command(AppScript::GITHUB, $arguments);
@@ -52,6 +64,13 @@ final class GitHubClient
         }
     }
 
+    /**
+     * Captures the output of a GitHub CLI command.
+     *
+     * @param string $arguments The GitHub CLI arguments to execute
+     * @return string The command output
+     * @throws \RuntimeException If the command exits with a non-zero code
+     */
     public function capture(string $arguments): string
     {
         $command = $this->scripts->command(AppScript::GITHUB, $arguments);
@@ -112,6 +131,14 @@ final class GitHubClient
         return $this->captureArgumentsWithExitCode($arguments);
     }
 
+    /**
+     * Edits an existing pull request.
+     *
+     * @param int $prNumber The pull request number
+     * @param string|null $title New title for the PR (optional)
+     * @param string|null $bodyFilePath Path to file containing body text (optional)
+     * @return void
+     */
     public function editPr(int $prNumber, ?string $title = null, ?string $bodyFilePath = null): void
     {
         $arguments = sprintf('pr edit %d', $prNumber);
@@ -125,16 +152,33 @@ final class GitHubClient
         $this->run($arguments);
     }
 
+    /**
+     * Closes a pull request.
+     *
+     * @param int $prNumber The pull request number to close
+     * @return void
+     */
     public function closePr(int $prNumber): void
     {
         $this->run(sprintf('pr close %d', $prNumber));
     }
 
+    /**
+     * Merges a pull request.
+     *
+     * @param int $prNumber The pull request number to merge
+     * @return void
+     */
     public function mergePr(int $prNumber): void
     {
         $this->run(sprintf('pr merge %d', $prNumber));
     }
 
+    /**
+     * Lists all open pull requests.
+     *
+     * @return string The output of the PR list command
+     */
     public function listPrs(): string
     {
         return $this->capture('pr list');

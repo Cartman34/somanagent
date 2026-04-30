@@ -23,6 +23,14 @@ final class BacklogFeatureReviewApproveCommand extends AbstractBacklogCommand
 
     private PullRequestService $pullRequestService;
 
+    /**
+     * @param BacklogPresenter $presenter
+     * @param bool $dryRun
+     * @param string $projectRoot
+     * @param BacklogBoardService $boardService
+     * @param GitService $gitService
+     * @param PullRequestService $pullRequestService
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
@@ -36,6 +44,11 @@ final class BacklogFeatureReviewApproveCommand extends AbstractBacklogCommand
         $this->pullRequestService = $pullRequestService;
     }
 
+    /**
+     * @param list<string> $commandArgs
+     * @param array<string, bool|string> $options
+     * @return void
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $board = $this->loadBoard();

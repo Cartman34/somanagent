@@ -10,6 +10,11 @@ namespace SoManAgent\Script\Test\Backlog\Campaign;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
 
+/**
+ * Scoped task lifecycle campaign
+ *
+ * Tests the workflow of scoped tasks within a feature, including child task review and approval.
+ */
 final class ScopedTaskLifecycleCampaign implements CampaignInterface
 {
     public function getName(): string

@@ -32,6 +32,10 @@ final class FrontendMapRunner extends AbstractScriptRunner
         ];
     }
 
+    /**
+     * @param list<string> $args
+     * @return int
+     */
     public function run(array $args): int
     {
         $jsonMode = in_array('--json', $args, true);

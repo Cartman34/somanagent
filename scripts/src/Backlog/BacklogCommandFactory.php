@@ -87,6 +87,16 @@ final class BacklogCommandFactory
     private ?FilesystemClientInterface $filesystemClient = null;
     private ?RetryPolicy $retryPolicy = null;
 
+    /**
+     * Constructor.
+     *
+     * @param Application $app The application instance
+     * @param Console $console The console instance
+     * @param bool $dryRun Whether to run in dry-run mode
+     * @param string $projectRoot The project root path
+     * @param string $boardPath The board path
+     * @param string $reviewFilePath The review file path
+     */
     public function __construct(
         Application $app,
         Console $console,
@@ -103,6 +113,13 @@ final class BacklogCommandFactory
         $this->reviewFilePath = $reviewFilePath;
     }
 
+    /**
+     * Create a handler for the given command name.
+     *
+     * @param string $commandName The command name
+     * @return AbstractBacklogCommand
+     * @throws \RuntimeException
+     */
     public function createHandler(string $commandName): AbstractBacklogCommand
     {
         $map = [
@@ -193,6 +210,11 @@ final class BacklogCommandFactory
 
     /* --- Lazy Loading Getters --- */
 
+    /**
+     * Get the board service.
+     *
+     * @return BacklogBoardService
+     */
     public function getBoardService(): BacklogBoardService
     {
         if ($this->boardService === null) {
@@ -201,6 +223,11 @@ final class BacklogCommandFactory
         return $this->boardService;
     }
 
+    /**
+     * Get the worktree service.
+     *
+     * @return BacklogWorktreeService
+     */
     public function getWorktreeService(): BacklogWorktreeService
     {
         if ($this->worktreeService === null) {
@@ -218,6 +245,11 @@ final class BacklogCommandFactory
         return $this->worktreeService;
     }
 
+    /**
+     * Get the permission service.
+     *
+     * @return BacklogPermissionService
+     */
     public function getPermissionService(): BacklogPermissionService
     {
         if ($this->permissionService === null) {
@@ -226,6 +258,11 @@ final class BacklogCommandFactory
         return $this->permissionService;
     }
 
+    /**
+     * Get the presenter.
+     *
+     * @return BacklogPresenter
+     */
     public function getPresenter(): BacklogPresenter
     {
         if ($this->presenter === null) {
@@ -234,6 +271,11 @@ final class BacklogCommandFactory
         return $this->presenter;
     }
 
+    /**
+     * Get the git service.
+     *
+     * @return GitService
+     */
     public function getGitService(): GitService
     {
         if ($this->gitService === null) {
@@ -242,6 +284,11 @@ final class BacklogCommandFactory
         return $this->gitService;
     }
 
+    /**
+     * Get the pull request service.
+     *
+     * @return PullRequestService
+     */
     public function getPullRequestService(): PullRequestService
     {
         if ($this->pullRequestService === null) {
@@ -250,6 +297,11 @@ final class BacklogCommandFactory
         return $this->pullRequestService;
     }
 
+    /**
+     * Get the review body formatter.
+     *
+     * @return BacklogReviewBodyFormatter
+     */
     public function getReviewBodyFormatter(): BacklogReviewBodyFormatter
     {
         if ($this->reviewBodyFormatter === null) {
@@ -258,6 +310,11 @@ final class BacklogCommandFactory
         return $this->reviewBodyFormatter;
     }
 
+    /**
+     * Get the filesystem client.
+     *
+     * @return FilesystemClientInterface
+     */
     public function getFilesystemClient(): FilesystemClientInterface
     {
         if ($this->filesystemClient === null) {
@@ -266,6 +323,11 @@ final class BacklogCommandFactory
         return $this->filesystemClient;
     }
 
+    /**
+     * Get the console client.
+     *
+     * @return ConsoleClient
+     */
     public function getConsoleClient(): ConsoleClient
     {
         if ($this->consoleClient === null) {
@@ -274,6 +336,11 @@ final class BacklogCommandFactory
         return $this->consoleClient;
     }
 
+    /**
+     * Get the git client.
+     *
+     * @return GitClient
+     */
     public function getGitClient(): GitClient
     {
         if ($this->gitClient === null) {
@@ -282,6 +349,11 @@ final class BacklogCommandFactory
         return $this->gitClient;
     }
 
+    /**
+     * Get the GitHub client.
+     *
+     * @return GitHubClient
+     */
     public function getGitHubClient(): GitHubClient
     {
         if ($this->gitHubClient === null) {
@@ -290,6 +362,11 @@ final class BacklogCommandFactory
         return $this->gitHubClient;
     }
 
+    /**
+     * Get the project script client.
+     *
+     * @return ProjectScriptClient
+     */
     public function getProjectScriptClient(): ProjectScriptClient
     {
         if ($this->projectScriptClient === null) {
@@ -298,6 +375,11 @@ final class BacklogCommandFactory
         return $this->projectScriptClient;
     }
 
+    /**
+     * Get the text slugger.
+     *
+     * @return TextSlugger
+     */
     public function getTextSlugger(): TextSlugger
     {
         if ($this->textSlugger === null) {
@@ -306,6 +388,11 @@ final class BacklogCommandFactory
         return $this->textSlugger;
     }
 
+    /**
+     * Get the retry policy.
+     *
+     * @return RetryPolicy
+     */
     public function getRetryPolicy(): RetryPolicy
     {
         if ($this->retryPolicy === null) {

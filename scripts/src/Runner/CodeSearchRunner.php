@@ -77,7 +77,8 @@ final class CodeSearchRunner extends AbstractScriptRunner
     /**
      * Executes a source search across backend and frontend code.
      *
-     * @param array<string> $args
+     * @param list<string> $args
+     * @return int
      */
     public function run(array $args): int
     {
