@@ -406,14 +406,14 @@ final class ReviewRunner extends AbstractScriptRunner
             return 0;
         }
 
-        if (!is_file($this->projectRoot . '/backend/vendor/bin/phpstan')) {
-            echo "PHPStan: UNAVAILABLE (run composer install in the backend container)\n";
+        if (!is_file($this->projectRoot . '/scripts/vendor/bin/phpstan')) {
+            echo "PHPStan: UNAVAILABLE (run php scripts/scripts-install.php)\n";
             return 0;
         }
 
         // --debug forces single-threaded mode, required on WSL2 where parallel worker IPC fails
         [$exitCode, $lines] = $this->runCommand(
-            'php backend/vendor/bin/phpstan analyse --configuration backend/phpstan.neon --debug'
+            'php scripts/vendor/bin/phpstan analyse --configuration config/phpstan.neon --debug'
         );
 
         foreach ($lines as $line) {
