@@ -262,7 +262,7 @@ Validate local child task review commands.
    - create a local review body under `local/tmp/`
    - `php scripts/backlog.php task-review-reject test-scoped-feature/test-child-a --body-file local/tmp/test-task-review-reject.md`
 5. Rework it:
-   - `php scripts/backlog.php task-rework --agent d01 test-scoped-feature/test-child-a`
+   - `php scripts/backlog.php rework --agent d01 test-scoped-feature/test-child-a`
 6. Submit again and approve:
    - `php scripts/backlog.php task-review-request --agent d01 test-scoped-feature/test-child-a`
    - `php scripts/backlog.php task-review-approve test-scoped-feature/test-child-a`
@@ -314,7 +314,7 @@ Validate remote feature review transitions.
 4. Reject:
    - `php scripts/backlog.php feature-review-reject test-scoped-feature --body-file local/tmp/test-feature-review-reject.md`
 5. Rework:
-   - `php scripts/backlog.php feature-rework --agent d01 test-scoped-feature`
+   - `php scripts/backlog.php rework --agent d01 test-scoped-feature`
 6. Request review again, then approve:
    - `php scripts/backlog.php feature-review-request --agent d01 test-scoped-feature`
    - `php scripts/backlog.php feature-review-approve test-scoped-feature`

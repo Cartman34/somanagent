@@ -42,7 +42,7 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $driver->assertFeatureReviewRejectFails($context->fixFeature, $invalidRejectBody, 'Review body items must be plain findings');
         $driver->rejectFeatureReview($context->fixFeature, $rejectBody);
         $driver->assertReviewContains($context->fixFeature);
-        $driver->reworkFeature($context->agentPrimary, $context->fixFeature);
+        $driver->rework($context->agentPrimary, $context->fixFeature);
         $driver->requestFeatureReview($context->agentPrimary, $context->fixFeature);
         $driver->approveFeature($context->fixFeature, $approveBody);
         $driver->blockFeature($context->agentPrimary, $context->fixFeature);

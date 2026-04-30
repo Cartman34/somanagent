@@ -1,0 +1,18 @@
+description: 'Move a rejected task or feature back to development'
+arguments:
+  -
+    name: '[<feature>|<task>|<feature/task>]'
+    description: 'Optional explicit reference. Use <feature/task> for a child task, a plain slug for a feature or a uniquely named task.'
+options:
+  -
+    name: '--agent'
+    description: 'Developer agent code owning the entry'
+examples:
+  - 'php scripts/backlog.php rework --agent agent-01'
+  - 'php scripts/backlog.php rework --agent agent-01 onboarding/task-copy-review'
+  - 'php scripts/backlog.php rework --agent agent-01 delete-question-reply'
+notes:
+  - 'Without an explicit reference, resolves the single rejected entry (task or feature) assigned to the provided agent.'
+  - 'With a <feature/task> reference, targets that child task. With a plain slug, tries feature first then task; errors if both match.'
+  - 'Displays stored review notes from local/backlog-review.md before the success message.'
+  - 'Reopens the entry branch in the agent worktree. Review notes are preserved until the next review request clears them.'

@@ -29,7 +29,7 @@ examples:
   - 'php scripts/backlog.php task-remove 8'
   - 'php scripts/backlog.php task-review-request --agent agent-01'
   - 'php scripts/backlog.php task-review-approve onboarding/task-copy-review'
-  - 'php scripts/backlog.php task-rework --agent agent-01 onboarding/task-copy-review'
+  - 'php scripts/backlog.php rework --agent agent-01 onboarding/task-copy-review'
   - 'php scripts/backlog.php feature-start --agent agent-01'
   - 'php scripts/backlog.php feature-release --agent agent-01'
   - 'php scripts/backlog.php feature-task-merge --agent agent-01'

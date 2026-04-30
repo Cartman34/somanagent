@@ -297,13 +297,13 @@ MD);
         $this->assertBacklogFails(['task-review-reject', $reference, '--body-file', $bodyFile], $needle);
     }
 
-    /**
-     * @param string $agent Agent performing the rework
-     * @param string $reference Task reference to rework
-     */
-    public function reworkTask(string $agent, string $reference): void
+    public function rework(string $agent, string $reference = ''): void
     {
-        $this->runBacklog(['task-rework', '--agent', $agent, $reference]);
+        $args = ['rework', '--agent', $agent];
+        if ($reference !== '') {
+            $args[] = $reference;
+        }
+        $this->runBacklog($args);
     }
 
     /**
@@ -368,19 +368,6 @@ MD);
         $this->assertBacklogFails(['feature-review-approve', $feature, '--body-file', $bodyFile], $needle);
     }
 
-    /**
-     * @param string $agent Agent performing the rework
-     * @param string $feature Feature name to rework
-     */
-    public function reworkFeature(string $agent, string $feature): void
-    {
-        $this->runBacklog(['feature-rework', '--agent', $agent, $feature]);
-    }
-
-    /**
-     * @param string $feature Feature name to approve
-     * @param string $bodyFile Path to approve body file
-     */
     public function approveFeature(string $feature, string $bodyFile): void
     {
         $this->runBacklog(['feature-review-approve', $feature, '--body-file', $bodyFile]);

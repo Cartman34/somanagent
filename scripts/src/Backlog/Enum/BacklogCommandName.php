@@ -23,14 +23,13 @@ enum BacklogCommandName: string
     case TASK_REVIEW_CHECK = 'task-review-check';
     case TASK_REVIEW_REJECT = 'task-review-reject';
     case TASK_REVIEW_APPROVE = 'task-review-approve';
-    case TASK_REWORK = 'task-rework';
+    case REWORK = 'rework';
     case FEATURE_START = 'feature-start';
     case FEATURE_RELEASE = 'feature-release';
     case FEATURE_TASK_ADD = 'feature-task-add';
     case FEATURE_TASK_MERGE = 'feature-task-merge';
     case FEATURE_ASSIGN = 'feature-assign';
     case FEATURE_UNASSIGN = 'feature-unassign';
-    case FEATURE_REWORK = 'feature-rework';
     case FEATURE_BLOCK = 'feature-block';
     case FEATURE_UNBLOCK = 'feature-unblock';
     case FEATURE_LIST = 'feature-list';
