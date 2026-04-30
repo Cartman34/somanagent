@@ -166,37 +166,18 @@ final class GitClient
         $this->runNetwork($command);
     }
 
-    public function fetchLocalBranch(string $branch, string $remote = 'origin'): void
+    public function fetch(string $remote = 'origin', ?string $branch = null, ?string $destination = null, ?string $worktree = null): void
     {
-        $this->runNetwork(sprintf(
-            'git fetch %s %s:%s',
-            escapeshellarg($remote),
-            escapeshellarg($branch),
-            escapeshellarg($branch),
-        ));
-    }
-
-    /**
-     * Fetches a specific branch from a remote repository.
-     *
-     * @param string $branch Branch name to fetch
-     * @param string $remote Remote name (default: origin)
-     * @param string|null $worktree Optional worktree path to run command in
-     */
-    public function fetchRemoteBranch(string $branch, string $remote = 'origin', ?string $worktree = null): void
-    {
-        $command = sprintf(
-            'fetch %s %s:%s',
-            escapeshellarg($remote),
-            escapeshellarg($branch),
-            escapeshellarg('refs/remotes/' . $remote . '/' . $branch)
-        );
-        if ($worktree !== null) {
-            $command = $this->inPath($worktree, $command);
-        } else {
-            $command = 'git ' . $command;
+        $parts = ['fetch', escapeshellarg($remote)];
+        if ($branch !== null) {
+            $parts[] = $destination !== null
+                ? escapeshellarg($branch) . ':' . escapeshellarg($destination)
+                : escapeshellarg($branch);
         }
-
+        $subCommand = implode(' ', $parts);
+        $command = $worktree !== null
+            ? $this->inPath($worktree, $subCommand)
+            : 'git ' . $subCommand;
         $this->runNetwork($command);
     }
 
