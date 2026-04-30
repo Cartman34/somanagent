@@ -26,6 +26,15 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
 
     private PullRequestService $pullRequestService;
 
+    /**
+     * @param BacklogPresenter $presenter
+     * @param bool $dryRun
+     * @param string $projectRoot
+     * @param BacklogBoardService $boardService
+     * @param BacklogWorktreeService $worktreeService
+     * @param GitService $gitService
+     * @param PullRequestService $pullRequestService
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
