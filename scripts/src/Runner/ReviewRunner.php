@@ -397,10 +397,8 @@ final class ReviewRunner extends AbstractScriptRunner
      */
     private function printPhpstanValidation(array $phpFiles): int
     {
-        $backendPhpFiles = array_filter($phpFiles, static fn(string $path): bool => str_starts_with($path, 'backend/'));
-
-        if ($backendPhpFiles === []) {
-            echo "(no backend PHP files modified)\n";
+        if ($phpFiles === []) {
+            echo "(no backend or scripts PHP source files modified)\n";
             return 0;
         }
 
@@ -409,10 +407,7 @@ final class ReviewRunner extends AbstractScriptRunner
             return 0;
         }
 
-        // --debug forces single-threaded mode, required on WSL2 where parallel worker IPC fails
-        [$exitCode, $lines] = $this->runCommand(
-            'php scripts/vendor/bin/phpstan analyse --configuration config/phpstan.neon --debug'
-        );
+        [$exitCode, $lines] = $this->runCommand('php scripts/phpstan.php');
 
         foreach ($lines as $line) {
             echo $line . "\n";

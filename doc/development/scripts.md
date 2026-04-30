@@ -317,7 +317,7 @@ Blockers (exit code 1):
 - Failing file validation for the review scope
 - Missing or unused translation keys
 - Failing dedicated PHPUnit tests mapped from modified `backend/src/Service/...` files
-- Failing PHPStan analysis when backend PHP source files are in scope
+- Failing PHPStan analysis when backend or scripts PHP source files are in scope
 
 Informational (no exit code impact):
 - List of modified files
