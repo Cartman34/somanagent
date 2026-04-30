@@ -101,6 +101,9 @@ final class HelpRunner extends AbstractScriptRunner
     private function parseHeader(string $file): array
     {
         $lines       = file($file, FILE_IGNORE_NEW_LINES);
+        if ($lines === false) {
+            throw new \RuntimeException("Unable to read script file: $file");
+        }
         $description = '';
         $usages      = [];
 

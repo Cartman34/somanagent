@@ -216,6 +216,9 @@ final class GitClient
         ));
     }
 
+    /**
+     * @param list<string> $files
+     */
     public function updateIndexAssumeUnchanged(string $path, array $files): void
     {
         if ($files === []) {
@@ -321,6 +324,9 @@ final class GitClient
         $this->runNetwork('git pull');
     }
 
+    /**
+     * @return list<string>
+     */
     public function getChangedFiles(string $base, string $branch): array
     {
         return array_values(array_filter(explode("\n", trim($this->captureReadonly(sprintf(
@@ -340,6 +346,9 @@ final class GitClient
         return trim($this->captureReadonly($this->inPath($path, sprintf('rev-parse --git-path %s', escapeshellarg($subPath)))));
     }
 
+    /**
+     * @return list<string>
+     */
     public function getTrackedFiles(string $path, string $dir): array
     {
         return array_values(array_filter(explode("\n", trim($this->captureReadonly($this->inPath(

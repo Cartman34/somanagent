@@ -10,7 +10,6 @@ namespace SoManAgent\Script\Backlog\Command;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
-use SoManAgent\Script\Service\GitService;
 use SoManAgent\Script\Service\PullRequestService;
 
 /**
@@ -18,8 +17,6 @@ use SoManAgent\Script\Service\PullRequestService;
  */
 final class BacklogFeatureUnblockCommand extends AbstractBacklogCommand
 {
-    private GitService $gitService;
-
     private PullRequestService $pullRequestService;
 
     public function __construct(
@@ -27,11 +24,9 @@ final class BacklogFeatureUnblockCommand extends AbstractBacklogCommand
         bool $dryRun,
         string $projectRoot,
         BacklogBoardService $boardService,
-        GitService $gitService,
         PullRequestService $pullRequestService
     ) {
         parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
-        $this->gitService = $gitService;
         $this->pullRequestService = $pullRequestService;
     }
 

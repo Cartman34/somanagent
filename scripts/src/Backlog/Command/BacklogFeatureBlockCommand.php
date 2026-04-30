@@ -12,7 +12,6 @@ use SoManAgent\Script\Backlog\Enum\PullRequestTag;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
-use SoManAgent\Script\Service\GitService;
 use SoManAgent\Script\Service\PullRequestService;
 
 /**
@@ -20,8 +19,6 @@ use SoManAgent\Script\Service\PullRequestService;
  */
 final class BacklogFeatureBlockCommand extends AbstractBacklogCommand
 {
-    private GitService $gitService;
-
     private PullRequestService $pullRequestService;
 
     public function __construct(
@@ -29,11 +26,9 @@ final class BacklogFeatureBlockCommand extends AbstractBacklogCommand
         bool $dryRun,
         string $projectRoot,
         BacklogBoardService $boardService,
-        GitService $gitService,
         PullRequestService $pullRequestService
     ) {
         parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
-        $this->gitService = $gitService;
         $this->pullRequestService = $pullRequestService;
     }
 

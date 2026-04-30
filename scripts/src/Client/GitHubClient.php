@@ -96,6 +96,9 @@ final class GitHubClient
         return $result;
     }
 
+    /**
+     * @return array{0: int, 1: string}
+     */
     public function createPr(string $title, string $headBranch, string $baseBranch, string $bodyFilePath): array
     {
         $arguments = sprintf(

@@ -41,7 +41,8 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
     {
         $board = $this->loadBoard();
         $review = $this->loadReviewFile();
-        $agent = $this->boardService->sanitizeString((string) ($options['agent'] ?? ''));
+        $agentOption = $options['agent'] ?? null;
+        $agent = is_string($agentOption) ? $this->boardService->sanitizeString($agentOption) : null;
         if ($agent !== null) {
             $match = isset($commandArgs[0])
                 ? $this->boardService->resolveTaskByReference($board, $commandArgs[0], BacklogCommandName::FEATURE_TASK_MERGE->value)
@@ -53,10 +54,6 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
 
             $match = $this->boardService->resolveTaskByReference($board, $commandArgs[0], BacklogCommandName::FEATURE_TASK_MERGE->value);
         }
-        if ($match === null) {
-            throw new \RuntimeException('No task available for feature-task-merge.');
-        }
-
         $entry = $match->getEntry();
         $this->boardService->checkIsTaskEntry($entry) || throw new \RuntimeException('feature-task-merge only applies to kind=task entries.');
         if ($agent !== null && $entry->getAgent() !== $agent) {

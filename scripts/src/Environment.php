@@ -66,7 +66,7 @@ final class Environment
             '/^([A-Za-z]):/',
             static fn(array $m) => '/mnt/' . strtolower($m[1]),
             $path
-        );
+        ) ?? $path;
     }
 
     // ── Filesystem ────────────────────────────────────────────────────────────

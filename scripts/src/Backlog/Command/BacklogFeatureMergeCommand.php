@@ -104,6 +104,9 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         }
     }
 
+    /**
+     * @param array<string> $commandArgs
+     */
     private function resolveFeatureReferenceArgument(BacklogBoard $board, array $commandArgs, string $command): string
     {
         if (!isset($commandArgs[0]) || trim($commandArgs[0]) === '') {

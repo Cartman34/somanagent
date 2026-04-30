@@ -91,10 +91,10 @@ final class GitHubRunner extends AbstractScriptRunner
             }
 
             match ($sub) {
-                'create' => $this->handleCreate($args, $flags),
-                'merge'  => $this->handleMerge($args, $flags),
-                'close'  => $this->handleClose($args),
-                'edit'   => $this->handleEdit($args, $flags),
+                'create' => $this->handleCreate(array_values($args), $flags),
+                'merge'  => $this->handleMerge(array_values($args), $flags),
+                'close'  => $this->handleClose(array_values($args)),
+                'edit'   => $this->handleEdit(array_values($args), $flags),
                 'list'   => $this->handleList(),
                 'view'   => $this->handleView($args),
                 default  => throw new \RuntimeException("Unknown subcommand: pr {$sub}. Available: create, merge, close, edit, list, view"),
@@ -107,7 +107,8 @@ final class GitHubRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $args
+     * @param list<string> $args
+     * @param array<string, string|true> $flags
      */
     private function handleCreate(array $args, array $flags): void
     {
@@ -116,10 +117,11 @@ final class GitHubRunner extends AbstractScriptRunner
         $base     = $flags['base']      ?? GitService::MAIN_BRANCH;
         $bodyFile = $flags['body-file'] ?? null;
 
-        if ($bodyFile !== null) {
+        if (is_string($bodyFile)) {
             $body = $this->readBodyFile($bodyFile);
         } else {
-            $body = $flags['body'] ?? '';
+            $bodyValue = $flags['body'] ?? '';
+            $body = is_string($bodyValue) ? $bodyValue : '';
         }
 
         if (!$title) {
@@ -144,7 +146,7 @@ final class GitHubRunner extends AbstractScriptRunner
             'base'  => $base,
         ]);
 
-        if ($bodyFile !== null) {
+        if (is_string($bodyFile)) {
             $this->deleteBodyFile($bodyFile);
         }
 
@@ -152,7 +154,8 @@ final class GitHubRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $args
+     * @param list<string> $args
+     * @param array<string, string|true> $flags
      */
     private function handleMerge(array $args, array $flags): void
     {
@@ -175,7 +178,7 @@ final class GitHubRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $args
+     * @param list<string> $args
      */
     private function handleClose(array $args): void
     {
@@ -194,7 +197,8 @@ final class GitHubRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $args
+     * @param list<string> $args
+     * @param array<string, string|true> $flags
      */
     private function handleEdit(array $args, array $flags): void
     {
@@ -306,26 +310,40 @@ final class GitHubRunner extends AbstractScriptRunner
     /**
      * Call the GitHub REST API.
      *
-     * @return array<mixed>
+     * @param array<string, mixed> $body
+     *
+     * @return array<string, mixed>
      */
     private function api(string $method, string $path, array $body = []): array
     {
+        if ($method === '') {
+            throw new \RuntimeException('GitHub API method cannot be empty.');
+        }
+
         $url = "https://api.github.com/repos/{$this->repo}{$path}";
         $ch  = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CUSTOMREQUEST  => $method,
-            CURLOPT_HTTPHEADER     => [
-                "Authorization: Bearer {$this->token}",
-                'Accept: application/vnd.github+json',
-                'X-GitHub-Api-Version: 2022-11-28',
-                'User-Agent: somanagent-script',
-                'Content-Type: application/json',
-            ],
-            CURLOPT_POSTFIELDS => $body ? json_encode($body) : null,
+        if ($ch === false) {
+            throw new \RuntimeException('Unable to initialize GitHub API request.');
+        }
+        $postFields = $body !== [] ? json_encode($body) : null;
+        if ($postFields === false) {
+            throw new \RuntimeException('Unable to encode GitHub API request body.');
+        }
+
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Authorization: Bearer {$this->token}",
+            'Accept: application/vnd.github+json',
+            'X-GitHub-Api-Version: 2022-11-28',
+            'User-Agent: somanagent-script',
+            'Content-Type: application/json',
         ]);
+        if ($postFields !== null) {
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
+        }
         $response = curl_exec($ch);
-        if ($response === false) {
+        if (!is_string($response)) {
             $error = curl_error($ch);
             curl_close($ch);
             throw new \RuntimeException('GitHub API transport error: ' . ($error !== '' ? $error : 'unknown curl error'));
@@ -413,7 +431,12 @@ final class GitHubRunner extends AbstractScriptRunner
         $token   = null;
 
         if (file_exists($envFile)) {
-            foreach (file($envFile) as $line) {
+            $lines = file($envFile);
+            if ($lines === false) {
+                throw new \RuntimeException("Unable to read .env file: $envFile");
+            }
+
+            foreach ($lines as $line) {
                 $line = trim($line);
                 if (str_starts_with($line, 'GITHUB_TOKEN=')) {
                     $token = trim(substr($line, strlen('GITHUB_TOKEN=')));
@@ -426,7 +449,8 @@ final class GitHubRunner extends AbstractScriptRunner
         }
         $this->token = $token;
 
-        $remote = trim(shell_exec('git remote get-url origin 2>/dev/null') ?? '');
+        $remoteRaw = shell_exec('git remote get-url origin 2>/dev/null');
+        $remote = is_string($remoteRaw) ? trim($remoteRaw) : '';
         $repo   = null;
         if (preg_match('#github\.com[:/](.+?)(?:\.git)?$#', $remote, $m)) {
             $repo = $m[1];

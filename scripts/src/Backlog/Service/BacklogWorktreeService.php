@@ -431,6 +431,9 @@ final class BacklogWorktreeService
 
             $targetPath = $worktree . '/' . $relativePath;
             $parent = preg_replace('/\/[^\/]+$/', '', $targetPath);
+            if ($parent === null) {
+                throw new \RuntimeException("Unable to resolve parent directory for {$targetPath}");
+            }
             if (!$this->fs->isDirectory($parent)) {
                 if ($this->dryRun) {
                     $this->logVerbose('[dry-run] Would create directory: ' . $this->git->toRelativeProjectPath($parent));
@@ -473,6 +476,9 @@ final class BacklogWorktreeService
         }
 
         $parent = preg_replace('/\/[^\/]+$/', '', $excludePath);
+        if ($parent === null) {
+            throw new \RuntimeException("Unable to resolve parent directory for {$excludePath}");
+        }
         if (!$this->fs->isDirectory($parent)) {
             $this->fs->makeDirectory($parent);
         }
@@ -644,9 +650,7 @@ final class BacklogWorktreeService
             $path = $block['path'];
             $branch = $block['branch'];
 
-            if ($path !== null) {
-                $bindings[] = ['path' => $path, 'branch' => $branch];
-            }
+            $bindings[] = ['path' => $path, 'branch' => $branch];
         }
 
         return $bindings;

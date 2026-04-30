@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Runner;
 
 /**
- * Local code refactoring tools for backend source files.
+ * Local code refactoring tools for backend and scripts source files.
  */
 final class CodeRefactoRunner extends AbstractScriptRunner
 {
@@ -16,9 +16,18 @@ final class CodeRefactoRunner extends AbstractScriptRunner
     private const COMMAND_ADD_MISSING_ARRAY_TYPES = 'add-missing-array-types';
     private const COMMAND_STRIP_WHAT_COMMENTS = 'strip-what-comments';
 
+    private const SCOPE_BACKEND = 'backend';
+    private const SCOPE_SCRIPTS = 'scripts';
+
+    /** @var array<string, array{directories: list<string>}> */
+    private const SCOPES = [
+        self::SCOPE_BACKEND => ['directories' => ['backend/src']],
+        self::SCOPE_SCRIPTS => ['directories' => ['scripts/src']],
+    ];
+
     protected function getDescription(): string
     {
-        return 'Local code refactoring tools for backend source files.';
+        return 'Local code refactoring tools for backend and scripts source files.';
     }
 
     protected function getCommands(): array
@@ -34,6 +43,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
     {
         return array_merge(parent::getExecutionModeOptions(), [
             ['name' => '--todo', 'description' => 'Used with add-missing-array-types to inject TODO comments'],
+            ['name' => '--scope', 'description' => 'Process one scope; repeat --scope=backend --scope=scripts for multiple scopes'],
         ]);
     }
 
@@ -42,7 +52,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
         return [
             'php scripts/code-refacto.php fix-inline-phpdoc --dry-run',
             'php scripts/code-refacto.php add-missing-array-types --todo --verbose',
-            'php scripts/code-refacto.php strip-what-comments',
+            'php scripts/code-refacto.php strip-what-comments --scope=scripts',
         ];
     }
 
@@ -59,11 +69,12 @@ final class CodeRefactoRunner extends AbstractScriptRunner
             return 0;
         }
 
-        $command = array_shift($args);
-        $options = $this->parseOptions($args);
+        $command = $args[0];
+        $remainingArgs = array_values(array_slice($args, 1));
+        $options = $this->parseOptions($remainingArgs);
         $this->configureExecutionModes($options);
 
-        $files = $this->getBackendFiles();
+        $files = $this->getSourceFiles($options);
 
         switch ($command) {
             case self::COMMAND_FIX_INLINE_PHPDOC:
@@ -77,6 +88,11 @@ final class CodeRefactoRunner extends AbstractScriptRunner
         }
     }
 
+    /**
+     * @param list<string> $args
+     *
+     * @return array<string, string|true|list<string>>
+     */
     private function parseOptions(array &$args): array
     {
         $options = [];
@@ -86,7 +102,12 @@ final class CodeRefactoRunner extends AbstractScriptRunner
                 $option = substr($arg, 2);
                 if (str_contains($option, '=')) {
                     [$key, $val] = explode('=', $option, 2);
-                    $options[$key] = $val;
+                    if ($key === 'scope') {
+                        $scopes = $options[$key] ?? [];
+                        $options[$key] = array_merge(is_array($scopes) ? $scopes : [], [$val]);
+                    } else {
+                        $options[$key] = $val;
+                    }
                 } else {
                     $options[$option] = true;
                 }
@@ -100,31 +121,71 @@ final class CodeRefactoRunner extends AbstractScriptRunner
     }
 
     /**
+     * @param array<string, string|true|list<string>> $options
+     *
      * @return list<string>
      */
-    private function getBackendFiles(): array
+    private function getSourceFiles(array $options): array
     {
-        $directory = $this->projectRoot . '/backend/src';
-        if (!is_dir($directory)) {
-            return [];
+        $directories = [];
+        foreach ($this->resolveScopes($options) as $scope) {
+            foreach (self::SCOPES[$scope]['directories'] as $directory) {
+                $directories[] = $this->projectRoot . '/' . $directory;
+            }
         }
-        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory));
+
         $files = [];
-        foreach ($iterator as $file) {
-            if ($file->isFile() && $file->getExtension() === 'php') {
-                $files[] = $file->getPathname();
+        foreach ($directories as $directory) {
+            if (!is_dir($directory)) {
+                continue;
+            }
+
+            $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory, \RecursiveDirectoryIterator::SKIP_DOTS));
+            foreach ($iterator as $file) {
+                if ($file->isFile() && $file->getExtension() === 'php') {
+                    $files[] = $file->getPathname();
+                }
             }
         }
 
         return $files;
     }
 
+    /**
+     * @param array<string, string|true|list<string>> $options
+     * @return list<string>
+     */
+    private function resolveScopes(array $options): array
+    {
+        $scopeOption = $options['scope'] ?? null;
+        $scopeOptions = is_array($scopeOption) ? $scopeOption : (is_string($scopeOption) ? [$scopeOption] : []);
+
+        $scopes = $scopeOptions;
+        if ($scopes === []) {
+            $scopes = array_keys(self::SCOPES);
+        }
+
+        foreach ($scopes as $scope) {
+            if (!isset(self::SCOPES[$scope])) {
+                throw new \RuntimeException(sprintf('Unknown scope "%s". Available scopes: %s.', $scope, implode(', ', array_keys(self::SCOPES))));
+            }
+        }
+
+        return array_values(array_unique($scopes));
+    }
+
+    /**
+     * @param list<string> $files
+     */
     private function fixInlinePhpDoc(array $files): int
     {
         $this->console->info('Fixing inline PHPDoc...');
         $count = 0;
         foreach ($files as $file) {
             $content = file_get_contents($file);
+            if ($content === false) {
+                throw new \RuntimeException(sprintf('Unable to read file: %s', $file));
+            }
             $newContent = $content;
 
             // Fix /* @var to /** @var
@@ -143,7 +204,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
                 },
                 $newContent
             );
-            if ($fixed !== $newContent) {
+            if ($fixed !== null && $fixed !== $newContent) {
                 $newContent = $fixed;
             }
 
@@ -156,12 +217,18 @@ final class CodeRefactoRunner extends AbstractScriptRunner
         return 0;
     }
 
+    /**
+     * @param list<string> $files
+     */
     private function addMissingArrayTypes(array $files, bool $todo): int
     {
         $this->console->info('Adding missing array types...');
         $count = 0;
         foreach ($files as $file) {
             $lines = file($file);
+            if ($lines === false) {
+                throw new \RuntimeException(sprintf('Unable to read file: %s', $file));
+            }
             $newLines = $lines;
             $changed = false;
 
@@ -170,8 +237,6 @@ final class CodeRefactoRunner extends AbstractScriptRunner
                 // Match method signature returning array
                 if (preg_match('/^(?P<indent>[ \t]+)(?P<signature>(?:public|protected|private)\s+function\s+\w+\s*\(.*?\)\s*:\s*array)/', $line, $matches)) {
                     $indent = $matches['indent'];
-                    $signature = $matches['signature'];
-
                     // Look for docblock just above
                     $docStart = -1;
                     $docEnd = -1;
@@ -233,6 +298,9 @@ final class CodeRefactoRunner extends AbstractScriptRunner
         return 0;
     }
 
+    /**
+     * @param list<string> $files
+     */
     private function stripWhatComments(array $files): int
     {
         $this->console->info('Stripping what-comments...');
@@ -247,6 +315,9 @@ final class CodeRefactoRunner extends AbstractScriptRunner
         
         foreach ($files as $file) {
             $lines = file($file);
+            if ($lines === false) {
+                throw new \RuntimeException(sprintf('Unable to read file: %s', $file));
+            }
             $newLines = $lines;
             $changed = false;
 

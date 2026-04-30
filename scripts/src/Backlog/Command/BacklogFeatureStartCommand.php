@@ -141,16 +141,6 @@ final class BacklogFeatureStartCommand extends AbstractBacklogCommand
             $startedFeatureEntry = $featureEntry;
         }
 
-        foreach (array_slice($reserved, 1) as $task) {
-            $reservedEntry = $task->getEntry();
-            $reservedEntry->setFeature(null);
-            $reservedEntry->setAgent(null);
-            $featureEntry->appendExtraLines(['  - ' . $reservedEntry->getText()]);
-            foreach ($reservedEntry->getExtraLines() as $line) {
-                $featureEntry->appendExtraLines(['  ' . ltrim($line)]);
-            }
-        }
-
         $this->boardService->removeReservedTasks($board, $reserved);
         $entries = $board->getEntries(BacklogBoard::SECTION_ACTIVE);
         $entries[] = $featureEntry;

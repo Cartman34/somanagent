@@ -43,13 +43,21 @@ final class DbSchemaRunner extends AbstractScriptRunner
 
         $entities = [];
 
-        foreach (glob($entityDir . '/*.php') as $file) {
+        $files = glob($entityDir . '/*.php');
+        if ($files === false) {
+            throw new \RuntimeException("Unable to list entity directory: $entityDir");
+        }
+
+        foreach ($files as $file) {
             $content    = file_get_contents($file);
             $entityName = basename($file, '.php');
+            if ($content === false) {
+                throw new \RuntimeException("Unable to read entity file: $file");
+            }
 
             $table = preg_match('/#\[ORM\\\\Table\s*\(\s*name:\s*[\'"]([^\'"]+)[\'"]/', $content, $m)
                 ? $m[1]
-                : strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $entityName));
+                : strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $entityName) ?? $entityName);
 
             $columns   = [];
             $relations = [];

@@ -133,7 +133,7 @@ final class OpenApiConsistencyValidator
         $errors = [];
 
         foreach ($paths as $path => $pathItem) {
-            if (!is_string($path) || !is_array($pathItem)) {
+            if (!is_array($pathItem)) {
                 $errors[] = 'OpenAPI "paths" entries must use string keys and object values.';
                 continue;
             }

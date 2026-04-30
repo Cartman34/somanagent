@@ -253,7 +253,7 @@ final class BacklogCommandFactory
     public function getReviewBodyFormatter(): BacklogReviewBodyFormatter
     {
         if ($this->reviewBodyFormatter === null) {
-            $this->reviewBodyFormatter = new BacklogReviewBodyFormatter($this->projectRoot);
+            $this->reviewBodyFormatter = new BacklogReviewBodyFormatter();
         }
         return $this->reviewBodyFormatter;
     }

@@ -89,6 +89,9 @@ final class BoardEntry
         $this->extraLines = $lines;
     }
 
+    /**
+     * @param array<string> $lines
+     */
     public function appendExtraLines(array $lines): void
     {
         foreach ($lines as $line) {

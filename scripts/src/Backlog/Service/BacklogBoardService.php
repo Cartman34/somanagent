@@ -667,6 +667,7 @@ final class BacklogBoardService
         }
 
         $metadata = [];
+        $metaStartIndex = (int) $metaStartIndex;
         $metaLines = array_slice($lines, $metaStartIndex + 1);
         if ($metaLines === []) {
             return [$lines, []];
@@ -762,6 +763,9 @@ final class BacklogBoardService
         return new BoardEntryMatch(BacklogBoard::SECTION_TODO, 0, $entries[0]);
     }
 
+    /**
+     * @param list<BoardEntryMatch> $reserved
+     */
     public function removeReservedTasks(BacklogBoard $board, array $reserved): void
     {
         $entries = $board->getEntries(BacklogBoard::SECTION_TODO);
@@ -838,7 +842,7 @@ final class BacklogBoardService
         $blocks[] = [
             'task' => $task,
             'text' => $taskEntry->getText(),
-            'extraLines' => $taskEntry->getExtraLines(),
+            'extraLines' => array_values($taskEntry->getExtraLines()),
         ];
         $this->rebuildFeatureFromContributionBlocks($featureEntry, $blocks);
     }
@@ -898,10 +902,11 @@ final class BacklogBoardService
     }
 
     /**
-     * @return array<int, array{task: string, text: string, extraLines: array<string>}>
+     * @return list<array{task: string, text: string, extraLines: list<string>}>
      */
     public function getFeatureContributionBlocks(BoardEntry $featureEntry): array
     {
+        /** @var list<array{task: string, text: string, extraLines: list<string>}> $blocks */
         $blocks = [];
         $currentIndex = null;
 
@@ -916,12 +921,17 @@ final class BacklogBoardService
                 continue;
             }
 
-            $blocks[$currentIndex]['extraLines'][] = '  ' . ltrim($line);
+            $block = $blocks[$currentIndex];
+            $block['extraLines'][] = '  ' . ltrim($line);
+            $blocks[$currentIndex] = $block;
         }
 
         return $blocks;
     }
 
+    /**
+     * @param list<array{task: string, text: string, extraLines: list<string>}> $blocks
+     */
     private function rebuildFeatureFromContributionBlocks(BoardEntry $featureEntry, array $blocks): void
     {
         $lines = [];
@@ -1117,7 +1127,7 @@ final class BacklogBoardService
             array_pop($normalized);
         }
 
-        return array_values($normalized);
+        return $normalized;
     }
 
     /**

@@ -84,6 +84,9 @@ final class BacklogFeatureReviewApproveCommand extends AbstractBacklogCommand
         $this->presenter->displaySuccess(sprintf('Approved feature %s with [%s] PR title', $feature, $tag->value));
     }
 
+    /**
+     * @param array<string> $commandArgs
+     */
     private function resolveFeatureReferenceArgument(BacklogBoard $board, array $commandArgs, string $command): string
     {
         if (!isset($commandArgs[0]) || trim($commandArgs[0]) === '') {

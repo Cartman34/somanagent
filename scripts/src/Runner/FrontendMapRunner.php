@@ -42,6 +42,9 @@ final class FrontendMapRunner extends AbstractScriptRunner
 
         if (file_exists($appFile)) {
             $content = file_get_contents($appFile);
+            if ($content === false) {
+                throw new \RuntimeException("Unable to read frontend app file: $appFile");
+            }
 
             preg_match_all('/<Route\s+path="([^"]+)"\s+element=\{<(\w+)(?:\s*\/)?>/', $content, $m, PREG_SET_ORDER);
             foreach ($m as $match) {
@@ -58,9 +61,17 @@ final class FrontendMapRunner extends AbstractScriptRunner
         $pagesDir = $frontendSrc . '/pages';
 
         if (is_dir($pagesDir)) {
-            foreach (glob($pagesDir . '/*.tsx') as $file) {
+            $pageFiles = glob($pagesDir . '/*.tsx');
+            if ($pageFiles === false) {
+                throw new \RuntimeException("Unable to list pages directory: $pagesDir");
+            }
+
+            foreach ($pageFiles as $file) {
                 $name = basename($file, '.tsx');
                 $src  = file_get_contents($file);
+                if ($src === false) {
+                    throw new \RuntimeException("Unable to read page file: $file");
+                }
 
                 $apis = [];
                 preg_match_all("/from\s+['\"](?:@\/api\/|\.\.\/api\/|\.\/api\/)([^'\"]+)['\"]/", $src, $am);
@@ -85,12 +96,20 @@ final class FrontendMapRunner extends AbstractScriptRunner
         $apiDir     = $frontendSrc . '/api';
 
         if (is_dir($apiDir)) {
-            foreach (glob($apiDir . '/*.ts') as $file) {
+            $apiFiles = glob($apiDir . '/*.ts');
+            if ($apiFiles === false) {
+                throw new \RuntimeException("Unable to list API directory: $apiDir");
+            }
+
+            foreach ($apiFiles as $file) {
                 $name = basename($file, '.ts');
                 if ($name === 'client') {
                     continue;
                 }
                 $src = file_get_contents($file);
+                if ($src === false) {
+                    throw new \RuntimeException("Unable to read API file: $file");
+                }
 
                 $endpoints = [];
                 preg_match_all("/apiClient\.(get|post|put|patch|delete)\s*\(\s*[`'\"]([^`'\"]+)[`'\"]/" , $src, $em, PREG_SET_ORDER);
@@ -98,9 +117,8 @@ final class FrontendMapRunner extends AbstractScriptRunner
                     $endpoints[] = strtoupper($e[1]) . ' ' . $e[2];
                 }
 
-                $types = [];
                 preg_match_all('/export\s+(?:interface|type)\s+(\w+)/', $src, $tm);
-                $types = $tm[1] ?? [];
+                $types = $tm[1];
 
                 $apiClients[] = [
                     'module'    => $name,

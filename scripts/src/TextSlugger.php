@@ -16,6 +16,7 @@ final class TextSlugger
 
     private int $maxLength;
 
+    /** @var non-empty-string */
     private string $separator;
 
     public function __construct(
@@ -23,8 +24,13 @@ final class TextSlugger
         int $maxLength = 64,
         string $separator = '-',
     ) {
+        if ($separator === '') {
+            throw new \InvalidArgumentException('Slug separator cannot be empty.');
+        }
+
         $this->maxWords = $maxWords;
         $this->maxLength = $maxLength;
+        /** @var non-empty-string $separator */
         $this->separator = $separator;
     }
 

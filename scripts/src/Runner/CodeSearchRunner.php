@@ -128,10 +128,6 @@ final class CodeSearchRunner extends AbstractScriptRunner
             ));
         }
 
-        if (!isset(self::SCOPE_DIRECTORIES[$scope])) {
-            $this->console->fail('Invalid scope configuration.');
-        }
-
         if ($engine === self::ENGINE_RG && $this->commandSucceeds('command -v rg')) {
             return $this->runRipgrepSearch($term, $scope, $context);
         }
@@ -166,6 +162,9 @@ final class CodeSearchRunner extends AbstractScriptRunner
                 }
 
                 $lines = file($file->getPathname(), FILE_IGNORE_NEW_LINES);
+                if ($lines === false) {
+                    throw new \RuntimeException(sprintf('Unable to read file: %s', $file->getPathname()));
+                }
                 foreach ($lines as $i => $line) {
                     if (stripos($line, $term) !== false) {
                         $results[] = [

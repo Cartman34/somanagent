@@ -52,7 +52,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
      */
     public function run(array $args): int
     {
-        [$commandArgs, $options] = $this->parseArgs($args);
+        [$commandArgs, $options] = $this->parseArgs(array_values($args));
         $this->configureExecutionModes($options);
 
         if ($commandArgs !== []) {
@@ -103,8 +103,8 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $args
-     * @return array{0: array<string>, 1: array<string, string|bool>}
+     * @param list<string> $args
+     * @return array{0: list<string>, 1: array<string, string|bool>}
      */
     private function parseArgs(array $args): array
     {
@@ -112,10 +112,8 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
         $options = [];
 
         while ($args !== []) {
-            $arg = array_shift($args);
-            if ($arg === null) {
-                continue;
-            }
+            $arg = $args[0];
+            array_shift($args);
 
             if (str_starts_with($arg, '--')) {
                 $option = substr($arg, 2);
@@ -127,7 +125,8 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
 
                 $next = $args[0] ?? null;
                 if ($next !== null && !str_starts_with($next, '--')) {
-                    $options[$option] = array_shift($args);
+                    $options[$option] = $next;
+                    array_shift($args);
                 } else {
                     $options[$option] = true;
                 }

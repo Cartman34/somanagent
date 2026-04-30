@@ -62,7 +62,7 @@ final class NodeRunner extends AbstractScriptRunner
 
         try {
             $runner = new NodeCommandRunner($this->app);
-            return $runner->run($args);
+            return $runner->run(array_values($args));
         } catch (\InvalidArgumentException $e) {
             $this->console->fail($e->getMessage());
         }

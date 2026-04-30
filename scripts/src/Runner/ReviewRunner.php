@@ -119,10 +119,8 @@ final class ReviewRunner extends AbstractScriptRunner
         $base = null;
 
         while ($args !== []) {
-            $arg = array_shift($args);
-            if ($arg === null) {
-                continue;
-            }
+            $arg = $args[0];
+            array_shift($args);
 
             if (str_starts_with($arg, '--base=')) {
                 $base = substr($arg, strlen('--base='));

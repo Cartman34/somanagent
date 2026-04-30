@@ -79,6 +79,9 @@ final class FilesystemClient implements FilesystemClientInterface
 
         $iterator = new \FilesystemIterator($source, \FilesystemIterator::SKIP_DOTS);
         foreach ($iterator as $item) {
+            if (!$item instanceof \SplFileInfo) {
+                continue;
+            }
             $this->copyPath($item->getPathname(), $target . '/' . $item->getBasename());
         }
     }
