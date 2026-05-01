@@ -211,17 +211,36 @@ final class BacklogRunner extends AbstractScriptRunner
 
     private function initializeLocalFiles(): void
     {
+        if ($this->dryRun) {
+            return;
+        }
+
         $localDir = dirname($this->boardPath());
         if (!is_dir($localDir)) {
-            mkdir($localDir, 0755, true);
+            if ($this->verbose) {
+                $this->console->line("Creating local directory: {$localDir}");
+            }
+            if (mkdir($localDir, 0755, true) === false) {
+                throw new \RuntimeException("Failed to create local directory: {$localDir}");
+            }
         }
 
         if (!is_file($this->boardPath())) {
-            file_put_contents($this->boardPath(), self::INITIAL_BOARD_CONTENT);
+            if ($this->verbose) {
+                $this->console->line("Creating backlog board file: {$this->boardPath()}");
+            }
+            if (file_put_contents($this->boardPath(), self::INITIAL_BOARD_CONTENT) === false) {
+                throw new \RuntimeException("Failed to create backlog board file: {$this->boardPath()}");
+            }
         }
 
         if (!is_file($this->reviewFilePath())) {
-            file_put_contents($this->reviewFilePath(), self::INITIAL_REVIEW_CONTENT);
+            if ($this->verbose) {
+                $this->console->line("Creating backlog review file: {$this->reviewFilePath()}");
+            }
+            if (file_put_contents($this->reviewFilePath(), self::INITIAL_REVIEW_CONTENT) === false) {
+                throw new \RuntimeException("Failed to create backlog review file: {$this->reviewFilePath()}");
+            }
         }
     }
 

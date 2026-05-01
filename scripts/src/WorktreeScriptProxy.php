@@ -85,7 +85,11 @@ final class WorktreeScriptProxy
      */
     public static function run(array $argv): void
     {
-        $instance = self::detect($argv[0]);
+        try {
+            $instance = self::detect($argv[0]);
+        } catch (\RuntimeException) {
+            return;
+        }
 
         if (!$instance->isLinkedWorktree() || in_array(self::FORCE_FLAG, $argv, true)) {
             return;
