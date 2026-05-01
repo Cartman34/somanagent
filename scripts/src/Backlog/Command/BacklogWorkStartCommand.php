@@ -85,7 +85,7 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
         } else {
             $singleFeature = $this->boardService->extractSingleFeaturePrefixMetadata($first->getText());
             [$featureEntry, $startedFeatureEntry] = $this->handlePlainFeature(
-                $worktree, $first, $agent, $branchTypeOverride, $singleFeature
+                $board, $worktree, $first, $agent, $branchTypeOverride, $singleFeature
             );
         }
 
@@ -176,6 +176,7 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
      * @return array{BoardEntry, BoardEntry}
      */
     private function handlePlainFeature(
+        BacklogBoard $board,
         string $worktree,
         BoardEntry $first,
         string $agent,
@@ -192,6 +193,14 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
         } else {
             $feature = $this->boardService->normalizeFeatureSlug($first->getText());
             $entryText = $first->getText();
+        }
+
+        if ($this->boardService->findParentFeatureEntry($board, $feature) !== null) {
+            throw new \RuntimeException(
+                "Feature {$feature} already exists in active entries.\n" .
+                "Use `php scripts/backlog.php work-start --agent={$agent}` only for new features, " .
+                "or prefix the task as [{$feature}][task-slug] to add a child task instead."
+            );
         }
 
         $branch = $branchType . '/' . $feature;

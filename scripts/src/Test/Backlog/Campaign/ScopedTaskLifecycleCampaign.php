@@ -40,7 +40,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
 
         $rejectBody = $driver->createBodyFile('test-task-review-reject.md', ['1. Reject child task for test workflow.']);
         $invalidRejectBody = $driver->createBodyFile('test-task-review-invalid.md', ['1. ### Task review']);
-        $driver->requestTaskReview($context->agentPrimary, $taskARef);
+        $driver->requestTaskReview($context->agentPrimary);
         if (!str_contains($driver->reviewNext(), $taskARef)) {
             throw new \RuntimeException('Expected review-next to return the active task review.');
         }
@@ -49,7 +49,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->rejectTaskReview($taskARef, $rejectBody);
         $driver->assertReviewContains($taskARef);
         $driver->rework($context->agentPrimary, $taskARef);
-        $driver->requestTaskReview($context->agentPrimary, $taskARef);
+        $driver->requestTaskReview($context->agentPrimary);
         $driver->approveTask($taskARef);
         $driver->assertReviewMissing($taskARef);
         $driver->mergeTask($taskARef);
@@ -64,11 +64,11 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
             $approveFeatureWithActiveTask,
             sprintf('feature-review-approve cannot continue while feature %s still has active task branches.', $context->scopedFeature),
         );
-        $driver->requestTaskReview($context->agentPrimary, $taskBRef);
+        $driver->requestTaskReview($context->agentPrimary);
         $driver->rejectTaskReview($taskBRef, $rejectFeatureTaskB);
         $driver->assertReviewContains('1. Reject second child task for coverage.');
         $driver->rework($context->agentPrimary, $taskBRef);
-        $driver->requestTaskReview($context->agentPrimary, $taskBRef);
+        $driver->requestTaskReview($context->agentPrimary);
         $driver->approveTask($taskBRef);
         $driver->mergeTask($taskBRef);
 

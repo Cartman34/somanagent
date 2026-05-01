@@ -246,11 +246,10 @@ MD);
 
     /**
      * @param string $agent Agent requesting the review
-     * @param string $reference Task reference (feature/task)
      */
-    public function requestTaskReview(string $agent, string $reference): void
+    public function requestTaskReview(string $agent): void
     {
-        $this->runBacklog(['task-review-request', '--agent', $agent, $reference]);
+        $this->runBacklog(['review-request', '--agent', $agent]);
     }
 
     /**
