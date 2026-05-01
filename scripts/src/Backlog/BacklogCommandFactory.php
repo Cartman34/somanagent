@@ -26,6 +26,7 @@ use SoManAgent\Script\Backlog\Command\BacklogFeatureTaskMergeCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureUnassignCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureUnblockCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewNextCommand;
+use SoManAgent\Script\Backlog\Command\BacklogReviewRequestCommand;
 use SoManAgent\Script\Backlog\Command\BacklogStatusCommand;
 use SoManAgent\Script\Backlog\Command\BacklogTaskCreateCommand;
 use SoManAgent\Script\Backlog\Command\BacklogTaskRemoveCommand;
@@ -137,6 +138,7 @@ final class BacklogCommandFactory
             BacklogCommandName::TASK_CREATE->value => BacklogTaskCreateCommand::class,
             BacklogCommandName::TASK_TODO_LIST->value => BacklogTaskTodoListCommand::class,
             BacklogCommandName::TASK_REMOVE->value => BacklogTaskRemoveCommand::class,
+            BacklogCommandName::REVIEW_REQUEST->value => BacklogReviewRequestCommand::class,
             BacklogCommandName::TASK_REVIEW_REQUEST->value => BacklogTaskReviewRequestCommand::class,
             BacklogCommandName::TASK_REVIEW_CHECK->value => BacklogTaskReviewCheckCommand::class,
             BacklogCommandName::TASK_REVIEW_REJECT->value => BacklogTaskReviewRejectCommand::class,

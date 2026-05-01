@@ -97,7 +97,7 @@ Rules:
 12. `kind=task` entries are local-only delivery units: they are never pushed and never get GitHub PRs.
 13. `feature-task-add --agent=<code> --feature-text=<text>` may absorb the next queued task into the current feature. If that queued task is prefixed as `[feature-slug][task-slug]`, it must target the current feature, it creates a new local child task entry, and it follows the same child-branch rules as `feature-start`.
 14. `feature-task-add` must not mix a plain queued task into a feature that already uses local child tasks.
-15. `task-review-request --agent=<code> [<task>|<feature/task>]` moves one child task to `review` after a green mechanical review in the task worktree.
+15. `review-request --agent=<code>` moves the agent's single active entry (`kind=task` or `kind=feature`) to `review` after a green mechanical review in the agent worktree. The command resolves the entry automatically — no disambiguation needed.
 16. `task-review-check`, `task-review-reject`, and `task-review-approve` apply only to `kind=task` entries and store local review notes under `local/backlog-review.md` with keys shaped as `<feature>/<task>`.
 17. `rework --agent=<code> [<feature>|<task>|<feature/task>]` moves one rejected task or feature back to `development`, displays its stored review notes, and reopens the entry branch in that agent worktree.
 18. For `kind=task` entries, `meta.stage=approved` means the reviewer review is OK, but it does not grant any additional merge permission beyond `development` or `review`.

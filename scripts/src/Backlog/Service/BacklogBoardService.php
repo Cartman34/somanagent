@@ -591,7 +591,7 @@ final class BacklogBoardService
         $stage = $this->getFeatureStage($entry);
         if ($this->checkIsTaskEntry($entry)) {
             return match ($stage) {
-                BacklogBoard::STAGE_IN_PROGRESS => "run `task-review-request --agent={$agent}` to submit the task for review",
+                BacklogBoard::STAGE_IN_PROGRESS => "run `review-request --agent={$agent}` to submit the task for review",
                 BacklogBoard::STAGE_IN_REVIEW   => 'wait for reviewer action on the active task',
                 BacklogBoard::STAGE_REJECTED    => "run `rework --agent={$agent}` to resume development on the rejected task",
                 BacklogBoard::STAGE_APPROVED    => "run `feature-task-merge --agent={$agent}` to merge the task into its parent feature",
@@ -600,7 +600,7 @@ final class BacklogBoardService
         }
 
         return match ($stage) {
-            BacklogBoard::STAGE_IN_PROGRESS => "run `feature-review-request --agent={$agent}` to submit for review, or `feature-release --agent={$agent}` if no commits were made",
+            BacklogBoard::STAGE_IN_PROGRESS => "run `review-request --agent={$agent}` to submit for review, or `feature-release --agent={$agent}` if no commits were made",
             BacklogBoard::STAGE_IN_REVIEW   => 'wait for reviewer action on the active feature',
             BacklogBoard::STAGE_REJECTED    => "run `rework --agent={$agent}` to resume development on the rejected feature",
             BacklogBoard::STAGE_APPROVED    => 'wait for the manager to merge the feature',
