@@ -18,7 +18,6 @@ use SoManAgent\Script\Backlog\Command\BacklogFeatureReleaseCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureReviewApproveCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureReviewCheckCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureReviewRejectCommand;
-use SoManAgent\Script\Backlog\Command\BacklogFeatureReviewRequestCommand;
 use SoManAgent\Script\Backlog\Command\BacklogEntryRenameCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReworkCommand;
 use SoManAgent\Script\Backlog\Command\BacklogWorkStartCommand;
@@ -33,7 +32,6 @@ use SoManAgent\Script\Backlog\Command\BacklogTaskRemoveCommand;
 use SoManAgent\Script\Backlog\Command\BacklogTaskReviewApproveCommand;
 use SoManAgent\Script\Backlog\Command\BacklogTaskReviewCheckCommand;
 use SoManAgent\Script\Backlog\Command\BacklogTaskReviewRejectCommand;
-use SoManAgent\Script\Backlog\Command\BacklogTaskReviewRequestCommand;
 use SoManAgent\Script\Backlog\Command\BacklogTaskTodoListCommand;
 use SoManAgent\Script\Backlog\Command\BacklogWorktreeCleanCommand;
 use SoManAgent\Script\Backlog\Command\BacklogWorktreeListCommand;
@@ -139,7 +137,6 @@ final class BacklogCommandFactory
             BacklogCommandName::TASK_TODO_LIST->value => BacklogTaskTodoListCommand::class,
             BacklogCommandName::TASK_REMOVE->value => BacklogTaskRemoveCommand::class,
             BacklogCommandName::REVIEW_REQUEST->value => BacklogReviewRequestCommand::class,
-            BacklogCommandName::TASK_REVIEW_REQUEST->value => BacklogTaskReviewRequestCommand::class,
             BacklogCommandName::TASK_REVIEW_CHECK->value => BacklogTaskReviewCheckCommand::class,
             BacklogCommandName::TASK_REVIEW_REJECT->value => BacklogTaskReviewRejectCommand::class,
             BacklogCommandName::TASK_REVIEW_APPROVE->value => BacklogTaskReviewApproveCommand::class,
@@ -154,7 +151,6 @@ final class BacklogCommandFactory
             BacklogCommandName::FEATURE_BLOCK->value => BacklogFeatureBlockCommand::class,
             BacklogCommandName::FEATURE_UNBLOCK->value => BacklogFeatureUnblockCommand::class,
             BacklogCommandName::FEATURE_LIST->value => BacklogFeatureListCommand::class,
-            BacklogCommandName::FEATURE_REVIEW_REQUEST->value => BacklogFeatureReviewRequestCommand::class,
             BacklogCommandName::FEATURE_REVIEW_CHECK->value => BacklogFeatureReviewCheckCommand::class,
             BacklogCommandName::FEATURE_REVIEW_REJECT->value => BacklogFeatureReviewRejectCommand::class,
             BacklogCommandName::FEATURE_REVIEW_APPROVE->value => BacklogFeatureReviewApproveCommand::class,

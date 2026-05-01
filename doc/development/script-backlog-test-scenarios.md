@@ -81,7 +81,7 @@ Validate that backlog help is available globally and per command.
 2. `php scripts/backlog.php help`
 3. `php scripts/backlog.php help work-start`
 4. `php scripts/backlog.php work-start --help`
-5. `php scripts/backlog.php help task-review-request`
+5. `php scripts/backlog.php help review-request`
 
 ### Expected checks
 

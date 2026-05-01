@@ -81,7 +81,7 @@ php scripts/backlog.php help work-start
 php scripts/backlog.php base-update my-feature
 php scripts/backlog.php work-start --help
 php scripts/backlog.php work-start --agent agent-01
-php scripts/backlog.php task-review-request --agent agent-01
+php scripts/backlog.php review-request --agent agent-01
 php scripts/backlog.php task-review-approve my-feature/my-task
 php scripts/backlog.php rework --agent agent-01 my-feature/my-task
 php scripts/backlog.php feature-task-merge my-feature/my-task

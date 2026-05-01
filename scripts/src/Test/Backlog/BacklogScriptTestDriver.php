@@ -314,11 +314,10 @@ MD);
 
     /**
      * @param string $agent Agent requesting the review
-     * @param string $feature Feature name to review
      */
-    public function requestFeatureReview(string $agent, string $feature): void
+    public function requestFeatureReview(string $agent): void
     {
-        $this->runBacklog(['feature-review-request', '--agent', $agent, $feature]);
+        $this->runBacklog(['review-request', '--agent', $agent]);
     }
 
     /**
