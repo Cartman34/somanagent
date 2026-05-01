@@ -18,20 +18,17 @@ final class WorktreeScriptProxy
 {
     private const FORCE_FLAG = '--force-current-worktree';
 
-    private string $scriptPath;
     private bool $linkedWorktree;
     private string $currentRoot;
     private string $mainRoot;
     private string $relativePath;
 
     private function __construct(
-        string $scriptPath,
         bool $linkedWorktree,
         string $currentRoot,
         string $mainRoot,
         string $relativePath
     ) {
-        $this->scriptPath = $scriptPath;
         $this->linkedWorktree = $linkedWorktree;
         $this->currentRoot = $currentRoot;
         $this->mainRoot = $mainRoot;
@@ -77,7 +74,7 @@ final class WorktreeScriptProxy
         $mainRoot = dirname($resolvedCommonDir);
         $relativePath = ltrim(substr($scriptPath, strlen($currentRoot)), '/');
 
-        return new self($scriptPath, $isLinked, $currentRoot, $mainRoot, $relativePath);
+        return new self($isLinked, $currentRoot, $mainRoot, $relativePath);
     }
 
     /**
@@ -123,11 +120,6 @@ final class WorktreeScriptProxy
         return $this->linkedWorktree;
     }
 
-    public function getScriptPath(): string
-    {
-        return $this->scriptPath;
-    }
-
     public function getCurrentRoot(): string
     {
         return $this->currentRoot;
@@ -136,11 +128,6 @@ final class WorktreeScriptProxy
     public function getMainRoot(): string
     {
         return $this->mainRoot;
-    }
-
-    public function getRelativePath(): string
-    {
-        return $this->relativePath;
     }
 
     public function getMainScriptPath(): string

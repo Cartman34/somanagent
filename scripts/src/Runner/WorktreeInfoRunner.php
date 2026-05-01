@@ -36,12 +36,9 @@ final class WorktreeInfoRunner extends AbstractScriptRunner
 
         $type = $context->isLinkedWorktree() ? 'linked worktree' : 'main worktree';
 
-        $this->console->line(sprintf('Type          : %s', $type));
-        $this->console->line(sprintf('Script        : %s', $this->format($context->getScriptPath())));
-        $this->console->line(sprintf('Current root  : %s', $this->format($context->getCurrentRoot())));
-        $this->console->line(sprintf('Main root     : %s', $this->format($context->getMainRoot())));
-        $this->console->line(sprintf('Relative path : %s', $this->format($context->getRelativePath())));
-        $this->console->line(sprintf('Main script   : %s', $this->format($context->getMainScriptPath())));
+        $this->console->line(sprintf('Type         : %s', $type));
+        $this->console->line(sprintf('Current root : %s', $this->format($context->getCurrentRoot())));
+        $this->console->line(sprintf('Main root    : %s', $this->format($context->getMainRoot())));
 
         return 0;
     }
