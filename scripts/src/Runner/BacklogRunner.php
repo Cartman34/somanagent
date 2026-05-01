@@ -22,6 +22,9 @@ final class BacklogRunner extends AbstractScriptRunner
     private const DEFAULT_WORKTREES_DIR = '.agent-worktrees';
     private const LEGACY_WORKTREES_DIR = '.worktrees';
 
+    private const INITIAL_BOARD_CONTENT = "# Backlog board\n\n## To do\n\n## In progress\n\n## Suggestions\n";
+    private const INITIAL_REVIEW_CONTENT = "# Backlog review\n\n## Usage rules\n\n## Current review\n\nNo review in progress.\n";
+
     private ?string $boardPath = null;
     private ?string $reviewFilePath = null;
     private ?string $worktreesRoot = null;
@@ -88,6 +91,8 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         try {
+            $this->initializeLocalFiles();
+
             return $this->handleCommand($command, $commandArgs, $options);
         } catch (\Exception $e) {
             $this->console->fail($e->getMessage());
@@ -202,6 +207,22 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         return $this->commandFactory;
+    }
+
+    private function initializeLocalFiles(): void
+    {
+        $localDir = dirname($this->boardPath());
+        if (!is_dir($localDir)) {
+            mkdir($localDir, 0755, true);
+        }
+
+        if (!is_file($this->boardPath())) {
+            file_put_contents($this->boardPath(), self::INITIAL_BOARD_CONTENT);
+        }
+
+        if (!is_file($this->reviewFilePath())) {
+            file_put_contents($this->reviewFilePath(), self::INITIAL_REVIEW_CONTENT);
+        }
     }
 
     private function boardPath(): string
