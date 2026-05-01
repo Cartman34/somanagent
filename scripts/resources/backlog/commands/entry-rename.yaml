@@ -1,0 +1,11 @@
+description: 'Rename the active entry text for the given agent'
+options:
+  -
+    name: '--agent'
+    description: 'Developer agent code whose active entry is renamed'
+examples:
+  - 'php scripts/backlog.php entry-rename --agent agent-01 "New description for the active task or feature"'
+notes:
+  - 'Accepts the agent''s single active entry, whether kind=task or kind=feature.'
+  - 'Updates the main entry text only — merged task contribution lines ([task:slug]) are not affected.'
+  - 'Fails when the agent has no active entry.'

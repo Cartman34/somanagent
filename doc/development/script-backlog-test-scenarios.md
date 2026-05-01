@@ -219,63 +219,36 @@ Validate `work-start` on scoped queued tasks.
 - parent contribution block contains `[task:test-child-a]`
 - `work-start` output includes the child task, parent feature, and assigned worktree
 
-## Scenario 7 - Start Second Child Task After Merging The First
+## Scenario 7 - Child Task Review Cycle
 
 ### Goal
 
-Validate picking up a second child task with `work-start` after the first has been merged.
-
-Prerequisite: task A from Scenario 6 has been reviewed and merged locally (see Scenarios 8-9 for the review/merge flow).
+Validate local child task review commands (reject, rework, approve). Demonstrated here on task A; the same flow applies to task B in Scenario 9.
 
 ### Steps
 
-1. Create the second scoped child task:
-   - `php scripts/backlog.php task-create [test-scoped-feature][test-child-b] Implement test child task B`
-2. Confirm the agent has no active entry after the merge:
-   - `php scripts/backlog.php status --agent d01`
-3. Pick up the next queued task:
-   - `php scripts/backlog.php work-start --agent d01`
-4. Inspect:
-   - `php scripts/backlog.php status test-scoped-feature`
-   - `php scripts/backlog.php feature-list`
-
-### Expected checks
-
-- second child task is created as active `kind=task` assigned to d01
-- parent feature container (`kind=feature`) remains with `agent=none`
-- contribution blocks now include both child tasks
-- parent review state is invalidated back to development when applicable
-
-## Scenario 8 - Child Task Review Flow
-
-### Goal
-
-Validate local child task review commands.
-
-### Steps
-
-1. Submit a child task:
-   - `php scripts/backlog.php task-review-request --agent d01 test-scoped-feature/test-child-a`
-2. Inspect next review:
+1. Submit the task for review:
+   - `php scripts/backlog.php review-request --agent d01`
+2. Inspect the review queue:
    - `php scripts/backlog.php review-next`
-3. Check mechanical review:
+3. Run the mechanical check:
    - `php scripts/backlog.php task-review-check test-scoped-feature/test-child-a`
 4. Reject it:
    - create a local review body under `local/tmp/`
    - `php scripts/backlog.php task-review-reject test-scoped-feature/test-child-a --body-file local/tmp/test-task-review-reject.md`
-5. Rework it:
+5. Rework and resubmit:
    - `php scripts/backlog.php rework --agent d01 test-scoped-feature/test-child-a`
-6. Submit again and approve:
-   - `php scripts/backlog.php task-review-request --agent d01 test-scoped-feature/test-child-a`
+   - `php scripts/backlog.php review-request --agent d01`
+6. Approve:
    - `php scripts/backlog.php task-review-approve test-scoped-feature/test-child-a`
 
 ### Expected checks
 
-- stage changes follow `development -> review -> rejected -> development -> review -> approved`
-- review notes are written to `local/backlog-review.md`
+- stage transitions follow `development → review → rejected → development → review → approved`
+- review notes are written to `local/backlog-review.md` on rejection
 - review notes are cleared on approval
 
-## Scenario 9 - Merge Approved Child Task
+## Scenario 8 - Merge Approved Child Task
 
 ### Goal
 
@@ -283,7 +256,7 @@ Validate local merge of one approved child task into its parent feature.
 
 ### Steps
 
-1. Merge approved task:
+1. Merge the approved task:
    - `php scripts/backlog.php feature-task-merge test-scoped-feature/test-child-a`
 2. Inspect:
    - `php scripts/backlog.php status test-scoped-feature`
@@ -293,32 +266,62 @@ Validate local merge of one approved child task into its parent feature.
 ### Expected checks
 
 - child task active entry disappears
-- parent feature remains active
-- parent contribution block still records merged child content
+- parent feature remains active with `agent=none`
+- parent contribution block still records the merged child content
 - child task worktree cleanup follows documented behavior
-- local child task branch cleanup follows documented behavior
+
+## Scenario 9 - Start Second Child Task And Complete Its Review
+
+### Goal
+
+Validate that after merging task A, `work-start` picks up the next queued scoped task and the full review cycle repeats for task B.
+
+### Steps
+
+1. Create the second scoped child task:
+   - `php scripts/backlog.php task-create [test-scoped-feature][test-child-b] Implement test child task B`
+2. Confirm the agent has no active entry after the merge:
+   - `php scripts/backlog.php status --agent d01`
+3. Pick up task B:
+   - `php scripts/backlog.php work-start --agent d01`
+4. Inspect:
+   - `php scripts/backlog.php status test-scoped-feature`
+5. Submit, review, and approve task B (same cycle as Scenario 7):
+   - `php scripts/backlog.php review-request --agent d01`
+   - `php scripts/backlog.php task-review-approve test-scoped-feature/test-child-b`
+6. Merge task B:
+   - `php scripts/backlog.php feature-task-merge test-scoped-feature/test-child-b`
+
+### Expected checks
+
+- second child task is created as active `kind=task` assigned to d01
+- parent feature container (`kind=feature`) remains with `agent=none` throughout
+- contribution blocks record both merged child tasks after step 6
+- agent has no active entry after the merge
 
 ## Scenario 10 - Feature Review Flow
 
 ### Goal
 
-Validate remote feature review transitions.
+Validate remote feature review transitions once all child tasks are merged.
 
 ### Steps
 
-1. Request feature review:
-   - `php scripts/backlog.php feature-review-request --agent d01 test-scoped-feature`
-2. Inspect:
+1. Developer takes integration ownership of the feature:
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php feature-assign --agent d01 test-scoped-feature`
+2. Submit the feature for review:
+   - `php scripts/backlog.php review-request --agent d01`
+3. Inspect:
    - `php scripts/backlog.php review-next`
    - `php scripts/backlog.php status test-scoped-feature`
-3. Run mechanical check:
+4. Run mechanical check:
    - `php scripts/backlog.php feature-review-check test-scoped-feature`
-4. Reject:
+5. Reject:
    - `php scripts/backlog.php feature-review-reject test-scoped-feature --body-file local/tmp/test-feature-review-reject.md`
-5. Rework:
+6. Rework and resubmit:
    - `php scripts/backlog.php rework --agent d01 test-scoped-feature`
-6. Request review again, then approve:
-   - `php scripts/backlog.php feature-review-request --agent d01 test-scoped-feature`
+   - `php scripts/backlog.php review-request --agent d01`
+7. Approve:
    - `php scripts/backlog.php feature-review-approve test-scoped-feature`
 
 ### Expected checks

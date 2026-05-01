@@ -128,7 +128,7 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
             $featureBase = $this->gitService->getBranchHead(GitService::ORIGIN_REMOTE . '/' . GitService::MAIN_BRANCH);
             $this->worktreeService->ensureLocalBranchExists($featureBranch, GitService::ORIGIN_REMOTE . '/' . GitService::MAIN_BRANCH);
 
-            $featureContainerEntry = new BoardEntry($scopedTask['featureGroup'], []);
+            $featureContainerEntry = new BoardEntry($scopedTask['text'], []);
             $this->boardService->hydrateEntryFromMetadata($featureContainerEntry, [
                 BoardEntry::META_KIND => BacklogBoardService::ENTRY_KIND_FEATURE,
                 BoardEntry::META_STAGE => BacklogBoard::STAGE_IN_PROGRESS,

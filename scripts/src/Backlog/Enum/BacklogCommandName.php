@@ -25,6 +25,7 @@ enum BacklogCommandName: string
     case TASK_REVIEW_REJECT = 'task-review-reject';
     case TASK_REVIEW_APPROVE = 'task-review-approve';
     case REWORK = 'rework';
+    case ENTRY_RENAME = 'entry-rename';
     case WORK_START = 'work-start';
     case FEATURE_RELEASE = 'feature-release';
     case FEATURE_TASK_MERGE = 'feature-task-merge';

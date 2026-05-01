@@ -12,6 +12,7 @@ Read this file only when the active task requires developer workflow details.
 - `task-remove`
 - `review-request`
 - `rework`
+- `entry-rename`
 - `work-start`
 - `feature-release`
 - `feature-task-merge`
@@ -76,6 +77,13 @@ Read this file only when the active task requires developer workflow details.
 
 1. Run `php scripts/backlog.php task-remove <number>`.
 2. The script removes the queued task at the given 1-based position from `## To do`.
+
+### `entry-rename`
+
+1. Run `php scripts/backlog.php entry-rename --agent=<code> <new-text>`.
+2. The script updates the main text of the agent's active entry, whether it is a `kind=task` or a `kind=feature`.
+3. Merged task contribution lines inside a feature container are not affected.
+4. The agent can only rename their own active entry.
 
 ### `rework`
 
