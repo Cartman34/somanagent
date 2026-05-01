@@ -27,14 +27,13 @@ Rules:
 - Use `WP` for the main workspace and `WA` for one developer agent worktree.
 - `WP` is the only workflow workspace.
 - `WA` is a development copy for one developer agent, not a runtime workspace.
-- If a command touches backlog state, review state, containers, runtime, networked services, or GitHub, do not run it from `WA`.
+- If a command touches review state, containers, runtime, networked services, or GitHub, do not run it from `WA`.
 - From `WP`, never launch dependent workflow commands in parallel. Any sequence where one command depends on the previous result, especially Git operations such as `add` then `commit`, must be run strictly one after another.
 - A `WA` belongs to the developer agent and is treated as ephemeral.
 - A branch belongs to the active feature.
 - A feature branch must never stay checked out in multiple worktrees at the same time.
 - Keep `.agent-worktrees/` ignored in the root `.gitignore`.
-- Run every `php scripts/backlog.php ...` command from `WP` only, never from a `WA`.
-- This rule is technically enforced by `scripts/backlog.php`: the command fails if it is launched from a `WA` or any other directory.
+- `php scripts/backlog.php` can be run from a `WA`: it automatically proxies execution to the equivalent script in `WP`, so backlog state always lives in `WP`'s `local/`.
 - `WA` runtime dependencies use local copies for `backend/vendor` and `frontend/node_modules`, created from `WP` when the `WA` is created or when those paths are missing. Root `.env` and `backend/.env.local` are refreshed by the workflow.
 - Use `php scripts/backlog.php worktree-list` to inspect managed worktrees under `.agent-worktrees/`.
 - Use `php scripts/backlog.php worktree-clean` to remove only abandoned managed worktrees that are safe to delete.

@@ -24,6 +24,7 @@ php scripts/help.php migrate.php
 | `check-php.sh` | Bash | Check that PHP 8.4+ is installed |
 | `help.php` | PHP | Display help for all scripts |
 | `backlog.php` | PHP | Run the local backlog workflow for features, child tasks, reviews, and merges |
+| `worktree-info.php` | PHP | Display the git worktree context for the current script (linked vs main worktree, roots) |
 | `test-backlog-workflow.php` | PHP | Run reusable sequential validation campaigns for `backlog.php` on temporary backlog files |
 | `setup.php` | PHP | Full installation (first time) |
 | `dev.php` | PHP | Start / stop the environment |
@@ -71,7 +72,7 @@ php scripts/help.php migrate.php  # detail for one script
 ---
 
 ### `backlog.php`
-Runs the documented local backlog workflow from `WP` only, including feature start/review/merge and local child task submit/review/merge flows.
+Runs the documented local backlog workflow, including feature start/review/merge and local child task submit/review/merge flows. Can be run from a `WA`: execution is automatically proxied to the equivalent script in `WP` so backlog state always lives in `WP`'s `local/`.
 
 ```bash
 php scripts/backlog.php
@@ -96,6 +97,15 @@ Notes:
 - `worktree-restore` validates copied PHP vendors with `autoload.php` witnesses and can recreate a clean managed worktree with `--force`
 - `feature-start` reads the next queued board entry, accepts plain text, optional `[feat]` / `[fix]` prefixes, and scoped entries like `[feature-slug][task-slug] Task text`, then prints the started task or feature details with the assigned worktree
 - child task review stays local; only the parent feature uses the remote PR flow
+
+---
+
+### `worktree-info.php`
+Displays the git worktree context detected for the current script: whether it runs inside a linked worktree or the main worktree, and the resolved roots of both.
+
+```bash
+php scripts/worktree-info.php
+```
 
 ---
 
