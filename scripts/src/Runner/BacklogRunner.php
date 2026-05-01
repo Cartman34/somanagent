@@ -193,6 +193,7 @@ final class BacklogRunner extends AbstractScriptRunner
                 $this->app,
                 $this->console,
                 $this->dryRun,
+                $this->verbose,
                 $this->projectRoot,
                 $this->resolvedWorktreesRoot(),
                 $this->boardPath(),

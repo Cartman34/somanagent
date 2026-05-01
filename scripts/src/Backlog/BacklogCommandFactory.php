@@ -67,6 +67,7 @@ final class BacklogCommandFactory
     private Application $app;
     private Console $console;
     private bool $dryRun;
+    private bool $verbose;
     private string $projectRoot;
     private string $worktreesRoot;
     private string $boardPath;
@@ -93,6 +94,7 @@ final class BacklogCommandFactory
      * @param Application $app The application instance
      * @param Console $console The console instance
      * @param bool $dryRun Whether to run in dry-run mode
+     * @param bool $verbose Whether to enable verbose logging
      * @param string $projectRoot The project root path
      * @param string $boardPath The board path
      * @param string $reviewFilePath The review file path
@@ -101,6 +103,7 @@ final class BacklogCommandFactory
         Application $app,
         Console $console,
         bool $dryRun,
+        bool $verbose,
         string $projectRoot,
         string $worktreesRoot,
         string $boardPath,
@@ -109,6 +112,7 @@ final class BacklogCommandFactory
         $this->app = $app;
         $this->console = $console;
         $this->dryRun = $dryRun;
+        $this->verbose = $verbose;
         $this->projectRoot = $projectRoot;
         $this->worktreesRoot = $worktreesRoot;
         $this->boardPath = $boardPath;
@@ -333,7 +337,11 @@ final class BacklogCommandFactory
     public function getConsoleClient(): ConsoleClient
     {
         if ($this->consoleClient === null) {
-            $this->consoleClient = new ConsoleClient($this->projectRoot, $this->dryRun, $this->app, function(string $m) { $this->console->line($m); });
+            $this->consoleClient = new ConsoleClient($this->projectRoot, $this->dryRun, $this->app, function(string $m): void {
+                if ($this->verbose) {
+                    $this->console->line($m);
+                }
+            });
         }
         return $this->consoleClient;
     }
