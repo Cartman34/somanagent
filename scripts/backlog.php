@@ -16,8 +16,11 @@
 require_once __DIR__ . '/src/bootstrap.php';
 
 use SoManAgent\Script\Runner\BacklogRunner;
+use SoManAgent\Script\WorktreeScriptProxy;
 
-/** backlog.php must only run from WP, never from a WA or arbitrary subdirectory. */
+WorktreeScriptProxy::run($argv);
+
+/** backlog.php must run from the project root (main or linked worktree with --force-current-worktree). */
 $projectRoot = realpath(__DIR__ . '/..');
 $currentWorkingDirectory = getcwd();
 if ($projectRoot === false || $currentWorkingDirectory === false) {
@@ -28,10 +31,10 @@ if ($projectRoot === false || $currentWorkingDirectory === false) {
 $normalizedProjectRoot = str_replace('\\', '/', $projectRoot);
 $normalizedCurrentWorkingDirectory = str_replace('\\', '/', $currentWorkingDirectory);
 if ($normalizedCurrentWorkingDirectory !== $normalizedProjectRoot) {
-    fwrite(STDERR, "❌ Run backlog.php from WP only.\n");
-    fwrite(STDERR, "Current cwd: {$normalizedCurrentWorkingDirectory}\n");
-    fwrite(STDERR, "Expected WP: {$normalizedProjectRoot}\n");
-    fwrite(STDERR, "Retry from WP: php scripts/backlog.php ...\n");
+    fwrite(STDERR, "❌ Run backlog.php from the project root.\n");
+    fwrite(STDERR, "Current directory: {$normalizedCurrentWorkingDirectory}\n");
+    fwrite(STDERR, "Expected root:     {$normalizedProjectRoot}\n");
+    fwrite(STDERR, "Retry from root:   php scripts/backlog.php ...\n");
     exit(1);
 }
 

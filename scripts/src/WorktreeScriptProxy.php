@@ -1,0 +1,162 @@
+<?php
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
+declare(strict_types=1);
+
+namespace SoManAgent\Script;
+
+/**
+ * Detects whether the current script runs inside a git linked worktree
+ * and transparently proxies execution to the equivalent script in the main worktree.
+ */
+final class WorktreeScriptProxy
+{
+    private const FORCE_FLAG = '--force-current-worktree';
+
+    private string $scriptPath;
+    private bool $linkedWorktree;
+    private string $currentRoot;
+    private string $mainRoot;
+    private string $relativePath;
+
+    private function __construct(
+        string $scriptPath,
+        bool $linkedWorktree,
+        string $currentRoot,
+        string $mainRoot,
+        string $relativePath
+    ) {
+        $this->scriptPath = $scriptPath;
+        $this->linkedWorktree = $linkedWorktree;
+        $this->currentRoot = $currentRoot;
+        $this->mainRoot = $mainRoot;
+        $this->relativePath = $relativePath;
+    }
+
+    /**
+     * Detects the worktree context for the given script path.
+     *
+     * @param string $script Path to the current script (typically $argv[0])
+     */
+    public static function detect(string $script): self
+    {
+        $scriptPath = realpath($script);
+        if ($scriptPath === false) {
+            throw new \RuntimeException("Cannot resolve script path: {$script}");
+        }
+
+        $dir = dirname($scriptPath);
+
+        $gitDir = self::git($dir, '--git-dir');
+        $gitCommonDir = self::git($dir, '--git-common-dir');
+
+        if ($gitDir === null || $gitCommonDir === null) {
+            throw new \RuntimeException('Not inside a git repository.');
+        }
+
+        $resolvedGitDir = self::resolve($dir, $gitDir);
+        $resolvedCommonDir = self::resolve($dir, $gitCommonDir);
+
+        if ($resolvedGitDir === null || $resolvedCommonDir === null) {
+            throw new \RuntimeException('Cannot resolve git directory paths.');
+        }
+
+        $isLinked = $resolvedGitDir !== $resolvedCommonDir;
+
+        $currentRoot = self::git($dir, '--show-toplevel');
+        if ($currentRoot === null) {
+            throw new \RuntimeException('Cannot determine current worktree root.');
+        }
+
+        $mainRoot = dirname($resolvedCommonDir);
+        $relativePath = ltrim(substr($scriptPath, strlen($currentRoot)), '/');
+
+        return new self($scriptPath, $isLinked, $currentRoot, $mainRoot, $relativePath);
+    }
+
+    /**
+     * Proxies execution to the main worktree script when running inside a linked worktree.
+     *
+     * Returns immediately when already in the main worktree or when --force-current-worktree is set.
+     *
+     * @param array<string> $argv
+     */
+    public static function run(array $argv): void
+    {
+        $instance = self::detect($argv[0]);
+
+        if (!$instance->isLinkedWorktree() || in_array(self::FORCE_FLAG, $argv, true)) {
+            return;
+        }
+
+        $mainScript = $instance->getMainScriptPath();
+        if (!is_file($mainScript)) {
+            fwrite(STDERR, "❌ Script not found in main worktree: {$mainScript}\n");
+            exit(1);
+        }
+
+        chdir($instance->getMainRoot());
+
+        $cmd = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($mainScript);
+        foreach (array_slice($argv, 1) as $arg) {
+            if ($arg !== self::FORCE_FLAG) {
+                $cmd .= ' ' . escapeshellarg($arg);
+            }
+        }
+
+        passthru($cmd, $exitCode);
+        exit($exitCode ?? 1);
+    }
+
+    public function isLinkedWorktree(): bool
+    {
+        return $this->linkedWorktree;
+    }
+
+    public function getScriptPath(): string
+    {
+        return $this->scriptPath;
+    }
+
+    public function getCurrentRoot(): string
+    {
+        return $this->currentRoot;
+    }
+
+    public function getMainRoot(): string
+    {
+        return $this->mainRoot;
+    }
+
+    public function getRelativePath(): string
+    {
+        return $this->relativePath;
+    }
+
+    public function getMainScriptPath(): string
+    {
+        return $this->mainRoot . '/' . $this->relativePath;
+    }
+
+    private static function git(string $dir, string $flag): ?string
+    {
+        $result = trim((string) shell_exec(
+            sprintf('git -C %s rev-parse %s 2>/dev/null', escapeshellarg($dir), $flag)
+        ));
+
+        return $result !== '' ? $result : null;
+    }
+
+    private static function resolve(string $base, string $path): ?string
+    {
+        if (str_starts_with($path, '/')) {
+            return $path;
+        }
+
+        $resolved = realpath($base . '/' . $path);
+
+        return $resolved !== false ? $resolved : null;
+    }
+}
