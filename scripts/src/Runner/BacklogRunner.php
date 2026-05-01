@@ -22,6 +22,9 @@ final class BacklogRunner extends AbstractScriptRunner
     private const DEFAULT_WORKTREES_DIR = '.agent-worktrees';
     private const LEGACY_WORKTREES_DIR = '.worktrees';
 
+    private const INITIAL_BOARD_CONTENT = "# Backlog board\n\n## To do\n\n## In progress\n\n## Suggestions\n";
+    private const INITIAL_REVIEW_CONTENT = "# Backlog review\n\n## Usage rules\n\n## Current review\n\nNo review in progress.\n";
+
     private ?string $boardPath = null;
     private ?string $reviewFilePath = null;
     private ?string $worktreesRoot = null;
@@ -88,6 +91,8 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         try {
+            $this->initializeLocalFiles();
+
             return $this->handleCommand($command, $commandArgs, $options);
         } catch (\Exception $e) {
             $this->console->fail($e->getMessage());
@@ -202,6 +207,41 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         return $this->commandFactory;
+    }
+
+    private function initializeLocalFiles(): void
+    {
+        if ($this->dryRun) {
+            return;
+        }
+
+        $localDir = dirname($this->boardPath());
+        if (!is_dir($localDir)) {
+            if ($this->verbose) {
+                $this->console->line("Creating local directory: {$localDir}");
+            }
+            if (mkdir($localDir, 0755, true) === false) {
+                throw new \RuntimeException("Failed to create local directory: {$localDir}");
+            }
+        }
+
+        if (!is_file($this->boardPath())) {
+            if ($this->verbose) {
+                $this->console->line("Creating backlog board file: {$this->boardPath()}");
+            }
+            if (file_put_contents($this->boardPath(), self::INITIAL_BOARD_CONTENT) === false) {
+                throw new \RuntimeException("Failed to create backlog board file: {$this->boardPath()}");
+            }
+        }
+
+        if (!is_file($this->reviewFilePath())) {
+            if ($this->verbose) {
+                $this->console->line("Creating backlog review file: {$this->reviewFilePath()}");
+            }
+            if (file_put_contents($this->reviewFilePath(), self::INITIAL_REVIEW_CONTENT) === false) {
+                throw new \RuntimeException("Failed to create backlog review file: {$this->reviewFilePath()}");
+            }
+        }
     }
 
     private function boardPath(): string

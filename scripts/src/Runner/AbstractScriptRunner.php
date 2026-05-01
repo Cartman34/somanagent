@@ -46,6 +46,7 @@ abstract class AbstractScriptRunner
     protected Application $app;
     protected Console $console;
     protected string $projectRoot;
+    protected ?string $scriptFile = null;
 
     /**
      * Global dry-run flag shared by runners that opt into execution modes.
@@ -174,6 +175,7 @@ abstract class AbstractScriptRunner
         }
 
         try {
+            $this->scriptFile = realpath($argv[0] ?? '') ?: null;
             chdir($this->projectRoot);
 
             $exitCode = $this->run($args);
