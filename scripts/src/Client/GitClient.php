@@ -522,6 +522,24 @@ final class GitClient
     }
 
     /**
+     * Runs a rev-parse flag in the given directory and returns the trimmed output, or null on failure.
+     *
+     * @param string $path Directory to run git in
+     * @param string $flag rev-parse flag (e.g. '--git-dir', '--show-toplevel')
+     */
+    public function revParseInPath(string $path, string $flag): ?string
+    {
+        $cmd = sprintf('git -C %s rev-parse %s', escapeshellarg($path), $flag);
+        [$code, $output] = $this->console->captureWithExitCode($cmd);
+        if ($code !== 0) {
+            return null;
+        }
+        $result = trim($output);
+
+        return $result !== '' ? $result : null;
+    }
+
+    /**
      * Converts an absolute path to a path relative to the project root.
      *
      * @param string $path The path to convert

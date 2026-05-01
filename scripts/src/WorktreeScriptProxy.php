@@ -7,6 +7,9 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script;
 
+use SoManAgent\Script\Client\ConsoleClient;
+use SoManAgent\Script\Client\GitClient;
+
 /**
  * Detects whether the current script runs inside a git linked worktree
  * and transparently proxies execution to the equivalent script in the main worktree.
@@ -48,9 +51,10 @@ final class WorktreeScriptProxy
         }
 
         $dir = dirname($scriptPath);
+        $git = self::buildGitClient();
 
-        $gitDir = self::git($dir, '--git-dir');
-        $gitCommonDir = self::git($dir, '--git-common-dir');
+        $gitDir = $git->revParseInPath($dir, '--git-dir');
+        $gitCommonDir = $git->revParseInPath($dir, '--git-common-dir');
 
         if ($gitDir === null || $gitCommonDir === null) {
             throw new \RuntimeException('Not inside a git repository.');
@@ -65,7 +69,7 @@ final class WorktreeScriptProxy
 
         $isLinked = $resolvedGitDir !== $resolvedCommonDir;
 
-        $currentRoot = self::git($dir, '--show-toplevel');
+        $currentRoot = $git->revParseInPath($dir, '--show-toplevel');
         if ($currentRoot === null) {
             throw new \RuntimeException('Cannot determine current worktree root.');
         }
@@ -144,13 +148,12 @@ final class WorktreeScriptProxy
         return $this->mainRoot . '/' . $this->relativePath;
     }
 
-    private static function git(string $dir, string $flag): ?string
+    private static function buildGitClient(): GitClient
     {
-        $result = trim((string) shell_exec(
-            sprintf('git -C %s rev-parse %s 2>/dev/null', escapeshellarg($dir), $flag)
-        ));
+        $app = Application::getInstance();
+        $consoleClient = new ConsoleClient('', false, $app, fn(string $message) => null);
 
-        return $result !== '' ? $result : null;
+        return new GitClient(false, $consoleClient, new RetryPolicy(0, 0));
     }
 
     private static function resolve(string $base, string $path): ?string
