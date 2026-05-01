@@ -28,6 +28,7 @@ final class BacklogBoardService
 
     private const TASK_CREATE_TYPE_SHORT_PREFIX_PATTERN = '/^\[(feat|fix)\](.*)$/i';
     private const TASK_SCOPE_PREFIX_PATTERN = '/^\[([A-Za-z0-9_-]+)\]\[([A-Za-z0-9_-]+)\]\s*(.+)$/';
+    private const SINGLE_FEATURE_PREFIX_PATTERN = '/^\[([A-Za-z0-9_-]+)\](?!\[)\s*(.+)$/';
     private const TASK_CONTRIBUTION_PREFIX_PATTERN = '/^\s*-\s*\[task:([a-z0-9-]+)\]\s*(.+)$/';
 
     private const META_BLOCK_PREFIX = '  meta:';
@@ -1108,6 +1109,21 @@ final class BacklogBoardService
             'featureGroup' => $this->normalizeFeatureSlug($matches[1]),
             'task' => $this->normalizeFeatureSlug($matches[2]),
             'text' => trim($matches[3]),
+        ];
+    }
+
+    /**
+     * @return array{featureSlug: string, text: string}|null
+     */
+    public function extractSingleFeaturePrefixMetadata(string $text): ?array
+    {
+        if (preg_match(self::SINGLE_FEATURE_PREFIX_PATTERN, trim($text), $matches) !== 1) {
+            return null;
+        }
+
+        return [
+            'featureSlug' => $this->normalizeFeatureSlug($matches[1]),
+            'text' => trim($matches[2]),
         ];
     }
 

@@ -46,7 +46,7 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
         if ($activeEntries === []) {
             throw new \RuntimeException(
                 "Agent {$agent} has no active entry.\n" .
-                "Run `php scripts/backlog.php feature-start --agent={$agent}` to start one."
+                "Run `php scripts/backlog.php work-start --agent={$agent}` to start one."
             );
         }
 

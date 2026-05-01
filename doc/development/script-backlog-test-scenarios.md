@@ -79,8 +79,8 @@ Validate that backlog help is available globally and per command.
 
 1. `php scripts/backlog.php`
 2. `php scripts/backlog.php help`
-3. `php scripts/backlog.php help feature-start`
-4. `php scripts/backlog.php feature-start --help`
+3. `php scripts/backlog.php help work-start`
+4. `php scripts/backlog.php work-start --help`
 5. `php scripts/backlog.php help task-review-request`
 
 ### Expected checks
@@ -115,7 +115,7 @@ Validate queued task insertion, ordering, listing, and removal.
 
 ### Goal
 
-Validate `feature-start` on a plain queued task.
+Validate `work-start` on a plain queued task.
 
 ### Steps
 
@@ -124,7 +124,7 @@ Validate `feature-start` on a plain queued task.
 2. Confirm next plain task with:
    - `php scripts/backlog.php task-todo-list`
 3. Start it:
-   - `php scripts/backlog.php feature-start --agent d01`
+   - `php scripts/backlog.php work-start --agent d01`
 4. Inspect result:
    - `php scripts/backlog.php feature-list`
    - `php scripts/backlog.php status --agent d01`
@@ -137,7 +137,7 @@ Validate `feature-start` on a plain queued task.
 - feature has `stage=development`
 - branch is created with the expected type
 - managed worktree exists for `d01`
-- `feature-start` output includes the feature summary and assigned worktree
+- `work-start` output includes the feature summary and assigned worktree
 - the created feature slug corresponds to `test-plain-feature-alpha`
 
 ## Scenario 4 - Release Plain Feature Without Development
@@ -172,7 +172,7 @@ Validate feature assignment and unassignment permissions.
 1. Create the assignment test task:
    - `php scripts/backlog.php task-create test-assign-feature`
 2. Start it:
-   - `php scripts/backlog.php feature-start --agent d01`
+   - `php scripts/backlog.php work-start --agent d01`
 3. Run with manager role:
    - `SOMANAGER_ROLE=manager php scripts/backlog.php feature-assign test-assign-feature --agent d02`
 4. Inspect:
@@ -195,7 +195,7 @@ Validate feature assignment and unassignment permissions.
 
 ### Goal
 
-Validate `feature-start` on scoped queued tasks.
+Validate `work-start` on scoped queued tasks.
 
 ### Steps
 
@@ -204,7 +204,7 @@ Validate `feature-start` on scoped queued tasks.
 2. Confirm next queued entry is the scoped task:
    - `php scripts/backlog.php task-todo-list`
 3. Start it:
-   - `php scripts/backlog.php feature-start --agent d01`
+   - `php scripts/backlog.php work-start --agent d01`
 4. Inspect:
    - `php scripts/backlog.php feature-list`
    - `php scripts/backlog.php status test-scoped-feature`
@@ -217,30 +217,32 @@ Validate `feature-start` on scoped queued tasks.
 - child task branch follows `<type>/<feature>--<task>`
 - parent feature branch exists separately
 - parent contribution block contains `[task:test-child-a]`
-- `feature-start` output includes the child task, parent feature, and assigned worktree
+- `work-start` output includes the child task, parent feature, and assigned worktree
 
-## Scenario 7 - Add Second Child Task To Existing Feature
+## Scenario 7 - Start Second Child Task After Merging The First
 
 ### Goal
 
-Validate `feature-task-add` for scoped child tasks.
+Validate picking up a second child task with `work-start` after the first has been merged.
+
+Prerequisite: task A from Scenario 6 has been reviewed and merged locally (see Scenarios 8-9 for the review/merge flow).
 
 ### Steps
 
 1. Create the second scoped child task:
    - `php scripts/backlog.php task-create [test-scoped-feature][test-child-b] Implement test child task B`
-2. Confirm next queued entry is the scoped task:
-   - `php scripts/backlog.php task-todo-list`
-3. Run:
-   - `php scripts/backlog.php feature-task-add --agent d01 --feature-text "Updated feature summary"`
+2. Confirm the agent has no active entry after the merge:
+   - `php scripts/backlog.php status --agent d01`
+3. Pick up the next queued task:
+   - `php scripts/backlog.php work-start --agent d01`
 4. Inspect:
    - `php scripts/backlog.php status test-scoped-feature`
    - `php scripts/backlog.php feature-list`
 
 ### Expected checks
 
-- parent feature summary is updated
-- second child task is created as active `kind=task`
+- second child task is created as active `kind=task` assigned to d01
+- parent feature container (`kind=feature`) remains with `agent=none`
 - contribution blocks now include both child tasks
 - parent review state is invalidated back to development when applicable
 
@@ -356,7 +358,7 @@ Validate final feature closure and merge behavior.
 1. Create a dedicated closable fix feature:
    - `php scripts/backlog.php task-create [fix] test-fix-feature-beta`
 2. Start it:
-   - `php scripts/backlog.php feature-start --agent d02`
+   - `php scripts/backlog.php work-start --agent d02`
 3. Close the unmerged feature when the workflow requires closing:
    - `php scripts/backlog.php feature-close test-fix-feature-beta`
 4. For the approved scoped feature, merge it:
@@ -423,7 +425,7 @@ After validation:
 When the full scenario set is too expensive, run at least:
 
 1. `php scripts/backlog.php`
-2. `php scripts/backlog.php help feature-start`
+2. `php scripts/backlog.php help work-start`
 3. `php scripts/backlog.php task-todo-list`
 4. `php scripts/backlog.php feature-list`
 5. `php scripts/backlog.php worktree-list`

@@ -116,8 +116,8 @@ MD);
         $this->assertOutputContains($this->runBacklog(['help']), 'Commands:');
         $this->assertOutputContains($this->runBacklog(['help', 'status']), 'status');
         $this->assertOutputContains($this->runBacklog(['help', 'review-next']), 'review-next');
-        $this->assertOutputContains($this->runBacklog(['help', 'feature-start']), 'feature-start');
-        $this->assertOutputContains($this->runBacklog(['feature-start', '--help']), 'feature-start');
+        $this->assertOutputContains($this->runBacklog(['help', 'work-start']), 'work-start');
+        $this->assertOutputContains($this->runBacklog(['work-start', '--help']), 'work-start');
     }
 
     /**
@@ -160,7 +160,7 @@ MD);
 
     /**
      * @param string $agent Agent identifier for the worktree
-     * @return string Command output from feature-start
+     * @return string Command output from work-start
      */
     public function startNextFeature(string $agent): string
     {
@@ -172,14 +172,14 @@ MD);
             ));
         }
 
-        $output = $this->runBacklog(['feature-start', '--agent', $agent]);
+        $output = $this->runBacklog(['work-start', '--agent', $agent]);
         $this->context->recordWorktree($worktreePath);
 
         return $output;
     }
 
     /**
-     * @param string $output Feature start output to check
+     * @param string $output work-start output to check
      * @param string $needle String that should be present in output
      */
     public function assertFeatureStartOutputContains(string $output, string $needle): void
@@ -242,15 +242,6 @@ MD);
         return $isAgent
             ? $this->runBacklog(['status', '--agent', $featureOrAgent])
             : $this->runBacklog(['status', $featureOrAgent]);
-    }
-
-    /**
-     * @param string $agent Agent performing the operation
-     * @param string $featureText Feature text to add to queue
-     */
-    public function addQueuedTaskToCurrentFeature(string $agent, string $featureText): void
-    {
-        $this->runBacklog(['feature-task-add', '--agent', $agent, '--feature-text', $featureText]);
     }
 
     /**

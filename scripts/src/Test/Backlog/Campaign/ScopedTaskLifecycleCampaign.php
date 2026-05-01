@@ -55,8 +55,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->mergeTask($taskARef);
 
         $driver->createTodoTask(sprintf('[%s][%s] Implement test child task B', $context->scopedFeature, $context->childB));
-        $driver->addQueuedTaskToCurrentFeature($context->agentPrimary, 'Updated test scoped feature summary');
-        $driver->assertStatusContains($context->scopedFeature, 'Updated test scoped feature summary');
+        $driver->startNextFeature($context->agentPrimary);
 
         $rejectFeatureTaskB = $driver->createBodyFile('test-task-review-reject-b.md', ['3. Reject second child task for coverage.']);
         $approveFeatureWithActiveTask = $driver->createBodyFile('test-feature-review-approve-active-task.md', ['Approve parent feature should be blocked by active child task.']);
