@@ -98,7 +98,7 @@ Read this file only when the active task requires developer workflow details.
 2. The script reads the branch type from the queued task prefix `[feat]` or `[fix]`.
 3. If no type prefix is present, the script falls back to `feat`.
 4. The script takes the next task from `## To do`, updates local `main` when possible, creates the feature branch from `origin/main` in the agent worktree, moves the feature to `## In progress`, sets `meta.stage=development`, and authorizes development.
-5. If the queued task starts with `[feature-slug][task-slug]`, the script creates or reuses the parent `kind=feature` entry for `<feature-slug>`, keeps the shared parent branch `<type>/<feature-slug>`, then creates the child `kind=task` entry and local child branch `<type>/<feature-slug>--<task-slug>` from that local parent branch in the agent worktree.
+5. If the queued task starts with `[feature-slug][task-slug]`, the script creates or reuses the parent `kind=feature` entry for `<feature-slug>` with `agent=none`, keeps the shared parent branch `<type>/<feature-slug>`, then creates the child `kind=task` entry assigned to the agent and the local child branch `<type>/<feature-slug>--<task-slug>` from that local parent branch in the agent worktree. The `kind=feature` container has no assigned developer until one explicitly takes it with `feature-assign`.
 6. The command output includes the started task when applicable, the parent feature summary and details, and the assigned worktree path and branch.
 7. `feature-start` is local-only: it does not push and it does not create a PR.
 
@@ -133,6 +133,7 @@ Read this file only when the active task requires developer workflow details.
 2. Export `SOMANAGER_ROLE=developer` and `SOMANAGER_AGENT=<code>` before running the command.
 3. Developer can only assign a feature to itself, and only when the feature is not assigned to another agent.
 4. The script assigns the feature to that same agent and prepares the `WA`.
+5. For `kind=feature` containers created with `agent=none` (prefixed-task features), this is the required step before running `review-request` or `feature-task-add`. The developer takes integration ownership of the feature branch.
 
 ### `feature-unassign`
 

@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
@@ -95,9 +96,16 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
                 "Feature {$feature} must be in " . $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_PROGRESS) . '.'
             );
         }
-        if ($entry->getAgent() !== $agent) {
+        $featureAgent = $entry->getAgent();
+        if ($featureAgent === null || $featureAgent === BacklogMetaValue::NONE->value) {
             throw new \RuntimeException(
-                "Feature {$feature} is not assigned to agent {$agent}.\n" .
+                "Feature {$feature} has no assigned developer.\n" .
+                "Run `php scripts/backlog.php feature-assign --agent={$agent} {$feature}` to take ownership before submitting for review."
+            );
+        }
+        if ($featureAgent !== $agent) {
+            throw new \RuntimeException(
+                "Feature {$feature} is assigned to agent {$featureAgent}, not {$agent}.\n" .
                 "Details: php scripts/backlog.php status --agent={$agent}"
             );
         }

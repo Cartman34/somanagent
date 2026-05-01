@@ -97,7 +97,7 @@ final class BacklogFeatureStartCommand extends AbstractBacklogCommand
                     BoardEntry::META_KIND => BacklogBoardService::ENTRY_KIND_FEATURE,
                     BoardEntry::META_STAGE => BacklogBoard::STAGE_IN_PROGRESS,
                     BoardEntry::META_FEATURE => $scopedTask['featureGroup'],
-                    BoardEntry::META_AGENT => $agent,
+                    BoardEntry::META_AGENT => BacklogMetaValue::NONE->value,
                     BoardEntry::META_BRANCH => $featureBranch,
                     BoardEntry::META_BASE => $featureBase,
                     BoardEntry::META_PR => BacklogMetaValue::NONE->value,
