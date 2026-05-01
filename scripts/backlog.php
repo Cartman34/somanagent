@@ -20,22 +20,4 @@ use SoManAgent\Script\WorktreeScriptProxy;
 
 WorktreeScriptProxy::run($argv);
 
-/** backlog.php must run from the project root (main or linked worktree with --force-current-worktree). */
-$projectRoot = realpath(__DIR__ . '/..');
-$currentWorkingDirectory = getcwd();
-if ($projectRoot === false || $currentWorkingDirectory === false) {
-    fwrite(STDERR, "❌ Unable to resolve the current workspace.\n");
-    exit(1);
-}
-
-$normalizedProjectRoot = str_replace('\\', '/', $projectRoot);
-$normalizedCurrentWorkingDirectory = str_replace('\\', '/', $currentWorkingDirectory);
-if ($normalizedCurrentWorkingDirectory !== $normalizedProjectRoot) {
-    fwrite(STDERR, "❌ Run backlog.php from the project root.\n");
-    fwrite(STDERR, "Current directory: {$normalizedCurrentWorkingDirectory}\n");
-    fwrite(STDERR, "Expected root:     {$normalizedProjectRoot}\n");
-    fwrite(STDERR, "Retry from root:   php scripts/backlog.php ...\n");
-    exit(1);
-}
-
 (new BacklogRunner())->handle($argv);
