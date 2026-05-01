@@ -57,22 +57,31 @@ final class BacklogTaskReviewCheckCommand extends AbstractBacklogCommand
 
         $reviewWorktree = $this->worktreeService->prepareFeatureAgentWorktree($entry);
 
+        $savedResult = $this->worktreeService->loadReviewResult($reviewWorktree);
+
+        if ($savedResult !== null) {
+            echo rtrim($savedResult) . "\n";
+            $this->presenter->displaySuccess(sprintf('Mechanical review passed for task %s', $this->boardService->getTaskReviewKey($entry)));
+
+            return;
+        }
+
+        // Fallback: no saved result (task submitted before this change was introduced)
         try {
             $this->worktreeService->runReviewScript($reviewWorktree, $entry->getBase());
         } catch (\RuntimeException $exception) {
             $message = 'Mechanical review `php scripts/review.php` failed. Fix mechanical issues before submitting the task again.';
-            
-            // Delegate to reject command
+
             $tempBodyFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'somanagent-review-' . bin2hex(random_bytes(8));
             $this->fs->writeFilePath($tempBodyFile, $message);
-            
+
             $this->commandFactory->createHandler(BacklogCommandName::TASK_REVIEW_REJECT->value)->handle(
                 [$this->boardService->getTaskReviewKey($entry)],
                 ['body-file' => $tempBodyFile]
             );
-            
+
             $this->fs->removePath($tempBodyFile);
-            
+
             throw $exception;
         }
 

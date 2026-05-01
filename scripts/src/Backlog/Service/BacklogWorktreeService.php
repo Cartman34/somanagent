@@ -26,6 +26,8 @@ use SoManAgent\Script\Client\ProjectScriptClient;
  */
 final class BacklogWorktreeService
 {
+    private const REVIEW_RESULT_FILE = 'local/backlog-review-result.txt';
+
     private string $projectRoot;
     private string $worktreesRoot;
     private bool $dryRun;
@@ -493,7 +495,27 @@ final class BacklogWorktreeService
         $arguments = $base !== null && $base !== ''
             ? sprintf('--base=%s', escapeshellarg($base))
             : '';
-        $this->scripts->run(AppScript::REVIEW, $arguments, projectRoot: $worktree);
+        [$code, $output] = $this->scripts->captureWithExitCode(AppScript::REVIEW, $arguments, projectRoot: $worktree);
+
+        $resultPath = $worktree . '/' . self::REVIEW_RESULT_FILE;
+        $this->fs->makeDirectory(dirname($resultPath));
+        $this->fs->writeFilePath($resultPath, $output);
+        echo rtrim($output) . "\n";
+
+        if ($code !== 0) {
+            throw new \RuntimeException("Review script failed with exit code {$code}.");
+        }
+    }
+
+    /**
+     * @param string $worktree The worktree path
+     * @return string|null The saved review output, or null if no result has been saved yet
+     */
+    public function loadReviewResult(string $worktree): ?string
+    {
+        $path = $worktree . '/' . self::REVIEW_RESULT_FILE;
+
+        return $this->fs->isFile($path) ? $this->fs->getFileContents($path) : null;
     }
 
     private function ensureWorktreeRuntimeState(string $worktree, bool $created): void
