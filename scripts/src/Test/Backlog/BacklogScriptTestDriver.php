@@ -507,11 +507,11 @@ MD);
     public function createRemoteTestBaseBranch(): string
     {
         $branch = sprintf('test/backlog-workflow-%s-%04d', date('Ymd-His'), random_int(1000, 9999));
-        $this->runGitRoot(sprintf('fetch origin %1$s:%1$s', GitService::MAIN_BRANCH));
+        $this->runGitRoot(sprintf('fetch origin %s', GitService::MAIN_BRANCH));
         $this->runGitRoot(sprintf(
             'branch %s %s',
             escapeshellarg($branch),
-            escapeshellarg(GitService::MAIN_BRANCH),
+            escapeshellarg(GitService::ORIGIN_REMOTE . '/' . GitService::MAIN_BRANCH),
         ));
         $this->context->recordLocalBranch($branch);
         $this->runGitRoot(sprintf('push -u origin %s', escapeshellarg($branch)));
