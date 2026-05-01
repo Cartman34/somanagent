@@ -49,6 +49,7 @@ desktop.ini
 # === Agents ===
 .claude/worktrees/
 .worktrees/
+.agent-worktrees/
 .codex
 
 # === Global ===

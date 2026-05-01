@@ -297,13 +297,13 @@ MD);
         $this->assertBacklogFails(['task-review-reject', $reference, '--body-file', $bodyFile], $needle);
     }
 
-    /**
-     * @param string $agent Agent performing the rework
-     * @param string $reference Task reference to rework
-     */
-    public function reworkTask(string $agent, string $reference): void
+    public function rework(string $agent, string $reference = ''): void
     {
-        $this->runBacklog(['task-rework', '--agent', $agent, $reference]);
+        $args = ['rework', '--agent', $agent];
+        if ($reference !== '') {
+            $args[] = $reference;
+        }
+        $this->runBacklog($args);
     }
 
     /**
@@ -368,19 +368,6 @@ MD);
         $this->assertBacklogFails(['feature-review-approve', $feature, '--body-file', $bodyFile], $needle);
     }
 
-    /**
-     * @param string $agent Agent performing the rework
-     * @param string $feature Feature name to rework
-     */
-    public function reworkFeature(string $agent, string $feature): void
-    {
-        $this->runBacklog(['feature-rework', '--agent', $agent, $feature]);
-    }
-
-    /**
-     * @param string $feature Feature name to approve
-     * @param string $bodyFile Path to approve body file
-     */
     public function approveFeature(string $feature, string $bodyFile): void
     {
         $this->runBacklog(['feature-review-approve', $feature, '--body-file', $bodyFile]);
@@ -520,11 +507,11 @@ MD);
     public function createRemoteTestBaseBranch(): string
     {
         $branch = sprintf('test/backlog-workflow-%s-%04d', date('Ymd-His'), random_int(1000, 9999));
-        $this->runGitRoot(sprintf('fetch origin %1$s:%1$s', GitService::MAIN_BRANCH));
+        $this->runGitRoot(sprintf('fetch origin %s', GitService::MAIN_BRANCH));
         $this->runGitRoot(sprintf(
             'branch %s %s',
             escapeshellarg($branch),
-            escapeshellarg(GitService::MAIN_BRANCH),
+            escapeshellarg(GitService::ORIGIN_REMOTE . '/' . GitService::MAIN_BRANCH),
         ));
         $this->context->recordLocalBranch($branch);
         $this->runGitRoot(sprintf('push -u origin %s', escapeshellarg($branch)));
@@ -702,6 +689,8 @@ MD);
         $parts[] = escapeshellarg($this->relativePath($this->context->boardPath));
         $parts[] = '--review-file';
         $parts[] = escapeshellarg($this->relativePath($this->context->reviewPath));
+        $parts[] = '--worktree-dir';
+        $parts[] = escapeshellarg($this->relativePath($this->context->worktreesRoot));
         if ($this->context->prBaseBranch() !== null) {
             $parts[] = '--pr-base-branch';
             $parts[] = escapeshellarg($this->context->prBaseBranch());
@@ -865,9 +854,9 @@ MD);
         }
     }
 
-    private function managedWorktreePath(string $agent): string
+    public function managedWorktreePath(string $agent): string
     {
-        return $this->context->projectRoot . '/.worktrees/' . $agent;
+        return $this->context->worktreesRoot . '/' . $agent;
     }
 
     private function relativePath(string $path): string

@@ -201,7 +201,7 @@ final class GitService
     public function pushBranchAndAwaitVisibility(string $branch, string $remote = self::ORIGIN_REMOTE, ?string $worktree = null): void
     {
         $this->git->pushUpstream($branch, $remote, $worktree);
-        $this->git->fetchRemoteBranch($branch, $remote, $worktree);
+        $this->git->fetch($remote, $branch, worktree: $worktree);
         $this->waitForRemoteBranchVisibility($branch, $remote);
     }
 
@@ -266,12 +266,7 @@ final class GitService
     public function updateMainBranch(): void
     {
         if ($this->getWorkspaceCurrentBranch() !== self::MAIN_BRANCH) {
-            $this->git->runNetwork(sprintf(
-                'git fetch %s %s:%s',
-                self::ORIGIN_REMOTE,
-                self::MAIN_BRANCH,
-                self::MAIN_BRANCH,
-            ));
+            $this->git->fetch(self::ORIGIN_REMOTE, self::MAIN_BRANCH);
 
             return;
         }
@@ -305,12 +300,7 @@ final class GitService
      */
     public function fetchBranch(string $branch, string $remote = self::ORIGIN_REMOTE): void
     {
-        $this->git->runNetwork(sprintf(
-            'git fetch %s %s:%s',
-            $remote,
-            escapeshellarg($branch),
-            escapeshellarg($branch),
-        ));
+        $this->git->fetch($remote, $branch, $branch);
     }
 
     private function updateLocalMainBranchWithWarning(): void
@@ -329,7 +319,7 @@ final class GitService
             return;
         }
 
-        // fetchRemoteBranch already succeeded before this call, so the branch is guaranteed to exist
+        // fetch already succeeded before this call, so the branch is guaranteed to exist
         // on the remote at this point. This check is a defensive assertion, not a propagation wait.
         // No retry is needed: if ls-remote returns empty here it indicates a real error, not lag.
         if ($this->git->isRemoteBranchVisible($branch, $remote)) {

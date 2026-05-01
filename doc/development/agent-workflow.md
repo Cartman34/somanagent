@@ -23,7 +23,7 @@ Rules:
 ## Worktrees
 
 - Developer work in a dedicated worktree is mandatory for every task.
-- Create agent worktrees under `.worktrees/` inside the main repository so they stay in the same WSL filesystem and remain easy to ignore.
+- Create agent worktrees under `.agent-worktrees/` inside the main repository so they stay in the same WSL filesystem and remain easy to ignore.
 - Use `WP` for the main workspace and `WA` for one developer agent worktree.
 - `WP` is the only workflow workspace.
 - `WA` is a development copy for one developer agent, not a runtime workspace.
@@ -32,13 +32,13 @@ Rules:
 - A `WA` belongs to the developer agent and is treated as ephemeral.
 - A branch belongs to the active feature.
 - A feature branch must never stay checked out in multiple worktrees at the same time.
-- Keep `.worktrees/` ignored in the root `.gitignore`.
+- Keep `.agent-worktrees/` ignored in the root `.gitignore`.
 - Run every `php scripts/backlog.php ...` command from `WP` only, never from a `WA`.
 - This rule is technically enforced by `scripts/backlog.php`: the command fails if it is launched from a `WA` or any other directory.
 - `WA` runtime dependencies use local copies for `backend/vendor` and `frontend/node_modules`, created from `WP` when the `WA` is created or when those paths are missing. Root `.env` and `backend/.env.local` are refreshed by the workflow.
-- Use `php scripts/backlog.php worktree-list` to inspect managed worktrees under `.worktrees/`.
+- Use `php scripts/backlog.php worktree-list` to inspect managed worktrees under `.agent-worktrees/`.
 - Use `php scripts/backlog.php worktree-clean` to remove only abandoned managed worktrees that are safe to delete.
-- Worktrees outside `.worktrees/` are never auto-removed by backlog commands; inspect them manually, then use `git worktree remove <path>` or `git worktree prune`.
+- Worktrees outside `.agent-worktrees/` are never auto-removed by backlog commands; inspect them manually, then use `git worktree remove <path>` or `git worktree prune`.
 
 ## Feature Identity Rules
 
@@ -100,7 +100,7 @@ Rules:
 14. `feature-task-add` must not mix a plain queued task into a feature that already uses local child tasks.
 15. `task-review-request --agent=<code> [<task>|<feature/task>]` moves one child task to `review` after a green mechanical review in the task worktree.
 16. `task-review-check`, `task-review-reject`, and `task-review-approve` apply only to `kind=task` entries and store local review notes under `local/backlog-review.md` with keys shaped as `<feature>/<task>`.
-17. `task-rework --agent=<code> [<task>|<feature/task>]` moves one rejected child task back to `development`, preserves its local review notes, and reopens the task branch in that agent worktree.
+17. `rework --agent=<code> [<feature>|<task>|<feature/task>]` moves one rejected task or feature back to `development`, displays its stored review notes, and reopens the entry branch in that agent worktree.
 18. For `kind=task` entries, `meta.stage=approved` means the reviewer review is OK, but it does not grant any additional merge permission beyond `development` or `review`.
 19. `feature-task-merge` merges one child task branch into its parent feature branch locally, after a green mechanical review in the task worktree, using either the worktree already bound to the parent branch or a temporary merge worktree.
 20. `feature-task-merge --agent=<code> [<task>]` is the developer form for merging the current agent task after an explicit user merge instruction.

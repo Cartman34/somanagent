@@ -34,7 +34,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->assertFeatureStartOutputContains($startOutput, '[Feature]');
         $driver->assertFeatureStartOutputContains($startOutput, 'Feature: ' . $context->scopedFeature);
         $driver->assertFeatureStartOutputContains($startOutput, '[Worktree]');
-        $driver->assertFeatureStartOutputContains($startOutput, '.worktrees/' . $context->agentPrimary);
+        $driver->assertFeatureStartOutputContains($startOutput, $context->agentPrimary);
         $driver->assertActiveFeatureExists($context->scopedFeature);
         $driver->assertStatusContains($context->scopedFeature, $context->childA);
 
@@ -48,7 +48,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->assertTaskReviewRejectFails($taskARef, $invalidRejectBody, 'Review body items must be plain findings');
         $driver->rejectTaskReview($taskARef, $rejectBody);
         $driver->assertReviewContains($taskARef);
-        $driver->reworkTask($context->agentPrimary, $taskARef);
+        $driver->rework($context->agentPrimary, $taskARef);
         $driver->requestTaskReview($context->agentPrimary, $taskARef);
         $driver->approveTask($taskARef);
         $driver->assertReviewMissing($taskARef);
@@ -68,7 +68,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->requestTaskReview($context->agentPrimary, $taskBRef);
         $driver->rejectTaskReview($taskBRef, $rejectFeatureTaskB);
         $driver->assertReviewContains('1. Reject second child task for coverage.');
-        $driver->reworkTask($context->agentPrimary, $taskBRef);
+        $driver->rework($context->agentPrimary, $taskBRef);
         $driver->requestTaskReview($context->agentPrimary, $taskBRef);
         $driver->approveTask($taskBRef);
         $driver->mergeTask($taskBRef);

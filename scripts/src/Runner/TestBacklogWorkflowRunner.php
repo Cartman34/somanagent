@@ -67,11 +67,17 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
         $keepArtifacts = isset($options['keep-artifacts']);
         $runToken = sprintf('%s-%04d', date('YmdHis'), random_int(1000, 9999));
 
+        $worktreesRoot = $this->projectRoot . '/local/tmp/worktrees-' . $runToken;
+        if (!is_dir($worktreesRoot) && !mkdir($worktreesRoot, 0777, true) && !is_dir($worktreesRoot)) {
+            throw new \RuntimeException("Unable to create temp worktrees directory: {$worktreesRoot}");
+        }
+
         $context = new BacklogScriptTestContext(
             projectRoot: $this->projectRoot,
             boardPath: $this->projectRoot . '/local/tmp/test-backlog-workflow-board.md',
             reviewPath: $this->projectRoot . '/local/tmp/test-backlog-workflow-review.md',
             tmpDir: $this->projectRoot . '/local/tmp',
+            worktreesRoot: $worktreesRoot,
             allowRemote: $allowRemote,
             keepArtifacts: $keepArtifacts,
             dryRun: $this->dryRun,
@@ -98,6 +104,9 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
             }
         } finally {
             $driver->finalizeArtifacts();
+            if (!$keepArtifacts && is_dir($worktreesRoot)) {
+                exec(sprintf('rm -rf %s', escapeshellarg($worktreesRoot)));
+            }
         }
 
         $this->console->ok('Backlog workflow test campaign(s) completed.');

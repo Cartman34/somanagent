@@ -30,6 +30,7 @@ final class BacklogScriptTestContext
         public readonly string $boardPath,
         public readonly string $reviewPath,
         public readonly string $tmpDir,
+        public readonly string $worktreesRoot,
         public readonly bool $allowRemote,
         public readonly bool $keepArtifacts,
         public readonly bool $dryRun,

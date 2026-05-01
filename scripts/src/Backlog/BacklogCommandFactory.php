@@ -19,7 +19,7 @@ use SoManAgent\Script\Backlog\Command\BacklogFeatureReviewApproveCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureReviewCheckCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureReviewRejectCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureReviewRequestCommand;
-use SoManAgent\Script\Backlog\Command\BacklogFeatureReworkCommand;
+use SoManAgent\Script\Backlog\Command\BacklogReworkCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureStartCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureTaskAddCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureTaskMergeCommand;
@@ -33,7 +33,6 @@ use SoManAgent\Script\Backlog\Command\BacklogTaskReviewApproveCommand;
 use SoManAgent\Script\Backlog\Command\BacklogTaskReviewCheckCommand;
 use SoManAgent\Script\Backlog\Command\BacklogTaskReviewRejectCommand;
 use SoManAgent\Script\Backlog\Command\BacklogTaskReviewRequestCommand;
-use SoManAgent\Script\Backlog\Command\BacklogTaskReworkCommand;
 use SoManAgent\Script\Backlog\Command\BacklogTaskTodoListCommand;
 use SoManAgent\Script\Backlog\Command\BacklogWorktreeCleanCommand;
 use SoManAgent\Script\Backlog\Command\BacklogWorktreeListCommand;
@@ -69,6 +68,7 @@ final class BacklogCommandFactory
     private Console $console;
     private bool $dryRun;
     private string $projectRoot;
+    private string $worktreesRoot;
     private string $boardPath;
     private string $reviewFilePath;
 
@@ -102,6 +102,7 @@ final class BacklogCommandFactory
         Console $console,
         bool $dryRun,
         string $projectRoot,
+        string $worktreesRoot,
         string $boardPath,
         string $reviewFilePath
     ) {
@@ -109,6 +110,7 @@ final class BacklogCommandFactory
         $this->console = $console;
         $this->dryRun = $dryRun;
         $this->projectRoot = $projectRoot;
+        $this->worktreesRoot = $worktreesRoot;
         $this->boardPath = $boardPath;
         $this->reviewFilePath = $reviewFilePath;
     }
@@ -135,7 +137,7 @@ final class BacklogCommandFactory
             BacklogCommandName::TASK_REVIEW_CHECK->value => BacklogTaskReviewCheckCommand::class,
             BacklogCommandName::TASK_REVIEW_REJECT->value => BacklogTaskReviewRejectCommand::class,
             BacklogCommandName::TASK_REVIEW_APPROVE->value => BacklogTaskReviewApproveCommand::class,
-            BacklogCommandName::TASK_REWORK->value => BacklogTaskReworkCommand::class,
+            BacklogCommandName::REWORK->value => BacklogReworkCommand::class,
             BacklogCommandName::REVIEW_NEXT->value => BacklogReviewNextCommand::class,
             BacklogCommandName::FEATURE_START->value => BacklogFeatureStartCommand::class,
             BacklogCommandName::FEATURE_RELEASE->value => BacklogFeatureReleaseCommand::class,
@@ -143,7 +145,6 @@ final class BacklogCommandFactory
             BacklogCommandName::FEATURE_TASK_MERGE->value => BacklogFeatureTaskMergeCommand::class,
             BacklogCommandName::FEATURE_ASSIGN->value => BacklogFeatureAssignCommand::class,
             BacklogCommandName::FEATURE_UNASSIGN->value => BacklogFeatureUnassignCommand::class,
-            BacklogCommandName::FEATURE_REWORK->value => BacklogFeatureReworkCommand::class,
             BacklogCommandName::FEATURE_BLOCK->value => BacklogFeatureBlockCommand::class,
             BacklogCommandName::FEATURE_UNBLOCK->value => BacklogFeatureUnblockCommand::class,
             BacklogCommandName::FEATURE_LIST->value => BacklogFeatureListCommand::class,
@@ -233,6 +234,7 @@ final class BacklogCommandFactory
         if ($this->worktreeService === null) {
             $this->worktreeService = new BacklogWorktreeService(
                 $this->projectRoot,
+                $this->worktreesRoot,
                 $this->dryRun,
                 (string) getenv('DATABASE_URL'),
                 $this->getBoardService(),

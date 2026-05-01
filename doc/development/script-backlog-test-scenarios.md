@@ -25,7 +25,7 @@ Before running the scenarios:
    - `php scripts/scripts-install.php`
 3. Ensure the repository is in a controlled local test state:
    - no uncommitted user work in `WP`
-   - no accidental worktrees to preserve under `.worktrees/`
+   - no accidental worktrees to preserve under `.agent-worktrees/`
 4. Back up the local-only workflow files if needed:
    - `local/backlog-board.md`
    - `local/backlog-review.md`
@@ -262,7 +262,7 @@ Validate local child task review commands.
    - create a local review body under `local/tmp/`
    - `php scripts/backlog.php task-review-reject test-scoped-feature/test-child-a --body-file local/tmp/test-task-review-reject.md`
 5. Rework it:
-   - `php scripts/backlog.php task-rework --agent d01 test-scoped-feature/test-child-a`
+   - `php scripts/backlog.php rework --agent d01 test-scoped-feature/test-child-a`
 6. Submit again and approve:
    - `php scripts/backlog.php task-review-request --agent d01 test-scoped-feature/test-child-a`
    - `php scripts/backlog.php task-review-approve test-scoped-feature/test-child-a`
@@ -314,7 +314,7 @@ Validate remote feature review transitions.
 4. Reject:
    - `php scripts/backlog.php feature-review-reject test-scoped-feature --body-file local/tmp/test-feature-review-reject.md`
 5. Rework:
-   - `php scripts/backlog.php feature-rework --agent d01 test-scoped-feature`
+   - `php scripts/backlog.php rework --agent d01 test-scoped-feature`
 6. Request review again, then approve:
    - `php scripts/backlog.php feature-review-request --agent d01 test-scoped-feature`
    - `php scripts/backlog.php feature-review-approve test-scoped-feature`
@@ -412,7 +412,7 @@ After validation:
 
 1. Restore the original local backlog files if they were backed up.
 2. Remove temporary files created under `local/tmp/`.
-3. Inspect `.worktrees/` and clean any leftover managed worktrees.
+3. Inspect `.agent-worktrees/` and clean any leftover managed worktrees.
 4. Confirm final local state with:
    - `php scripts/backlog.php feature-list`
    - `php scripts/backlog.php worktree-list`

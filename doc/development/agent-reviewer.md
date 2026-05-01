@@ -86,7 +86,7 @@ Rules:
 1. Prepare the review body file under `local/tmp/`: one plain finding per line, optional leading numbers or bullets, no Markdown headings.
 2. Run `php scripts/backlog.php task-review-reject <feature/task> --body-file=<path>`.
 3. The script sets `meta.stage=rejected` and overwrites the `### <feature>/<task>` section in `local/backlog-review.md`.
-4. Developers resume corrections on that task through `php scripts/backlog.php task-rework --agent=<code> [<task>|<feature/task>]`.
+4. Developers resume corrections on that task through `php scripts/backlog.php rework --agent=<code> [<task>|<feature/task>]`.
 
 ### `task-review-approve`
 
@@ -102,13 +102,13 @@ Rules:
 ### `worktree-list`
 
 1. Run `php scripts/backlog.php worktree-list`.
-2. The script lists worktrees under `.worktrees/` with their cleanup state and recommended action.
-3. Worktrees outside `.worktrees/` are reported separately for manual cleanup only.
+2. The script lists worktrees under `.agent-worktrees/` with their cleanup state and recommended action.
+3. Worktrees outside `.agent-worktrees/` are reported separately for manual cleanup only.
 
 ### `worktree-clean`
 
 1. Run `php scripts/backlog.php worktree-clean`.
-2. The script removes only abandoned managed worktrees under `.worktrees/` when they are safe to delete.
+2. The script removes only abandoned managed worktrees under `.agent-worktrees/` when they are safe to delete.
 3. Dirty, blocked, or external worktrees are left untouched and must be handled manually.
 4. In the normal workflow, this command is mainly triggered automatically after `feature-close` and `feature-merge`, or manually through `cleanup`.
 
@@ -139,7 +139,7 @@ Also check:
 1. Prepare the review body file under `local/tmp/`: one plain finding per line, optional leading numbers or bullets, no Markdown headings.
 2. Run `php scripts/backlog.php feature-review-reject <feature> --body-file=<path>`.
 3. The script sets `meta.stage=rejected` and overwrites the `### <feature>` section in `local/backlog-review.md`.
-4. Developers resume corrections through `php scripts/backlog.php feature-rework --agent=<code> [<feature>]`.
+4. Developers resume corrections through `php scripts/backlog.php rework --agent=<code> [<feature>]`.
 
 ### `feature-review-approve`
 

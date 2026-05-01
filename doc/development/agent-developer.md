@@ -11,14 +11,13 @@ Read this file only when the active task requires developer workflow details.
 - `task-todo-list`
 - `task-remove`
 - `task-review-request`
-- `task-rework`
+- `rework`
 - `feature-start`
 - `feature-release`
 - `feature-task-add`
 - `feature-task-merge`
 - `feature-assign`
 - `feature-unassign`
-- `feature-rework`
 - `feature-block`
 - `feature-unblock`
 - `feature-list`
@@ -86,13 +85,13 @@ Read this file only when the active task requires developer workflow details.
 2. The script targets the agent's active `kind=task` entry, or the explicit task reference when provided.
 3. The script requires a green mechanical review in the task worktree, moves the task to `meta.stage=review`, and clears any stale local task review notes for that task.
 
-### `task-rework`
+### `rework`
 
-1. Read the review feedback recorded for the rejected task.
-2. Run `php scripts/backlog.php task-rework --agent=<code> [<task>|<feature/task>]`.
-3. The script targets the agent's active `kind=task` entry, or the explicit task reference when provided.
-4. The script requires the task to be in `meta.stage=rejected`, moves it back to `meta.stage=development`, and reopens the task branch in the agent `WA`.
-5. The task review notes stay in `local/backlog-review.md` until the next `task-review-request` clears them.
+1. Run `php scripts/backlog.php rework --agent=<code> [<feature>|<task>|<feature/task>]`.
+2. Without an explicit reference, the script resolves the single rejected entry (task or feature) assigned to the agent.
+3. With a `<feature/task>` reference, the script targets that child task. With a plain slug, it tries feature first then task, and errors if both match.
+4. The script requires the entry to be in `meta.stage=rejected`, moves it back to `meta.stage=development`, displays the stored review notes from `local/backlog-review.md`, and reopens the entry branch in the agent `WA`.
+5. The review notes stay in `local/backlog-review.md` until the next `task-review-request` or `feature-review-request` clears them.
 
 ### `feature-start`
 
@@ -142,13 +141,7 @@ Read this file only when the active task requires developer workflow details.
 2. Export `SOMANAGER_ROLE=developer` and `SOMANAGER_AGENT=<code>` before running the command.
 3. Developer can only remove its own assignment from its own feature.
 4. The script removes the current agent assignment from the target feature and keeps the feature in its current backlog section.
-5. If this leaves behind an abandoned managed worktree under `.worktrees/`, the script runs `worktree-clean` automatically.
-
-### `feature-rework`
-
-1. Read the review feedback provided with the `rework` instruction.
-2. Run `php scripts/backlog.php feature-rework --agent=<code> [<feature>]`.
-3. Resume development on the same feature branch from `meta.stage=rejected` back to `meta.stage=development`.
+5. If this leaves behind an abandoned managed worktree under `.agent-worktrees/`, the script runs `worktree-clean` automatically.
 
 ### `feature-block`
 
@@ -168,14 +161,14 @@ Read this file only when the active task requires developer workflow details.
 ### `worktree-list`
 
 1. Run `php scripts/backlog.php worktree-list`.
-2. The script lists worktrees under `.worktrees/` with their cleanup state and recommended action.
-3. Worktrees outside `.worktrees/` are reported separately for manual cleanup only.
+2. The script lists worktrees under `.agent-worktrees/` with their cleanup state and recommended action.
+3. Worktrees outside `.agent-worktrees/` are reported separately for manual cleanup only.
 4. Use this command only when there is a cleanup need outside the normal workflow procedure.
 
 ### `worktree-clean`
 
 1. Run `php scripts/backlog.php worktree-clean`.
-2. The script removes only abandoned managed worktrees under `.worktrees/` when they are safe to delete.
+2. The script removes only abandoned managed worktrees under `.agent-worktrees/` when they are safe to delete.
 3. Dirty, blocked, or external worktrees are left untouched and must be handled manually.
 
 ### `worktree-restore`
@@ -184,7 +177,7 @@ Read this file only when the active task requires developer workflow details.
 2. The script recreates or refreshes the managed worktree for the active feature or task recorded in backlog metadata without changing the workflow stage.
 3. Existing PHP vendors are validated with `scripts/vendor/autoload.php` and `backend/vendor/autoload.php`; when a witness is missing, the whole matching vendor directory is replaced from `WP`.
 4. Run `php scripts/backlog.php worktree-restore --agent=<code> --force` to recreate the managed worktree completely; the script refuses `--force` when the existing worktree has local changes.
-5. Use this command when `.worktrees/<agent>` was removed or when copied PHP runtime dependencies are incomplete while the backlog still has active development.
+5. Use this command when `.agent-worktrees/<agent>` was removed or when copied PHP runtime dependencies are incomplete while the backlog still has active development.
 
 ### `status`
 
@@ -231,10 +224,10 @@ Read this file only when the active task requires developer workflow details.
 
 ### `rework`
 
-1. Read the review feedback provided with the `rework` instruction.
-2. `WP`: if the active entry is `kind=task`, run `php scripts/backlog.php task-rework --agent=<code> [<task>|<feature/task>]`.
-3. `WP`: if the active entry is `kind=feature`, run `php scripts/backlog.php feature-rework --agent=<code> [<feature>]`.
-4. `WA`: resume development on the same branch and address the recorded review feedback.
+1. The review feedback is given with the `rework` instruction. The `rework` command provides the task status and review notes directly in its output. Do not run `status` or read `local/backlog-review.md` before proceeding.
+2. `WP`: run `php scripts/backlog.php rework --agent=<code> [<feature>|<task>|<feature/task>]`.
+3. `WA`: resume development on the same branch and address the recorded review feedback.
+4. Stop here. Do not run `submit` unless the user explicitly asks for it.
 
 ### `cleanup`
 

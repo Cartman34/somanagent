@@ -196,7 +196,7 @@ final class BacklogPresenter
         return match ($stage) {
             BacklogBoard::STAGE_IN_PROGRESS => BacklogCommandName::FEATURE_REVIEW_REQUEST->value,
             BacklogBoard::STAGE_IN_REVIEW => BacklogCommandName::FEATURE_REVIEW_CHECK->value . ' or ' . BacklogCommandName::FEATURE_REVIEW_APPROVE->value,
-            BacklogBoard::STAGE_REJECTED => BacklogCommandName::FEATURE_REWORK->value,
+            BacklogBoard::STAGE_REJECTED => BacklogCommandName::REWORK->value,
             BacklogBoard::STAGE_APPROVED => BacklogCommandName::FEATURE_MERGE->value,
             default => '-',
         };
@@ -207,7 +207,7 @@ final class BacklogPresenter
         return match ($stage) {
             BacklogBoard::STAGE_IN_PROGRESS => BacklogCommandName::TASK_REVIEW_REQUEST->value,
             BacklogBoard::STAGE_IN_REVIEW => BacklogCommandName::TASK_REVIEW_CHECK->value . ' or ' . BacklogCommandName::TASK_REVIEW_APPROVE->value,
-            BacklogBoard::STAGE_REJECTED => BacklogCommandName::TASK_REWORK->value,
+            BacklogBoard::STAGE_REJECTED => BacklogCommandName::REWORK->value,
             BacklogBoard::STAGE_APPROVED => BacklogCommandName::FEATURE_TASK_MERGE->value,
             default => '-',
         };
