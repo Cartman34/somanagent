@@ -118,6 +118,7 @@ MD);
         $this->assertOutputContains($this->runBacklog(['help', 'review-next']), 'review-next');
         $this->assertOutputContains($this->runBacklog(['help', 'work-start']), 'work-start');
         $this->assertOutputContains($this->runBacklog(['work-start', '--help']), 'work-start');
+        $this->assertOutputContains($this->runBacklog(['help', 'review-request']), 'review-request');
     }
 
     /**

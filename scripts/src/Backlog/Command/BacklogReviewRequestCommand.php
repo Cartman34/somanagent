@@ -63,13 +63,6 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
     {
         $review = $this->loadReviewFile();
 
-        if ($entry->getAgent() !== $agent) {
-            throw new \RuntimeException(
-                "review-request: the active task is not assigned to agent {$agent}.\n" .
-                "Details: php scripts/backlog.php status --agent={$agent}"
-            );
-        }
-
         $taskWorktree = $this->worktreeService->prepareFeatureAgentWorktree($entry);
         $this->worktreeService->runReviewScript($taskWorktree, $entry->getBase());
 

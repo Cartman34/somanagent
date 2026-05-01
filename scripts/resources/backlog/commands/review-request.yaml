@@ -1,0 +1,13 @@
+description: 'Submit the agent''s active entry (task or feature) for review'
+options:
+  -
+    name: '--agent'
+    description: 'Developer agent code submitting for review'
+examples:
+  - 'php scripts/backlog.php review-request --agent agent-01'
+notes:
+  - 'Replaces both task-review-request and feature-review-request.'
+  - 'Detects automatically whether the active entry is a task or a feature.'
+  - 'For a task: runs the review script and moves the task to the review stage.'
+  - 'For a feature: verifies no active child tasks remain, runs the review script, and moves the feature to the review stage.'
+  - 'The feature must have an assigned developer (run feature-assign first if needed).'
