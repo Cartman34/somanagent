@@ -62,8 +62,9 @@ final class BacklogFeatureStartCommand extends AbstractBacklogCommand
 
         $board = $this->loadBoard();
 
-        if ($this->boardService->findTaskEntriesByAgent($board, $agent) !== []) {
-            throw new \RuntimeException("Agent {$agent} already owns an active task.");
+        $activeEntries = $this->boardService->findActiveEntriesByAgent($board, $agent);
+        if ($activeEntries !== []) {
+            throw new \RuntimeException($this->boardService->describeActiveEntryConflict($activeEntries, $agent));
         }
 
         $target = $this->boardService->fetchNextTodoTask($board);

@@ -192,7 +192,7 @@ Read this file only when the active task requires developer workflow details.
 
 ## Rules
 
-- Do not start a second visible feature for the same agent.
+- An agent can have at most one active entry (`kind=task` or `kind=feature`) at a time. `feature-start` and `feature-assign` enforce this at the script level and will refuse with the current active entry details and the required next step.
 - Do not edit local backlog files directly.
 - A plain feature is considered done for Developer only when it is committed, mechanically valid, and passed to `meta.stage=review`.
 - A `kind=task` entry may be submitted for review with `task-review-request`, but it is considered done for Developer only when it is committed, mechanically valid, and merged locally into its parent feature branch with `feature-task-merge`.

@@ -112,3 +112,4 @@ Rules:
 27. `--verbose` prints detailed execution steps and simulated commands.
 28. When the user invokes a documented workflow keyword or command sequence, agents must rerun that documented procedure each time unless the user cancels it. Repetition is not a reason to switch to advisory mode or rely on remembered state instead of the workflow result.
 29. PR merges use a standard merge by default. Squash merge is available on explicit user request only.
+30. An agent can have at most one active entry at a time, either `kind=task` or `kind=feature`. `feature-start` and `feature-assign` are enforced at the script level and refuse when the agent already has any active entry. The refusal message includes the current active entry and the required next step to unblock.

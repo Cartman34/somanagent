@@ -83,11 +83,9 @@ final class BacklogFeatureTaskAddCommand extends AbstractBacklogCommand
                         $feature,
                     ));
                 }
-                if ($this->boardService->findTaskEntriesByAgent($board, $agent) !== []) {
-                    throw new \RuntimeException(sprintf(
-                        'Agent %s already owns an active task. Merge or release it before feature-task-add.',
-                        $agent,
-                    ));
+                $activeTaskEntries = $this->boardService->findTaskEntriesByAgent($board, $agent);
+                if ($activeTaskEntries !== []) {
+                    throw new \RuntimeException($this->boardService->describeActiveEntryConflict($activeTaskEntries, $agent));
                 }
 
                 $featureBranch = $entry->getBranch();

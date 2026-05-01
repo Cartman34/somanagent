@@ -530,6 +530,85 @@ final class BacklogBoardService
     }
 
     /**
+     * Returns all active entries (task and feature kinds) assigned to an agent.
+     *
+     * @return array<int, BoardEntryMatch>
+     */
+    public function findActiveEntriesByAgent(BacklogBoard $board, string $agent): array
+    {
+        return array_merge(
+            $this->findTaskEntriesByAgent($board, $agent),
+            $this->findFeatureEntriesByAgent($board, $agent)
+        );
+    }
+
+    /**
+     * Builds an informative conflict error when an agent already has an active entry.
+     *
+     * @param array<int, BoardEntryMatch> $activeEntries
+     */
+    public function describeActiveEntryConflict(array $activeEntries, string $agent): string
+    {
+        $count = count($activeEntries);
+        $lines = [
+            sprintf(
+                'Agent %s already has %s active %s. One entry per agent is allowed.',
+                $agent,
+                $count === 1 ? 'an' : $count,
+                $count === 1 ? 'entry' : 'entries'
+            ),
+        ];
+
+        $resolveEntry = null;
+        foreach ($activeEntries as $match) {
+            $entry = $match->getEntry();
+            $isTask = $this->checkIsTaskEntry($entry);
+            $kind = $this->getEntryKind($entry);
+            $stage = $this->getFeatureStage($entry);
+            if ($isTask) {
+                $ref = "kind={$kind}  feature={$entry->getFeature()}  task={$entry->getTask()}  stage={$stage}  branch={$entry->getBranch()}";
+            } else {
+                $ref = "kind={$kind}  feature={$entry->getFeature()}  stage={$stage}  branch={$entry->getBranch()}";
+            }
+            $lines[] = "  {$ref}";
+            if ($resolveEntry === null || $isTask) {
+                $resolveEntry = $entry;
+            }
+        }
+
+        if ($resolveEntry !== null) {
+            $lines[] = 'Resolve:';
+            $lines[] = '  ' . $this->resolveActiveEntryNextStep($resolveEntry, $agent);
+        }
+
+        $lines[] = "Details: php scripts/backlog.php status --agent={$agent}";
+
+        return implode("\n", $lines);
+    }
+
+    private function resolveActiveEntryNextStep(BoardEntry $entry, string $agent): string
+    {
+        $stage = $this->getFeatureStage($entry);
+        if ($this->checkIsTaskEntry($entry)) {
+            return match ($stage) {
+                BacklogBoard::STAGE_IN_PROGRESS => "run `task-review-request --agent={$agent}` to submit the task for review",
+                BacklogBoard::STAGE_IN_REVIEW   => 'wait for reviewer action on the active task',
+                BacklogBoard::STAGE_REJECTED    => "run `rework --agent={$agent}` to resume development on the rejected task",
+                BacklogBoard::STAGE_APPROVED    => "run `feature-task-merge --agent={$agent}` to merge the task into its parent feature",
+                default                         => 'check status',
+            };
+        }
+
+        return match ($stage) {
+            BacklogBoard::STAGE_IN_PROGRESS => "run `feature-review-request --agent={$agent}` to submit for review, or `feature-release --agent={$agent}` if no commits were made",
+            BacklogBoard::STAGE_IN_REVIEW   => 'wait for reviewer action on the active feature',
+            BacklogBoard::STAGE_REJECTED    => "run `rework --agent={$agent}` to resume development on the rejected feature",
+            BacklogBoard::STAGE_APPROVED    => 'wait for the manager to merge the feature',
+            default                         => 'check status',
+        };
+    }
+
+    /**
      * @return array<int, BoardEntryMatch>
      */
     public function fetchReservedTasks(BacklogBoard $board, ?string $agent = null, ?string $feature = null): array
