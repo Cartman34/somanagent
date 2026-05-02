@@ -39,6 +39,7 @@ php scripts/help.php migrate.php
 | `review.php` | PHP | Run mechanical review checks (French strings, PHPDoc, JSDoc, translations, targeted validation, PHPStan) |
 | `validate-files.php` | PHP | Run targeted backend/frontend validations for an explicit file list |
 | `validate-backend-tests.php` | PHP | Run isolated local PHPUnit checks for backend unit tests from WSL without Docker services |
+| `phpunit.php` | PHP | Run PHPUnit on the project scopes |
 | `phpstan.php` | PHP | Run PHPStan static analysis on backend and/or scripts PHP sources |
 | `rector.php` | PHP | Apply automated code fixes to backend and/or scripts PHP sources via Rector |
 | `code-refacto.php` | PHP | Local code refactoring tools for backend and scripts source files |
@@ -352,6 +353,25 @@ The review flow skips container-backed validations that depend on local uncommit
 php scripts/review.php
 php scripts/review.php --base=HEAD~1
 ```
+
+---
+
+### `phpunit.php`
+Runs PHPUnit using the dedicated configuration and binary for the requested scopes. By default all configured scopes are tested. Use `--scope=<name>` to restrict the scope.
+
+```bash
+php scripts/phpunit.php
+php scripts/phpunit.php --scope=backend
+php scripts/phpunit.php --suite local-unit
+php scripts/phpunit.php backend/tests/Unit/Service/MyServiceTest.php
+```
+
+Notes:
+- currently available scope is `backend`
+- explicit file arguments determine their own scope; using `--scope` with files is forbidden
+- invalid or non-existent files print a warning but execution proceeds for valid files
+- the wrapper automatically injects the configuration file for the scope, but does **not** inject environment variables. If you need local test isolation, you must prefix your call (e.g., `SOMANAGENT_PHPUNIT_LOCAL=1 php scripts/phpunit.php`)
+- `--suite <name>` allows running a specific test suite defined in the scope's PHPUnit configuration
 
 ---
 

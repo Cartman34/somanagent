@@ -62,7 +62,8 @@ final class ValidateTranslationsRunner extends AbstractScriptRunner
     {
         require_once $this->projectRoot . '/backend/vendor/autoload.php';
 
-        $checks = $this->parseChecks($args);
+        [, $options] = $this->parseArgs(array_values($args));
+        $checks = $this->resolveChecks($options);
         if ($checks === null) {
             return 1;
         }
@@ -118,22 +119,23 @@ final class ValidateTranslationsRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $args
+     * @param array<string, bool|string|array<bool|string>> $options
      * @return array<string>|null
      */
-    private function parseChecks(array $args): ?array
+    private function resolveChecks(array $options): ?array
     {
-        $checks = [];
+        $rawChecks = $options['check'] ?? [];
+        $checkList = is_array($rawChecks) ? $rawChecks : [$rawChecks];
 
-        foreach ($args as $arg) {
-            if (!str_starts_with($arg, '--check=')) {
-                fwrite(STDERR, "Unknown option: {$arg}\n");
+        $checks = [];
+        foreach ($checkList as $raw) {
+            if (is_bool($raw)) {
+                fwrite(STDERR, "Option --check requires a value.\n");
                 return null;
             }
-
-            $rawValues = explode(',', substr($arg, strlen('--check=')));
-            foreach ($rawValues as $rawValue) {
-                $check = trim($rawValue);
+            $parts = explode(',', $raw);
+            foreach ($parts as $part) {
+                $check = trim($part);
                 if ($check === '') {
                     continue;
                 }

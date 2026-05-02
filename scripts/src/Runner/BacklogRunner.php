@@ -104,7 +104,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
     /**
      * @param list<string> $commandArgs
-     * @param array<string, bool|string> $options
+     * @param array<string, bool|string|array<bool|string>> $options
      */
     private function handleCommand(string $command, array $commandArgs, array $options): int
     {
@@ -114,43 +114,7 @@ final class BacklogRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param list<string> $args
-     * @return array{0: list<string>, 1: array<string, bool|string>}
-     */
-    private function parseArgs(array $args): array
-    {
-        $parsedArgs = [];
-        $options = [];
-
-        for ($i = 0, $c = count($args); $i < $c; $i++) {
-            $arg = $args[$i];
-            if (str_starts_with($arg, '--')) {
-                $option = substr($arg, 2);
-                if (str_contains($option, '=')) {
-                    [$key, $val] = explode('=', $option, 2);
-                    $options[$key] = $val;
-
-                    continue;
-                }
-
-                $key = $option;
-                $val = $args[$i + 1] ?? true;
-                if ($val !== true && str_starts_with((string) $val, '--')) {
-                    $val = true;
-                } else {
-                    $i++;
-                }
-                $options[$key] = $val;
-            } else {
-                $parsedArgs[] = $arg;
-            }
-        }
-
-        return [$parsedArgs, $options];
-    }
-
-    /**
-     * @param array<string, bool|string> $options
+     * @param array<string, bool|string|array<bool|string>> $options
      */
     private function configureTestFileOverrides(array $options): void
     {
@@ -159,15 +123,27 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         if (isset($options[BacklogCliOption::BOARD_FILE->value])) {
-            $this->boardPath = $this->validateTestFileOverride((string) $options[BacklogCliOption::BOARD_FILE->value], BacklogCliOption::BOARD_FILE->value);
+            $boardFile = $options[BacklogCliOption::BOARD_FILE->value];
+            if (is_array($boardFile)) {
+                throw new \RuntimeException(sprintf('Option --%s cannot be repeated.', BacklogCliOption::BOARD_FILE->value));
+            }
+            $this->boardPath = $this->validateTestFileOverride((string) $boardFile, BacklogCliOption::BOARD_FILE->value);
         }
 
         if (isset($options[BacklogCliOption::REVIEW_FILE->value])) {
-            $this->reviewFilePath = $this->validateTestFileOverride((string) $options[BacklogCliOption::REVIEW_FILE->value], BacklogCliOption::REVIEW_FILE->value);
+            $reviewFile = $options[BacklogCliOption::REVIEW_FILE->value];
+            if (is_array($reviewFile)) {
+                throw new \RuntimeException(sprintf('Option --%s cannot be repeated.', BacklogCliOption::REVIEW_FILE->value));
+            }
+            $this->reviewFilePath = $this->validateTestFileOverride((string) $reviewFile, BacklogCliOption::REVIEW_FILE->value);
         }
 
         if (isset($options[BacklogCliOption::WORKTREE_DIR->value])) {
-            $this->worktreesRoot = $this->validateTestFileOverride((string) $options[BacklogCliOption::WORKTREE_DIR->value], BacklogCliOption::WORKTREE_DIR->value);
+            $worktreeDir = $options[BacklogCliOption::WORKTREE_DIR->value];
+            if (is_array($worktreeDir)) {
+                throw new \RuntimeException(sprintf('Option --%s cannot be repeated.', BacklogCliOption::WORKTREE_DIR->value));
+            }
+            $this->worktreesRoot = $this->validateTestFileOverride((string) $worktreeDir, BacklogCliOption::WORKTREE_DIR->value);
         }
     }
 

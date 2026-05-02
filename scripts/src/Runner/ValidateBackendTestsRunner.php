@@ -20,7 +20,6 @@ final class ValidateBackendTestsRunner extends AbstractScriptRunner
     }
 
     private const ALL_OPTION = '--all';
-    private const LOCAL_TEST_ENV = 'SOMANAGENT_PHPUNIT_LOCAL=1';
     private const LOCAL_TEST_SUITE = 'local-unit';
 
     /**
@@ -169,10 +168,10 @@ final class ValidateBackendTestsRunner extends AbstractScriptRunner
      */
     private function runPhpUnit(array $testPaths = [], bool $runAll = false): int
     {
-        $command = self::LOCAL_TEST_ENV . ' php backend/vendor/bin/phpunit --configuration backend/phpunit.dist.xml';
+        $command = 'SOMANAGENT_PHPUNIT_LOCAL=1 php scripts/phpunit.php';
 
         if ($runAll) {
-            $command .= ' --testsuite ' . escapeshellarg(self::LOCAL_TEST_SUITE);
+            $command .= ' --scope=backend --suite ' . escapeshellarg(self::LOCAL_TEST_SUITE);
         } elseif ($testPaths !== []) {
             $command .= ' ' . implode(' ', array_map('escapeshellarg', $testPaths));
         }

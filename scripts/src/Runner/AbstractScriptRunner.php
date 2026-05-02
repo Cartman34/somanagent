@@ -205,6 +205,56 @@ abstract class AbstractScriptRunner
     }
 
     /**
+     * Standard argument parser for all SoManAgent scripts.
+     *
+     * Extracts named options (--key or --key=val) and positional arguments.
+     * When an option is followed by a value that does not start with --, it is taken as the value.
+     * When the same option is used multiple times, values are collected into an array.
+     *
+     * @param list<string> $args
+     * @return array{0: list<string>, 1: array<string, bool|string|array<bool|string>>}
+     */
+    protected function parseArgs(array $args): array
+    {
+        $parsedArgs = [];
+        $options = [];
+
+        for ($i = 0, $c = count($args); $i < $c; $i++) {
+            $arg = $args[$i];
+            if (str_starts_with($arg, '--')) {
+                $option = substr($arg, 2);
+                if (str_contains($option, '=')) {
+                    [$key, $val] = explode('=', $option, 2);
+                } else {
+                    $key = $option;
+                    $val = $args[$i + 1] ?? true;
+                    if ($val !== true && str_starts_with((string) $val, '--')) {
+                        $val = true;
+                    } else {
+                        $i++;
+                    }
+                }
+
+                if (isset($options[$key])) {
+                    if (is_array($options[$key])) {
+                        $options[$key][] = $val;
+                    } else {
+                        $options[$key] = [$options[$key], $val];
+                    }
+                } else {
+                    $options[$key] = $val;
+                }
+
+                continue;
+            }
+
+            $parsedArgs[] = $arg;
+        }
+
+        return [$parsedArgs, $options];
+    }
+
+    /**
      * Convert the execution-mode options to typed CommandParamHelp DTOs.
      *
      * @return list<CommandParamHelp>

@@ -65,124 +65,87 @@ final class CodeRefactoRunner extends AbstractScriptRunner
 
     /**
      * Executes the refactoring command.
-     *
-     * @param array<string> $args
      */
     public function run(array $args): int
     {
-        if ($args === []) {
+        [$commandArgs, $options] = $this->parseArgs(array_values($args));
+        $this->configureExecutionModes($options);
+
+        $command = array_shift($commandArgs);
+
+        if ($command === null) {
             $this->printHelp();
 
             return 0;
         }
 
-        $command = $args[0];
-        $remainingArgs = array_values(array_slice($args, 1));
-        $options = $this->parseOptions($remainingArgs);
-        $this->configureExecutionModes($options);
+        $scopes = $this->resolveScopes($options);
 
-        $files = $this->getSourceFiles($options);
-
-        switch ($command) {
-            case self::COMMAND_FIX_INLINE_PHPDOC:
-                return $this->fixInlinePhpDoc($files);
-            case self::COMMAND_ADD_MISSING_ARRAY_TYPES:
-                return $this->addMissingArrayTypes($files, isset($options['todo']));
-            case self::COMMAND_STRIP_WHAT_COMMENTS:
-                return $this->stripWhatComments($files);
-            default:
-                $this->console->fail(sprintf('Unknown command: %s', $command));
-        }
-    }
-
-    /**
-     * @param list<string> $args
-     *
-     * @return array<string, string|true|list<string>>
-     */
-    private function parseOptions(array &$args): array
-    {
-        $options = [];
-        $remainingArgs = [];
-        foreach ($args as $arg) {
-            if (str_starts_with($arg, '--')) {
-                $option = substr($arg, 2);
-                if (str_contains($option, '=')) {
-                    [$key, $val] = explode('=', $option, 2);
-                    if ($key === 'scope') {
-                        $scopes = $options[$key] ?? [];
-                        $options[$key] = array_merge(is_array($scopes) ? $scopes : [], [$val]);
-                    } else {
-                        $options[$key] = $val;
-                    }
-                } else {
-                    $options[$option] = true;
-                }
-            } else {
-                $remainingArgs[] = $arg;
-            }
-        }
-        $args = $remainingArgs;
-
-        return $options;
-    }
-
-    /**
-     * @param array<string, string|true|list<string>> $options
-     *
-     * @return list<string>
-     */
-    private function getSourceFiles(array $options): array
-    {
-        $directories = [];
-        foreach ($this->resolveScopes($options) as $scope) {
-            foreach (self::SCOPES[$scope]['directories'] as $directory) {
-                $directories[] = $this->projectRoot . '/' . $directory;
-            }
-        }
-
+        /** @var string[] $files */
         $files = [];
-        foreach ($directories as $directory) {
-            if (!is_dir($directory)) {
-                continue;
-            }
-
-            $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory, \RecursiveDirectoryIterator::SKIP_DOTS));
-            foreach ($iterator as $file) {
-                if ($file->isFile() && $file->getExtension() === 'php') {
-                    $files[] = $file->getPathname();
-                }
+        foreach ($scopes as $scope) {
+            foreach (self::SCOPES[$scope]['directories'] as $dir) {
+                $this->collectPhpFiles($this->projectRoot . '/' . $dir, $files);
             }
         }
 
-        return $files;
+        match ($command) {
+            self::COMMAND_FIX_INLINE_PHPDOC => $this->fixInlinePhpDoc($files),
+            self::COMMAND_ADD_MISSING_ARRAY_TYPES => $this->addMissingArrayTypes($files, isset($options['todo'])),
+            self::COMMAND_STRIP_WHAT_COMMENTS => $this->stripWhatComments($files),
+            default => throw new \RuntimeException(sprintf('Unknown command "%s".', $command)),
+        };
+
+        return 0;
     }
 
     /**
-     * @param array<string, string|true|list<string>> $options
-     * @return list<string>
+     * @param array<string, bool|string|array<bool|string>> $options
+     * @return array<string>
      */
     private function resolveScopes(array $options): array
     {
-        $scopeOption = $options['scope'] ?? null;
-        $scopeOptions = is_array($scopeOption) ? $scopeOption : (is_string($scopeOption) ? [$scopeOption] : []);
-
-        $scopes = $scopeOptions;
-        if ($scopes === []) {
-            $scopes = array_keys(self::SCOPES);
-        }
+        $rawScopes = $options['scope'] ?? array_keys(self::SCOPES);
+        $scopes = is_array($rawScopes) ? $rawScopes : [$rawScopes];
 
         foreach ($scopes as $scope) {
             if (!isset(self::SCOPES[$scope])) {
-                throw new \RuntimeException(sprintf('Unknown scope "%s". Available scopes: %s.', $scope, implode(', ', array_keys(self::SCOPES))));
+                throw new \RuntimeException(sprintf('Unknown scope "%s". Available scopes: %s.', (string) $scope, implode(', ', array_keys(self::SCOPES))));
             }
         }
 
-        return array_values(array_unique($scopes));
+        return array_values(array_unique(array_map('strval', $scopes)));
     }
 
     /**
-     * @param list<string> $files
+     * @param string[] $files
+     */
+    private function collectPhpFiles(string $dir, array &$files): void
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+
+        $items = scandir($dir);
+        if ($items === false) {
+            return;
+        }
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            $path = $dir . '/' . $item;
+            if (is_dir($path)) {
+                $this->collectPhpFiles($path, $files);
+            } elseif (str_ends_with($item, '.php')) {
+                $files[] = $path;
+            }
+        }
+    }
+
+    /**
+     * @param array<string> $files
      */
     private function fixInlinePhpDoc(array $files): int
     {
@@ -191,7 +154,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
         foreach ($files as $file) {
             $content = file_get_contents($file);
             if ($content === false) {
-                throw new \RuntimeException(sprintf('Unable to read file: %s', $file));
+                continue;
             }
             $newContent = $content;
 
@@ -207,6 +170,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
                 '/^([ \t]*)\/\*\* (@(?:return|param|var|throws)[^*\n]+?) \*\/$/m',
                 function (array $m) use (&$count): string {
                     $count++;
+
                     return $m[1] . "/**\n" . $m[1] . " * " . rtrim($m[2]) . "\n" . $m[1] . " */";
                 },
                 $newContent
@@ -216,7 +180,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
             }
 
             if ($newContent !== $content) {
-                $this->updateFile($file, $content, $newContent);
+                $this->applyChange($file, $content, $newContent);
             }
         }
         $this->console->ok(sprintf('Fixed %d inline PHPDoc blocks.', $count));
@@ -225,7 +189,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param list<string> $files
+     * @param array<string> $files
      */
     private function addMissingArrayTypes(array $files, bool $todo): int
     {
@@ -234,7 +198,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
         foreach ($files as $file) {
             $lines = file($file);
             if ($lines === false) {
-                throw new \RuntimeException(sprintf('Unable to read file: %s', $file));
+                continue;
             }
             $newLines = $lines;
             $changed = false;
@@ -271,7 +235,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
                         array_splice($newLines, $i + (count($newLines) - count($lines)), 0, [
                             $indent . "/**\n",
                             $indent . " * " . $returnTag . "\n",
-                            $indent . " */\n"
+                            $indent . " */\n",
                         ]);
                         $changed = true;
                         $count++;
@@ -287,7 +251,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
                         if (!$hasReturn) {
                             // Inject into docblock
                             array_splice($newLines, $docEnd + (count($newLines) - count($lines)), 0, [
-                                $indent . " * " . $returnTag . "\n"
+                                $indent . " * " . $returnTag . "\n",
                             ]);
                             $changed = true;
                             $count++;
@@ -297,7 +261,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
             }
 
             if ($changed) {
-                $this->updateFile($file, implode('', $lines), implode('', $newLines));
+                $this->applyChange($file, implode('', $lines), implode('', $newLines));
             }
         }
         $this->console->ok(sprintf('Added @return to %d method(s).', $count));
@@ -306,7 +270,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param list<string> $files
+     * @param array<string> $files
      */
     private function stripWhatComments(array $files): int
     {
@@ -319,11 +283,11 @@ final class CodeRefactoRunner extends AbstractScriptRunner
             'Setter.',
             'Converts to array.',
         ];
-        
+
         foreach ($files as $file) {
             $lines = file($file);
             if ($lines === false) {
-                throw new \RuntimeException(sprintf('Unable to read file: %s', $file));
+                continue;
             }
             $newLines = $lines;
             $changed = false;
@@ -373,7 +337,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
             }
 
             if ($changed) {
-                $this->updateFile($file, implode('', $lines), implode('', $newLines));
+                $this->applyChange($file, implode('', $lines), implode('', $newLines));
             }
         }
         $this->console->ok(sprintf('Stripped %d what-comments.', $count));
@@ -381,7 +345,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
         return 0;
     }
 
-    private function updateFile(string $file, string $oldContent, string $newContent): void
+    private function applyChange(string $file, string $oldContent, string $newContent): void
     {
         if ($this->verbose) {
             $relativePath = str_replace($this->projectRoot . '/', '', $file);
@@ -412,3 +376,4 @@ final class CodeRefactoRunner extends AbstractScriptRunner
         file_put_contents($file, $newContent);
     }
 }
+
