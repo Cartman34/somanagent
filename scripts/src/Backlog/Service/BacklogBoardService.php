@@ -1050,6 +1050,26 @@ final class BacklogBoardService
     }
 
     /**
+     * Updates the text of an existing task contribution line in the feature container.
+     *
+     * @param BoardEntry $featureEntry
+     * @param string $taskSlug
+     * @param string $newText
+     */
+    public function updateTaskContributionText(BoardEntry $featureEntry, string $taskSlug, string $newText): void
+    {
+        $blocks = $this->getFeatureContributionBlocks($featureEntry);
+        foreach ($blocks as &$block) {
+            if ($block['task'] === $taskSlug) {
+                $block['text'] = $newText;
+                $this->rebuildFeatureFromContributionBlocks($featureEntry, $blocks);
+
+                return;
+            }
+        }
+    }
+
+    /**
      * Removes a task contribution from a feature entry, returning true if removed and others remain.
      * @param BoardEntry $featureEntry, BoardEntry $taskEntry
      * @return bool

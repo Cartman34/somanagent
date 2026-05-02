@@ -314,6 +314,15 @@ MD);
     }
 
     /**
+     * @param string $agent Agent whose active entry is renamed
+     * @param string $newText New entry text
+     */
+    public function renameEntry(string $agent, string $newText): void
+    {
+        $this->runBacklog(['entry-rename', '--agent', $agent, $newText]);
+    }
+
+    /**
      * @param string $agent Agent requesting the review
      */
     public function requestFeatureReview(string $agent): void

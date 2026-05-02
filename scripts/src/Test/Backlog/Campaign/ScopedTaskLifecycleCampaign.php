@@ -38,6 +38,11 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->assertActiveFeatureExists($context->scopedFeature);
         $driver->assertStatusContains($context->scopedFeature, $context->childA);
 
+        $renamedTaskText = 'Renamed child task A after start';
+        $driver->renameEntry($context->agentPrimary, $renamedTaskText);
+        $driver->assertStatusContains($taskARef, $renamedTaskText);
+        $driver->assertStatusContains($context->scopedFeature, $renamedTaskText);
+
         $rejectBody = $driver->createBodyFile('test-task-review-reject.md', ['1. Reject child task for test workflow.']);
         $invalidRejectBody = $driver->createBodyFile('test-task-review-invalid.md', ['1. ### Task review']);
         $driver->requestTaskReview($context->agentPrimary);

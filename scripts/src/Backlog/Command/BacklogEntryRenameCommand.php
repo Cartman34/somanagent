@@ -59,6 +59,17 @@ final class BacklogEntryRenameCommand extends AbstractBacklogCommand
         $old = $entry->getText();
         $entry->setText($newText);
 
+        if ($this->boardService->checkIsTaskEntry($entry)) {
+            $feature = $entry->getFeature();
+            $task = $entry->getTask();
+            if ($feature !== null && $task !== null) {
+                $parent = $this->boardService->findParentFeatureEntry($board, $feature);
+                if ($parent !== null) {
+                    $this->boardService->updateTaskContributionText($parent->getEntry(), $task, $newText);
+                }
+            }
+        }
+
         $this->saveBoard($board, BacklogCommandName::ENTRY_RENAME->value);
 
         $this->presenter->displaySuccess(sprintf(
