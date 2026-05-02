@@ -15,7 +15,7 @@ use SoManAgent\Script\Backlog\Service\BacklogPresenter;
  * Renames the active entry text for the given agent.
  *
  * Works for both kind=task and kind=feature entries assigned to the agent.
- * Does not touch merged task contribution lines ([task:slug] prefixed lines).
+ * For kind=task, also updates the matching contribution line in the parent feature container.
  */
 final class BacklogEntryRenameCommand extends AbstractBacklogCommand
 {

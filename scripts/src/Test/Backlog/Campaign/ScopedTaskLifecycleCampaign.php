@@ -40,7 +40,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
 
         $renamedTaskText = 'Renamed child task A after start';
         $driver->renameEntry($context->agentPrimary, $renamedTaskText);
-        $driver->assertStatusContains($taskARef, $renamedTaskText);
+        $driver->assertStatusContains($context->agentPrimary, $renamedTaskText, true);
         $driver->assertStatusContains($context->scopedFeature, $renamedTaskText);
 
         $rejectBody = $driver->createBodyFile('test-task-review-reject.md', ['1. Reject child task for test workflow.']);
