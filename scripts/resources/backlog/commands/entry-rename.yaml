@@ -7,5 +7,5 @@ examples:
   - 'php scripts/backlog.php entry-rename --agent agent-01 "New description for the active task or feature"'
 notes:
   - 'Accepts the agent''s single active entry, whether kind=task or kind=feature.'
-  - 'Updates the main entry text only — merged task contribution lines ([task:slug]) are not affected.'
+  - 'For kind=task, also updates the matching contribution line in the parent feature container to keep them in sync.'
   - 'Fails when the agent has no active entry.'
