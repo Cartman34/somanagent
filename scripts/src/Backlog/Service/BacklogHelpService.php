@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Service;
 
 use SoManAgent\Script\Client\FilesystemClientInterface;
+use SoManAgent\Script\Service\CommandHelpLoader;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
 
@@ -16,7 +17,7 @@ use Symfony\Component\Yaml\Yaml;
  *
  * Help content lives under scripts/resources/backlog/ and is loaded lazily:
  * - help.yaml for global help
- * - commands/<command>.yaml for one specific command
+ * - commands/<command>.yaml for one specific command (loaded via CommandHelpLoader)
  */
 final class BacklogHelpService
 {
@@ -24,16 +25,16 @@ final class BacklogHelpService
 
     private string $resourceDir;
 
+    private CommandHelpLoader $commandLoader;
+
     /** @var array<string, mixed>|null */
     private ?array $globalHelp = null;
-
-    /** @var array<string, array<string, mixed>> */
-    private array $commandHelp = [];
 
     public function __construct(FilesystemClientInterface $fs, ?string $resourceDir = null)
     {
         $this->fs = $fs;
         $this->resourceDir = $resourceDir ?? (dirname(__DIR__, 3) . '/resources/backlog');
+        $this->commandLoader = new CommandHelpLoader($this->resourceDir . '/commands');
     }
 
     /**
@@ -52,9 +53,9 @@ final class BacklogHelpService
         $commands = [];
         foreach ($paths as $path) {
             $name = pathinfo($path, PATHINFO_FILENAME);
-            $data = $this->loadCommandHelp($name);
+            $data = $this->commandLoader->loadCommandHelp($name);
             $commands[] = [
-                'name' => $name,
+                'name'        => $name,
                 'description' => (string) ($data['description'] ?? $name),
             ];
         }
@@ -88,61 +89,12 @@ final class BacklogHelpService
         return array_map(static fn(mixed $value): string => (string) $value, $examples);
     }
 
+    /**
+     * @throws \RuntimeException When the command YAML file does not exist or is invalid
+     */
     public function renderCommandHelp(string $command): string
     {
-        $help = $this->loadCommandHelp($command);
-        $lines = [$command, (string) ($help['description'] ?? $command)];
-
-        $arguments = $this->normalizeNameDescriptionList($help['arguments'] ?? [], sprintf('arguments for %s', $command));
-        if ($arguments !== []) {
-            $lines[] = '';
-            $lines[] = 'Arguments:';
-            foreach ($arguments as $argument) {
-                $lines[] = "  {$argument['name']}";
-                $lines[] = "    {$argument['description']}";
-            }
-        }
-
-        $options = $this->normalizeNameDescriptionList($help['options'] ?? [], sprintf('options for %s', $command));
-        if ($options !== []) {
-            $lines[] = '';
-            $lines[] = 'Options:';
-            foreach ($options as $option) {
-                $lines[] = "  {$option['name']}";
-                $lines[] = "    {$option['description']}";
-            }
-        }
-
-        $examples = $help['examples'] ?? [];
-        if (!is_array($examples) || $examples === []) {
-            throw new \RuntimeException(sprintf(
-                'Invalid backlog help file for `%s`: `examples` must be a non-empty list.',
-                $command,
-            ));
-        }
-
-        $lines[] = '';
-        $lines[] = 'Examples:';
-        foreach ($examples as $example) {
-            $lines[] = '  ' . (string) $example;
-        }
-
-        $notes = $help['notes'] ?? [];
-        if ($notes !== []) {
-            if (!is_array($notes)) {
-                throw new \RuntimeException(sprintf(
-                    'Invalid backlog help file for `%s`: `notes` must be a list when present.',
-                    $command,
-                ));
-            }
-            $lines[] = '';
-            $lines[] = 'Notes:';
-            foreach ($notes as $note) {
-                $lines[] = '  - ' . (string) $note;
-            }
-        }
-
-        return implode("\n", $lines) . "\n";
+        return $this->commandLoader->renderCommandHelp($command);
     }
 
     /**
@@ -163,36 +115,6 @@ final class BacklogHelpService
         $this->globalHelp = $data;
 
         return $this->globalHelp;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function loadCommandHelp(string $command): array
-    {
-        if (isset($this->commandHelp[$command])) {
-            return $this->commandHelp[$command];
-        }
-
-        $path = $this->resourceDir . '/commands/' . $command . '.yaml';
-        if (!$this->fs->isFile($path)) {
-            throw new \RuntimeException(sprintf(
-                'Unknown backlog command: %s. Run `php scripts/backlog.php help` for the available commands.',
-                $command,
-            ));
-        }
-
-        $data = $this->parseYamlFile($path, sprintf('backlog help for `%s`', $command));
-        if (!isset($data['description'])) {
-            throw new \RuntimeException(sprintf(
-                'Invalid backlog help file for `%s`: `description` is required.',
-                $command,
-            ));
-        }
-
-        $this->commandHelp[$command] = $data;
-
-        return $this->commandHelp[$command];
     }
 
     /**
@@ -253,7 +175,7 @@ final class BacklogHelpService
             }
 
             $normalized[] = [
-                'name' => (string) $item['name'],
+                'name'        => (string) $item['name'],
                 'description' => (string) $item['description'],
             ];
         }

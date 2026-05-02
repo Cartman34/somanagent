@@ -11,33 +11,34 @@ use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
 
 /**
- * GitHub CLI help loader and renderer.
+ * Generic per-command help loader and renderer for YAML-based CLI scripts.
  *
- * Help content lives under scripts/resources/github/commands/ and is loaded lazily.
- * One YAML file per command: pr-create.yaml, pr-merge.yaml, etc.
+ * Each command is described in a dedicated YAML file under the configured directory:
+ *   {commandsDir}/{command}.yaml
+ *
+ * Expected YAML keys: description (required), arguments, options, examples, notes.
  */
-final class GitHubHelpService
+final class CommandHelpLoader
 {
-    private string $resourceDir;
+    private string $commandsDir;
 
     /** @var array<string, array<string, mixed>> */
-    private array $commandHelp = [];
+    private array $cache = [];
 
-    public function __construct(?string $resourceDir = null)
+    public function __construct(string $commandsDir)
     {
-        $this->resourceDir = $resourceDir ?? (dirname(__DIR__, 2) . '/resources/github/commands');
+        $this->commandsDir = $commandsDir;
     }
 
     /**
-     * Render the help output for a single command.
+     * Render the full help output for one command.
      *
-     * Appends execution-mode options (dry-run, verbose, no-verbose) after
-     * command-specific options so they always appear last.
+     * Appends execution-mode options after command-specific options when provided.
      *
      * @param array<array{name: string, description: string}> $execOpts
-     * @throws \RuntimeException When the command YAML file does not exist
+     * @throws \RuntimeException When the command YAML file does not exist or is invalid
      */
-    public function renderCommandHelp(string $command, array $execOpts): string
+    public function renderCommandHelp(string $command, array $execOpts = []): string
     {
         $help = $this->loadCommandHelp($command);
         $lines = [$command, (string) ($help['description'] ?? $command)];
@@ -66,7 +67,7 @@ final class GitHubHelpService
         $examples = $help['examples'] ?? [];
         if (!is_array($examples) || $examples === []) {
             throw new \RuntimeException(sprintf(
-                'Invalid github help file for `%s`: `examples` must be a non-empty list.',
+                'Invalid help file for `%s`: `examples` must be a non-empty list.',
                 $command,
             ));
         }
@@ -81,7 +82,7 @@ final class GitHubHelpService
         if ($notes !== []) {
             if (!is_array($notes)) {
                 throw new \RuntimeException(sprintf(
-                    'Invalid github help file for `%s`: `notes` must be a list when present.',
+                    'Invalid help file for `%s`: `notes` must be a list when present.',
                     $command,
                 ));
             }
@@ -96,19 +97,22 @@ final class GitHubHelpService
     }
 
     /**
+     * Load and cache the raw YAML data for a command.
+     *
      * @return array<string, mixed>
      * @throws \RuntimeException When the command YAML file does not exist or is invalid
      */
-    private function loadCommandHelp(string $command): array
+    public function loadCommandHelp(string $command): array
     {
-        if (isset($this->commandHelp[$command])) {
-            return $this->commandHelp[$command];
+        if (isset($this->cache[$command])) {
+            return $this->cache[$command];
         }
 
-        $path = $this->resourceDir . '/' . $command . '.yaml';
+        $path = $this->commandsDir . '/' . $command . '.yaml';
+
         if (!file_exists($path)) {
             throw new \RuntimeException(sprintf(
-                'Unknown command: %s. Run `php scripts/github.php --help` for the available commands.',
+                'Unknown command: %s. Run with --help for the list of available commands.',
                 $command,
             ));
         }
@@ -117,7 +121,7 @@ final class GitHubHelpService
             $data = Yaml::parseFile($path);
         } catch (ParseException $exception) {
             throw new \RuntimeException(sprintf(
-                'Invalid github help file `%s`: %s',
+                'Invalid help file `%s`: %s',
                 $path,
                 $exception->getMessage(),
             ), previous: $exception);
@@ -125,21 +129,21 @@ final class GitHubHelpService
 
         if (!is_array($data)) {
             throw new \RuntimeException(sprintf(
-                'Invalid github help file `%s`: expected a YAML mapping at the root.',
+                'Invalid help file `%s`: expected a YAML mapping at the root.',
                 $path,
             ));
         }
 
         if (!isset($data['description'])) {
             throw new \RuntimeException(sprintf(
-                'Invalid github help file for `%s`: `description` is required.',
+                'Invalid help file for `%s`: `description` is required.',
                 $command,
             ));
         }
 
-        $this->commandHelp[$command] = $data;
+        $this->cache[$command] = $data;
 
-        return $this->commandHelp[$command];
+        return $this->cache[$command];
     }
 
     /**

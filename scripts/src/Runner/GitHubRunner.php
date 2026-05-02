@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Runner;
 
-use SoManAgent\Script\Service\GitHubHelpService;
+use SoManAgent\Script\Service\CommandHelpLoader;
 use SoManAgent\Script\Service\GitService;
 
 /**
@@ -19,7 +19,7 @@ final class GitHubRunner extends AbstractScriptRunner
 {
     private ?string $token = null;
     private ?string $repo = null;
-    private ?GitHubHelpService $helpService = null;
+    private ?CommandHelpLoader $commandHelpLoader = null;
 
     protected function getDescription(): string
     {
@@ -288,24 +288,24 @@ final class GitHubRunner extends AbstractScriptRunner
     /**
      * Print contextual help for a single PR command loaded from YAML.
      *
-     * Delegates to GitHubHelpService which throws a RuntimeException for unknown
+     * Delegates to CommandHelpLoader which throws a RuntimeException for unknown
      * commands, propagating exit code 1 via the handle() outer catch.
      */
     private function printCommandHelp(string $command): void
     {
-        echo $this->helpService()->renderCommandHelp($command, $this->getExecutionModeOptions());
+        echo $this->commandHelpLoader()->renderCommandHelp($command, $this->getExecutionModeOptions());
     }
 
     /**
-     * Lazy getter for the GitHub help service.
+     * Lazy getter for the GitHub command help loader.
      */
-    private function helpService(): GitHubHelpService
+    private function commandHelpLoader(): CommandHelpLoader
     {
-        if ($this->helpService === null) {
-            $this->helpService = new GitHubHelpService();
+        if ($this->commandHelpLoader === null) {
+            $this->commandHelpLoader = new CommandHelpLoader(dirname(__DIR__, 2) . '/resources/github/commands');
         }
 
-        return $this->helpService;
+        return $this->commandHelpLoader;
     }
 
     /**
