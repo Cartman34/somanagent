@@ -79,9 +79,9 @@ Validate that backlog help is available globally and per command.
 
 1. `php scripts/backlog.php`
 2. `php scripts/backlog.php help`
-3. `php scripts/backlog.php help feature-start`
-4. `php scripts/backlog.php feature-start --help`
-5. `php scripts/backlog.php help task-review-request`
+3. `php scripts/backlog.php help work-start`
+4. `php scripts/backlog.php work-start --help`
+5. `php scripts/backlog.php help review-request`
 
 ### Expected checks
 
@@ -115,7 +115,7 @@ Validate queued task insertion, ordering, listing, and removal.
 
 ### Goal
 
-Validate `feature-start` on a plain queued task.
+Validate `work-start` on a plain queued task.
 
 ### Steps
 
@@ -124,7 +124,7 @@ Validate `feature-start` on a plain queued task.
 2. Confirm next plain task with:
    - `php scripts/backlog.php task-todo-list`
 3. Start it:
-   - `php scripts/backlog.php feature-start --agent d01`
+   - `php scripts/backlog.php work-start --agent d01`
 4. Inspect result:
    - `php scripts/backlog.php feature-list`
    - `php scripts/backlog.php status --agent d01`
@@ -137,10 +137,44 @@ Validate `feature-start` on a plain queued task.
 - feature has `stage=development`
 - branch is created with the expected type
 - managed worktree exists for `d01`
-- `feature-start` output includes the feature summary and assigned worktree
+- `work-start` output includes the feature summary and assigned worktree
 - the created feature slug corresponds to `test-plain-feature-alpha`
 
-## Scenario 4 - Release Plain Feature Without Development
+## Scenario 4 - Start Feature With Explicit Slug And Entry Rename
+
+### Goal
+
+Validate the single-prefix `[feature-slug] text` mode of `work-start` and the `entry-rename` command on a feature and a task.
+
+### Steps
+
+1. Create a single-prefix task:
+   - `php scripts/backlog.php task-create "[test-single-prefix] Single prefix feature description"`
+2. Start it:
+   - `php scripts/backlog.php work-start --agent d01`
+3. Rename the active feature entry:
+   - `php scripts/backlog.php entry-rename --agent d01 "Renamed single prefix description"`
+4. Inspect:
+   - `php scripts/backlog.php status test-single-prefix`
+5. Release the feature:
+   - `php scripts/backlog.php feature-release --agent d01 test-single-prefix`
+6. Create a scoped task to test entry-rename on a `kind=task`:
+   - `php scripts/backlog.php task-create "[test-scoped-feature][rename-task] Original task text"`
+   - `php scripts/backlog.php work-start --agent d01`
+7. Rename the active task entry:
+   - `php scripts/backlog.php entry-rename --agent d01 "Renamed task text"`
+8. Inspect both the task and the parent feature container:
+   - `php scripts/backlog.php status --agent d01`
+   - `php scripts/backlog.php status test-scoped-feature`
+
+### Expected checks
+
+- `work-start` on `[test-single-prefix] ...` creates a `kind=feature` with slug `test-single-prefix`, not a slug derived from the description
+- after `entry-rename`, `status test-single-prefix` shows `Summary: Renamed single prefix description`
+- after task rename, `status --agent d01` shows `Summary: Renamed task text`
+- after task rename, `status test-scoped-feature` details section shows the updated contribution line `[task:rename-task] Renamed task text`
+
+## Scenario 5 - Release Plain Feature Without Development
 
 ### Goal
 
@@ -161,7 +195,7 @@ Validate `feature-release` on a feature with no actual development ahead of base
 - no active feature remains for `d01`
 - branch/worktree cleanup behavior matches the documented workflow
 
-## Scenario 5 - Assignment Flow
+## Scenario 6 - Assignment Flow
 
 ### Goal
 
@@ -172,7 +206,7 @@ Validate feature assignment and unassignment permissions.
 1. Create the assignment test task:
    - `php scripts/backlog.php task-create test-assign-feature`
 2. Start it:
-   - `php scripts/backlog.php feature-start --agent d01`
+   - `php scripts/backlog.php work-start --agent d01`
 3. Run with manager role:
    - `SOMANAGER_ROLE=manager php scripts/backlog.php feature-assign test-assign-feature --agent d02`
 4. Inspect:
@@ -191,11 +225,11 @@ Validate feature assignment and unassignment permissions.
 1. As developer with mismatched `SOMANAGER_AGENT`, assignment must fail.
 2. As developer, unassigning another agent’s feature must fail.
 
-## Scenario 6 - Start Scoped Feature And Local Child Task
+## Scenario 7 - Start Scoped Feature And Local Child Task
 
 ### Goal
 
-Validate `feature-start` on scoped queued tasks.
+Validate `work-start` on scoped queued tasks.
 
 ### Steps
 
@@ -204,7 +238,7 @@ Validate `feature-start` on scoped queued tasks.
 2. Confirm next queued entry is the scoped task:
    - `php scripts/backlog.php task-todo-list`
 3. Start it:
-   - `php scripts/backlog.php feature-start --agent d01`
+   - `php scripts/backlog.php work-start --agent d01`
 4. Inspect:
    - `php scripts/backlog.php feature-list`
    - `php scripts/backlog.php status test-scoped-feature`
@@ -217,60 +251,35 @@ Validate `feature-start` on scoped queued tasks.
 - child task branch follows `<type>/<feature>--<task>`
 - parent feature branch exists separately
 - parent contribution block contains `[task:test-child-a]`
-- `feature-start` output includes the child task, parent feature, and assigned worktree
+- `work-start` output includes the child task, parent feature, and assigned worktree
 
-## Scenario 7 - Add Second Child Task To Existing Feature
-
-### Goal
-
-Validate `feature-task-add` for scoped child tasks.
-
-### Steps
-
-1. Create the second scoped child task:
-   - `php scripts/backlog.php task-create [test-scoped-feature][test-child-b] Implement test child task B`
-2. Confirm next queued entry is the scoped task:
-   - `php scripts/backlog.php task-todo-list`
-3. Run:
-   - `php scripts/backlog.php feature-task-add --agent d01 --feature-text "Updated feature summary"`
-4. Inspect:
-   - `php scripts/backlog.php status test-scoped-feature`
-   - `php scripts/backlog.php feature-list`
-
-### Expected checks
-
-- parent feature summary is updated
-- second child task is created as active `kind=task`
-- contribution blocks now include both child tasks
-- parent review state is invalidated back to development when applicable
-
-## Scenario 8 - Child Task Review Flow
+## Scenario 8 - Child Task Review Cycle
 
 ### Goal
 
-Validate local child task review commands.
+Validate local child task review commands (reject, rework, approve). Demonstrated here on task A; the same flow applies to task B in Scenario 9.
 
 ### Steps
 
-1. Submit a child task:
-   - `php scripts/backlog.php task-review-request --agent d01 test-scoped-feature/test-child-a`
-2. Inspect next review:
+1. Submit the task for review:
+   - `php scripts/backlog.php review-request --agent d01`
+2. Inspect the review queue:
    - `php scripts/backlog.php review-next`
-3. Check mechanical review:
+3. Run the mechanical check:
    - `php scripts/backlog.php task-review-check test-scoped-feature/test-child-a`
 4. Reject it:
    - create a local review body under `local/tmp/`
    - `php scripts/backlog.php task-review-reject test-scoped-feature/test-child-a --body-file local/tmp/test-task-review-reject.md`
-5. Rework it:
+5. Rework and resubmit:
    - `php scripts/backlog.php rework --agent d01 test-scoped-feature/test-child-a`
-6. Submit again and approve:
-   - `php scripts/backlog.php task-review-request --agent d01 test-scoped-feature/test-child-a`
+   - `php scripts/backlog.php review-request --agent d01`
+6. Approve:
    - `php scripts/backlog.php task-review-approve test-scoped-feature/test-child-a`
 
 ### Expected checks
 
-- stage changes follow `development -> review -> rejected -> development -> review -> approved`
-- review notes are written to `local/backlog-review.md`
+- stage transitions follow `development → review → rejected → development → review → approved`
+- review notes are written to `local/backlog-review.md` on rejection
 - review notes are cleared on approval
 
 ## Scenario 9 - Merge Approved Child Task
@@ -281,7 +290,7 @@ Validate local merge of one approved child task into its parent feature.
 
 ### Steps
 
-1. Merge approved task:
+1. Merge the approved task:
    - `php scripts/backlog.php feature-task-merge test-scoped-feature/test-child-a`
 2. Inspect:
    - `php scripts/backlog.php status test-scoped-feature`
@@ -291,32 +300,62 @@ Validate local merge of one approved child task into its parent feature.
 ### Expected checks
 
 - child task active entry disappears
-- parent feature remains active
-- parent contribution block still records merged child content
+- parent feature remains active with `agent=none`
+- parent contribution block still records the merged child content
 - child task worktree cleanup follows documented behavior
-- local child task branch cleanup follows documented behavior
 
-## Scenario 10 - Feature Review Flow
+## Scenario 10 - Start Second Child Task And Complete Its Review
 
 ### Goal
 
-Validate remote feature review transitions.
+Validate that after merging task A, `work-start` picks up the next queued scoped task and the full review cycle repeats for task B.
 
 ### Steps
 
-1. Request feature review:
-   - `php scripts/backlog.php feature-review-request --agent d01 test-scoped-feature`
-2. Inspect:
+1. Create the second scoped child task:
+   - `php scripts/backlog.php task-create [test-scoped-feature][test-child-b] Implement test child task B`
+2. Confirm the agent has no active entry after the merge:
+   - `php scripts/backlog.php status --agent d01`
+3. Pick up task B:
+   - `php scripts/backlog.php work-start --agent d01`
+4. Inspect:
+   - `php scripts/backlog.php status test-scoped-feature`
+5. Submit, review, and approve task B (same cycle as Scenario 7):
+   - `php scripts/backlog.php review-request --agent d01`
+   - `php scripts/backlog.php task-review-approve test-scoped-feature/test-child-b`
+6. Merge task B:
+   - `php scripts/backlog.php feature-task-merge test-scoped-feature/test-child-b`
+
+### Expected checks
+
+- second child task is created as active `kind=task` assigned to d01
+- parent feature container (`kind=feature`) remains with `agent=none` throughout
+- contribution blocks record both merged child tasks after step 6
+- agent has no active entry after the merge
+
+## Scenario 11 - Feature Review Flow
+
+### Goal
+
+Validate remote feature review transitions once all child tasks are merged.
+
+### Steps
+
+1. Developer takes integration ownership of the feature:
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php feature-assign --agent d01 test-scoped-feature`
+2. Submit the feature for review:
+   - `php scripts/backlog.php review-request --agent d01`
+3. Inspect:
    - `php scripts/backlog.php review-next`
    - `php scripts/backlog.php status test-scoped-feature`
-3. Run mechanical check:
+4. Run mechanical check:
    - `php scripts/backlog.php feature-review-check test-scoped-feature`
-4. Reject:
+5. Reject:
    - `php scripts/backlog.php feature-review-reject test-scoped-feature --body-file local/tmp/test-feature-review-reject.md`
-5. Rework:
+6. Rework and resubmit:
    - `php scripts/backlog.php rework --agent d01 test-scoped-feature`
-6. Request review again, then approve:
-   - `php scripts/backlog.php feature-review-request --agent d01 test-scoped-feature`
+   - `php scripts/backlog.php review-request --agent d01`
+7. Approve:
    - `php scripts/backlog.php feature-review-approve test-scoped-feature`
 
 ### Expected checks
@@ -324,7 +363,7 @@ Validate remote feature review transitions.
 - stage changes follow the documented feature review lifecycle
 - PR metadata and review notes behave consistently with the workflow
 
-## Scenario 11 - Block And Unblock Feature
+## Scenario 12 - Block And Unblock Feature
 
 ### Goal
 
@@ -345,7 +384,7 @@ Validate blocked flag handling and PR title synchronization.
 - `blocked=yes` appears and disappears in backlog state
 - PR title is updated when a PR exists
 
-## Scenario 12 - Close And Merge Feature
+## Scenario 13 - Close And Merge Feature
 
 ### Goal
 
@@ -356,7 +395,7 @@ Validate final feature closure and merge behavior.
 1. Create a dedicated closable fix feature:
    - `php scripts/backlog.php task-create [fix] test-fix-feature-beta`
 2. Start it:
-   - `php scripts/backlog.php feature-start --agent d02`
+   - `php scripts/backlog.php work-start --agent d02`
 3. Close the unmerged feature when the workflow requires closing:
    - `php scripts/backlog.php feature-close test-fix-feature-beta`
 4. For the approved scoped feature, merge it:
@@ -372,7 +411,7 @@ Validate final feature closure and merge behavior.
 - feature merge can reuse the existing PR body when `--body-file` is omitted
 - managed worktree cleanup is coherent
 
-## Scenario 13 - Worktree Helpers
+## Scenario 14 - Worktree Helpers
 
 ### Goal
 
@@ -391,7 +430,7 @@ Validate inspection and cleanup helpers independently.
 - dry-run reports intended actions without mutating state
 - cleanup removes only safe abandoned managed worktrees
 
-## Scenario 14 - Negative And Guardrail Checks
+## Scenario 15 - Negative And Guardrail Checks
 
 ### Goal
 
@@ -423,7 +462,7 @@ After validation:
 When the full scenario set is too expensive, run at least:
 
 1. `php scripts/backlog.php`
-2. `php scripts/backlog.php help feature-start`
+2. `php scripts/backlog.php help work-start`
 3. `php scripts/backlog.php task-todo-list`
 4. `php scripts/backlog.php feature-list`
 5. `php scripts/backlog.php worktree-list`

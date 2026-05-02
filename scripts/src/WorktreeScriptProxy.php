@@ -112,24 +112,36 @@ final class WorktreeScriptProxy
         }
 
         passthru($cmd, $exitCode);
-        exit($exitCode ?? 1);
+        exit($exitCode);
     }
 
+    /**
+     * @return bool
+     */
     public function isLinkedWorktree(): bool
     {
         return $this->linkedWorktree;
     }
 
+    /**
+     * @return string
+     */
     public function getCurrentRoot(): string
     {
         return $this->currentRoot;
     }
 
+    /**
+     * @return string
+     */
     public function getMainRoot(): string
     {
         return $this->mainRoot;
     }
 
+    /**
+     * @return string
+     */
     public function getMainScriptPath(): string
     {
         return $this->mainRoot . '/' . $this->relativePath;

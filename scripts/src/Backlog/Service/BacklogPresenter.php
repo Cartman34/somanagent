@@ -29,6 +29,11 @@ final class BacklogPresenter
 
     private BacklogBoardService $boardService;
 
+    /**
+     * @param Console $console
+     * @param ConsoleClient $consoleClient
+     * @param BacklogBoardService $boardService
+     */
     public function __construct(Console $console, ConsoleClient $consoleClient, BacklogBoardService $boardService)
     {
         $this->console = $console;
@@ -36,21 +41,33 @@ final class BacklogPresenter
         $this->boardService = $boardService;
     }
 
+    /**
+     * @param string $message
+     */
     public function displaySuccess(string $message): void
     {
         $this->console->ok($message);
     }
 
+    /**
+     * @param string $message
+     */
     public function displayInfo(string $message): void
     {
         $this->console->info($message);
     }
 
+    /**
+     * @param string $message
+     */
     public function displayLine(string $message): void
     {
         $this->console->line($message);
     }
 
+    /**
+     * @param BoardEntry $entry
+     */
     public function displayEntryStatus(BoardEntry $entry): void
     {
         $stage = $this->boardService->getFeatureStage($entry);
@@ -73,6 +90,9 @@ final class BacklogPresenter
         $this->console->line('Blocker: ' . ($entry->checkIsBlocked() ? 'blocked' : '-'));
     }
 
+    /**
+     * @param BoardEntry $entry
+     */
     public function displayEntryDetails(BoardEntry $entry): void
     {
         $extraLines = $entry->getExtraLines();
@@ -84,6 +104,9 @@ final class BacklogPresenter
         }
     }
 
+    /**
+     * @param WorktreeClassification $classification
+     */
     public function displayWorktreeList(WorktreeClassification $classification): void
     {
         if ($classification->getManaged() === [] && $classification->getExternal() === []) {
@@ -121,6 +144,9 @@ final class BacklogPresenter
         }
     }
 
+    /**
+     * @param ManagedWorktree $worktree
+     */
     public function displayManagedWorktreeStatus(ManagedWorktree $worktree): void
     {
         $this->console->line('State:  ' . $this->statusWorktreeStateLabel($worktree->getState()));
@@ -129,11 +155,17 @@ final class BacklogPresenter
         $this->console->line('Action: ' . $worktree->getAction()->value);
     }
 
+    /**
+     * @param string $stage
+     */
     public function displayStageHeader(string $stage): void
     {
         $this->console->line('[' . $this->boardService->getStageLabel($stage) . ']');
     }
 
+    /**
+     * @param BoardEntry $entry
+     */
     public function displayEntryLine(BoardEntry $entry): void
     {
         $parts = [
@@ -147,6 +179,9 @@ final class BacklogPresenter
         $this->console->line('- ' . implode(' ', $parts));
     }
 
+    /**
+     * @param BoardEntry $entry
+     */
     public function displayTodoEntryLine(BoardEntry $entry): void
     {
         $parts = [
@@ -194,7 +229,7 @@ final class BacklogPresenter
     private function nextStepForStage(string $stage): string
     {
         return match ($stage) {
-            BacklogBoard::STAGE_IN_PROGRESS => BacklogCommandName::FEATURE_REVIEW_REQUEST->value,
+            BacklogBoard::STAGE_IN_PROGRESS => BacklogCommandName::REVIEW_REQUEST->value,
             BacklogBoard::STAGE_IN_REVIEW => BacklogCommandName::FEATURE_REVIEW_CHECK->value . ' or ' . BacklogCommandName::FEATURE_REVIEW_APPROVE->value,
             BacklogBoard::STAGE_REJECTED => BacklogCommandName::REWORK->value,
             BacklogBoard::STAGE_APPROVED => BacklogCommandName::FEATURE_MERGE->value,
@@ -205,7 +240,7 @@ final class BacklogPresenter
     private function nextStepForTaskStage(string $stage): string
     {
         return match ($stage) {
-            BacklogBoard::STAGE_IN_PROGRESS => BacklogCommandName::TASK_REVIEW_REQUEST->value,
+            BacklogBoard::STAGE_IN_PROGRESS => BacklogCommandName::REVIEW_REQUEST->value,
             BacklogBoard::STAGE_IN_REVIEW => BacklogCommandName::TASK_REVIEW_CHECK->value . ' or ' . BacklogCommandName::TASK_REVIEW_APPROVE->value,
             BacklogBoard::STAGE_REJECTED => BacklogCommandName::REWORK->value,
             BacklogBoard::STAGE_APPROVED => BacklogCommandName::FEATURE_TASK_MERGE->value,

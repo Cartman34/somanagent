@@ -34,7 +34,7 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $invalidRejectBody = $driver->createBodyFile('test-feature-review-invalid.md', ['1. ### Revue de la feature']);
         $approveBody = $driver->createBodyFile('test-feature-review-approve.md', ['1. Approve feature review for workflow coverage.']);
 
-        $driver->requestFeatureReview($context->agentPrimary, $context->fixFeature);
+        $driver->requestFeatureReview($context->agentPrimary);
         if (!str_contains($driver->reviewNext(), $context->fixFeature)) {
             throw new \RuntimeException('Expected review-next to return the active feature review.');
         }
@@ -43,7 +43,7 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $driver->rejectFeatureReview($context->fixFeature, $rejectBody);
         $driver->assertReviewContains($context->fixFeature);
         $driver->rework($context->agentPrimary, $context->fixFeature);
-        $driver->requestFeatureReview($context->agentPrimary, $context->fixFeature);
+        $driver->requestFeatureReview($context->agentPrimary);
         $driver->approveFeature($context->fixFeature, $approveBody);
         $driver->blockFeature($context->agentPrimary, $context->fixFeature);
         $driver->assertStatusContains($context->fixFeature, 'Blocker: blocked');

@@ -116,8 +116,9 @@ MD);
         $this->assertOutputContains($this->runBacklog(['help']), 'Commands:');
         $this->assertOutputContains($this->runBacklog(['help', 'status']), 'status');
         $this->assertOutputContains($this->runBacklog(['help', 'review-next']), 'review-next');
-        $this->assertOutputContains($this->runBacklog(['help', 'feature-start']), 'feature-start');
-        $this->assertOutputContains($this->runBacklog(['feature-start', '--help']), 'feature-start');
+        $this->assertOutputContains($this->runBacklog(['help', 'work-start']), 'work-start');
+        $this->assertOutputContains($this->runBacklog(['work-start', '--help']), 'work-start');
+        $this->assertOutputContains($this->runBacklog(['help', 'review-request']), 'review-request');
     }
 
     /**
@@ -160,7 +161,7 @@ MD);
 
     /**
      * @param string $agent Agent identifier for the worktree
-     * @return string Command output from feature-start
+     * @return string Command output from work-start
      */
     public function startNextFeature(string $agent): string
     {
@@ -172,14 +173,14 @@ MD);
             ));
         }
 
-        $output = $this->runBacklog(['feature-start', '--agent', $agent]);
+        $output = $this->runBacklog(['work-start', '--agent', $agent]);
         $this->context->recordWorktree($worktreePath);
 
         return $output;
     }
 
     /**
-     * @param string $output Feature start output to check
+     * @param string $output work-start output to check
      * @param string $needle String that should be present in output
      */
     public function assertFeatureStartOutputContains(string $output, string $needle): void
@@ -245,21 +246,11 @@ MD);
     }
 
     /**
-     * @param string $agent Agent performing the operation
-     * @param string $featureText Feature text to add to queue
-     */
-    public function addQueuedTaskToCurrentFeature(string $agent, string $featureText): void
-    {
-        $this->runBacklog(['feature-task-add', '--agent', $agent, '--feature-text', $featureText]);
-    }
-
-    /**
      * @param string $agent Agent requesting the review
-     * @param string $reference Task reference (feature/task)
      */
-    public function requestTaskReview(string $agent, string $reference): void
+    public function requestTaskReview(string $agent): void
     {
-        $this->runBacklog(['task-review-request', '--agent', $agent, $reference]);
+        $this->runBacklog(['review-request', '--agent', $agent]);
     }
 
     /**
@@ -323,12 +314,20 @@ MD);
     }
 
     /**
-     * @param string $agent Agent requesting the review
-     * @param string $feature Feature name to review
+     * @param string $agent Agent whose active entry is renamed
+     * @param string $newText New entry text
      */
-    public function requestFeatureReview(string $agent, string $feature): void
+    public function renameEntry(string $agent, string $newText): void
     {
-        $this->runBacklog(['feature-review-request', '--agent', $agent, $feature]);
+        $this->runBacklog(['entry-rename', '--agent', $agent, $newText]);
+    }
+
+    /**
+     * @param string $agent Agent requesting the review
+     */
+    public function requestFeatureReview(string $agent): void
+    {
+        $this->runBacklog(['review-request', '--agent', $agent]);
     }
 
     /**

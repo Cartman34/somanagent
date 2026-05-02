@@ -28,6 +28,7 @@ final class BacklogBoardService
 
     private const TASK_CREATE_TYPE_SHORT_PREFIX_PATTERN = '/^\[(feat|fix)\](.*)$/i';
     private const TASK_SCOPE_PREFIX_PATTERN = '/^\[([A-Za-z0-9_-]+)\]\[([A-Za-z0-9_-]+)\]\s*(.+)$/';
+    private const SINGLE_FEATURE_PREFIX_PATTERN = '/^\[([A-Za-z0-9_-]+)\](?!\[)\s*(.+)$/';
     private const TASK_CONTRIBUTION_PREFIX_PATTERN = '/^\s*-\s*\[task:([a-z0-9-]+)\]\s*(.+)$/';
 
     private const META_BLOCK_PREFIX = '  meta:';
@@ -530,6 +531,85 @@ final class BacklogBoardService
     }
 
     /**
+     * Returns all active entries (task and feature kinds) assigned to an agent.
+     *
+     * @return array<int, BoardEntryMatch>
+     */
+    public function findActiveEntriesByAgent(BacklogBoard $board, string $agent): array
+    {
+        return array_merge(
+            $this->findTaskEntriesByAgent($board, $agent),
+            $this->findFeatureEntriesByAgent($board, $agent)
+        );
+    }
+
+    /**
+     * Builds an informative conflict error when an agent already has an active entry.
+     *
+     * @param array<int, BoardEntryMatch> $activeEntries
+     */
+    public function describeActiveEntryConflict(array $activeEntries, string $agent): string
+    {
+        $count = count($activeEntries);
+        $lines = [
+            sprintf(
+                'Agent %s already has %s active %s. One entry per agent is allowed.',
+                $agent,
+                $count === 1 ? 'an' : $count,
+                $count === 1 ? 'entry' : 'entries'
+            ),
+        ];
+
+        $resolveEntry = null;
+        foreach ($activeEntries as $match) {
+            $entry = $match->getEntry();
+            $isTask = $this->checkIsTaskEntry($entry);
+            $kind = $this->getEntryKind($entry);
+            $stage = $this->getFeatureStage($entry);
+            if ($isTask) {
+                $ref = "kind={$kind}  feature={$entry->getFeature()}  task={$entry->getTask()}  stage={$stage}  branch={$entry->getBranch()}";
+            } else {
+                $ref = "kind={$kind}  feature={$entry->getFeature()}  stage={$stage}  branch={$entry->getBranch()}";
+            }
+            $lines[] = "  {$ref}";
+            if ($resolveEntry === null || $isTask) {
+                $resolveEntry = $entry;
+            }
+        }
+
+        if ($resolveEntry !== null) {
+            $lines[] = 'Resolve:';
+            $lines[] = '  ' . $this->resolveActiveEntryNextStep($resolveEntry, $agent);
+        }
+
+        $lines[] = "Details: php scripts/backlog.php status --agent={$agent}";
+
+        return implode("\n", $lines);
+    }
+
+    private function resolveActiveEntryNextStep(BoardEntry $entry, string $agent): string
+    {
+        $stage = $this->getFeatureStage($entry);
+        if ($this->checkIsTaskEntry($entry)) {
+            return match ($stage) {
+                BacklogBoard::STAGE_IN_PROGRESS => "run `review-request --agent={$agent}` to submit the task for review",
+                BacklogBoard::STAGE_IN_REVIEW   => 'wait for reviewer action on the active task',
+                BacklogBoard::STAGE_REJECTED    => "run `rework --agent={$agent}` to resume development on the rejected task",
+                BacklogBoard::STAGE_APPROVED    => "run `feature-task-merge --agent={$agent}` to merge the task into its parent feature",
+                default                         => 'check status',
+            };
+        }
+
+        return match ($stage) {
+            BacklogBoard::STAGE_IN_PROGRESS => "run `review-request --agent={$agent}` to submit for review, or `feature-release --agent={$agent}` if no commits were made",
+            BacklogBoard::STAGE_IN_REVIEW   => 'wait for reviewer action on the active feature',
+            BacklogBoard::STAGE_REJECTED    => "run `rework --agent={$agent}` to resume development on the rejected feature",
+            BacklogBoard::STAGE_APPROVED    => 'wait for the manager to merge the feature',
+            default                         => 'check status',
+        };
+    }
+
+    /**
      * @return array<int, BoardEntryMatch>
      */
     public function fetchReservedTasks(BacklogBoard $board, ?string $agent = null, ?string $feature = null): array
@@ -970,6 +1050,26 @@ final class BacklogBoardService
     }
 
     /**
+     * Updates the text of an existing task contribution line in the feature container.
+     *
+     * @param BoardEntry $featureEntry
+     * @param string $taskSlug
+     * @param string $newText
+     */
+    public function updateTaskContributionText(BoardEntry $featureEntry, string $taskSlug, string $newText): void
+    {
+        $blocks = $this->getFeatureContributionBlocks($featureEntry);
+        foreach ($blocks as &$block) {
+            if ($block['task'] === $taskSlug) {
+                $block['text'] = $newText;
+                $this->rebuildFeatureFromContributionBlocks($featureEntry, $blocks);
+
+                return;
+            }
+        }
+    }
+
+    /**
      * Removes a task contribution from a feature entry, returning true if removed and others remain.
      * @param BoardEntry $featureEntry, BoardEntry $taskEntry
      * @return bool
@@ -1029,6 +1129,21 @@ final class BacklogBoardService
             'featureGroup' => $this->normalizeFeatureSlug($matches[1]),
             'task' => $this->normalizeFeatureSlug($matches[2]),
             'text' => trim($matches[3]),
+        ];
+    }
+
+    /**
+     * @return array{featureSlug: string, text: string}|null
+     */
+    public function extractSingleFeaturePrefixMetadata(string $text): ?array
+    {
+        if (preg_match(self::SINGLE_FEATURE_PREFIX_PATTERN, trim($text), $matches) !== 1) {
+            return null;
+        }
+
+        return [
+            'featureSlug' => $this->normalizeFeatureSlug($matches[1]),
+            'text' => trim($matches[2]),
         ];
     }
 

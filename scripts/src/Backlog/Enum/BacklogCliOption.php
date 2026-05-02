@@ -16,7 +16,6 @@ enum BacklogCliOption: string
     case BOARD_FILE = 'board-file';
     case BODY_FILE = 'body-file';
     case BRANCH_TYPE = 'branch-type';
-    case FEATURE_TEXT = 'feature-text';
     case PR_BASE_BRANCH = 'pr-base-branch';
     case REVIEW_FILE = 'review-file';
     case TEST_MODE = 'test-mode';

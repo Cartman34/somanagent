@@ -38,9 +38,14 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->assertActiveFeatureExists($context->scopedFeature);
         $driver->assertStatusContains($context->scopedFeature, $context->childA);
 
+        $renamedTaskText = 'Renamed child task A after start';
+        $driver->renameEntry($context->agentPrimary, $renamedTaskText);
+        $driver->assertStatusContains($context->agentPrimary, $renamedTaskText, true);
+        $driver->assertStatusContains($context->scopedFeature, $renamedTaskText);
+
         $rejectBody = $driver->createBodyFile('test-task-review-reject.md', ['1. Reject child task for test workflow.']);
         $invalidRejectBody = $driver->createBodyFile('test-task-review-invalid.md', ['1. ### Task review']);
-        $driver->requestTaskReview($context->agentPrimary, $taskARef);
+        $driver->requestTaskReview($context->agentPrimary);
         if (!str_contains($driver->reviewNext(), $taskARef)) {
             throw new \RuntimeException('Expected review-next to return the active task review.');
         }
@@ -49,14 +54,13 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->rejectTaskReview($taskARef, $rejectBody);
         $driver->assertReviewContains($taskARef);
         $driver->rework($context->agentPrimary, $taskARef);
-        $driver->requestTaskReview($context->agentPrimary, $taskARef);
+        $driver->requestTaskReview($context->agentPrimary);
         $driver->approveTask($taskARef);
         $driver->assertReviewMissing($taskARef);
         $driver->mergeTask($taskARef);
 
         $driver->createTodoTask(sprintf('[%s][%s] Implement test child task B', $context->scopedFeature, $context->childB));
-        $driver->addQueuedTaskToCurrentFeature($context->agentPrimary, 'Updated test scoped feature summary');
-        $driver->assertStatusContains($context->scopedFeature, 'Updated test scoped feature summary');
+        $driver->startNextFeature($context->agentPrimary);
 
         $rejectFeatureTaskB = $driver->createBodyFile('test-task-review-reject-b.md', ['3. Reject second child task for coverage.']);
         $approveFeatureWithActiveTask = $driver->createBodyFile('test-feature-review-approve-active-task.md', ['Approve parent feature should be blocked by active child task.']);
@@ -65,11 +69,11 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
             $approveFeatureWithActiveTask,
             sprintf('feature-review-approve cannot continue while feature %s still has active task branches.', $context->scopedFeature),
         );
-        $driver->requestTaskReview($context->agentPrimary, $taskBRef);
+        $driver->requestTaskReview($context->agentPrimary);
         $driver->rejectTaskReview($taskBRef, $rejectFeatureTaskB);
         $driver->assertReviewContains('1. Reject second child task for coverage.');
         $driver->rework($context->agentPrimary, $taskBRef);
-        $driver->requestTaskReview($context->agentPrimary, $taskBRef);
+        $driver->requestTaskReview($context->agentPrimary);
         $driver->approveTask($taskBRef);
         $driver->mergeTask($taskBRef);
 

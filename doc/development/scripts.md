@@ -77,11 +77,12 @@ Runs the documented local backlog workflow, including feature start/review/merge
 ```bash
 php scripts/backlog.php
 php scripts/backlog.php help
-php scripts/backlog.php help feature-start
+php scripts/backlog.php help work-start
 php scripts/backlog.php base-update my-feature
-php scripts/backlog.php feature-start --help
-php scripts/backlog.php feature-start --agent agent-01
-php scripts/backlog.php task-review-request --agent agent-01
+php scripts/backlog.php work-start --help
+php scripts/backlog.php work-start --agent agent-01
+php scripts/backlog.php review-request --agent agent-01
+php scripts/backlog.php entry-rename --agent agent-01 "New description"
 php scripts/backlog.php task-review-approve my-feature/my-task
 php scripts/backlog.php rework --agent agent-01 my-feature/my-task
 php scripts/backlog.php feature-task-merge my-feature/my-task
@@ -95,7 +96,7 @@ Notes:
 - reviewer commands never use `--agent`
 - `base-update` refreshes the recorded Git base after a rebase; features update `origin/main` before using the merge base with it, and local child tasks default to the merge base with their parent feature branch
 - `worktree-restore` validates copied PHP vendors with `autoload.php` witnesses and can recreate a clean managed worktree with `--force`
-- `feature-start` reads the next queued board entry, accepts plain text, optional `[feat]` / `[fix]` prefixes, and scoped entries like `[feature-slug][task-slug] Task text`, then prints the started task or feature details with the assigned worktree
+- `work-start` reads the next queued board entry, accepts plain text, optional `[feat]` / `[fix]` prefixes, a single `[feature-slug]` prefix, and scoped entries like `[feature-slug][task-slug] Task text`, then prints the started task or feature details with the assigned worktree
 - child task review stays local; only the parent feature uses the remote PR flow
 
 ---
