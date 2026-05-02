@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Runner;
 
+use SoManAgent\Script\Service\GitHubHelpService;
 use SoManAgent\Script\Service\GitService;
 
 /**
@@ -18,6 +19,7 @@ final class GitHubRunner extends AbstractScriptRunner
 {
     private ?string $token = null;
     private ?string $repo = null;
+    private ?GitHubHelpService $helpService = null;
 
     protected function getDescription(): string
     {
@@ -284,83 +286,26 @@ final class GitHubRunner extends AbstractScriptRunner
     }
 
     /**
-     * Print contextual help for a single PR command.
+     * Print contextual help for a single PR command loaded from YAML.
+     *
+     * Delegates to GitHubHelpService which throws a RuntimeException for unknown
+     * commands, propagating exit code 1 via the handle() outer catch.
      */
     private function printCommandHelp(string $command): void
     {
-        $config = $this->getCommandConfig($command);
-        if ($config === null) {
-            echo "Unknown command: {$command}. Available: pr-create, pr-merge, pr-close, pr-edit, pr-list, pr-view\n";
-
-            return;
-        }
-
-        echo $config['description'] . "\n";
-        echo "\nUsage:\n  " . $config['usage'] . "\n";
-
-        if (!empty($config['options'])) {
-            echo "\nOptions:\n";
-            foreach ($config['options'] as $opt) {
-                echo "  {$opt['name']}\n    {$opt['description']}\n";
-            }
-        }
+        echo $this->helpService()->renderCommandHelp($command, $this->getExecutionModeOptions());
     }
 
     /**
-     * Return the description, canonical usage line, and relevant options for a single command.
-     *
-     * @return array{description: string, usage: string, options: array<array{name: string, description: string}>}|null
+     * Lazy getter for the GitHub help service.
      */
-    private function getCommandConfig(string $command): ?array
+    private function helpService(): GitHubHelpService
     {
-        $execOpts = $this->getExecutionModeOptions();
+        if ($this->helpService === null) {
+            $this->helpService = new GitHubHelpService();
+        }
 
-        return match ($command) {
-            'pr-create' => [
-                'description' => 'Create a new pull request',
-                'usage'       => 'php scripts/github.php pr-create --title "..." --head <branch> [--base main] [--body "..."|--body-file <path>]',
-                'options'     => array_merge([
-                    ['name' => '--title', 'description' => 'PR title (required)'],
-                    ['name' => '--head', 'description' => 'Source branch (required)'],
-                    ['name' => '--base', 'description' => 'Target branch, defaults to ' . GitService::MAIN_BRANCH],
-                    ['name' => '--body', 'description' => 'PR body text'],
-                    ['name' => '--body-file', 'description' => 'Path to a file for PR body (preferred; file is deleted after use)'],
-                ], $execOpts),
-            ],
-            'pr-merge' => [
-                'description' => 'Merge a pull request',
-                'usage'       => 'php scripts/github.php pr-merge <number> [--squash|--rebase]',
-                'options'     => array_merge([
-                    ['name' => '--squash', 'description' => 'Squash merge'],
-                    ['name' => '--rebase', 'description' => 'Rebase merge'],
-                ], $execOpts),
-            ],
-            'pr-close' => [
-                'description' => 'Close a pull request',
-                'usage'       => 'php scripts/github.php pr-close <number>',
-                'options'     => $execOpts,
-            ],
-            'pr-edit' => [
-                'description' => 'Edit a pull request title or body',
-                'usage'       => 'php scripts/github.php pr-edit <number> [--title "..."] [--body "..."|--body-file <path>]',
-                'options'     => array_merge([
-                    ['name' => '--title', 'description' => 'New PR title'],
-                    ['name' => '--body', 'description' => 'New PR body text'],
-                    ['name' => '--body-file', 'description' => 'Path to a file for PR body (preferred; file is deleted after use)'],
-                ], $execOpts),
-            ],
-            'pr-list' => [
-                'description' => 'List open pull requests',
-                'usage'       => 'php scripts/github.php pr-list',
-                'options'     => $execOpts,
-            ],
-            'pr-view' => [
-                'description' => 'View a pull request details',
-                'usage'       => 'php scripts/github.php pr-view <number>',
-                'options'     => $execOpts,
-            ],
-            default => null,
-        };
+        return $this->helpService;
     }
 
     /**
