@@ -12,6 +12,8 @@ Read this file first. Open additional files only when the active task requires t
 - For temporary workflow files such as PR bodies, write under `local/tmp/`, not `/tmp`.
 - Keep chat updates concise.
 - Never run dependent commands in parallel. Any command sequence where one step relies on the previous step having completed, especially Git flows such as `add` then `commit`, must be executed strictly sequentially.
+- When executing requested operations, avoid chaining multiple operational commands with `&&` unless there is a real technical need.
+- Anticipate permission needs as early as possible, and request permissions in grouped batches whenever the workflow allows it.
 - Do not infer backlog or review state from chat alone.
 - If a tool is known to be unavailable, stop probing for it until the user explicitly asks to install it or confirms it is available again.
 - In this repository, treat `rg` as unavailable by default unless the user explicitly says otherwise.
