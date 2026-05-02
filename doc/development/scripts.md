@@ -277,18 +277,20 @@ Use this script in priority for source lookup and usage discovery instead of ad 
 Wraps a few common GitHub CLI/API flows used during delivery work, especially around pull requests.
 
 ```bash
-php scripts/github.php pr list
-php scripts/github.php pr view 42
-php scripts/github.php pr create --title "My PR" --head <branch> --body-file /tmp/pr_body.md
-php scripts/github.php pr merge 42
-php scripts/github.php pr close 42
-php scripts/github.php pr edit 42 --title "Updated title" --body-file /tmp/pr_body.md
+php scripts/github.php pr-list
+php scripts/github.php pr-view 42
+php scripts/github.php pr-create --title "My PR" --head <branch> --body-file local/tmp/pr_body.md
+php scripts/github.php pr-merge 42
+php scripts/github.php pr-close 42
+php scripts/github.php pr-edit 42 --title "Updated title" --body-file local/tmp/pr_body.md
+php scripts/github.php pr-merge --help
 ```
 
 Notes:
-- `--head <branch>` is required for `pr create`
+- `--head <branch>` is required for `pr-create`
 - `--body-file <file>` is preferred over `--body` to avoid shell quoting issues; the script reads and deletes the file automatically
 - Requires `GITHUB_TOKEN` in `.env` and a detectable `origin` remote pointing to GitHub.
+- Use `php scripts/github.php <command> --help` for per-command option details (e.g. `pr-merge --help`).
 - For backlog tasks started from a `[feature-slug][task-slug]` prefix, the local merge between the child task branch and the parent feature branch happens before any GitHub PR flow; `github.php` is only relevant once work is promoted back to a branch meant for remote review.
 
 ---

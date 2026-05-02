@@ -27,58 +27,65 @@ final class GitHubRunner extends AbstractScriptRunner
     protected function getCommands(): array
     {
         return [
-            ['name' => 'pr create', 'description' => 'Create a new pull request'],
-            ['name' => 'pr merge', 'description' => 'Merge a pull request'],
-            ['name' => 'pr close', 'description' => 'Close a pull request'],
-            ['name' => 'pr edit', 'description' => 'Edit a pull request title or body'],
-            ['name' => 'pr list', 'description' => 'List open pull requests'],
-            ['name' => 'pr view', 'description' => 'View a pull request details'],
+            ['name' => 'pr-create', 'description' => 'Create a new pull request'],
+            ['name' => 'pr-merge', 'description' => 'Merge a pull request'],
+            ['name' => 'pr-close', 'description' => 'Close a pull request'],
+            ['name' => 'pr-edit', 'description' => 'Edit a pull request title or body'],
+            ['name' => 'pr-list', 'description' => 'List open pull requests'],
+            ['name' => 'pr-view', 'description' => 'View a pull request details'],
         ];
     }
 
     protected function getArguments(): array
     {
         return [
-            ['name' => '<number>', 'description' => 'Pull request number (for merge, close, edit, view)'],
+            ['name' => '<number>', 'description' => 'Pull request number (for pr-merge, pr-close, pr-edit, pr-view)'],
         ];
     }
 
     protected function getOptions(): array
     {
         return array_merge([
-            ['name' => '--title', 'description' => 'PR title (create, edit)'],
-            ['name' => '--head', 'description' => 'Source branch (create)'],
-            ['name' => '--base', 'description' => 'Target branch, defaults to ' . GitService::MAIN_BRANCH . ' (create)'],
-            ['name' => '--body', 'description' => 'PR body text (create, edit)'],
-            ['name' => '--body-file', 'description' => 'Path to a file for PR body (create, edit)'],
-            ['name' => '--squash', 'description' => 'Squash merge (merge)'],
-            ['name' => '--rebase', 'description' => 'Rebase merge (merge)'],
+            ['name' => '--title', 'description' => 'PR title (pr-create, pr-edit)'],
+            ['name' => '--head', 'description' => 'Source branch (pr-create)'],
+            ['name' => '--base', 'description' => 'Target branch, defaults to ' . GitService::MAIN_BRANCH . ' (pr-create)'],
+            ['name' => '--body', 'description' => 'PR body text (pr-create, pr-edit)'],
+            ['name' => '--body-file', 'description' => 'Path to a file for PR body (pr-create, pr-edit)'],
+            ['name' => '--squash', 'description' => 'Squash merge (pr-merge)'],
+            ['name' => '--rebase', 'description' => 'Rebase merge (pr-merge)'],
         ], $this->getExecutionModeOptions());
     }
 
     protected function getUsageExamples(): array
     {
         return [
-            'php scripts/github.php pr create --title "Fix login" --head fix/login --body "Description..."',
-            'php scripts/github.php pr create --title "Fix login" --head fix/login --body-file local/tmp/pr_body.md',
-            'php scripts/github.php pr merge 42 --squash',
-            'php scripts/github.php pr close 42',
-            'php scripts/github.php pr edit 42 --title "Updated title"',
-            'php scripts/github.php pr list',
-            'php scripts/github.php pr view 42',
+            'php scripts/github.php pr-create --title "Fix login" --head fix/login --body "Description..."',
+            'php scripts/github.php pr-create --title "Fix login" --head fix/login --body-file local/tmp/pr_body.md',
+            'php scripts/github.php pr-merge 42 --squash',
+            'php scripts/github.php pr-close 42',
+            'php scripts/github.php pr-edit 42 --title "Updated title"',
+            'php scripts/github.php pr-list',
+            'php scripts/github.php pr-view 42',
+            'php scripts/github.php pr-merge --help',
         ];
     }
 
     /**
-     * Dispatches GitHub pull request subcommands after credentials are loaded.
+     * Dispatches GitHub pull request flat commands after credentials are loaded.
      *
      * @param array<string> $args
      */
     public function run(array $args): int
     {
         $command = array_shift($args) ?? '';
-        $sub     = array_shift($args) ?? '';
-        $flags   = $this->parseFlags($args);
+
+        if (in_array('--help', $args, true) || in_array('-h', $args, true)) {
+            $this->printCommandHelp($command);
+
+            return 0;
+        }
+
+        $flags = $this->parseFlags($args);
         $this->configureExecutionModes($flags);
 
         if (!$this->dryRun) {
@@ -86,18 +93,14 @@ final class GitHubRunner extends AbstractScriptRunner
         }
 
         try {
-            if ($command !== 'pr') {
-                throw new \RuntimeException("Unknown command: {$command}. Available: pr");
-            }
-
-            match ($sub) {
-                'create' => $this->handleCreate(array_values($args), $flags),
-                'merge'  => $this->handleMerge(array_values($args), $flags),
-                'close'  => $this->handleClose(array_values($args)),
-                'edit'   => $this->handleEdit(array_values($args), $flags),
-                'list'   => $this->handleList(),
-                'view'   => $this->handleView($args),
-                default  => throw new \RuntimeException("Unknown subcommand: pr {$sub}. Available: create, merge, close, edit, list, view"),
+            match ($command) {
+                'pr-create' => $this->handleCreate(array_values($args), $flags),
+                'pr-merge'  => $this->handleMerge(array_values($args), $flags),
+                'pr-close'  => $this->handleClose(array_values($args)),
+                'pr-edit'   => $this->handleEdit(array_values($args), $flags),
+                'pr-list'   => $this->handleList(),
+                'pr-view'   => $this->handleView($args),
+                default     => throw new \RuntimeException("Unknown command: {$command}. Available: pr-create, pr-merge, pr-close, pr-edit, pr-list, pr-view"),
             };
 
             return 0;
@@ -278,6 +281,86 @@ final class GitHubRunner extends AbstractScriptRunner
         $this->console->line("Branch : {$pr['head']['ref']} → {$pr['base']['ref']}");
         $this->console->line("URL    : {$pr['html_url']}");
         $this->console->line("Body   :\n{$pr['body']}");
+    }
+
+    /**
+     * Print contextual help for a single PR command.
+     */
+    private function printCommandHelp(string $command): void
+    {
+        $config = $this->getCommandConfig($command);
+        if ($config === null) {
+            echo "Unknown command: {$command}. Available: pr-create, pr-merge, pr-close, pr-edit, pr-list, pr-view\n";
+
+            return;
+        }
+
+        echo $config['description'] . "\n";
+        echo "\nUsage:\n  " . $config['usage'] . "\n";
+
+        if (!empty($config['options'])) {
+            echo "\nOptions:\n";
+            foreach ($config['options'] as $opt) {
+                echo "  {$opt['name']}\n    {$opt['description']}\n";
+            }
+        }
+    }
+
+    /**
+     * Return the description, canonical usage line, and relevant options for a single command.
+     *
+     * @return array{description: string, usage: string, options: array<array{name: string, description: string}>}|null
+     */
+    private function getCommandConfig(string $command): ?array
+    {
+        $execOpts = $this->getExecutionModeOptions();
+
+        return match ($command) {
+            'pr-create' => [
+                'description' => 'Create a new pull request',
+                'usage'       => 'php scripts/github.php pr-create --title "..." --head <branch> [--base main] [--body "..."|--body-file <path>]',
+                'options'     => array_merge([
+                    ['name' => '--title', 'description' => 'PR title (required)'],
+                    ['name' => '--head', 'description' => 'Source branch (required)'],
+                    ['name' => '--base', 'description' => 'Target branch, defaults to ' . GitService::MAIN_BRANCH],
+                    ['name' => '--body', 'description' => 'PR body text'],
+                    ['name' => '--body-file', 'description' => 'Path to a file for PR body (preferred; file is deleted after use)'],
+                ], $execOpts),
+            ],
+            'pr-merge' => [
+                'description' => 'Merge a pull request',
+                'usage'       => 'php scripts/github.php pr-merge <number> [--squash|--rebase]',
+                'options'     => array_merge([
+                    ['name' => '--squash', 'description' => 'Squash merge'],
+                    ['name' => '--rebase', 'description' => 'Rebase merge'],
+                ], $execOpts),
+            ],
+            'pr-close' => [
+                'description' => 'Close a pull request',
+                'usage'       => 'php scripts/github.php pr-close <number>',
+                'options'     => $execOpts,
+            ],
+            'pr-edit' => [
+                'description' => 'Edit a pull request title or body',
+                'usage'       => 'php scripts/github.php pr-edit <number> [--title "..."] [--body "..."|--body-file <path>]',
+                'options'     => array_merge([
+                    ['name' => '--title', 'description' => 'New PR title'],
+                    ['name' => '--body', 'description' => 'New PR body text'],
+                    ['name' => '--body-file', 'description' => 'Path to a file for PR body (preferred; file is deleted after use)'],
+                ], $execOpts),
+            ],
+            'pr-list' => [
+                'description' => 'List open pull requests',
+                'usage'       => 'php scripts/github.php pr-list',
+                'options'     => $execOpts,
+            ],
+            'pr-view' => [
+                'description' => 'View a pull request details',
+                'usage'       => 'php scripts/github.php pr-view <number>',
+                'options'     => $execOpts,
+            ],
+            default => null,
+        };
     }
 
     /**

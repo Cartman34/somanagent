@@ -121,7 +121,7 @@ final class GitHubClient
     public function createPr(string $title, string $headBranch, string $baseBranch, string $bodyFilePath): array
     {
         $arguments = sprintf(
-            'pr create --title %s --head %s --base %s --body-file %s',
+            'pr-create --title %s --head %s --base %s --body-file %s',
             escapeshellarg($title),
             escapeshellarg($headBranch),
             escapeshellarg($baseBranch),
@@ -141,7 +141,7 @@ final class GitHubClient
      */
     public function editPr(int $prNumber, ?string $title = null, ?string $bodyFilePath = null): void
     {
-        $arguments = sprintf('pr edit %d', $prNumber);
+        $arguments = sprintf('pr-edit %d', $prNumber);
         if ($title !== null) {
             $arguments .= sprintf(' --title %s', escapeshellarg($title));
         }
@@ -160,7 +160,7 @@ final class GitHubClient
      */
     public function closePr(int $prNumber): void
     {
-        $this->run(sprintf('pr close %d', $prNumber));
+        $this->run(sprintf('pr-close %d', $prNumber));
     }
 
     /**
@@ -171,7 +171,7 @@ final class GitHubClient
      */
     public function mergePr(int $prNumber): void
     {
-        $this->run(sprintf('pr merge %d', $prNumber));
+        $this->run(sprintf('pr-merge %d', $prNumber));
     }
 
     /**
@@ -181,7 +181,7 @@ final class GitHubClient
      */
     public function listPrs(): string
     {
-        return $this->capture('pr list');
+        return $this->capture('pr-list');
     }
 
     private function isRetryableNetworkError(string $output): bool

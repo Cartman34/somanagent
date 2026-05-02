@@ -776,7 +776,7 @@ MD);
         if ($this->context->pullRequestNumber() !== null && !$this->context->isPullRequestMerged()) {
             $this->cleanupCommand(
                 sprintf('close PR #%d', $this->context->pullRequestNumber()),
-                sprintf('php scripts/github.php pr close %d', $this->context->pullRequestNumber()),
+                sprintf('php scripts/github.php pr-close %d', $this->context->pullRequestNumber()),
                 ['GitHub API error 404', 'already closed'],
             );
         }
