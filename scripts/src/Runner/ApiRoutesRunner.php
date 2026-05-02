@@ -14,6 +14,13 @@ use SoManAgent\Script\Api\ControllerRouteCatalog;
  */
 final class ApiRoutesRunner extends AbstractScriptRunner
 {
+    public const NAME = 'api-routes';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     protected function getDescription(): string
     {
         return 'List all REST routes from Symfony controllers by parsing #[Route] attributes';

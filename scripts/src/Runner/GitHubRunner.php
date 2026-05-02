@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Runner;
 
-use SoManAgent\Script\Service\CommandHelpLoader;
+use SoManAgent\Script\GitHub\Enum\GitHubCommandName;
 use SoManAgent\Script\Service\GitService;
 
 /**
@@ -17,59 +17,19 @@ use SoManAgent\Script\Service\GitService;
  */
 final class GitHubRunner extends AbstractScriptRunner
 {
+    public const NAME = 'github';
+
     private ?string $token = null;
     private ?string $repo = null;
-    private ?CommandHelpLoader $commandHelpLoader = null;
 
-    protected function getDescription(): string
+    protected function getName(): string
     {
-        return 'GitHub CLI helper — create PRs, merge, close, edit, list, view';
+        return self::NAME;
     }
 
-    protected function getCommands(): array
+    protected function printHelp(): void
     {
-        return [
-            ['name' => 'pr-create', 'description' => 'Create a new pull request'],
-            ['name' => 'pr-merge', 'description' => 'Merge a pull request'],
-            ['name' => 'pr-close', 'description' => 'Close a pull request'],
-            ['name' => 'pr-edit', 'description' => 'Edit a pull request title or body'],
-            ['name' => 'pr-list', 'description' => 'List open pull requests'],
-            ['name' => 'pr-view', 'description' => 'View a pull request details'],
-        ];
-    }
-
-    protected function getArguments(): array
-    {
-        return [
-            ['name' => '<number>', 'description' => 'Pull request number (for pr-merge, pr-close, pr-edit, pr-view)'],
-        ];
-    }
-
-    protected function getOptions(): array
-    {
-        return array_merge([
-            ['name' => '--title', 'description' => 'PR title (pr-create, pr-edit)'],
-            ['name' => '--head', 'description' => 'Source branch (pr-create)'],
-            ['name' => '--base', 'description' => 'Target branch, defaults to ' . GitService::MAIN_BRANCH . ' (pr-create)'],
-            ['name' => '--body', 'description' => 'PR body text (pr-create, pr-edit)'],
-            ['name' => '--body-file', 'description' => 'Path to a file for PR body (pr-create, pr-edit)'],
-            ['name' => '--squash', 'description' => 'Squash merge (pr-merge)'],
-            ['name' => '--rebase', 'description' => 'Rebase merge (pr-merge)'],
-        ], $this->getExecutionModeOptions());
-    }
-
-    protected function getUsageExamples(): array
-    {
-        return [
-            'php scripts/github.php pr-create --title "Fix login" --head fix/login --body "Description..."',
-            'php scripts/github.php pr-create --title "Fix login" --head fix/login --body-file local/tmp/pr_body.md',
-            'php scripts/github.php pr-merge 42 --squash',
-            'php scripts/github.php pr-close 42',
-            'php scripts/github.php pr-edit 42 --title "Updated title"',
-            'php scripts/github.php pr-list',
-            'php scripts/github.php pr-view 42',
-            'php scripts/github.php pr-merge --help',
-        ];
+        $this->printYamlHelp();
     }
 
     /**
@@ -96,13 +56,17 @@ final class GitHubRunner extends AbstractScriptRunner
 
         try {
             match ($command) {
-                'pr-create' => $this->handleCreate(array_values($args), $flags),
-                'pr-merge'  => $this->handleMerge(array_values($args), $flags),
-                'pr-close'  => $this->handleClose(array_values($args)),
-                'pr-edit'   => $this->handleEdit(array_values($args), $flags),
-                'pr-list'   => $this->handleList(),
-                'pr-view'   => $this->handleView($args),
-                default     => throw new \RuntimeException("Unknown command: {$command}. Available: pr-create, pr-merge, pr-close, pr-edit, pr-list, pr-view"),
+                GitHubCommandName::PR_CREATE->value => $this->handleCreate(array_values($args), $flags),
+                GitHubCommandName::PR_MERGE->value  => $this->handleMerge(array_values($args), $flags),
+                GitHubCommandName::PR_CLOSE->value  => $this->handleClose(array_values($args)),
+                GitHubCommandName::PR_EDIT->value   => $this->handleEdit(array_values($args), $flags),
+                GitHubCommandName::PR_LIST->value   => $this->handleList(),
+                GitHubCommandName::PR_VIEW->value   => $this->handleView(array_values($args)),
+                default                             => throw new \RuntimeException(sprintf(
+                    'Unknown command: %s. Available: %s',
+                    $command,
+                    implode(', ', $this->getRunnerHelp()->commandNames),
+                )),
             };
 
             return 0;
@@ -264,7 +228,7 @@ final class GitHubRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $args
+     * @param list<string> $args
      */
     private function handleView(array $args): void
     {
@@ -288,24 +252,12 @@ final class GitHubRunner extends AbstractScriptRunner
     /**
      * Print contextual help for a single PR command loaded from YAML.
      *
-     * Delegates to CommandHelpLoader which throws a RuntimeException for unknown
+     * Delegates to CommandHelpService which throws a RuntimeException for unknown
      * commands, propagating exit code 1 via the handle() outer catch.
      */
     private function printCommandHelp(string $command): void
     {
-        echo $this->commandHelpLoader()->renderCommandHelp($command, $this->getExecutionModeOptions());
-    }
-
-    /**
-     * Lazy getter for the GitHub command help loader.
-     */
-    private function commandHelpLoader(): CommandHelpLoader
-    {
-        if ($this->commandHelpLoader === null) {
-            $this->commandHelpLoader = new CommandHelpLoader(dirname(__DIR__, 2) . '/resources/github/commands');
-        }
-
-        return $this->commandHelpLoader;
+        $this->printYamlCommandHelp($command);
     }
 
     /**

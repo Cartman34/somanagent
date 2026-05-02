@@ -14,6 +14,13 @@ namespace SoManAgent\Script\Runner;
  */
 final class NodeRunner extends AbstractScriptRunner
 {
+    public const NAME = 'node';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     protected function getDescription(): string
     {
         return 'Run reusable commands inside the Node Docker container';

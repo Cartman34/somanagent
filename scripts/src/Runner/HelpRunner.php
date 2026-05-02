@@ -14,6 +14,13 @@ namespace SoManAgent\Script\Runner;
  */
 final class HelpRunner extends AbstractScriptRunner
 {
+    public const NAME = 'help';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     protected function getDescription(): string
     {
         return 'List all available scripts with their description and usage examples';

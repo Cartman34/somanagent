@@ -16,6 +16,13 @@ use SoManAgent\Script\Environment;
  */
 final class SetupRunner extends AbstractScriptRunner
 {
+    public const NAME = 'setup';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     protected function getDescription(): string
     {
         return 'Full setup of SoManAgent (first run)';

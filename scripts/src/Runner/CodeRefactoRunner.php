@@ -12,6 +12,13 @@ namespace SoManAgent\Script\Runner;
  */
 final class CodeRefactoRunner extends AbstractScriptRunner
 {
+    public const NAME = 'code-refacto';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     private const COMMAND_FIX_INLINE_PHPDOC = 'fix-inline-phpdoc';
     private const COMMAND_ADD_MISSING_ARRAY_TYPES = 'add-missing-array-types';
     private const COMMAND_STRIP_WHAT_COMMENTS = 'strip-what-comments';

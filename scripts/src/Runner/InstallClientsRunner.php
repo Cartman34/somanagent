@@ -16,6 +16,13 @@ namespace SoManAgent\Script\Runner;
  */
 final class InstallClientsRunner extends AbstractScriptRunner
 {
+    public const NAME = 'install-clients';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     /**
      * Default client configuration.
      *

@@ -14,6 +14,13 @@ namespace SoManAgent\Script\Runner;
  */
 final class PhpstanRunner extends AbstractScriptRunner
 {
+    public const NAME = 'phpstan';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     private const SCOPE_BACKEND = 'backend';
     private const SCOPE_SCRIPTS = 'scripts';
 

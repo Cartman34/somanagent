@@ -1,0 +1,32 @@
+description: 'GitHub CLI helper — create PRs, merge, close, edit, list, view'
+options:
+  -
+    name: '--title'
+    description: 'PR title (pr-create, pr-edit)'
+  -
+    name: '--head'
+    description: 'Source branch (pr-create)'
+  -
+    name: '--base'
+    description: 'Target branch, defaults to main (pr-create)'
+  -
+    name: '--body'
+    description: 'PR body text (pr-create, pr-edit)'
+  -
+    name: '--body-file'
+    description: 'Path to a file for PR body (pr-create, pr-edit)'
+  -
+    name: '--squash'
+    description: 'Squash merge (pr-merge)'
+  -
+    name: '--rebase'
+    description: 'Rebase merge (pr-merge)'
+examples:
+  - 'php scripts/github.php pr-create --title "Fix login" --head fix/login --body "Description..."'
+  - 'php scripts/github.php pr-create --title "Fix login" --head fix/login --body-file local/tmp/pr_body.md'
+  - 'php scripts/github.php pr-merge 42 --squash'
+  - 'php scripts/github.php pr-close 42'
+  - 'php scripts/github.php pr-edit 42 --title "Updated title"'
+  - 'php scripts/github.php pr-list'
+  - 'php scripts/github.php pr-view 42'
+  - 'php scripts/github.php pr-merge --help'

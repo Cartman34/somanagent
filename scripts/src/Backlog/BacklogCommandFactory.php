@@ -38,7 +38,6 @@ use SoManAgent\Script\Backlog\Command\BacklogWorktreeListCommand;
 use SoManAgent\Script\Backlog\Command\BacklogWorktreeRestoreCommand;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use SoManAgent\Script\Backlog\Service\BacklogHelpService;
 use SoManAgent\Script\Backlog\Service\BacklogPermissionService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use SoManAgent\Script\Backlog\Service\BacklogReviewBodyFormatter;

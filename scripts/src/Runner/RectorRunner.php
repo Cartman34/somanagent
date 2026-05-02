@@ -14,6 +14,13 @@ namespace SoManAgent\Script\Runner;
  */
 final class RectorRunner extends AbstractScriptRunner
 {
+    public const NAME = 'rector';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     private const SCOPE_BACKEND = 'backend';
     private const SCOPE_SCRIPTS = 'scripts';
 

@@ -12,6 +12,13 @@ namespace SoManAgent\Script\Runner;
  */
 final class CodeSearchRunner extends AbstractScriptRunner
 {
+    public const NAME = 'code-search';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     private const ENGINE_RG = 'rg';
     private const ENGINE_PHP = 'php';
     private const DEFAULT_ENGINE = self::ENGINE_RG;

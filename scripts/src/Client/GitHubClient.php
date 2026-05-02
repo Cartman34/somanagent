@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Client;
 
+use SoManAgent\Script\GitHub\Enum\GitHubCommandName;
 use SoManAgent\Script\RetryHelper;
 use SoManAgent\Script\RetryPolicy;
 
@@ -121,7 +122,8 @@ final class GitHubClient
     public function createPr(string $title, string $headBranch, string $baseBranch, string $bodyFilePath): array
     {
         $arguments = sprintf(
-            'pr-create --title %s --head %s --base %s --body-file %s',
+            '%s --title %s --head %s --base %s --body-file %s',
+            GitHubCommandName::PR_CREATE->value,
             escapeshellarg($title),
             escapeshellarg($headBranch),
             escapeshellarg($baseBranch),
@@ -141,7 +143,7 @@ final class GitHubClient
      */
     public function editPr(int $prNumber, ?string $title = null, ?string $bodyFilePath = null): void
     {
-        $arguments = sprintf('pr-edit %d', $prNumber);
+        $arguments = sprintf('%s %d', GitHubCommandName::PR_EDIT->value, $prNumber);
         if ($title !== null) {
             $arguments .= sprintf(' --title %s', escapeshellarg($title));
         }
@@ -160,7 +162,7 @@ final class GitHubClient
      */
     public function closePr(int $prNumber): void
     {
-        $this->run(sprintf('pr-close %d', $prNumber));
+        $this->run(sprintf('%s %d', GitHubCommandName::PR_CLOSE->value, $prNumber));
     }
 
     /**
@@ -171,7 +173,7 @@ final class GitHubClient
      */
     public function mergePr(int $prNumber): void
     {
-        $this->run(sprintf('pr-merge %d', $prNumber));
+        $this->run(sprintf('%s %d', GitHubCommandName::PR_MERGE->value, $prNumber));
     }
 
     /**
@@ -181,7 +183,7 @@ final class GitHubClient
      */
     public function listPrs(): string
     {
-        return $this->capture('pr-list');
+        return $this->capture(GitHubCommandName::PR_LIST->value);
     }
 
     private function isRetryableNetworkError(string $output): bool

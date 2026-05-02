@@ -14,6 +14,13 @@ namespace SoManAgent\Script\Runner;
  */
 final class MigrateRunner extends AbstractScriptRunner
 {
+    public const NAME = 'migrate';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     protected function getDescription(): string
     {
         return 'Run Doctrine migrations inside the PHP container';

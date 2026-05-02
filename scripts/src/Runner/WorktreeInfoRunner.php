@@ -14,6 +14,13 @@ use SoManAgent\Script\WorktreeScriptProxy;
  */
 final class WorktreeInfoRunner extends AbstractScriptRunner
 {
+    public const NAME = 'worktree-info';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     protected function getDescription(): string
     {
         return 'Display git worktree context for the current script.';

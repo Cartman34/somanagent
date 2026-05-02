@@ -10,13 +10,14 @@ namespace SoManAgent\Script\Runner;
 use SoManAgent\Script\Backlog\BacklogCommandFactory;
 use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
-use SoManAgent\Script\Backlog\Service\BacklogHelpService;
 
 /**
  * Local backlog workflow orchestrator.
  */
 final class BacklogRunner extends AbstractScriptRunner
 {
+    public const NAME = 'backlog';
+
     private const DEFAULT_BOARD_PATH = 'local/backlog-board.md';
     private const DEFAULT_REVIEW_FILE_PATH = 'local/backlog-review.md';
     private const DEFAULT_WORKTREES_DIR = '.agent-worktrees';
@@ -29,27 +30,16 @@ final class BacklogRunner extends AbstractScriptRunner
     private ?string $reviewFilePath = null;
     private ?string $worktreesRoot = null;
 
-    private ?BacklogHelpService $helpService = null;
     private ?BacklogCommandFactory $commandFactory = null;
 
-    protected function getDescription(): string
+    protected function getName(): string
     {
-        return 'Local backlog workflow orchestrator.';
+        return self::NAME;
     }
 
-    protected function getCommands(): array
+    protected function printHelp(): void
     {
-        return $this->helpService()->getCommands();
-    }
-
-    protected function getOptions(): array
-    {
-        return $this->helpService()->getOptions($this->getExecutionModeOptions());
-    }
-
-    protected function getUsageExamples(): array
-    {
-        return $this->helpService()->getUsageExamples();
+        $this->printYamlHelp();
     }
 
     /**
@@ -179,16 +169,7 @@ final class BacklogRunner extends AbstractScriptRunner
 
     private function printCommandHelp(string $command): void
     {
-        echo $this->helpService()->renderCommandHelp($command);
-    }
-
-    private function helpService(): BacklogHelpService
-    {
-        if ($this->helpService === null) {
-            $this->helpService = new BacklogHelpService($this->commandFactory()->getFilesystemClient());
-        }
-
-        return $this->helpService;
+        $this->printYamlCommandHelp($command);
     }
 
     private function commandFactory(): BacklogCommandFactory

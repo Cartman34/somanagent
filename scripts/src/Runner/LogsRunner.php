@@ -14,6 +14,13 @@ namespace SoManAgent\Script\Runner;
  */
 final class LogsRunner extends AbstractScriptRunner
 {
+    public const NAME = 'logs';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     protected function getDescription(): string
     {
         return 'Stream logs from a Docker container in real time';

@@ -16,6 +16,13 @@ use SoManAgent\Script\CodexAuthManager;
  */
 final class CodexAuthRunner extends AbstractScriptRunner
 {
+    public const NAME = 'codex-auth';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     protected function getDescription(): string
     {
         return 'Manage Codex CLI auth with WSL as the source of truth and sync it to Docker';
