@@ -114,6 +114,43 @@ An abstract class name must be prefixed with `Abstract`.
 
 ---
 
+## PHP Classes — final keyword
+
+PHP classes must remain extensible by default so unit tests can mock concrete collaborators when no contract exists.
+
+A class may be declared `final` only when one of these conditions is true:
+
+- it is a DTO without business behavior
+- it implements at least one PHP interface
+
+Any other PHP class must not be declared `final`.
+
+```php
+/**
+ * Carries the normalized result of a repository validation.
+ */
+final class RepositoryValidationResult
+{
+    public function __construct(
+        public readonly bool $valid,
+        public readonly ?string $baseBranch,
+    ) {
+    }
+}
+```
+
+```php
+/**
+ * Runs the local backlog maintenance command.
+ */
+class BacklogMaintenanceCommand extends Command
+{
+    // This command has no interface contract, so it must remain mockable.
+}
+```
+
+---
+
 ## PHPDoc
 
 PHPDoc is required on:
