@@ -166,6 +166,12 @@ final class GitClient
         $this->runNetwork($command);
     }
 
+    /**
+     * @param string $remote
+     * @param string|null $branch
+     * @param string|null $destination
+     * @param string|null $worktree
+     */
     public function fetch(string $remote = 'origin', ?string $branch = null, ?string $destination = null, ?string $worktree = null): void
     {
         $parts = ['fetch', escapeshellarg($remote)];

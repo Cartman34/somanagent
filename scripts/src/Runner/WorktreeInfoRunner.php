@@ -26,6 +26,9 @@ final class WorktreeInfoRunner extends AbstractScriptRunner
         ];
     }
 
+    /**
+     * @param array<string> $args
+     */
     public function run(array $args): int
     {
         if ($this->scriptFile === null) {
