@@ -22,6 +22,13 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
 {
     private BacklogWorktreeService $worktreeService;
 
+    /**
+     * @param BacklogPresenter $presenter
+     * @param bool $dryRun
+     * @param string $projectRoot
+     * @param BacklogBoardService $boardService
+     * @param BacklogWorktreeService $worktreeService
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
@@ -33,6 +40,10 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
         $this->worktreeService = $worktreeService;
     }
 
+    /**
+     * @param list<string> $commandArgs
+     * @param array<string, bool|string> $options
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $agent = $options['agent'] ?? null;

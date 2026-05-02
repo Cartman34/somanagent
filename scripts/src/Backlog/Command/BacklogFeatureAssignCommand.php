@@ -23,6 +23,14 @@ final class BacklogFeatureAssignCommand extends AbstractBacklogCommand
 
     private BacklogPermissionService $permissionService;
 
+    /**
+     * @param BacklogPresenter $presenter
+     * @param bool $dryRun
+     * @param string $projectRoot
+     * @param BacklogBoardService $boardService
+     * @param BacklogWorktreeService $worktreeService
+     * @param BacklogPermissionService $permissionService
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
@@ -36,6 +44,10 @@ final class BacklogFeatureAssignCommand extends AbstractBacklogCommand
         $this->permissionService = $permissionService;
     }
 
+    /**
+     * @param list<string> $commandArgs
+     * @param array<string, bool|string> $options
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $actorRole = $this->permissionService->requireWorkflowRole();

@@ -19,6 +19,12 @@ use SoManAgent\Script\Backlog\Service\BacklogPresenter;
  */
 final class BacklogEntryRenameCommand extends AbstractBacklogCommand
 {
+    /**
+     * @param BacklogPresenter $presenter
+     * @param bool $dryRun
+     * @param string $projectRoot
+     * @param BacklogBoardService $boardService
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
