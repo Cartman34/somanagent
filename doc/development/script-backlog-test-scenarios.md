@@ -140,7 +140,41 @@ Validate `work-start` on a plain queued task.
 - `work-start` output includes the feature summary and assigned worktree
 - the created feature slug corresponds to `test-plain-feature-alpha`
 
-## Scenario 4 - Release Plain Feature Without Development
+## Scenario 4 - Start Feature With Explicit Slug And Entry Rename
+
+### Goal
+
+Validate the single-prefix `[feature-slug] text` mode of `work-start` and the `entry-rename` command on a feature and a task.
+
+### Steps
+
+1. Create a single-prefix task:
+   - `php scripts/backlog.php task-create "[test-single-prefix] Single prefix feature description"`
+2. Start it:
+   - `php scripts/backlog.php work-start --agent d01`
+3. Rename the active feature entry:
+   - `php scripts/backlog.php entry-rename --agent d01 "Renamed single prefix description"`
+4. Inspect:
+   - `php scripts/backlog.php status test-single-prefix`
+5. Release the feature:
+   - `php scripts/backlog.php feature-release --agent d01 test-single-prefix`
+6. Create a scoped task to test entry-rename on a `kind=task`:
+   - `php scripts/backlog.php task-create "[test-scoped-feature][rename-task] Original task text"`
+   - `php scripts/backlog.php work-start --agent d01`
+7. Rename the active task entry:
+   - `php scripts/backlog.php entry-rename --agent d01 "Renamed task text"`
+8. Inspect both the task and the parent feature container:
+   - `php scripts/backlog.php status --agent d01`
+   - `php scripts/backlog.php status test-scoped-feature`
+
+### Expected checks
+
+- `work-start` on `[test-single-prefix] ...` creates a `kind=feature` with slug `test-single-prefix`, not a slug derived from the description
+- after `entry-rename`, `status test-single-prefix` shows `Summary: Renamed single prefix description`
+- after task rename, `status --agent d01` shows `Summary: Renamed task text`
+- after task rename, `status test-scoped-feature` details section shows the updated contribution line `[task:rename-task] Renamed task text`
+
+## Scenario 5 - Release Plain Feature Without Development
 
 ### Goal
 
@@ -161,7 +195,7 @@ Validate `feature-release` on a feature with no actual development ahead of base
 - no active feature remains for `d01`
 - branch/worktree cleanup behavior matches the documented workflow
 
-## Scenario 5 - Assignment Flow
+## Scenario 6 - Assignment Flow
 
 ### Goal
 
@@ -191,7 +225,7 @@ Validate feature assignment and unassignment permissions.
 1. As developer with mismatched `SOMANAGER_AGENT`, assignment must fail.
 2. As developer, unassigning another agent’s feature must fail.
 
-## Scenario 6 - Start Scoped Feature And Local Child Task
+## Scenario 7 - Start Scoped Feature And Local Child Task
 
 ### Goal
 
@@ -219,7 +253,7 @@ Validate `work-start` on scoped queued tasks.
 - parent contribution block contains `[task:test-child-a]`
 - `work-start` output includes the child task, parent feature, and assigned worktree
 
-## Scenario 7 - Child Task Review Cycle
+## Scenario 8 - Child Task Review Cycle
 
 ### Goal
 
@@ -248,7 +282,7 @@ Validate local child task review commands (reject, rework, approve). Demonstrate
 - review notes are written to `local/backlog-review.md` on rejection
 - review notes are cleared on approval
 
-## Scenario 8 - Merge Approved Child Task
+## Scenario 9 - Merge Approved Child Task
 
 ### Goal
 
@@ -270,7 +304,7 @@ Validate local merge of one approved child task into its parent feature.
 - parent contribution block still records the merged child content
 - child task worktree cleanup follows documented behavior
 
-## Scenario 9 - Start Second Child Task And Complete Its Review
+## Scenario 10 - Start Second Child Task And Complete Its Review
 
 ### Goal
 
@@ -299,7 +333,7 @@ Validate that after merging task A, `work-start` picks up the next queued scoped
 - contribution blocks record both merged child tasks after step 6
 - agent has no active entry after the merge
 
-## Scenario 10 - Feature Review Flow
+## Scenario 11 - Feature Review Flow
 
 ### Goal
 
@@ -329,7 +363,7 @@ Validate remote feature review transitions once all child tasks are merged.
 - stage changes follow the documented feature review lifecycle
 - PR metadata and review notes behave consistently with the workflow
 
-## Scenario 11 - Block And Unblock Feature
+## Scenario 12 - Block And Unblock Feature
 
 ### Goal
 
@@ -350,7 +384,7 @@ Validate blocked flag handling and PR title synchronization.
 - `blocked=yes` appears and disappears in backlog state
 - PR title is updated when a PR exists
 
-## Scenario 12 - Close And Merge Feature
+## Scenario 13 - Close And Merge Feature
 
 ### Goal
 
@@ -377,7 +411,7 @@ Validate final feature closure and merge behavior.
 - feature merge can reuse the existing PR body when `--body-file` is omitted
 - managed worktree cleanup is coherent
 
-## Scenario 13 - Worktree Helpers
+## Scenario 14 - Worktree Helpers
 
 ### Goal
 
@@ -396,7 +430,7 @@ Validate inspection and cleanup helpers independently.
 - dry-run reports intended actions without mutating state
 - cleanup removes only safe abandoned managed worktrees
 
-## Scenario 14 - Negative And Guardrail Checks
+## Scenario 15 - Negative And Guardrail Checks
 
 ### Goal
 

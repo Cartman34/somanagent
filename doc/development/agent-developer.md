@@ -82,7 +82,7 @@ Read this file only when the active task requires developer workflow details.
 
 1. Run `php scripts/backlog.php entry-rename --agent=<code> <new-text>`.
 2. The script updates the main text of the agent's active entry, whether it is a `kind=task` or a `kind=feature`.
-3. Merged task contribution lines inside a feature container are not affected.
+3. For `kind=task`, the corresponding contribution line inside the parent feature container is also updated to keep them in sync.
 4. The agent can only rename their own active entry.
 
 ### `rework`
