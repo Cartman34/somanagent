@@ -125,29 +125,7 @@ A class may be declared `final` only when one of these conditions is true:
 
 Any other PHP class must not be declared `final`.
 
-```php
-/**
- * Carries the normalized result of a repository validation.
- */
-final class RepositoryValidationResult
-{
-    public function __construct(
-        public readonly bool $valid,
-        public readonly ?string $baseBranch,
-    ) {
-    }
-}
-```
-
-```php
-/**
- * Runs the local backlog maintenance command.
- */
-class BacklogMaintenanceCommand extends Command
-{
-    // This command has no interface contract, so it must remain mockable.
-}
-```
+The use of `final` must never make unit tests harder to write or force tests to avoid normal mocking strategies for concrete collaborators.
 
 ---
 
