@@ -12,6 +12,10 @@ namespace SoManAgent\Script\Service;
  */
 final class CommandParamHelp
 {
+    /**
+     * @param string $name        Display name of the parameter (e.g. "--agent" or "<text>")
+     * @param string $description Human-readable description shown in command help output
+     */
     public function __construct(
         public readonly string $name,
         public readonly string $description,

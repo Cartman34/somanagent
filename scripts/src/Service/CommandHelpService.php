@@ -22,6 +22,9 @@ use Symfony\Component\Yaml\Yaml;
  */
 class CommandHelpService
 {
+    /**
+     * @param string $resourcesBasePath Absolute path to the directory containing per-runner help YAML subdirectories
+     */
     public function __construct(private string $resourcesBasePath)
     {
     }

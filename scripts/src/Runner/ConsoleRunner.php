@@ -41,6 +41,9 @@ final class ConsoleRunner extends AbstractScriptRunner
         ];
     }
 
+    /**
+     * @param list<string> $args Symfony console command and its arguments
+     */
     public function run(array $args): int
     {
         if ($args === []) {

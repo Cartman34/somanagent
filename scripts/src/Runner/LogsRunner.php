@@ -49,6 +49,9 @@ final class LogsRunner extends AbstractScriptRunner
         ];
     }
 
+    /**
+     * @param list<string> $args Service name (php|worker|node|db|nginx) and optional docker logs flags
+     */
     public function run(array $args): int
     {
         $allowed   = ['php', 'worker', 'node', 'db', 'nginx'];

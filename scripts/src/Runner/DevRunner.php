@@ -41,6 +41,9 @@ final class DevRunner extends AbstractScriptRunner
         ];
     }
 
+    /**
+     * @param list<string> $args CLI arguments — supports the --stop flag
+     */
     public function run(array $args): int
     {
         $stop = in_array('--stop', $args, true);
