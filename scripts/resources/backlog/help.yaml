@@ -1,4 +1,4 @@
-description: 'Backlog workflow helper for local developer and reviewer procedures'
+description: 'Local backlog workflow orchestrator.'
 options:
   -
     name: '--agent'

@@ -29,10 +29,12 @@ class CommandHelpService
     /**
      * Load and return the runner-level help DTO.
      *
-     * @throws \RuntimeException When the runner help YAML file does not exist or is invalid
+     * @throws \RuntimeException When the runner is unknown or its help YAML is invalid
      */
     public function getRunnerHelp(string $runnerName): RunnerHelp
     {
+        $this->assertRunnerExists($runnerName);
+
         $runnerDir = $this->runnerDir($runnerName);
         $path = $runnerDir . '/help.yaml';
 
@@ -69,10 +71,12 @@ class CommandHelpService
     /**
      * Load and return the typed help DTO for a command.
      *
-     * @throws \RuntimeException When the command YAML file does not exist or is invalid
+     * @throws \RuntimeException When the runner is unknown, the command YAML file does not exist, or is invalid
      */
     public function getCommandHelp(string $runnerName, string $commandName): CommandHelp
     {
+        $this->assertRunnerExists($runnerName);
+
         $path = $this->runnerDir($runnerName) . '/commands/' . $commandName . '.yaml';
 
         if (!file_exists($path)) {
@@ -177,10 +181,28 @@ class CommandHelpService
     }
 
     /**
+     * @throws \RuntimeException When the runner directory does not exist
+     */
+    private function assertRunnerExists(string $runnerName): void
+    {
+        if (!is_dir($this->runnerDir($runnerName))) {
+            throw new \RuntimeException(sprintf(
+                'Unknown runner `%s`: missing help directory %s',
+                $runnerName,
+                $this->runnerDir($runnerName),
+            ));
+        }
+    }
+
+    /**
      * @return list<string>
      */
     private function listCommandNames(string $commandsDir): array
     {
+        if (!is_dir($commandsDir)) {
+            return [];
+        }
+
         $paths = glob($commandsDir . '/*.yaml');
         if ($paths === false) {
             throw new \RuntimeException('Unable to list command help files.');
