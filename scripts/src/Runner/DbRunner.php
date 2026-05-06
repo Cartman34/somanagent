@@ -14,6 +14,13 @@ namespace SoManAgent\Script\Runner;
  */
 final class DbRunner extends AbstractScriptRunner
 {
+    public const NAME = 'db';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     protected function getDescription(): string
     {
         return 'Run database-related commands inside Docker containers (PostgreSQL + PHP)';

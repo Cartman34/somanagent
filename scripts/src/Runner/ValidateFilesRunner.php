@@ -16,6 +16,13 @@ use SoManAgent\Script\Validation\OpenApiConsistencyValidator;
  */
 final class ValidateFilesRunner extends AbstractScriptRunner
 {
+    public const NAME = 'validate-files';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     protected function getDescription(): string
     {
         return 'Run targeted backend/frontend validations for an explicit file list';

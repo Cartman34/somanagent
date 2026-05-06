@@ -14,6 +14,13 @@ namespace SoManAgent\Script\Runner;
  */
 final class ConsoleRunner extends AbstractScriptRunner
 {
+    public const NAME = 'console';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     protected function getDescription(): string
     {
         return 'Run a Symfony bin/console command inside the PHP Docker container';
@@ -34,6 +41,9 @@ final class ConsoleRunner extends AbstractScriptRunner
         ];
     }
 
+    /**
+     * @param list<string> $args Symfony console command and its arguments
+     */
     public function run(array $args): int
     {
         if ($args === []) {

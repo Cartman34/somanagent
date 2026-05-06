@@ -1,0 +1,18 @@
+description: 'Merge a pull request'
+arguments:
+  -
+    name: '<number>'
+    description: 'Pull request number to merge'
+options:
+  -
+    name: '--squash'
+    description: 'Squash merge'
+  -
+    name: '--rebase'
+    description: 'Rebase merge'
+examples:
+  - 'php scripts/github.php pr-merge 42'
+  - 'php scripts/github.php pr-merge 42 --squash'
+  - 'php scripts/github.php pr-merge 42 --rebase'
+notes:
+  - 'Default merge method is a regular merge commit'

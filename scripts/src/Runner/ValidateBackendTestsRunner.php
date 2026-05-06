@@ -12,6 +12,13 @@ namespace SoManAgent\Script\Runner;
  */
 final class ValidateBackendTestsRunner extends AbstractScriptRunner
 {
+    public const NAME = 'validate-backend-tests';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     private const ALL_OPTION = '--all';
     private const LOCAL_TEST_ENV = 'SOMANAGENT_PHPUNIT_LOCAL=1';
     private const LOCAL_TEST_SUITE = 'local-unit';

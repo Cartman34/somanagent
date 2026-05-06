@@ -14,6 +14,13 @@ namespace SoManAgent\Script\Runner;
  */
 final class HealthRunner extends AbstractScriptRunner
 {
+    public const NAME = 'health';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     protected function getDescription(): string
     {
         return 'Check application reachability and run somanagent:health';

@@ -9,6 +9,10 @@ namespace SoManAgent\Script\Runner;
 
 use SoManAgent\Script\Application;
 use SoManAgent\Script\Console;
+use SoManAgent\Script\Service\CommandHelp;
+use SoManAgent\Script\Service\CommandHelpService;
+use SoManAgent\Script\Service\CommandParamHelp;
+use SoManAgent\Script\Service\RunnerHelp;
 
 /**
  * Abstract base class for all SoManAgent CLI scripts.
@@ -18,28 +22,13 @@ use SoManAgent\Script\Console;
  *  - Standardized bootstrap (Application + Console)
  *  - Consistent error handling and exit codes
  *
- * Usage:
- *   class HealthRunner extends AbstractScriptRunner
- *   {
- *       protected function getDescription(): string
- *       {
- *           return 'Check application health';
- *       }
+ * Two help modes are supported:
+ *  - Array-based: override getDescription(), getUsageExamples(), getOptions(), etc.
+ *  - YAML-based: override printHelp() to call printYamlHelp(), and store help under
+ *    scripts/resources/{name}/help.yaml + scripts/resources/{name}/commands/{cmd}.yaml.
  *
- *       protected function getUsageExamples(): array
- *       {
- *           return [
- *               'php scripts/health.php',
- *               'php scripts/health.php --url http://localhost:8080',
- *           ];
- *       }
- *
- *       public function run(array $args): int
- *       {
- *           // implementation
- *           return 0;
- *       }
- *   }
+ * @see AbstractScriptRunner::printYamlHelp()       for the YAML-driven help mode
+ * @see AbstractScriptRunner::printYamlCommandHelp() for per-command YAML help rendering
  */
 abstract class AbstractScriptRunner
 {
@@ -66,6 +55,10 @@ abstract class AbstractScriptRunner
      */
     protected bool $verbose = false;
 
+    private ?CommandHelpService $helpService = null;
+
+    private ?RunnerHelp $runnerHelp = null;
+
     /**
      * Initializes the shared application and console singletons and resolves the project root.
      */
@@ -85,16 +78,42 @@ abstract class AbstractScriptRunner
     abstract public function run(array $args): int;
 
     /**
-     * Short description displayed in help header.
+     * Short stable name identifying the runner — used to locate its YAML resources at
+     * scripts/resources/{name}/. Typically matches the script filename without `.php`.
      */
-    abstract protected function getDescription(): string;
+    abstract protected function getName(): string;
+
+    /**
+     * Short description displayed in help header.
+     *
+     * Array-based runners must override; YAML-based runners use printYamlHelp() and never call this.
+     */
+    protected function getDescription(): string
+    {
+        // Throws to surface any forgotten override on array-based runners (YAML runners override printHelp).
+        throw new \RuntimeException(sprintf(
+            'Runner %s did not override getDescription() — required for array-based printHelp(). '
+            . 'YAML-based runners should override printHelp() to call printYamlHelp() instead.',
+            static::class,
+        ));
+    }
 
     /**
      * Usage examples displayed in help body.
      *
+     * Array-based runners must override; YAML-based runners use printYamlHelp() and never call this.
+     *
      * @return array<string>
      */
-    abstract protected function getUsageExamples(): array;
+    protected function getUsageExamples(): array
+    {
+        // Throws to surface any forgotten override on array-based runners (YAML runners override printHelp).
+        throw new \RuntimeException(sprintf(
+            'Runner %s did not override getUsageExamples() — required for array-based printHelp(). '
+            . 'YAML-based runners should override printHelp() to call printYamlHelp() instead.',
+            static::class,
+        ));
+    }
 
     /**
      * Declare positional arguments for help display.
@@ -186,9 +205,103 @@ abstract class AbstractScriptRunner
     }
 
     /**
-     * Display the help message (description + commands + arguments + options + usage examples).
+     * Convert the execution-mode options to typed CommandParamHelp DTOs.
+     *
+     * @return list<CommandParamHelp>
      */
-    final protected function printHelp(): void
+    protected function getExecutionModeOptionsAsDtos(): array
+    {
+        return array_values(array_map(
+            static fn(array $opt): CommandParamHelp => new CommandParamHelp($opt['name'], $opt['description']),
+            $this->getExecutionModeOptions(),
+        ));
+    }
+
+    /**
+     * Lazy getter for the YAML-driven help service shared by runners.
+     */
+    protected function getHelpService(): CommandHelpService
+    {
+        if ($this->helpService === null) {
+            $this->helpService = new CommandHelpService($this->projectRoot . '/scripts/resources');
+        }
+
+        return $this->helpService;
+    }
+
+    /**
+     * Lazy getter caching the runner help DTO for the current runner.
+     */
+    protected function getRunnerHelp(): RunnerHelp
+    {
+        if ($this->runnerHelp === null) {
+            $this->runnerHelp = $this->getHelpService()->getRunnerHelp($this->getName());
+        }
+
+        return $this->runnerHelp;
+    }
+
+    /**
+     * Display the help message from a YAML-defined runner — fetches RunnerHelp + each CommandHelp
+     * via the service and renders them. Used by runners that store their help under
+     * scripts/resources/{name}/.
+     */
+    protected function printYamlHelp(): void
+    {
+        $service    = $this->getHelpService();
+        $runnerName = $this->getName();
+        $runnerHelp = $this->getRunnerHelp();
+        $commands   = array_map(
+            fn(string $name): CommandHelp => $service->getCommandHelp($runnerName, $name),
+            $runnerHelp->commandNames,
+        );
+
+        echo $runnerHelp->description . "\n";
+
+        if ($commands) {
+            echo "\nCommands:\n";
+            foreach ($commands as $cmd) {
+                echo "  {$cmd->name}\n";
+                echo "    {$cmd->description}\n";
+            }
+        }
+
+        $allOptions = array_merge($runnerHelp->options, $this->getExecutionModeOptionsAsDtos());
+        if ($allOptions) {
+            echo "\nOptions:\n";
+            foreach ($allOptions as $opt) {
+                echo "  {$opt->name}\n";
+                echo "    {$opt->description}\n";
+            }
+        }
+
+        if ($runnerHelp->examples) {
+            echo "\nExamples:\n";
+            foreach ($runnerHelp->examples as $example) {
+                echo "  {$example}\n";
+            }
+        }
+    }
+
+    /**
+     * Render and print the per-command help for a YAML-driven runner.
+     */
+    protected function printYamlCommandHelp(string $commandName): void
+    {
+        echo $this->getHelpService()->renderCommandHelp(
+            $this->getName(),
+            $commandName,
+            $this->getExecutionModeOptionsAsDtos(),
+        );
+    }
+
+    /**
+     * Display the help message (description + commands + arguments + options + usage examples).
+     *
+     * Default implementation reads from the array-based getXxx() methods. Override this method
+     * to call printYamlHelp() when the runner provides DTOs from YAML resources.
+     */
+    protected function printHelp(): void
     {
         echo $this->getDescription() . "\n";
 

@@ -14,6 +14,13 @@ namespace SoManAgent\Script\Runner;
  */
 final class DevRunner extends AbstractScriptRunner
 {
+    public const NAME = 'dev';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     protected function getDescription(): string
     {
         return 'Start or stop the development environment (Docker Compose)';
@@ -34,6 +41,9 @@ final class DevRunner extends AbstractScriptRunner
         ];
     }
 
+    /**
+     * @param list<string> $args CLI arguments — supports the --stop flag
+     */
     public function run(array $args): int
     {
         $stop = in_array('--stop', $args, true);

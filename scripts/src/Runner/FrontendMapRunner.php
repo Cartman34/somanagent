@@ -12,6 +12,13 @@ namespace SoManAgent\Script\Runner;
  */
 final class FrontendMapRunner extends AbstractScriptRunner
 {
+    public const NAME = 'frontend-map';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     protected function getDescription(): string
     {
         return 'Output a map of the React frontend: routes, pages, and API clients';

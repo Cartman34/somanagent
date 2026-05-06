@@ -21,6 +21,13 @@ use SoManAgent\Script\Test\Backlog\Campaign\TodoAndPlainFeatureLifecycleCampaign
  */
 final class TestBacklogWorkflowRunner extends AbstractScriptRunner
 {
+    public const NAME = 'test-backlog-workflow';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     /** @var array<string, CampaignInterface>|null */
     private ?array $campaigns = null;
 

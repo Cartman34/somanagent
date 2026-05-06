@@ -16,6 +16,13 @@ use SoManAgent\Script\OpenCodeAuthManager;
  */
 final class OpenCodeAuthRunner extends AbstractScriptRunner
 {
+    public const NAME = 'opencode-auth';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     protected function getDescription(): string
     {
         return 'Manage OpenCode CLI provider credentials with WSL as the source of truth and sync them to Docker';

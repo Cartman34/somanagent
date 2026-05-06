@@ -12,6 +12,13 @@ namespace SoManAgent\Script\Runner;
  */
 final class DbSchemaRunner extends AbstractScriptRunner
 {
+    public const NAME = 'db-schema';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     protected function getDescription(): string
     {
         return 'Output a compact schema of all Doctrine entities by parsing #[ORM\...] attributes';

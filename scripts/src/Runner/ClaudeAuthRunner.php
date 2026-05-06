@@ -16,6 +16,13 @@ use SoManAgent\Script\ClaudeAuthManager;
  */
 final class ClaudeAuthRunner extends AbstractScriptRunner
 {
+    public const NAME = 'claude-auth';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     protected function getDescription(): string
     {
         return 'Manage Claude CLI auth with WSL as the source of truth and sync it to Docker';

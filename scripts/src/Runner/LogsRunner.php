@@ -14,6 +14,13 @@ namespace SoManAgent\Script\Runner;
  */
 final class LogsRunner extends AbstractScriptRunner
 {
+    public const NAME = 'logs';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     protected function getDescription(): string
     {
         return 'Stream logs from a Docker container in real time';
@@ -42,6 +49,9 @@ final class LogsRunner extends AbstractScriptRunner
         ];
     }
 
+    /**
+     * @param list<string> $args Service name (php|worker|node|db|nginx) and optional docker logs flags
+     */
     public function run(array $args): int
     {
         $allowed   = ['php', 'worker', 'node', 'db', 'nginx'];

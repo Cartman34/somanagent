@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Runner;
 
+use SoManAgent\Script\GitHub\Enum\GitHubCommandName;
 use SoManAgent\Script\Service\GitService;
 
 /**
@@ -16,69 +17,37 @@ use SoManAgent\Script\Service\GitService;
  */
 final class GitHubRunner extends AbstractScriptRunner
 {
+    public const NAME = 'github';
+
     private ?string $token = null;
     private ?string $repo = null;
 
-    protected function getDescription(): string
+    protected function getName(): string
     {
-        return 'GitHub CLI helper — create PRs, merge, close, edit, list, view';
+        return self::NAME;
     }
 
-    protected function getCommands(): array
+    protected function printHelp(): void
     {
-        return [
-            ['name' => 'pr create', 'description' => 'Create a new pull request'],
-            ['name' => 'pr merge', 'description' => 'Merge a pull request'],
-            ['name' => 'pr close', 'description' => 'Close a pull request'],
-            ['name' => 'pr edit', 'description' => 'Edit a pull request title or body'],
-            ['name' => 'pr list', 'description' => 'List open pull requests'],
-            ['name' => 'pr view', 'description' => 'View a pull request details'],
-        ];
-    }
-
-    protected function getArguments(): array
-    {
-        return [
-            ['name' => '<number>', 'description' => 'Pull request number (for merge, close, edit, view)'],
-        ];
-    }
-
-    protected function getOptions(): array
-    {
-        return array_merge([
-            ['name' => '--title', 'description' => 'PR title (create, edit)'],
-            ['name' => '--head', 'description' => 'Source branch (create)'],
-            ['name' => '--base', 'description' => 'Target branch, defaults to ' . GitService::MAIN_BRANCH . ' (create)'],
-            ['name' => '--body', 'description' => 'PR body text (create, edit)'],
-            ['name' => '--body-file', 'description' => 'Path to a file for PR body (create, edit)'],
-            ['name' => '--squash', 'description' => 'Squash merge (merge)'],
-            ['name' => '--rebase', 'description' => 'Rebase merge (merge)'],
-        ], $this->getExecutionModeOptions());
-    }
-
-    protected function getUsageExamples(): array
-    {
-        return [
-            'php scripts/github.php pr create --title "Fix login" --head fix/login --body "Description..."',
-            'php scripts/github.php pr create --title "Fix login" --head fix/login --body-file local/tmp/pr_body.md',
-            'php scripts/github.php pr merge 42 --squash',
-            'php scripts/github.php pr close 42',
-            'php scripts/github.php pr edit 42 --title "Updated title"',
-            'php scripts/github.php pr list',
-            'php scripts/github.php pr view 42',
-        ];
+        $this->printYamlHelp();
     }
 
     /**
-     * Dispatches GitHub pull request subcommands after credentials are loaded.
+     * Dispatches GitHub pull request flat commands after credentials are loaded.
      *
      * @param array<string> $args
      */
     public function run(array $args): int
     {
         $command = array_shift($args) ?? '';
-        $sub     = array_shift($args) ?? '';
-        $flags   = $this->parseFlags($args);
+
+        if (in_array('--help', $args, true) || in_array('-h', $args, true)) {
+            $this->printCommandHelp($command);
+
+            return 0;
+        }
+
+        $flags = $this->parseFlags($args);
         $this->configureExecutionModes($flags);
 
         if (!$this->dryRun) {
@@ -86,18 +55,18 @@ final class GitHubRunner extends AbstractScriptRunner
         }
 
         try {
-            if ($command !== 'pr') {
-                throw new \RuntimeException("Unknown command: {$command}. Available: pr");
-            }
-
-            match ($sub) {
-                'create' => $this->handleCreate(array_values($args), $flags),
-                'merge'  => $this->handleMerge(array_values($args), $flags),
-                'close'  => $this->handleClose(array_values($args)),
-                'edit'   => $this->handleEdit(array_values($args), $flags),
-                'list'   => $this->handleList(),
-                'view'   => $this->handleView($args),
-                default  => throw new \RuntimeException("Unknown subcommand: pr {$sub}. Available: create, merge, close, edit, list, view"),
+            match ($command) {
+                GitHubCommandName::PR_CREATE->value => $this->handleCreate(array_values($args), $flags),
+                GitHubCommandName::PR_MERGE->value  => $this->handleMerge(array_values($args), $flags),
+                GitHubCommandName::PR_CLOSE->value  => $this->handleClose(array_values($args)),
+                GitHubCommandName::PR_EDIT->value   => $this->handleEdit(array_values($args), $flags),
+                GitHubCommandName::PR_LIST->value   => $this->handleList(),
+                GitHubCommandName::PR_VIEW->value   => $this->handleView(array_values($args)),
+                default                             => throw new \RuntimeException(sprintf(
+                    'Unknown command: %s. Available: %s',
+                    $command,
+                    implode(', ', $this->getRunnerHelp()->commandNames),
+                )),
             };
 
             return 0;
@@ -259,7 +228,7 @@ final class GitHubRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string> $args
+     * @param list<string> $args
      */
     private function handleView(array $args): void
     {
@@ -278,6 +247,17 @@ final class GitHubRunner extends AbstractScriptRunner
         $this->console->line("Branch : {$pr['head']['ref']} → {$pr['base']['ref']}");
         $this->console->line("URL    : {$pr['html_url']}");
         $this->console->line("Body   :\n{$pr['body']}");
+    }
+
+    /**
+     * Print contextual help for a single PR command loaded from YAML.
+     *
+     * Delegates to CommandHelpService which throws a RuntimeException for unknown
+     * commands, propagating exit code 1 via the handle() outer catch.
+     */
+    private function printCommandHelp(string $command): void
+    {
+        $this->printYamlCommandHelp($command);
     }
 
     /**

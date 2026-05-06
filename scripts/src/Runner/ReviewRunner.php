@@ -14,6 +14,13 @@ namespace SoManAgent\Script\Runner;
  */
 final class ReviewRunner extends AbstractScriptRunner
 {
+    public const NAME = 'review';
+
+    protected function getName(): string
+    {
+        return self::NAME;
+    }
+
     private const FRENCH_REGEX = '/[\x{00C0}-\x{00FF}\x{0152}\x{0153}]/u';
 
     protected function getDescription(): string

@@ -1,0 +1,7 @@
+description: 'View a pull request details'
+arguments:
+  -
+    name: '<number>'
+    description: 'Pull request number to view'
+examples:
+  - 'php scripts/github.php pr-view 42'
