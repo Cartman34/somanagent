@@ -84,12 +84,27 @@ Rules:
 ## Queued Task Format
 
 1. A queued task is one entry under `## To do`: a short title on the `- ` line, optional indented sub-task lines below it, and no `meta:` block until `work-start` consumes it.
-2. The title may carry the optional prefixes (in this order): `[feat]` or `[fix]` for the branch type, then `[feature-slug]` or `[feature-slug][task-slug]` for the feature or child task scope. Examples: `[feat] Short title`, `[feature-slug] Short title`, `[feat][feature-slug][task-slug] Short title`.
-3. Keep the title short; put the breakdown on indented sub-task lines (two-space indent, one bullet per line). The script accepts unindented sub-task lines and auto-indents them to two spaces.
-4. Always create queued tasks through `task-create`. Two supported forms for multi-line bodies:
+2. The title may carry two kinds of bracket prefixes: a **type** prefix among `[feat]`, `[fix]`, `[tech]` (case-insensitive, only one per entry), and a **feature/task scope** prefix `[feature-slug]` or `[feature-slug][task-slug]`.
+3. The type prefix is recognized at any position in the leading bracket sequence. The following forms are all valid and equivalent on the type/scope axes:
+   `[type] Short title`,
+   `[type][feature-slug] Short title`,
+   `[type][feature-slug][task-slug] Short title`,
+   `[feature-slug][type] Short title`,
+   `[feature-slug][task-slug][type] Short title`.
+4. **Recommended at task creation:** always include both a `[type]` prefix and a `[feature-slug]` (plus `[task-slug]` when the task is a child) so the queued entry is unambiguous and `work-start` does not have to fall back on text-derived slugs.
+5. Type → branch prefix mapping is 1:1: `feat → feat/<slug>`, `fix → fix/<slug>`, `tech → tech/<slug>`. Scoped child tasks use `<type>/<feature-slug>--<task-slug>`.
+6. Adding a new task type requires extending the `BacklogTaskType` enum and is therefore a deliberate change, not something `task-create` infers from text.
+7. Keep the title short; put the breakdown on indented sub-task lines (two-space indent, one bullet per line). The script accepts unindented sub-task lines and auto-indents them to two spaces.
+8. Always create queued tasks through `task-create`. Two supported forms for multi-line bodies:
    - Inline: pass the full body as a single quoted argument with `\n` line breaks (Bash `$'...'` literal).
    - File: pass `--body-file=<path>` (typically under `local/tmp/`).
-5. Manual edits to `local/backlog-board.md` are not the way to add long or multi-line tasks. Use `--body-file=<path>` instead.
+9. Manual edits to `local/backlog-board.md` are not the way to add long or multi-line tasks. Use `--body-file=<path>` instead.
+
+## Work-start Validation Guarantees
+
+1. `work-start` parses the next queued entry, resolves its type and feature/task slugs, and verifies all conflicts (active entry for the agent, existing feature, duplicate task slug, unknown `--branch-type`) **before** any worktree, branch or backlog mutation.
+2. A refusal during validation leaves no managed worktree and no backlog change behind; the queued task remains in place untouched.
+3. With `--dry-run`, `work-start` prints the full resolved interpretation (kind, type, feature slug, task slug, planned branches) and performs no Git, worktree or backlog mutation. Read-only Git operations such as `fetch` and resolving `origin/main` remain enabled.
 
 ## Command Policy
 
@@ -100,7 +115,7 @@ Rules:
 5. Reviewer commands on `backlog.php` never use `--agent`.
 6. The agent code must never leave local backlog files.
 7. `work-start` takes the next queued task directly from `## To do`; no separate reservation step is part of the standard workflow.
-8. Queued tasks may declare their branch type with a prefix `[feat]` or `[fix]`.
+8. Queued tasks may declare their branch type with a prefix `[feat]`, `[fix]` or `[tech]`. The branch follows the same name 1:1 (`feat/<slug>`, `fix/<slug>`, `tech/<slug>`).
 9. `feature-release` returns the active feature to `## To do` only when no development was done on its branch. A parent `kind=feature` cannot be released while child `kind=task` entries still exist for that feature.
 10. When `work-start` consumes a queued task prefixed as `[feature-slug][task-slug]`, it creates or reuses the local parent feature branch from `origin/main`, ensures one active `kind=feature` entry exists for that feature with `agent=none`, and creates the active child `kind=task` entry assigned to the agent from that local parent branch. A `kind=feature` container created this way has no assigned developer until a developer self-assigns with `feature-assign` or a manager assigns one.
 11. When `work-start` consumes a queued task prefixed as `[feature-slug]` (single prefix, no task slug), it creates a plain `kind=feature` with the explicit slug `<feature-slug>`, assigned to the agent.

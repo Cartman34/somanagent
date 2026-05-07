@@ -13,6 +13,7 @@ use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Model\BoardEntryMatch;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
+use SoManAgent\Script\Backlog\Enum\BacklogTaskType;
 use SoManAgent\Script\Client\FilesystemClientInterface;
 use SoManAgent\Script\TextSlugger;
 
@@ -23,10 +24,18 @@ final class BacklogBoardService
 {
     public const ENTRY_KIND_FEATURE = 'feature';
     public const ENTRY_KIND_TASK = 'task';
+
+    /**
+     * @deprecated Use BacklogTaskType::FEAT->branchPrefix() instead.
+     */
     public const BRANCH_TYPE_FEAT = 'feat';
+
+    /**
+     * @deprecated Use BacklogTaskType::FIX->branchPrefix() instead.
+     */
     public const BRANCH_TYPE_FIX = 'fix';
 
-    private const TASK_CREATE_TYPE_SHORT_PREFIX_PATTERN = '/^\[(feat|fix)\](.*)$/i';
+    private const LEADING_PREFIX_PATTERN = '/^\[([A-Za-z0-9_-]+)\]\s*(.*)$/s';
     private const TASK_SCOPE_PREFIX_PATTERN = '/^\[([A-Za-z0-9_-]+)\]\[([A-Za-z0-9_-]+)\]\s*(.+)$/';
     private const SINGLE_FEATURE_PREFIX_PATTERN = '/^\[([A-Za-z0-9_-]+)\](?!\[)\s*(.+)$/';
     private const TASK_CONTRIBUTION_PREFIX_PATTERN = '/^\s*-\s*\[task:([a-z0-9-]+)\]\s*(.+)$/';
@@ -913,29 +922,91 @@ final class BacklogBoardService
     /* --- Mutations & Complex Logic --- */
 
     /**
+     * Extracts an optional task type prefix from anywhere in the leading bracket sequence.
+     *
+     * Recognizes any case of {@see BacklogTaskType} as the type prefix. Other leading
+     * `[token]` brackets are kept verbatim (they remain feature/task slug prefixes that
+     * downstream `extractScopedTaskMetadata` / `extractSingleFeaturePrefixMetadata`
+     * still resolve). Only one type prefix is allowed; duplicates raise a RuntimeException.
+     *
+     * @return array{0: ?BacklogTaskType, 1: string} Tuple [type|null, textWithoutType]
+     */
+    public function extractTypePrefix(string $text): array
+    {
+        $remaining = trim($text);
+        $prefixes = [];
+
+        while (preg_match(self::LEADING_PREFIX_PATTERN, $remaining, $matches) === 1) {
+            $prefixes[] = $matches[1];
+            $remaining = ltrim($matches[2]);
+        }
+
+        $type = null;
+        $kept = [];
+
+        foreach ($prefixes as $token) {
+            $candidate = BacklogTaskType::tryFromToken($token);
+            if ($candidate === null) {
+                $kept[] = $token;
+                continue;
+            }
+            if ($type !== null) {
+                throw new \RuntimeException(sprintf(
+                    'Duplicate task type prefix: [%s] cannot follow [%s]. Allowed types: %s.',
+                    $candidate->value,
+                    $type->value,
+                    BacklogTaskType::tokenList(),
+                ));
+            }
+            $type = $candidate;
+        }
+
+        $cleanedPrefix = '';
+        foreach ($kept as $token) {
+            $cleanedPrefix .= '[' . $token . ']';
+        }
+
+        if ($cleanedPrefix === '') {
+            $cleaned = $remaining;
+        } elseif ($remaining === '') {
+            $cleaned = $cleanedPrefix;
+        } else {
+            $cleaned = $cleanedPrefix . ' ' . $remaining;
+        }
+
+        return [$type, trim($cleaned)];
+    }
+
+    /**
      * Creates a board entry from raw input text (short prefix or markdown format).
      * @param string $text
      * @return BoardEntry
      */
     public function createEntryFromInput(string $text): BoardEntry
     {
-        $normalizedText = trim($text);
-        if (preg_match(self::TASK_CREATE_TYPE_SHORT_PREFIX_PATTERN, $normalizedText, $matches) === 1) {
-            $entry = new BoardEntry(trim($matches[2]));
-            $entry->setType(strtolower($matches[1]));
+        [$type, $cleaned] = $this->extractTypePrefix($text);
+
+        if ($type !== null) {
+            $entry = new BoardEntry($cleaned);
+            $entry->setType($type->value);
 
             return $entry;
         }
 
-        return $this->parseEntryFromLines(['- ' . $normalizedText]);
+        if ($cleaned === '') {
+            throw new \RuntimeException('Task body cannot be empty.');
+        }
+
+        return $this->parseEntryFromLines(['- ' . $cleaned]);
     }
 
     /**
      * Creates a board entry from a multi-line input.
      *
      * The first non-empty line is the task title (with an optional leading `- ` and
-     * optional `[feat]`/`[fix]` short prefix). Remaining non-empty lines become
-     * sub-task lines indented by two spaces when not already indented.
+     * an optional task type prefix from {@see BacklogTaskType} placed anywhere in
+     * the leading bracket sequence). Remaining non-empty lines become sub-task lines
+     * indented by two spaces when not already indented.
      *
      * @param array<int, string> $lines
      */
@@ -964,13 +1035,9 @@ final class BacklogBoardService
             $first = $stripMatches[1];
         }
 
-        $type = null;
-        if (preg_match(self::TASK_CREATE_TYPE_SHORT_PREFIX_PATTERN, $first, $typeMatches) === 1) {
-            $type = strtolower($typeMatches[1]);
-            $first = trim($typeMatches[2]);
-        }
+        [$type, $firstCleaned] = $this->extractTypePrefix($first);
 
-        if (trim($first) === '') {
+        if (trim($firstCleaned) === '') {
             throw new \RuntimeException('Task title (first line of --body-file) cannot be empty.');
         }
 
@@ -987,9 +1054,9 @@ final class BacklogBoardService
             $extra[] = '  ' . $line;
         }
 
-        $entry = new BoardEntry(trim($first), $extra);
+        $entry = new BoardEntry(trim($firstCleaned), $extra);
         if ($type !== null) {
-            $entry->setType($type);
+            $entry->setType($type->value);
         }
 
         return $entry;
@@ -1272,21 +1339,70 @@ final class BacklogBoardService
 
     /**
      * Resolves the branch type for a new feature, respecting override, first entry, and parent.
-     * @param BoardEntry $first, ?BoardEntry $parent, string $override
+     *
+     * Returns the branch prefix string of the resolved {@see BacklogTaskType}. An explicit
+     * override is validated against the enum and rejected when unknown. When nothing else
+     * matches, the default is {@see BacklogTaskType::FEAT}.
+     *
+     * @param BoardEntry $first
+     * @param ?BoardEntry $parent
+     * @param string $override
      * @return string
      */
     public function resolveFeatureStartBranchType(BoardEntry $first, ?BoardEntry $parent, string $override): string
     {
+        return $this->resolveTaskTypeOrDefault($first, $parent, $override)->branchPrefix();
+    }
+
+    /**
+     * Resolves the canonical {@see BacklogTaskType} for an entry being started.
+     *
+     * @param BoardEntry $first
+     * @param ?BoardEntry $parent
+     * @param string $override
+     */
+    public function resolveTaskTypeOrDefault(BoardEntry $first, ?BoardEntry $parent, string $override): BacklogTaskType
+    {
         if ($override !== '') {
-            return $override;
+            $resolved = BacklogTaskType::tryFromToken($override);
+            if ($resolved === null) {
+                throw new \RuntimeException(sprintf(
+                    'Unknown --branch-type=%s. Allowed values: %s.',
+                    $override,
+                    BacklogTaskType::tokenList(),
+                ));
+            }
+
+            return $resolved;
         }
+
         if ($first->getType() !== null) {
-            return $first->getType();
+            $resolved = BacklogTaskType::tryFromToken($first->getType());
+            if ($resolved === null) {
+                throw new \RuntimeException(sprintf(
+                    'Unknown task type metadata: %s. Allowed values: %s.',
+                    $first->getType(),
+                    BacklogTaskType::tokenList(),
+                ));
+            }
+
+            return $resolved;
         }
+
         if ($parent !== null && $parent->getType() !== null) {
-            return $parent->getType();
+            $resolved = BacklogTaskType::tryFromToken($parent->getType());
+            if ($resolved === null) {
+                throw new \RuntimeException(sprintf(
+                    'Unknown parent task type metadata: %s. Allowed values: %s.',
+                    $parent->getType(),
+                    BacklogTaskType::tokenList(),
+                ));
+            }
+
+            return $resolved;
         }
-        return self::BRANCH_TYPE_FEAT;
+
+        return BacklogTaskType::FEAT;
     }
 
     /**
