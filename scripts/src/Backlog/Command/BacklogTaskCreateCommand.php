@@ -9,6 +9,7 @@ namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 
@@ -32,19 +33,70 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
 
     public function handle(array $commandArgs, array $options): void
     {
-        $text = trim(implode(' ', $commandArgs));
-        if ($text === '') {
-            throw new \RuntimeException('This command requires a task description.');
-        }
+        $entry = $this->buildEntryFromInput($commandArgs, $options);
 
         $board = $this->loadBoard();
         $entries = $board->getEntries(BacklogBoard::SECTION_TODO);
         $position = $this->resolveTaskCreatePosition($options, count($entries));
-        array_splice($entries, $position, 0, [$this->boardService->createEntryFromInput($text)]);
+        array_splice($entries, $position, 0, [$entry]);
         $board->setEntries(BacklogBoard::SECTION_TODO, $entries);
         $this->saveBoard($board, BacklogCommandName::TASK_CREATE->value);
 
         $this->presenter->displaySuccess(sprintf('Added task to the todo section at position %d', $position + 1));
+    }
+
+    /**
+     * Builds a board entry from the positional arguments or from --body-file.
+     *
+     * @param array<int, string> $commandArgs
+     * @param array<string, string|bool> $options
+     */
+    private function buildEntryFromInput(array $commandArgs, array $options): BoardEntry
+    {
+        $bodyFile = $options['body-file'] ?? null;
+
+        if ($bodyFile !== null) {
+            if (!is_string($bodyFile) || trim($bodyFile) === '') {
+                throw new \RuntimeException('Option --body-file requires a non-empty path when provided.');
+            }
+            if ($commandArgs !== [] && trim(implode(' ', $commandArgs)) !== '') {
+                throw new \RuntimeException('task-create does not accept positional <text> when --body-file is used.');
+            }
+            $resolvedPath = $this->resolveBodyFilePath($bodyFile);
+            $contents = file_get_contents($resolvedPath);
+            if ($contents === false) {
+                throw new \RuntimeException(sprintf('Unable to read --body-file: %s', $bodyFile));
+            }
+            $lines = preg_split('/\R/', $contents) ?: [];
+
+            return $this->boardService->createEntryFromInputLines($lines);
+        }
+
+        $text = implode(' ', $commandArgs);
+        if (trim($text) === '') {
+            throw new \RuntimeException('This command requires a task description or --body-file=<path>.');
+        }
+
+        if (preg_match('/\R/', $text) === 1) {
+            $lines = preg_split('/\R/', $text) ?: [];
+
+            return $this->boardService->createEntryFromInputLines($lines);
+        }
+
+        return $this->boardService->createEntryFromInput(trim($text));
+    }
+
+    /**
+     * Resolves a --body-file path against the project root and asserts the file exists.
+     */
+    private function resolveBodyFilePath(string $bodyFile): string
+    {
+        $candidate = str_starts_with($bodyFile, '/') ? $bodyFile : $this->projectRoot . '/' . $bodyFile;
+        if (!is_file($candidate)) {
+            throw new \RuntimeException(sprintf('--body-file path does not exist: %s', $bodyFile));
+        }
+
+        return $candidate;
     }
 
     /**

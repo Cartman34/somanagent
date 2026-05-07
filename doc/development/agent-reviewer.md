@@ -46,11 +46,23 @@ Read this file only when the active task requires reviewer workflow details.
 
 ### `task-create <description>`
 
-1. Run `php scripts/backlog.php task-create <description> [--position=<start|index|end>] [--index=<n>]`.
+1. Run `php scripts/backlog.php task-create <description> [--position=<start|index|end>] [--index=<n>] [--body-file=<path>]`.
 2. By default the script appends the task to the end of the `## To do` section in `local/backlog-board.md`.
 3. `--position=start` inserts at the start of `## To do`.
 4. `--position=index --index=<n>` inserts at the requested 1-based position and clamps out-of-range values to the start or the end.
-5. Prefix the description with `[feat]` or `[fix]` so `work-start` can derive the branch type from the backlog entry.
+5. Keep the task title short and put the breakdown on indented sub-task lines below it. Use a `[feat]` or `[fix]` type prefix so `work-start` can derive the branch type, and add a `[feature-slug]` or `[feature-slug][task-slug]` prefix when the task targets a specific feature or child task.
+6. Multi-line tasks: pass the full body as one quoted argument with `\n` line breaks (Bash `$'...'` literal), or use `--body-file=<path>` to read the body from a file. The first non-empty line is the title; the remaining non-empty lines become indented sub-tasks (auto-indented to two spaces when missing).
+7. Do not edit `local/backlog-board.md` manually for long tasks; use `--body-file=<path>` (typically under `local/tmp/`) instead.
+
+Examples:
+
+```bash
+php scripts/backlog.php task-create $'[fix][snapshot-bug] Fix snapshot crash on empty input
+  - Reproduce in unit test
+  - Guard the empty case in SnapshotBuilder'
+
+php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
+```
 
 Rules:
 

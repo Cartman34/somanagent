@@ -635,6 +635,47 @@ MD);
     }
 
     /**
+     * Creates a queued task using --body-file=<path>.
+     *
+     * @param list<string> $lines Lines to write to the temporary body file
+     * @param string $name File name for the body file (kept under local/tmp/)
+     */
+    public function createTodoTaskFromBodyFile(array $lines, string $name): string
+    {
+        $path = $this->createBodyFile($name, $lines);
+        $relative = $this->relativePath($path);
+        $this->runBacklog(['task-create', '--body-file=' . $relative]);
+
+        return $path;
+    }
+
+    /**
+     * Asserts that the queued tasks of the test board contain the given block of lines, in order.
+     *
+     * @param list<string> $expectedLines
+     */
+    public function assertBoardTodoBlock(array $expectedLines): void
+    {
+        $contents = (string) file_get_contents($this->context->boardPath);
+        $needle = implode("\n", $expectedLines);
+        if (!str_contains($contents, $needle)) {
+            throw new \RuntimeException(sprintf(
+                "Expected backlog board to contain the queued block:\n%s\n--- actual board ---\n%s",
+                $needle,
+                $contents,
+            ));
+        }
+    }
+
+    /**
+     * @param list<string> $arguments task-create arguments after the command name
+     */
+    public function assertTaskCreateFails(string $needle, array $arguments): void
+    {
+        $this->assertBacklogFails(array_merge(['task-create'], $arguments), $needle);
+    }
+
+    /**
      * @param list<string> $arguments Backlog command arguments
      * @param array<string, string> $env Environment variables
      * @return string Command output

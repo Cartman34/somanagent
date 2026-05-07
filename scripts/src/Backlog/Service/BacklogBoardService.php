@@ -931,6 +931,71 @@ final class BacklogBoardService
     }
 
     /**
+     * Creates a board entry from a multi-line input.
+     *
+     * The first non-empty line is the task title (with an optional leading `- ` and
+     * optional `[feat]`/`[fix]` short prefix). Remaining non-empty lines become
+     * sub-task lines indented by two spaces when not already indented.
+     *
+     * @param array<int, string> $lines
+     */
+    public function createEntryFromInputLines(array $lines): BoardEntry
+    {
+        $cleaned = [];
+        foreach ($lines as $line) {
+            $cleaned[] = rtrim((string) $line);
+        }
+        while ($cleaned !== [] && $cleaned[0] === '') {
+            array_shift($cleaned);
+        }
+        while ($cleaned !== [] && end($cleaned) === '') {
+            array_pop($cleaned);
+        }
+        if ($cleaned === []) {
+            throw new \RuntimeException('Task body cannot be empty.');
+        }
+
+        if (count($cleaned) === 1) {
+            return $this->createEntryFromInput($cleaned[0]);
+        }
+
+        $first = $cleaned[0];
+        if (preg_match('/^-\s+(.*)$/', $first, $stripMatches) === 1) {
+            $first = $stripMatches[1];
+        }
+
+        $type = null;
+        if (preg_match(self::TASK_CREATE_TYPE_SHORT_PREFIX_PATTERN, $first, $typeMatches) === 1) {
+            $type = strtolower($typeMatches[1]);
+            $first = trim($typeMatches[2]);
+        }
+
+        if (trim($first) === '') {
+            throw new \RuntimeException('Task title (first line of --body-file) cannot be empty.');
+        }
+
+        $extra = [];
+        foreach (array_slice($cleaned, 1) as $line) {
+            if ($line === '') {
+                $extra[] = '';
+                continue;
+            }
+            if (preg_match('/^\s/', $line) === 1) {
+                $extra[] = $line;
+                continue;
+            }
+            $extra[] = '  ' . $line;
+        }
+
+        $entry = new BoardEntry(trim($first), $extra);
+        if ($type !== null) {
+            $entry->setType($type);
+        }
+
+        return $entry;
+    }
+
+    /**
      * Returns the first entry in the TODO section, or null if empty.
      * @param BacklogBoard $board
      * @return ?BoardEntryMatch
