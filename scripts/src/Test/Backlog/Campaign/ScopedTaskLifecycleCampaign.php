@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Test\Backlog\Campaign;
 
+use SoManAgent\Script\Backlog\Command\BacklogReviewNotesCommand;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
 
@@ -53,10 +54,12 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->assertTaskReviewRejectFails($taskARef, $invalidRejectBody, 'Review body items must be plain findings');
         $driver->rejectTaskReview($taskARef, $rejectBody);
         $driver->assertReviewContains($taskARef);
+        $this->assertReviewNotesForTask($driver, $context, $taskARef, '1. Reject child task for test workflow.');
         $driver->rework($context->agentPrimary, $taskARef);
         $driver->requestTaskReview($context->agentPrimary);
         $driver->approveTask($taskARef);
         $driver->assertReviewMissing($taskARef);
+        $this->assertReviewNotesAbsentForTask($driver, $taskARef);
         $driver->mergeTask($taskARef);
 
         $driver->createTodoTask(sprintf('[%s][%s] Implement test child task B', $context->scopedFeature, $context->childB));
@@ -79,5 +82,96 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
 
         $driver->closeFeature($context->scopedFeature);
         $driver->assertActiveFeatureMissing($context->scopedFeature);
+
+        $this->assertReviewNotesAmbiguityAndMissingReference($driver, $context);
+    }
+
+    /**
+     * Assert review-notes prints the documented protected, read-only block for a rejected task,
+     * resolves both via positional reference and via --agent, and respects the exact format.
+     */
+    private function assertReviewNotesForTask(
+        BacklogScriptTestDriver $driver,
+        BacklogScriptTestContext $context,
+        string $taskRef,
+        string $expectedNoteLine,
+    ): void {
+        $byRef = $driver->reviewNotes(null, $taskRef);
+        $driver->assertContains($byRef, BacklogReviewNotesCommand::BLOCK_TITLE);
+        $driver->assertContains($byRef, 'Target: ' . $taskRef);
+        $driver->assertContains($byRef, BacklogReviewNotesCommand::BLOCK_WARNING);
+        $driver->assertContains($byRef, BacklogReviewNotesCommand::BLOCK_FENCE_OPEN);
+        $driver->assertContains($byRef, $expectedNoteLine);
+
+        $titlePos = strpos($byRef, BacklogReviewNotesCommand::BLOCK_TITLE);
+        $warningPos = strpos($byRef, BacklogReviewNotesCommand::BLOCK_WARNING);
+        $fencePos = strpos($byRef, BacklogReviewNotesCommand::BLOCK_FENCE_OPEN);
+        $notePos = strpos($byRef, $expectedNoteLine);
+        $endPos = strrpos($byRef, BacklogReviewNotesCommand::BLOCK_END_MARKER);
+
+        if ($titlePos === false || $warningPos === false || $fencePos === false || $notePos === false || $endPos === false) {
+            throw new \RuntimeException('Protected block markers missing in review-notes output:' . "\n" . $byRef);
+        }
+        if (!($titlePos < $warningPos && $warningPos < $fencePos && $fencePos < $notePos && $notePos < $endPos)) {
+            throw new \RuntimeException('Protected block markers in unexpected order in review-notes output:' . "\n" . $byRef);
+        }
+        if (!str_ends_with(rtrim($byRef), BacklogReviewNotesCommand::BLOCK_END_MARKER)) {
+            throw new \RuntimeException('Protected block must end with the read-only marker on its own line:' . "\n" . $byRef);
+        }
+
+        $byAgent = $driver->reviewNotes($context->agentPrimary, null);
+        $driver->assertContains($byAgent, 'Target: ' . $taskRef);
+        $driver->assertContains($byAgent, $expectedNoteLine);
+
+        $driver->assertStatusContains($context->agentPrimary, 'Review notes: stored', true);
+        $driver->assertStatusContains($context->agentPrimary, 'review-notes ' . $taskRef, true);
+        $statusOutput = $driver->status($context->agentPrimary, true);
+        if (str_contains($statusOutput, $expectedNoteLine)) {
+            throw new \RuntimeException('Status output unexpectedly contains the review notes themselves: ' . $statusOutput);
+        }
+    }
+
+    /**
+     * Assert review-notes still prints the protected block but with the absent-notes line for an approved task.
+     */
+    private function assertReviewNotesAbsentForTask(BacklogScriptTestDriver $driver, string $taskRef): void
+    {
+        $output = $driver->reviewNotes(null, $taskRef);
+        $driver->assertContains($output, BacklogReviewNotesCommand::BLOCK_TITLE);
+        $driver->assertContains($output, 'Target: ' . $taskRef);
+        $driver->assertContains($output, 'No review notes stored for ' . $taskRef);
+        $driver->assertContains($output, BacklogReviewNotesCommand::BLOCK_END_MARKER);
+    }
+
+    /**
+     * After the primary scoped feature is closed, set up an ambiguous slug pair (active feature + active task
+     * sharing the same slug) and verify review-notes refuses to resolve it. Also check the missing-reference
+     * and missing-target failure paths. Cleans up created entries to avoid leaking state to other campaigns.
+     */
+    private function assertReviewNotesAmbiguityAndMissingReference(
+        BacklogScriptTestDriver $driver,
+        BacklogScriptTestContext $context,
+    ): void {
+        $driver->assertReviewNotesFails(null, 'rn-does-not-exist', 'No active entry found for reference: rn-does-not-exist');
+        $driver->assertReviewNotesFails(null, null, 'review-notes requires either --agent=<code> or a reference');
+
+        $ambSlug = 'test-rn-ambiguous';
+        $ambFeatureContainer = 'test-rn-amb-container';
+
+        $driver->createTodoTask(sprintf('[%s][%s] Scoped task for ambiguity coverage', $ambFeatureContainer, $ambSlug));
+        $driver->startNextFeature($context->agentPrimary);
+
+        $driver->createTodoTask(sprintf('[%s] Plain feature whose slug collides with the scoped task', $ambSlug));
+        $driver->startNextFeature($context->agentSecondary);
+
+        $driver->assertReviewNotesFails(
+            null,
+            $ambSlug,
+            sprintf('Ambiguous reference %s: matches both a feature and a task.', $ambSlug),
+        );
+
+        // Cleanup so the next campaign starts from a clean board.
+        $driver->releaseFeature($context->agentSecondary, $ambSlug);
+        $driver->removeFirstTodoTask();
     }
 }

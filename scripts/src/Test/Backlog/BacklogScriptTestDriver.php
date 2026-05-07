@@ -322,6 +322,55 @@ MD);
     }
 
     /**
+     * Run review-notes with optional agent and optional positional reference.
+     *
+     * @param string|null $agent Agent owning the entry, or null when only a positional reference is used
+     * @param string|null $reference Positional reference (<feature>, <task>, or <feature/task>), or null
+     * @return string Command output for further assertions
+     */
+    public function reviewNotes(?string $agent, ?string $reference): string
+    {
+        $args = ['review-notes'];
+        if ($agent !== null) {
+            $args[] = '--agent';
+            $args[] = $agent;
+        }
+        if ($reference !== null) {
+            $args[] = $reference;
+        }
+
+        return $this->runBacklog($args);
+    }
+
+    /**
+     * Asserts that review-notes fails with the expected error message.
+     *
+     * @param string|null $agent Agent owning the entry, or null when only a positional reference is used
+     * @param string|null $reference Positional reference, or null
+     * @param string $needle Error fragment expected in the failure output
+     */
+    public function assertReviewNotesFails(?string $agent, ?string $reference, string $needle): void
+    {
+        $args = ['review-notes'];
+        if ($agent !== null) {
+            $args[] = '--agent';
+            $args[] = $agent;
+        }
+        if ($reference !== null) {
+            $args[] = $reference;
+        }
+        $this->assertBacklogFails($args, $needle);
+    }
+
+    /**
+     * Asserts that the given output contains the needle. Public for campaigns that compose reviewNotes() with custom checks.
+     */
+    public function assertContains(string $output, string $needle): void
+    {
+        $this->assertOutputContains($output, $needle);
+    }
+
+    /**
      * @param string $reference Task reference to approve
      */
     public function approveTask(string $reference): void
@@ -744,6 +793,10 @@ MD);
         }
 
         $parts[] = 'php scripts/backlog.php';
+        // Ensure the test always exercises the backlog code in the current worktree, never the proxied
+        // copy in WP. WorktreeScriptProxy strips this flag from $argv before downstream argument parsing,
+        // so it never reaches the backlog runner itself.
+        $parts[] = '--force-current-worktree';
         foreach ($arguments as $argument) {
             $parts[] = escapeshellarg($argument);
         }
