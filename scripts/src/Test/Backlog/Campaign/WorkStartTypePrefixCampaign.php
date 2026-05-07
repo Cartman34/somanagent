@@ -15,8 +15,9 @@ use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
  *
  * Validates that work-start parses task type prefixes ([feat], [fix], [tech]) at any
  * position in the leading bracket sequence, maps each type to the matching branch
- * prefix 1:1, rejects unknown --branch-type values, refuses without leaving any
- * worktree behind, and supports --dry-run with full plan output and no mutation.
+ * prefix 1:1, rejects unknown --branch-type values, rejects when the queued feature
+ * slug is already active, refuses without leaving any worktree behind, and supports
+ * --dry-run with full plan output and no mutation.
  */
 final class WorkStartTypePrefixCampaign implements CampaignInterface
 {
@@ -89,6 +90,27 @@ final class WorkStartTypePrefixCampaign implements CampaignInterface
             throw new \RuntimeException('A refused work-start must not create a managed worktree.');
         }
         $driver->assertTodoContains('Plain feature for unknown branch-type test');
+        $driver->removeFirstTodoTask();
+
+        $secondary = $context->agentSecondary;
+        $duplicateSlug = 'duplicate-feature-test';
+        $driver->createTodoTask(sprintf('[%s] First feature instance', $duplicateSlug));
+        $driver->startNextFeature($primary);
+        $driver->assertActiveFeatureExists($duplicateSlug);
+
+        $driver->createTodoTask(sprintf('[%s] Second feature instance with same slug', $duplicateSlug));
+        $driver->assertWorkStartFails(
+            $secondary,
+            sprintf('Feature %s already exists in active entries', $duplicateSlug),
+            ['--dry-run'],
+        );
+        if ($driver->checkManagedWorktreeExists($secondary)) {
+            throw new \RuntimeException('A refused work-start must not create a managed worktree for the second agent.');
+        }
+        $driver->assertTodoContains('Second feature instance with same slug');
+
+        $driver->removeFirstTodoTask();
+        $driver->releaseFeature($primary, $duplicateSlug);
         $driver->removeFirstTodoTask();
     }
 }
