@@ -7,8 +7,10 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
@@ -20,6 +22,15 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
 {
     private BacklogWorktreeService $worktreeService;
 
+    /**
+     * Resolves shared backlog services through the parent constructor and stores the worktree service used to classify managed worktrees.
+     *
+     * @param BacklogPresenter $presenter Output writer for status sections
+     * @param bool $dryRun Reserved by the base class; status is read-only and never mutates state
+     * @param string $projectRoot Absolute project root, used to default the board and review file paths
+     * @param BacklogBoardService $boardService Board access for entry resolution and stored-review-key formatting
+     * @param BacklogWorktreeService $worktreeService Used to classify the agent's managed worktree state
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
@@ -31,6 +42,13 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
         $this->worktreeService = $worktreeService;
     }
 
+    /**
+     * Prints the backlog status for one agent or one feature, with worktree state and a `Review notes: stored` hint
+     * when reviewer notes exist for the active entry. Never prints the notes themselves; never mutates backlog state.
+     *
+     * @param list<string> $commandArgs Optional positional <feature> reference; ignored when --agent is provided
+     * @param array<string, bool|string> $options Recognises --agent=<code> to resolve the active task and feature for one agent
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $board = $this->loadBoard();
@@ -85,10 +103,12 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
     {
         $taskEntry = $this->boardService->findTaskEntriesByAgent($board, $agent)[0] ?? null;
         $featureEntry = $this->boardService->findFeatureEntriesByAgent($board, $agent)[0] ?? null;
+        $reviewKeys = $this->loadReviewKeys();
 
         $this->presenter->displayLine('[Task]');
         if ($taskEntry !== null) {
             $this->presenter->displayEntryStatus($taskEntry->getEntry());
+            $this->displayReviewNotesHint($taskEntry->getEntry(), $reviewKeys);
         } else {
             $this->presenter->displayLine('Active: ' . BacklogMetaValue::NONE->value);
         }
@@ -97,6 +117,7 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
         $this->presenter->displayLine('[Feature]');
         if ($featureEntry !== null) {
             $this->presenter->displayEntryStatus($featureEntry->getEntry());
+            $this->displayReviewNotesHint($featureEntry->getEntry(), $reviewKeys);
         } else {
             $this->presenter->displayLine('Active: ' . BacklogMetaValue::NONE->value);
         }
@@ -113,9 +134,45 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
 
         $this->presenter->displayLine('[Feature]');
         $this->presenter->displayEntryStatus($entry);
+        $this->displayReviewNotesHint($entry, $this->loadReviewKeys());
 
         $this->presenter->displayLine('');
         $this->statusWorktree($board, $entry->getAgent());
+    }
+
+    /**
+     * @return array<string, true>
+     */
+    private function loadReviewKeys(): array
+    {
+        $keys = [];
+        foreach ($this->loadReviewFile()->getReviews() as $key => $items) {
+            if ($items !== []) {
+                $keys[$key] = true;
+            }
+        }
+
+        return $keys;
+    }
+
+    /**
+     * @param array<string, true> $reviewKeys
+     */
+    private function displayReviewNotesHint(BoardEntry $entry, array $reviewKeys): void
+    {
+        $reviewKey = $this->boardService->checkIsTaskEntry($entry)
+            ? $this->boardService->getTaskReviewKey($entry)
+            : ($entry->getFeature() ?? '-');
+
+        if (!isset($reviewKeys[$reviewKey])) {
+            return;
+        }
+
+        $this->presenter->displayLine(sprintf(
+            'Review notes: stored — read with `php scripts/backlog.php %s %s` (notes hidden here).',
+            BacklogCommandName::REVIEW_NOTES->value,
+            $reviewKey,
+        ));
     }
 
     private function statusWorktree(BacklogBoard $board, ?string $agent): void
