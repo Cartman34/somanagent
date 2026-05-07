@@ -34,6 +34,14 @@ final class BacklogReviewNotesCommand extends AbstractBacklogCommand
 
     public const BLOCK_END_MARKER = 'REVIEW_NOTES_READ_ONLY_END';
 
+    /**
+     * Resolves shared backlog services through the parent constructor.
+     *
+     * @param BacklogPresenter $presenter Output writer used for the protected block
+     * @param bool $dryRun Reserved by the base class; review-notes is read-only and never mutates state
+     * @param string $projectRoot Absolute project root, used to default the review file path
+     * @param BacklogBoardService $boardService Board access for entry resolution and review-key formatting
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
@@ -43,6 +51,13 @@ final class BacklogReviewNotesCommand extends AbstractBacklogCommand
         parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
     }
 
+    /**
+     * Resolves the target entry, loads its stored reviewer notes from local/backlog-review.md,
+     * and prints them inside the documented protected, read-only block. Never mutates backlog state.
+     *
+     * @param list<string> $commandArgs Optional positional reference: <feature>, <task>, or <feature/task>
+     * @param array<string, bool|string> $options Recognises --agent=<code> to enforce ownership and to resolve the single active entry of an agent
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $agent = $options['agent'] ?? null;

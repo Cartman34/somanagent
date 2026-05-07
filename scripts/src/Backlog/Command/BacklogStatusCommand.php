@@ -22,6 +22,15 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
 {
     private BacklogWorktreeService $worktreeService;
 
+    /**
+     * Resolves shared backlog services through the parent constructor and stores the worktree service used to classify managed worktrees.
+     *
+     * @param BacklogPresenter $presenter Output writer for status sections
+     * @param bool $dryRun Reserved by the base class; status is read-only and never mutates state
+     * @param string $projectRoot Absolute project root, used to default the board and review file paths
+     * @param BacklogBoardService $boardService Board access for entry resolution and stored-review-key formatting
+     * @param BacklogWorktreeService $worktreeService Used to classify the agent's managed worktree state
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
@@ -33,6 +42,13 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
         $this->worktreeService = $worktreeService;
     }
 
+    /**
+     * Prints the backlog status for one agent or one feature, with worktree state and a `Review notes: stored` hint
+     * when reviewer notes exist for the active entry. Never prints the notes themselves; never mutates backlog state.
+     *
+     * @param list<string> $commandArgs Optional positional <feature> reference; ignored when --agent is provided
+     * @param array<string, bool|string> $options Recognises --agent=<code> to resolve the active task and feature for one agent
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $board = $this->loadBoard();
