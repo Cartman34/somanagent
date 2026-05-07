@@ -123,6 +123,29 @@ MD);
     }
 
     /**
+     * Verify --force-current-worktree is stripped from argv before backlog argument parsing.
+     *
+     * Regression: a leftover --force-current-worktree was consumed as the value of the
+     * preceding option by parseArgs, which made the requested command disappear and the
+     * runner respond with the global help (or "Unknown command" depending on placement).
+     */
+    public function runForceCurrentWorktreeFlagChecks(): void
+    {
+        $this->assertOutputContains(
+            $this->runBacklog(['--force-current-worktree', 'help', 'status']),
+            'Print the current backlog and worktree status',
+        );
+        $this->assertOutputContains(
+            $this->runBacklog(['--force-current-worktree', 'help', 'work-start']),
+            'work-start',
+        );
+        $this->assertOutputContains(
+            $this->runBacklog(['help', 'status', '--force-current-worktree']),
+            'Print the current backlog and worktree status',
+        );
+    }
+
+    /**
      * Run option equals syntax checks
      */
     public function runOptionEqualsChecks(): void
