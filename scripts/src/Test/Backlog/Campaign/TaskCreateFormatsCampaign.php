@@ -14,7 +14,8 @@ use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
  * Task creation formats campaign.
  *
  * Covers the supported task-create input shapes: single-line text with optional
- * type prefix, single-line text with feature/task scoped prefix, multi-line
+ * type prefix ([feat] / [fix] / [tech]), single-line text with feature/task scoped
+ * prefix, type prefix at any position in the leading bracket sequence, multi-line
  * inline body with sub-tasks, and multi-line body read from --body-file=<path>.
  */
 final class TaskCreateFormatsCampaign implements CampaignInterface
@@ -26,27 +27,44 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
 
     public function run(BacklogScriptTestDriver $driver, BacklogScriptTestContext $context): void
     {
-        $driver->createTodoTask('[feat] Single-line feat task');
-        $driver->assertTodoContains('Single-line feat task');
-        $driver->assertBoardTodoBlock([
-            '- Single-line feat task',
-            '  meta:',
-            '    type: feat',
-        ]);
-        $driver->removeFirstTodoTask();
-
-        $driver->createTodoTask('[fix] Single-line fix task');
-        $driver->assertBoardTodoBlock([
-            '- Single-line fix task',
-            '  meta:',
-            '    type: fix',
-        ]);
-        $driver->removeFirstTodoTask();
+        foreach (['feat', 'fix', 'tech'] as $type) {
+            $driver->createTodoTask(sprintf('[%s] Single-line %s task', $type, $type));
+            $driver->assertBoardTodoBlock([
+                sprintf('- Single-line %s task', $type),
+                '  meta:',
+                sprintf('    type: %s', $type),
+            ]);
+            $driver->removeFirstTodoTask();
+        }
 
         $driver->createTodoTask('[scope-feature][scope-task] Scoped task title');
         $driver->assertTodoContains('[scope-feature][scope-task] Scoped task title');
         $driver->assertBoardTodoBlock([
             '- [scope-feature][scope-task] Scoped task title',
+        ]);
+        $driver->removeFirstTodoTask();
+
+        $driver->createTodoTask('[tech][backlog-entry-types] Type-leading scoped feature');
+        $driver->assertBoardTodoBlock([
+            '- [backlog-entry-types] Type-leading scoped feature',
+            '  meta:',
+            '    type: tech',
+        ]);
+        $driver->removeFirstTodoTask();
+
+        $driver->createTodoTask('[backlog-entry-types][tech] Type-trailing single feature');
+        $driver->assertBoardTodoBlock([
+            '- [backlog-entry-types] Type-trailing single feature',
+            '  meta:',
+            '    type: tech',
+        ]);
+        $driver->removeFirstTodoTask();
+
+        $driver->createTodoTask('[backlog-entry-types][child-task][tech] Type-trailing scoped child task');
+        $driver->assertBoardTodoBlock([
+            '- [backlog-entry-types][child-task] Type-trailing scoped child task',
+            '  meta:',
+            '    type: tech',
         ]);
         $driver->removeFirstTodoTask();
 
@@ -63,7 +81,7 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
         $driver->removeFirstTodoTask();
 
         $bodyFilePath = $driver->createTodoTaskFromBodyFile([
-            '[feat][body-file-feature][body-file-task] Body file task title',
+            '[tech][body-file-feature][body-file-task] Body file task title',
             '  - Sub-task one',
             '  - Sub-task two',
             '  - Sub-task three',
@@ -74,7 +92,7 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
             '  - Sub-task two',
             '  - Sub-task three',
             '  meta:',
-            '    type: feat',
+            '    type: tech',
         ]);
         $driver->removeFirstTodoTask();
 
@@ -89,6 +107,11 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
             '    type: feat',
         ]);
         $driver->removeFirstTodoTask();
+
+        $driver->assertTaskCreateFails(
+            'Duplicate task type prefix',
+            ['[feat][fix] Duplicate type'],
+        );
 
         $driver->assertTaskCreateFails(
             'task-create does not accept positional <text> when --body-file is used.',

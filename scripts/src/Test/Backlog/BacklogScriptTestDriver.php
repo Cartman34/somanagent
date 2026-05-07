@@ -699,6 +699,51 @@ MD);
     }
 
     /**
+     * Runs work-start with --dry-run and returns the captured output.
+     *
+     * @param list<string> $extraArguments Additional CLI arguments after --agent
+     */
+    public function dryRunStartNextFeature(string $agent, array $extraArguments = []): string
+    {
+        $arguments = array_merge(['work-start', '--agent', $agent, '--dry-run'], $extraArguments);
+
+        return $this->runBacklog($arguments);
+    }
+
+    /**
+     * @param list<string> $extraArguments Additional CLI arguments after --agent
+     */
+    public function assertWorkStartFails(string $agent, string $needle, array $extraArguments = []): void
+    {
+        $arguments = array_merge(['work-start', '--agent', $agent], $extraArguments);
+        $this->assertBacklogFails($arguments, $needle);
+    }
+
+    /**
+     * Returns true when the agent has a managed worktree directory present on disk.
+     */
+    public function checkManagedWorktreeExists(string $agent): bool
+    {
+        return is_dir($this->managedWorktreePath($agent));
+    }
+
+    /**
+     * @param list<string> $needles
+     */
+    public function assertOutputContainsAll(string $output, array $needles): void
+    {
+        foreach ($needles as $needle) {
+            if (!str_contains($output, $needle)) {
+                throw new \RuntimeException(sprintf(
+                    "Expected command output to contain: %s\n--- actual output ---\n%s",
+                    $needle,
+                    $output,
+                ));
+            }
+        }
+    }
+
+    /**
      * @param list<string> $arguments Backlog command arguments
      * @param array<string, string> $env Environment variables
      * @return string Command output

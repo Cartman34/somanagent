@@ -96,7 +96,9 @@ Notes:
 - reviewer commands never use `--agent`
 - `base-update` refreshes the recorded Git base after a rebase; features update `origin/main` before using the merge base with it, and local child tasks default to the merge base with their parent feature branch
 - `worktree-restore` validates copied PHP vendors with `autoload.php` witnesses and can recreate a clean managed worktree with `--force`
-- `work-start` reads the next queued board entry, accepts plain text, optional `[feat]` / `[fix]` prefixes, a single `[feature-slug]` prefix, and scoped entries like `[feature-slug][task-slug] Task text`, then prints the started task or feature details with the assigned worktree
+- `work-start` reads the next queued board entry, accepts plain text, the type prefixes `[feat]` / `[fix]` / `[tech]` (case-insensitive, at any position in the leading bracket sequence), a single `[feature-slug]` prefix, and scoped entries like `[feature-slug][task-slug] Task text`, then prints the started task or feature details with the assigned worktree
+- branch prefix matches the type 1:1 (`feat → feat/<slug>`, `fix → fix/<slug>`, `tech → tech/<slug>`); `--branch-type=<feat|fix|tech>` overrides the queued prefix and rejects unknown values
+- `work-start` validates the queued entry fully (type, slugs, conflicts) before any worktree, branch or backlog mutation; a refusal leaves no leftover state. With `--dry-run` it prints the resolved interpretation and performs no Git, worktree or backlog mutation (Git fetch / `origin/main` reads remain enabled)
 - child task review stays local; only the parent feature uses the remote PR flow
 
 ---

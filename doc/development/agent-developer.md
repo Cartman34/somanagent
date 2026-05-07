@@ -66,7 +66,7 @@ Read this file only when the active task requires developer workflow details.
 2. By default the script appends the task to the end of `## To do`.
 3. `--position=start` inserts at the start of `## To do`.
 4. `--position=index --index=<n>` inserts at the requested 1-based position and clamps out-of-range values to the start or the end.
-5. Keep the task title short and put the breakdown on indented sub-task lines below it. Use a `[feat]` or `[fix]` type prefix so `work-start` can derive the branch type, and add a `[feature-slug]` or `[feature-slug][task-slug]` prefix when the task targets a specific feature or child task.
+5. Keep the task title short and put the breakdown on indented sub-task lines below it. **Always include both** a type prefix (`[feat]`, `[fix]` or `[tech]`) and a `[feature-slug]` (plus `[task-slug]` for child tasks) so the queued entry is unambiguous. The type prefix may appear at any position in the leading bracket sequence.
 6. Multi-line tasks: pass the full body as one quoted argument with `\n` line breaks (Bash `$'...'` literal), or use `--body-file=<path>` to read the body from a file. The first non-empty line is the title; the remaining non-empty lines become indented sub-tasks (auto-indented to two spaces when missing).
 7. Do not edit `local/backlog-board.md` manually for long tasks; use `--body-file=<path>` (typically under `local/tmp/`) instead.
 
@@ -76,6 +76,10 @@ Examples:
 php scripts/backlog.php task-create $'[feat][workspace-worktree][wws-init] Initialize workspace worktree
   - Bootstrap directory structure
   - Wire CI bindings'
+
+php scripts/backlog.php task-create $'[tech][backlog-entry-types] Centralize task types
+  - Add BacklogTaskType enum
+  - Update task-create / work-start parser'
 
 php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 ```
@@ -107,16 +111,19 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 
 ### `work-start`
 
-1. Run `php scripts/backlog.php work-start --agent=<code>`.
+1. Run `php scripts/backlog.php work-start --agent=<code> [--branch-type=<feat|fix|tech>] [--dry-run]`.
 2. The agent must have no active entry. If one exists, the script refuses and describes the required next step.
-3. The script reads the branch type from the queued task prefix `[feat]` or `[fix]`. If no type prefix is present, it falls back to `feat`.
-4. The script takes the next task from `## To do`, updates local `main` when possible, creates the branch in the agent worktree, moves the entry to `## In progress`, sets `meta.stage=development`, and authorizes development.
-5. Behaviour depends on the queued task prefix (after the optional `[feat]`/`[fix]` type prefix):
+3. The script reads the branch type from the queued task prefix `[feat]`, `[fix]` or `[tech]` (case-insensitive). The type prefix is recognized at any position in the leading bracket sequence. `--branch-type` overrides the queued prefix and rejects any value not in the canonical type list.
+4. The script validates the queued entry fully (type, feature/task slugs, conflicts) before any worktree, branch or backlog mutation. A refusal leaves no leftover worktree or backlog state behind.
+5. After validation the script takes the next task from `## To do`, updates local `main` when possible, creates the branch in the agent worktree, moves the entry to `## In progress`, sets `meta.stage=development`, and authorizes development.
+6. Branch prefix follows the type 1:1: `feat → feat/<slug>`, `fix → fix/<slug>`, `tech → tech/<slug>` for plain features and `<type>/<feature-slug>--<task-slug>` for scoped tasks.
+7. Behaviour depends on the queued task prefix (after the optional `[feat]`/`[fix]`/`[tech]` type prefix):
    - **`[feature-slug][task-slug] text`** — creates or reuses the parent `kind=feature` entry for `<feature-slug>` with `agent=none`, and creates the child `kind=task` entry assigned to the agent on branch `<type>/<feature-slug>--<task-slug>`. The `kind=feature` container stays unassigned until a developer explicitly takes integration ownership with `feature-assign`.
    - **`[feature-slug] text`** — creates a plain `kind=feature` with the explicit slug `<feature-slug>`, assigned to the agent, on branch `<type>/<feature-slug>`.
    - **`text` (no feature prefix)** — creates a plain `kind=feature` with a slug derived from the task text, assigned to the agent.
-6. The command output includes the started task when applicable, the parent feature summary and details, and the assigned worktree path and branch.
-7. `work-start` is local-only: it does not push and it does not create a PR.
+8. With `--dry-run`, the script prints the resolved interpretation (kind, type, feature, task, planned branches) and performs no Git, worktree or backlog mutation. Read-only Git operations (fetch, `origin/main` resolution) remain enabled.
+9. The command output includes the started task when applicable, the parent feature summary and details, and the assigned worktree path and branch.
+10. `work-start` is local-only: it does not push and it does not create a PR.
 
 ### `feature-release`
 

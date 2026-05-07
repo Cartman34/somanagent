@@ -9,9 +9,11 @@ namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
+use SoManAgent\Script\Backlog\Enum\BacklogTaskType;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Model\ManagedWorktree;
+use SoManAgent\Script\Backlog\Model\WorkStartPlan;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
@@ -20,10 +22,15 @@ use SoManAgent\Script\Service\GitService;
 /**
  * Unified command for starting work on the next queued backlog task.
  *
- * Replaces feature-start and feature-task-add. Behaviour depends on the queued task prefix:
- *   [feature][task] text  → child kind=task under an existing or new kind=feature container (agent=none)
- *   [feature] text        → plain kind=feature with an explicit slug, assigned to the agent
- *   text (no prefix)      → plain kind=feature with a slug derived from the task text, assigned to the agent
+ * Behaviour depends on the queued task prefix combination (any order, type-aware):
+ *   [type][feature][task] text  → child kind=task under an existing or new kind=feature container (agent=none)
+ *   [type][feature] text        → plain kind=feature with an explicit slug, assigned to the agent
+ *   [type] text                 → plain kind=feature with a slug derived from the task text, assigned to the agent
+ *   text (no prefix)            → plain kind=feature with a slug derived from the task text, default type=feat
+ *
+ * The full queued task is parsed and validated before any worktree, branch or backlog
+ * mutation happens. With `--dry-run`, the resolved plan is printed and no side effects
+ * are performed beyond Git reads (fetch / `origin/main`).
  */
 final class BacklogWorkStartCommand extends AbstractBacklogCommand
 {
@@ -76,25 +83,31 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
         if ($target === null) {
             throw new \RuntimeException('No backlog task available to start.');
         }
-        $reserved = [$target];
 
-        $worktree = $this->worktreeService->prepareAgentWorktree($agent);
-        $first = $reserved[0]->getEntry();
+        $first = $target->getEntry();
         $first->setFeature(null);
         $first->setAgent(null);
-        $startedTaskEntry = null;
-        $startedFeatureEntry = null;
 
-        $scopedTask = $this->boardService->extractScopedTaskMetadata($first->getText());
-        if ($scopedTask !== null) {
-            [$featureEntry, $startedTaskEntry, $startedFeatureEntry] = $this->handleScopedTask(
-                $board, $worktree, $first, $scopedTask, $agent, $branchTypeOverride
+        $plan = $this->buildPlan($board, $first, $agent, $branchTypeOverride);
+
+        if ($this->dryRun) {
+            $this->displayDryRunPlan($plan);
+
+            return;
+        }
+
+        $reserved = [$target];
+        $worktree = $this->worktreeService->prepareAgentWorktree($agent);
+
+        if ($plan->kind === WorkStartPlan::KIND_TASK) {
+            [$featureEntry, $startedTaskEntry, $startedFeatureEntry] = $this->executeScopedTask(
+                $board, $worktree, $first, $plan
             );
         } else {
-            $singleFeature = $this->boardService->extractSingleFeaturePrefixMetadata($first->getText());
-            [$featureEntry, $startedFeatureEntry] = $this->handlePlainFeature(
-                $board, $worktree, $first, $agent, $branchTypeOverride, $singleFeature
+            [$featureEntry, $startedFeatureEntry] = $this->executePlainFeature(
+                $board, $worktree, $first, $plan
             );
+            $startedTaskEntry = null;
         }
 
         $this->boardService->removeReservedTasks($board, $reserved);
@@ -114,86 +127,88 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
     }
 
     /**
-     * @param array{featureGroup: string, task: string, text: string} $scopedTask
-     * @return array{BoardEntry, BoardEntry, BoardEntry}
+     * Builds the read-only plan describing the queued task interpretation.
+     *
+     * Validates the type override and feature/task slug shape; rejects conflicts
+     * (existing feature, duplicate task slug) without performing any mutation.
      */
-    private function handleScopedTask(
+    private function buildPlan(
         BacklogBoard $board,
-        string $worktree,
+        BoardEntry $first,
+        string $agent,
+        string $branchTypeOverride
+    ): WorkStartPlan {
+        $scopedTask = $this->boardService->extractScopedTaskMetadata($first->getText());
+        if ($scopedTask !== null) {
+            return $this->buildScopedTaskPlan($board, $first, $scopedTask, $agent, $branchTypeOverride);
+        }
+
+        $singleFeature = $this->boardService->extractSingleFeaturePrefixMetadata($first->getText());
+
+        return $this->buildPlainFeaturePlan($board, $first, $agent, $branchTypeOverride, $singleFeature);
+    }
+
+    /**
+     * @param array{featureGroup: string, task: string, text: string} $scopedTask
+     */
+    private function buildScopedTaskPlan(
+        BacklogBoard $board,
         BoardEntry $first,
         array $scopedTask,
         string $agent,
         string $branchTypeOverride
-    ): array {
-        $task = $scopedTask['task'];
+    ): WorkStartPlan {
         $parent = $this->boardService->findParentFeatureEntry($board, $scopedTask['featureGroup']);
 
+        $type = $this->boardService->resolveTaskTypeOrDefault(
+            $first,
+            $parent?->getEntry(),
+            $branchTypeOverride
+        );
+
         if ($parent === null) {
-            $branchType = $this->boardService->resolveFeatureStartBranchType($first, null, $branchTypeOverride);
-            $featureBranch = $branchType . '/' . $scopedTask['featureGroup'];
-            $branch = $branchType . '/' . $scopedTask['featureGroup'] . '--' . $task;
-            $this->gitService->updateMainBranch();
-            $featureBase = $this->gitService->getBranchHead(GitService::ORIGIN_REMOTE . '/' . GitService::MAIN_BRANCH);
-            $this->worktreeService->ensureLocalBranchExists($featureBranch, GitService::ORIGIN_REMOTE . '/' . GitService::MAIN_BRANCH);
-
-            $featureContainerEntry = new BoardEntry($scopedTask['text'], []);
-            $this->boardService->hydrateEntryFromMetadata($featureContainerEntry, [
-                BoardEntry::META_KIND => BacklogBoardService::ENTRY_KIND_FEATURE,
-                BoardEntry::META_STAGE => BacklogBoard::STAGE_IN_PROGRESS,
-                BoardEntry::META_FEATURE => $scopedTask['featureGroup'],
-                BoardEntry::META_AGENT => BacklogMetaValue::NONE->value,
-                BoardEntry::META_BRANCH => $featureBranch,
-                BoardEntry::META_BASE => $featureBase,
-                BoardEntry::META_PR => BacklogMetaValue::NONE->value,
-            ]);
-            $activeEntries = $board->getEntries(BacklogBoard::SECTION_ACTIVE);
-            $activeEntries[] = $featureContainerEntry;
-            $board->setEntries(BacklogBoard::SECTION_ACTIVE, $activeEntries);
-            $parent = $this->boardService->resolveFeature($board, $scopedTask['featureGroup']);
+            $featureBranch = $type->branchPrefix() . '/' . $scopedTask['featureGroup'];
+            $needsCreation = true;
         } else {
-            $branchType = $this->boardService->resolveFeatureStartBranchType($first, $parent->getEntry(), $branchTypeOverride);
-            $featureBranch = $parent->getEntry()->getBranch() ?: ($branchType . '/' . $scopedTask['featureGroup']);
-            $branch = $branchType . '/' . $scopedTask['featureGroup'] . '--' . $task;
-            $this->boardService->invalidateFeatureReviewState($parent->getEntry());
+            $featureBranch = $parent->getEntry()->getBranch() ?: ($type->branchPrefix() . '/' . $scopedTask['featureGroup']);
+            $needsCreation = false;
+            foreach ($this->boardService->findTaskEntriesByFeature($board, $scopedTask['featureGroup']) as $match) {
+                if ($match->getEntry()->getTask() === $scopedTask['task']) {
+                    throw new \RuntimeException(sprintf(
+                        '%s: Task slug %s is already used for feature %s.',
+                        BacklogCommandName::WORK_START->value,
+                        $scopedTask['task'],
+                        $scopedTask['featureGroup'],
+                    ));
+                }
+            }
         }
-        $this->boardService->assertTaskSlugAvailableForFeature($board, $parent->getEntry(), $scopedTask['featureGroup'], $task, BacklogCommandName::WORK_START->value);
+        $taskBranch = $type->branchPrefix() . '/' . $scopedTask['featureGroup'] . '--' . $scopedTask['task'];
 
-        $taskBase = $this->gitService->getBranchHead($featureBranch);
-        $this->worktreeService->requireLocalBranchExists($featureBranch, BacklogCommandName::WORK_START->value);
-        $this->worktreeService->checkoutBranchInWorktree($worktree, $branch, true, $featureBranch);
-
-        $taskEntry = new BoardEntry($scopedTask['text'], $first->getExtraLines());
-        $this->boardService->hydrateEntryFromMetadata($taskEntry, [
-            BoardEntry::META_KIND => BacklogBoardService::ENTRY_KIND_TASK,
-            BoardEntry::META_STAGE => BacklogBoard::STAGE_IN_PROGRESS,
-            BoardEntry::META_FEATURE => $scopedTask['featureGroup'],
-            BoardEntry::META_TASK => $task,
-            BoardEntry::META_AGENT => $agent,
-            BoardEntry::META_BRANCH => $branch,
-            BoardEntry::META_FEATURE_BRANCH => $featureBranch,
-            BoardEntry::META_BASE => $taskBase,
-            BoardEntry::META_PR => BacklogMetaValue::NONE->value,
-        ]);
-        $this->boardService->appendTaskContribution($parent->getEntry(), $taskEntry);
-
-        return [$taskEntry, $taskEntry, $parent->getEntry()];
+        return new WorkStartPlan(
+            kind: WorkStartPlan::KIND_TASK,
+            type: $type,
+            featureSlug: $scopedTask['featureGroup'],
+            taskSlug: $scopedTask['task'],
+            entryText: $scopedTask['text'],
+            featureBranch: $featureBranch,
+            taskBranch: $taskBranch,
+            featureContainerNeedsCreation: $needsCreation,
+            agent: $agent,
+        );
     }
 
     /**
      * @param array{featureSlug: string, text: string}|null $singleFeature
-     * @return array{BoardEntry, BoardEntry}
      */
-    private function handlePlainFeature(
+    private function buildPlainFeaturePlan(
         BacklogBoard $board,
-        string $worktree,
         BoardEntry $first,
         string $agent,
         string $branchTypeOverride,
         ?array $singleFeature
-    ): array {
-        $branchType = $this->boardService->resolveFeatureStartBranchType($first, null, $branchTypeOverride);
-        $this->gitService->updateMainBranch();
-        $base = $this->gitService->getBranchHead(GitService::ORIGIN_REMOTE . '/' . GitService::MAIN_BRANCH);
+    ): WorkStartPlan {
+        $type = $this->boardService->resolveTaskTypeOrDefault($first, null, $branchTypeOverride);
 
         if ($singleFeature !== null) {
             $feature = $singleFeature['featureSlug'];
@@ -211,21 +226,134 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
             );
         }
 
-        $branch = $branchType . '/' . $feature;
+        return new WorkStartPlan(
+            kind: WorkStartPlan::KIND_FEATURE,
+            type: $type,
+            featureSlug: $feature,
+            taskSlug: null,
+            entryText: $entryText,
+            featureBranch: $type->branchPrefix() . '/' . $feature,
+            taskBranch: null,
+            featureContainerNeedsCreation: false,
+            agent: $agent,
+        );
+    }
+
+    /**
+     * Performs the planned scoped-task mutations.
+     *
+     * @return array{BoardEntry, BoardEntry, BoardEntry}
+     */
+    private function executeScopedTask(
+        BacklogBoard $board,
+        string $worktree,
+        BoardEntry $first,
+        WorkStartPlan $plan
+    ): array {
+        $featureGroup = $plan->featureSlug;
+        $task = (string) $plan->taskSlug;
+        $featureBranch = $plan->featureBranch;
+        $branch = (string) $plan->taskBranch;
+
+        if ($plan->featureContainerNeedsCreation) {
+            $this->gitService->updateMainBranch();
+            $featureBase = $this->gitService->getBranchHead(GitService::ORIGIN_REMOTE . '/' . GitService::MAIN_BRANCH);
+            $this->worktreeService->ensureLocalBranchExists($featureBranch, GitService::ORIGIN_REMOTE . '/' . GitService::MAIN_BRANCH);
+
+            $featureContainerEntry = new BoardEntry($plan->entryText, []);
+            $this->boardService->hydrateEntryFromMetadata($featureContainerEntry, [
+                BoardEntry::META_KIND => BacklogBoardService::ENTRY_KIND_FEATURE,
+                BoardEntry::META_STAGE => BacklogBoard::STAGE_IN_PROGRESS,
+                BoardEntry::META_FEATURE => $featureGroup,
+                BoardEntry::META_AGENT => BacklogMetaValue::NONE->value,
+                BoardEntry::META_BRANCH => $featureBranch,
+                BoardEntry::META_BASE => $featureBase,
+                BoardEntry::META_PR => BacklogMetaValue::NONE->value,
+            ]);
+            $activeEntries = $board->getEntries(BacklogBoard::SECTION_ACTIVE);
+            $activeEntries[] = $featureContainerEntry;
+            $board->setEntries(BacklogBoard::SECTION_ACTIVE, $activeEntries);
+        }
+
+        $parent = $this->boardService->resolveFeature($board, $featureGroup);
+        if (!$plan->featureContainerNeedsCreation) {
+            $this->boardService->invalidateFeatureReviewState($parent->getEntry());
+        }
+
+        $taskBase = $this->gitService->getBranchHead($featureBranch);
+        $this->worktreeService->requireLocalBranchExists($featureBranch, BacklogCommandName::WORK_START->value);
+        $this->worktreeService->checkoutBranchInWorktree($worktree, $branch, true, $featureBranch);
+
+        $taskEntry = new BoardEntry($plan->entryText, $first->getExtraLines());
+        $this->boardService->hydrateEntryFromMetadata($taskEntry, [
+            BoardEntry::META_KIND => BacklogBoardService::ENTRY_KIND_TASK,
+            BoardEntry::META_STAGE => BacklogBoard::STAGE_IN_PROGRESS,
+            BoardEntry::META_FEATURE => $featureGroup,
+            BoardEntry::META_TASK => $task,
+            BoardEntry::META_AGENT => $plan->agent,
+            BoardEntry::META_BRANCH => $branch,
+            BoardEntry::META_FEATURE_BRANCH => $featureBranch,
+            BoardEntry::META_BASE => $taskBase,
+            BoardEntry::META_PR => BacklogMetaValue::NONE->value,
+        ]);
+        $this->boardService->appendTaskContribution($parent->getEntry(), $taskEntry);
+
+        return [$taskEntry, $taskEntry, $parent->getEntry()];
+    }
+
+    /**
+     * Performs the planned plain-feature mutations.
+     *
+     * @return array{BoardEntry, BoardEntry}
+     */
+    private function executePlainFeature(
+        BacklogBoard $board,
+        string $worktree,
+        BoardEntry $first,
+        WorkStartPlan $plan
+    ): array {
+        $this->gitService->updateMainBranch();
+        $base = $this->gitService->getBranchHead(GitService::ORIGIN_REMOTE . '/' . GitService::MAIN_BRANCH);
+
+        $branch = $plan->featureBranch;
         $this->worktreeService->checkoutBranchInWorktree($worktree, $branch, true);
 
-        $featureEntry = new BoardEntry($entryText, $first->getExtraLines());
+        $featureEntry = new BoardEntry($plan->entryText, $first->getExtraLines());
         $this->boardService->hydrateEntryFromMetadata($featureEntry, [
             BoardEntry::META_KIND => BacklogBoardService::ENTRY_KIND_FEATURE,
             BoardEntry::META_STAGE => BacklogBoard::STAGE_IN_PROGRESS,
-            BoardEntry::META_FEATURE => $feature,
-            BoardEntry::META_AGENT => $agent,
+            BoardEntry::META_FEATURE => $plan->featureSlug,
+            BoardEntry::META_AGENT => $plan->agent,
             BoardEntry::META_BRANCH => $branch,
             BoardEntry::META_BASE => $base,
             BoardEntry::META_PR => BacklogMetaValue::NONE->value,
         ]);
 
         return [$featureEntry, $featureEntry];
+    }
+
+    /**
+     * Prints the resolved interpretation of the queued task without performing any mutation.
+     */
+    private function displayDryRunPlan(WorkStartPlan $plan): void
+    {
+        $this->presenter->displayLine('[Dry-run]');
+        $this->presenter->displayLine('Kind:           ' . $plan->kind);
+        $this->presenter->displayLine('Type:           ' . $plan->type->value);
+        $this->presenter->displayLine('Feature:        ' . $plan->featureSlug);
+        if ($plan->taskSlug !== null) {
+            $this->presenter->displayLine('Task:           ' . $plan->taskSlug);
+        }
+        $this->presenter->displayLine('Entry text:     ' . $plan->entryText);
+        $this->presenter->displayLine('Feature branch: ' . $plan->featureBranch);
+        if ($plan->taskBranch !== null) {
+            $this->presenter->displayLine('Task branch:    ' . $plan->taskBranch);
+        }
+        if ($plan->kind === WorkStartPlan::KIND_TASK) {
+            $this->presenter->displayLine('Feature parent: ' . ($plan->featureContainerNeedsCreation ? 'will be created' : 'already exists'));
+        }
+        $this->presenter->displayLine('Agent:          ' . $plan->agent);
+        $this->presenter->displayLine('No mutation performed (--dry-run).');
     }
 
     private function displayStartedStatus(
