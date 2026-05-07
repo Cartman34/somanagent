@@ -22,6 +22,12 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
     private const POSITION_INDEX = 'index';
     private const POSITION_END = 'end';
 
+    /**
+     * @param BacklogPresenter $presenter
+     * @param bool $dryRun
+     * @param string $projectRoot
+     * @param BacklogBoardService $boardService
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
@@ -31,6 +37,15 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
         parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
     }
 
+    /**
+     * Inserts a new queued task in the todo section.
+     *
+     * Accepts either a positional `<text>` description (single line, multi-line via
+     * embedded newlines) or `--body-file=<path>` for longer multi-line bodies.
+     *
+     * @param list<string> $commandArgs
+     * @param array<string, string|bool> $options
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $entry = $this->buildEntryFromInput($commandArgs, $options);
