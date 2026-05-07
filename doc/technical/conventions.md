@@ -161,28 +161,22 @@ class ProjectService
 }
 ```
 
-PHPDoc must always be written on multiple lines. Single-line PHPDoc such as `/** Description. */` is forbidden, even when the description is short. The opening `/**` and the closing `*/` must each sit on their own line, and every description or tag line must start with ` * `.
+PHPDoc must be multi-line. Single-line `/** ... */` is forbidden.
 
-KO (forbidden, single-line):
+KO:
 
 ```php
-/** Builds the immutable pricing snapshot used by model catalogs. */
+/** Builds the snapshot. */
 public function build(): Snapshot
-{
-    // ...
-}
 ```
 
-OK (required, multi-line):
+OK:
 
 ```php
 /**
- * Builds the immutable pricing snapshot used by model catalogs.
+ * Builds the snapshot.
  */
 public function build(): Snapshot
-{
-    // ...
-}
 ```
 
 When a Symfony method uses both a PHPDoc block and PHP attributes such as `#[Route(...)]`, keep the order:
