@@ -81,6 +81,16 @@ Rules:
 5. `Developer` may only assign itself to an unassigned feature or keep the same self-assignment.
 6. `Developer` may only unassign itself from its own feature.
 
+## Queued Task Format
+
+1. A queued task is one entry under `## To do`: a short title on the `- ` line, optional indented sub-task lines below it, and no `meta:` block until `work-start` consumes it.
+2. The title may carry the optional prefixes (in this order): `[feat]` or `[fix]` for the branch type, then `[feature-slug]` or `[feature-slug][task-slug]` for the feature or child task scope. Examples: `[feat] Short title`, `[feature-slug] Short title`, `[feat][feature-slug][task-slug] Short title`.
+3. Keep the title short; put the breakdown on indented sub-task lines (two-space indent, one bullet per line). The script accepts unindented sub-task lines and auto-indents them to two spaces.
+4. Always create queued tasks through `task-create`. Two supported forms for multi-line bodies:
+   - Inline: pass the full body as a single quoted argument with `\n` line breaks (Bash `$'...'` literal).
+   - File: pass `--body-file=<path>` (typically under `local/tmp/`).
+5. Manual edits to `local/backlog-board.md` are not the way to add long or multi-line tasks. Use `--body-file=<path>` instead.
+
 ## Command Policy
 
 1. Use `php scripts/backlog.php` for the full local workflow.

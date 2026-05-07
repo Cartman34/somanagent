@@ -14,6 +14,7 @@ use SoManAgent\Script\Test\Backlog\Campaign\CampaignInterface;
 use SoManAgent\Script\Test\Backlog\Campaign\FeatureReviewLifecycleCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\HelpCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\ScopedTaskLifecycleCampaign;
+use SoManAgent\Script\Test\Backlog\Campaign\TaskCreateFormatsCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\TodoAndPlainFeatureLifecycleCampaign;
 
 /**
@@ -40,7 +41,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
     {
         return array_merge(
             [
-                ['name' => '--campaign', 'description' => 'Campaign to run: help, todo-and-plain-feature-lifecycle, scoped-task-lifecycle, feature-review-lifecycle, or all'],
+                ['name' => '--campaign', 'description' => 'Campaign to run: help, todo-and-plain-feature-lifecycle, scoped-task-lifecycle, task-create-formats, feature-review-lifecycle, or all'],
                 ['name' => '--allow-remote', 'description' => 'Allow campaigns that push branches or create/merge GitHub PRs'],
                 ['name' => '--keep-artifacts', 'description' => 'Keep temporary backlog/review files under local/tmp/ after execution'],
             ],
@@ -168,6 +169,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
         if ($requestedCampaign === 'all') {
             $resolved = [
                 $campaigns['help'],
+                $campaigns['task-create-formats'],
                 $campaigns['todo-and-plain-feature-lifecycle'],
                 $campaigns['scoped-task-lifecycle'],
             ];
@@ -200,6 +202,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
         if ($this->campaigns === null) {
             $this->campaigns = [
                 'help' => new HelpCampaign(),
+                'task-create-formats' => new TaskCreateFormatsCampaign(),
                 'todo-and-plain-feature-lifecycle' => new TodoAndPlainFeatureLifecycleCampaign(),
                 'scoped-task-lifecycle' => new ScopedTaskLifecycleCampaign(),
                 'feature-review-lifecycle' => new FeatureReviewLifecycleCampaign(),
