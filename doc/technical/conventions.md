@@ -161,6 +161,24 @@ class ProjectService
 }
 ```
 
+PHPDoc must be multi-line. Single-line `/** ... */` is forbidden.
+
+KO:
+
+```php
+/** Builds the snapshot. */
+public function build(): Snapshot
+```
+
+OK:
+
+```php
+/**
+ * Builds the snapshot.
+ */
+public function build(): Snapshot
+```
+
 When a Symfony method uses both a PHPDoc block and PHP attributes such as `#[Route(...)]`, keep the order:
 1. PHPDoc
 2. attribute(s)
