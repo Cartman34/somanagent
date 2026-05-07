@@ -81,18 +81,25 @@ final class WorktreeScriptProxy
      * Proxies execution to the main worktree script when running inside a linked worktree.
      *
      * Returns immediately when already in the main worktree or when --force-current-worktree is set.
+     * Always strips --force-current-worktree from $argv so downstream runners never see the proxy flag,
+     * which would otherwise be consumed as the value of an option by argument parsers.
      *
-     * @param array<string> $argv
+     * @param array<string> $argv Mutated in place: --force-current-worktree is removed and indices reindexed.
      */
-    public static function run(array $argv): void
+    public static function run(array &$argv): void
     {
+        $hasForceFlag = in_array(self::FORCE_FLAG, $argv, true);
+        if ($hasForceFlag) {
+            $argv = array_values(array_filter($argv, static fn(string $arg): bool => $arg !== self::FORCE_FLAG));
+        }
+
         try {
             $instance = self::detect($argv[0]);
         } catch (\RuntimeException) {
             return;
         }
 
-        if (!$instance->isLinkedWorktree() || in_array(self::FORCE_FLAG, $argv, true)) {
+        if (!$instance->isLinkedWorktree() || $hasForceFlag) {
             return;
         }
 
@@ -106,9 +113,7 @@ final class WorktreeScriptProxy
 
         $cmd = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($mainScript);
         foreach (array_slice($argv, 1) as $arg) {
-            if ($arg !== self::FORCE_FLAG) {
-                $cmd .= ' ' . escapeshellarg($arg);
-            }
+            $cmd .= ' ' . escapeshellarg($arg);
         }
 
         passthru($cmd, $exitCode);
