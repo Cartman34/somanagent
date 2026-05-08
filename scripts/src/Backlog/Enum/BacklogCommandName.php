@@ -30,7 +30,7 @@ enum BacklogCommandName: string
     case FEATURE_RELEASE = 'feature-release';
     case FEATURE_TASK_MERGE = 'feature-task-merge';
     case FEATURE_ASSIGN = 'feature-assign';
-    case FEATURE_UNASSIGN = 'feature-unassign';
+    case ENTRY_UNASSIGN = 'entry-unassign';
     case FEATURE_BLOCK = 'feature-block';
     case FEATURE_UNBLOCK = 'feature-unblock';
     case FEATURE_LIST = 'feature-list';
