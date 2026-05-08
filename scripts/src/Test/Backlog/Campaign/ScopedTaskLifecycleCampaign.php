@@ -83,6 +83,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->closeFeature($context->scopedFeature);
         $driver->assertActiveFeatureMissing($context->scopedFeature);
 
+        $this->assertEntryUnassignForTaskAndAmbiguity($driver, $context);
         $this->assertReviewNotesAmbiguityAndMissingReference($driver, $context);
     }
 
@@ -172,6 +173,45 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
 
         // Cleanup so the next campaign starts from a clean board.
         $driver->releaseFeature($context->agentSecondary, $ambSlug);
+        $driver->removeFirstTodoTask();
+    }
+
+    /**
+     * Verify entry-unassign on a child task across the three reference forms (`<feature/task>`,
+     * `<task>` simple slug, and ambiguity rejection on a slug colliding with a feature).
+     *
+     * Runs first so it leaves agentPrimary and agentSecondary free for the review-notes
+     * ambiguity coverage that follows.
+     */
+    private function assertEntryUnassignForTaskAndAmbiguity(
+        BacklogScriptTestDriver $driver,
+        BacklogScriptTestContext $context,
+    ): void {
+        $featureSlug = 'test-eu-task-feature';
+        $taskSlug = 'test-eu-task';
+        $taskRef = $featureSlug . '/' . $taskSlug;
+
+        $driver->createTodoTask(sprintf('[%s][%s] Task for entry-unassign coverage', $featureSlug, $taskSlug));
+        $driver->startNextFeature($context->agentPrimary);
+        $driver->unassignEntryAsManager($taskRef, $context->agentPrimary);
+
+        $taskOnlyFeature = 'test-eu-task-only-feature';
+        $taskOnlySlug = 'test-eu-task-only';
+        $driver->createTodoTask(sprintf('[%s][%s] Task for entry-unassign by task slug only', $taskOnlyFeature, $taskOnlySlug));
+        $driver->startNextFeature($context->agentPrimary);
+        $driver->unassignEntryAsManager($taskOnlySlug, $context->agentPrimary);
+
+        $driver->createTodoTask(sprintf('[%s] Plain feature colliding with the orphaned task slug', $taskSlug));
+        $driver->startNextFeature($context->agentSecondary);
+
+        $driver->assertUnassignEntryFails(
+            $taskSlug,
+            $context->agentSecondary,
+            ['SOMANAGER_ROLE' => 'manager'],
+            sprintf('Ambiguous reference %s: matches both a feature and a task.', $taskSlug),
+        );
+
+        $driver->releaseFeature($context->agentSecondary, $taskSlug);
         $driver->removeFirstTodoTask();
     }
 }

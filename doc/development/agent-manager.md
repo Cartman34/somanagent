@@ -27,8 +27,8 @@ Read this file only when the active task requires backlog management or workflow
 ## Assignment Authority
 
 - `Manager` can assign any feature to any developer agent.
-- `Manager` can unassign any feature from any developer agent.
-- For `feature-assign` and `feature-unassign`, export `SOMANAGER_ROLE=manager` before running `php scripts/backlog.php ...`.
+- `Manager` can unassign any active entry (feature or task) from any developer agent through `entry-unassign`.
+- For `feature-assign` and `entry-unassign`, export `SOMANAGER_ROLE=manager` before running `php scripts/backlog.php ...`.
 
 ## Guidance
 
