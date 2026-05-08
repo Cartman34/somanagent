@@ -322,6 +322,41 @@ MD);
     }
 
     /**
+     * @param string $agent Agent owning the entry
+     * @param string $reference Optional positional reference, empty to omit
+     * @param string $needle Error fragment expected in the failure output
+     */
+    public function assertReworkFails(string $agent, string $reference, string $needle): void
+    {
+        $args = ['rework', '--agent', $agent];
+        if ($reference !== '') {
+            $args[] = $reference;
+        }
+        $this->assertBacklogFails($args, $needle);
+    }
+
+    /**
+     * Assert the active task entry has the expected stage value.
+     *
+     * @param string $reference Task reference (<feature>/<task>)
+     * @param string $expectedStage One of BacklogBoard::STAGE_* constants
+     */
+    public function assertTaskStage(string $reference, string $expectedStage): void
+    {
+        $service = $this->boardService();
+        $match = $service->resolveTaskByReference($this->board(), $reference, 'assertTaskStage');
+        $actual = $service->getFeatureStage($match->getEntry());
+        if ($actual !== $expectedStage) {
+            throw new \RuntimeException(sprintf(
+                'Expected task %s to be in stage %s, got %s.',
+                $reference,
+                $expectedStage,
+                $actual,
+            ));
+        }
+    }
+
+    /**
      * Run review-notes with optional agent and optional positional reference.
      *
      * @param string|null $agent Agent owning the entry, or null when only a positional reference is used

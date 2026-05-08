@@ -16,10 +16,23 @@ use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 use RuntimeException;
 
 /**
- * Command for reworking a rejected task or feature.
+ * Command for reworking a rejected or approved task or feature back to development.
+ *
+ * Used after a reviewer rejection (review notes are displayed) and after a merge
+ * conflict on an approved entry, where the developer needs to resume coding.
  */
 final class BacklogReworkCommand extends AbstractBacklogCommand
 {
+    /**
+     * Stages from which an entry can be moved back to development.
+     *
+     * @var list<string>
+     */
+    private const REWORKABLE_STAGES = [
+        BacklogBoard::STAGE_REJECTED,
+        BacklogBoard::STAGE_APPROVED,
+    ];
+
     private BacklogWorktreeService $worktreeService;
 
     public function __construct(
@@ -46,13 +59,20 @@ final class BacklogReworkCommand extends AbstractBacklogCommand
         if ($reference !== null) {
             $entry = $this->resolveByReference($board, $reference, $agent);
         } else {
-            $entry = $this->resolveRejectedEntryForAgent($board, $agent);
+            $entry = $this->resolveReworkableEntryForAgent($board, $agent);
         }
 
-        if ($this->boardService->getFeatureStage($entry) !== BacklogBoard::STAGE_REJECTED) {
+        $stage = $this->boardService->getFeatureStage($entry);
+        if (!in_array($stage, self::REWORKABLE_STAGES, true)) {
+            $expected = array_map(
+                fn(string $candidate): string => $this->boardService->getStageLabel($candidate),
+                self::REWORKABLE_STAGES,
+            );
             throw new RuntimeException(sprintf(
-                'Entry %s is not in the rejected stage.',
+                'Entry %s has stage %s, but rework only accepts %s.',
                 $this->describeEntry($entry),
+                $this->boardService->getStageLabel($stage),
+                implode(' or ', $expected),
             ));
         }
 
@@ -77,10 +97,11 @@ final class BacklogReworkCommand extends AbstractBacklogCommand
         }
 
         $this->presenter->displaySuccess(sprintf(
-            '%s %s moved back to %s',
+            '%s %s moved back to %s from %s',
             $this->boardService->checkIsTaskEntry($entry) ? 'Task' : 'Feature',
             $this->describeEntry($entry),
             $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_PROGRESS),
+            $this->boardService->getStageLabel($stage),
         ));
     }
 
@@ -132,34 +153,40 @@ final class BacklogReworkCommand extends AbstractBacklogCommand
         return $entry;
     }
 
-    private function resolveRejectedEntryForAgent(BacklogBoard $board, string $agent): BoardEntry
+    /**
+     * Resolve the single reworkable entry (rejected or approved) assigned to the agent.
+     */
+    private function resolveReworkableEntryForAgent(BacklogBoard $board, string $agent): BoardEntry
     {
-        $rejected = [];
+        $candidates = [];
 
         foreach ($this->boardService->findTaskEntriesByAgent($board, $agent) as $match) {
-            if ($this->boardService->getFeatureStage($match->getEntry()) === BacklogBoard::STAGE_REJECTED) {
-                $rejected[] = $match->getEntry();
+            if (in_array($this->boardService->getFeatureStage($match->getEntry()), self::REWORKABLE_STAGES, true)) {
+                $candidates[] = $match->getEntry();
             }
         }
 
         foreach ($this->boardService->findFeatureEntriesByAgent($board, $agent) as $match) {
-            if ($this->boardService->getFeatureStage($match->getEntry()) === BacklogBoard::STAGE_REJECTED) {
-                $rejected[] = $match->getEntry();
+            if (in_array($this->boardService->getFeatureStage($match->getEntry()), self::REWORKABLE_STAGES, true)) {
+                $candidates[] = $match->getEntry();
             }
         }
 
-        if ($rejected === []) {
-            throw new RuntimeException(sprintf('Agent %s has no rejected entry.', $agent));
-        }
-
-        if (count($rejected) > 1) {
+        if ($candidates === []) {
             throw new RuntimeException(sprintf(
-                'Agent %s has multiple rejected entries. Provide an explicit reference.',
+                'Agent %s has no rejected or approved entry.',
                 $agent,
             ));
         }
 
-        return $rejected[0];
+        if (count($candidates) > 1) {
+            throw new RuntimeException(sprintf(
+                'Agent %s has multiple reworkable entries. Provide an explicit reference.',
+                $agent,
+            ));
+        }
+
+        return $candidates[0];
     }
 
     private function describeEntry(BoardEntry $entry): string
