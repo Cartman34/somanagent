@@ -23,6 +23,11 @@ final class BacklogPermissionService
     private const ENV_ACTIVE_ROLE = 'SOMANAGER_ROLE';
     private const ENV_ACTIVE_AGENT = 'SOMANAGER_AGENT';
 
+    /**
+     * Reads and validates the active workflow role from the SOMANAGER_ROLE environment variable.
+     *
+     * @return string The normalized role (`manager` or `developer`)
+     */
     public function requireWorkflowRole(): string
     {
         $role = strtolower(trim((string) getenv(self::ENV_ACTIVE_ROLE)));
@@ -37,6 +42,11 @@ final class BacklogPermissionService
         return $role;
     }
 
+    /**
+     * Reads and validates the active workflow agent code from the SOMANAGER_AGENT environment variable.
+     *
+     * @return string The agent code
+     */
     public function requireWorkflowAgent(): string
     {
         $agent = trim((string) getenv(self::ENV_ACTIVE_AGENT));
@@ -50,6 +60,20 @@ final class BacklogPermissionService
         return $agent;
     }
 
+    /**
+     * Authorizes assignment of a feature to an agent.
+     *
+     * Manager bypasses ownership checks. Developer is restricted to self-assignment of an
+     * unassigned feature; the --agent argument must match the developer agent code from
+     * SOMANAGER_AGENT.
+     *
+     * @param string $actorRole Caller role (manager or developer)
+     * @param ?string $actorAgent Caller agent code when actorRole is developer
+     * @param string $targetAgent Agent code passed via --agent
+     * @param string $feature Feature slug to assign
+     * @param BacklogBoard $board Loaded backlog board
+     * @param BacklogBoardService $boardService Service used to resolve the feature entry
+     */
     public function assertCanAssignFeature(
         string $actorRole,
         ?string $actorAgent,
