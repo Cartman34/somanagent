@@ -83,8 +83,8 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->closeFeature($context->scopedFeature);
         $driver->assertActiveFeatureMissing($context->scopedFeature);
 
-        $this->assertReviewNotesAmbiguityAndMissingReference($driver, $context);
         $this->assertEntryUnassignForTaskAndAmbiguity($driver, $context);
+        $this->assertReviewNotesAmbiguityAndMissingReference($driver, $context);
     }
 
     /**
@@ -177,9 +177,11 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
     }
 
     /**
-     * Verify entry-unassign on a child task: manager unassigns via `<feature/task>` and a plain
-     * slug colliding with a feature is rejected as ambiguous. Uses dedicated entries so the
-     * earlier review-notes coverage stays untouched.
+     * Verify entry-unassign on a child task across the three reference forms (`<feature/task>`,
+     * `<task>` simple slug, and ambiguity rejection on a slug colliding with a feature).
+     *
+     * Runs first so it leaves agentPrimary and agentSecondary free for the review-notes
+     * ambiguity coverage that follows.
      */
     private function assertEntryUnassignForTaskAndAmbiguity(
         BacklogScriptTestDriver $driver,
@@ -191,8 +193,13 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
 
         $driver->createTodoTask(sprintf('[%s][%s] Task for entry-unassign coverage', $featureSlug, $taskSlug));
         $driver->startNextFeature($context->agentPrimary);
-
         $driver->unassignEntryAsManager($taskRef, $context->agentPrimary);
+
+        $taskOnlyFeature = 'test-eu-task-only-feature';
+        $taskOnlySlug = 'test-eu-task-only';
+        $driver->createTodoTask(sprintf('[%s][%s] Task for entry-unassign by task slug only', $taskOnlyFeature, $taskOnlySlug));
+        $driver->startNextFeature($context->agentPrimary);
+        $driver->unassignEntryAsManager($taskOnlySlug, $context->agentPrimary);
 
         $driver->createTodoTask(sprintf('[%s] Plain feature colliding with the orphaned task slug', $taskSlug));
         $driver->startNextFeature($context->agentSecondary);
