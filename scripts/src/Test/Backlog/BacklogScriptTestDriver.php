@@ -222,12 +222,41 @@ MD);
     }
 
     /**
-     * @param string $feature Feature name to unassign
-     * @param string $agent Agent to unassign the feature from
+     * Unassigns an entry (feature or task) using the manager role.
+     *
+     * @param ?string $reference Optional explicit reference (`<feature>`, `<task>`, or `<feature/task>`).
+     *                           When null, the script falls back to the agent's single active entry.
+     * @param string $agent Agent code passed via `--agent`.
      */
-    public function unassignFeatureAsManager(string $feature, string $agent): void
+    public function unassignEntryAsManager(?string $reference, string $agent): void
     {
-        $this->runBacklog(['feature-unassign', $feature, '--agent', $agent], ['SOMANAGER_ROLE' => 'manager']);
+        $arguments = ['entry-unassign'];
+        if ($reference !== null) {
+            $arguments[] = $reference;
+        }
+        $arguments[] = '--agent';
+        $arguments[] = $agent;
+        $this->runBacklog($arguments, ['SOMANAGER_ROLE' => 'manager']);
+    }
+
+    /**
+     * Asserts that `entry-unassign` fails with the given message when invoked under the
+     * provided role/agent environment.
+     *
+     * @param ?string $reference Optional explicit reference (`<feature>`, `<task>`, or `<feature/task>`).
+     * @param string $agent Agent code passed via `--agent`.
+     * @param array<string, string> $env Environment variables (typically SOMANAGER_ROLE / SOMANAGER_AGENT).
+     * @param string $needle Expected substring of the failure output.
+     */
+    public function assertUnassignEntryFails(?string $reference, string $agent, array $env, string $needle): void
+    {
+        $arguments = ['entry-unassign'];
+        if ($reference !== null) {
+            $arguments[] = $reference;
+        }
+        $arguments[] = '--agent';
+        $arguments[] = $agent;
+        $this->assertBacklogFails($arguments, $needle, $env);
     }
 
     /**
@@ -815,10 +844,12 @@ MD);
 
     /**
      * @param list<string> $arguments Backlog command arguments
+     * @param string $needle Expected substring of the failure output
+     * @param array<string, string> $env Optional environment variables
      */
-    private function assertBacklogFails(array $arguments, string $needle): void
+    private function assertBacklogFails(array $arguments, string $needle, array $env = []): void
     {
-        $command = $this->buildBacklogCommand($arguments);
+        $command = $this->buildBacklogCommand($arguments, $env);
         [$code, $output] = $this->consoleClient->captureWithExitCode($command);
         if ($code === 0) {
             throw new \RuntimeException("Expected backlog command to fail: {$command}");

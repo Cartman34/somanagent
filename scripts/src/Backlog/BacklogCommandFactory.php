@@ -22,7 +22,7 @@ use SoManAgent\Script\Backlog\Command\BacklogEntryRenameCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReworkCommand;
 use SoManAgent\Script\Backlog\Command\BacklogWorkStartCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureTaskMergeCommand;
-use SoManAgent\Script\Backlog\Command\BacklogFeatureUnassignCommand;
+use SoManAgent\Script\Backlog\Command\BacklogEntryUnassignCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureUnblockCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewNextCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewNotesCommand;
@@ -148,7 +148,7 @@ final class BacklogCommandFactory
             BacklogCommandName::FEATURE_RELEASE->value => BacklogFeatureReleaseCommand::class,
             BacklogCommandName::FEATURE_TASK_MERGE->value => BacklogFeatureTaskMergeCommand::class,
             BacklogCommandName::FEATURE_ASSIGN->value => BacklogFeatureAssignCommand::class,
-            BacklogCommandName::FEATURE_UNASSIGN->value => BacklogFeatureUnassignCommand::class,
+            BacklogCommandName::ENTRY_UNASSIGN->value => BacklogEntryUnassignCommand::class,
             BacklogCommandName::FEATURE_BLOCK->value => BacklogFeatureBlockCommand::class,
             BacklogCommandName::FEATURE_UNBLOCK->value => BacklogFeatureUnblockCommand::class,
             BacklogCommandName::FEATURE_LIST->value => BacklogFeatureListCommand::class,

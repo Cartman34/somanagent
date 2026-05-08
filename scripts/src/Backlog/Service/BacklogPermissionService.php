@@ -80,11 +80,23 @@ final class BacklogPermissionService
         }
     }
 
-    public function assertCanUnassignFeature(
+    /**
+     * Authorizes unassignment of a backlog entry (feature or task).
+     *
+     * Manager bypasses ownership checks. Developer is restricted to its own active entries
+     * and the --agent argument must match the developer agent code from SOMANAGER_AGENT.
+     *
+     * @param string $actorRole Caller role (manager or developer)
+     * @param ?string $actorAgent Caller agent code when actorRole is developer
+     * @param string $targetAgent Agent code passed via --agent
+     * @param string $entryRef Human-readable entry reference for error messages
+     * @param BoardEntry $entry Resolved backlog entry to unassign
+     */
+    public function assertCanUnassignEntry(
         string $actorRole,
         ?string $actorAgent,
         string $targetAgent,
-        string $feature,
+        string $entryRef,
         BoardEntry $entry
     ): void {
         if ($actorRole === self::ROLE_MANAGER) {
@@ -101,8 +113,8 @@ final class BacklogPermissionService
         $assignedAgent = $entry->getAgent();
         if ($assignedAgent !== $actorAgent) {
             throw new RuntimeException(sprintf(
-                'Feature %s is assigned to %s. Developer role can only unassign its own feature.',
-                $feature,
+                'Entry %s is assigned to %s. Developer role can only unassign its own entry.',
+                $entryRef,
                 $assignedAgent === null ? 'no agent' : $assignedAgent,
             ));
         }

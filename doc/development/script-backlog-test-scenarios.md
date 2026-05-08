@@ -212,18 +212,23 @@ Validate feature assignment and unassignment permissions.
 4. Inspect:
    - `php scripts/backlog.php status --agent d02`
 5. Unassign with manager role:
-   - `SOMANAGER_ROLE=manager php scripts/backlog.php feature-unassign test-assign-feature --agent d02`
+   - `SOMANAGER_ROLE=manager php scripts/backlog.php entry-unassign test-assign-feature --agent d02`
+6. Unassign a child task with manager role using `<feature/task>`:
+   - `SOMANAGER_ROLE=manager php scripts/backlog.php entry-unassign test-assign-feature/cleanup --agent d02`
+7. Unassign the agent's single active entry without an explicit reference:
+   - `SOMANAGER_ROLE=manager php scripts/backlog.php entry-unassign --agent d02`
 
 ### Expected checks
 
 - assignment updates `meta.agent`
 - target worktree is prepared for the assigned agent
-- unassignment removes the assignment cleanly
+- unassignment removes the assignment cleanly on a feature, on a task, and on the agent's single active entry resolved by `--agent`
 
 ### Negative checks
 
 1. As developer with mismatched `SOMANAGER_AGENT`, assignment must fail.
-2. As developer, unassigning another agent’s feature must fail.
+2. As developer, unassigning another agent's active entry (feature or task) must fail.
+3. A plain slug that matches both a feature and a task must be rejected as ambiguous.
 
 ## Scenario 7 - Start Scoped Feature And Local Child Task
 

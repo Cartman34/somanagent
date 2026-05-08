@@ -48,8 +48,20 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
         $driver->startNextFeature($context->agentPrimary);
         $driver->assignFeatureAsManager($context->assignFeature, $context->agentSecondary);
         $driver->assertStatusContains($context->agentSecondary, $context->assignFeature, true);
-        $driver->unassignFeatureAsManager($context->assignFeature, $context->agentSecondary);
+
+        $driver->unassignEntryAsManager($context->assignFeature, $context->agentSecondary);
         $driver->assignFeatureAsManager($context->assignFeature, $context->agentSecondary);
+
+        $driver->unassignEntryAsManager(null, $context->agentSecondary);
+        $driver->assignFeatureAsManager($context->assignFeature, $context->agentSecondary);
+
+        $driver->assertUnassignEntryFails(
+            $context->assignFeature,
+            $context->agentSecondary,
+            ['SOMANAGER_ROLE' => 'developer', 'SOMANAGER_AGENT' => $context->agentPrimary],
+            'Developer role can only unassign itself',
+        );
+
         $driver->releaseFeature($context->agentSecondary, $context->assignFeature);
         $driver->assertTodoContains($context->assignFeature);
         $driver->removeFirstTodoTask();

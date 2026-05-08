@@ -18,7 +18,7 @@ Read this file only when the active task requires developer workflow details.
 - `feature-release`
 - `feature-task-merge`
 - `feature-assign`
-- `feature-unassign`
+- `entry-unassign`
 - `feature-block`
 - `feature-unblock`
 - `feature-list`
@@ -158,13 +158,15 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 4. The script assigns the feature to that same agent and prepares the `WA`.
 5. For `kind=feature` containers created with `agent=none` (from a `[feature-slug][task-slug]`-prefixed task), this is the required step before running `review-request` on the feature. The developer takes integration ownership of the feature branch.
 
-### `feature-unassign`
+### `entry-unassign`
 
-1. Run `php scripts/backlog.php feature-unassign --agent=<code> [<feature>]`.
+1. Run `php scripts/backlog.php entry-unassign --agent=<code> [<feature>|<task>|<feature/task>]`.
 2. Export `SOMANAGER_ROLE=developer` and `SOMANAGER_AGENT=<code>` before running the command.
-3. Developer can only remove its own assignment from its own feature.
-4. The script removes the current agent assignment from the target feature and keeps the feature in its current backlog section.
-5. If this leaves behind an abandoned managed worktree under `.agent-worktrees/`, the script runs `worktree-clean` automatically.
+3. Without an explicit reference, the script resolves the single active entry assigned to the agent (task or feature).
+4. With a `<feature/task>` reference, the script targets that child task. With a plain slug, it tries feature first then task; a slug that matches both is rejected as ambiguous.
+5. Developer can only remove its own assignment from its own active entry, whether it is a `kind=task` or a `kind=feature`.
+6. The script removes the current agent assignment from the target entry and keeps the entry in its current backlog section.
+7. If this leaves behind an abandoned managed worktree under `.agent-worktrees/`, the script runs `worktree-clean` automatically.
 
 ### `feature-block`
 
@@ -220,7 +222,7 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 - Do not edit local backlog files directly.
 - A plain feature is considered done for Developer only when it is committed, mechanically valid, and passed to `meta.stage=review`.
 - A `kind=task` entry may be submitted for review with `review-request`, but it is considered done for Developer only when it is committed, mechanically valid, and merged locally into its parent feature branch with `feature-task-merge`.
-- For `feature-assign` and `feature-unassign`, `SOMANAGER_ROLE` must be `developer` and `SOMANAGER_AGENT` must match `--agent`.
+- For `feature-assign` and `entry-unassign`, `SOMANAGER_ROLE` must be `developer` and `SOMANAGER_AGENT` must match `--agent`.
 - User workflow keywords are procedural orders. For `next`, `submit`, `rework`, and `cleanup`, execute the documented command sequence exactly as written, even if memory suggests the feature state is inconsistent or unchanged.
 - If a needed backlog action is missing from `backlog.php`, stop and ask the user instead of editing the backlog manually.
 
