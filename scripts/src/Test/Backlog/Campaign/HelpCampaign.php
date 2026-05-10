@@ -22,5 +22,6 @@ final class HelpCampaign implements CampaignInterface
         $driver->runHelpChecks();
         $driver->runOptionEqualsChecks();
         $driver->runForceCurrentWorktreeFlagChecks();
+        $driver->runStrictOptionsChecks();
     }
 }

@@ -10,6 +10,8 @@ namespace SoManAgent\Script\Runner;
 use SoManAgent\Script\Backlog\BacklogCommandFactory;
 use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Service\BacklogCliOptionValidator;
+use SoManAgent\Script\Service\CommandHelpService;
 
 /**
  * Local backlog workflow orchestrator.
@@ -31,6 +33,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private ?string $worktreesRoot = null;
 
     private ?BacklogCommandFactory $commandFactory = null;
+    private ?BacklogCliOptionValidator $optionValidator = null;
 
     protected function getName(): string
     {
@@ -55,6 +58,16 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->configureExecutionModes($options);
         $this->configureTestFileOverrides($options);
 
+        try {
+            if ($command === '' || $command === BacklogCommandName::HELP->value) {
+                $this->optionValidator()->assertGlobalOptionsAccepted($options);
+            } else {
+                $this->optionValidator()->assertCommandOptionsAccepted($command, $options);
+            }
+        } catch (\Exception $e) {
+            $this->console->fail($e->getMessage());
+        }
+
         if ($command === '') {
             $this->printHelp();
 
@@ -74,7 +87,7 @@ final class BacklogRunner extends AbstractScriptRunner
             return 0;
         }
 
-        if (isset($options['help'])) {
+        if (isset($options[BacklogCliOption::HELP->value])) {
             $this->printCommandHelp($command);
 
             return 0;
@@ -188,6 +201,17 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         return $this->commandFactory;
+    }
+
+    private function optionValidator(): BacklogCliOptionValidator
+    {
+        if ($this->optionValidator === null) {
+            $this->optionValidator = new BacklogCliOptionValidator(
+                new CommandHelpService($this->projectRoot . '/scripts/resources'),
+            );
+        }
+
+        return $this->optionValidator;
     }
 
     private function initializeLocalFiles(): void

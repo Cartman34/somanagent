@@ -160,6 +160,47 @@ MD);
     }
 
     /**
+     * Verify the strict CLI option validator rejects unknown options on every entry path.
+     *
+     * Covers both the `--option=value` and `--option value` forms, the typo path
+     * (`--as=<code>` must fail rather than be silently dropped), and confirms that
+     * documented options (`--agent`, `--body-file`, `--branch-type`, `--base`) plus
+     * global ones (`--dry-run`, `--verbose`) remain accepted.
+     */
+    public function runStrictOptionsChecks(): void
+    {
+        $this->assertBacklogFails(
+            ['status', '--as=' . $this->context->agentPrimary],
+            'Unknown option(s) for command `status`: --as',
+        );
+        $this->assertBacklogFails(
+            ['status', '--as', $this->context->agentPrimary],
+            'Unknown option(s) for command `status`: --as',
+        );
+        $this->assertBacklogFails(
+            ['work-start', '--agent=' . $this->context->agentPrimary, '--unknown-flag'],
+            'Unknown option(s) for command `work-start`: --unknown-flag',
+        );
+        $this->assertBacklogFails(
+            ['--unknown-global'],
+            'Unknown global option(s): --unknown-global',
+        );
+        $this->assertBacklogFails(
+            ['help', '--unknown-global'],
+            'Unknown global option(s): --unknown-global',
+        );
+
+        $this->assertOutputContains(
+            $this->runBacklog(['status', '--agent=' . $this->context->agentPrimary, '--dry-run']),
+            '[Task]',
+        );
+        $this->assertOutputContains(
+            $this->runBacklog(['status', '--agent', $this->context->agentPrimary, '--verbose']),
+            '[Task]',
+        );
+    }
+
+    /**
      * @param string $text Task text to create
      */
     public function createTodoTask(string $text): void
