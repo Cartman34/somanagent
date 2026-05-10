@@ -185,12 +185,14 @@ Also check:
 1. Run `php scripts/backlog.php feature-merge <feature>`.
 2. Add `--body-file=<path>` only when the existing PR body must be replaced before merging.
 3. The script requires the feature to be in `meta.stage=approved`, merges the PR, removes the feature from the backlog, runs `worktree-clean`, deletes the branches, and frees the agent.
+4. If the merge aborts on a conflict, the entry stays in `approved`. The assigned developer must run `rework` on the same entry to move it back to `development`, fix the conflict, then resubmit through `review-request`.
 
 ### `feature-task-merge`
 
 1. Run `php scripts/backlog.php feature-task-merge <feature/task>`.
 2. The script requires a green mechanical review in the task worktree, then merges that child branch into its parent feature branch locally.
 3. The current task review stage does not gate this merge. Reviewer may merge a task on explicit user instruction whether it is in `development`, `review`, `rejected`, or `approved`.
+4. If the local merge aborts on a conflict on an `approved` task, the developer must run `rework` on that task to resume work, then resubmit.
 
 ## Rules
 
