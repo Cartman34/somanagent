@@ -100,7 +100,7 @@ final class BacklogCliOptionValidator
         $unknown = array_keys(array_diff_key($options, array_flip($allowed)));
         sort($unknown);
 
-        return array_values($unknown);
+        return $unknown;
     }
 
     /**
