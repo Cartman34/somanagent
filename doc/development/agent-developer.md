@@ -113,10 +113,11 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 ### `rework`
 
 1. Run `php scripts/backlog.php rework --agent=<code> [<feature>|<task>|<feature/task>]`.
-2. Without an explicit reference, the script resolves the single rejected entry (task or feature) assigned to the agent.
+2. Without an explicit reference, the script resolves the single reworkable entry (task or feature) assigned to the agent. An entry is reworkable when its stage is `rejected` or `approved`.
 3. With a `<feature/task>` reference, the script targets that child task. With a plain slug, it tries feature first then task, and errors if both match.
-4. The script requires the entry to be in `meta.stage=rejected`, moves it back to `meta.stage=development`, displays the stored review notes from `local/backlog-review.md`, and reopens the entry branch in the agent `WA`.
+4. The script requires the entry stage to be `rejected` or `approved`, moves it back to `meta.stage=development`, and reopens the entry branch in the agent `WA`. Stored review notes from `local/backlog-review.md` are displayed when the entry came from a rejection.
 5. The review notes stay in `local/backlog-review.md` until the next `review-request` clears them.
+6. When recovering from a merge conflict on an approved entry, `rework` keeps the existing GitHub PR untouched; resubmit through `review-request` once the conflict is fixed.
 
 ### `work-start`
 
@@ -246,10 +247,11 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 
 ### `rework`
 
-1. The review feedback is given with the `rework` instruction. The `rework` command provides the task status and review notes directly in its output. Do not run `status` or read `local/backlog-review.md` before proceeding.
-2. `WP`: run `php scripts/backlog.php rework --agent=<code> [<feature>|<task>|<feature/task>]`.
-3. `WA`: resume development on the same branch and address the recorded review feedback.
-4. Stop here. Do not run `submit` unless the user explicitly asks for it.
+1. Use this keyword in two scenarios: (a) after a reviewer rejection, and (b) after a merge conflict aborted `feature-merge` or `feature-task-merge` on an approved entry.
+2. For scenario (a), the review feedback is given with the `rework` instruction. The `rework` command output prints the stored review notes directly; do not run `status` or read `local/backlog-review.md` before proceeding.
+3. `WP`: run `php scripts/backlog.php rework --agent=<code> [<feature>|<task>|<feature/task>]`.
+4. `WA`: resume development on the same branch. Address the review feedback for scenario (a), or resolve the conflict for scenario (b).
+5. Stop here. Do not run `submit` unless the user explicitly asks for it.
 
 ### `cleanup`
 

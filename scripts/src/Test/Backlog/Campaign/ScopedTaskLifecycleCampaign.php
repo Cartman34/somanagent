@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Test\Backlog\Campaign;
 
 use SoManAgent\Script\Backlog\Command\BacklogReviewNotesCommand;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
 
@@ -46,7 +47,16 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
 
         $rejectBody = $driver->createBodyFile('test-task-review-reject.md', ['1. Reject child task for test workflow.']);
         $invalidRejectBody = $driver->createBodyFile('test-task-review-invalid.md', ['1. ### Task review']);
+
+        $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_IN_PROGRESS);
+        $driver->assertReworkFails($context->agentPrimary, $taskARef, 'rework only accepts');
+        $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_IN_PROGRESS);
+
         $driver->requestTaskReview($context->agentPrimary);
+        $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_IN_REVIEW);
+        $driver->assertReworkFails($context->agentPrimary, $taskARef, 'rework only accepts');
+        $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_IN_REVIEW);
+
         if (!str_contains($driver->reviewNext(), $taskARef)) {
             throw new \RuntimeException('Expected review-next to return the active task review.');
         }
@@ -56,10 +66,20 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->assertReviewContains($taskARef);
         $this->assertReviewNotesForTask($driver, $context, $taskARef, '1. Reject child task for test workflow.');
         $driver->rework($context->agentPrimary, $taskARef);
+        $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_IN_PROGRESS);
         $driver->requestTaskReview($context->agentPrimary);
         $driver->approveTask($taskARef);
         $driver->assertReviewMissing($taskARef);
         $this->assertReviewNotesAbsentForTask($driver, $taskARef);
+
+        $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_APPROVED);
+        // Auto-resolve path: rework --agent without explicit reference must pick the single approved entry.
+        $reworkApprovedOutput = $driver->runBacklog(['rework', '--agent', $context->agentPrimary]);
+        $driver->assertContains($reworkApprovedOutput, 'moved back to In development from Approved');
+        $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_IN_PROGRESS);
+        $driver->requestTaskReview($context->agentPrimary);
+        $driver->approveTask($taskARef);
+
         $driver->mergeTask($taskARef);
 
         $driver->createTodoTask(sprintf('[%s][%s] Implement test child task B', $context->scopedFeature, $context->childB));
