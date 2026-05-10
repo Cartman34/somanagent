@@ -466,6 +466,9 @@ Validate explicit failures and guardrails.
 7. Call `review-notes` with no `--agent` and no positional reference; confirm it fails with `review-notes requires either --agent=<code> or a reference …`.
 8. Call `review-notes does-not-exist`; confirm it fails with `No active entry found for reference: does-not-exist`.
 9. Set up an active feature and an active child task that share the same slug; call `review-notes <slug>`; confirm it fails with `Ambiguous reference <slug>: matches both a feature and a task.`.
+10. Call any backlog command with an unknown option such as `--as=<code>`; confirm it fails with `Unknown option(s) for command \`<command>\`: --as` instead of being silently ignored. Both `--as=<code>` and `--as <code>` must be rejected.
+11. Call a backlog command with a documented option (`--agent=<code>`, `--body-file=<path>`, `--branch-type=<value>`, `--base=<ref>`) and confirm it is accepted.
+12. Call `php scripts/backlog.php --unknown-global` and confirm it fails with `Unknown global option(s): --unknown-global`.
 
 ## Cleanup
 
