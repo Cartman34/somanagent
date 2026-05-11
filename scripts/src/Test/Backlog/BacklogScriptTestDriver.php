@@ -275,7 +275,7 @@ MD);
      *
      * @param ?string $reference Optional explicit reference (`<feature>`, `<task>`, or `<feature/task>`).
      *                           When null, the script falls back to the agent's single active entry.
-     * @param string $agent Agent code passed via `--agent`.
+     * @param string $agent Caller agent code passed via `--agent`.
      */
     public function unassignEntryAsManager(?string $reference, string $agent): void
     {
@@ -293,7 +293,7 @@ MD);
      * provided role/agent environment.
      *
      * @param ?string $reference Optional explicit reference (`<feature>`, `<task>`, or `<feature/task>`).
-     * @param string $agent Agent code passed via `--agent`.
+     * @param string $agent Caller agent code passed via `--agent`.
      * @param array<string, string> $env Environment variables (typically SOMANAGER_ROLE / SOMANAGER_AGENT).
      * @param string $needle Expected substring of the failure output.
      */

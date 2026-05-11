@@ -109,17 +109,19 @@ final class BacklogPermissionService
      *
      * Manager bypasses ownership checks. Developer is restricted to its own active entries
      * and the --agent argument must match the developer agent code from SOMANAGER_AGENT.
+     * For manager callers, --agent identifies the caller and does not restrict which
+     * resolved entry assignment may be removed.
      *
      * @param string $actorRole Caller role (manager or developer)
      * @param ?string $actorAgent Caller agent code when actorRole is developer
-     * @param string $targetAgent Agent code passed via --agent
+     * @param string $callerAgent Agent code passed via --agent
      * @param string $entryRef Human-readable entry reference for error messages
      * @param BoardEntry $entry Resolved backlog entry to unassign
      */
     public function assertCanUnassignEntry(
         string $actorRole,
         ?string $actorAgent,
-        string $targetAgent,
+        string $callerAgent,
         string $entryRef,
         BoardEntry $entry
     ): void {
@@ -127,7 +129,7 @@ final class BacklogPermissionService
             return;
         }
 
-        if ($actorAgent !== $targetAgent) {
+        if ($actorAgent !== $callerAgent) {
             throw new RuntimeException(sprintf(
                 'Developer role can only unassign itself. %s must match --agent.',
                 self::ENV_ACTIVE_AGENT,

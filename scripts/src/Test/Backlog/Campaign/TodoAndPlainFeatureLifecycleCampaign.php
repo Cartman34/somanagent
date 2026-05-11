@@ -17,6 +17,8 @@ use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
  */
 final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
 {
+    private const MANAGER_AGENT = 'test-m01';
+
     public function getName(): string
     {
         return 'todo-and-plain-feature-lifecycle';
@@ -49,7 +51,7 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
         $driver->assignFeatureAsManager($context->assignFeature, $context->agentSecondary);
         $driver->assertStatusContains($context->agentSecondary, $context->assignFeature, true);
 
-        $driver->unassignEntryAsManager($context->assignFeature, $context->agentSecondary);
+        $driver->unassignEntryAsManager($context->assignFeature, self::MANAGER_AGENT);
         $driver->assignFeatureAsManager($context->assignFeature, $context->agentSecondary);
 
         $driver->unassignEntryAsManager(null, $context->agentSecondary);
@@ -60,6 +62,12 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
             $context->agentSecondary,
             ['SOMANAGER_ROLE' => 'developer', 'SOMANAGER_AGENT' => $context->agentPrimary],
             'Developer role can only unassign itself',
+        );
+        $driver->assertUnassignEntryFails(
+            $context->assignFeature,
+            $context->agentPrimary,
+            ['SOMANAGER_ROLE' => 'developer', 'SOMANAGER_AGENT' => $context->agentPrimary],
+            sprintf('Entry %s is assigned to %s. Developer role can only unassign its own entry.', $context->assignFeature, $context->agentSecondary),
         );
 
         $driver->releaseFeature($context->agentSecondary, $context->assignFeature);

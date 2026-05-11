@@ -53,8 +53,8 @@ final class BacklogEntryUnassignCommand extends AbstractBacklogCommand
     public function handle(array $commandArgs, array $options): void
     {
         $actorRole = $this->permissionService->requireWorkflowRole();
-        $agent = $options['agent'] ?? null;
-        if (!is_string($agent)) {
+        $callerAgent = $options['agent'] ?? null;
+        if (!is_string($callerAgent)) {
             throw new RuntimeException('Option --agent is required.');
         }
         $board = $this->loadBoard();
@@ -62,7 +62,7 @@ final class BacklogEntryUnassignCommand extends AbstractBacklogCommand
         $reference = $commandArgs[0] ?? null;
         $entry = $reference !== null
             ? $this->resolveByReference($board, $reference)
-            : $this->resolveSingleActiveEntryForAgent($board, $agent);
+            : $this->resolveSingleActiveEntryForAgent($board, $callerAgent);
 
         $isTask = $this->boardService->checkIsTaskEntry($entry);
         $kind = $isTask ? 'task' : 'feature';
@@ -72,16 +72,17 @@ final class BacklogEntryUnassignCommand extends AbstractBacklogCommand
 
         $actorAgent = $actorRole === BacklogPermissionService::ROLE_DEVELOPER ? $this->permissionService->requireWorkflowAgent() : null;
 
-        $this->permissionService->assertCanUnassignEntry($actorRole, $actorAgent, $agent, $entryRef, $entry);
-        if ($entry->getAgent() !== $agent) {
-            throw new RuntimeException(sprintf('%s %s is not assigned to agent %s.', ucfirst($kind), $entryRef, $agent));
+        $this->permissionService->assertCanUnassignEntry($actorRole, $actorAgent, $callerAgent, $entryRef, $entry);
+        $assignedAgent = $entry->getAgent();
+        if ($assignedAgent === null) {
+            throw new RuntimeException(sprintf('%s %s is not assigned to any agent.', ucfirst($kind), $entryRef));
         }
 
         $entry->setAgent(null);
         $this->saveBoard($board, BacklogCommandName::ENTRY_UNASSIGN->value);
         $cleaned = $this->worktreeService->cleanupAbandonedManagedWorktrees($board);
 
-        $this->presenter->displaySuccess(sprintf('Unassigned %s %s from %s', $kind, $entryRef, $agent));
+        $this->presenter->displaySuccess(sprintf('Unassigned %s %s from %s', $kind, $entryRef, $assignedAgent));
         if ($cleaned > 0) {
             $this->presenter->displayLine(sprintf('Cleaned %d abandoned managed worktree%s.', $cleaned, $cleaned > 1 ? 's' : ''));
         }

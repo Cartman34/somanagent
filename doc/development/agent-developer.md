@@ -176,9 +176,10 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 2. Export `SOMANAGER_ROLE=developer` and `SOMANAGER_AGENT=<code>` before running the command.
 3. Without an explicit reference, the script resolves the single active entry assigned to the agent (task or feature).
 4. With a `<feature/task>` reference, the script targets that child task. With a plain slug, it tries feature first then task; a slug that matches both is rejected as ambiguous.
-5. Developer can only remove its own assignment from its own active entry, whether it is a `kind=task` or a `kind=feature`.
-6. The script removes the current agent assignment from the target entry and keeps the entry in its current backlog section.
-7. If this leaves behind an abandoned managed worktree under `.agent-worktrees/`, the script runs `worktree-clean` automatically.
+5. `--agent=<code>` identifies the developer caller and must match `SOMANAGER_AGENT`; it is not a separate target selector.
+6. Developer can only remove its own assignment from its own active entry, whether it is a `kind=task` or a `kind=feature`.
+7. The script removes the current agent assignment from the target entry and keeps the entry in its current backlog section.
+8. If this leaves behind an abandoned managed worktree under `.agent-worktrees/`, the script runs `worktree-clean` automatically.
 
 ### `feature-block`
 

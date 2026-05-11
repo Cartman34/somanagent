@@ -28,6 +28,7 @@ Read this file only when the active task requires backlog management or workflow
 
 - `Manager` can assign any feature to any developer agent.
 - `Manager` can unassign any active entry (feature or task) from any developer agent through `entry-unassign`.
+- For `entry-unassign`, `--agent=<code>` identifies the manager caller. Use an explicit `<feature>`, `<task>`, or `<feature/task>` reference to choose the entry to unassign.
 - For `feature-assign` and `entry-unassign`, export `SOMANAGER_ROLE=manager` before running `php scripts/backlog.php ...`.
 
 ## Guidance
