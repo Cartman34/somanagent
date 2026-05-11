@@ -76,7 +76,11 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
         $keepArtifacts = isset($options['keep-artifacts']);
         $runToken = sprintf('%s-%04d', date('YmdHis'), random_int(1000, 9999));
 
-        $worktreesRoot = $this->projectRoot . '/local/tmp/worktrees-' . $runToken;
+        $testWorktreesParent = $this->projectRoot . '/local/test-worktrees';
+        $this->sweepStaleTestWorktrees($testWorktreesParent);
+        $this->assertNoStaleTestWorktrees($testWorktreesParent);
+
+        $worktreesRoot = $testWorktreesParent . '/' . $runToken;
         if (!is_dir($worktreesRoot) && !mkdir($worktreesRoot, 0777, true) && !is_dir($worktreesRoot)) {
             throw new \RuntimeException("Unable to create temp worktrees directory: {$worktreesRoot}");
         }
@@ -213,6 +217,145 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
         }
 
         return $this->campaigns;
+    }
+
+    /**
+     * Remove worktrees and branches left behind by interrupted test runs under testWorktreesParent.
+     *
+     * Called at startup so that a previous Ctrl+C / kill before the finally block does not leave
+     * stale git worktrees registered for branches like feat/test-plain-feature-alpha, which would
+     * cause the next work-start to fail with "Branch X is active in a non-managed worktree".
+     */
+    private function sweepStaleTestWorktrees(string $testWorktreesParent): void
+    {
+        if (!is_dir($testWorktreesParent)) {
+            return;
+        }
+
+        exec('git worktree list --porcelain 2>&1', $lines, $code);
+        if ($code !== 0) {
+            $this->console->warn('[sweep] git worktree list failed; skipping stale test-worktree sweep');
+
+            return;
+        }
+
+        /** @var array<string, string|null> $staleWorktrees path => branch|null */
+        $staleWorktrees = [];
+        $currentPath = null;
+        $currentBranch = null;
+
+        foreach ($lines as $line) {
+            if (str_starts_with($line, 'worktree ')) {
+                $currentPath = substr($line, strlen('worktree '));
+                $currentBranch = null;
+            } elseif (str_starts_with($line, 'branch ')) {
+                $currentBranch = substr($line, strlen('branch refs/heads/'));
+            } elseif ($line === '' && $currentPath !== null) {
+                if (str_starts_with($currentPath, $testWorktreesParent . '/')) {
+                    $staleWorktrees[$currentPath] = $currentBranch;
+                }
+                $currentPath = null;
+                $currentBranch = null;
+            }
+        }
+        // Handle last entry when no trailing blank line is present
+        if ($currentPath !== null && str_starts_with($currentPath, $testWorktreesParent . '/')) {
+            $staleWorktrees[$currentPath] = $currentBranch;
+        }
+
+        if ($this->dryRun) {
+            foreach ($staleWorktrees as $path => $branch) {
+                $this->console->line(sprintf('[sweep][dry-run] would remove worktree %s (branch: %s)', $this->relativeProjectPath($path), $branch ?? '(detached)'));
+            }
+
+            return;
+        }
+
+        foreach ($staleWorktrees as $path => $branch) {
+            $rmOut = [];
+            exec(sprintf('git worktree remove --force %s 2>&1', escapeshellarg($path)), $rmOut, $rmCode);
+            if ($rmCode === 0) {
+                $this->console->line(sprintf('[sweep] removed worktree: %s', $this->relativeProjectPath($path)));
+                if ($branch !== null && $branch !== '') {
+                    $branchOut = [];
+                    exec(sprintf('git branch -D %s 2>&1', escapeshellarg($branch)), $branchOut, $branchCode);
+                    if ($branchCode === 0) {
+                        $this->console->line(sprintf('[sweep] deleted branch: %s', $branch));
+                    } else {
+                        $this->console->warn(sprintf('[sweep] failed to delete branch %s: %s', $branch, implode(' ', $branchOut)));
+                    }
+                }
+            } else {
+                $this->console->warn(sprintf('[sweep] failed to remove worktree %s: %s', $this->relativeProjectPath($path), implode(' ', $rmOut)));
+            }
+        }
+
+        if ($staleWorktrees !== []) {
+            exec('git worktree prune 2>&1');
+        }
+
+        // Remove any leftover run directories whose worktrees were already deregistered or never created
+        foreach (glob($testWorktreesParent . '/*') ?: [] as $entry) {
+            if (!is_dir($entry)) {
+                continue;
+            }
+            $rmdirOut = [];
+            exec(sprintf('rm -rf %s 2>&1', escapeshellarg($entry)), $rmdirOut, $rmdirCode);
+            if ($rmdirCode === 0) {
+                $this->console->line(sprintf('[sweep] removed stale run dir: %s', $this->relativeProjectPath($entry)));
+            } else {
+                $this->console->warn(sprintf('[sweep] failed to remove stale run dir: %s', $this->relativeProjectPath($entry)));
+            }
+        }
+    }
+
+    /**
+     * Assert that no stale test worktrees remain registered after the sweep.
+     *
+     * Fails fast with a diagnostic message so a broken sweep is visible immediately
+     * rather than surfacing as a confusing "branch is active in a non-managed worktree" error.
+     */
+    private function assertNoStaleTestWorktrees(string $testWorktreesParent): void
+    {
+        if ($this->dryRun) {
+            return;
+        }
+
+        exec('git worktree list --porcelain 2>&1', $lines, $code);
+        if ($code !== 0) {
+            return;
+        }
+
+        $remaining = [];
+        $currentPath = null;
+
+        foreach ($lines as $line) {
+            if (str_starts_with($line, 'worktree ')) {
+                $currentPath = substr($line, strlen('worktree '));
+            } elseif ($line === '' && $currentPath !== null) {
+                if (str_starts_with($currentPath, $testWorktreesParent . '/')) {
+                    $remaining[] = $this->relativeProjectPath($currentPath);
+                }
+                $currentPath = null;
+            }
+        }
+        if ($currentPath !== null && str_starts_with($currentPath, $testWorktreesParent . '/')) {
+            $remaining[] = $this->relativeProjectPath($currentPath);
+        }
+
+        if ($remaining !== []) {
+            throw new \RuntimeException(sprintf(
+                'Stale test worktrees remain after sweep — cannot start a new run safely. Remove manually: %s',
+                implode(', ', $remaining),
+            ));
+        }
+    }
+
+    private function relativeProjectPath(string $path): string
+    {
+        $prefix = $this->projectRoot . '/';
+
+        return str_starts_with($path, $prefix) ? substr($path, strlen($prefix)) : $path;
     }
 
     private function logVerbose(string $message): void
