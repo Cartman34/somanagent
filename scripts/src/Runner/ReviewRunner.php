@@ -120,6 +120,7 @@ final class ReviewRunner extends AbstractScriptRunner
 
     /**
      * @param array<string> $args
+     * @deprecated Use parseArgs() instead.
      */
     private function parseBaseOption(array $args): ?string
     {

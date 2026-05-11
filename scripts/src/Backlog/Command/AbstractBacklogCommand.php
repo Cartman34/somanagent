@@ -29,6 +29,9 @@ abstract class AbstractBacklogCommand
 
     protected ?string $reviewFilePath = null;
 
+    /**
+     * AbstractBacklogCommand constructor.
+     */
     public function __construct(BacklogPresenter $presenter, bool $dryRun, string $projectRoot, BacklogBoardService $boardService)
     {
         $this->presenter = $presenter;
@@ -37,11 +40,17 @@ abstract class AbstractBacklogCommand
         $this->boardService = $boardService;
     }
 
+    /**
+     * Sets the backlog board path.
+     */
     public function setBoardPath(string $boardPath): void
     {
         $this->boardPath = $boardPath;
     }
 
+    /**
+     * Sets the review file path.
+     */
     public function setReviewFilePath(string $reviewFilePath): void
     {
         $this->reviewFilePath = $reviewFilePath;
@@ -51,7 +60,7 @@ abstract class AbstractBacklogCommand
      * Executes the command logic.
      *
      * @param array<string> $commandArgs
-     * @param array<string, string|bool> $options
+     * @param array<string, bool|string|array<bool|string>> $options
      * @throws \Exception
      */
     abstract public function handle(array $commandArgs, array $options): void;

@@ -37,7 +37,7 @@ final class BacklogCliOptionValidator
      * parsed map, so this check covers both shapes.
      *
      * @param string $command The dispatched backlog command name
-     * @param array<string, bool|string> $options Parsed option map from the CLI
+     * @param array<string, bool|string|array<bool|string>> $options Parsed option map from the CLI
      * @throws RuntimeException When at least one option key is not accepted for the command
      */
     public function assertCommandOptionsAccepted(string $command, array $options): void
@@ -60,7 +60,7 @@ final class BacklogCliOptionValidator
      * Used for the help-only paths (no command, or `help [<command>]`) where per-command
      * options are not in scope.
      *
-     * @param array<string, bool|string> $options Parsed option map from the CLI
+     * @param array<string, bool|string|array<bool|string>> $options Parsed option map from the CLI
      * @throws RuntimeException When at least one option key is not a global option
      */
     public function assertGlobalOptionsAccepted(array $options): void
@@ -91,7 +91,7 @@ final class BacklogCliOptionValidator
     }
 
     /**
-     * @param array<string, bool|string> $options
+     * @param array<string, bool|string|array<bool|string>> $options
      * @param list<string> $allowed
      * @return list<string>
      */

@@ -39,15 +39,15 @@ final class GitHubRunner extends AbstractScriptRunner
      */
     public function run(array $args): int
     {
-        $command = array_shift($args) ?? '';
+        [$positional, $flags] = $this->parseArgs(array_values($args));
+        $command = array_shift($positional) ?? '';
 
-        if (in_array('--help', $args, true) || in_array('-h', $args, true)) {
+        if (isset($flags['help']) || isset($flags['h'])) {
             $this->printCommandHelp($command);
 
             return 0;
         }
 
-        $flags = $this->parseFlags($args);
         $this->configureExecutionModes($flags);
 
         if (!$this->dryRun) {
@@ -56,12 +56,12 @@ final class GitHubRunner extends AbstractScriptRunner
 
         try {
             match ($command) {
-                GitHubCommandName::PR_CREATE->value => $this->handleCreate(array_values($args), $flags),
-                GitHubCommandName::PR_MERGE->value  => $this->handleMerge(array_values($args), $flags),
-                GitHubCommandName::PR_CLOSE->value  => $this->handleClose(array_values($args)),
-                GitHubCommandName::PR_EDIT->value   => $this->handleEdit(array_values($args), $flags),
+                GitHubCommandName::PR_CREATE->value => $this->handleCreate($positional, $flags),
+                GitHubCommandName::PR_MERGE->value  => $this->handleMerge($positional, $flags),
+                GitHubCommandName::PR_CLOSE->value  => $this->handleClose($positional),
+                GitHubCommandName::PR_EDIT->value   => $this->handleEdit($positional, $flags),
                 GitHubCommandName::PR_LIST->value   => $this->handleList(),
-                GitHubCommandName::PR_VIEW->value   => $this->handleView(array_values($args)),
+                GitHubCommandName::PR_VIEW->value   => $this->handleView($positional),
                 default                             => throw new \RuntimeException(sprintf(
                     'Unknown command: %s. Available: %s',
                     $command,
@@ -77,20 +77,19 @@ final class GitHubRunner extends AbstractScriptRunner
 
     /**
      * @param list<string> $args
-     * @param array<string, string|true> $flags
+     * @param array<string, bool|string|array<bool|string>> $flags
      */
     private function handleCreate(array $args, array $flags): void
     {
-        $title    = $flags['title']     ?? null;
-        $head     = $flags['head']      ?? null;
-        $base     = $flags['base']      ?? GitService::MAIN_BRANCH;
-        $bodyFile = $flags['body-file'] ?? null;
+        $title    = $this->getSingleOption($flags, 'title');
+        $head     = $this->getSingleOption($flags, 'head');
+        $base     = $this->getSingleOption($flags, 'base') ?? GitService::MAIN_BRANCH;
+        $bodyFile = $this->getSingleOption($flags, 'body-file');
 
         if (is_string($bodyFile)) {
             $body = $this->readBodyFile($bodyFile);
         } else {
-            $bodyValue = $flags['body'] ?? '';
-            $body = is_string($bodyValue) ? $bodyValue : '';
+            $body = $this->getSingleOption($flags, 'body') ?? '';
         }
 
         if (!$title) {
@@ -102,7 +101,7 @@ final class GitHubRunner extends AbstractScriptRunner
         }
 
         if ($this->dryRun) {
-            $this->console->ok(sprintf('Dry-run: would create PR from %s to %s.', $head, $base));
+            $this->console->ok(sprintf('Dry-run: would create PR from %s to %s.', (string) $head, (string) $base));
 
             return;
         }
@@ -124,7 +123,7 @@ final class GitHubRunner extends AbstractScriptRunner
 
     /**
      * @param list<string> $args
-     * @param array<string, string|true> $flags
+     * @param array<string, bool|string|array<bool|string>> $flags
      */
     private function handleMerge(array $args, array $flags): void
     {
@@ -167,7 +166,7 @@ final class GitHubRunner extends AbstractScriptRunner
 
     /**
      * @param list<string> $args
-     * @param array<string, string|true> $flags
+     * @param array<string, bool|string|array<bool|string>> $flags
      */
     private function handleEdit(array $args, array $flags): void
     {
@@ -179,14 +178,18 @@ final class GitHubRunner extends AbstractScriptRunner
 
         $patch = [];
 
-        if (isset($flags['title'])) {
-            $patch['title'] = $flags['title'];
+        $title = $this->getSingleOption($flags, 'title');
+        if ($title !== null) {
+            $patch['title'] = $title;
         }
 
-        if (isset($flags['body-file'])) {
-            $patch['body'] = $this->readBodyFile((string) $flags['body-file']);
-        } elseif (isset($flags['body'])) {
-            $patch['body'] = $flags['body'];
+        $bodyFile = $this->getSingleOption($flags, 'body-file');
+        $body = $this->getSingleOption($flags, 'body');
+
+        if (is_string($bodyFile)) {
+            $patch['body'] = $this->readBodyFile($bodyFile);
+        } elseif (is_string($body)) {
+            $patch['body'] = $body;
         }
 
         if (empty($patch)) {
@@ -202,8 +205,8 @@ final class GitHubRunner extends AbstractScriptRunner
         $this->console->step("Editing PR #{$number}");
         $pr = $this->api('PATCH', "/pulls/{$number}", $patch);
 
-        if (isset($flags['body-file'])) {
-            $this->deleteBodyFile((string) $flags['body-file']);
+        if (is_string($bodyFile)) {
+            $this->deleteBodyFile($bodyFile);
         }
 
         $this->console->ok("PR #{$number} updated: {$pr['html_url']}");
@@ -261,37 +264,9 @@ final class GitHubRunner extends AbstractScriptRunner
     }
 
     /**
-     * Parse --flag value pairs from remaining args.
-     *
-     * @param array<string> $args
-     * @return array<string, mixed>
-     */
-    private function parseFlags(array $args): array
-    {
-        $flags = [];
-        $i = 0;
-        while ($i < count($args)) {
-            $arg = $args[$i];
-            if (str_starts_with($arg, '--')) {
-                $key = ltrim($arg, '-');
-                $val = $args[$i + 1] ?? true;
-                if ($val !== true && str_starts_with((string) $val, '--')) {
-                    $val = true;
-                } else {
-                    $i++;
-                }
-                $flags[$key] = $val;
-            }
-            $i++;
-        }
-        return $flags;
-    }
-
-    /**
-     * Call the GitHub REST API.
+     * Performs a GitHub API request via curl.
      *
      * @param array<string, mixed> $body
-     *
      * @return array<string, mixed>
      */
     private function api(string $method, string $path, array $body = []): array
@@ -332,6 +307,9 @@ final class GitHubRunner extends AbstractScriptRunner
         $code     = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
         $data = json_decode($response, true) ?? [];
+        if (!is_array($data)) {
+            $data = ['message' => $response];
+        }
         if ($code >= 400) {
             $message = $data['message'] ?? $response;
 
@@ -360,6 +338,7 @@ final class GitHubRunner extends AbstractScriptRunner
 
             throw new \RuntimeException("GitHub API error {$code}: {$message}");
         }
+        /** @var array<string, mixed> $data */
         return $data;
     }
 

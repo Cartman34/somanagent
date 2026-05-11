@@ -66,10 +66,12 @@ final class ClaudeAuthRunner extends AbstractScriptRunner
      */
     public function run(array $args): int
     {
-        $command = $args[0] ?? 'status';
-        $force   = in_array('--force', $args, true);
-        $baseUrl = $this->parseOption($args, '--url', 'http://localhost:8080');
-        $model   = $this->parseOption($args, '--model', '');
+        [$positional, $options] = $this->parseArgs(array_values($args));
+
+        $command = $positional[0] ?? 'status';
+        $force   = isset($options['force']);
+        $baseUrl = $this->getSingleOption($options, 'url') ?? 'http://localhost:8080';
+        $model   = $this->getSingleOption($options, 'model') ?? '';
 
         if ($command === 'test') {
             return $this->runTest($baseUrl, $model !== '' ? $model : null);
@@ -134,24 +136,6 @@ final class ClaudeAuthRunner extends AbstractScriptRunner
 
         $this->console->line('  ❌ Test failed: ' . ($data['error'] ?? 'unknown error'));
         return 1;
-    }
-
-    /**
-     * Parses a named option from CLI arguments and returns its value or the given default.
-     *
-     * @param array<string> $args
-     */
-    private function parseOption(array $args, string $name, string $default): string
-    {
-        foreach ($args as $i => $arg) {
-            if ($arg === $name && isset($args[$i + 1])) {
-                return $args[$i + 1];
-            }
-            if (str_starts_with($arg, $name . '=')) {
-                return substr($arg, strlen($name) + 1);
-            }
-        }
-        return $default;
     }
 
     /**

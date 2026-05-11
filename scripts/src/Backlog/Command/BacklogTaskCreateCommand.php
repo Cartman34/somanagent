@@ -28,12 +28,8 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
      * @param string $projectRoot
      * @param BacklogBoardService $boardService
      */
-    public function __construct(
-        BacklogPresenter $presenter,
-        bool $dryRun,
-        string $projectRoot,
-        BacklogBoardService $boardService
-    ) {
+    public function __construct(BacklogPresenter $presenter, bool $dryRun, string $projectRoot, BacklogBoardService $boardService)
+    {
         parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
     }
 
@@ -44,7 +40,7 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
      * embedded newlines) or `--body-file=<path>` for longer multi-line bodies.
      *
      * @param list<string> $commandArgs
-     * @param array<string, string|bool> $options
+     * @param array<string, bool|string|array<bool|string>> $options
      */
     public function handle(array $commandArgs, array $options): void
     {
@@ -64,7 +60,7 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
      * Builds a board entry from the positional arguments or from --body-file.
      *
      * @param array<int, string> $commandArgs
-     * @param array<string, string|bool> $options
+     * @param array<string, bool|string|array<bool|string>> $options
      */
     private function buildEntryFromInput(array $commandArgs, array $options): BoardEntry
     {
@@ -117,11 +113,15 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
     /**
      * Resolves the 0-based insertion index for task-create from options.
      *
-     * @param array<string, string|bool> $options
+     * @param array<string, bool|string|array<bool|string>> $options
      */
     private function resolveTaskCreatePosition(array $options, int $entryCount): int
     {
-        $position = (string) ($options['position'] ?? self::POSITION_END);
+        $rawPosition = $options['position'] ?? self::POSITION_END;
+        if (is_array($rawPosition)) {
+            throw new \RuntimeException('Option --position cannot be repeated.');
+        }
+        $position = (string) $rawPosition;
         if (!in_array($position, [
             self::POSITION_START,
             self::POSITION_INDEX,
@@ -138,11 +138,15 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
             return $entryCount;
         }
 
-        $rawIndex = (int) ($options['index'] ?? 0);
-        if ($rawIndex <= 0) {
+        $rawIndex = $options['index'] ?? 0;
+        if (is_array($rawIndex)) {
+            throw new \RuntimeException('Option --index cannot be repeated.');
+        }
+        $index = (int) $rawIndex;
+        if ($index <= 0) {
             throw new \RuntimeException('task-create with --position=index requires --index=<positive-number>.');
         }
 
-        return min($entryCount, $rawIndex - 1);
+        return min($entryCount, $index - 1);
     }
 }

@@ -46,7 +46,8 @@ final class HealthRunner extends AbstractScriptRunner
      */
     public function run(array $args): int
     {
-        $baseUrl = $this->parseBaseUrl($args);
+        [, $options] = $this->parseArgs(array_values($args));
+        $baseUrl = $this->getSingleOption($options, 'url') ?? 'http://localhost:8080';
 
         $this->console->step("Checking SoManAgent ($baseUrl)");
 
@@ -66,22 +67,6 @@ final class HealthRunner extends AbstractScriptRunner
     }
 
     /**
-     * Parse --url flag from CLI arguments.
-     *
-     * @param array<string> $args
-     */
-    private function parseBaseUrl(array $args): string
-    {
-        $baseUrl = 'http://localhost:8080';
-        foreach ($args as $i => $arg) {
-            if ($arg === '--url' && isset($args[$i + 1])) {
-                $baseUrl = $args[$i + 1];
-            }
-        }
-        return $baseUrl;
-    }
-
-    /**
      * Performs a GET request and decodes the JSON response.
      *
      * @return array<mixed>
@@ -89,15 +74,25 @@ final class HealthRunner extends AbstractScriptRunner
      */
     private function httpGet(string $url, int $timeout = 10): array
     {
-        $ctx = stream_context_create(['http' => ['timeout' => $timeout, 'ignore_errors' => true]]);
+        $ctx = stream_context_create([
+            'http' => [
+                'timeout'       => $timeout,
+                'ignore_errors' => true,
+            ],
+        ]);
+
         $raw = @file_get_contents($url, false, $ctx);
+
         if ($raw === false) {
             throw new \RuntimeException("Cannot reach $url");
         }
+
         $data = json_decode($raw, true);
-        if ($data === null) {
+
+        if (!is_array($data)) {
             throw new \RuntimeException("Non-JSON response from $url");
         }
+
         return $data;
     }
 }

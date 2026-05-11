@@ -71,7 +71,11 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
             throw new \RuntimeException('This script only accepts named options. Use --campaign=<name>.');
         }
 
-        $requestedCampaign = trim((string) ($options['campaign'] ?? 'all'));
+        $rawCampaign = $options['campaign'] ?? 'all';
+        if (is_array($rawCampaign)) {
+            throw new \RuntimeException('Option --campaign cannot be repeated.');
+        }
+        $requestedCampaign = trim((string) $rawCampaign);
         $allowRemote = isset($options['allow-remote']);
         $keepArtifacts = isset($options['keep-artifacts']);
         $runToken = sprintf('%s-%04d', date('YmdHis'), random_int(1000, 9999));
@@ -125,43 +129,6 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
         $this->console->ok('Backlog workflow test campaign(s) completed.');
 
         return 0;
-    }
-
-    /**
-     * @param list<string> $args
-     * @return array{0: list<string>, 1: array<string, string|bool>}
-     */
-    private function parseArgs(array $args): array
-    {
-        $commandArgs = [];
-        $options = [];
-
-        while ($args !== []) {
-            $arg = $args[0];
-            array_shift($args);
-
-            if (str_starts_with($arg, '--')) {
-                $option = substr($arg, 2);
-                if (str_contains($option, '=')) {
-                    [$key, $value] = explode('=', $option, 2);
-                    $options[$key] = $value;
-                    continue;
-                }
-
-                $next = $args[0] ?? null;
-                if ($next !== null && !str_starts_with($next, '--')) {
-                    $options[$option] = $next;
-                    array_shift($args);
-                } else {
-                    $options[$option] = true;
-                }
-                continue;
-            }
-
-            $commandArgs[] = $arg;
-        }
-
-        return [$commandArgs, $options];
     }
 
     /**
