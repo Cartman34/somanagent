@@ -112,6 +112,8 @@ Rules:
 
 ### `task-review-check`
 
+> Compatible wrapper — prefer `review-check --agent=<reviewer> <feature/task>`.
+
 1. Run `php scripts/backlog.php task-review-check <feature/task>`.
 2. The script checks the mechanical review in the assigned developer `WA` of that task.
 3. Accepts tasks in the `review` or `reviewing` stage.
@@ -120,12 +122,16 @@ Rules:
 
 ### `task-review-reject`
 
+> Compatible wrapper — prefer `review-reject --agent=<reviewer> <feature/task> --body-file=<path>`.
+
 1. Prepare the review body file under `local/tmp/`: one plain finding per line, optional leading numbers or bullets, no Markdown headings.
 2. Run `php scripts/backlog.php task-review-reject <feature/task> --body-file=<path>`.
 3. The script sets `meta.stage=rejected` and overwrites the `### <feature>/<task>` section in `local/backlog-review.md`.
 4. Developers resume corrections on that task through `php scripts/backlog.php rework --agent=<code> [<task>|<feature/task>]`.
 
 ### `task-review-approve`
+
+> Compatible wrapper — prefer `review-approve --agent=<reviewer> <feature/task>`.
 
 1. Run `php scripts/backlog.php task-review-approve <feature/task>`.
 2. The script sets `meta.stage=approved` and clears any existing `### <feature>/<task>` section in `local/backlog-review.md`.
@@ -178,6 +184,8 @@ Rules:
 
 ### `feature-review-check`
 
+> Compatible wrapper — prefer `review-check --agent=<reviewer> <feature>`.
+
 1. Run `php scripts/backlog.php feature-review-check <feature>`.
 2. The script checks the mechanical review in the assigned developer `WA` of that feature.
 3. Accepts features in the `review` or `reviewing` stage.
@@ -201,12 +209,16 @@ Also check:
 
 ### `feature-review-reject`
 
+> Compatible wrapper — prefer `review-reject --agent=<reviewer> <feature> --body-file=<path>`.
+
 1. Prepare the review body file under `local/tmp/`: one plain finding per line, optional leading numbers or bullets, no Markdown headings.
 2. Run `php scripts/backlog.php feature-review-reject <feature> --body-file=<path>`.
 3. The script sets `meta.stage=rejected` and overwrites the `### <feature>` section in `local/backlog-review.md`.
 4. Developers resume corrections through `php scripts/backlog.php rework --agent=<code> [<feature>]`.
 
 ### `feature-review-approve`
+
+> Compatible wrapper — prefer `review-approve --agent=<reviewer> <feature> --body-file=<path>`.
 
 1. Prepare the approved PR body file under `local/tmp/`.
 2. Run `php scripts/backlog.php feature-review-approve <feature> --body-file=<path>`.

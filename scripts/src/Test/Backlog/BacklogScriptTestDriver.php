@@ -121,6 +121,9 @@ MD);
         $this->assertOutputContains($this->runBacklog(['work-start', '--help']), 'work-start');
         $this->assertOutputContains($this->runBacklog(['help', 'entry-merge']), 'entry-merge');
         $this->assertOutputContains($this->runBacklog(['help', 'review-request']), 'review-request');
+        $this->assertOutputContains($this->runBacklog(['help', 'review-check']), 'review-check');
+        $this->assertOutputContains($this->runBacklog(['help', 'review-approve']), 'review-approve');
+        $this->assertOutputContains($this->runBacklog(['help', 'review-reject']), 'review-reject');
     }
 
     /**
@@ -198,6 +201,10 @@ MD);
         $this->assertOutputContains(
             $this->runBacklog(['status', '--agent', $this->context->agentPrimary, '--verbose']),
             '[Task]',
+        );
+        $this->assertBacklogFails(
+            ['review-check', '--as=' . $this->context->agentPrimary],
+            'Unknown option(s) for command `review-check`: --as',
         );
     }
 
