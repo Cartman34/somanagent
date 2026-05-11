@@ -16,7 +16,7 @@ Read this file only when the active task requires developer workflow details.
 - `entry-rename`
 - `work-start`
 - `feature-release`
-- `feature-task-merge`
+- `entry-merge`
 - `feature-assign`
 - `entry-unassign`
 - `feature-block`
@@ -153,10 +153,10 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 3. A parent `kind=feature` cannot be released while child `kind=task` entries are still active for that feature.
 4. The script then removes the managed worktree and deletes the untouched local branch.
 
-### `feature-task-merge`
+### `entry-merge`
 
-1. Run `php scripts/backlog.php feature-task-merge --agent=<code> [<task>|<feature/task>]`.
-2. The script targets the agent's active `kind=task` entry, or the explicit task reference when provided.
+1. Run `php scripts/backlog.php entry-merge <feature/task> --agent=<code>`.
+2. The script targets the explicit `<feature/task>` reference.
 3. The script requires a green mechanical review in the task worktree, then merges the child branch into the parent feature branch locally from the parent feature worktree or from a temporary merge worktree.
 4. The current task review stage does not gate this merge. `development`, `review`, `rejected`, and `approved` are all mergeable when the user explicitly asks for `merge`.
 5. The child task entry is removed from `## In progress` after the local merge. The child task worktree is removed when that agent no longer owns any active task.
@@ -236,7 +236,7 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 - An agent can have at most one active entry (`kind=task` or `kind=feature`) at a time. `work-start` and `feature-assign` enforce this at the script level and will refuse with the current active entry details and the required next step.
 - Do not edit local backlog files directly.
 - A plain feature is considered done for Developer only when it is committed, mechanically valid, and passed to `meta.stage=review`.
-- A `kind=task` entry may be submitted for review with `review-request`, but it is considered done for Developer only when it is committed, mechanically valid, and merged locally into its parent feature branch with `feature-task-merge`.
+- A `kind=task` entry may be submitted for review with `review-request`, but it is considered done for Developer only when it is committed, mechanically valid, and merged locally into its parent feature branch with `entry-merge`.
 - For `feature-assign` and `entry-unassign`, `SOMANAGER_ROLE` must be `developer` and `SOMANAGER_AGENT` must match `--agent`.
 - User workflow keywords are procedural orders. For `next`, `submit`, `rework`, and `cleanup`, execute the documented command sequence exactly as written, even if memory suggests the feature state is inconsistent or unchanged.
 - If a needed backlog action is missing from `backlog.php`, stop and ask the user instead of editing the backlog manually.
@@ -258,12 +258,12 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 
 ### `merge`
 
-1. `WP`: if the active entry is `kind=task`, run `php scripts/backlog.php feature-task-merge --agent=<code> [<task>|<feature/task>]`.
+1. `WP`: if the active entry is `kind=task`, run `php scripts/backlog.php entry-merge <feature/task> --agent=<code>`.
 2. This keyword merges the local task only on explicit user instruction; it is not implied by `submit`.
 
 ### `rework`
 
-1. Use this keyword in two scenarios: (a) after a reviewer rejection, and (b) after a merge conflict aborted `feature-merge` or `feature-task-merge` on an approved entry.
+1. Use this keyword in two scenarios: (a) after a reviewer rejection, and (b) after a merge conflict aborted `entry-merge` on an approved entry.
 2. For scenario (a), the review feedback is given with the `rework` instruction. The `rework` command output prints the stored review notes directly; do not run `status` or read `local/backlog-review.md` before proceeding.
 3. `WP`: run `php scripts/backlog.php rework --agent=<code> [<feature>|<task>|<feature/task>]`.
 4. `WA`: resume development on the same branch. Address the review feedback for scenario (a), or resolve the conflict for scenario (b).

@@ -1,17 +1,4 @@
-description: 'Merge one approved feature and remove it from the backlog'
-arguments:
-  -
-    name: '<feature>'
-    description: 'Feature slug to merge'
-options:
-  -
-    name: '--body-file'
-    description: 'Optional local file used to update the PR body before merge'
-examples:
-  - 'php scripts/backlog.php feature-merge delete-question-reply'
-  - 'php scripts/backlog.php feature-merge delete-question-reply --body-file local/tmp/pr_body.md'
+description: 'Deprecated. Use entry-merge instead.'
 notes:
-  - 'The feature must already be approved, unblocked, and have no active local child tasks.'
-  - 'Requires an open PR for the feature branch.'
-  - 'When --body-file is omitted, the existing PR title and body are left unchanged.'
-  - 'After the remote merge, removes the feature from backlog state and deletes the local and remote feature branches.'
+  - 'This command is no longer available as a public command.'
+  - 'Use: php scripts/backlog.php entry-merge <feature> --agent=<reviewer>'

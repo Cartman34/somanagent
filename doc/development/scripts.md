@@ -86,7 +86,7 @@ php scripts/backlog.php review-request --agent agent-01
 php scripts/backlog.php entry-rename --agent agent-01 "New description"
 php scripts/backlog.php task-review-approve my-feature/my-task
 php scripts/backlog.php rework --agent agent-01 my-feature/my-task
-php scripts/backlog.php feature-task-merge my-feature/my-task
+php scripts/backlog.php entry-merge my-feature/my-task --agent agent-01
 php scripts/backlog.php worktree-restore --agent agent-01 --force
 ```
 
