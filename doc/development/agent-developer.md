@@ -227,6 +227,9 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 1. Run `php scripts/backlog.php review-request --agent=<code>`.
 2. The script resolves the agent's single active entry automatically: if `kind=task`, submits the task for review; if `kind=feature`, submits the feature for review.
 3. For `kind=feature`, requires all child `kind=task` entries to have been merged locally first, and requires the agent to be assigned to the feature via `feature-assign`.
+4. Before running the mechanical review, the script rebases the entry branch automatically: a `kind=feature` is rebased on `origin/main` (with `origin/main` refreshed first), a `kind=task` is rebased on its local parent feature branch.
+5. After a successful rebase, `meta.base` is refreshed automatically to the new base commit. Manual `base-update` is not required after `review-request` succeeds.
+6. If the rebase fails (typically a conflict), the rebase is aborted, the command stops with a recovery hint, the entry stays in `development`, and the mechanical review is not run. Resolve the conflict manually in the worktree, commit, then rerun `review-request`.
 
 ## Rules
 

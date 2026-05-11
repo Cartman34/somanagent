@@ -14,13 +14,22 @@ use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
+use SoManAgent\Script\Service\GitService;
 
 /**
  * Unified review-request command: submits the agent's single active entry (task or feature) for review.
+ *
+ * Before running the mechanical review, the entry branch is rebased automatically
+ * (feature on `origin/main`, task on its parent feature branch). On a rebase
+ * conflict the command aborts, leaves the entry in `development`, and surfaces
+ * the recovery hint without running the mechanical review. After a successful
+ * rebase, `meta.base` is refreshed with the new base commit.
  */
 final class BacklogReviewRequestCommand extends AbstractBacklogCommand
 {
     private BacklogWorktreeService $worktreeService;
+
+    private GitService $gitService;
 
     /**
      * @param BacklogPresenter $presenter
@@ -28,16 +37,19 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
      * @param string $projectRoot
      * @param BacklogBoardService $boardService
      * @param BacklogWorktreeService $worktreeService
+     * @param GitService $gitService
      */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
         BacklogBoardService $boardService,
-        BacklogWorktreeService $worktreeService
+        BacklogWorktreeService $worktreeService,
+        GitService $gitService
     ) {
         parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
         $this->worktreeService = $worktreeService;
+        $this->gitService = $gitService;
     }
 
     /**
@@ -75,8 +87,10 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
         $review = $this->loadReviewFile();
 
         $taskWorktree = $this->worktreeService->prepareFeatureAgentWorktree($entry);
-        $this->worktreeService->runReviewScript($taskWorktree, $entry->getBase());
+        $newBase = $this->rebaseTaskBeforeReview($entry, $taskWorktree);
+        $this->worktreeService->runReviewScript($taskWorktree, $newBase);
 
+        $entry->setBase($newBase);
         $entry->setStage(BacklogBoard::STAGE_IN_REVIEW);
         $review->clearReview($this->boardService->getTaskReviewKey($entry));
         $this->saveBoard($board, BacklogCommandName::REVIEW_REQUEST->value);
@@ -115,8 +129,10 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
         }
 
         $worktree = $this->worktreeService->prepareFeatureAgentWorktree($entry);
-        $this->worktreeService->runReviewScript($worktree, $entry->getBase());
+        $newBase = $this->rebaseFeatureBeforeReview($worktree);
+        $this->worktreeService->runReviewScript($worktree, $newBase);
 
+        $entry->setBase($newBase);
         $entry->setStage(BacklogBoard::STAGE_IN_REVIEW);
         $this->saveBoard($board, BacklogCommandName::REVIEW_REQUEST->value);
 
@@ -125,5 +141,55 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
             $feature,
             $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_REVIEW),
         ));
+    }
+
+    /**
+     * Rebase a task branch on top of its parent feature branch.
+     *
+     * @param BoardEntry $entry The task entry being submitted for review
+     * @param string $worktree Path of the task worktree
+     * @return string Commit hash of the new base (head of the parent feature branch)
+     * @throws \RuntimeException When parent feature branch metadata is missing,
+     *                           the parent ref does not exist, or the rebase fails
+     */
+    private function rebaseTaskBeforeReview(BoardEntry $entry, string $worktree): string
+    {
+        $featureBranch = $entry->getFeatureBranch();
+        if ($featureBranch === null || $featureBranch === '') {
+            throw new \RuntimeException(
+                'Cannot rebase task automatically: entry metadata is missing feature-branch.'
+            );
+        }
+        if (!$this->gitService->checkRefExists($featureBranch)) {
+            throw new \RuntimeException(sprintf(
+                'Cannot rebase task automatically: parent feature branch ref does not exist: %s.',
+                $featureBranch,
+            ));
+        }
+
+        $this->gitService->rebaseBranchOnto($worktree, $featureBranch);
+
+        return $this->gitService->getBranchHead($featureBranch);
+    }
+
+    /**
+     * Rebase a feature branch on top of `origin/main`.
+     *
+     * Refreshes `origin/main` first so the rebase target reflects the latest
+     * remote state, without making the workflow depend on the local `main`
+     * branch being in sync.
+     *
+     * @param string $worktree Path of the feature worktree
+     * @return string Commit hash of the new base (head of `origin/main` after the fetch)
+     * @throws \RuntimeException When the rebase fails
+     */
+    private function rebaseFeatureBeforeReview(string $worktree): string
+    {
+        $this->gitService->updateMainBranch();
+        $target = GitService::ORIGIN_REMOTE . '/' . GitService::MAIN_BRANCH;
+
+        $this->gitService->rebaseBranchOnto($worktree, $target);
+
+        return $this->gitService->getBranchHead($target);
     }
 }

@@ -404,6 +404,55 @@ final class GitClient
     }
 
     /**
+     * Rebases the current branch of a worktree onto a target ref.
+     *
+     * Captures stdout+stderr so callers can include the rebase output in error
+     * messages on conflict.
+     *
+     * @param string $path Worktree path to rebase in
+     * @param string $onto Target ref to rebase onto
+     * @throws \RuntimeException When the rebase fails
+     */
+    public function rebaseInPath(string $path, string $onto): void
+    {
+        $command = $this->inPath($path, sprintf('rebase %s', escapeshellarg($onto)));
+        $this->console->logVerbose(($this->dryRun ? '[dry-run] Would run git command: ' : 'Run git command: ') . $command);
+        if ($this->dryRun) {
+            return;
+        }
+
+        [$code, $output] = $this->console->captureWithExitCode($command);
+        if ($code !== 0) {
+            throw new \RuntimeException(sprintf(
+                "Rebase failed with exit code %d in worktree %s:\n%s",
+                $code,
+                $this->toRelativeProjectPath($path),
+                $output,
+            ));
+        }
+    }
+
+    /**
+     * Aborts an in-progress rebase in a worktree.
+     *
+     * Swallows the non-zero exit code that `git rebase --abort` returns when
+     * there is no rebase in progress, so this method is safe to call as a
+     * cleanup step after a failed rebase attempt.
+     *
+     * @param string $path Worktree path to abort the rebase in
+     */
+    public function rebaseAbortInPath(string $path): void
+    {
+        $command = $this->inPath($path, 'rebase --abort');
+        $this->console->logVerbose(($this->dryRun ? '[dry-run] Would run git command: ' : 'Run git command: ') . $command);
+        if ($this->dryRun) {
+            return;
+        }
+
+        $this->console->captureWithExitCode($command);
+    }
+
+    /**
      * Merges a branch into the current branch in a repository path.
      *
      * @param string $path Repository path
