@@ -25,9 +25,12 @@ use SoManAgent\Script\Backlog\Command\BacklogWorkStartCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureTaskMergeCommand;
 use SoManAgent\Script\Backlog\Command\BacklogEntryUnassignCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureUnblockCommand;
+use SoManAgent\Script\Backlog\Command\BacklogReviewApproveCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewCancelCommand;
+use SoManAgent\Script\Backlog\Command\BacklogReviewCheckCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewNextCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewNotesCommand;
+use SoManAgent\Script\Backlog\Command\BacklogReviewRejectCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewRequestCommand;
 use SoManAgent\Script\Backlog\Command\BacklogStatusCommand;
 use SoManAgent\Script\Backlog\Command\BacklogTaskCreateCommand;
@@ -148,6 +151,9 @@ final class BacklogCommandFactory
             BacklogCommandName::ENTRY_MERGE->value => BacklogEntryMergeCommand::class,
             BacklogCommandName::ENTRY_RENAME->value => BacklogEntryRenameCommand::class,
             BacklogCommandName::REVIEW_CANCEL->value => BacklogReviewCancelCommand::class,
+            BacklogCommandName::REVIEW_CHECK->value => BacklogReviewCheckCommand::class,
+            BacklogCommandName::REVIEW_APPROVE->value => BacklogReviewApproveCommand::class,
+            BacklogCommandName::REVIEW_REJECT->value => BacklogReviewRejectCommand::class,
             BacklogCommandName::REVIEW_NEXT->value => BacklogReviewNextCommand::class,
             BacklogCommandName::REVIEW_NOTES->value => BacklogReviewNotesCommand::class,
             BacklogCommandName::WORK_START->value => BacklogWorkStartCommand::class,

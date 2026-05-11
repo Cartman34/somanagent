@@ -19,6 +19,9 @@ enum BacklogCommandName: string
     case TASK_TODO_LIST = 'task-todo-list';
     case TASK_REMOVE = 'task-remove';
     case REVIEW_CANCEL = 'review-cancel';
+    case REVIEW_CHECK = 'review-check';
+    case REVIEW_APPROVE = 'review-approve';
+    case REVIEW_REJECT = 'review-reject';
     case REVIEW_NEXT = 'review-next';
     case REVIEW_NOTES = 'review-notes';
     case REVIEW_REQUEST = 'review-request';

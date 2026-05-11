@@ -1,0 +1,18 @@
+description: 'Run reviewer mechanical checks on a feature or task'
+arguments:
+  -
+    name: '<feature|feature/task>'
+    description: 'Feature slug or fully qualified task reference to inspect'
+options:
+  -
+    name: '--agent'
+    description: 'Reviewer agent code (required)'
+examples:
+  - 'php scripts/backlog.php review-check --agent=r01 delete-question-reply'
+  - 'php scripts/backlog.php review-check --agent=r01 onboarding/task-copy-review'
+notes:
+  - 'Use <feature> for feature entries, <feature/task> for child task entries.'
+  - 'Short task references (bare task slug without the parent feature) are refused; use <feature/task>.'
+  - 'The entry must be in the review or reviewing stage.'
+  - 'On mechanical review failure, the entry is automatically rejected with generated review notes.'
+  - 'Delegates to feature-review-check for features or task-review-check for tasks.'

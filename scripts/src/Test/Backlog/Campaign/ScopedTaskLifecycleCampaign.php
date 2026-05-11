@@ -69,7 +69,12 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->rework($context->agentPrimary, $taskARef);
         $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_IN_PROGRESS);
         $driver->requestTaskReview($context->agentPrimary);
-        $driver->approveTask($taskARef);
+
+        // unified review-check: short task slug (childA without feature prefix) must be refused
+        $driver->assertReviewCheckFails($context->agentSecondary, $context->childA, 'refuses short task reference');
+        // unified commands: approve task via review-check + review-approve
+        $driver->reviewCheck($context->agentSecondary, $taskARef);
+        $driver->approveTaskViaUnifiedCommand($context->agentSecondary, $taskARef);
         $driver->assertReviewMissing($taskARef);
         $this->assertReviewNotesAbsentForTask($driver, $taskARef);
 
@@ -99,7 +104,8 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
             sprintf('feature-review-approve cannot continue while feature %s still has active task branches.', $context->scopedFeature),
         );
         $driver->requestTaskReview($context->agentPrimary);
-        $driver->rejectTaskReview($taskBRef, $rejectFeatureTaskB);
+        // unified review-reject for task covers the task delegation path
+        $driver->rejectReviewViaUnifiedCommand($context->agentSecondary, $taskBRef, $rejectFeatureTaskB);
         $driver->assertReviewContains('1. Reject second child task for coverage.');
         $driver->rework($context->agentPrimary, $taskBRef);
         $driver->requestTaskReview($context->agentPrimary);

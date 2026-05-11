@@ -6,15 +6,18 @@ Read this file only when the active task requires reviewer workflow details.
 
 ## Allowed Commands
 
-- `feature-review-check`
-- `feature-review-reject`
-- `feature-review-approve`
+- `review-check` (canonical; replaces `feature-review-check` / `task-review-check`)
+- `review-approve` (canonical; replaces `feature-review-approve` / `task-review-approve`)
+- `review-reject` (canonical; replaces `feature-review-reject` / `task-review-reject`)
+- `feature-review-check` (compatible wrapper)
+- `feature-review-reject` (compatible wrapper)
+- `feature-review-approve` (compatible wrapper)
+- `task-review-check` (compatible wrapper)
+- `task-review-reject` (compatible wrapper)
+- `task-review-approve` (compatible wrapper)
 - `review-cancel`
 - `review-next`
 - `review-notes`
-- `task-review-check`
-- `task-review-reject`
-- `task-review-approve`
 - `feature-close`
 - `entry-merge`
 - `task-create`
@@ -146,6 +149,33 @@ Rules:
 3. Dirty, blocked, or external worktrees are left untouched and must be handled manually.
 4. In the normal workflow, this command is mainly triggered automatically after `feature-close` and `feature-merge`, or manually through `cleanup`.
 
+### `review-check`
+
+1. Run `php scripts/backlog.php review-check --agent=<reviewer> <feature>` for a feature entry.
+2. Run `php scripts/backlog.php review-check --agent=<reviewer> <feature/task>` for a child task entry.
+3. The script delegates to `feature-review-check` or `task-review-check` based on the reference kind.
+4. Short task references (bare task slug without the parent feature) are refused; use `<feature/task>`.
+5. The `--agent` value is the reviewer code of the caller and is required.
+6. If the mechanical review fails, the entry is automatically rejected with a standard message.
+
+### `review-reject`
+
+1. Prepare the review body file under `local/tmp/`: one plain finding per line, optional leading numbers or bullets, no Markdown headings.
+2. Run `php scripts/backlog.php review-reject --agent=<reviewer> <feature> --body-file=<path>` for a feature.
+3. Run `php scripts/backlog.php review-reject --agent=<reviewer> <feature/task> --body-file=<path>` for a task.
+4. The script delegates to `feature-review-reject` or `task-review-reject` based on the reference kind.
+5. Short task references are refused; use `<feature/task>`.
+6. `--body-file` is required for both feature and task rejections.
+
+### `review-approve`
+
+1. For a feature: prepare the approved PR body file under `local/tmp/`.
+2. Run `php scripts/backlog.php review-approve --agent=<reviewer> <feature> --body-file=<path>` for a feature.
+3. Run `php scripts/backlog.php review-approve --agent=<reviewer> <feature/task>` for a task.
+4. The script delegates to `feature-review-approve` or `task-review-approve` based on the reference kind.
+5. Short task references are refused; use `<feature/task>`.
+6. `--body-file` is required for feature approvals and rejected for task approvals.
+
 ### `feature-review-check`
 
 1. Run `php scripts/backlog.php feature-review-check <feature>`.
@@ -222,16 +252,17 @@ Also check:
 
 1. Run `php scripts/backlog.php review-next --agent=<reviewer>`.
 2. The entry moves to `reviewing` and the reviewer is recorded.
-3. If the output is `Kind: feature`, run `php scripts/backlog.php feature-review-check <feature>`.
-4. If the output is `Kind: task`, run `php scripts/backlog.php task-review-check <feature/task>`.
+3. Use `Ref` or `Feature` from the output as the reference for the next command.
+4. Run `php scripts/backlog.php review-check --agent=<reviewer> <feature>` for a feature, or `php scripts/backlog.php review-check --agent=<reviewer> <feature/task>` for a task.
 5. If the mechanical review fails, stop: the command rejects the current target automatically.
 6. If the mechanical review passes, continue the technical and functional review manually.
-7. End the review by running either the matching `approve` or `reject` command for that target.
+7. End the review by running either the matching `approve` or `reject` unified command for that target.
 
 ### `approve`
 
-1. Prepare the approved PR body file under `local/tmp/`.
-2. Run `php scripts/backlog.php feature-review-approve <feature> --body-file=<path>`.
+1. Prepare the approved PR body file under `local/tmp/` for a feature.
+2. Run `php scripts/backlog.php review-approve --agent=<reviewer> <feature> --body-file=<path>` for a feature.
+3. Run `php scripts/backlog.php review-approve --agent=<reviewer> <feature/task>` for a task.
 
 ### `merge`
 

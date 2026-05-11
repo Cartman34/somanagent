@@ -1,0 +1,20 @@
+description: 'Approve a feature or task review'
+arguments:
+  -
+    name: '<feature|feature/task>'
+    description: 'Feature slug or fully qualified task reference to approve'
+options:
+  -
+    name: '--agent'
+    description: 'Reviewer agent code (required)'
+  -
+    name: '--body-file'
+    description: 'Local file used for the PR update body (required for feature approvals, rejected for task approvals)'
+examples:
+  - 'php scripts/backlog.php review-approve --agent=r01 delete-question-reply --body-file local/tmp/pr_body.md'
+  - 'php scripts/backlog.php review-approve --agent=r01 onboarding/task-copy-review'
+notes:
+  - 'Use <feature> for feature entries, <feature/task> for child task entries.'
+  - 'Short task references (bare task slug without the parent feature) are refused; use <feature/task>.'
+  - '--body-file is required for feature approvals and rejected for task approvals.'
+  - 'Delegates to feature-review-approve for features or task-review-approve for tasks.'
