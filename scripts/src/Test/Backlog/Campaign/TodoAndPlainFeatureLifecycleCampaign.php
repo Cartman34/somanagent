@@ -73,6 +73,7 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
         $driver->renameEntry($context->agentPrimary, 'Renamed single prefix description');
         $driver->assertStatusContains($singlePrefixSlug, 'Renamed single prefix description');
         $driver->releaseFeature($context->agentPrimary, $singlePrefixSlug);
+        $driver->removeFirstTodoTask();
 
         $committedFeature = $context->plainFeature . '-committed-release';
         $driver->createTodoTask($committedFeature);
