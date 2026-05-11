@@ -276,12 +276,17 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
             exec(sprintf('git worktree remove --force %s 2>&1', escapeshellarg($path)), $rmOut, $rmCode);
             if ($rmCode === 0) {
                 $this->console->line(sprintf('[sweep] removed worktree: %s', $this->relativeProjectPath($path)));
+                if ($branch !== null && $branch !== '') {
+                    $branchOut = [];
+                    exec(sprintf('git branch -D %s 2>&1', escapeshellarg($branch)), $branchOut, $branchCode);
+                    if ($branchCode === 0) {
+                        $this->console->line(sprintf('[sweep] deleted branch: %s', $branch));
+                    } else {
+                        $this->console->warn(sprintf('[sweep] failed to delete branch %s: %s', $branch, implode(' ', $branchOut)));
+                    }
+                }
             } else {
                 $this->console->warn(sprintf('[sweep] failed to remove worktree %s: %s', $this->relativeProjectPath($path), implode(' ', $rmOut)));
-            }
-            if ($branch !== null && $branch !== '') {
-                exec(sprintf('git branch -D %s 2>&1', escapeshellarg($branch)));
-                $this->console->line(sprintf('[sweep] deleted branch: %s', $branch));
             }
         }
 
