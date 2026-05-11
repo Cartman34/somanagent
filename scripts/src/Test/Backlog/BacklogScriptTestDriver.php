@@ -532,11 +532,16 @@ MD);
     }
 
     /**
-     * @param string $reference Task reference to merge through the compatible legacy command
+     * Assert that the deprecated feature-task-merge command is no longer public.
+     *
+     * @param string $reference Task reference
      */
     public function mergeTaskWithLegacyCommand(string $reference): void
     {
-        $this->runBacklog(['feature-task-merge', $reference]);
+        $this->assertBacklogFails(
+            ['feature-task-merge', $reference],
+            'feature-task-merge is no longer a public command.',
+        );
     }
 
     /**
@@ -693,26 +698,28 @@ MD);
     }
 
     /**
-     * @param string $feature Feature name to merge through the compatible legacy command
-     * @param string|null $bodyFile Path to merge body file
+     * Assert that the deprecated feature-merge command is no longer public.
+     *
+     * @param string $feature Feature slug
      */
-    public function mergeFeatureWithLegacyCommand(string $feature, ?string $bodyFile = null): void
-    {
-        $arguments = ['feature-merge', $feature];
-        if ($bodyFile !== null) {
-            $arguments[] = '--body-file';
-            $arguments[] = $bodyFile;
-        }
-
-        $this->runBacklog($arguments);
-        $this->context->markPullRequestMerged();
-    }
-
-    public function assertFeatureMergeBodyFileWithoutValueFails(string $feature): void
+    public function mergeFeatureWithLegacyCommand(string $feature): void
     {
         $this->assertBacklogFails(
-            ['feature-merge', $feature, '--body-file'],
-            'Option --body-file requires a non-empty path when provided.',
+            ['feature-merge', $feature],
+            'feature-merge is no longer a public command.',
+        );
+    }
+
+    /**
+     * Assert that the deprecated feature-merge command is no longer public.
+     *
+     * @param string $feature Feature slug
+     */
+    public function assertFeatureMergeIsDeprecated(string $feature): void
+    {
+        $this->assertBacklogFails(
+            ['feature-merge', $feature],
+            'feature-merge is no longer a public command.',
         );
     }
 

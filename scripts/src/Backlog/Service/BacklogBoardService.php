@@ -604,7 +604,7 @@ final class BacklogBoardService
                 BacklogBoard::STAGE_IN_PROGRESS => "run `review-request --agent={$agent}` to submit the task for review",
                 BacklogBoard::STAGE_IN_REVIEW   => 'wait for reviewer action on the active task',
                 BacklogBoard::STAGE_REJECTED    => "run `rework --agent={$agent}` to resume development on the rejected task",
-                BacklogBoard::STAGE_APPROVED    => "run `feature-task-merge --agent={$agent}` to merge the task into its parent feature",
+                BacklogBoard::STAGE_APPROVED    => "run `entry-merge <feature/task> --agent={$agent}` to merge the task into its parent feature",
                 default                         => 'check status',
             };
         }

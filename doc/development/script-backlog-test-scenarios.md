@@ -305,7 +305,7 @@ Validate local merge of one approved child task into its parent feature.
 ### Steps
 
 1. Merge the approved task:
-   - `php scripts/backlog.php feature-task-merge test-scoped-feature/test-child-a`
+   - `php scripts/backlog.php entry-merge test-scoped-feature/test-child-a --agent d01`
 2. Inspect:
    - `php scripts/backlog.php status test-scoped-feature`
    - `php scripts/backlog.php feature-list`
@@ -338,7 +338,7 @@ Validate that after merging task A, `work-start` picks up the next queued scoped
    - `php scripts/backlog.php review-request --agent d01`
    - `php scripts/backlog.php task-review-approve test-scoped-feature/test-child-b`
 6. Merge task B:
-   - `php scripts/backlog.php feature-task-merge test-scoped-feature/test-child-b`
+   - `php scripts/backlog.php entry-merge test-scoped-feature/test-child-b --agent d01`
 
 ### Expected checks
 
@@ -418,7 +418,7 @@ Validate final feature closure and merge behavior.
 3. Close the unmerged feature when the workflow requires closing:
    - `php scripts/backlog.php feature-close test-fix-feature-beta`
 4. For the approved scoped feature, merge it:
-   - `php scripts/backlog.php feature-merge test-scoped-feature`
+   - `php scripts/backlog.php entry-merge test-scoped-feature --agent cp-01`
 5. Inspect:
    - `php scripts/backlog.php feature-list`
    - `php scripts/backlog.php worktree-list`

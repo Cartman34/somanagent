@@ -88,6 +88,8 @@ final class BacklogCommandFactory
     private ?TextSlugger $textSlugger = null;
     private ?FilesystemClientInterface $filesystemClient = null;
     private ?RetryPolicy $retryPolicy = null;
+    private ?BacklogFeatureMergeCommand $featureMergeCommand = null;
+    private ?BacklogFeatureTaskMergeCommand $featureTaskMergeCommand = null;
 
     /**
      * Constructor.
@@ -203,6 +205,8 @@ final class BacklogCommandFactory
                 PullRequestService::class => $this->getPullRequestService(),
                 BacklogReviewBodyFormatter::class => $this->getReviewBodyFormatter(),
                 FilesystemClientInterface::class => $this->getFilesystemClient(),
+                BacklogFeatureMergeCommand::class => $this->getFeatureMergeCommand(),
+                BacklogFeatureTaskMergeCommand::class => $this->getFeatureTaskMergeCommand(),
                 self::class => $this,
                 default => throw new \RuntimeException('Unable to inject ' . $type->getName()),
             };
@@ -413,5 +417,52 @@ final class BacklogCommandFactory
         }
 
         return $this->retryPolicy;
+    }
+
+    /**
+     * Get the feature merge command (internal implementation, not public).
+     *
+     * @return BacklogFeatureMergeCommand
+     */
+    public function getFeatureMergeCommand(): BacklogFeatureMergeCommand
+    {
+        if ($this->featureMergeCommand === null) {
+            $this->featureMergeCommand = new BacklogFeatureMergeCommand(
+                $this->getPresenter(),
+                $this->dryRun,
+                $this->projectRoot,
+                $this->getBoardService(),
+                $this->getWorktreeService(),
+                $this->getGitService(),
+                $this->getPullRequestService(),
+            );
+            $this->featureMergeCommand->setBoardPath($this->boardPath);
+            $this->featureMergeCommand->setReviewFilePath($this->reviewFilePath);
+        }
+
+        return $this->featureMergeCommand;
+    }
+
+    /**
+     * Get the feature task merge command (internal implementation, not public).
+     *
+     * @return BacklogFeatureTaskMergeCommand
+     */
+    public function getFeatureTaskMergeCommand(): BacklogFeatureTaskMergeCommand
+    {
+        if ($this->featureTaskMergeCommand === null) {
+            $this->featureTaskMergeCommand = new BacklogFeatureTaskMergeCommand(
+                $this->getPresenter(),
+                $this->dryRun,
+                $this->projectRoot,
+                $this->getBoardService(),
+                $this->getWorktreeService(),
+                $this->getGitService(),
+            );
+            $this->featureTaskMergeCommand->setBoardPath($this->boardPath);
+            $this->featureTaskMergeCommand->setReviewFilePath($this->reviewFilePath);
+        }
+
+        return $this->featureTaskMergeCommand;
     }
 }

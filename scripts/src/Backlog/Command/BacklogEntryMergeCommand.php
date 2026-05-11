@@ -7,7 +7,6 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogCommandFactory;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntryMatch;
@@ -19,27 +18,29 @@ use SoManAgent\Script\Backlog\Service\BacklogPresenter;
  */
 final class BacklogEntryMergeCommand extends AbstractBacklogCommand
 {
-    /**
-     * Command factory used to delegate to the existing merge implementations after resolution.
-     */
-    private BacklogCommandFactory $commandFactory;
+    private BacklogFeatureMergeCommand $featureMergeCommand;
+
+    private BacklogFeatureTaskMergeCommand $featureTaskMergeCommand;
 
     /**
      * @param BacklogPresenter $presenter
      * @param bool $dryRun
      * @param string $projectRoot
      * @param BacklogBoardService $boardService
-     * @param BacklogCommandFactory $commandFactory
+     * @param BacklogFeatureMergeCommand $featureMergeCommand
+     * @param BacklogFeatureTaskMergeCommand $featureTaskMergeCommand
      */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
         BacklogBoardService $boardService,
-        BacklogCommandFactory $commandFactory
+        BacklogFeatureMergeCommand $featureMergeCommand,
+        BacklogFeatureTaskMergeCommand $featureTaskMergeCommand
     ) {
         parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
-        $this->commandFactory = $commandFactory;
+        $this->featureMergeCommand = $featureMergeCommand;
+        $this->featureTaskMergeCommand = $featureTaskMergeCommand;
     }
 
     /**
@@ -125,7 +126,7 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
             $equivalentCommand,
         );
 
-        $this->commandFactory->createHandler(BacklogCommandName::FEATURE_MERGE->value)->handle($arguments, $delegatedOptions);
+        $this->featureMergeCommand->performMerge($arguments, $delegatedOptions);
     }
 
     /**
@@ -150,7 +151,7 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
             BacklogCommandName::FEATURE_TASK_MERGE->value . ' ' . $target,
         );
 
-        $this->commandFactory->createHandler(BacklogCommandName::FEATURE_TASK_MERGE->value)->handle([$target], []);
+        $this->featureTaskMergeCommand->performMerge([$target], []);
     }
 
     private function resolveFullTaskReference(BacklogBoard $board, string $reference): BoardEntryMatch
