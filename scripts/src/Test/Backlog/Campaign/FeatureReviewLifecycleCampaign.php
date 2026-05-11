@@ -61,7 +61,7 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
 
         // review-cancel releases the entry back to review
         $driver->reviewCancel($context->agentSecondary, $context->fixFeature);
-        $driver->assertReviewCancelFails($context->agentSecondary, $context->fixFeature, 'reviewing');
+        $driver->assertReviewCancelFails($context->agentSecondary, $context->fixFeature, 'Reviewing');
 
         // re-claim and do the full reject cycle
         $driver->reviewNext($context->agentSecondary);
