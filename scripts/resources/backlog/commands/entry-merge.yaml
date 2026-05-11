@@ -19,3 +19,4 @@ notes:
   - 'A task merge must use the full <feature/task> reference. A short task slug is refused even when it is unique.'
   - 'Before merging, the command prints the resolved type, target, merge target, and equivalent legacy command.'
   - 'Feature merges delegate to feature-merge; task merges delegate to feature-task-merge <feature/task>.'
+  - 'After a successful feature merge to main, the command fetches origin/main and advances local main in best-effort mode. A failure to sync local main is reported as a warning and does not interrupt the cleanup.'

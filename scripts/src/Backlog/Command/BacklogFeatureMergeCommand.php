@@ -114,6 +114,7 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
             $this->pullRequestService->createOrUpdatePr($branch, $title, $bodyFile);
         }
         $this->pullRequestService->mergePr($prNumber);
+        $this->gitService->syncMainBranchAfterMerge();
 
         $this->boardService->deleteFeature($board, $feature);
         $review->clearReview($feature);
