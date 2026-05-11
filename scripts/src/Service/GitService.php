@@ -156,6 +156,33 @@ final class GitService
     }
 
     /**
+     * Rebase the current branch of a worktree onto a target ref.
+     *
+     * On rebase failure (typically a conflict) the rebase is aborted to leave
+     * the worktree in a clean state, and a RuntimeException is re-thrown with a
+     * recovery hint pointing to the manual resolution flow.
+     *
+     * @param string $worktree Worktree path to rebase in
+     * @param string $onto Target ref to rebase onto
+     * @throws \RuntimeException When the rebase fails after the abort
+     */
+    public function rebaseBranchOnto(string $worktree, string $onto): void
+    {
+        try {
+            $this->git->rebaseInPath($worktree, $onto);
+        } catch (\RuntimeException $exception) {
+            $this->git->rebaseAbortInPath($worktree);
+
+            throw new \RuntimeException(sprintf(
+                "Cannot rebase onto %s automatically. The rebase was aborted, leaving the worktree clean. Update the branch manually in the worktree (rebase or merge onto %s and resolve the conflicts), then rerun review-request.\nDetail: %s",
+                $onto,
+                $onto,
+                $exception->getMessage(),
+            ), 0, $exception);
+        }
+    }
+
+    /**
      * Check if a branch has no development commits compared to base.
      *
      * @param string $base Base branch
