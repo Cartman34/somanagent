@@ -96,3 +96,30 @@ somanagent/
 ├── scripts/          # Maintenance scripts
 └── doc/              # This documentation
 ```
+
+---
+
+## Documentation Maintenance
+
+### When to update
+
+Update documentation in the **same commit** as the code change. Never defer it to a follow-up commit.
+
+### What to update
+
+| Change type | Documents to update |
+|---|---|
+| New or modified backlog command | YAML help file in `scripts/resources/backlog/help/` |
+| New runnable script or changed usage | `doc/development/scripts.md` |
+| Changed backlog workflow rule | `doc/development/agent-workflow.md` |
+| Changed developer-facing behavior | `doc/development/agent-developer.md` |
+| Changed reviewer-facing behavior | `doc/development/agent-reviewer.md` |
+| Changed manager-facing behavior | `doc/development/agent-manager.md` |
+| Changed test scenario | `doc/development/script-backlog-test-scenarios.md` |
+| New or modified PHP class or method | PHPDoc on the class or method |
+
+### Writing conventions
+
+- Write for readers with no context of the current development session. Avoid internal labels that only make sense during a refactoring (e.g. "unified command", "legacy form", "specialized wrapper").
+- Document what a command does, not how its implementation is structured or how it came to be.
+- Never reference implementation history in user-facing documentation.
