@@ -12,4 +12,6 @@ examples:
 notes:
   - 'The feature must be in the review or reviewing stage.'
   - 'Blocked while local child tasks remain active for the feature.'
-  - 'Pushes the branch, creates or updates the PR, then records the PR number in the backlog metadata.'
+  - 'Pushes the branch with safe-force semantics: fetches origin/<branch> first, then fast-forward push when the local branch is descendant of the remote, or push with --force-with-lease locked to the observed remote SHA when the local branch has diverged (typical of a rebased branch).'
+  - 'Refuses the approval when the local branch is behind the remote.'
+  - 'Creates or updates the PR after the push, then records the PR number in the backlog metadata.'

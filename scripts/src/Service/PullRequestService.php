@@ -24,6 +24,13 @@ final class PullRequestService
 
     private RetryPolicy $retryPolicy;
 
+    /**
+     * Constructor.
+     *
+     * @param GitHubClient $github GitHub client for PR API calls
+     * @param GitService $gitService Git service for local operations and pushes
+     * @param RetryPolicy $retryPolicy Retry policy for network-dependent calls
+     */
     public function __construct(
         GitHubClient $github,
         GitService $gitService,
@@ -34,6 +41,14 @@ final class PullRequestService
         $this->retryPolicy = $retryPolicy;
     }
 
+    /**
+     * Create the PR for a branch if it does not exist, otherwise update the existing one.
+     *
+     * @param string $branch Source branch of the PR
+     * @param string $title PR title to set
+     * @param string $bodyFile Local file containing the PR body
+     * @param string $baseBranch Target base branch (default: main)
+     */
     public function createOrUpdatePr(string $branch, string $title, string $bodyFile, string $baseBranch = GitService::MAIN_BRANCH): void
     {
         $prNumber = $this->findPrNumberByBranch($branch);
@@ -47,6 +62,13 @@ final class PullRequestService
         $this->github->editPr($prNumber, $title, $bodyFile);
     }
 
+    /**
+     * Update the body of the PR attached to a branch.
+     *
+     * @param string $branch Source branch of the PR
+     * @param string $bodyFile Local file containing the new PR body
+     * @throws \RuntimeException When no open PR exists for the branch
+     */
     public function updatePrBody(string $branch, string $bodyFile): void
     {
         $prNumber = $this->findPrNumberByBranch($branch);
@@ -57,6 +79,12 @@ final class PullRequestService
         $this->github->editPr($prNumber, null, $bodyFile);
     }
 
+    /**
+     * Update the body of the PR attached to a branch when a PR exists, no-op otherwise.
+     *
+     * @param string $branch Source branch of the PR
+     * @param string $bodyFile Local file containing the new PR body
+     */
     public function updatePrBodyIfExists(string $branch, string $bodyFile): void
     {
         $prNumber = $this->findPrNumberByBranch($branch);
@@ -67,21 +95,43 @@ final class PullRequestService
         $this->github->editPr($prNumber, null, $bodyFile);
     }
 
+    /**
+     * Close a PR by number.
+     *
+     * @param int $prNumber Pull request number on GitHub
+     */
     public function closePr(int $prNumber): void
     {
         $this->github->closePr($prNumber);
     }
 
+    /**
+     * Merge a PR by number.
+     *
+     * @param int $prNumber Pull request number on GitHub
+     */
     public function mergePr(int $prNumber): void
     {
         $this->github->mergePr($prNumber);
     }
 
+    /**
+     * Update only the title of a PR by number.
+     *
+     * @param int $prNumber Pull request number on GitHub
+     * @param string $title New PR title
+     */
     public function editPrTitle(int $prNumber, string $title): void
     {
         $this->github->editPr($prNumber, $title);
     }
 
+    /**
+     * Find the open PR number associated with a source branch.
+     *
+     * @param string $branch Source branch to look up
+     * @return int|null PR number when found, null when no open PR matches the branch
+     */
     public function findPrNumberByBranch(string $branch): ?int
     {
         if ($branch === '') {
@@ -100,6 +150,17 @@ final class PullRequestService
         return null;
     }
 
+    /**
+     * Derive the dominant PR tag from the file changes between a base and a branch.
+     *
+     * Returns DOC when every change is under `doc/` or in `AGENTS.md`, TECH when
+     * every change is under `scripts/` / `.github/` or matches a tooling
+     * manifest, FIX when the branch name starts with `fix/`, otherwise FEAT.
+     *
+     * @param string $base Base commit to compare against
+     * @param string $branch Branch to compare from
+     * @return PullRequestTag Resolved dominant tag for the PR title
+     */
     public function getPrTypeFromChanges(string $base, string $branch): PullRequestTag
     {
         $files = $this->gitService->getChangedFiles($base, $branch);
@@ -136,6 +197,14 @@ final class PullRequestService
         return str_starts_with($branch, 'fix/') ? PullRequestTag::FIX : PullRequestTag::FEAT;
     }
 
+    /**
+     * Build the canonical PR title `[<tag>] <text>`, optionally with the blocked marker.
+     *
+     * @param PullRequestTag $tag Dominant tag for the title
+     * @param string $text Feature text to include in the title
+     * @param bool $blocked When true, prefix the title with the blocked tag
+     * @return string Formatted PR title
+     */
     public function buildPrTitle(PullRequestTag $tag, string $text, bool $blocked = false): string
     {
         $title = sprintf('[%s] %s', $tag->value, $text);
@@ -143,6 +212,12 @@ final class PullRequestService
         return $blocked ? $this->getFormattedBlockedTitle($title) : $title;
     }
 
+    /**
+     * Ensure a PR title carries the blocked marker exactly once.
+     *
+     * @param string $title PR title to inspect
+     * @return string Same title when the blocked marker is already present, otherwise the marker prepended
+     */
     public function getFormattedBlockedTitle(string $title): string
     {
         $tag = '[' . PullRequestTag::BLOCKED->value . ']';
@@ -158,7 +233,7 @@ final class PullRequestService
             function () use ($title, $branch, $baseBranch, $bodyFile): array {
                 $result = $this->github->createPr($title, $branch, $baseBranch, $bodyFile);
                 if ($result[0] !== 0 && $this->isHeadInvalidCreateError($result[1])) {
-                    $this->gitService->pushBranchAndAwaitVisibility($branch);
+                    $this->gitService->pushBranchSafely($branch);
                 }
 
                 return $result;

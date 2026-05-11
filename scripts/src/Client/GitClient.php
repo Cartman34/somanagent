@@ -167,6 +167,35 @@ final class GitClient
     }
 
     /**
+     * Pushes a branch to a remote with `--force-with-lease` locked to an observed SHA.
+     *
+     * The push only succeeds when the remote ref still points to
+     * `$expectedRemoteSha` at the moment of the push, preventing the local
+     * branch from clobbering remote commits that appeared after the
+     * observation. Always sets the upstream tracking with `-u`.
+     *
+     * @param string $branch Branch name to push
+     * @param string $remote Remote name
+     * @param string $expectedRemoteSha Observed remote SHA used as the lease lock
+     * @param string|null $worktree Optional worktree path to run the command in
+     */
+    public function pushForceWithLease(string $branch, string $remote, string $expectedRemoteSha, ?string $worktree = null): void
+    {
+        $subCommand = sprintf(
+            'push --force-with-lease=%s:%s -u %s %s',
+            escapeshellarg($branch),
+            escapeshellarg($expectedRemoteSha),
+            escapeshellarg($remote),
+            escapeshellarg($branch),
+        );
+        $command = $worktree !== null
+            ? $this->inPath($worktree, $subCommand)
+            : 'git ' . $subCommand;
+
+        $this->runNetwork($command);
+    }
+
+    /**
      * @param string $remote
      * @param string|null $branch
      * @param string|null $destination
