@@ -73,8 +73,14 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $driver->rework($context->agentPrimary, $context->fixFeature);
         $driver->requestFeatureReview($context->agentPrimary);
 
-        // approve path (without review-next, entry stays in review — commands accept both stages)
-        $driver->approveFeature($context->fixFeature, $approveBody);
+        // unified commands: reviewer required and body-file required guards
+        $driver->assertReviewCheckFails('', $context->fixFeature, 'review-check requires --agent=<reviewer>.');
+        $driver->assertReviewRejectFails($context->agentSecondary, $context->fixFeature, null, 'review-reject requires --body-file=<path>.');
+        $driver->assertReviewApproveFails($context->agentSecondary, $context->fixFeature, null, 'Option --body-file is required.');
+
+        // approve path via unified commands (without review-next, entry stays in review — commands accept both stages)
+        $driver->reviewCheck($context->agentSecondary, $context->fixFeature);
+        $driver->approveFeatureViaUnifiedCommand($context->agentSecondary, $context->fixFeature, $approveBody);
         $driver->blockFeature($context->agentPrimary, $context->fixFeature);
         $driver->assertStatusContains($context->fixFeature, 'Blocker: blocked');
         $driver->unblockFeature($context->agentPrimary, $context->fixFeature);

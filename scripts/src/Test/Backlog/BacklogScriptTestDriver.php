@@ -121,6 +121,9 @@ MD);
         $this->assertOutputContains($this->runBacklog(['work-start', '--help']), 'work-start');
         $this->assertOutputContains($this->runBacklog(['help', 'entry-merge']), 'entry-merge');
         $this->assertOutputContains($this->runBacklog(['help', 'review-request']), 'review-request');
+        $this->assertOutputContains($this->runBacklog(['help', 'review-check']), 'review-check');
+        $this->assertOutputContains($this->runBacklog(['help', 'review-approve']), 'review-approve');
+        $this->assertOutputContains($this->runBacklog(['help', 'review-reject']), 'review-reject');
     }
 
     /**
@@ -198,6 +201,10 @@ MD);
         $this->assertOutputContains(
             $this->runBacklog(['status', '--agent', $this->context->agentPrimary, '--verbose']),
             '[Task]',
+        );
+        $this->assertBacklogFails(
+            ['review-check', '--as=' . $this->context->agentPrimary],
+            'Unknown option(s) for command `review-check`: --as',
         );
     }
 
@@ -389,6 +396,103 @@ MD);
         $args = ['review-cancel', '--agent', $reviewer];
         if ($reference !== '') {
             $args[] = $reference;
+        }
+        $this->assertBacklogFails($args, $needle);
+    }
+
+    /**
+     * @param string $reviewer Reviewer agent code
+     * @param string $reference Feature slug or fully qualified task reference
+     * @return string Command output
+     */
+    public function reviewCheck(string $reviewer, string $reference): string
+    {
+        return $this->runBacklog(['review-check', '--agent', $reviewer, $reference]);
+    }
+
+    /**
+     * @param string $reviewer Reviewer agent code
+     * @param string $reference Feature slug or fully qualified task reference
+     * @param string $needle Expected error message
+     */
+    public function assertReviewCheckFails(string $reviewer, string $reference, string $needle): void
+    {
+        $this->assertBacklogFails(['review-check', '--agent', $reviewer, $reference], $needle);
+    }
+
+    /**
+     * Approve a feature via the unified review-approve command, tracking branch and PR.
+     *
+     * @param string $reviewer Reviewer agent code
+     * @param string $feature Feature slug
+     * @param string $bodyFile Path to approve body file
+     */
+    public function approveFeatureViaUnifiedCommand(string $reviewer, string $feature, string $bodyFile): void
+    {
+        $this->runBacklog(['review-approve', '--agent', $reviewer, $feature, '--body-file', $bodyFile]);
+        $entry = $this->requireFeatureEntry($feature);
+        $branch = $entry->getBranch();
+        if ($branch !== null && $branch !== '') {
+            $this->context->recordRemoteBranch($branch);
+        }
+        $prNumber = $entry->getPr();
+        if (!$this->context->dryRun && $prNumber === null) {
+            throw new \RuntimeException('Expected review-approve to record the pull request number.');
+        }
+        $this->context->setPullRequestNumber($prNumber !== null ? (int) $prNumber : null);
+    }
+
+    /**
+     * Approve a task via the unified review-approve command.
+     *
+     * @param string $reviewer Reviewer agent code
+     * @param string $reference Fully qualified task reference (<feature/task>)
+     */
+    public function approveTaskViaUnifiedCommand(string $reviewer, string $reference): void
+    {
+        $this->runBacklog(['review-approve', '--agent', $reviewer, $reference]);
+    }
+
+    /**
+     * @param string $reviewer Reviewer agent code
+     * @param string $reference Feature slug or task reference
+     * @param string|null $bodyFile Path to body file (null to omit)
+     * @param string $needle Expected error message
+     */
+    public function assertReviewApproveFails(string $reviewer, string $reference, ?string $bodyFile, string $needle): void
+    {
+        $args = ['review-approve', '--agent', $reviewer, $reference];
+        if ($bodyFile !== null) {
+            $args[] = '--body-file';
+            $args[] = $bodyFile;
+        }
+        $this->assertBacklogFails($args, $needle);
+    }
+
+    /**
+     * Reject a feature or task via the unified review-reject command.
+     *
+     * @param string $reviewer Reviewer agent code
+     * @param string $reference Feature slug or fully qualified task reference
+     * @param string $bodyFile Path to reject body file
+     */
+    public function rejectReviewViaUnifiedCommand(string $reviewer, string $reference, string $bodyFile): void
+    {
+        $this->runBacklog(['review-reject', '--agent', $reviewer, $reference, '--body-file', $bodyFile]);
+    }
+
+    /**
+     * @param string $reviewer Reviewer agent code
+     * @param string $reference Feature slug or task reference
+     * @param string|null $bodyFile Path to body file (null to omit --body-file)
+     * @param string $needle Expected error message
+     */
+    public function assertReviewRejectFails(string $reviewer, string $reference, ?string $bodyFile, string $needle): void
+    {
+        $args = ['review-reject', '--agent', $reviewer, $reference];
+        if ($bodyFile !== null) {
+            $args[] = '--body-file';
+            $args[] = $bodyFile;
         }
         $this->assertBacklogFails($args, $needle);
     }

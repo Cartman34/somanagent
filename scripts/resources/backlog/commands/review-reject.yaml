@@ -1,0 +1,20 @@
+description: 'Reject a feature or task review and record reviewer blockers'
+arguments:
+  -
+    name: '<feature|feature/task>'
+    description: 'Feature slug or fully qualified task reference to reject'
+options:
+  -
+    name: '--agent'
+    description: 'Reviewer agent code (required)'
+  -
+    name: '--body-file'
+    description: 'Local file containing one plain rejection finding per line (required)'
+examples:
+  - 'php scripts/backlog.php review-reject --agent=r01 delete-question-reply --body-file local/tmp/review.md'
+  - 'php scripts/backlog.php review-reject --agent=r01 onboarding/task-copy-review --body-file local/tmp/review.md'
+notes:
+  - 'Use <feature> for feature entries, <feature/task> for child task entries.'
+  - 'Short task references (bare task slug without the parent feature) are refused; use <feature/task>.'
+  - 'The body file must contain plain findings only: one finding per line, optional leading numbers or bullets, no Markdown headings.'
+  - 'Delegates to feature-review-reject for features or task-review-reject for tasks.'
