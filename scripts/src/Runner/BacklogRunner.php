@@ -150,7 +150,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private function validateTestFileOverride(string $path, string $option): string
     {
         $allowedPrefixes = $option === BacklogCliOption::WORKTREE_DIR->value
-            ? ['local/tmp/', 'local/test-worktrees/']
+            ? ['local/test-worktrees/']
             : ['local/tmp/'];
 
         foreach ($allowedPrefixes as $prefix) {
