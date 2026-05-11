@@ -207,7 +207,7 @@ Also check:
 4. Run `php scripts/backlog.php review-check --agent=<reviewer> <feature>` for a feature, or `php scripts/backlog.php review-check --agent=<reviewer> <feature/task>` for a task.
 5. If the mechanical review fails, stop: the command rejects the current target automatically.
 6. If the mechanical review passes, continue the technical and functional review manually.
-7. End the review by running either the matching `approve` or `reject` unified command for that target.
+7. End the review by running `review-approve` or `review-reject` for that target.
 
 ### `approve`
 
