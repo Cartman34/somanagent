@@ -505,6 +505,30 @@ final class GitClient
     }
 
     /**
+     * Checks if a local branch is currently checked out in any worktree.
+     *
+     * @param string $branch Branch name
+     * @return bool True if the branch is checked out in any worktree
+     */
+    public function isBranchCheckedOutInWorktree(string $branch): bool
+    {
+        $output = $this->listWorktreesPorcelain();
+
+        return in_array('branch refs/heads/' . $branch, explode("\n", $output), true);
+    }
+
+    /**
+     * Advances a local branch to point to the given target without network access.
+     *
+     * @param string $branch Branch name to advance
+     * @param string $to Target reference to advance to
+     */
+    public function advanceLocalBranch(string $branch, string $to): void
+    {
+        $this->run(sprintf('git branch -f %s %s', escapeshellarg($branch), escapeshellarg($to)));
+    }
+
+    /**
      * Gets the Git internal path for a subpath in a repository.
      *
      * @param string $path Repository path

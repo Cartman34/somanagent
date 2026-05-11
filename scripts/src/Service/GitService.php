@@ -262,16 +262,21 @@ final class GitService
 
     /**
      * Update main branch (fetch or pull depending on workspace state).
+     *
+     * Uses origin/main as the authoritative source of truth. After fetching, attempts to advance
+     * the local main branch in best-effort mode: warns and skips when main is checked out in
+     * another worktree or has diverged from origin/main.
      */
     public function updateMainBranch(): void
     {
-        if ($this->getWorkspaceCurrentBranch() !== self::MAIN_BRANCH) {
-            $this->git->fetch(self::ORIGIN_REMOTE, self::MAIN_BRANCH);
+        if ($this->getWorkspaceCurrentBranch() === self::MAIN_BRANCH) {
+            $this->updateLocalMainBranchWithWarning();
 
             return;
         }
 
-        $this->updateLocalMainBranchWithWarning();
+        $this->git->fetch(self::ORIGIN_REMOTE, self::MAIN_BRANCH);
+        $this->tryAdvanceLocalMainBranch();
     }
 
     /**
@@ -310,6 +315,33 @@ final class GitService
         } catch (\RuntimeException $exception) {
             $this->console->warn('Unable to update local main in WP; continuing with the current local main.');
             $this->logVerbose('Main update warning detail: ' . $exception->getMessage());
+        }
+    }
+
+    private function tryAdvanceLocalMainBranch(): void
+    {
+        if (!$this->git->localBranchExists(self::MAIN_BRANCH)) {
+            return;
+        }
+
+        if ($this->git->isBranchCheckedOutInWorktree(self::MAIN_BRANCH)) {
+            $this->console->warn('Local main is checked out in another worktree; skipping best-effort sync.');
+
+            return;
+        }
+
+        $originMain = self::ORIGIN_REMOTE . '/' . self::MAIN_BRANCH;
+        if (!$this->git->isAncestor(self::MAIN_BRANCH, $originMain)) {
+            $this->console->warn('Local main has diverged from origin/main; skipping best-effort sync.');
+
+            return;
+        }
+
+        try {
+            $this->git->advanceLocalBranch(self::MAIN_BRANCH, $originMain);
+        } catch (\RuntimeException $exception) {
+            $this->console->warn('Unable to advance local main to origin/main; continuing with current state.');
+            $this->logVerbose('Main sync warning: ' . $exception->getMessage());
         }
     }
 
