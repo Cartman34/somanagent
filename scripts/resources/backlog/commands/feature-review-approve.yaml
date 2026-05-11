@@ -10,6 +10,6 @@ options:
 examples:
   - 'php scripts/backlog.php feature-review-approve delete-question-reply --body-file local/tmp/pr_body.md'
 notes:
-  - 'The feature must already be in the review stage.'
+  - 'The feature must be in the review or reviewing stage.'
   - 'Blocked while local child tasks remain active for the feature.'
   - 'Pushes the branch, creates or updates the PR, then records the PR number in the backlog metadata.'

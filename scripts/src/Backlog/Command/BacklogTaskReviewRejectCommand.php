@@ -20,6 +20,13 @@ final class BacklogTaskReviewRejectCommand extends AbstractBacklogCommand
 {
     private BacklogReviewBodyFormatter $reviewBodyFormatter;
 
+    /**
+     * @param BacklogPresenter $presenter
+     * @param bool $dryRun
+     * @param string $projectRoot
+     * @param BacklogBoardService $boardService
+     * @param BacklogReviewBodyFormatter $reviewBodyFormatter
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
@@ -31,6 +38,10 @@ final class BacklogTaskReviewRejectCommand extends AbstractBacklogCommand
         $this->reviewBodyFormatter = $reviewBodyFormatter;
     }
 
+    /**
+     * @param list<string> $commandArgs
+     * @param array<string, bool|string> $options
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $bodyFile = $options['body-file'] ?? null;
@@ -43,15 +54,18 @@ final class BacklogTaskReviewRejectCommand extends AbstractBacklogCommand
         $match = $this->boardService->resolveTaskByReference($board, $commandArgs[0] ?? '', BacklogCommandName::TASK_REVIEW_REJECT->value);
         $entry = $match->getEntry();
 
-        if ($this->boardService->getFeatureStage($entry) !== BacklogBoard::STAGE_IN_REVIEW) {
+        $stage = $this->boardService->getFeatureStage($entry);
+        if ($stage !== BacklogBoard::STAGE_IN_REVIEW && $stage !== BacklogBoard::STAGE_REVIEWING) {
             throw new \RuntimeException(sprintf(
-                'Task %s must be in %s to be rejected.',
+                'Task %s must be in %s or %s to be rejected.',
                 $this->boardService->getTaskReviewKey($entry),
                 $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_REVIEW),
+                $this->boardService->getStageLabel(BacklogBoard::STAGE_REVIEWING),
             ));
         }
 
         $entry->setStage(BacklogBoard::STAGE_REJECTED);
+        $entry->setReviewer(null);
         $review->setReview($this->boardService->getTaskReviewKey($entry), $this->reviewBodyFormatter->fromFile($bodyFile));
         $this->saveBoard($board, BacklogCommandName::TASK_REVIEW_REJECT->value);
         $this->saveReviewFile($review, BacklogCommandName::TASK_REVIEW_REJECT->value);

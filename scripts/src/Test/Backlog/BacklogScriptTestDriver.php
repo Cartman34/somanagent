@@ -349,11 +349,48 @@ MD);
     }
 
     /**
+     * @param string $reviewer Reviewer agent code (required by review-next)
      * @return string Output from review-next command
      */
-    public function reviewNext(): string
+    public function reviewNext(string $reviewer): string
     {
-        return $this->runBacklog(['review-next']);
+        return $this->runBacklog(['review-next', '--agent', $reviewer]);
+    }
+
+    /**
+     * @param string $reviewer Reviewer agent code
+     * @param string $needle Expected error message
+     */
+    public function assertReviewNextFails(string $reviewer, string $needle): void
+    {
+        $this->assertBacklogFails(['review-next', '--agent', $reviewer], $needle);
+    }
+
+    /**
+     * @param string $reviewer Reviewer agent code
+     * @param string $reference Optional entry reference; empty to omit
+     */
+    public function reviewCancel(string $reviewer, string $reference = ''): void
+    {
+        $args = ['review-cancel', '--agent', $reviewer];
+        if ($reference !== '') {
+            $args[] = $reference;
+        }
+        $this->runBacklog($args);
+    }
+
+    /**
+     * @param string $reviewer Reviewer agent code
+     * @param string $reference Optional entry reference; empty to omit
+     * @param string $needle Expected error message
+     */
+    public function assertReviewCancelFails(string $reviewer, string $reference, string $needle): void
+    {
+        $args = ['review-cancel', '--agent', $reviewer];
+        if ($reference !== '') {
+            $args[] = $reference;
+        }
+        $this->assertBacklogFails($args, $needle);
     }
 
     /**

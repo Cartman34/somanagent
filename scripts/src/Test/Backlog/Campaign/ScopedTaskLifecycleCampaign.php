@@ -57,9 +57,10 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->assertReworkFails($context->agentPrimary, $taskARef, 'rework only accepts');
         $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_IN_REVIEW);
 
-        if (!str_contains($driver->reviewNext(), $taskARef)) {
+        if (!str_contains($driver->reviewNext($context->agentSecondary), $taskARef)) {
             throw new \RuntimeException('Expected review-next to return the active task review.');
         }
+        $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_REVIEWING);
         $driver->checkTaskReview($taskARef);
         $driver->assertTaskReviewRejectFails($taskARef, $invalidRejectBody, 'Review body items must be plain findings');
         $driver->rejectTaskReview($taskARef, $rejectBody);

@@ -38,5 +38,6 @@ examples:
   - 'php scripts/backlog.php worktree-list'
   - 'php scripts/backlog.php worktree-clean --dry-run'
   - 'php scripts/backlog.php worktree-restore --agent agent-01'
-  - 'php scripts/backlog.php review-next'
+  - 'php scripts/backlog.php review-next --agent cp-01'
+  - 'php scripts/backlog.php review-cancel --agent cp-01'
   - 'php scripts/backlog.php feature-review-approve delete-question-reply --body-file local/tmp/pr_body.md'

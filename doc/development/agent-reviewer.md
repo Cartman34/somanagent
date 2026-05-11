@@ -9,6 +9,7 @@ Read this file only when the active task requires reviewer workflow details.
 - `feature-review-check`
 - `feature-review-reject`
 - `feature-review-approve`
+- `review-cancel`
 - `review-next`
 - `review-notes`
 - `task-review-check`
@@ -88,9 +89,18 @@ Rules:
 
 ### `review-next`
 
-1. Run `php scripts/backlog.php review-next`.
-2. The script prints the first visible task or feature with `meta.stage=review` without changing its backlog state.
-3. Use `Kind` and `Ref`/`Feature` in the output to choose the matching review check command.
+1. Run `php scripts/backlog.php review-next --agent=<reviewer>`.
+2. The script selects the first entry with `meta.stage=review`, transitions it to `meta.stage=reviewing`, records the reviewer in `meta.reviewer`, and displays the entry.
+3. The command refuses if the reviewer already has an entry in `reviewing`. Run `review-cancel` first to release it.
+4. Entries already in `reviewing` (claimed by another reviewer) are skipped.
+5. Use `Kind` and `Ref`/`Feature` in the output to choose the matching review check command.
+
+### `review-cancel`
+
+1. Run `php scripts/backlog.php review-cancel --agent=<reviewer> [<feature>|<feature/task>]`.
+2. Moves the entry from `reviewing` back to `review` and clears `meta.reviewer`.
+3. Only the reviewer who claimed the entry may cancel it. A manager (`SOMANAGER_ROLE=manager`) may force-cancel any stuck reviewing entry.
+4. When no reference is given, the script auto-resolves the reviewer's single reviewing entry; fails if none or ambiguous.
 
 ### `review-notes`
 
@@ -103,8 +113,9 @@ Rules:
 
 1. Run `php scripts/backlog.php task-review-check <feature/task>`.
 2. The script checks the mechanical review in the assigned developer `WA` of that task.
-3. If it fails, the script automatically rejects the task with a standard message.
-4. If it passes, continue the technical and functional review manually.
+3. Accepts tasks in the `review` or `reviewing` stage.
+4. If it fails, the script automatically rejects the task with a standard message.
+5. If it passes, continue the technical and functional review manually.
 
 ### `task-review-reject`
 
@@ -141,8 +152,9 @@ Rules:
 
 1. Run `php scripts/backlog.php feature-review-check <feature>`.
 2. The script checks the mechanical review in the assigned developer `WA` of that feature.
-3. If it fails, the script automatically rejects the feature with a standard message.
-4. If it passes, continue the technical and functional review manually.
+3. Accepts features in the `review` or `reviewing` stage.
+4. If it fails, the script automatically rejects the feature with a standard message.
+5. If it passes, continue the technical and functional review manually.
 
 Block on:
 
@@ -226,12 +238,13 @@ Also check:
 
 ### `review`
 
-1. Run `php scripts/backlog.php review-next`.
-2. If the output is `Kind: feature`, run `php scripts/backlog.php feature-review-check <feature>`.
-3. If the output is `Kind: task`, run `php scripts/backlog.php task-review-check <feature/task>`.
-4. If the mechanical review fails, stop: the command rejects the current target automatically.
-5. If the mechanical review passes, continue the technical and functional review manually.
-6. End the review by running either the matching `approve` or `reject` command for that target.
+1. Run `php scripts/backlog.php review-next --agent=<reviewer>`.
+2. The entry moves to `reviewing` and the reviewer is recorded.
+3. If the output is `Kind: feature`, run `php scripts/backlog.php feature-review-check <feature>`.
+4. If the output is `Kind: task`, run `php scripts/backlog.php task-review-check <feature/task>`.
+5. If the mechanical review fails, stop: the command rejects the current target automatically.
+6. If the mechanical review passes, continue the technical and functional review manually.
+7. End the review by running either the matching `approve` or `reject` command for that target.
 
 ### `approve`
 

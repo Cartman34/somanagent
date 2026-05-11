@@ -20,6 +20,7 @@ final class BoardEntry
     public const META_FEATURE_BRANCH = 'feature-branch';
     public const META_KIND = 'kind';
     public const META_PR = 'pr';
+    public const META_REVIEWER = 'reviewer';
     public const META_STAGE = 'stage';
     public const META_TASK = 'task';
     public const META_TYPE = 'type';
@@ -39,6 +40,8 @@ final class BoardEntry
     private ?string $kind = null;
 
     private ?string $pr = null;
+
+    private ?string $reviewer = null;
 
     private ?string $stage = null;
 
@@ -242,6 +245,23 @@ final class BoardEntry
     public function setPr(?string $pr): void
     {
         $this->pr = $pr;
+    }
+
+    /**
+     * @return ?string
+     */
+    public function getReviewer(): ?string
+    {
+        return $this->reviewer;
+    }
+
+    /**
+     * @param ?string $reviewer
+     * @return void
+     */
+    public function setReviewer(?string $reviewer): void
+    {
+        $this->reviewer = $reviewer;
     }
 
     /**
