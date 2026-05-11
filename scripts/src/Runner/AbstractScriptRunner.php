@@ -255,6 +255,32 @@ abstract class AbstractScriptRunner
     }
 
     /**
+     * Returns the value of a single-value option parsed by parseArgs(), or null when absent.
+     *
+     * Throws when the option was repeated on the CLI (array value) or used without a value
+     * (bool true). Returns the string value when present, or null when absent — callers
+     * supply their own default with `??`.
+     *
+     * @param array<string, bool|string|array<bool|string>> $options
+     */
+    protected function getSingleOption(array $options, string $name): ?string
+    {
+        if (!array_key_exists($name, $options)) {
+            return null;
+        }
+
+        $val = $options[$name];
+        if (is_array($val)) {
+            throw new \RuntimeException(sprintf('Option --%s cannot be repeated.', $name));
+        }
+        if (is_bool($val)) {
+            throw new \RuntimeException(sprintf('Option --%s requires a value.', $name));
+        }
+
+        return $val;
+    }
+
+    /**
      * Convert the execution-mode options to typed CommandParamHelp DTOs.
      *
      * @return list<CommandParamHelp>

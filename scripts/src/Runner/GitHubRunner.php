@@ -81,15 +81,15 @@ final class GitHubRunner extends AbstractScriptRunner
      */
     private function handleCreate(array $args, array $flags): void
     {
-        $title    = $this->getSingleFlag($flags, 'title');
-        $head     = $this->getSingleFlag($flags, 'head');
-        $base     = $this->getSingleFlag($flags, 'base') ?? GitService::MAIN_BRANCH;
-        $bodyFile = $this->getSingleFlag($flags, 'body-file');
+        $title    = $this->getSingleOption($flags, 'title');
+        $head     = $this->getSingleOption($flags, 'head');
+        $base     = $this->getSingleOption($flags, 'base') ?? GitService::MAIN_BRANCH;
+        $bodyFile = $this->getSingleOption($flags, 'body-file');
 
         if (is_string($bodyFile)) {
             $body = $this->readBodyFile($bodyFile);
         } else {
-            $bodyValue = $this->getSingleFlag($flags, 'body') ?? '';
+            $bodyValue = $this->getSingleOption($flags, 'body') ?? '';
             $body = (string) $bodyValue;
         }
 
@@ -179,13 +179,13 @@ final class GitHubRunner extends AbstractScriptRunner
 
         $patch = [];
 
-        $title = $this->getSingleFlag($flags, 'title');
+        $title = $this->getSingleOption($flags, 'title');
         if ($title !== null) {
             $patch['title'] = $title;
         }
 
-        $bodyFile = $this->getSingleFlag($flags, 'body-file');
-        $body = $this->getSingleFlag($flags, 'body');
+        $bodyFile = $this->getSingleOption($flags, 'body-file');
+        $body = $this->getSingleOption($flags, 'body');
 
         if (is_string($bodyFile)) {
             $patch['body'] = $this->readBodyFile($bodyFile);
@@ -262,23 +262,6 @@ final class GitHubRunner extends AbstractScriptRunner
     private function printCommandHelp(string $command): void
     {
         $this->printYamlCommandHelp($command);
-    }
-
-    /**
-     * @param array<string, bool|string|array<bool|string>> $flags
-     * @return string|null
-     */
-    private function getSingleFlag(array $flags, string $name): ?string
-    {
-        $val = $flags[$name] ?? null;
-        if (is_array($val)) {
-            throw new \RuntimeException(sprintf('Option --%s cannot be repeated.', $name));
-        }
-        if (is_bool($val)) {
-            throw new \RuntimeException(sprintf('Option --%s requires a value.', $name));
-        }
-
-        return $val;
     }
 
     /**

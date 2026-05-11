@@ -79,15 +79,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
             return 0;
         }
 
-        $scopes = $this->resolveScopes($options);
-
-        /** @var string[] $files */
-        $files = [];
-        foreach ($scopes as $scope) {
-            foreach (self::SCOPES[$scope]['directories'] as $dir) {
-                $this->collectPhpFiles($this->projectRoot . '/' . $dir, $files);
-            }
-        }
+        $files = $this->getSourceFiles($options);
 
         match ($command) {
             self::COMMAND_FIX_INLINE_PHPDOC => $this->fixInlinePhpDoc($files),
@@ -118,30 +110,33 @@ final class CodeRefactoRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param string[] $files
+     * @param array<string, bool|string|array<bool|string>> $options
+     * @return list<string>
      */
-    private function collectPhpFiles(string $dir, array &$files): void
+    private function getSourceFiles(array $options): array
     {
-        if (!is_dir($dir)) {
-            return;
+        $directories = [];
+        foreach ($this->resolveScopes($options) as $scope) {
+            foreach (self::SCOPES[$scope]['directories'] as $directory) {
+                $directories[] = $this->projectRoot . '/' . $directory;
+            }
         }
 
-        $items = scandir($dir);
-        if ($items === false) {
-            return;
-        }
-        foreach ($items as $item) {
-            if ($item === '.' || $item === '..') {
+        $files = [];
+        foreach ($directories as $directory) {
+            if (!is_dir($directory)) {
                 continue;
             }
 
-            $path = $dir . '/' . $item;
-            if (is_dir($path)) {
-                $this->collectPhpFiles($path, $files);
-            } elseif (str_ends_with($item, '.php')) {
-                $files[] = $path;
+            $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory, \RecursiveDirectoryIterator::SKIP_DOTS));
+            foreach ($iterator as $file) {
+                if ($file->isFile() && $file->getExtension() === 'php') {
+                    $files[] = $file->getPathname();
+                }
             }
         }
+
+        return $files;
     }
 
     /**
@@ -154,7 +149,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
         foreach ($files as $file) {
             $content = file_get_contents($file);
             if ($content === false) {
-                continue;
+                throw new \RuntimeException(sprintf('Unable to read file: %s', $file));
             }
             $newContent = $content;
 
@@ -180,7 +175,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
             }
 
             if ($newContent !== $content) {
-                $this->applyChange($file, $content, $newContent);
+                $this->updateFile($file, $content, $newContent);
             }
         }
         $this->console->ok(sprintf('Fixed %d inline PHPDoc blocks.', $count));
@@ -198,7 +193,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
         foreach ($files as $file) {
             $lines = file($file);
             if ($lines === false) {
-                continue;
+                throw new \RuntimeException(sprintf('Unable to read file: %s', $file));
             }
             $newLines = $lines;
             $changed = false;
@@ -261,7 +256,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
             }
 
             if ($changed) {
-                $this->applyChange($file, implode('', $lines), implode('', $newLines));
+                $this->updateFile($file, implode('', $lines), implode('', $newLines));
             }
         }
         $this->console->ok(sprintf('Added @return to %d method(s).', $count));
@@ -287,7 +282,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
         foreach ($files as $file) {
             $lines = file($file);
             if ($lines === false) {
-                continue;
+                throw new \RuntimeException(sprintf('Unable to read file: %s', $file));
             }
             $newLines = $lines;
             $changed = false;
@@ -337,7 +332,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
             }
 
             if ($changed) {
-                $this->applyChange($file, implode('', $lines), implode('', $newLines));
+                $this->updateFile($file, implode('', $lines), implode('', $newLines));
             }
         }
         $this->console->ok(sprintf('Stripped %d what-comments.', $count));
@@ -345,7 +340,7 @@ final class CodeRefactoRunner extends AbstractScriptRunner
         return 0;
     }
 
-    private function applyChange(string $file, string $oldContent, string $newContent): void
+    private function updateFile(string $file, string $oldContent, string $newContent): void
     {
         if ($this->verbose) {
             $relativePath = str_replace($this->projectRoot . '/', '', $file);

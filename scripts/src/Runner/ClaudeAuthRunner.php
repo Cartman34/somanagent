@@ -70,8 +70,8 @@ final class ClaudeAuthRunner extends AbstractScriptRunner
 
         $command = $positional[0] ?? 'status';
         $force   = isset($options['force']);
-        $baseUrl = $this->getSingleOption($options, 'url', 'http://localhost:8080');
-        $model   = $this->getSingleOption($options, 'model', '');
+        $baseUrl = $this->getSingleOption($options, 'url') ?? 'http://localhost:8080';
+        $model   = $this->getSingleOption($options, 'model') ?? '';
 
         if ($command === 'test') {
             return $this->runTest($baseUrl, $model !== '' ? $model : null);
@@ -91,22 +91,6 @@ final class ClaudeAuthRunner extends AbstractScriptRunner
         }
 
         return 0;
-    }
-
-    /**
-     * @param array<string, bool|string|array<bool|string>> $options
-     */
-    private function getSingleOption(array $options, string $name, string $default): string
-    {
-        $val = $options[$name] ?? $default;
-        if (is_array($val)) {
-            throw new \RuntimeException(sprintf('Option --%s cannot be repeated.', $name));
-        }
-        if (is_bool($val)) {
-            throw new \RuntimeException(sprintf('Option --%s requires a value.', $name));
-        }
-
-        return (string) $val;
     }
 
     /**
@@ -133,9 +117,20 @@ final class ClaudeAuthRunner extends AbstractScriptRunner
             return 1;
         }
 
-        if ($data['success'] ?? false) {
-            $this->console->ok('Claude CLI reachable via API');
-            $this->console->line('Response: ' . $data['response']);
+        $ok = (bool) ($data['ok'] ?? false);
+
+        if ($ok) {
+            $this->console->ok(sprintf(
+                'Response received in %d ms (model: %s)',
+                (int) ($data['durationMs'] ?? 0),
+                $data['model'] ?? '?',
+            ));
+            $this->console->info(sprintf(
+                'Tokens: %d in / %d out',
+                (int) ($data['inputTokens'] ?? 0),
+                (int) ($data['outputTokens'] ?? 0),
+            ));
+            $this->console->info('Response: ' . ($data['response'] ?? '(empty)'));
             return 0;
         }
 

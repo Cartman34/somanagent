@@ -47,7 +47,7 @@ final class HealthRunner extends AbstractScriptRunner
     public function run(array $args): int
     {
         [, $options] = $this->parseArgs(array_values($args));
-        $baseUrl = $this->getSingleOption($options, 'url', 'http://localhost:8080');
+        $baseUrl = $this->getSingleOption($options, 'url') ?? 'http://localhost:8080';
 
         $this->console->step("Checking SoManAgent ($baseUrl)");
 
@@ -67,33 +67,17 @@ final class HealthRunner extends AbstractScriptRunner
     }
 
     /**
-     * @param array<string, bool|string|array<bool|string>> $options
-     */
-    private function getSingleOption(array $options, string $name, string $default): string
-    {
-        $val = $options[$name] ?? $default;
-        if (is_array($val)) {
-            throw new \RuntimeException(sprintf('Option --%s cannot be repeated.', $name));
-        }
-        if (is_bool($val)) {
-            throw new \RuntimeException(sprintf('Option --%s requires a value.', $name));
-        }
-
-        return (string) $val;
-    }
-
-    /**
      * Performs a GET request and decodes the JSON response.
      *
      * @return array<mixed>
      * @throws \RuntimeException when the request fails or the response is not valid JSON.
      */
-    private function httpGet(string $url, int $timeout = 30): array
+    private function httpGet(string $url, int $timeout = 10): array
     {
         $ctx = stream_context_create([
             'http' => [
-                'method'  => 'GET',
-                'timeout' => $timeout,
+                'timeout'       => $timeout,
+                'ignore_errors' => true,
             ],
         ]);
 
