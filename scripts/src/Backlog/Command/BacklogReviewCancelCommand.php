@@ -24,6 +24,12 @@ final class BacklogReviewCancelCommand extends AbstractBacklogCommand
 {
     private const ROLE_MANAGER = 'manager';
 
+    /**
+     * @param BacklogPresenter $presenter
+     * @param bool $dryRun
+     * @param string $projectRoot
+     * @param BacklogBoardService $boardService
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,

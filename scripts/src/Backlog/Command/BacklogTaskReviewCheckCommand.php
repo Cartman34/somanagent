@@ -26,6 +26,15 @@ final class BacklogTaskReviewCheckCommand extends AbstractBacklogCommand
 
     private FilesystemClientInterface $fs;
 
+    /**
+     * @param BacklogPresenter $presenter
+     * @param bool $dryRun
+     * @param string $projectRoot
+     * @param BacklogBoardService $boardService
+     * @param BacklogWorktreeService $worktreeService
+     * @param BacklogCommandFactory $commandFactory
+     * @param FilesystemClientInterface $fs
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
@@ -41,6 +50,10 @@ final class BacklogTaskReviewCheckCommand extends AbstractBacklogCommand
         $this->fs = $fs;
     }
 
+    /**
+     * @param list<string> $commandArgs
+     * @param array<string, bool|string> $options
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $board = $this->loadBoard();
