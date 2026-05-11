@@ -134,7 +134,7 @@ final class BacklogBoardService
                 if ($entries !== []) {
                     $order = match ($section) {
                         BacklogBoard::SECTION_TODO => ['agent', 'feature'],
-                        default => ['kind', 'stage', 'feature', 'task', 'agent', 'branch', 'feature-branch', 'base', 'pr', 'blocked'],
+                        default => ['kind', 'stage', 'feature', 'task', 'agent', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked'],
                     };
 
                     foreach ($entries as $entry) {
@@ -749,6 +749,7 @@ final class BacklogBoardService
         $entry->setFeatureBranch($this->sanitizeString($metadata[BoardEntry::META_FEATURE_BRANCH] ?? null));
         $entry->setKind($this->sanitizeString($metadata[BoardEntry::META_KIND] ?? null));
         $entry->setPr($this->sanitizeString($metadata[BoardEntry::META_PR] ?? null));
+        $entry->setReviewer($this->sanitizeString($metadata[BoardEntry::META_REVIEWER] ?? null));
         $entry->setStage($this->sanitizeString($metadata[BoardEntry::META_STAGE] ?? null));
         $entry->setTask($this->sanitizeString($metadata[BoardEntry::META_TASK] ?? null));
         $entry->setType($this->sanitizeString($metadata[BoardEntry::META_TYPE] ?? null));
@@ -756,7 +757,7 @@ final class BacklogBoardService
         $knownKeys = [
             BoardEntry::META_AGENT, BoardEntry::META_BASE, BoardEntry::META_BLOCKED, BoardEntry::META_BRANCH,
             BoardEntry::META_FEATURE, BoardEntry::META_FEATURE_BRANCH, BoardEntry::META_KIND,
-            BoardEntry::META_PR, BoardEntry::META_STAGE, BoardEntry::META_TASK, BoardEntry::META_TYPE,
+            BoardEntry::META_PR, BoardEntry::META_REVIEWER, BoardEntry::META_STAGE, BoardEntry::META_TASK, BoardEntry::META_TYPE,
         ];
 
         $extraMetadata = array_diff_key($metadata, array_flip($knownKeys));
@@ -782,6 +783,7 @@ final class BacklogBoardService
             BoardEntry::META_FEATURE_BRANCH => $entry->getFeatureBranch(),
             BoardEntry::META_KIND => $entry->getKind(),
             BoardEntry::META_PR => $entry->getPr(),
+            BoardEntry::META_REVIEWER => $entry->getReviewer(),
             BoardEntry::META_STAGE => $entry->getStage(),
             BoardEntry::META_TASK => $entry->getTask(),
             BoardEntry::META_TYPE => $entry->getType(),
@@ -874,6 +876,7 @@ final class BacklogBoardService
         return match ($stage) {
             BacklogBoard::STAGE_IN_PROGRESS => BacklogBoard::STAGE_IN_PROGRESS,
             BacklogBoard::STAGE_IN_REVIEW => BacklogBoard::STAGE_IN_REVIEW,
+            BacklogBoard::STAGE_REVIEWING => BacklogBoard::STAGE_REVIEWING,
             BacklogBoard::STAGE_REJECTED => BacklogBoard::STAGE_REJECTED,
             BacklogBoard::STAGE_APPROVED => BacklogBoard::STAGE_APPROVED,
             default => null,
@@ -890,6 +893,7 @@ final class BacklogBoardService
         return match ($this->getNormalizedStage($stage)) {
             BacklogBoard::STAGE_IN_PROGRESS => 'In development',
             BacklogBoard::STAGE_IN_REVIEW => 'In review',
+            BacklogBoard::STAGE_REVIEWING => 'Reviewing',
             BacklogBoard::STAGE_REJECTED => 'Rejected',
             BacklogBoard::STAGE_APPROVED => 'Approved',
             default => $stage,
@@ -904,6 +908,7 @@ final class BacklogBoardService
         return [
             BacklogBoard::STAGE_IN_PROGRESS,
             BacklogBoard::STAGE_IN_REVIEW,
+            BacklogBoard::STAGE_REVIEWING,
             BacklogBoard::STAGE_REJECTED,
             BacklogBoard::STAGE_APPROVED,
         ];

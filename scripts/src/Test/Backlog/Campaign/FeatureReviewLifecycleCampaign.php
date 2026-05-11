@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Test\Backlog\Campaign;
 
 use SoManAgent\Script\Backlog\Command\BacklogReviewNotesCommand;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
 
@@ -36,9 +37,34 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $approveBody = $driver->createBodyFile('test-feature-review-approve.md', ['1. Approve feature review for workflow coverage.']);
 
         $driver->requestFeatureReview($context->agentPrimary);
-        if (!str_contains($driver->reviewNext(), $context->fixFeature)) {
+
+        // review-next claims the entry and transitions it to reviewing
+        $reviewNextOutput = $driver->reviewNext($context->agentSecondary);
+        if (!str_contains($reviewNextOutput, $context->fixFeature)) {
             throw new \RuntimeException('Expected review-next to return the active feature review.');
         }
+        if (!str_contains($reviewNextOutput, 'Stage: Reviewing')) {
+            throw new \RuntimeException('Expected review-next output to show Stage: Reviewing.');
+        }
+        if (!str_contains($reviewNextOutput, 'Reviewer: ' . $context->agentSecondary)) {
+            throw new \RuntimeException('Expected review-next output to show Reviewer: ' . $context->agentSecondary);
+        }
+
+        // reviewer already has a reviewing entry — refusing a second claim is expected
+        $driver->assertReviewNextFails($context->agentSecondary, 'already has an entry in Reviewing');
+
+        // feature-list should show the reviewing entry with reviewer field
+        $featureListOutput = $driver->runBacklog(['feature-list']);
+        if (!str_contains($featureListOutput, 'reviewer=' . $context->agentSecondary)) {
+            throw new \RuntimeException('Expected feature-list to show reviewer=' . $context->agentSecondary);
+        }
+
+        // review-cancel releases the entry back to review
+        $driver->reviewCancel($context->agentSecondary, $context->fixFeature);
+        $driver->assertReviewCancelFails($context->agentSecondary, $context->fixFeature, 'reviewing');
+
+        // re-claim and do the full reject cycle
+        $driver->reviewNext($context->agentSecondary);
         $driver->checkFeatureReview($context->fixFeature);
         $driver->assertFeatureReviewRejectFails($context->fixFeature, $invalidRejectBody, 'Review body items must be plain findings');
         $driver->rejectFeatureReview($context->fixFeature, $rejectBody);
@@ -46,6 +72,8 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $this->assertReviewNotesForFeature($driver, $context, '1. Reject feature review for workflow coverage.');
         $driver->rework($context->agentPrimary, $context->fixFeature);
         $driver->requestFeatureReview($context->agentPrimary);
+
+        // approve path (without review-next, entry stays in review — commands accept both stages)
         $driver->approveFeature($context->fixFeature, $approveBody);
         $driver->blockFeature($context->agentPrimary, $context->fixFeature);
         $driver->assertStatusContains($context->fixFeature, 'Blocker: blocked');

@@ -10,7 +10,7 @@ options:
 examples:
   - 'php scripts/backlog.php task-review-reject onboarding/task-copy-review --body-file local/tmp/review.md'
 notes:
-  - 'The task must already be in the review stage.'
+  - 'The task must be in the review or reviewing stage.'
   - 'Review notes are stored under `local/backlog-review.md` with the `<feature>/<task>` key.'
   - 'The body file must contain plain findings only: one finding per line, optional leading numbers or bullets, no Markdown headings.'
   - 'The script rewrites findings as a clean numbered list.'

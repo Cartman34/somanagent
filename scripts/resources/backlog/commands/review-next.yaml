@@ -1,6 +1,12 @@
-description: 'Print the next task or feature currently waiting in review'
+description: 'Claim the next task or feature waiting in review and move it to the reviewing stage'
+options:
+  -
+    name: '--agent'
+    description: 'Reviewer agent code (required)'
 examples:
-  - 'php scripts/backlog.php review-next'
+  - 'php scripts/backlog.php review-next --agent cp-01'
 notes:
-  - 'Prints the first active backlog entry currently in the review stage, preserving board order.'
-  - 'The output includes Kind, Feature, Task or Ref when relevant, Branch, Base, Stage, PR, Summary, Next, and Blocker.'
+  - 'Selects the first active backlog entry in the review stage, transitions it to reviewing, and records the reviewer.'
+  - 'Refuses when the reviewer already has an entry in the reviewing stage; run review-cancel first to release it.'
+  - 'Entries already in the reviewing stage are skipped and not available to other reviewers.'
+  - 'The output includes Kind, Feature, Task or Ref when relevant, Branch, Base, Stage, Reviewer, PR, Summary, Next, and Blocker.'

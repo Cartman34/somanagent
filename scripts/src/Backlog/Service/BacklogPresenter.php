@@ -83,6 +83,9 @@ final class BacklogPresenter
         $this->console->line('Branch: ' . ($entry->getBranch() ?? '-'));
         $this->console->line('Base: ' . ($entry->getBase() ?? '-'));
         $this->console->line('Stage: ' . $this->boardService->getStageLabel($stage));
+        if ($stage === BacklogBoard::STAGE_REVIEWING) {
+            $this->console->line('Reviewer: ' . ($entry->getReviewer() ?? '-'));
+        }
         $this->console->line('PR: ' . $this->describePrStatus($entry));
         $this->console->line('Summary: ' . $entry->getText());
         $this->displayEntryDetails($entry);
@@ -168,11 +171,15 @@ final class BacklogPresenter
      */
     public function displayEntryLine(BoardEntry $entry): void
     {
+        $stage = $this->boardService->getFeatureStage($entry);
         $parts = [
             $entry->getFeature() ?? '-',
             'agent=' . ($entry->getAgent() ?? '-'),
             'pr=' . $this->describePrStatus($entry),
         ];
+        if ($stage === BacklogBoard::STAGE_REVIEWING) {
+            $parts[] = 'reviewer=' . ($entry->getReviewer() ?? '-');
+        }
         if ($entry->checkIsBlocked()) {
             $parts[] = 'blocked=' . BacklogMetaValue::YES->value;
         }
@@ -231,6 +238,7 @@ final class BacklogPresenter
         return match ($stage) {
             BacklogBoard::STAGE_IN_PROGRESS => BacklogCommandName::REVIEW_REQUEST->value,
             BacklogBoard::STAGE_IN_REVIEW => BacklogCommandName::FEATURE_REVIEW_CHECK->value . ' or ' . BacklogCommandName::FEATURE_REVIEW_APPROVE->value,
+            BacklogBoard::STAGE_REVIEWING => BacklogCommandName::REVIEW_CANCEL->value . ' or ' . BacklogCommandName::FEATURE_REVIEW_CHECK->value . ' or ' . BacklogCommandName::FEATURE_REVIEW_APPROVE->value,
             BacklogBoard::STAGE_REJECTED => BacklogCommandName::REWORK->value,
             BacklogBoard::STAGE_APPROVED => BacklogCommandName::FEATURE_MERGE->value,
             default => '-',
@@ -242,6 +250,7 @@ final class BacklogPresenter
         return match ($stage) {
             BacklogBoard::STAGE_IN_PROGRESS => BacklogCommandName::REVIEW_REQUEST->value,
             BacklogBoard::STAGE_IN_REVIEW => BacklogCommandName::TASK_REVIEW_CHECK->value . ' or ' . BacklogCommandName::TASK_REVIEW_APPROVE->value,
+            BacklogBoard::STAGE_REVIEWING => BacklogCommandName::REVIEW_CANCEL->value . ' or ' . BacklogCommandName::TASK_REVIEW_CHECK->value . ' or ' . BacklogCommandName::TASK_REVIEW_APPROVE->value,
             BacklogBoard::STAGE_REJECTED => BacklogCommandName::REWORK->value,
             BacklogBoard::STAGE_APPROVED => BacklogCommandName::FEATURE_TASK_MERGE->value,
             default => '-',

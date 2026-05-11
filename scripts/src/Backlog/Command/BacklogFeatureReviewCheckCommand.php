@@ -62,11 +62,13 @@ final class BacklogFeatureReviewCheckCommand extends AbstractBacklogCommand
         $match = $this->boardService->resolveFeature($board, $feature);
         $entry = $match->getEntry();
 
-        if ($this->boardService->getFeatureStage($entry) !== BacklogBoard::STAGE_IN_REVIEW) {
+        $stage = $this->boardService->getFeatureStage($entry);
+        if ($stage !== BacklogBoard::STAGE_IN_REVIEW && $stage !== BacklogBoard::STAGE_REVIEWING) {
             throw new \RuntimeException(sprintf(
-                'Feature %s must be in %s to be checked.',
+                'Feature %s must be in %s or %s to be checked.',
                 $feature,
                 $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_REVIEW),
+                $this->boardService->getStageLabel(BacklogBoard::STAGE_REVIEWING),
             ));
         }
 

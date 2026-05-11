@@ -64,11 +64,13 @@ final class BacklogFeatureReviewApproveCommand extends AbstractBacklogCommand
         $this->boardService->checkIsFeatureEntry($entry) || throw new \RuntimeException('feature-review-approve only applies to kind=feature entries.');
         $this->boardService->assertNoActiveTasksForFeature($board, $feature, BacklogCommandName::FEATURE_REVIEW_APPROVE->value);
 
-        if ($this->boardService->getFeatureStage($entry) !== BacklogBoard::STAGE_IN_REVIEW) {
+        $stage = $this->boardService->getFeatureStage($entry);
+        if ($stage !== BacklogBoard::STAGE_IN_REVIEW && $stage !== BacklogBoard::STAGE_REVIEWING) {
             throw new \RuntimeException(sprintf(
-                'Feature %s must be in %s to be approved.',
+                'Feature %s must be in %s or %s to be approved.',
                 $feature,
                 $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_REVIEW),
+                $this->boardService->getStageLabel(BacklogBoard::STAGE_REVIEWING),
             ));
         }
 
@@ -90,6 +92,7 @@ final class BacklogFeatureReviewApproveCommand extends AbstractBacklogCommand
             $entry->setPr((string) $prNumber);
         }
         $entry->setStage(BacklogBoard::STAGE_APPROVED);
+        $entry->setReviewer(null);
         $review->clearReview($feature);
         $this->saveBoard($board, BacklogCommandName::FEATURE_REVIEW_APPROVE->value);
         $this->saveReviewFile($review, BacklogCommandName::FEATURE_REVIEW_APPROVE->value);

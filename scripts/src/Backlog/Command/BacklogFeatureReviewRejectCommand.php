@@ -56,15 +56,18 @@ final class BacklogFeatureReviewRejectCommand extends AbstractBacklogCommand
         $match = $this->boardService->resolveFeature($board, $feature);
         $entry = $match->getEntry();
 
-        if ($this->boardService->getFeatureStage($entry) !== BacklogBoard::STAGE_IN_REVIEW) {
+        $stage = $this->boardService->getFeatureStage($entry);
+        if ($stage !== BacklogBoard::STAGE_IN_REVIEW && $stage !== BacklogBoard::STAGE_REVIEWING) {
             throw new \RuntimeException(sprintf(
-                'Feature %s must be in %s to be rejected.',
+                'Feature %s must be in %s or %s to be rejected.',
                 $feature,
                 $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_REVIEW),
+                $this->boardService->getStageLabel(BacklogBoard::STAGE_REVIEWING),
             ));
         }
 
         $entry->setStage(BacklogBoard::STAGE_REJECTED);
+        $entry->setReviewer(null);
         $review->setReview($feature, $this->reviewBodyFormatter->fromFile($bodyFile));
         $this->saveBoard($board, BacklogCommandName::FEATURE_REVIEW_REJECT->value);
         $this->saveReviewFile($review, BacklogCommandName::FEATURE_REVIEW_REJECT->value);

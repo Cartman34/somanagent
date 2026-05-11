@@ -6,5 +6,5 @@ arguments:
 examples:
   - 'php scripts/backlog.php task-review-check onboarding/task-copy-review'
 notes:
-  - 'The task must already be in the review stage.'
+  - 'The task must be in the review or reviewing stage.'
   - 'On mechanical review failure, the task is automatically rejected with generated review notes.'

@@ -47,11 +47,13 @@ final class BacklogTaskReviewCheckCommand extends AbstractBacklogCommand
         $match = $this->boardService->resolveTaskByReference($board, $commandArgs[0] ?? '', BacklogCommandName::TASK_REVIEW_CHECK->value);
         $entry = $match->getEntry();
 
-        if ($this->boardService->getFeatureStage($entry) !== BacklogBoard::STAGE_IN_REVIEW) {
+        $stage = $this->boardService->getFeatureStage($entry);
+        if ($stage !== BacklogBoard::STAGE_IN_REVIEW && $stage !== BacklogBoard::STAGE_REVIEWING) {
             throw new \RuntimeException(sprintf(
-                'Task %s must be in %s to be checked.',
+                'Task %s must be in %s or %s to be checked.',
                 $this->boardService->getTaskReviewKey($entry),
                 $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_REVIEW),
+                $this->boardService->getStageLabel(BacklogBoard::STAGE_REVIEWING),
             ));
         }
 
