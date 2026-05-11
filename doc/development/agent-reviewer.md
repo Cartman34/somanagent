@@ -15,6 +15,7 @@ Read this file only when the active task requires reviewer workflow details.
 - `task-review-reject`
 - `task-review-approve`
 - `feature-close`
+- `entry-merge`
 - `feature-merge`
 - `feature-task-merge`
 - `task-create`
@@ -180,19 +181,33 @@ Also check:
 5. If a PR exists, the script closes it, keeps the remote branch, removes the feature from the local backlog, and clears the related review state.
 6. The script runs `worktree-clean` automatically at the end.
 
+### `entry-merge`
+
+1. Run `php scripts/backlog.php entry-merge <feature|feature/task> --agent=<reviewer>`.
+2. Use `<feature>` to merge an approved feature into `main`.
+3. Use `<feature/task>` to merge one local child task into its parent feature branch.
+4. Do not use a short task slug with `entry-merge`; `entry-merge <task> --agent=<reviewer>` is refused even when the task slug is unique.
+5. The `--agent` value is the reviewer code of the caller. It is not a developer owner lookup and is not passed to the developer form of `feature-task-merge`.
+6. The command prints the resolved type, target, merge target, and equivalent internal command before running the merge.
+7. Add `--body-file=<path>` only for feature merges when the existing PR body must be replaced before merging.
+8. If a feature merge aborts on a conflict, the entry stays in `approved`. The assigned developer must run `rework` on the same entry to move it back to `development`, fix the conflict, then resubmit through `review-request`.
+9. If a task merge aborts on a conflict on an `approved` task, the developer must run `rework` on that task to resume work, then resubmit.
+
 ### `feature-merge`
 
-1. Run `php scripts/backlog.php feature-merge <feature>`.
-2. Add `--body-file=<path>` only when the existing PR body must be replaced before merging.
-3. The script requires the feature to be in `meta.stage=approved`, merges the PR, removes the feature from the backlog, runs `worktree-clean`, deletes the branches, and frees the agent.
-4. If the merge aborts on a conflict, the entry stays in `approved`. The assigned developer must run `rework` on the same entry to move it back to `development`, fix the conflict, then resubmit through `review-request`.
+1. Prefer `php scripts/backlog.php entry-merge <feature> --agent=<reviewer>` for reviewer workflow. `feature-merge` remains available for compatibility.
+2. Run `php scripts/backlog.php feature-merge <feature>`.
+3. Add `--body-file=<path>` only when the existing PR body must be replaced before merging.
+4. The script requires the feature to be in `meta.stage=approved`, merges the PR, removes the feature from the backlog, runs `worktree-clean`, deletes the branches, and frees the agent.
+5. If the merge aborts on a conflict, the entry stays in `approved`. The assigned developer must run `rework` on the same entry to move it back to `development`, fix the conflict, then resubmit through `review-request`.
 
 ### `feature-task-merge`
 
-1. Run `php scripts/backlog.php feature-task-merge <feature/task>`.
-2. The script requires a green mechanical review in the task worktree, then merges that child branch into its parent feature branch locally.
-3. The current task review stage does not gate this merge. Reviewer may merge a task on explicit user instruction whether it is in `development`, `review`, `rejected`, or `approved`.
-4. If the local merge aborts on a conflict on an `approved` task, the developer must run `rework` on that task to resume work, then resubmit.
+1. Prefer `php scripts/backlog.php entry-merge <feature/task> --agent=<reviewer>` for reviewer workflow. `feature-task-merge` remains available for compatibility.
+2. Run `php scripts/backlog.php feature-task-merge <feature/task>`.
+3. The script requires a green mechanical review in the task worktree, then merges that child branch into its parent feature branch locally.
+4. The current task review stage does not gate this merge. Reviewer may merge a task on explicit user instruction whether it is in `development`, `review`, `rejected`, or `approved`.
+5. If the local merge aborts on an `approved` task, the developer must run `rework` on that task to resume work, then resubmit.
 
 ## Rules
 
@@ -225,8 +240,8 @@ Also check:
 
 ### `merge`
 
-1. For a feature merge, run `php scripts/backlog.php feature-merge <feature>`. Prepare a final PR body file under `local/tmp/` and pass `--body-file=<path>` only when the PR body must be updated before merge.
-2. For a task merge, run `php scripts/backlog.php feature-task-merge <feature/task>`.
+1. For a feature merge, run `php scripts/backlog.php entry-merge <feature> --agent=<reviewer>`. Prepare a final PR body file under `local/tmp/` and pass `--body-file=<path>` only when the PR body must be updated before merge.
+2. For a task merge, run `php scripts/backlog.php entry-merge <feature/task> --agent=<reviewer>`.
 
 ### `cleanup`
 
