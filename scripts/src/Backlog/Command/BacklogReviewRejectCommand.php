@@ -8,7 +8,6 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\BacklogCommandFactory;
-use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 
@@ -64,7 +63,7 @@ final class BacklogReviewRejectCommand extends AbstractBacklogCommand
         $delegatedOptions = ['body-file' => $bodyFile];
 
         if (str_contains($reference, '/')) {
-            $this->commandFactory->createHandler(BacklogCommandName::TASK_REVIEW_REJECT->value)->handle([$reference], $delegatedOptions);
+            $this->commandFactory->getTaskReviewRejectCommand()->performReject([$reference], $delegatedOptions);
 
             return;
         }
@@ -81,6 +80,6 @@ final class BacklogReviewRejectCommand extends AbstractBacklogCommand
             }
         }
 
-        $this->commandFactory->createHandler(BacklogCommandName::FEATURE_REVIEW_REJECT->value)->handle([$reference], $delegatedOptions);
+        $this->commandFactory->getFeatureReviewRejectCommand()->performReject([$reference], $delegatedOptions);
     }
 }

@@ -1,11 +1,4 @@
-description: 'Run reviewer mechanical checks on a feature'
-arguments:
-  -
-    name: '<feature>'
-    description: 'Feature slug to inspect'
-examples:
-  - 'php scripts/backlog.php feature-review-check delete-question-reply'
+description: 'Deprecated. Use review-check instead.'
 notes:
-  - 'The feature must be in the review or reviewing stage.'
-  - 'Blocked while local child tasks remain active for the feature.'
-  - 'On mechanical review failure, the feature is automatically rejected with generated review notes.'
+  - 'This command is no longer available as a public command.'
+  - 'Use: php scripts/backlog.php review-check --agent=<reviewer> <feature>'

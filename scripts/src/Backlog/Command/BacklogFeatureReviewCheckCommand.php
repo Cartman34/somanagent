@@ -57,6 +57,18 @@ final class BacklogFeatureReviewCheckCommand extends AbstractBacklogCommand
      */
     public function handle(array $commandArgs, array $options): void
     {
+        throw new \RuntimeException(
+            'feature-review-check is no longer a public command. Use: php scripts/backlog.php review-check --agent=<reviewer> <feature>',
+        );
+    }
+
+    /**
+     * @param list<string> $commandArgs
+     * @param array<string, bool|string|array<bool|string>> $options
+     * @return void
+     */
+    public function performCheck(array $commandArgs, array $options): void
+    {
         $board = $this->loadBoard();
         $feature = $this->resolveFeatureReferenceArgument($board, $commandArgs, BacklogCommandName::FEATURE_REVIEW_CHECK->value);
         $match = $this->boardService->resolveFeature($board, $feature);
@@ -92,7 +104,7 @@ final class BacklogFeatureReviewCheckCommand extends AbstractBacklogCommand
             $tempBodyFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'somanagent-review-' . bin2hex(random_bytes(8));
             $this->fs->writeFilePath($tempBodyFile, $message);
 
-            $this->commandFactory->createHandler(BacklogCommandName::FEATURE_REVIEW_REJECT->value)->handle(
+            $this->commandFactory->getFeatureReviewRejectCommand()->performReject(
                 [$feature],
                 ['body-file' => $tempBodyFile]
             );

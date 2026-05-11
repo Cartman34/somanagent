@@ -61,9 +61,14 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
             throw new \RuntimeException('Expected review-next to return the active task review.');
         }
         $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_REVIEWING);
+        // verify that specialized commands now redirect to unified equivalents
         $driver->checkTaskReview($taskARef);
-        $driver->assertTaskReviewRejectFails($taskARef, $invalidRejectBody, 'Review body items must be plain findings');
+        $driver->assertTaskReviewRejectFails($taskARef, $invalidRejectBody, 'task-review-reject is no longer a public command.');
         $driver->rejectTaskReview($taskARef, $rejectBody);
+        // actual check and reject via unified commands
+        $driver->reviewCheck($context->agentSecondary, $taskARef);
+        $driver->assertReviewRejectFails($context->agentSecondary, $taskARef, $invalidRejectBody, 'Review body items must be plain findings');
+        $driver->rejectReviewViaUnifiedCommand($context->agentSecondary, $taskARef, $rejectBody);
         $driver->assertReviewContains($taskARef);
         $this->assertReviewNotesForTask($driver, $context, $taskARef, '1. Reject child task for test workflow.');
         $driver->rework($context->agentPrimary, $taskARef);
@@ -90,6 +95,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_IN_PROGRESS);
         $driver->requestTaskReview($context->agentPrimary);
         $driver->approveTask($taskARef);
+        $driver->approveTaskViaUnifiedCommand($context->agentSecondary, $taskARef);
 
         $driver->mergeTask($taskARef);
 
@@ -98,10 +104,18 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
 
         $rejectFeatureTaskB = $driver->createBodyFile('test-task-review-reject-b.md', ['3. Reject second child task for coverage.']);
         $approveFeatureWithActiveTask = $driver->createBodyFile('test-feature-review-approve-active-task.md', ['Approve parent feature should be blocked by active child task.']);
+        // verify specialized command redirects
         $driver->assertFeatureReviewApproveFails(
             $context->scopedFeature,
             $approveFeatureWithActiveTask,
-            sprintf('feature-review-approve cannot continue while feature %s still has active task branches.', $context->scopedFeature),
+            'feature-review-approve is no longer a public command.',
+        );
+        // verify unified command still validates active task guard
+        $driver->assertReviewApproveFails(
+            $context->agentSecondary,
+            $context->scopedFeature,
+            $approveFeatureWithActiveTask,
+            sprintf('cannot continue while feature %s still has active task branches.', $context->scopedFeature),
         );
         $driver->requestTaskReview($context->agentPrimary);
         // unified review-reject for task covers the task delegation path
@@ -110,6 +124,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->rework($context->agentPrimary, $taskBRef);
         $driver->requestTaskReview($context->agentPrimary);
         $driver->approveTask($taskBRef);
+        $driver->approveTaskViaUnifiedCommand($context->agentSecondary, $taskBRef);
         $driver->mergeTaskWithLegacyCommand($taskBRef);
         $driver->mergeTask($taskBRef);
 

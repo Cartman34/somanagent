@@ -65,9 +65,14 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
 
         // re-claim and do the full reject cycle
         $driver->reviewNext($context->agentSecondary);
+        // verify that specialized commands now redirect to unified equivalents
         $driver->checkFeatureReview($context->fixFeature);
-        $driver->assertFeatureReviewRejectFails($context->fixFeature, $invalidRejectBody, 'Review body items must be plain findings');
+        $driver->assertFeatureReviewRejectFails($context->fixFeature, $invalidRejectBody, 'feature-review-reject is no longer a public command.');
         $driver->rejectFeatureReview($context->fixFeature, $rejectBody);
+        // actual check and reject via unified commands
+        $driver->reviewCheck($context->agentSecondary, $context->fixFeature);
+        $driver->assertReviewRejectFails($context->agentSecondary, $context->fixFeature, $invalidRejectBody, 'Review body items must be plain findings');
+        $driver->rejectReviewViaUnifiedCommand($context->agentSecondary, $context->fixFeature, $rejectBody);
         $driver->assertReviewContains($context->fixFeature);
         $this->assertReviewNotesForFeature($driver, $context, '1. Reject feature review for workflow coverage.');
         $driver->rework($context->agentPrimary, $context->fixFeature);

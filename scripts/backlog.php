@@ -11,10 +11,11 @@
 // Usage: php scripts/backlog.php work-start --agent agent-01
 // Usage: php scripts/backlog.php review-request --agent agent-01
 // Usage: php scripts/backlog.php review-check --agent r01 my-feature
+// Usage: php scripts/backlog.php review-check --agent r01 my-feature/my-task
 // Usage: php scripts/backlog.php review-approve --agent r01 my-feature --body-file local/tmp/pr_body.md
+// Usage: php scripts/backlog.php review-approve --agent r01 my-feature/my-task
+// Usage: php scripts/backlog.php review-reject --agent r01 my-feature --body-file local/tmp/review.md
 // Usage: php scripts/backlog.php review-reject --agent r01 my-feature/my-task --body-file local/tmp/review.md
-// Usage: php scripts/backlog.php feature-review-approve my-feature --body-file local/tmp/pr_body.md
-// Usage: php scripts/backlog.php task-review-approve my-feature/my-task
 
 require_once __DIR__ . '/src/bootstrap.php';
 

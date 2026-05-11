@@ -45,6 +45,18 @@ final class BacklogFeatureReviewRejectCommand extends AbstractBacklogCommand
      */
     public function handle(array $commandArgs, array $options): void
     {
+        throw new \RuntimeException(
+            'feature-review-reject is no longer a public command. Use: php scripts/backlog.php review-reject --agent=<reviewer> <feature> --body-file=<path>',
+        );
+    }
+
+    /**
+     * @param list<string> $commandArgs
+     * @param array<string, bool|string|array<bool|string>> $options
+     * @return void
+     */
+    public function performReject(array $commandArgs, array $options): void
+    {
         $bodyFile = $options['body-file'] ?? null;
         if (!is_string($bodyFile)) {
             throw new \RuntimeException('Option --body-file is required.');
