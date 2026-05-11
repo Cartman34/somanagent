@@ -246,6 +246,7 @@ Also check:
 7. Add `--body-file=<path>` only for feature merges when the existing PR body must be replaced before merging.
 8. If a feature merge aborts on a conflict, the entry stays in `approved`. The assigned developer must run `rework` on the same entry to move it back to `development`, fix the conflict, then resubmit through `review-request`.
 9. If a task merge aborts on a conflict on an `approved` task, the developer must run `rework` on that task to resume work, then resubmit.
+10. After a successful feature merge to `main`, the command automatically fetches `origin/main` and advances the local `main` reference in best-effort mode. If the WP is on `main`, the working tree is also updated via fast-forward. A sync failure is reported as a warning and does not block the entry cleanup.
 
 ## Rules
 

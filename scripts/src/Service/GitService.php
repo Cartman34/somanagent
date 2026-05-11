@@ -369,6 +369,23 @@ final class GitService
     }
 
     /**
+     * Sync the local main branch after a feature merge in best-effort mode.
+     *
+     * Fetches origin/main, then attempts to advance local main without blocking
+     * the merge workflow. Any failure is reported as a warning and does not
+     * interrupt the caller.
+     */
+    public function syncMainBranchAfterMerge(): void
+    {
+        try {
+            $this->updateMainBranch();
+        } catch (\RuntimeException $exception) {
+            $this->console->warn('Unable to sync local main after merge; continuing with current state.');
+            $this->logVerbose('Main sync warning: ' . $exception->getMessage());
+        }
+    }
+
+    /**
      * @return array<string>
      */
     public function getChangedFiles(string $base, string $branch): array
