@@ -143,3 +143,12 @@ Rules:
 32. An agent can have at most one active entry at a time, either `kind=task` or `kind=feature`. `work-start` and `feature-assign` are enforced at the script level and refuse when the agent already has any active entry. The refusal message includes the current active entry and the required next step to unblock.
 33. PR merges use a standard merge by default. Squash merge is available on explicit user request only.
 34. `backlog.php` rejects unknown CLI options. Each command accepts the options declared in its `scripts/resources/backlog/commands/<command>.yaml` plus the global options `--dry-run`, `--verbose`, `--no-verbose`, `--help`, `--test-mode`, `--board-file`, `--review-file`, `--worktree-dir` and `--pr-base-branch`. Both the `--option=value` and `--option value` forms are validated. A typo such as `--as=<code>` instead of `--agent=<code>` produces an `Unknown option(s)` error instead of being silently ignored.
+
+## Main Branch Sync
+
+1. `origin/main` is the authoritative source of truth for all workflow branches and recorded bases. New feature branches are always created from `origin/main`, never from the local `main` branch.
+2. Workflow commands that need `origin/main` (such as `work-start` and `base-update`) first run `git fetch origin main` to update the remote tracking reference before resolving any base SHA.
+3. After fetching, the workflow attempts to advance the local `main` branch toward `origin/main` in best-effort mode so that local tooling, IDEs, and manual inspection reflect the latest remote state.
+4. If `WP` is currently on the `main` branch, the workflow uses `git pull --ff-only` so the working tree is also updated.
+5. If `WP` is on another branch, the workflow runs `git branch -f main origin/main` to advance the local ref without touching the working tree. This is non-blocking: failures are logged as warnings and the workflow continues.
+6. The best-effort sync is skipped with an explicit warning when local `main` is checked out in another worktree (a concurrent agent worktree has it active) or when local `main` has diverged from `origin/main` (its tip is not an ancestor of `origin/main`). In neither case does the workflow block or fail.
