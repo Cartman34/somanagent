@@ -173,11 +173,21 @@ final class BacklogRunner extends AbstractScriptRunner
 
     private function validateTestFileOverride(string $path, string $option): string
     {
-        if (!str_starts_with($path, 'local/tmp/')) {
-            throw new \RuntimeException("Backlog test file override for --{$option} must be in local/tmp/.");
+        $allowedPrefixes = $option === BacklogCliOption::WORKTREE_DIR->value
+            ? ['local/tmp/', 'local/test-worktrees/']
+            : ['local/tmp/'];
+
+        foreach ($allowedPrefixes as $prefix) {
+            if (str_starts_with($path, $prefix)) {
+                return $this->projectRoot . '/' . $path;
+            }
         }
 
-        return $this->projectRoot . '/' . $path;
+        throw new \RuntimeException(sprintf(
+            'Backlog test file override for --%s must be in %s.',
+            $option,
+            implode(' or ', $allowedPrefixes),
+        ));
     }
 
     private function printCommandHelp(string $command): void

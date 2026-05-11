@@ -119,6 +119,7 @@ MD);
         $this->assertOutputContains($this->runBacklog(['help', 'review-next']), 'review-next');
         $this->assertOutputContains($this->runBacklog(['help', 'work-start']), 'work-start');
         $this->assertOutputContains($this->runBacklog(['work-start', '--help']), 'work-start');
+        $this->assertOutputContains($this->runBacklog(['help', 'entry-merge']), 'entry-merge');
         $this->assertOutputContains($this->runBacklog(['help', 'review-request']), 'review-request');
     }
 
@@ -488,7 +489,64 @@ MD);
      */
     public function mergeTask(string $reference): void
     {
+        $output = $this->runBacklog(['entry-merge', $reference, '--agent', 'test-reviewer']);
+        $this->assertOutputContains($output, 'Resolved type: task');
+        $this->assertOutputContains($output, 'Equivalent command: feature-task-merge ' . $reference);
+    }
+
+    /**
+     * @param string $reference Task reference to merge through the compatible legacy command
+     */
+    public function mergeTaskWithLegacyCommand(string $reference): void
+    {
         $this->runBacklog(['feature-task-merge', $reference]);
+    }
+
+    /**
+     * Assert entry-merge refuses to infer a task from the developer agent option.
+     *
+     * @param string $agent Developer agent that owns a task
+     */
+    public function assertEntryMergeWithoutReferenceFails(string $agent): void
+    {
+        $this->assertBacklogFails(
+            ['entry-merge', '--agent', $agent],
+            'entry-merge requires <feature> or <feature/task>.',
+        );
+    }
+
+    /**
+     * @param string $reference Feature or task reference
+     */
+    public function assertEntryMergeRequiresReviewer(string $reference): void
+    {
+        $this->assertBacklogFails(
+            ['entry-merge', $reference],
+            'entry-merge requires --agent=<reviewer>.',
+        );
+    }
+
+    /**
+     * @param string $task Task slug without the parent feature
+     */
+    public function assertEntryMergeShortTaskReferenceFails(string $task): void
+    {
+        $this->assertBacklogFails(
+            ['entry-merge', $task, '--agent', 'test-reviewer'],
+            'entry-merge refuses short task reference',
+        );
+    }
+
+    /**
+     * @param string $reference Full task reference
+     * @param string $bodyFile Body file that should be rejected on task merges
+     */
+    public function assertEntryMergeTaskBodyFileFails(string $reference, string $bodyFile): void
+    {
+        $this->assertBacklogFails(
+            ['entry-merge', $reference, '--agent', 'test-reviewer', '--body-file', $bodyFile],
+            'entry-merge accepts --body-file only for feature merges.',
+        );
     }
 
     /**
@@ -584,6 +642,24 @@ MD);
      * @param string|null $bodyFile Path to merge body file
      */
     public function mergeFeature(string $feature, ?string $bodyFile = null): void
+    {
+        $arguments = ['entry-merge', $feature, '--agent', 'test-reviewer'];
+        if ($bodyFile !== null) {
+            $arguments[] = '--body-file';
+            $arguments[] = $bodyFile;
+        }
+
+        $output = $this->runBacklog($arguments);
+        $this->assertOutputContains($output, 'Resolved type: feature');
+        $this->assertOutputContains($output, 'Equivalent command: feature-merge ' . $feature);
+        $this->context->markPullRequestMerged();
+    }
+
+    /**
+     * @param string $feature Feature name to merge through the compatible legacy command
+     * @param string|null $bodyFile Path to merge body file
+     */
+    public function mergeFeatureWithLegacyCommand(string $feature, ?string $bodyFile = null): void
     {
         $arguments = ['feature-merge', $feature];
         if ($bodyFile !== null) {

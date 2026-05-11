@@ -73,6 +73,11 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $this->assertReviewNotesAbsentForTask($driver, $taskARef);
 
         $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_APPROVED);
+        $driver->assertEntryMergeRequiresReviewer($taskARef);
+        $driver->assertEntryMergeWithoutReferenceFails($context->agentPrimary);
+        $driver->assertEntryMergeShortTaskReferenceFails($context->childA);
+        $taskMergeBody = $driver->createBodyFile('test-entry-merge-task-body.md', ['Task merges do not accept PR body files.']);
+        $driver->assertEntryMergeTaskBodyFileFails($taskARef, $taskMergeBody);
         // Auto-resolve path: rework --agent without explicit reference must pick the single approved entry.
         $reworkApprovedOutput = $driver->runBacklog(['rework', '--agent', $context->agentPrimary]);
         $driver->assertContains($reworkApprovedOutput, 'moved back to In development from Approved');
@@ -98,7 +103,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->rework($context->agentPrimary, $taskBRef);
         $driver->requestTaskReview($context->agentPrimary);
         $driver->approveTask($taskBRef);
-        $driver->mergeTask($taskBRef);
+        $driver->mergeTaskWithLegacyCommand($taskBRef);
 
         $driver->closeFeature($context->scopedFeature);
         $driver->assertActiveFeatureMissing($context->scopedFeature);

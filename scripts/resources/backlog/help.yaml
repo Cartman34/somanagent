@@ -20,7 +20,7 @@ options:
     description: 'Allow taking a task that is already reserved'
   -
     name: '--worktree-dir'
-    description: 'Override managed worktrees root directory (test mode only, must be in local/tmp/)'
+    description: 'Override managed worktrees root directory (test mode only, must be in local/tmp/ or local/test-worktrees/)'
 examples:
   - 'php scripts/backlog.php status --agent agent-01'
   - 'php scripts/backlog.php base-update my-feature'
@@ -28,6 +28,7 @@ examples:
   - 'php scripts/backlog.php task-todo-list'
   - 'php scripts/backlog.php task-remove 8'
   - 'php scripts/backlog.php review-request --agent agent-01'
+  - 'php scripts/backlog.php entry-merge onboarding/task-copy-review --agent cp-01'
   - 'php scripts/backlog.php task-review-approve onboarding/task-copy-review'
   - 'php scripts/backlog.php rework --agent agent-01 onboarding/task-copy-review'
   - 'php scripts/backlog.php work-start --agent agent-01'
