@@ -22,6 +22,7 @@ Read this file only when the active task requires developer workflow details.
 - `feature-block`
 - `feature-unblock`
 - `feature-list`
+- `base-update`
 - `worktree-list`
 - `worktree-clean`
 - `worktree-restore`
@@ -118,6 +119,16 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 4. The script requires the entry stage to be `rejected` or `approved`, moves it back to `meta.stage=development`, and reopens the entry branch in the agent `WA`. Stored review notes from `local/backlog-review.md` are displayed when the entry came from a rejection.
 5. The review notes stay in `local/backlog-review.md` until the next `review-request` clears them.
 6. When recovering from a merge conflict on an approved entry, `rework` keeps the existing GitHub PR untouched; resubmit through `review-request` once the conflict is fixed.
+
+### `base-update`
+
+1. Run `php scripts/backlog.php base-update <feature|feature/task>`.
+2. Use this command after a rebase or after resolving a merge conflict to refresh the `meta.base` SHA recorded in the backlog without editing the file manually.
+3. For a plain `kind=feature`, pass the feature slug as `<feature>`. For a child `kind=task`, pass the full `<feature/task>` reference. Never pass a bare task slug.
+4. Without `--base`, the automatic base is resolved as follows:
+   - For a `kind=feature`: the command fetches `origin/main` first, then records the merge base between `origin/main` and the feature branch.
+   - For a `kind=task`: the command records the merge base between the local parent feature branch and the task branch.
+5. `--base=<ref>` records an explicit Git ref instead of the automatically resolved merge base. Use this option only when the automatic base is incorrect and you have a specific, validated commit to substitute; the ref must resolve to a commit and must be an ancestor of the entry branch.
 
 ### `work-start`
 
