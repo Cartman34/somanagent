@@ -96,3 +96,15 @@ somanagent/
 ├── scripts/          # Maintenance scripts
 └── doc/              # This documentation
 ```
+
+---
+
+## Documentation Maintenance
+
+Update documentation in the **same commit** as the code change. Never defer it to a follow-up commit. Use the Quick reference table above to find which document to update.
+
+### Writing conventions
+
+- Write for readers with no context of the current development session. Avoid internal labels that only make sense during a refactoring (e.g. "unified command", "legacy form", "specialized wrapper").
+- Document what a command does, not how its implementation is structured or how it came to be.
+- Never reference implementation history in user-facing documentation.

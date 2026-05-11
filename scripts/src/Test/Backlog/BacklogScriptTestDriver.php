@@ -158,8 +158,8 @@ MD);
 
         $bodyFile = $this->createBodyFile('test-option-equals-body.md', ['Missing task should fail after parsing body-file.']);
         $this->assertBacklogFails(
-            ['task-review-reject', 'missing-feature/missing-task', '--body-file=' . $bodyFile],
-            'Task not found: missing-feature/missing-task',
+            ['review-reject', '--agent', $this->context->agentPrimary, 'missing-feature/missing-task', '--body-file=' . $bodyFile],
+            'missing-feature/missing-task',
         );
     }
 
@@ -498,30 +498,45 @@ MD);
     }
 
     /**
+     * Assert that task-review-check produces a redirect error (no longer a public command).
+     *
      * @param string $reference Task reference to check
      */
     public function checkTaskReview(string $reference): void
     {
-        $this->runBacklog(['task-review-check', $reference]);
+        $this->assertBacklogFails(
+            ['task-review-check', $reference],
+            'task-review-check is no longer a public command.',
+        );
     }
 
     /**
+     * Assert that task-review-reject produces a redirect error (no longer a public command).
+     *
      * @param string $reference Task reference to reject
      * @param string $bodyFile Path to reject body file
      */
     public function rejectTaskReview(string $reference, string $bodyFile): void
     {
-        $this->runBacklog(['task-review-reject', $reference, '--body-file', $bodyFile]);
+        $this->assertBacklogFails(
+            ['task-review-reject', $reference, '--body-file', $bodyFile],
+            'task-review-reject is no longer a public command.',
+        );
     }
 
     /**
+     * Assert that task-review-reject produces a redirect error (no longer a public command).
+     *
      * @param string $reference Task reference to reject
      * @param string $bodyFile Path to reject body file
-     * @param string $needle Expected error message
+     * @param string $needle Unused — redirect message is checked regardless
      */
     public function assertTaskReviewRejectFails(string $reference, string $bodyFile, string $needle): void
     {
-        $this->assertBacklogFails(['task-review-reject', $reference, '--body-file', $bodyFile], $needle);
+        $this->assertBacklogFails(
+            ['task-review-reject', $reference, '--body-file', $bodyFile],
+            'task-review-reject is no longer a public command.',
+        );
     }
 
     public function rework(string $agent, string $reference = ''): void
@@ -618,11 +633,16 @@ MD);
     }
 
     /**
+     * Assert that task-review-approve produces a redirect error (no longer a public command).
+     *
      * @param string $reference Task reference to approve
      */
     public function approveTask(string $reference): void
     {
-        $this->runBacklog(['task-review-approve', $reference]);
+        $this->assertBacklogFails(
+            ['task-review-approve', $reference],
+            'task-review-approve is no longer a public command.',
+        );
     }
 
     /**
@@ -713,56 +733,74 @@ MD);
     }
 
     /**
+     * Assert that feature-review-check produces a redirect error (no longer a public command).
+     *
      * @param string $feature Feature name to check
      */
     public function checkFeatureReview(string $feature): void
     {
-        $this->runBacklog(['feature-review-check', $feature]);
+        $this->assertBacklogFails(
+            ['feature-review-check', $feature],
+            'feature-review-check is no longer a public command.',
+        );
     }
 
     /**
+     * Assert that feature-review-reject produces a redirect error (no longer a public command).
+     *
      * @param string $feature Feature name to reject
      * @param string $bodyFile Path to reject body file
      */
     public function rejectFeatureReview(string $feature, string $bodyFile): void
     {
-        $this->runBacklog(['feature-review-reject', $feature, '--body-file', $bodyFile]);
+        $this->assertBacklogFails(
+            ['feature-review-reject', $feature, '--body-file', $bodyFile],
+            'feature-review-reject is no longer a public command.',
+        );
     }
 
     /**
+     * Assert that feature-review-reject produces a redirect error (no longer a public command).
+     *
      * @param string $feature Feature name to reject
      * @param string $bodyFile Path to reject body file
-     * @param string $needle Expected error message
+     * @param string $needle Unused — redirect message is checked regardless
      */
     public function assertFeatureReviewRejectFails(string $feature, string $bodyFile, string $needle): void
     {
-        $this->assertBacklogFails(['feature-review-reject', $feature, '--body-file', $bodyFile], $needle);
+        $this->assertBacklogFails(
+            ['feature-review-reject', $feature, '--body-file', $bodyFile],
+            'feature-review-reject is no longer a public command.',
+        );
     }
 
     /**
+     * Assert that feature-review-approve produces a redirect error (no longer a public command).
+     *
      * @param string $feature Feature name to approve
      * @param string $bodyFile Path to approve body file
-     * @param string $needle Expected error message
+     * @param string $needle Unused — redirect message is checked regardless
      */
     public function assertFeatureReviewApproveFails(string $feature, string $bodyFile, string $needle): void
     {
-        $this->assertBacklogFails(['feature-review-approve', $feature, '--body-file', $bodyFile], $needle);
+        $this->assertBacklogFails(
+            ['feature-review-approve', $feature, '--body-file', $bodyFile],
+            'feature-review-approve is no longer a public command.',
+        );
     }
 
+    /**
+     * Assert that feature-review-approve produces a redirect error (no longer a public command).
+     *
+     * @param string $feature Feature name to approve
+     * @param string $bodyFile Path to approve body file
+     */
     public function approveFeature(string $feature, string $bodyFile): void
     {
-        $this->runBacklog(['feature-review-approve', $feature, '--body-file', $bodyFile]);
-        $entry = $this->requireFeatureEntry($feature);
-        $branch = $entry->getBranch();
-        if ($branch !== null && $branch !== '') {
-            $this->context->recordRemoteBranch($branch);
-        }
-        $prNumber = $entry->getPr();
-        if (!$this->context->dryRun && $prNumber === null) {
-            throw new \RuntimeException('Expected feature-review-approve to record the pull request number.');
-        }
-
-        $this->context->setPullRequestNumber($prNumber !== null ? (int) $prNumber : null);
+        $this->assertBacklogFails(
+            ['feature-review-approve', $feature, '--body-file', $bodyFile],
+            'feature-review-approve is no longer a public command.',
+        );
     }
 
     /**

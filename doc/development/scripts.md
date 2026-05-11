@@ -84,7 +84,7 @@ php scripts/backlog.php work-start --help
 php scripts/backlog.php work-start --agent agent-01
 php scripts/backlog.php review-request --agent agent-01
 php scripts/backlog.php entry-rename --agent agent-01 "New description"
-php scripts/backlog.php task-review-approve my-feature/my-task
+php scripts/backlog.php review-approve --agent r01 my-feature/my-task
 php scripts/backlog.php rework --agent agent-01 my-feature/my-task
 php scripts/backlog.php entry-merge my-feature/my-task --agent agent-01
 php scripts/backlog.php worktree-restore --agent agent-01 --force
@@ -94,7 +94,7 @@ Notes:
 - run `php scripts/backlog.php` for the global backlog help
 - use `php scripts/backlog.php help <command>` or `php scripts/backlog.php <command> --help` for one command
 - developer commands require `--agent=<code>`
-- reviewer commands never use `--agent`
+- reviewer commands (`review-check`, `review-approve`, `review-reject`, `review-next`, `review-cancel`) require `--agent=<reviewer>`
 - `base-update` refreshes the recorded Git base after a rebase; features update `origin/main` before using the merge base with it, and local child tasks default to the merge base with their parent feature branch
 - `worktree-restore` validates copied PHP vendors with `autoload.php` witnesses and can recreate a clean managed worktree with `--force`
 - `work-start` reads the next queued board entry, accepts plain text, the type prefixes `[feat]` / `[fix]` / `[tech]` (case-insensitive, at any position in the leading bracket sequence), a single `[feature-slug]` prefix, and scoped entries like `[feature-slug][task-slug] Task text`, then prints the started task or feature details with the assigned worktree

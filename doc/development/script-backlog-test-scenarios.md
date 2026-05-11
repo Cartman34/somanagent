@@ -271,10 +271,10 @@ Validate local child task review commands (reject, rework, approve). Demonstrate
 2. Inspect the review queue:
    - `php scripts/backlog.php review-next`
 3. Run the mechanical check:
-   - `php scripts/backlog.php task-review-check test-scoped-feature/test-child-a`
+   - `php scripts/backlog.php review-check --agent r01 test-scoped-feature/test-child-a`
 4. Reject it:
    - create a local review body under `local/tmp/`
-   - `php scripts/backlog.php task-review-reject test-scoped-feature/test-child-a --body-file local/tmp/test-task-review-reject.md`
+   - `php scripts/backlog.php review-reject --agent r01 test-scoped-feature/test-child-a --body-file local/tmp/test-task-review-reject.md`
 5. Inspect the stored review notes through the protected, read-only block (without mutating state):
    - `php scripts/backlog.php review-notes test-scoped-feature/test-child-a`
    - `php scripts/backlog.php review-notes --agent d01`
@@ -283,7 +283,7 @@ Validate local child task review commands (reject, rework, approve). Demonstrate
    - `php scripts/backlog.php rework --agent d01 test-scoped-feature/test-child-a`
    - `php scripts/backlog.php review-request --agent d01`
 7. Approve:
-   - `php scripts/backlog.php task-review-approve test-scoped-feature/test-child-a`
+   - `php scripts/backlog.php review-approve --agent r01 test-scoped-feature/test-child-a`
 8. Confirm the notes are gone after approval:
    - `php scripts/backlog.php review-notes test-scoped-feature/test-child-a`
 
@@ -336,7 +336,7 @@ Validate that after merging task A, `work-start` picks up the next queued scoped
    - `php scripts/backlog.php status test-scoped-feature`
 5. Submit, review, and approve task B (same cycle as Scenario 7):
    - `php scripts/backlog.php review-request --agent d01`
-   - `php scripts/backlog.php task-review-approve test-scoped-feature/test-child-b`
+   - `php scripts/backlog.php review-approve --agent r01 test-scoped-feature/test-child-b`
 6. Merge task B:
    - `php scripts/backlog.php entry-merge test-scoped-feature/test-child-b --agent d01`
 
@@ -363,9 +363,9 @@ Validate remote feature review transitions once all child tasks are merged.
    - `php scripts/backlog.php review-next`
    - `php scripts/backlog.php status test-scoped-feature`
 4. Run mechanical check:
-   - `php scripts/backlog.php feature-review-check test-scoped-feature`
+   - `php scripts/backlog.php review-check --agent r01 test-scoped-feature`
 5. Reject:
-   - `php scripts/backlog.php feature-review-reject test-scoped-feature --body-file local/tmp/test-feature-review-reject.md`
+   - `php scripts/backlog.php review-reject --agent r01 test-scoped-feature --body-file local/tmp/test-feature-review-reject.md`
 5.a Inspect the stored feature review notes through the protected, read-only block:
    - `php scripts/backlog.php review-notes test-scoped-feature`
    - `php scripts/backlog.php review-notes --agent d01`
@@ -374,7 +374,7 @@ Validate remote feature review transitions once all child tasks are merged.
    - `php scripts/backlog.php rework --agent d01 test-scoped-feature`
    - `php scripts/backlog.php review-request --agent d01`
 7. Approve:
-   - `php scripts/backlog.php feature-review-approve test-scoped-feature`
+   - `php scripts/backlog.php review-approve --agent r01 test-scoped-feature`
 
 ### Expected checks
 

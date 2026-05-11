@@ -8,7 +8,6 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\BacklogCommandFactory;
-use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 
@@ -57,7 +56,7 @@ final class BacklogReviewCheckCommand extends AbstractBacklogCommand
         }
 
         if (str_contains($reference, '/')) {
-            $this->commandFactory->createHandler(BacklogCommandName::TASK_REVIEW_CHECK->value)->handle([$reference], []);
+            $this->commandFactory->getTaskReviewCheckCommand()->performCheck([$reference], []);
 
             return;
         }
@@ -74,6 +73,6 @@ final class BacklogReviewCheckCommand extends AbstractBacklogCommand
             }
         }
 
-        $this->commandFactory->createHandler(BacklogCommandName::FEATURE_REVIEW_CHECK->value)->handle([$reference], []);
+        $this->commandFactory->getFeatureReviewCheckCommand()->performCheck([$reference], []);
     }
 }

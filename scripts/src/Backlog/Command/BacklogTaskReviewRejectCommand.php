@@ -44,6 +44,17 @@ final class BacklogTaskReviewRejectCommand extends AbstractBacklogCommand
      */
     public function handle(array $commandArgs, array $options): void
     {
+        throw new \RuntimeException(
+            'task-review-reject is no longer a public command. Use: php scripts/backlog.php review-reject --agent=<reviewer> <feature/task> --body-file=<path>',
+        );
+    }
+
+    /**
+     * @param list<string> $commandArgs
+     * @param array<string, bool|string|array<bool|string>> $options
+     */
+    public function performReject(array $commandArgs, array $options): void
+    {
         $bodyFile = $options['body-file'] ?? null;
         if (!is_string($bodyFile)) {
             throw new \RuntimeException('Option --body-file is required.');

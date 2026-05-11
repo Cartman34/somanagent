@@ -1,16 +1,4 @@
-description: 'Reject a feature and record reviewer blockers'
-arguments:
-  -
-    name: '<feature>'
-    description: 'Feature slug to reject'
-options:
-  -
-    name: '--body-file'
-    description: 'Local file containing one plain rejection finding per line'
-examples:
-  - 'php scripts/backlog.php feature-review-reject delete-question-reply --body-file local/tmp/review.md'
+description: 'Deprecated. Use review-reject instead.'
 notes:
-  - 'The feature must be in the review or reviewing stage.'
-  - 'Review notes are stored under `local/backlog-review.md` with the feature slug as key.'
-  - 'The body file must contain plain findings only: one finding per line, optional leading numbers or bullets, no Markdown headings.'
-  - 'The script rewrites findings as a clean numbered list.'
+  - 'This command is no longer available as a public command.'
+  - 'Use: php scripts/backlog.php review-reject --agent=<reviewer> <feature> --body-file=<path>'

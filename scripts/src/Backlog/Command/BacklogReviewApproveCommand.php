@@ -8,7 +8,6 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\BacklogCommandFactory;
-use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 
@@ -62,7 +61,7 @@ final class BacklogReviewApproveCommand extends AbstractBacklogCommand
                 throw new \RuntimeException('review-approve does not accept --body-file for task approvals.');
             }
 
-            $this->commandFactory->createHandler(BacklogCommandName::TASK_REVIEW_APPROVE->value)->handle([$reference], []);
+            $this->commandFactory->getTaskReviewApproveCommand()->performApprove([$reference], []);
 
             return;
         }
@@ -84,6 +83,6 @@ final class BacklogReviewApproveCommand extends AbstractBacklogCommand
             $delegatedOptions['body-file'] = $options['body-file'];
         }
 
-        $this->commandFactory->createHandler(BacklogCommandName::FEATURE_REVIEW_APPROVE->value)->handle([$reference], $delegatedOptions);
+        $this->commandFactory->getFeatureReviewApproveCommand()->performApprove([$reference], $delegatedOptions);
     }
 }

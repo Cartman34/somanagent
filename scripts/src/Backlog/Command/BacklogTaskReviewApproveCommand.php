@@ -39,6 +39,17 @@ final class BacklogTaskReviewApproveCommand extends AbstractBacklogCommand
      */
     public function handle(array $commandArgs, array $options): void
     {
+        throw new \RuntimeException(
+            'task-review-approve is no longer a public command. Use: php scripts/backlog.php review-approve --agent=<reviewer> <feature/task>',
+        );
+    }
+
+    /**
+     * @param list<string> $commandArgs
+     * @param array<string, bool|string|array<bool|string>> $options
+     */
+    public function performApprove(array $commandArgs, array $options): void
+    {
         $board = $this->loadBoard();
         $review = $this->loadReviewFile();
         $reference = $commandArgs[0] ?? '';

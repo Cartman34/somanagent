@@ -56,6 +56,17 @@ final class BacklogTaskReviewCheckCommand extends AbstractBacklogCommand
      */
     public function handle(array $commandArgs, array $options): void
     {
+        throw new \RuntimeException(
+            'task-review-check is no longer a public command. Use: php scripts/backlog.php review-check --agent=<reviewer> <feature/task>',
+        );
+    }
+
+    /**
+     * @param list<string> $commandArgs
+     * @param array<string, bool|string|array<bool|string>> $options
+     */
+    public function performCheck(array $commandArgs, array $options): void
+    {
         $board = $this->loadBoard();
         $match = $this->boardService->resolveTaskByReference($board, $commandArgs[0] ?? '', BacklogCommandName::TASK_REVIEW_CHECK->value);
         $entry = $match->getEntry();
@@ -90,7 +101,7 @@ final class BacklogTaskReviewCheckCommand extends AbstractBacklogCommand
             $tempBodyFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'somanagent-review-' . bin2hex(random_bytes(8));
             $this->fs->writeFilePath($tempBodyFile, $message);
 
-            $this->commandFactory->createHandler(BacklogCommandName::TASK_REVIEW_REJECT->value)->handle(
+            $this->commandFactory->getTaskReviewRejectCommand()->performReject(
                 [$this->boardService->getTaskReviewKey($entry)],
                 ['body-file' => $tempBodyFile]
             );
