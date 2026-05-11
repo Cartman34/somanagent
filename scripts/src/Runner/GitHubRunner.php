@@ -89,8 +89,7 @@ final class GitHubRunner extends AbstractScriptRunner
         if (is_string($bodyFile)) {
             $body = $this->readBodyFile($bodyFile);
         } else {
-            $bodyValue = $this->getSingleOption($flags, 'body') ?? '';
-            $body = (string) $bodyValue;
+            $body = $this->getSingleOption($flags, 'body') ?? '';
         }
 
         if (!$title) {
