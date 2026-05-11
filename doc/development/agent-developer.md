@@ -229,7 +229,7 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 3. For `kind=feature`, requires all child `kind=task` entries to have been merged locally first, and requires the agent to be assigned to the feature via `feature-assign`.
 4. Before running the mechanical review, the script rebases the entry branch automatically: a `kind=feature` is rebased on `origin/main` (with `origin/main` refreshed first), a `kind=task` is rebased on its local parent feature branch.
 5. After a successful rebase, `meta.base` is refreshed automatically to the new base commit. Manual `base-update` is not required after `review-request` succeeds.
-6. If the rebase fails (typically a conflict), the rebase is aborted, the command stops with a recovery hint, the entry stays in `development`, and the mechanical review is not run. Resolve the conflict manually in the worktree, commit, then rerun `review-request`.
+6. If the rebase fails (typically a conflict), the rebase is aborted, the command stops with a recovery hint, the entry stays in `development`, and the mechanical review is not run. The worktree is left clean by the abort. Update the branch manually in the worktree (rebase or merge onto the target and resolve the conflicts), then rerun `review-request`.
 
 ## Rules
 

@@ -10,5 +10,5 @@ notes:
   - 'Detects automatically whether the active entry is a task or a feature.'
   - 'For a task: rebases the task branch on its parent feature branch, runs the review script, refreshes meta.base, and moves the task to the review stage.'
   - 'For a feature: verifies no active child tasks remain, refreshes origin/main, rebases the feature branch on origin/main, runs the review script, refreshes meta.base, and moves the feature to the review stage.'
-  - 'If the rebase fails (typically a conflict), the rebase is aborted, the command stops with a recovery hint, the entry stays in development, and the mechanical review is not run.'
+  - 'If the rebase fails (typically a conflict), the rebase is aborted (leaving the worktree clean), the command stops with a recovery hint, the entry stays in development, and the mechanical review is not run. Update the branch manually in the worktree (rebase or merge onto the target and resolve the conflicts), then rerun review-request.'
   - 'The feature must have an assigned developer (run feature-assign first if needed).'

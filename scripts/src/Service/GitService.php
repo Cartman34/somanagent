@@ -174,7 +174,8 @@ final class GitService
             $this->git->rebaseAbortInPath($worktree);
 
             throw new \RuntimeException(sprintf(
-                "Cannot rebase onto %s automatically. The rebase has been aborted; resolve the conflict manually in the worktree, commit, then rerun review-request.\nDetail: %s",
+                "Cannot rebase onto %s automatically. The rebase was aborted, leaving the worktree clean. Update the branch manually in the worktree (rebase or merge onto %s and resolve the conflicts), then rerun review-request.\nDetail: %s",
+                $onto,
                 $onto,
                 $exception->getMessage(),
             ), 0, $exception);
