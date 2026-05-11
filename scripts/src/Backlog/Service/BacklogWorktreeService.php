@@ -70,6 +70,10 @@ final class BacklogWorktreeService
         $this->fs = $fs;
     }
 
+    /**
+     * @param string $agent Agent code
+     * @return string Absolute path to the agent worktree
+     */
     public function getAgentWorktreePath(string $agent): string
     {
         return $this->worktreesRoot . '/' . $agent;
