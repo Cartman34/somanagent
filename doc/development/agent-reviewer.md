@@ -180,7 +180,9 @@ Also check:
 
 1. Prepare the approved PR body file under `local/tmp/`.
 2. Run `php scripts/backlog.php feature-review-approve <feature> --body-file=<path>`.
-3. The script pushes the branch, waits until the remote branch is visible, creates the PR if it does not exist yet, retries PR creation when GitHub still reports a transient invalid head, updates the PR title and body, determines the main tag by priority `FEAT > FIX > TECH > DOC`, and sets `meta.stage=approved`.
+3. The script pushes the branch with safe-force semantics, waits until the remote branch is visible, creates the PR if it does not exist yet, retries PR creation when GitHub still reports a transient invalid head, updates the PR title and body, determines the main tag by priority `FEAT > FIX > TECH > DOC`, and sets `meta.stage=approved`.
+4. Push behavior: the script fetches `origin/<branch>` first to observe the current remote SHA. If the remote branch does not exist or the local branch is descendant of (or equal to) the remote, it does a normal upstream push. If the local branch has diverged from the remote (typical when `review-request` rebased the local branch), it pushes with `--force-with-lease=<branch>:<observed-sha>` so the push fails when the remote moved between the observation and the push, never using an unprotected `--force`.
+5. The script refuses the approval when the local branch is behind the remote (someone else pushed in the meantime). In that case, pull or rebase locally and resubmit through `review-request`.
 
 ### `feature-close`
 

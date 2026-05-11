@@ -158,7 +158,7 @@ final class PullRequestService
             function () use ($title, $branch, $baseBranch, $bodyFile): array {
                 $result = $this->github->createPr($title, $branch, $baseBranch, $bodyFile);
                 if ($result[0] !== 0 && $this->isHeadInvalidCreateError($result[1])) {
-                    $this->gitService->pushBranchAndAwaitVisibility($branch);
+                    $this->gitService->pushBranchSafely($branch);
                 }
 
                 return $result;

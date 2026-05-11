@@ -233,6 +233,68 @@ final class GitService
     }
 
     /**
+     * Push a branch to a remote with safe-force semantics.
+     *
+     * Refreshes `origin/<branch>` first to observe the current remote SHA,
+     * then decides the push mode without ever using an unprotected `--force`:
+     * - remote branch does not exist: normal upstream push (creates it);
+     * - local is descendant of (or equal to) remote: normal upstream push (fast-forward);
+     * - local has diverged from remote (typical of a rebased branch): push
+     *   with `--force-with-lease=<branch>:<observed-sha>` so the push fails if
+     *   the remote moved between the observation and the push;
+     * - local is behind remote: refuse with a clear error.
+     *
+     * After a successful push, fetches and waits for the new remote ref to
+     * become visible.
+     *
+     * @param string $branch Branch name to push
+     * @param string $remote Remote name (default: origin)
+     * @param string|null $worktree Optional worktree path
+     * @throws \RuntimeException When the local branch is behind the remote or
+     *                           the remote SHA cannot be observed
+     */
+    public function pushBranchSafely(string $branch, string $remote = self::ORIGIN_REMOTE, ?string $worktree = null): void
+    {
+        // ls-remote first so we never call `git fetch <remote> <missing-branch>`,
+        // which would fail with "couldn't find remote ref" on the initial push.
+        if (!$this->git->isRemoteBranchVisible($branch, $remote)) {
+            $this->pushBranchAndAwaitVisibility($branch, $remote, $worktree);
+
+            return;
+        }
+
+        $this->git->fetch($remote, $branch, worktree: $worktree);
+
+        $remoteRef = $remote . '/' . $branch;
+        $remoteSha = $this->git->branchHead($remoteRef);
+        if ($remoteSha === '') {
+            throw new \RuntimeException(sprintf(
+                'Cannot push branch %s safely: unable to observe %s SHA.',
+                $branch,
+                $remoteRef,
+            ));
+        }
+
+        if ($this->git->isAncestor($remoteRef, $branch)) {
+            $this->pushBranchAndAwaitVisibility($branch, $remote, $worktree);
+
+            return;
+        }
+
+        if ($this->git->isAncestor($branch, $remoteRef)) {
+            throw new \RuntimeException(sprintf(
+                'Cannot push branch %s safely: local branch is behind %s. Pull or rebase before retrying.',
+                $branch,
+                $remoteRef,
+            ));
+        }
+
+        $this->git->pushForceWithLease($branch, $remote, $remoteSha, $worktree);
+        $this->git->fetch($remote, $branch, worktree: $worktree);
+        $this->waitForRemoteBranchVisibility($branch, $remote);
+    }
+
+    /**
      * Push branch if it's ahead of remote.
      *
      * @param string $branch Branch to push

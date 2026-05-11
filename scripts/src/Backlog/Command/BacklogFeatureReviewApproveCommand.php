@@ -81,7 +81,7 @@ final class BacklogFeatureReviewApproveCommand extends AbstractBacklogCommand
 
         $tag = $this->pullRequestService->getPrTypeFromChanges($entry->getBase() ?? '', $branch);
         $title = $this->pullRequestService->buildPrTitle($tag, $entry->getText(), $entry->checkIsBlocked());
-        $this->gitService->pushBranchAndAwaitVisibility($branch);
+        $this->gitService->pushBranchSafely($branch);
         $this->pullRequestService->createOrUpdatePr($branch, $title, $bodyFile);
         $prNumber = $this->pullRequestService->findPrNumberByBranch($branch);
         if ($prNumber === null && !$this->dryRun) {
