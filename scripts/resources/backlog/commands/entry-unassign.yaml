@@ -2,16 +2,17 @@ description: 'Remove the current agent assignment from one active backlog entry 
 arguments:
   -
     name: '[<feature>|<task>|<feature/task>]'
-    description: 'Optional explicit reference. Without it, the command resolves the agent single active entry.'
+    description: 'Optional explicit reference. Without it, the command resolves the caller agent single active entry.'
 options:
   -
     name: '--agent'
-    description: 'Agent code currently assigned to the entry'
+    description: 'Caller agent code. With an explicit reference, this is not used to select the entry assignment to remove.'
 examples:
-  - 'php scripts/backlog.php entry-unassign --agent agent-01'
-  - 'php scripts/backlog.php entry-unassign delete-question-reply --agent agent-01'
-  - 'php scripts/backlog.php entry-unassign delete-question-reply/cleanup --agent agent-01'
+  - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=agent-01 php scripts/backlog.php entry-unassign --agent agent-01'
+  - 'SOMANAGER_ROLE=manager php scripts/backlog.php entry-unassign delete-question-reply --agent manager-01'
+  - 'SOMANAGER_ROLE=manager php scripts/backlog.php entry-unassign delete-question-reply/cleanup --agent manager-01'
 notes:
   - 'The caller role is controlled by `SOMANAGER_ROLE`.'
   - 'With `SOMANAGER_ROLE=developer`, `SOMANAGER_AGENT` must match `--agent` and the developer may only unassign its own active entry.'
+  - 'With `SOMANAGER_ROLE=manager`, an explicit reference may target an entry assigned to any developer agent.'
   - 'A plain slug that matches both a feature and a task is rejected as ambiguous; use `<feature/task>` to disambiguate.'

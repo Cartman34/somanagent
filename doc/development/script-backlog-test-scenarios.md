@@ -212,17 +212,17 @@ Validate feature assignment and unassignment permissions.
 4. Inspect:
    - `php scripts/backlog.php status --agent d02`
 5. Unassign with manager role:
-   - `SOMANAGER_ROLE=manager php scripts/backlog.php entry-unassign test-assign-feature --agent d02`
+   - `SOMANAGER_ROLE=manager php scripts/backlog.php entry-unassign test-assign-feature --agent m01`
 6. Unassign a child task with manager role using `<feature/task>`:
-   - `SOMANAGER_ROLE=manager php scripts/backlog.php entry-unassign test-assign-feature/cleanup --agent d02`
-7. Unassign the agent's single active entry without an explicit reference:
+   - `SOMANAGER_ROLE=manager php scripts/backlog.php entry-unassign test-assign-feature/cleanup --agent m01`
+7. Unassign the caller agent's single active entry without an explicit reference:
    - `SOMANAGER_ROLE=manager php scripts/backlog.php entry-unassign --agent d02`
 
 ### Expected checks
 
 - assignment updates `meta.agent`
 - target worktree is prepared for the assigned agent
-- unassignment removes the assignment cleanly on a feature, on a task, and on the agent's single active entry resolved by `--agent`
+- unassignment removes the assignment cleanly on an explicitly referenced feature or task even when `--agent` is a manager caller code, and still works on the caller agent's single active entry when no reference is provided
 
 ### Negative checks
 

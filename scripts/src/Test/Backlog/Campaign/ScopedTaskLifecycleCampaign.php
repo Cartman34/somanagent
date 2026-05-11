@@ -19,6 +19,8 @@ use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
  */
 final class ScopedTaskLifecycleCampaign implements CampaignInterface
 {
+    private const MANAGER_AGENT = 'test-m01';
+
     public function getName(): string
     {
         return 'scoped-task-lifecycle';
@@ -226,20 +228,20 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
 
         $driver->createTodoTask(sprintf('[%s][%s] Task for entry-unassign coverage', $featureSlug, $taskSlug));
         $driver->startNextFeature($context->agentPrimary);
-        $driver->unassignEntryAsManager($taskRef, $context->agentPrimary);
+        $driver->unassignEntryAsManager($taskRef, self::MANAGER_AGENT);
 
         $taskOnlyFeature = 'test-eu-task-only-feature';
         $taskOnlySlug = 'test-eu-task-only';
         $driver->createTodoTask(sprintf('[%s][%s] Task for entry-unassign by task slug only', $taskOnlyFeature, $taskOnlySlug));
         $driver->startNextFeature($context->agentPrimary);
-        $driver->unassignEntryAsManager($taskOnlySlug, $context->agentPrimary);
+        $driver->unassignEntryAsManager($taskOnlySlug, self::MANAGER_AGENT);
 
         $driver->createTodoTask(sprintf('[%s] Plain feature colliding with the orphaned task slug', $taskSlug));
         $driver->startNextFeature($context->agentSecondary);
 
         $driver->assertUnassignEntryFails(
             $taskSlug,
-            $context->agentSecondary,
+            self::MANAGER_AGENT,
             ['SOMANAGER_ROLE' => 'manager'],
             sprintf('Ambiguous reference %s: matches both a feature and a task.', $taskSlug),
         );

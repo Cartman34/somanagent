@@ -76,11 +76,12 @@ Rules:
 
 1. `feature-assign` and `entry-unassign` read the active caller role from `SOMANAGER_ROLE`.
 2. Allowed values are `manager` and `developer`.
-3. When `SOMANAGER_ROLE=developer`, `SOMANAGER_AGENT` is mandatory and must match the `--agent` value passed to the command.
-4. `Manager` may assign any feature, and may unassign any active entry (feature or task) for any developer agent.
-5. `Developer` may only assign itself to an unassigned feature or keep the same self-assignment.
-6. `Developer` may only unassign itself from its own active entry, whether it is a `kind=task` or a `kind=feature`.
-7. `entry-unassign` accepts a `<feature>`, `<task>`, or `<feature/task>` reference, or no reference to fall back to the agent's single active entry. A plain slug that matches both a feature and a task is rejected as ambiguous.
+3. For `entry-unassign`, `--agent` identifies the caller. With an explicit entry reference, it does not select which assigned agent is removed.
+4. When `SOMANAGER_ROLE=developer`, `SOMANAGER_AGENT` is mandatory and must match the `--agent` value passed to the command.
+5. `Manager` may assign any feature, and may unassign any active entry (feature or task) for any developer agent.
+6. `Developer` may only assign itself to an unassigned feature or keep the same self-assignment.
+7. `Developer` may only unassign itself from its own active entry, whether it is a `kind=task` or a `kind=feature`.
+8. `entry-unassign` accepts a `<feature>`, `<task>`, or `<feature/task>` reference, or no reference to fall back to the caller agent's single active entry. A plain slug that matches both a feature and a task is rejected as ambiguous.
 
 ## Queued Task Format
 
