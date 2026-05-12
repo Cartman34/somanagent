@@ -14,7 +14,12 @@ use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 
 /**
- * Command for creating a new task in the todo section.
+ * Inserts a new task into the todo section.
+ *
+ * The `--position=index --index=<n>` option is advisory: out-of-range values
+ * clamp to the start or the end (with a warning) so a concurrent reorder of the
+ * queue cannot turn the insertion into a hard failure. Display numbers are
+ * never used to identify queued tasks for mutation.
  */
 final class BacklogTaskCreateCommand extends AbstractBacklogCommand
 {
@@ -138,15 +143,24 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
             return $entryCount;
         }
 
-        $rawIndex = $options['index'] ?? 0;
+        if (!array_key_exists('index', $options)) {
+            throw new \RuntimeException('task-create with --position=index requires --index=<1-based-position>.');
+        }
+        $rawIndex = $options['index'];
         if (is_array($rawIndex)) {
             throw new \RuntimeException('Option --index cannot be repeated.');
         }
         $index = (int) $rawIndex;
-        if ($index <= 0) {
-            throw new \RuntimeException('task-create with --position=index requires --index=<positive-number>.');
+        $clamped = max(0, min($entryCount, $index - 1));
+        if ($clamped !== $index - 1) {
+            $this->presenter->displayLine(sprintf(
+                'Warning: --index=%d is out of range (1..%d); inserting at position %d instead.',
+                $index,
+                max(1, $entryCount + 1),
+                $clamped + 1,
+            ));
         }
 
-        return min($entryCount, $index - 1);
+        return $clamped;
     }
 }

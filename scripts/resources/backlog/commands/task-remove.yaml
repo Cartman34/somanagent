@@ -1,7 +1,11 @@
-description: 'Remove one queued todo task by its displayed number'
+description: 'Remove one queued todo task by its stable feature or feature/task reference'
 arguments:
   -
-    name: '<number>'
-    description: '1-based number shown by todo-list'
+    name: '<feature|feature/task>'
+    description: 'Stable slug shown in brackets by todo-list (feature slug, or feature/task pair for scoped tasks)'
 examples:
-  - 'php scripts/backlog.php task-remove 8'
+  - 'php scripts/backlog.php task-remove my-feature'
+  - 'php scripts/backlog.php task-remove my-feature/my-task'
+notes:
+  - 'Queued display numbers shown by todo-list are advisory only; pass the bracketed reference to identify the task.'
+  - 'Refuses when the reference is missing, unknown, or matches more than one queued task; rename a colliding queued task or pass <feature/task> to disambiguate.'

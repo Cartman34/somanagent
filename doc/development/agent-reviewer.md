@@ -75,12 +75,13 @@ Rules:
 ### `todo-list`
 
 1. Run `php scripts/backlog.php todo-list`.
-2. The script prints queued tasks in priority order.
+2. The script prints queued tasks in priority order. Each line shows the display index, the queued entry's stable reference between brackets, and the original task text. Numbers are advisory only and never accepted as mutation identity.
 
 ### `task-remove`
 
-1. Run `php scripts/backlog.php task-remove <number>`.
-2. The script removes the queued task at the given 1-based position from `## To do`.
+1. Run `php scripts/backlog.php task-remove <feature|feature/task>`.
+2. The reference is the stable slug shown between brackets by `todo-list`: a feature slug for plain queued tasks, or a `<feature>/<task>` pair for scoped child tasks.
+3. The script refuses an empty, unknown, or ambiguous reference; rename a colliding queued task or pass `<feature/task>` to disambiguate.
 
 ### `review-next`
 
@@ -92,10 +93,10 @@ Rules:
 
 ### `review-cancel`
 
-1. Run `php scripts/backlog.php review-cancel --agent=<reviewer> [<feature>|<feature/task>]`.
-2. Moves the entry from `reviewing` back to `review` and clears `meta.reviewer`.
-3. Only the reviewer who claimed the entry may cancel it. A manager (`SOMANAGER_ROLE=manager`) may force-cancel any stuck reviewing entry.
-4. When no reference is given, the script auto-resolves the reviewer's single reviewing entry; fails if none or ambiguous.
+1. Run `php scripts/backlog.php review-cancel <feature|feature/task> --agent=<reviewer>`.
+2. The reference is mandatory: review-cancel never auto-resolves the entry from the agent code, so the mutation cannot silently retarget another claim.
+3. Moves the entry from `reviewing` back to `review` and clears `meta.reviewer` after verifying the entry's stored reviewer matches `--agent`.
+4. A manager (`SOMANAGER_ROLE=manager`) may force-cancel any stuck reviewing entry with the same explicit reference contract.
 
 ### `review-notes`
 

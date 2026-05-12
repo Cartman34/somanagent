@@ -28,7 +28,25 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
     {
         $driver->createTodoTask('test-remove-task');
         $driver->assertTodoContains('test-remove-task');
-        $driver->removeFirstTodoTask();
+        $driver->assertTodoContains('[test-remove-task]');
+        $driver->assertTaskRemoveFails('', 'requires a queued task reference');
+        $driver->assertTaskRemoveFails('does-not-exist-slug', 'No queued task found for reference: does-not-exist-slug');
+        $driver->removeTodoTask('test-remove-task');
+
+        $driver->createTodoTask('[feat][stable-feature-ref][stable-task-ref] Scoped task for stable reference coverage');
+        $driver->createTodoTask('[feat][stable-feature-ref] Plain feature with same feature slug as the scoped child');
+        $driver->removeTodoTask('stable-feature-ref/stable-task-ref');
+        $driver->removeTodoTask('stable-feature-ref');
+
+        $driver->createTodoTask('[ambiguous-plain-ref] First plain instance');
+        $driver->createTodoTask('[ambiguous-plain-ref] Second plain instance with same feature slug');
+        $driver->assertTaskRemoveFails('ambiguous-plain-ref', 'Ambiguous queued reference ambiguous-plain-ref');
+        $driver->replaceBoardText(
+            '- [ambiguous-plain-ref] Second plain instance with same feature slug',
+            '- [ambiguous-plain-ref-2] Second plain instance with renamed feature slug',
+        );
+        $driver->removeTodoTask('ambiguous-plain-ref');
+        $driver->removeTodoTask('ambiguous-plain-ref-2');
 
         $driver->createTodoTask($context->plainFeature);
         $driver->assertTodoContains($context->plainFeature);

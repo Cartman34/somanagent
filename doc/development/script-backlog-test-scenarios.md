@@ -98,18 +98,21 @@ Validate queued task insertion, ordering, listing, and removal.
 ### Steps
 
 1. `php scripts/backlog.php todo-list`
-2. `php scripts/backlog.php task-create Test inserted at end`
-3. `php scripts/backlog.php task-create --position=start Test inserted at start`
-4. `php scripts/backlog.php task-create --position=index --index=2 Test inserted at index`
+2. `php scripts/backlog.php task-create "[scenario-todo-end] Test inserted at end"`
+3. `php scripts/backlog.php task-create --position=start "[scenario-todo-start] Test inserted at start"`
+4. `php scripts/backlog.php task-create --position=index --index=2 "[scenario-todo-index] Test inserted at index"`
 5. `php scripts/backlog.php todo-list`
-6. Remove one inserted task with:
-   - `php scripts/backlog.php task-remove <exact task reference expected by the command>`
+6. Remove one inserted task by its stable reference shown in todo-list:
+   - `php scripts/backlog.php task-remove scenario-todo-index`
 
 ### Expected checks
 
 - inserted tasks appear in the expected order
 - typed input such as `[feat]` or `[fix]` keeps valid metadata behavior
-- removing a queued task updates only the todo section
+- todo-list shows each queued entry with its stable reference between brackets
+- removing a queued task by reference updates only the todo section
+- `task-remove` refuses an empty, unknown, or ambiguous reference and never accepts display numbers as identity
+- `task-create --position=index` clamps out-of-range `--index` values to start/end with a warning, while still inserting the task
 
 ## Scenario 3 - Start Plain Feature
 

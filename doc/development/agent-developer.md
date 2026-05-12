@@ -89,12 +89,13 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 ### `todo-list`
 
 1. Run `php scripts/backlog.php todo-list`.
-2. The script prints queued tasks in priority order.
+2. The script prints queued tasks in priority order. Each line shows the display index, the queued entry's stable reference between brackets, and the original task text. Numbers are advisory only and never accepted as mutation identity.
 
 ### `task-remove`
 
-1. Run `php scripts/backlog.php task-remove <number>`.
-2. The script removes the queued task at the given 1-based position from `## To do`.
+1. Run `php scripts/backlog.php task-remove <feature|feature/task>`.
+2. The reference is the stable slug shown between brackets by `todo-list`: a feature slug for plain queued tasks, or a `<feature>/<task>` pair for scoped child tasks.
+3. The script refuses an empty, unknown, or ambiguous reference; rename a colliding queued task or pass `<feature/task>` to disambiguate.
 
 ### `entry-rename`
 

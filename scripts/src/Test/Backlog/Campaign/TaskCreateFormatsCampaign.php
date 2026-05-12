@@ -122,5 +122,37 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
             '--body-file path does not exist',
             ['--body-file=local/tmp/task-create-missing-body-file.md'],
         );
+
+        // --position=index clamps out-of-range values while still inserting the task.
+        $driver->createTodoTask('[clamp-low] Task to anchor the queue for clamp coverage');
+        $clampLowOutput = $driver->runBacklog([
+            'task-create',
+            '[clamp-zero] Insert with --index=0 should clamp to start',
+            '--position=index',
+            '--index=0',
+        ]);
+        $driver->assertOutputContainsAll($clampLowOutput, [
+            'Warning: --index=0 is out of range',
+            'inserting at position 1 instead',
+        ]);
+        $driver->assertTodoContains('[clamp-zero] Insert with --index=0 should clamp to start');
+        $clampHighOutput = $driver->runBacklog([
+            'task-create',
+            '[clamp-high] Insert with --index=99 should clamp to end',
+            '--position=index',
+            '--index=99',
+        ]);
+        $driver->assertOutputContainsAll($clampHighOutput, [
+            'Warning: --index=99 is out of range',
+        ]);
+        $driver->assertTodoContains('[clamp-high] Insert with --index=99 should clamp to end');
+        $driver->removeTodoTask('clamp-zero');
+        $driver->removeTodoTask('clamp-low');
+        $driver->removeTodoTask('clamp-high');
+
+        $driver->assertTaskCreateFails(
+            'task-create with --position=index requires --index=',
+            ['Missing index value', '--position=index'],
+        );
     }
 }

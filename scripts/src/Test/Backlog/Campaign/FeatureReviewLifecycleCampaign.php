@@ -59,6 +59,8 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
             throw new \RuntimeException('Expected feature-list to show reviewer=' . $context->agentSecondary);
         }
 
+        // review-cancel requires an explicit reference; never auto-resolves by agent
+        $driver->assertReviewCancelFails($context->agentSecondary, '', 'review-cancel requires an explicit <feature> or <feature/task> reference.');
         // review-cancel releases the entry back to review
         $driver->reviewCancel($context->agentSecondary, $context->fixFeature);
         $driver->assertReviewCancelFails($context->agentSecondary, $context->fixFeature, 'Reviewing');

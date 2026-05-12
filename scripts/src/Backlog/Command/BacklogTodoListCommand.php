@@ -12,7 +12,11 @@ use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 
 /**
- * Command for listing tasks in the todo section.
+ * Lists queued tasks in priority order with their stable mutation reference.
+ *
+ * Each line shows the display index, the stable feature (or feature/task) slug
+ * between brackets, and the original task text. Display numbers are advisory
+ * only; mutations such as task-remove always require the stable reference.
  */
 final class BacklogTodoListCommand extends AbstractBacklogCommand
 {
@@ -43,8 +47,8 @@ final class BacklogTodoListCommand extends AbstractBacklogCommand
         }
 
         foreach ($entries as $index => $entry) {
-            $prefix = sprintf('%d. ', $index + 1);
-            $this->presenter->displayLine($prefix . $entry->getText());
+            $reference = $this->boardService->computeQueuedEntryReference($entry);
+            $this->presenter->displayLine(sprintf('%d. [%s] %s', $index + 1, $reference, $entry->getText()));
         }
     }
 }

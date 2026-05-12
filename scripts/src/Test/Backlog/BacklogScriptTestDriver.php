@@ -217,11 +217,38 @@ MD);
     }
 
     /**
-     * Remove the first todo task
+     * Remove the first todo task using its stable reference.
      */
     public function removeFirstTodoTask(): void
     {
-        $this->runBacklog(['task-remove', '1']);
+        $service = $this->boardService();
+        $entries = $service->loadBoard($this->context->boardPath)->getEntries(BacklogBoard::SECTION_TODO);
+        if ($entries === []) {
+            throw new \RuntimeException('removeFirstTodoTask: no queued todo task to remove.');
+        }
+        $reference = $service->computeQueuedEntryReference($entries[0]);
+        $this->runBacklog(['task-remove', $reference]);
+    }
+
+    /**
+     * Remove a queued todo task by its stable reference.
+     *
+     * @param string $reference Feature slug or feature/task slug pair
+     */
+    public function removeTodoTask(string $reference): void
+    {
+        $this->runBacklog(['task-remove', $reference]);
+    }
+
+    /**
+     * Asserts that `task-remove` fails with the given message.
+     *
+     * @param string $reference Reference passed to task-remove
+     * @param string $needle Expected substring of the failure output
+     */
+    public function assertTaskRemoveFails(string $reference, string $needle): void
+    {
+        $this->assertBacklogFails(['task-remove', $reference], $needle);
     }
 
     /**

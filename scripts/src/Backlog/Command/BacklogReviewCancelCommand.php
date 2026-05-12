@@ -15,10 +15,13 @@ use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use RuntimeException;
 
 /**
- * Command for releasing a reviewing entry back to the review stage.
+ * Releases a reviewing entry back to the review stage.
  *
- * The reviewer who claimed the entry (via review-next) may cancel their own
- * claim. A manager (SOMANAGER_ROLE=manager) may force-cancel any stuck review.
+ * The reviewer who claimed the entry (via review-next) must pass an explicit
+ * `<feature>` or `<feature/task>` reference: no implicit resolution by agent so
+ * the mutation never silently retargets a different entry. A manager
+ * (SOMANAGER_ROLE=manager) may force-cancel any stuck review with the same
+ * explicit reference contract.
  */
 final class BacklogReviewCancelCommand extends AbstractBacklogCommand
 {
@@ -50,14 +53,15 @@ final class BacklogReviewCancelCommand extends AbstractBacklogCommand
             throw new RuntimeException('review-cancel requires --agent=<reviewer>.');
         }
 
+        $reference = $commandArgs[0] ?? null;
+        if (!is_string($reference) || trim($reference) === '') {
+            throw new RuntimeException('review-cancel requires an explicit <feature> or <feature/task> reference.');
+        }
+
         $isManager = strtolower(trim((string) getenv('SOMANAGER_ROLE'))) === self::ROLE_MANAGER;
 
         $board = $this->loadBoard();
-        $reference = $commandArgs[0] ?? null;
-
-        $entry = $reference !== null
-            ? $this->resolveByReference($board, $reference)
-            : $this->resolveReviewingEntryForAgent($board, $agent);
+        $entry = $this->resolveByReference($board, $reference);
 
         $stage = $this->boardService->getFeatureStage($entry);
         if ($stage !== BacklogBoard::STAGE_REVIEWING) {
@@ -69,11 +73,12 @@ final class BacklogReviewCancelCommand extends AbstractBacklogCommand
             ));
         }
 
-        if (!$isManager && $entry->getReviewer() !== $agent) {
+        $claimedBy = $entry->getReviewer();
+        if (!$isManager && $claimedBy !== $agent) {
             throw new RuntimeException(sprintf(
                 'Entry %s is claimed by reviewer %s. Only that reviewer or a manager can cancel it.',
                 $this->describeEntry($entry),
-                $entry->getReviewer() ?? '-',
+                $claimedBy ?? '-',
             ));
         }
 
@@ -122,36 +127,6 @@ final class BacklogReviewCancelCommand extends AbstractBacklogCommand
         }
 
         throw new RuntimeException(sprintf('No active entry found for reference: %s', $reference));
-    }
-
-    private function resolveReviewingEntryForAgent(BacklogBoard $board, string $agent): BoardEntry
-    {
-        $candidates = [];
-
-        foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-            if ($this->boardService->getFeatureStage($entry) === BacklogBoard::STAGE_REVIEWING
-                && $entry->getReviewer() === $agent) {
-                $candidates[] = $entry;
-            }
-        }
-
-        if ($candidates === []) {
-            throw new RuntimeException(sprintf(
-                'Reviewer %s has no entry in %s.',
-                $agent,
-                $this->boardService->getStageLabel(BacklogBoard::STAGE_REVIEWING),
-            ));
-        }
-
-        if (count($candidates) > 1) {
-            throw new RuntimeException(sprintf(
-                'Reviewer %s has multiple entries in %s. Provide an explicit reference.',
-                $agent,
-                $this->boardService->getStageLabel(BacklogBoard::STAGE_REVIEWING),
-            ));
-        }
-
-        return $candidates[0];
     }
 
     private function describeEntry(BoardEntry $entry): string
