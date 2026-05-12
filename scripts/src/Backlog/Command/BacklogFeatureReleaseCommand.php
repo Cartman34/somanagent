@@ -24,6 +24,14 @@ final class BacklogFeatureReleaseCommand extends AbstractBacklogCommand
 
     private GitService $gitService;
 
+    /**
+     * @param BacklogPresenter $presenter
+     * @param bool $dryRun
+     * @param string $projectRoot
+     * @param BacklogBoardService $boardService
+     * @param BacklogWorktreeService $worktreeService
+     * @param GitService $gitService
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
@@ -37,6 +45,10 @@ final class BacklogFeatureReleaseCommand extends AbstractBacklogCommand
         $this->gitService = $gitService;
     }
 
+    /**
+     * @param list<string> $commandArgs
+     * @param array<string, bool|string> $options
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $agent = $this->requireCallerAgent();
