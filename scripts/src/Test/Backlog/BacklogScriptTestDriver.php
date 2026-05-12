@@ -570,44 +570,15 @@ MD);
     }
 
     /**
-     * Assert that task-review-check produces a redirect error (no longer a public command).
+     * Assert that the given command name is rejected as unknown, with no specific legacy text.
      *
-     * @param string $reference Task reference to check
+     * @param string $name Command name expected to be unknown
      */
-    public function checkTaskReview(string $reference): void
+    public function assertCommandIsUnknown(string $name): void
     {
         $this->assertBacklogFails(
-            ['task-review-check', $reference],
-            'task-review-check is no longer a public command.',
-        );
-    }
-
-    /**
-     * Assert that task-review-reject produces a redirect error (no longer a public command).
-     *
-     * @param string $reference Task reference to reject
-     * @param string $bodyFile Path to reject body file
-     */
-    public function rejectTaskReview(string $reference, string $bodyFile): void
-    {
-        $this->assertBacklogFails(
-            ['task-review-reject', $reference, '--body-file', $bodyFile],
-            'task-review-reject is no longer a public command.',
-        );
-    }
-
-    /**
-     * Assert that task-review-reject produces a redirect error (no longer a public command).
-     *
-     * @param string $reference Task reference to reject
-     * @param string $bodyFile Path to reject body file
-     * @param string $needle Unused — redirect message is checked regardless
-     */
-    public function assertTaskReviewRejectFails(string $reference, string $bodyFile, string $needle): void
-    {
-        $this->assertBacklogFails(
-            ['task-review-reject', $reference, '--body-file', $bodyFile],
-            'task-review-reject is no longer a public command.',
+            [$name],
+            sprintf('Unknown command: %s. Run with --help for the list of available commands.', $name),
         );
     }
 
@@ -705,19 +676,6 @@ MD);
     }
 
     /**
-     * Assert that task-review-approve produces a redirect error (no longer a public command).
-     *
-     * @param string $reference Task reference to approve
-     */
-    public function approveTask(string $reference): void
-    {
-        $this->assertBacklogFails(
-            ['task-review-approve', $reference],
-            'task-review-approve is no longer a public command.',
-        );
-    }
-
-    /**
      * @param string $reference Task reference to merge
      */
     public function mergeTask(string $reference): void
@@ -802,77 +760,6 @@ MD);
     public function requestFeatureReview(string $agent): void
     {
         $this->runBacklog(['review-request', '--agent', $agent]);
-    }
-
-    /**
-     * Assert that feature-review-check produces a redirect error (no longer a public command).
-     *
-     * @param string $feature Feature name to check
-     */
-    public function checkFeatureReview(string $feature): void
-    {
-        $this->assertBacklogFails(
-            ['feature-review-check', $feature],
-            'feature-review-check is no longer a public command.',
-        );
-    }
-
-    /**
-     * Assert that feature-review-reject produces a redirect error (no longer a public command).
-     *
-     * @param string $feature Feature name to reject
-     * @param string $bodyFile Path to reject body file
-     */
-    public function rejectFeatureReview(string $feature, string $bodyFile): void
-    {
-        $this->assertBacklogFails(
-            ['feature-review-reject', $feature, '--body-file', $bodyFile],
-            'feature-review-reject is no longer a public command.',
-        );
-    }
-
-    /**
-     * Assert that feature-review-reject produces a redirect error (no longer a public command).
-     *
-     * @param string $feature Feature name to reject
-     * @param string $bodyFile Path to reject body file
-     * @param string $needle Unused — redirect message is checked regardless
-     */
-    public function assertFeatureReviewRejectFails(string $feature, string $bodyFile, string $needle): void
-    {
-        $this->assertBacklogFails(
-            ['feature-review-reject', $feature, '--body-file', $bodyFile],
-            'feature-review-reject is no longer a public command.',
-        );
-    }
-
-    /**
-     * Assert that feature-review-approve produces a redirect error (no longer a public command).
-     *
-     * @param string $feature Feature name to approve
-     * @param string $bodyFile Path to approve body file
-     * @param string $needle Unused — redirect message is checked regardless
-     */
-    public function assertFeatureReviewApproveFails(string $feature, string $bodyFile, string $needle): void
-    {
-        $this->assertBacklogFails(
-            ['feature-review-approve', $feature, '--body-file', $bodyFile],
-            'feature-review-approve is no longer a public command.',
-        );
-    }
-
-    /**
-     * Assert that feature-review-approve produces a redirect error (no longer a public command).
-     *
-     * @param string $feature Feature name to approve
-     * @param string $bodyFile Path to approve body file
-     */
-    public function approveFeature(string $feature, string $bodyFile): void
-    {
-        $this->assertBacklogFails(
-            ['feature-review-approve', $feature, '--body-file', $bodyFile],
-            'feature-review-approve is no longer a public command.',
-        );
     }
 
     /**

@@ -1,4 +1,0 @@
-description: 'Deprecated. Use review-approve instead.'
-notes:
-  - 'This command is no longer available as a public command.'
-  - 'Use: php scripts/backlog.php review-approve --agent=<reviewer> <feature/task>'

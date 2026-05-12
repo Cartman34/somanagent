@@ -77,8 +77,25 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
         $board = $this->loadBoard();
 
         $activeEntries = $this->boardService->findActiveEntriesByAgent($board, $agent);
+
         if ($activeEntries !== []) {
-            throw new \RuntimeException($this->boardService->describeActiveEntryConflict($activeEntries, $agent));
+            // Allow starting a scoped child task when the agent's only active entry is the parent
+            // feature container for that task (auto-assigned by feature-task-merge on prior task merge).
+            // Only applies when no explicit reference is given; explicit references use the normal guard.
+            $allowStart = false;
+            if ($explicitReference === null && count($activeEntries) === 1) {
+                $nextTask = $this->boardService->fetchNextTodoTask($board);
+                $scopedTask = $nextTask !== null
+                    ? $this->boardService->extractScopedTaskMetadata($nextTask->getEntry()->getText())
+                    : null;
+                $allowStart = $scopedTask !== null
+                    && $this->boardService->checkIsFeatureEntry($activeEntries[0]->getEntry())
+                    && $activeEntries[0]->getEntry()->getFeature() === $scopedTask['featureGroup'];
+            }
+
+            if (!$allowStart) {
+                throw new \RuntimeException($this->boardService->describeActiveEntryConflict($activeEntries, $agent));
+            }
         }
 
         if ($explicitReference !== null) {

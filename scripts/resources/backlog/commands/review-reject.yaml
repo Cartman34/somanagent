@@ -17,4 +17,3 @@ notes:
   - 'Use <feature> for feature entries, <feature/task> for child task entries.'
   - 'Short task references (bare task slug without the parent feature) are refused; use <feature/task>.'
   - 'The body file must contain plain findings only: one finding per line, optional leading numbers or bullets, no Markdown headings.'
-  - 'Delegates to feature-review-reject for features or task-review-reject for tasks.'

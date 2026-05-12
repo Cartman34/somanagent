@@ -22,7 +22,7 @@ notes:
   - 'With an explicit target, locates the first queued entry whose `[feature-slug]` or `[feature-slug][task-slug]` prefix matches the reference exposed by `todo-list`. Refuses with a clear error when the reference does not match any queued entry.'
   - 'Only entries carrying a `[feature-slug]` or `[feature-slug][task-slug]` prefix have a stable reference; bare text entries can only be taken implicitly without a target.'
   - 'Automated workflows must always pass an explicit target; relying on the implicit head of the list is reserved for interactive usage.'
-  - 'Refuses if the agent already has any active entry (kind=task or kind=feature).'
+  - 'Refuses if the agent already has any active entry (kind=task or kind=feature), with one exception: allows starting a scoped child task (no explicit target only) when the agent''s only active entry is the parent feature container for that task (auto-assigned by feature-task-merge on a prior task merge).'
   - 'Accepts plain task text and derives the feature slug from that text.'
   - 'Accepts task type prefixes [feat], [fix] and [tech] (case-insensitive). The prefix may appear at any position in the leading bracket sequence.'
   - 'Accepts a single feature prefix [feature-slug] to create a plain kind=feature with the explicit slug.'

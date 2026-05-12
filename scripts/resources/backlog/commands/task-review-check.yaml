@@ -1,4 +1,0 @@
-description: 'Deprecated. Use review-check instead.'
-notes:
-  - 'This command is no longer available as a public command.'
-  - 'Use: php scripts/backlog.php review-check --agent=<reviewer> <feature/task>'

@@ -15,4 +15,3 @@ notes:
   - 'Short task references (bare task slug without the parent feature) are refused; use <feature/task>.'
   - 'The entry must be in the review or reviewing stage.'
   - 'On mechanical review failure, the entry is automatically rejected with generated review notes.'
-  - 'Delegates to feature-review-check for features or task-review-check for tasks.'
