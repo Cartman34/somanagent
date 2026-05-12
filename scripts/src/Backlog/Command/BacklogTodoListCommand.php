@@ -14,13 +14,25 @@ use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 /**
  * Command for listing tasks in the todo section.
  */
-final class BacklogTaskTodoListCommand extends AbstractBacklogCommand
+final class BacklogTodoListCommand extends AbstractBacklogCommand
 {
+    /**
+     * @param BacklogPresenter $presenter
+     * @param bool $dryRun
+     * @param string $projectRoot
+     * @param BacklogBoardService $boardService
+     */
     public function __construct(BacklogPresenter $presenter, bool $dryRun, string $projectRoot, BacklogBoardService $boardService)
     {
         parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
     }
 
+    /**
+     * List queued todo tasks in priority order.
+     *
+     * @param list<string> $commandArgs
+     * @param array<string, bool|string|array<bool|string>> $options
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $entries = $this->loadBoard()->getEntries(BacklogBoard::SECTION_TODO);

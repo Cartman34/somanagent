@@ -15,7 +15,7 @@ Read this file only when the active task requires reviewer workflow details.
 - `feature-close`
 - `entry-merge`
 - `task-create`
-- `task-todo-list`
+- `todo-list`
 - `task-remove`
 - `feature-list`
 - `worktree-list`
@@ -72,9 +72,9 @@ Rules:
 - Do not interrupt a developer command sequence unless the user explicitly redirects.
 - Do not edit backlog files directly when `task-create` covers the change.
 
-### `task-todo-list`
+### `todo-list`
 
-1. Run `php scripts/backlog.php task-todo-list`.
+1. Run `php scripts/backlog.php todo-list`.
 2. The script prints queued tasks in priority order.
 
 ### `task-remove`

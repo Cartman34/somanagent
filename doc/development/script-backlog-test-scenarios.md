@@ -97,11 +97,11 @@ Validate queued task insertion, ordering, listing, and removal.
 
 ### Steps
 
-1. `php scripts/backlog.php task-todo-list`
+1. `php scripts/backlog.php todo-list`
 2. `php scripts/backlog.php task-create Test inserted at end`
 3. `php scripts/backlog.php task-create --position=start Test inserted at start`
 4. `php scripts/backlog.php task-create --position=index --index=2 Test inserted at index`
-5. `php scripts/backlog.php task-todo-list`
+5. `php scripts/backlog.php todo-list`
 6. Remove one inserted task with:
    - `php scripts/backlog.php task-remove <exact task reference expected by the command>`
 
@@ -122,7 +122,7 @@ Validate `work-start` on a plain queued task.
 1. Create the plain test task:
    - `php scripts/backlog.php task-create test-plain-feature-alpha`
 2. Confirm next plain task with:
-   - `php scripts/backlog.php task-todo-list`
+   - `php scripts/backlog.php todo-list`
 3. Start it:
    - `php scripts/backlog.php work-start --agent d01`
 4. Inspect result:
@@ -185,7 +185,7 @@ Validate `feature-release` on a feature with no actual development ahead of base
 1. Release the active feature:
    - `php scripts/backlog.php feature-release --agent d01`
 2. Inspect:
-   - `php scripts/backlog.php task-todo-list`
+   - `php scripts/backlog.php todo-list`
    - `php scripts/backlog.php feature-list`
    - `php scripts/backlog.php worktree-list`
 
@@ -250,7 +250,7 @@ Validate `work-start` on scoped queued tasks.
 1. Create the first scoped child task:
    - `php scripts/backlog.php task-create [test-scoped-feature][test-child-a] Implement test child task A`
 2. Confirm next queued entry is the scoped task:
-   - `php scripts/backlog.php task-todo-list`
+   - `php scripts/backlog.php todo-list`
 3. Start it:
    - `php scripts/backlog.php work-start --agent d01`
 4. Inspect:
@@ -497,7 +497,7 @@ When the full scenario set is too expensive, run at least:
 
 1. `php scripts/backlog.php`
 2. `php scripts/backlog.php help work-start`
-3. `php scripts/backlog.php task-todo-list`
+3. `php scripts/backlog.php todo-list`
 4. `php scripts/backlog.php feature-list`
 5. `php scripts/backlog.php worktree-list`
 6. `php scripts/backlog.php status --agent <known-agent>`

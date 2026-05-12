@@ -8,7 +8,7 @@ Read this file only when the active task requires developer workflow details.
 
 - `task-create`
 - `status`
-- `task-todo-list`
+- `todo-list`
 - `task-remove`
 - `review-notes`
 - `review-request`
@@ -86,9 +86,9 @@ php scripts/backlog.php task-create $'[tech][backlog-entry-types] Centralize tas
 php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 ```
 
-### `task-todo-list`
+### `todo-list`
 
-1. Run `php scripts/backlog.php task-todo-list`.
+1. Run `php scripts/backlog.php todo-list`.
 2. The script prints queued tasks in priority order.
 
 ### `task-remove`
