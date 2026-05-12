@@ -57,8 +57,7 @@ final class BacklogCliOptionValidator
     /**
      * Asserts that every option key belongs to the global allowlist.
      *
-     * Used for the help-only paths (no command, or `help [<command>]`) where per-command
-     * options are not in scope.
+     * Used for the no-command path where per-command options are not in scope.
      *
      * @param array<string, bool|string|array<bool|string>> $options Parsed option map from the CLI
      * @throws RuntimeException When at least one option key is not a global option

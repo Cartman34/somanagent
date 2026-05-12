@@ -77,7 +77,6 @@ Runs the documented local backlog workflow, including feature start/review/merge
 
 ```bash
 php scripts/backlog.php
-php scripts/backlog.php work-start --help
 php scripts/backlog.php base-update my-feature
 php scripts/backlog.php work-start --help
 php scripts/backlog.php work-start --agent agent-01
