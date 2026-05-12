@@ -42,7 +42,18 @@
       "Bash(sort *)",
       "Bash(grep *)",
       "Bash(awk *)",
-      "Bash(composer install *)"
+      "Bash(composer install *)",
+      "WebSearch",
+      "WebFetch(domain:developers.openai.com)",
+      "WebFetch(domain:opencode.ai)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:geminicli.com)",
+      "WebFetch(domain:google-gemini.github.io)",
+      "Bash(rm *)",
+      "Bash(xargs -I{} php -l {})",
+      "Bash(cat)",
+      "Bash(xargs -I{} basename {})",
+      "Bash(GIT_EDITOR=true git *)"
     ]
   }
 }
