@@ -3,6 +3,6 @@ examples:
   - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php feature-release'
   - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php feature-release delete-question-reply'
 notes:
-  - 'Without an explicit argument, resolves the current active task or feature owned by the provided agent.'
+  - 'Without an explicit argument, resolves the current active task or feature owned by the caller agent.'
   - 'Only works when the active entry has no development work yet.'
   - 'A parent feature cannot be released while local child tasks are still active under it.'

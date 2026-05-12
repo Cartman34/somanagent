@@ -50,7 +50,7 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
      */
     public function handle(array $commandArgs, array $options): void
     {
-        $reviewer = $this->resolveReviewer($options);
+        $reviewer = $this->resolveReviewer();
         $reference = $this->resolveReference($commandArgs);
         $board = $this->loadBoard();
 
@@ -63,10 +63,7 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
         $this->handleFeatureMerge($board, $reference, $reviewer, $options);
     }
 
-    /**
-     * @param array<string, bool|string> $options
-     */
-    private function resolveReviewer(array $options): string
+    private function resolveReviewer(): string
     {
         $reviewer = $this->boardService->sanitizeString($this->requireCallerAgent());
         if ($reviewer === null) {

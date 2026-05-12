@@ -722,6 +722,7 @@ MD);
         $this->assertBacklogFails(
             ['entry-merge', $reference],
             'Command requires SOMANAGER_AGENT=<code>.',
+            ['SOMANAGER_AGENT' => ''],
         );
     }
 

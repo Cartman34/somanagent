@@ -9,7 +9,7 @@ examples:
   - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php rework delete-question-reply'
 notes:
   - 'Use after a reviewer rejection to resume work on the displayed feedback, or after a merge conflict on an approved entry to fix the conflict locally.'
-  - 'Without an explicit reference, resolves the single rejected or approved entry assigned to the provided agent. Errors if the agent has more than one reworkable entry.'
+  - 'Without an explicit reference, resolves the single rejected or approved entry assigned to the caller agent. Errors if the agent has more than one reworkable entry.'
   - 'With a <feature/task> reference, targets that child task. With a plain slug, tries feature first then task; errors if both match.'
   - 'Displays stored review notes from local/backlog-review.md before the success message when the entry came from a rejection. Approved entries had their notes cleared at approval time, so none are printed.'
   - 'Reopens the entry branch in the agent worktree. Review notes are preserved until the next review request clears them.'
