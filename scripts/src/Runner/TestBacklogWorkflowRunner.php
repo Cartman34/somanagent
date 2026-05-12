@@ -146,8 +146,13 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
                 $campaigns['work-start-type-prefix'],
                 $campaigns['todo-and-plain-feature-lifecycle'],
                 $campaigns['scoped-task-lifecycle'],
-                $campaigns['mutation-lock'],
             ];
+
+            if (!$this->dryRun) {
+                $resolved[] = $campaigns['mutation-lock'];
+            } else {
+                $this->console->warn('Skipping mutation-lock because --dry-run is set.');
+            }
 
             if ($allowRemote) {
                 $resolved[] = $campaigns['feature-review-lifecycle'];
