@@ -109,21 +109,25 @@ MD);
     }
 
     /**
-     * Run help command checks
+     * Run help checks: --help is the only accepted form; the old `help` command is gone.
      */
     public function runHelpChecks(): void
     {
         $this->assertOutputContains($this->runBacklog([]), 'Commands:');
-        $this->assertOutputContains($this->runBacklog(['help']), 'Commands:');
-        $this->assertOutputContains($this->runBacklog(['help', 'status']), 'status');
-        $this->assertOutputContains($this->runBacklog(['help', 'review-next']), 'review-next');
-        $this->assertOutputContains($this->runBacklog(['help', 'work-start']), 'work-start');
+        $this->assertOutputContains($this->runBacklog(['status', '--help']), 'status');
+        $this->assertOutputContains($this->runBacklog(['review-next', '--help']), 'review-next');
         $this->assertOutputContains($this->runBacklog(['work-start', '--help']), 'work-start');
-        $this->assertOutputContains($this->runBacklog(['help', 'entry-merge']), 'entry-merge');
-        $this->assertOutputContains($this->runBacklog(['help', 'review-request']), 'review-request');
-        $this->assertOutputContains($this->runBacklog(['help', 'review-check']), 'review-check');
-        $this->assertOutputContains($this->runBacklog(['help', 'review-approve']), 'review-approve');
-        $this->assertOutputContains($this->runBacklog(['help', 'review-reject']), 'review-reject');
+        $this->assertOutputContains($this->runBacklog(['entry-merge', '--help']), 'entry-merge');
+        $this->assertOutputContains($this->runBacklog(['review-request', '--help']), 'review-request');
+        $this->assertOutputContains($this->runBacklog(['review-check', '--help']), 'review-check');
+        $this->assertOutputContains($this->runBacklog(['review-approve', '--help']), 'review-approve');
+        $this->assertOutputContains($this->runBacklog(['review-reject', '--help']), 'review-reject');
+        // Regression: `help` and `help <command>` must be unknown commands, not silent aliases.
+        $this->assertCommandIsUnknown('help');
+        $this->assertBacklogFails(
+            ['help', 'work-start'],
+            'Unknown command: help. Run with --help for the list of available commands.',
+        );
     }
 
     /**
@@ -136,15 +140,15 @@ MD);
     public function runForceCurrentWorktreeFlagChecks(): void
     {
         $this->assertOutputContains(
-            $this->runBacklog(['--force-current-worktree', 'help', 'status']),
+            $this->runBacklog(['--force-current-worktree', 'status', '--help']),
             'Print the current backlog and worktree status',
         );
         $this->assertOutputContains(
-            $this->runBacklog(['--force-current-worktree', 'help', 'work-start']),
+            $this->runBacklog(['--force-current-worktree', 'work-start', '--help']),
             'work-start',
         );
         $this->assertOutputContains(
-            $this->runBacklog(['help', 'status', '--force-current-worktree']),
+            $this->runBacklog(['status', '--force-current-worktree', '--help']),
             'Print the current backlog and worktree status',
         );
     }
@@ -187,10 +191,6 @@ MD);
         );
         $this->assertBacklogFails(
             ['--unknown-global'],
-            'Unknown global option(s): --unknown-global',
-        );
-        $this->assertBacklogFails(
-            ['help', '--unknown-global'],
             'Unknown global option(s): --unknown-global',
         );
 
