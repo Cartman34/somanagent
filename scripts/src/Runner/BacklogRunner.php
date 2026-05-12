@@ -11,6 +11,7 @@ use SoManAgent\Script\Backlog\BacklogCommandFactory;
 use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Service\BacklogCliOptionValidator;
+use SoManAgent\Script\Backlog\Service\BacklogMutationLock;
 use SoManAgent\Script\Service\CommandHelpService;
 
 /**
@@ -31,6 +32,9 @@ final class BacklogRunner extends AbstractScriptRunner
     private ?string $boardPath = null;
     private ?string $reviewFilePath = null;
     private ?string $worktreesRoot = null;
+
+    private const DEFAULT_LOCK_PATH = 'local/tmp/backlog.lock';
+    private const LOCK_TIMEOUT_SECONDS = 30;
 
     private ?BacklogCommandFactory $commandFactory = null;
     private ?BacklogCliOptionValidator $optionValidator = null;
@@ -108,7 +112,29 @@ final class BacklogRunner extends AbstractScriptRunner
      */
     private function handleCommand(string $command, array $commandArgs, array $options): int
     {
-        $this->commandFactory()->createHandler($command)->handle($commandArgs, $options);
+        $commandName = BacklogCommandName::tryFrom($command);
+        $needsLock = !$this->dryRun && $commandName !== null && $commandName->isMutating();
+
+        if (!$needsLock) {
+            $this->commandFactory()->createHandler($command)->handle($commandArgs, $options);
+
+            return 0;
+        }
+
+        $lock = new BacklogMutationLock($this->lockPath(), self::LOCK_TIMEOUT_SECONDS);
+        $lockPath = $lock->getLockPath();
+        $lock->acquire(function () use ($lockPath): void {
+            $this->console->line(sprintf(
+                'Waiting for another backlog command to finish (lock: %s)...',
+                basename($lockPath),
+            ));
+        });
+
+        try {
+            $this->commandFactory()->createHandler($command)->handle($commandArgs, $options);
+        } finally {
+            $lock->release();
+        }
 
         return 0;
     }
@@ -238,6 +264,15 @@ final class BacklogRunner extends AbstractScriptRunner
     private function boardPath(): string
     {
         return $this->boardPath ?? ($this->projectRoot . '/' . self::DEFAULT_BOARD_PATH);
+    }
+
+    private function lockPath(): string
+    {
+        if ($this->boardPath !== null) {
+            return $this->boardPath . '.lock';
+        }
+
+        return $this->projectRoot . '/' . self::DEFAULT_LOCK_PATH;
     }
 
     private function reviewFilePath(): string
