@@ -30,7 +30,7 @@ final class SystemInteractiveProcessRunner implements InteractiveProcessRunner
             2 => STDERR,
         ];
 
-        $command = array_values(array_merge([$bin], $args));
+        $command = array_merge([$bin], $args);
         $pipes = [];
 
         $process = proc_open($command, $descriptors, $pipes, $cwd !== '' ? $cwd : null, $env);
@@ -39,7 +39,7 @@ final class SystemInteractiveProcessRunner implements InteractiveProcessRunner
         }
 
         $status = proc_get_status($process);
-        $clientPid = $status['pid'] ?? 0;
+        $clientPid = $status['pid'];
         $processGroupId = $clientPid > 0 ? $this->resolveProcessGroupId($clientPid) : null;
 
         if ($onSpawned !== null) {

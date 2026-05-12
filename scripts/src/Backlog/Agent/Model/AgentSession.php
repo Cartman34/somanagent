@@ -92,8 +92,8 @@ final class AgentSession
             startedAt: new \DateTimeImmutable((string) ($data['started_at'] ?? 'now')),
             lastSeenAt: new \DateTimeImmutable((string) ($data['last_seen_at'] ?? 'now')),
             sessionId: isset($data['session_id']) ? (string) $data['session_id'] : null,
-            clientPid: isset($data['client_pid']) && $data['client_pid'] !== null ? (int) $data['client_pid'] : null,
-            processGroupId: isset($data['process_group_id']) && $data['process_group_id'] !== null ? (int) $data['process_group_id'] : null,
+            clientPid: isset($data['client_pid']) ? (int) $data['client_pid'] : null,
+            processGroupId: isset($data['process_group_id']) ? (int) $data['process_group_id'] : null,
         );
     }
 
