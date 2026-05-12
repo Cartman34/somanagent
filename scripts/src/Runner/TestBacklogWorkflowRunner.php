@@ -10,6 +10,7 @@ namespace SoManAgent\Script\Runner;
 use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
+use SoManAgent\Script\Test\Backlog\Campaign\BoardFormatNormalizationCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\CampaignInterface;
 use SoManAgent\Script\Test\Backlog\Campaign\FeatureReviewLifecycleCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\HelpCampaign;
@@ -43,7 +44,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
     {
         return array_merge(
             [
-                ['name' => '--campaign', 'description' => 'Campaign to run: help, todo-and-plain-feature-lifecycle, scoped-task-lifecycle, task-create-formats, work-start-type-prefix, feature-review-lifecycle, mutation-lock, or all'],
+                ['name' => '--campaign', 'description' => 'Campaign to run: help, board-format-normalization, todo-and-plain-feature-lifecycle, scoped-task-lifecycle, task-create-formats, work-start-type-prefix, feature-review-lifecycle, mutation-lock, or all'],
                 ['name' => '--allow-remote', 'description' => 'Allow campaigns that push branches or create/merge GitHub PRs'],
                 ['name' => '--keep-artifacts', 'description' => 'Keep temporary backlog/review files under local/tmp/ after execution'],
             ],
@@ -142,6 +143,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
         if ($requestedCampaign === 'all') {
             $resolved = [
                 $campaigns['help'],
+                $campaigns['board-format-normalization'],
                 $campaigns['task-create-formats'],
                 $campaigns['work-start-type-prefix'],
                 $campaigns['todo-and-plain-feature-lifecycle'],
@@ -186,6 +188,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
         if ($this->campaigns === null) {
             $this->campaigns = [
                 'help' => new HelpCampaign(),
+                'board-format-normalization' => new BoardFormatNormalizationCampaign(),
                 'task-create-formats' => new TaskCreateFormatsCampaign(),
                 'work-start-type-prefix' => new WorkStartTypePrefixCampaign(),
                 'todo-and-plain-feature-lifecycle' => new TodoAndPlainFeatureLifecycleCampaign(),

@@ -1066,6 +1066,21 @@ MD);
     }
 
     /**
+     * Asserts that the test board file does not contain the given text.
+     */
+    public function assertBoardLacksText(string $text): void
+    {
+        $contents = (string) file_get_contents($this->context->boardPath);
+        if (str_contains($contents, $text)) {
+            throw new \RuntimeException(sprintf(
+                "Expected backlog board NOT to contain:\n%s\n--- actual board ---\n%s",
+                $text,
+                $contents,
+            ));
+        }
+    }
+
+    /**
      * Replaces one text fragment in the temporary backlog board.
      *
      * @param string $search Text fragment expected in the board

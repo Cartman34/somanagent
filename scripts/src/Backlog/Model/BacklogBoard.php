@@ -12,8 +12,16 @@ namespace SoManAgent\Script\Backlog\Model;
  */
 final class BacklogBoard
 {
+    public const TITLE = '# Backlog board';
     public const SECTION_TODO = 'To do';
     public const SECTION_ACTIVE = 'In progress';
+    public const SECTION_SUGGESTIONS = 'Suggestions';
+
+    /** @var list<string> */
+    public const LEGACY_TITLES = ['# Tableau du backlog'];
+
+    /** @var list<string> */
+    public const LEGACY_RULE_SECTIONS = ["Règles d'usage", 'Usage rules'];
 
     public const STAGE_IN_PROGRESS = 'development';
     public const STAGE_IN_REVIEW = 'review';
