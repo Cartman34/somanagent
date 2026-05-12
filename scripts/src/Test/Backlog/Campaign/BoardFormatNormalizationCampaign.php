@@ -43,12 +43,12 @@ final class BoardFormatNormalizationCampaign implements CampaignInterface
         $driver->assertBoardTodoBlock(['## Suggestions']);
         $driver->removeFirstTodoTask();
 
-        // Scenario 2 — board carrying a French "Règles d'usage" section must have
+        // Scenario 2 — board carrying a legacy French rules section must have
         // that section stripped while work entries are preserved.
         $driver->resetArtifacts();
-        $driver->replaceBoardText('## Usage rules', "## Règles d'usage");
-        $driver->createTodoTask("[tech][board-format-normalization][norm-french] French rules normalization");
-        $driver->assertBoardLacksText("## Règles d'usage");
+        $driver->replaceBoardText('## Usage rules', "## R\u{00E8}gles d'usage");
+        $driver->createTodoTask('[tech][board-format-normalization][norm-french] French rules normalization');
+        $driver->assertBoardLacksText("## R\u{00E8}gles d'usage");
         $driver->assertBoardTodoBlock(['- [board-format-normalization][norm-french] French rules normalization']);
         $driver->removeFirstTodoTask();
 

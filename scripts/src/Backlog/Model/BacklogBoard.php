@@ -21,7 +21,7 @@ final class BacklogBoard
     public const LEGACY_TITLES = ['# Tableau du backlog'];
 
     /** @var list<string> */
-    public const LEGACY_RULE_SECTIONS = ["Règles d'usage", 'Usage rules'];
+    public const LEGACY_RULE_SECTIONS = ["R\u{00E8}gles d'usage", 'Usage rules'];
 
     public const STAGE_IN_PROGRESS = 'development';
     public const STAGE_IN_REVIEW = 'review';
