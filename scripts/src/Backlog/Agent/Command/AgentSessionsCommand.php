@@ -73,7 +73,7 @@ final class AgentSessionsCommand extends AbstractAgentCommand
      */
     public function handle(array $args, array $options): int
     {
-        $code = isset($options['code']) ? (string) $options['code'] : null;
+        $code = $this->getSingleOption($options, 'code');
         if ($code === null || $code === '') {
             throw new \RuntimeException('--code=<code> is required.');
         }

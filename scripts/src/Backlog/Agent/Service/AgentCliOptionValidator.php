@@ -34,7 +34,7 @@ final class AgentCliOptionValidator
      *
      * @param string $command The dispatched subcommand name
      * @param array<array{name: string, description: string}> $declaredOptions Options returned by the subcommand's getOptions()
-     * @param array<string, bool|string> $parsedOptions Parsed option map from the CLI
+     * @param array<string, bool|string|array<bool|string>> $parsedOptions Parsed option map from the CLI
      * @throws RuntimeException When at least one option key is not accepted for the command
      */
     public function assertCommandOptionsAccepted(string $command, array $declaredOptions, array $parsedOptions): void
@@ -58,7 +58,7 @@ final class AgentCliOptionValidator
      * Used for the help-only paths (no command, or `help [<command>]`) where
      * per-command options are not in scope.
      *
-     * @param array<string, bool|string> $parsedOptions Parsed option map from the CLI
+     * @param array<string, bool|string|array<bool|string>> $parsedOptions Parsed option map from the CLI
      * @throws RuntimeException When at least one option key is not a runner-level option
      */
     public function assertGlobalOptionsAccepted(array $parsedOptions): void
@@ -99,7 +99,7 @@ final class AgentCliOptionValidator
     }
 
     /**
-     * @param array<string, bool|string> $options
+     * @param array<string, bool|string|array<bool|string>> $options
      * @param list<string> $allowed
      * @return list<string>
      */

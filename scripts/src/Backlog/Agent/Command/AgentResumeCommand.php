@@ -94,7 +94,7 @@ final class AgentResumeCommand extends AbstractAgentCommand
      */
     public function handle(array $args, array $options): int
     {
-        $code = isset($options['code']) ? (string) $options['code'] : null;
+        $code = $this->getSingleOption($options, 'code');
         if ($code === null || $code === '') {
             throw new \RuntimeException('--code=<code> is required.');
         }
@@ -110,7 +110,7 @@ final class AgentResumeCommand extends AbstractAgentCommand
         $client = $existingSession->client;
         $role = $existingSession->role;
 
-        $sessionId = isset($options['session']) ? (string) $options['session'] : null;
+        $sessionId = $this->getSingleOption($options, 'session');
         $continueLast = $sessionId === null;
 
         // Always use the worktree stored in sessions.json (mandatory for reviewer sessions

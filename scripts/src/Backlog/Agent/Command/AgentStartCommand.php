@@ -156,7 +156,7 @@ final class AgentStartCommand extends AbstractAgentCommand
             throw new \RuntimeException('--reset is not allowed with --reviewer.');
         }
 
-        $codeOption = isset($options['code']) ? (string) $options['code'] : null;
+        $codeOption = $this->getSingleOption($options, 'code');
 
         if ($codeOption !== null) {
             $this->codeService->validate($codeOption, $role);
@@ -234,17 +234,15 @@ final class AgentStartCommand extends AbstractAgentCommand
      * Returns [worktree, takenEntry|null, takenBoard|null].
      * takenEntry/takenBoard are non-null only when a new review was taken (needed for rollback on failure).
      *
-     * @param array<string, string|bool> $options
+     * @param array<string, string|bool|array<bool|string>> $options
      * @return array{0: string, 1: BoardEntry|null, 2: BacklogBoard|null}
      */
     private function prepareReviewerMode(array $options, string $reviewerCode): array
     {
         $force = isset($options['force']);
-        $featureOpt = isset($options['feature']) ? (string) $options['feature'] : null;
-        $taskOpt = isset($options['task']) ? (string) $options['task'] : null;
-        $developerOpt = (isset($options['developer']) && $options['developer'] !== true)
-            ? (string) $options['developer']
-            : null;
+        $featureOpt = $this->getSingleOption($options, 'feature');
+        $taskOpt = $this->getSingleOption($options, 'task');
+        $developerOpt = $this->getSingleOption($options, 'developer');
 
         $board = $this->boardService->loadBoard($this->boardPath);
 
@@ -356,7 +354,7 @@ final class AgentStartCommand extends AbstractAgentCommand
      *
      * --developer=<dXX> (with value) is a reviewer targeting flag, not a role flag.
      *
-     * @param array<string, string|bool> $options
+     * @param array<string, string|bool|array<bool|string>> $options
      */
     private function resolveRole(array $options): AgentRole
     {

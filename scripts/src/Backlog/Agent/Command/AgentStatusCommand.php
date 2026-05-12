@@ -82,7 +82,7 @@ final class AgentStatusCommand extends AbstractAgentCommand
      */
     public function handle(array $args, array $options): int
     {
-        $codeOption = isset($options['code']) ? (string) $options['code'] : null;
+        $codeOption = $this->getSingleOption($options, 'code');
 
         if ($codeOption !== null) {
             return $this->statusForCode($codeOption);

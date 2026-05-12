@@ -62,6 +62,14 @@ final class BacklogAgentRunner extends AbstractScriptRunner
     /**
      * {@inheritdoc}
      */
+    protected function getName(): string
+    {
+        return 'backlog-agent';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     protected function getDescription(): string
     {
         return 'Unified launcher for AI coding agents in managed worktrees.';
