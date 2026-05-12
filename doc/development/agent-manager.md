@@ -33,6 +33,34 @@ Read this file only when the active task requires backlog management or workflow
 - For `entry-unassign`, `--agent=<code>` identifies the manager caller. Use an explicit `<entry-ref>` to choose the entry to unassign.
 - Every manager backlog command must be prefixed exactly as `SOMANAGER_ROLE=manager SOMANAGER_AGENT=<code> php scripts/backlog.php ...`.
 
+## Session Environment
+
+Manager sessions are started by the operator with:
+
+```
+php scripts/backlog-agent.php start <client> --manager [--code=<mXX>]
+```
+
+Supported clients:
+
+- `claude`: supported end to end by `ClaudeAgentLauncher`.
+- `codex`: supported end to end by `CodexAgentLauncher`.
+- `opencode`: supported end to end by `OpenCodeAgentLauncher`.
+- `gemini`: supported end to end by `GeminiAgentLauncher`. Context is injected via the `GEMINI_SYSTEM_MD` env var.
+
+The following environment variables are injected into every session:
+
+| Variable | Value |
+|---|---|
+| `SOMANAGER_AGENT` | Agent code (e.g. `m01`) |
+| `SOMANAGER_ROLE` | `manager` |
+| `SOMANAGER_CLIENT` | `claude`, `codex`, `opencode`, or `gemini` |
+| `SOMANAGER_WP` | Absolute path to the main workspace |
+
+A context file is generated at `<WA>/local/agent-context.md` on every session start and resume. It summarises the current task, allowed commands, and backlog vocabulary. Do not commit or push this file.
+
+Run `php scripts/backlog-agent.php whoami` from inside the WA to confirm the session identity.
+
 ## Guidance
 
 - use `doc/development/agent-workflow.md` for the shared backlog model and state transitions

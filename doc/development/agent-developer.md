@@ -60,6 +60,34 @@ Read this file only when the active task requires developer workflow details.
 - start a second visible backlog entry for the same feature
 - edit `local/backlog-board.md` or `local/backlog-review.md` manually
 
+## Session Environment
+
+Developer sessions are started by the operator with:
+
+```
+php scripts/backlog-agent.php start <client> --developer [--code=<dXX>]
+```
+
+Supported clients:
+
+- `claude`: supported end to end by `ClaudeAgentLauncher`.
+- `codex`: supported end to end by `CodexAgentLauncher`.
+- `opencode`: supported end to end by `OpenCodeAgentLauncher`.
+- `gemini`: supported end to end by `GeminiAgentLauncher`. Context is injected via the `GEMINI_SYSTEM_MD` env var.
+
+The following environment variables are injected into every session:
+
+| Variable | Value |
+|---|---|
+| `SOMANAGER_AGENT` | Agent code (e.g. `d04`) |
+| `SOMANAGER_ROLE` | `developer` |
+| `SOMANAGER_CLIENT` | `claude`, `codex`, `opencode`, or `gemini` |
+| `SOMANAGER_WP` | Absolute path to the main workspace |
+
+A context file is generated at `<WA>/local/agent-context.md` on every session start and resume. It summarises the current task, allowed commands, and backlog vocabulary. Do not commit or push this file.
+
+Run `php scripts/backlog-agent.php whoami` from inside the WA to confirm the session identity.
+
 ## Read Only When Needed
 
 - `local/backlog-board.md` for feature state
