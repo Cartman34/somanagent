@@ -25,7 +25,7 @@ enum BacklogCommandName: string
             self::STATUS,
             self::FEATURE_LIST,
             self::WORKTREE_LIST,
-            self::TASK_TODO_LIST,
+            self::TODO_LIST,
             self::REVIEW_NOTES,
             self::REVIEW_CHECK,
             self::FEATURE_REVIEW_CHECK,
