@@ -262,12 +262,25 @@ MD);
     }
 
     /**
-     * @param string $feature Feature name to assign
-     * @param string $agent Agent to assign the feature to
+     * @param string $reference Entry reference (`<feature>`, `<task>`, or `<feature/task>`) to assign
+     * @param string $agent Agent to assign the entry to
      */
-    public function assignFeatureAsManager(string $feature, string $agent): void
+    public function assignFeatureAsManager(string $reference, string $agent): void
     {
-        $this->runBacklog(['feature-assign', $feature, '--agent', $agent], ['SOMANAGER_ROLE' => 'manager']);
+        $this->runBacklog(['feature-assign', $reference, '--agent', $agent], ['SOMANAGER_ROLE' => 'manager']);
+    }
+
+    /**
+     * Asserts that `feature-assign` fails with the given message.
+     *
+     * @param string $reference Entry reference (`<feature>`, `<task>`, or `<feature/task>`) to assign
+     * @param string $agent Agent code passed via `--agent`
+     * @param array<string, string> $env Environment variables (typically SOMANAGER_ROLE / SOMANAGER_AGENT)
+     * @param string $needle Expected substring of the failure output
+     */
+    public function assertAssignFeatureFails(string $reference, string $agent, array $env, string $needle): void
+    {
+        $this->assertBacklogFails(['feature-assign', $reference, '--agent', $agent], $needle, $env);
     }
 
     /**
@@ -1104,6 +1117,26 @@ MD);
                 $contents,
             ));
         }
+    }
+
+    /**
+     * Replaces one text fragment in the temporary backlog board.
+     *
+     * @param string $search Text fragment expected in the board
+     * @param string $replace Replacement text fragment
+     */
+    public function replaceBoardText(string $search, string $replace): void
+    {
+        $contents = (string) file_get_contents($this->context->boardPath);
+        if (!str_contains($contents, $search)) {
+            throw new \RuntimeException(sprintf(
+                "Expected backlog board to contain text before replacement:\n%s\n--- actual board ---\n%s",
+                $search,
+                $contents,
+            ));
+        }
+
+        $this->writeFile($this->context->boardPath, str_replace($search, $replace, $contents));
     }
 
     /**

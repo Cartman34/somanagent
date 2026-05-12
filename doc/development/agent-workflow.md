@@ -78,10 +78,11 @@ Rules:
 2. Allowed values are `manager` and `developer`.
 3. For `entry-unassign`, `--agent` identifies the caller. With an explicit entry reference, it does not select which assigned agent is removed.
 4. When `SOMANAGER_ROLE=developer`, `SOMANAGER_AGENT` is mandatory and must match the `--agent` value passed to the command.
-5. `Manager` may assign any feature, and may unassign any active entry (feature or task) for any developer agent.
-6. `Developer` may only assign itself to an unassigned feature or keep the same self-assignment.
+5. `Manager` may assign any unassigned active entry (feature or task), may refresh the same assignment when the entry is already assigned to the target agent, and may unassign any active entry (feature or task) for any developer agent.
+6. `Developer` may only assign itself to an unassigned active entry or refresh an entry already assigned to itself.
 7. `Developer` may only unassign itself from its own active entry, whether it is a `kind=task` or a `kind=feature`.
 8. `entry-unassign` accepts a `<feature>`, `<task>`, or `<feature/task>` reference, or no reference to fall back to the caller agent's single active entry. A plain slug that matches both a feature and a task is rejected as ambiguous.
+9. Missing `agent` metadata and legacy `agent: none` both mean an entry is unassigned. A different real agent code means the entry is assigned and must be unassigned before another agent can be assigned.
 
 ## Queued Task Format
 
@@ -119,7 +120,7 @@ Rules:
 7. `work-start` takes the next queued task directly from `## To do`; no separate reservation step is part of the standard workflow.
 8. Queued tasks may declare their branch type with a prefix `[feat]`, `[fix]` or `[tech]`. The branch follows the same name 1:1 (`feat/<slug>`, `fix/<slug>`, `tech/<slug>`).
 9. `feature-release` returns the active feature to `## To do` only when no development was done on its branch. A parent `kind=feature` cannot be released while child `kind=task` entries still exist for that feature.
-10. When `work-start` consumes a queued task prefixed as `[feature-slug][task-slug]`, it creates or reuses the local parent feature branch from `origin/main`, ensures one active `kind=feature` entry exists for that feature with `agent=none`, and creates the active child `kind=task` entry assigned to the agent from that local parent branch. A `kind=feature` container created this way has no assigned developer until a developer self-assigns with `feature-assign` or a manager assigns one.
+10. When `work-start` consumes a queued task prefixed as `[feature-slug][task-slug]`, it creates or reuses the local parent feature branch from `origin/main`, ensures one active unassigned `kind=feature` entry exists for that feature, and creates the active child `kind=task` entry assigned to the agent from that local parent branch. A `kind=feature` container created this way has no assigned developer until a developer self-assigns with `feature-assign` or a manager assigns one.
 11. When `work-start` consumes a queued task prefixed as `[feature-slug]` (single prefix, no task slug), it creates a plain `kind=feature` with the explicit slug `<feature-slug>`, assigned to the agent.
 12. Starting a new child task or merging a child task locally invalidates any parent feature review state and moves the parent `kind=feature` back to `development`.
 13. `kind=task` entries are local-only delivery units: they are never pushed and never get GitHub PRs.

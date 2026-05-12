@@ -139,7 +139,7 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 5. After validation the script takes the next task from `## To do`, updates local `main` when possible, creates the branch in the agent worktree, moves the entry to `## In progress`, sets `meta.stage=development`, and authorizes development.
 6. Branch prefix follows the type 1:1: `feat → feat/<slug>`, `fix → fix/<slug>`, `tech → tech/<slug>` for plain features and `<type>/<feature-slug>--<task-slug>` for scoped tasks.
 7. Behaviour depends on the queued task prefix (after the optional `[feat]`/`[fix]`/`[tech]` type prefix):
-   - **`[feature-slug][task-slug] text`** — creates or reuses the parent `kind=feature` entry for `<feature-slug>` with `agent=none`, and creates the child `kind=task` entry assigned to the agent on branch `<type>/<feature-slug>--<task-slug>`. The `kind=feature` container stays unassigned until a developer explicitly takes integration ownership with `feature-assign`.
+   - **`[feature-slug][task-slug] text`** — creates or reuses the parent `kind=feature` entry for `<feature-slug>` without agent assignment, and creates the child `kind=task` entry assigned to the agent on branch `<type>/<feature-slug>--<task-slug>`. The `kind=feature` container stays unassigned until a developer explicitly takes integration ownership with `feature-assign`.
    - **`[feature-slug] text`** — creates a plain `kind=feature` with the explicit slug `<feature-slug>`, assigned to the agent, on branch `<type>/<feature-slug>`.
    - **`text` (no feature prefix)** — creates a plain `kind=feature` with a slug derived from the task text, assigned to the agent.
 8. With `--dry-run`, the script prints the resolved interpretation (kind, type, feature, task, planned branches) and performs no Git, worktree or backlog mutation. Read-only Git operations (fetch, `origin/main` resolution) remain enabled.
@@ -164,11 +164,12 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 
 ### `feature-assign`
 
-1. Run `php scripts/backlog.php feature-assign --agent=<code> <feature>`.
+1. Run `php scripts/backlog.php feature-assign --agent=<code> <feature|task|feature/task>`.
 2. Export `SOMANAGER_ROLE=developer` and `SOMANAGER_AGENT=<code>` before running the command.
-3. Developer can only assign a feature to itself, and only when the feature is not assigned to another agent.
-4. The script assigns the feature to that same agent and prepares the `WA`.
-5. For `kind=feature` containers created with `agent=none` (from a `[feature-slug][task-slug]`-prefixed task), this is the required step before running `review-request` on the feature. The developer takes integration ownership of the feature branch.
+3. Developer can only assign an unassigned entry to itself, or refresh an entry already assigned to itself.
+4. The script assigns the entry to that same agent and prepares the `WA`.
+5. Missing `agent` metadata and legacy `agent: none` both mean the entry is unassigned. A different real agent code means the entry is already assigned and must not be reassigned through `feature-assign`.
+6. For unassigned `kind=feature` containers created from a `[feature-slug][task-slug]`-prefixed task, this is the required step before running `review-request` on the feature. The developer takes integration ownership of the feature branch.
 
 ### `entry-unassign`
 

@@ -1,11 +1,16 @@
-description: 'Assign an existing feature to one developer agent'
+description: 'Assign an unassigned active feature or task to one developer agent'
 arguments:
   -
-    name: '<feature>'
-    description: 'Feature slug to assign'
+    name: '<feature|task|feature/task>'
+    description: 'Active entry reference to assign'
 options:
   -
     name: '--agent'
     description: 'Developer agent code to assign'
 examples:
   - 'php scripts/backlog.php feature-assign delete-question-reply --agent agent-01'
+  - 'php scripts/backlog.php feature-assign delete-question-reply/cleanup --agent agent-01'
+notes:
+  - 'The target entry must be unassigned or already assigned to the same target agent. Missing `agent` metadata and legacy `agent: none` both mean unassigned.'
+  - 'An entry assigned to a different real agent must be unassigned before another agent can be assigned.'
+  - 'A plain slug that matches both a feature and a task is rejected as ambiguous; use `<feature/task>` to disambiguate.'

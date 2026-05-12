@@ -25,36 +25,83 @@ final class BoardEntry
     public const META_TASK = 'task';
     public const META_TYPE = 'type';
 
+    /**
+     * Agent code currently assigned to the entry, or null when the entry is unassigned.
+     */
     private ?string $agent = null;
 
+    /**
+     * Recorded Git base commit used to scope reviews and rebases for the entry branch.
+     */
     private ?string $base = null;
 
+    /**
+     * Whether the entry is blocked in the backlog workflow.
+     */
     private bool $blocked = false;
 
+    /**
+     * Git branch that carries the entry implementation.
+     */
     private ?string $branch = null;
 
+    /**
+     * Canonical parent feature slug for the entry.
+     */
     private ?string $feature = null;
 
+    /**
+     * Parent feature branch used by child task entries.
+     */
     private ?string $featureBranch = null;
 
+    /**
+     * Backlog entry kind, usually feature or task.
+     */
     private ?string $kind = null;
 
+    /**
+     * Pull request identifier for feature review flow, or none/null when absent.
+     */
     private ?string $pr = null;
 
+    /**
+     * Reviewer agent code currently reviewing the entry, or null when no review is claimed.
+     */
     private ?string $reviewer = null;
 
+    /**
+     * Workflow stage for the entry, such as development, review, rejected, or approved.
+     */
     private ?string $stage = null;
 
+    /**
+     * Child task slug when the entry is a scoped task.
+     */
     private ?string $task = null;
 
+    /**
+     * Branch/task type recorded for the entry, such as feat, fix, or tech.
+     */
     private ?string $type = null;
 
-    /** @var array<string, string> */
+    /**
+     * Additional metadata keys preserved when parsing and formatting the board.
+     *
+     * @var array<string, string>
+     */
     private array $extraMetadata = [];
 
-    /** @var array<string> */
+    /**
+     * Body lines below the main entry title, excluding the trailing metadata block.
+     *
+     * @var array<string>
+     */
     private array $extraLines;
 
+    /**
+     * Human-readable entry title shown on the backlog line.
+     */
     private string $text;
 
     /**
@@ -125,7 +172,8 @@ final class BoardEntry
      */
     public function setAgent(?string $agent): void
     {
-        $this->agent = $agent;
+        $agent = trim((string) $agent);
+        $this->agent = $agent === '' || $agent === 'none' ? null : $agent;
     }
 
     /**

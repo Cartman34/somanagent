@@ -8,9 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Service;
 
 use RuntimeException;
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
-use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 
 /**
  * Handles role-based permissions and workflow restrictions.
@@ -61,28 +59,30 @@ final class BacklogPermissionService
     }
 
     /**
-     * Authorizes assignment of a feature to an agent.
+     * Authorizes assignment of one active backlog entry to an agent.
      *
-     * Manager bypasses ownership checks. Developer is restricted to self-assignment of an
-     * unassigned feature; the --agent argument must match the developer agent code from
-     * SOMANAGER_AGENT.
+     * Manager may assign an unassigned entry to any developer agent or refresh an existing
+     * assignment for the same target agent. Developer is restricted to self-assignment; the
+     * --agent argument must match the developer agent code from SOMANAGER_AGENT. Entries
+     * assigned to another real agent are refused so assignment does not silently reassign
+     * ownership.
      *
      * @param string $actorRole Caller role (manager or developer)
      * @param ?string $actorAgent Caller agent code when actorRole is developer
      * @param string $targetAgent Agent code passed via --agent
-     * @param string $feature Feature slug to assign
-     * @param BacklogBoard $board Loaded backlog board
-     * @param BacklogBoardService $boardService Service used to resolve the feature entry
+     * @param string $entryRef Human-readable entry reference for error messages
+     * @param BoardEntry $entry Resolved active backlog entry to assign
      */
-    public function assertCanAssignFeature(
+    public function assertCanAssignEntry(
         string $actorRole,
         ?string $actorAgent,
         string $targetAgent,
-        string $feature,
-        BacklogBoard $board,
-        BacklogBoardService $boardService
+        string $entryRef,
+        BoardEntry $entry
     ): void {
         if ($actorRole === self::ROLE_MANAGER) {
+            $this->assertEntryIsUnassignedOrAssignedToTarget($entry, $entryRef, $targetAgent);
+
             return;
         }
 
@@ -93,12 +93,23 @@ final class BacklogPermissionService
             ));
         }
 
-        $match = $boardService->resolveFeature($board, $feature);
-        $assignedAgent = $match->getEntry()->getAgent();
-        if ($assignedAgent !== null && $assignedAgent !== $actorAgent) {
+        $this->assertEntryIsUnassignedOrAssignedToTarget($entry, $entryRef, $targetAgent);
+    }
+
+    /**
+     * Refuses assignment only when the entry is assigned to another real agent.
+     *
+     * @param BoardEntry $entry Resolved active backlog entry to assign
+     * @param string $entryRef Human-readable entry reference for error messages
+     * @param string $targetAgent Agent code passed via --agent
+     */
+    private function assertEntryIsUnassignedOrAssignedToTarget(BoardEntry $entry, string $entryRef, string $targetAgent): void
+    {
+        $assignedAgent = $entry->getAgent();
+        if ($assignedAgent !== null && $assignedAgent !== $targetAgent) {
             throw new RuntimeException(sprintf(
-                'Feature %s is already assigned to %s. Only manager can reassign it.',
-                $feature,
+                'Entry %s is already assigned to %s.',
+                $entryRef,
                 $assignedAgent,
             ));
         }

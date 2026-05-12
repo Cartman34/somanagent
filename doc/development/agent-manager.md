@@ -26,7 +26,8 @@ Read this file only when the active task requires backlog management or workflow
 
 ## Assignment Authority
 
-- `Manager` can assign any feature to any developer agent.
+- `Manager` can assign any unassigned active feature or task to any developer agent, and can refresh an existing assignment for the same target agent.
+- Missing `agent` metadata and legacy `agent: none` both mean the entry is unassigned; a different real agent code must be unassigned first before a new assignment.
 - `Manager` can unassign any active entry (feature or task) from any developer agent through `entry-unassign`.
 - For `entry-unassign`, `--agent=<code>` identifies the manager caller. Use an explicit `<feature>`, `<task>`, or `<feature/task>` reference to choose the entry to unassign.
 - For `feature-assign` and `entry-unassign`, export `SOMANAGER_ROLE=manager` before running `php scripts/backlog.php ...`.

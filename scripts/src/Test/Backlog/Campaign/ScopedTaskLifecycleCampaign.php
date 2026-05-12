@@ -243,6 +243,13 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
 
         $driver->createTodoTask(sprintf('[%s][%s] Task for entry-unassign coverage', $featureSlug, $taskSlug));
         $driver->startNextFeature($context->agentPrimary);
+        $driver->replaceBoardText(
+            '    agent: ' . $context->agentPrimary . "\n",
+            "    agent: none\n",
+        );
+        $driver->removeManagedWorktree($context->agentPrimary);
+        $driver->assignFeatureAsManager($taskRef, $context->agentSecondary);
+        $driver->assertStatusContains($context->agentSecondary, $taskSlug, true);
         $driver->unassignEntryAsManager($taskRef, self::MANAGER_AGENT);
 
         $taskOnlyFeature = 'test-eu-task-only-feature';

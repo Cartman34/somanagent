@@ -17,7 +17,7 @@ notes:
   - 'Accepts plain task text and derives the feature slug from that text.'
   - 'Accepts task type prefixes [feat], [fix] and [tech] (case-insensitive). The prefix may appear at any position in the leading bracket sequence.'
   - 'Accepts a single feature prefix [feature-slug] to create a plain kind=feature with the explicit slug.'
-  - 'Accepts scoped task entries in the form [feature-slug][task-slug] Task text to start or attach a local child task under an existing parent feature (agent=none on the container).'
+  - 'Accepts scoped task entries in the form [feature-slug][task-slug] Task text to start or attach a local child task under an existing unassigned parent feature container.'
   - 'Combinations are explicit: [type][feature-slug] text, [type][feature-slug][task-slug] text, [feature-slug][type] text, [feature-slug][task-slug][type] text are all valid; only one type prefix is allowed per entry.'
   - 'Branch prefix matches the type 1:1: feat → feat/<slug>, fix → fix/<slug>, tech → tech/<slug> for plain features and feat/<feature>--<task>, fix/<feature>--<task>, tech/<feature>--<task> for scoped tasks.'
   - 'Validates the queued entry fully (type, feature/task slugs, conflicts) before any worktree, branch or backlog mutation. A refusal leaves no leftover worktree or backlog state.'
