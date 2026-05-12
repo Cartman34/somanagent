@@ -38,6 +38,7 @@ Rules:
 - Use `SOMANAGER_ROLE=<role> SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-list` to inspect managed worktrees under `.agent-worktrees/`.
 - Use `SOMANAGER_ROLE=<role> SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-clean` to remove only abandoned managed worktrees that are safe to delete.
 - Worktrees outside `.agent-worktrees/` are never auto-removed by backlog commands; inspect them manually, then use `git worktree remove <path>` or `git worktree prune`.
+- Manager sessions run in WP by default; no manager WA is created automatically. A manager may inspect or switch to a WA when the documented manager workflow permits it.
 
 ## Feature Identity Rules
 

@@ -41,6 +41,10 @@ Manager sessions are started by the operator with:
 php scripts/backlog-agent.php start <client> --manager [--code=<mXX>]
 ```
 
+Manager sessions run in WP by default. No `.agent-worktrees/<mXX>` directory is created automatically. The `--reset` flag is not supported for the manager role.
+
+A manager may inspect or switch to a WA when the documented manager workflow allows it; this must be done manually from within the WP session.
+
 Supported clients:
 
 - `claude`: supported end to end by `ClaudeAgentLauncher`.
@@ -57,11 +61,11 @@ The following environment variables are injected into every session:
 | `SOMANAGER_CLIENT` | `claude`, `codex`, `opencode`, or `gemini` |
 | `SOMANAGER_WP` | Absolute path to the main workspace |
 
-A context file is generated at `<WA>/local/agent-context.md` on every session start and resume. It summarises the current task, allowed commands, and backlog vocabulary. Do not commit or push this file.
+A context file is generated at `<WP>/local/agent-context.md` on every session start and resume. It summarises the current task, allowed commands, and backlog vocabulary. Do not commit or push this file.
 
 The launcher spawns the AI client as an interactive child process and records its real PID and process group in `local/tmp/agent-sessions.json`, so `php scripts/backlog-agent.php stop --code=<mXX>` terminates the actual client (SIGTERM, then SIGKILL after 5 seconds if it does not exit), not only the PHP wrapper. A `resume` is refused while any tracked process is still alive — run `stop` first. See `doc/development/agent-workflow.md` for the full lifecycle and `last_seen_at` semantics.
 
-Run `php scripts/backlog-agent.php whoami` from inside the WA to confirm the session identity.
+Run `php scripts/backlog-agent.php whoami` from WP to confirm the session identity.
 
 ## Guidance
 

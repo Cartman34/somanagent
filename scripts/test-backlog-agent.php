@@ -16,6 +16,7 @@ use SoManAgent\Script\Backlog\Agent\Test\AgentContextBuilderTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentResumeCommandTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentReviewerSelectorTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentSessionServiceTest;
+use SoManAgent\Script\Backlog\Agent\Test\AgentStartCommandManagerTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentStopCommandTest;
 use SoManAgent\Script\Backlog\Agent\Test\BacklogAgentRunnerStrictOptionsTest;
 use SoManAgent\Script\Backlog\Agent\Test\ClaudeAgentLauncherTest;
@@ -40,6 +41,7 @@ foreach (array_slice($argv, 1) as $arg) {
 $suites = [
     'AgentCodeServiceTest' => AgentCodeServiceTest::class,
     'AgentSessionServiceTest' => AgentSessionServiceTest::class,
+    'AgentStartCommandManagerTest' => AgentStartCommandManagerTest::class,
     'AgentContextBuilderTest' => AgentContextBuilderTest::class,
     'AgentReviewerSelectorTest' => AgentReviewerSelectorTest::class,
     'AgentClientLauncherRegistryTest' => AgentClientLauncherRegistryTest::class,

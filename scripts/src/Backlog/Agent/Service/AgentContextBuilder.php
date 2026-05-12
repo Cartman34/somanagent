@@ -138,6 +138,10 @@ final class AgentContextBuilder
     {
         $header = '## Current task';
 
+        if ($role === AgentRole::MANAGER) {
+            return $this->renderManagerCurrentTask($code, $header);
+        }
+
         if ($role === AgentRole::REVIEWER) {
             return $this->renderReviewerCurrentTask($code, $header);
         }
@@ -185,6 +189,39 @@ final class AgentContextBuilder
             foreach ($extraLines as $line) {
                 $lines[] = $line;
             }
+        }
+
+        return implode("\n", $lines);
+    }
+
+    private function renderManagerCurrentTask(string $code, string $header): string
+    {
+        $lines = [$header, '', 'Manager session in WP.'];
+
+        if (!is_file($this->boardPath)) {
+            return implode("\n", $lines);
+        }
+
+        try {
+            $board = $this->boardService->loadBoard($this->boardPath);
+            $entries = $this->boardService->findActiveEntriesByAgent($board, $code);
+        } catch (\RuntimeException) {
+            return implode("\n", $lines);
+        }
+
+        if ($entries === []) {
+            return implode("\n", $lines);
+        }
+
+        $lines[] = '';
+        $lines[] = 'Entries assigned to this manager code:';
+        foreach ($entries as $match) {
+            $entry = $match->getEntry();
+            $feature = $entry->getFeature() ?? '';
+            $task = $entry->getTask() ?? '';
+            $ref = $task !== '' ? "{$feature}/{$task}" : $feature;
+            $stage = $entry->getStage() ?? '';
+            $lines[] = sprintf('  %s (%s)', $ref, $stage);
         }
 
         return implode("\n", $lines);

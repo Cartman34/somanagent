@@ -111,7 +111,7 @@ final class AgentStartCommand extends AbstractAgentCommand
             ['name' => '--reviewer', 'description' => 'Launch as reviewer role (reuses the developer WA)'],
             ['name' => '--manager', 'description' => 'Launch as manager role'],
             ['name' => '--code=<code>', 'description' => 'Explicit agent code (e.g. d04, r01). Omit to auto-allocate.'],
-            ['name' => '--reset', 'description' => 'Remove and recreate the worktree before launching (developer/manager only; refuses if dirty)'],
+            ['name' => '--reset', 'description' => 'Remove and recreate the worktree before launching (developer only; refuses if dirty)'],
             ['name' => '--feature=<slug>', 'description' => 'Reviewer: target the feature entry at stage=review with this slug'],
             ['name' => '--task=<feature/task>', 'description' => 'Reviewer: target the task entry at stage=review with this reference'],
             ['name' => '--developer=<dXX>', 'description' => 'Reviewer: target the active entry assigned to this developer code'],
@@ -127,7 +127,6 @@ final class AgentStartCommand extends AbstractAgentCommand
         return [
             'php scripts/backlog-agent.php start claude --developer',
             'php scripts/backlog-agent.php start claude --developer --code=d04',
-            'php scripts/backlog-agent.php start codex --manager --reset',
             'php scripts/backlog-agent.php start claude --reviewer',
             'php scripts/backlog-agent.php start claude --reviewer --feature=my-feature',
             'php scripts/backlog-agent.php start claude --reviewer --task=my-feature/my-task',
@@ -157,8 +156,8 @@ final class AgentStartCommand extends AbstractAgentCommand
         $role = $this->resolveRole($options);
         $reset = isset($options['reset']);
 
-        if ($reset && $role === AgentRole::REVIEWER) {
-            throw new \RuntimeException('--reset is not allowed with --reviewer.');
+        if ($reset && $role !== AgentRole::DEVELOPER) {
+            throw new \RuntimeException('--reset is only allowed with --developer.');
         }
 
         $codeOption = $this->getSingleOption($options, 'code');
@@ -181,6 +180,8 @@ final class AgentStartCommand extends AbstractAgentCommand
 
         if ($role === AgentRole::REVIEWER) {
             [$worktree, $takenEntry, $takenBoard] = $this->prepareReviewerMode($options, $code);
+        } elseif ($role === AgentRole::MANAGER) {
+            $worktree = $this->projectRoot;
         } else {
             $worktree = $this->worktreesRoot . '/' . $code;
             if ($reset) {

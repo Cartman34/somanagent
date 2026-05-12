@@ -52,6 +52,8 @@ final class AgentContextBuilderTest
         $failed += $this->testReviewerContextShowsNoReviewWhenBoardAbsent();
         $failed += $this->testReviewerContextShowsNoReviewWhenNoReviewingEntry();
         $failed += $this->testReviewerContextShowsCurrentReview();
+        $failed += $this->testManagerContextShowsSessionInWP();
+        $failed += $this->testManagerContextWorkingDirectoryRule();
 
         return $failed;
     }
@@ -233,6 +235,44 @@ final class AgentContextBuilderTest
         }
         echo "OK testReviewerContextShowsCurrentReview\n";
         $this->rmdir($projectRoot);
+        return 0;
+    }
+
+    private function testManagerContextShowsSessionInWP(): int
+    {
+        $worktree = $this->tmpDir . '/wt-manager-wp-' . uniqid('', true);
+        mkdir($worktree . '/.git/info', 0755, true);
+        $builder = $this->makeBuilder();
+
+        $path = $builder->build($worktree, 'm01', AgentRole::MANAGER);
+        $content = (string) file_get_contents($path);
+
+        if (!str_contains($content, 'Manager session in WP')) {
+            echo "FAIL testManagerContextShowsSessionInWP: 'Manager session in WP' not found in context\n";
+            $this->rmdir($worktree);
+            return 1;
+        }
+        echo "OK testManagerContextShowsSessionInWP\n";
+        $this->rmdir($worktree);
+        return 0;
+    }
+
+    private function testManagerContextWorkingDirectoryRule(): int
+    {
+        $worktree = $this->tmpDir . '/wt-manager-rule-' . uniqid('', true);
+        mkdir($worktree . '/.git/info', 0755, true);
+        $builder = $this->makeBuilder();
+
+        $path = $builder->build($worktree, 'm01', AgentRole::MANAGER);
+        $content = (string) file_get_contents($path);
+
+        if (!str_contains($content, 'WP is the normal working directory')) {
+            echo "FAIL testManagerContextWorkingDirectoryRule: WP rule not found in context\n";
+            $this->rmdir($worktree);
+            return 1;
+        }
+        echo "OK testManagerContextWorkingDirectoryRule\n";
+        $this->rmdir($worktree);
         return 0;
     }
 
