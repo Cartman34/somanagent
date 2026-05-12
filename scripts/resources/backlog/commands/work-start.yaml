@@ -5,18 +5,15 @@ arguments:
     description: 'Optional stable reference exposed by `todo-list`. When omitted, work-start consumes the first queued entry implicitly.'
 options:
   -
-    name: '--agent'
-    description: 'Developer agent code that takes the next task'
-  -
     name: '--branch-type'
     description: 'Override branch type. Allowed values: feat, fix, tech (rejected if unknown).'
 examples:
-  - 'php scripts/backlog.php work-start --agent agent-01'
-  - 'php scripts/backlog.php work-start --agent agent-01 my-feature'
-  - 'php scripts/backlog.php work-start --agent agent-01 my-feature/my-task'
-  - 'php scripts/backlog.php work-start --agent agent-01 --branch-type=fix'
-  - 'php scripts/backlog.php work-start --agent agent-01 --branch-type=tech'
-  - 'php scripts/backlog.php work-start --agent agent-01 --dry-run'
+  - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php work-start'
+  - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php work-start my-feature'
+  - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php work-start my-feature/my-task'
+  - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php work-start --branch-type=fix'
+  - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php work-start --branch-type=tech'
+  - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php work-start --dry-run'
 notes:
   - 'Without a target, reads the next queued entry from the board `To do` section.'
   - 'With an explicit target, locates the first queued entry whose `[feature-slug]` or `[feature-slug][task-slug]` prefix matches the reference exposed by `todo-list`. Refuses with a clear error when the reference does not match any queued entry.'

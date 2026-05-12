@@ -96,4 +96,31 @@ abstract class AbstractBacklogCommand
 
         $this->boardService->saveReviewFile($review);
     }
+
+    /**
+     * Reads and validates the caller identity from the SOMANAGER_AGENT environment variable.
+     *
+     * @return string The agent code
+     */
+    protected function requireCallerAgent(): string
+    {
+        $agent = trim((string) getenv('SOMANAGER_AGENT'));
+        if ($agent === '') {
+            throw new \RuntimeException('Command requires SOMANAGER_AGENT=<code>.');
+        }
+
+        return $agent;
+    }
+
+    /**
+     * Reads the active caller role from the SOMANAGER_ROLE environment variable without throwing.
+     *
+     * @return string|null 'manager', 'developer', or null when not set or invalid
+     */
+    protected function readCallerRole(): ?string
+    {
+        $role = strtolower(trim((string) getenv('SOMANAGER_ROLE')));
+
+        return in_array($role, ['manager', 'developer'], true) ? $role : null;
+    }
 }

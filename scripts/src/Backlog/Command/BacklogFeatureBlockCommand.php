@@ -43,15 +43,12 @@ final class BacklogFeatureBlockCommand extends AbstractBacklogCommand
      * Block a feature in the backlog board.
      *
      * @param list<string> $commandArgs Feature slug (optional, auto-detect if not provided)
-     * @param array<string, bool|string> $options Command options (--agent required)
+     * @param array<string, bool|string> $options Command options
      * @return void
      */
     public function handle(array $commandArgs, array $options): void
     {
-        $agent = $options['agent'] ?? null;
-        if (!is_string($agent)) {
-            throw new \RuntimeException('Option --agent is required.');
-        }
+        $agent = $this->requireCallerAgent();
         $board = $this->loadBoard();
         $match = isset($commandArgs[0])
             ? $this->boardService->resolveFeature($board, $this->boardService->normalizeFeatureSlug($commandArgs[0]))

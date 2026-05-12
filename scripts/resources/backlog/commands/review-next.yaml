@@ -3,14 +3,10 @@ arguments:
   -
     name: '[<feature|feature/task>]'
     description: 'Optional stable reference exposed by `review-list`. When omitted, review-next claims the first entry waiting in review implicitly.'
-options:
-  -
-    name: '--agent'
-    description: 'Reviewer agent code (required)'
 examples:
-  - 'php scripts/backlog.php review-next --agent cp-01'
-  - 'php scripts/backlog.php review-next --agent cp-01 my-feature'
-  - 'php scripts/backlog.php review-next --agent cp-01 my-feature/my-task'
+  - 'SOMANAGER_AGENT=cp-01 php scripts/backlog.php review-next'
+  - 'SOMANAGER_AGENT=cp-01 php scripts/backlog.php review-next my-feature'
+  - 'SOMANAGER_AGENT=cp-01 php scripts/backlog.php review-next my-feature/my-task'
 notes:
   - 'Without a target, selects the first active backlog entry in the review stage, transitions it to reviewing, and records the reviewer.'
   - 'With an explicit target, claims the named entry only if it is still in the review stage. Refuses with a clear error when the entry is already in reviewing (claimed by another reviewer) or no longer in review.'

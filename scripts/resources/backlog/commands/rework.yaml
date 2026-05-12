@@ -3,14 +3,10 @@ arguments:
   -
     name: '[<feature>|<task>|<feature/task>]'
     description: 'Optional explicit reference. Use <feature/task> for a child task, a plain slug for a feature or a uniquely named task.'
-options:
-  -
-    name: '--agent'
-    description: 'Developer agent code owning the entry'
 examples:
-  - 'php scripts/backlog.php rework --agent agent-01'
-  - 'php scripts/backlog.php rework --agent agent-01 onboarding/task-copy-review'
-  - 'php scripts/backlog.php rework --agent agent-01 delete-question-reply'
+  - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php rework'
+  - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php rework onboarding/task-copy-review'
+  - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php rework delete-question-reply'
 notes:
   - 'Use after a reviewer rejection to resume work on the displayed feedback, or after a merge conflict on an approved entry to fix the conflict locally.'
   - 'Without an explicit reference, resolves the single rejected or approved entry assigned to the provided agent. Errors if the agent has more than one reworkable entry.'

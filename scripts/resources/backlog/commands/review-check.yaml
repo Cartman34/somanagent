@@ -3,13 +3,9 @@ arguments:
   -
     name: '<feature|feature/task>'
     description: 'Feature slug or fully qualified task reference to inspect'
-options:
-  -
-    name: '--agent'
-    description: 'Reviewer agent code (required)'
 examples:
-  - 'php scripts/backlog.php review-check --agent=r01 delete-question-reply'
-  - 'php scripts/backlog.php review-check --agent=r01 onboarding/task-copy-review'
+  - 'SOMANAGER_AGENT=r01 php scripts/backlog.php review-check delete-question-reply'
+  - 'SOMANAGER_AGENT=r01 php scripts/backlog.php review-check onboarding/task-copy-review'
 notes:
   - 'Use <feature> for feature entries, <feature/task> for child task entries.'
   - 'Short task references (bare task slug without the parent feature) are refused; use <feature/task>.'

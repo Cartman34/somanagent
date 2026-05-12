@@ -5,14 +5,11 @@ arguments:
     description: 'Feature slug or fully qualified task reference to reject'
 options:
   -
-    name: '--agent'
-    description: 'Reviewer agent code (required)'
-  -
     name: '--body-file'
     description: 'Local file containing one plain rejection finding per line (required)'
 examples:
-  - 'php scripts/backlog.php review-reject --agent=r01 delete-question-reply --body-file local/tmp/review.md'
-  - 'php scripts/backlog.php review-reject --agent=r01 onboarding/task-copy-review --body-file local/tmp/review.md'
+  - 'SOMANAGER_AGENT=r01 php scripts/backlog.php review-reject delete-question-reply --body-file local/tmp/review.md'
+  - 'SOMANAGER_AGENT=r01 php scripts/backlog.php review-reject onboarding/task-copy-review --body-file local/tmp/review.md'
 notes:
   - 'Use <feature> for feature entries, <feature/task> for child task entries.'
   - 'Short task references (bare task slug without the parent feature) are refused; use <feature/task>.'

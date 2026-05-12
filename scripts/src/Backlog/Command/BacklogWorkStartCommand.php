@@ -67,10 +67,7 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
      */
     public function handle(array $commandArgs, array $options): void
     {
-        $agent = $options['agent'] ?? null;
-        if (!is_string($agent)) {
-            throw new \RuntimeException('Option --agent is required.');
-        }
+        $agent = $this->requireCallerAgent();
         $branchTypeOverride = is_string($options['branch-type'] ?? null) ? $options['branch-type'] : '';
         $explicitReference = $commandArgs[0] ?? null;
 

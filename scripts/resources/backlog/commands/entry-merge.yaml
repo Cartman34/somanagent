@@ -5,17 +5,14 @@ arguments:
     description: 'Feature slug, or full child task identifier'
 options:
   -
-    name: '--agent'
-    description: 'Reviewer agent code performing the merge command'
-  -
     name: '--body-file'
     description: 'Optional local file used to update the PR body before a feature merge'
 examples:
-  - 'php scripts/backlog.php entry-merge delete-question-reply --agent cp-01'
-  - 'php scripts/backlog.php entry-merge onboarding/task-copy-review --agent cp-01'
-  - 'php scripts/backlog.php entry-merge delete-question-reply --agent cp-01 --body-file local/tmp/pr_body.md'
+  - 'SOMANAGER_AGENT=cp-01 php scripts/backlog.php entry-merge delete-question-reply'
+  - 'SOMANAGER_AGENT=cp-01 php scripts/backlog.php entry-merge onboarding/task-copy-review'
+  - 'SOMANAGER_AGENT=cp-01 php scripts/backlog.php entry-merge delete-question-reply --body-file local/tmp/pr_body.md'
 notes:
-  - 'The --agent value identifies the reviewer calling entry-merge; it is never used to resolve a developer-owned task.'
+  - 'The caller agent (SOMANAGER_AGENT) identifies the reviewer performing the merge; it is never used to resolve a developer-owned task.'
   - 'A task merge must use the full <feature/task> reference. A short task slug is refused even when it is unique.'
   - 'Before merging, the command prints the resolved type, target, merge target, and equivalent legacy command.'
   - 'Feature merges delegate to feature-merge; task merges delegate to feature-task-merge <feature/task>.'

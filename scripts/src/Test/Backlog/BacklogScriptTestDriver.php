@@ -162,8 +162,9 @@ MD);
 
         $bodyFile = $this->createBodyFile('test-option-equals-body.md', ['Missing task should fail after parsing body-file.']);
         $this->assertBacklogFails(
-            ['review-reject', '--agent', $this->context->agentPrimary, 'missing-feature/missing-task', '--body-file=' . $bodyFile],
+            ['review-reject', 'missing-feature/missing-task', '--body-file=' . $bodyFile],
             'missing-feature/missing-task',
+            ['SOMANAGER_AGENT' => $this->context->agentPrimary],
         );
     }
 
@@ -172,7 +173,7 @@ MD);
      *
      * Covers both the `--option=value` and `--option value` forms, the typo path
      * (`--as=<code>` must fail rather than be silently dropped), and confirms that
-     * documented options (`--agent`, `--body-file`, `--branch-type`, `--base`) plus
+     * documented options (`--body-file`, `--branch-type`) plus
      * global ones (`--dry-run`, `--verbose`) remain accepted.
      */
     public function runStrictOptionsChecks(): void
@@ -186,8 +187,9 @@ MD);
             'Unknown option(s) for command `status`: --as',
         );
         $this->assertBacklogFails(
-            ['work-start', '--agent=' . $this->context->agentPrimary, '--unknown-flag'],
+            ['work-start', '--unknown-flag'],
             'Unknown option(s) for command `work-start`: --unknown-flag',
+            ['SOMANAGER_AGENT' => $this->context->agentPrimary],
         );
         $this->assertBacklogFails(
             ['--unknown-global'],
@@ -274,11 +276,11 @@ MD);
             ));
         }
 
-        $args = ['work-start', '--agent', $agent];
+        $args = ['work-start'];
         if ($target !== null) {
             $args[] = $target;
         }
-        $output = $this->runBacklog($args);
+        $output = $this->runBacklog($args, ['SOMANAGER_AGENT' => $agent]);
         $this->context->recordWorktree($worktreePath);
 
         return $output;
@@ -375,7 +377,7 @@ MD);
      */
     public function releaseFeature(string $agent, string $feature): void
     {
-        $this->runBacklog(['feature-release', $feature, '--agent', $agent]);
+        $this->runBacklog(['feature-release', $feature], ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -385,7 +387,7 @@ MD);
      */
     public function assertReleaseFeatureFails(string $agent, string $feature, string $needle): void
     {
-        $this->assertBacklogFails(['feature-release', $feature, '--agent', $agent], $needle);
+        $this->assertBacklogFails(['feature-release', $feature], $needle, ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -413,7 +415,7 @@ MD);
      */
     public function requestTaskReview(string $agent): void
     {
-        $this->runBacklog(['review-request', '--agent', $agent]);
+        $this->runBacklog(['review-request'], ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -423,12 +425,12 @@ MD);
      */
     public function reviewNext(string $reviewer, ?string $target = null): string
     {
-        $args = ['review-next', '--agent', $reviewer];
+        $args = ['review-next'];
         if ($target !== null) {
             $args[] = $target;
         }
 
-        return $this->runBacklog($args);
+        return $this->runBacklog($args, ['SOMANAGER_AGENT' => $reviewer]);
     }
 
     /**
@@ -438,11 +440,11 @@ MD);
      */
     public function assertReviewNextFails(string $reviewer, string $needle, ?string $target = null): void
     {
-        $args = ['review-next', '--agent', $reviewer];
+        $args = ['review-next'];
         if ($target !== null) {
             $args[] = $target;
         }
-        $this->assertBacklogFails($args, $needle);
+        $this->assertBacklogFails($args, $needle, ['SOMANAGER_AGENT' => $reviewer]);
     }
 
     /**
@@ -451,11 +453,11 @@ MD);
      */
     public function reviewCancel(string $reviewer, string $reference = ''): void
     {
-        $args = ['review-cancel', '--agent', $reviewer];
+        $args = ['review-cancel'];
         if ($reference !== '') {
             $args[] = $reference;
         }
-        $this->runBacklog($args);
+        $this->runBacklog($args, ['SOMANAGER_AGENT' => $reviewer]);
     }
 
     /**
@@ -465,11 +467,11 @@ MD);
      */
     public function assertReviewCancelFails(string $reviewer, string $reference, string $needle): void
     {
-        $args = ['review-cancel', '--agent', $reviewer];
+        $args = ['review-cancel'];
         if ($reference !== '') {
             $args[] = $reference;
         }
-        $this->assertBacklogFails($args, $needle);
+        $this->assertBacklogFails($args, $needle, ['SOMANAGER_AGENT' => $reviewer]);
     }
 
     /**
@@ -479,7 +481,7 @@ MD);
      */
     public function reviewCheck(string $reviewer, string $reference): string
     {
-        return $this->runBacklog(['review-check', '--agent', $reviewer, $reference]);
+        return $this->runBacklog(['review-check', $reference], ['SOMANAGER_AGENT' => $reviewer]);
     }
 
     /**
@@ -489,7 +491,7 @@ MD);
      */
     public function assertReviewCheckFails(string $reviewer, string $reference, string $needle): void
     {
-        $this->assertBacklogFails(['review-check', '--agent', $reviewer, $reference], $needle);
+        $this->assertBacklogFails(['review-check', $reference], $needle, ['SOMANAGER_AGENT' => $reviewer]);
     }
 
     /**
@@ -501,7 +503,7 @@ MD);
      */
     public function approveFeatureViaUnifiedCommand(string $reviewer, string $feature, string $bodyFile): void
     {
-        $this->runBacklog(['review-approve', '--agent', $reviewer, $feature, '--body-file', $bodyFile]);
+        $this->runBacklog(['review-approve', $feature, '--body-file', $bodyFile], ['SOMANAGER_AGENT' => $reviewer]);
         $entry = $this->requireFeatureEntry($feature);
         $branch = $entry->getBranch();
         if ($branch !== null && $branch !== '') {
@@ -522,7 +524,7 @@ MD);
      */
     public function approveTaskViaUnifiedCommand(string $reviewer, string $reference): void
     {
-        $this->runBacklog(['review-approve', '--agent', $reviewer, $reference]);
+        $this->runBacklog(['review-approve', $reference], ['SOMANAGER_AGENT' => $reviewer]);
     }
 
     /**
@@ -533,12 +535,12 @@ MD);
      */
     public function assertReviewApproveFails(string $reviewer, string $reference, ?string $bodyFile, string $needle): void
     {
-        $args = ['review-approve', '--agent', $reviewer, $reference];
+        $args = ['review-approve', $reference];
         if ($bodyFile !== null) {
             $args[] = '--body-file';
             $args[] = $bodyFile;
         }
-        $this->assertBacklogFails($args, $needle);
+        $this->assertBacklogFails($args, $needle, ['SOMANAGER_AGENT' => $reviewer]);
     }
 
     /**
@@ -550,7 +552,7 @@ MD);
      */
     public function rejectReviewViaUnifiedCommand(string $reviewer, string $reference, string $bodyFile): void
     {
-        $this->runBacklog(['review-reject', '--agent', $reviewer, $reference, '--body-file', $bodyFile]);
+        $this->runBacklog(['review-reject', $reference, '--body-file', $bodyFile], ['SOMANAGER_AGENT' => $reviewer]);
     }
 
     /**
@@ -561,12 +563,12 @@ MD);
      */
     public function assertReviewRejectFails(string $reviewer, string $reference, ?string $bodyFile, string $needle): void
     {
-        $args = ['review-reject', '--agent', $reviewer, $reference];
+        $args = ['review-reject', $reference];
         if ($bodyFile !== null) {
             $args[] = '--body-file';
             $args[] = $bodyFile;
         }
-        $this->assertBacklogFails($args, $needle);
+        $this->assertBacklogFails($args, $needle, ['SOMANAGER_AGENT' => $reviewer]);
     }
 
     /**
@@ -584,11 +586,11 @@ MD);
 
     public function rework(string $agent, string $reference = ''): void
     {
-        $args = ['rework', '--agent', $agent];
+        $args = ['rework'];
         if ($reference !== '') {
             $args[] = $reference;
         }
-        $this->runBacklog($args);
+        $this->runBacklog($args, ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -598,11 +600,11 @@ MD);
      */
     public function assertReworkFails(string $agent, string $reference, string $needle): void
     {
-        $args = ['rework', '--agent', $agent];
+        $args = ['rework'];
         if ($reference !== '') {
             $args[] = $reference;
         }
-        $this->assertBacklogFails($args, $needle);
+        $this->assertBacklogFails($args, $needle, ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -680,7 +682,7 @@ MD);
      */
     public function mergeTask(string $reference): void
     {
-        $output = $this->runBacklog(['entry-merge', $reference, '--agent', 'test-reviewer']);
+        $output = $this->runBacklog(['entry-merge', $reference], ['SOMANAGER_AGENT' => 'test-reviewer']);
         $this->assertOutputContains($output, 'Resolved type: task');
         $this->assertOutputContains($output, 'Equivalent command: feature-task-merge ' . $reference);
     }
@@ -706,8 +708,9 @@ MD);
     public function assertEntryMergeWithoutReferenceFails(string $agent): void
     {
         $this->assertBacklogFails(
-            ['entry-merge', '--agent', $agent],
+            ['entry-merge'],
             'entry-merge requires <feature> or <feature/task>.',
+            ['SOMANAGER_AGENT' => $agent],
         );
     }
 
@@ -718,7 +721,7 @@ MD);
     {
         $this->assertBacklogFails(
             ['entry-merge', $reference],
-            'entry-merge requires --agent=<reviewer>.',
+            'Command requires SOMANAGER_AGENT=<code>.',
         );
     }
 
@@ -728,8 +731,9 @@ MD);
     public function assertEntryMergeShortTaskReferenceFails(string $task): void
     {
         $this->assertBacklogFails(
-            ['entry-merge', $task, '--agent', 'test-reviewer'],
+            ['entry-merge', $task],
             'entry-merge refuses short task reference',
+            ['SOMANAGER_AGENT' => 'test-reviewer'],
         );
     }
 
@@ -740,8 +744,9 @@ MD);
     public function assertEntryMergeTaskBodyFileFails(string $reference, string $bodyFile): void
     {
         $this->assertBacklogFails(
-            ['entry-merge', $reference, '--agent', 'test-reviewer', '--body-file', $bodyFile],
+            ['entry-merge', $reference, '--body-file', $bodyFile],
             'entry-merge accepts --body-file only for feature merges.',
+            ['SOMANAGER_AGENT' => 'test-reviewer'],
         );
     }
 
@@ -751,7 +756,7 @@ MD);
      */
     public function renameEntry(string $agent, string $newText): void
     {
-        $this->runBacklog(['entry-rename', '--agent', $agent, $newText]);
+        $this->runBacklog(['entry-rename', $newText], ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -759,7 +764,7 @@ MD);
      */
     public function requestFeatureReview(string $agent): void
     {
-        $this->runBacklog(['review-request', '--agent', $agent]);
+        $this->runBacklog(['review-request'], ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -768,7 +773,7 @@ MD);
      */
     public function blockFeature(string $agent, string $feature): void
     {
-        $this->runBacklog(['feature-block', '--agent', $agent, $feature]);
+        $this->runBacklog(['feature-block', $feature], ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -777,7 +782,7 @@ MD);
      */
     public function unblockFeature(string $agent, string $feature): void
     {
-        $this->runBacklog(['feature-unblock', '--agent', $agent, $feature]);
+        $this->runBacklog(['feature-unblock', $feature], ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -786,13 +791,13 @@ MD);
      */
     public function mergeFeature(string $feature, ?string $bodyFile = null): void
     {
-        $arguments = ['entry-merge', $feature, '--agent', 'test-reviewer'];
+        $arguments = ['entry-merge', $feature];
         if ($bodyFile !== null) {
             $arguments[] = '--body-file';
             $arguments[] = $bodyFile;
         }
 
-        $output = $this->runBacklog($arguments);
+        $output = $this->runBacklog($arguments, ['SOMANAGER_AGENT' => 'test-reviewer']);
         $this->assertOutputContains($output, 'Resolved type: feature');
         $this->assertOutputContains($output, 'Equivalent command: feature-merge ' . $feature);
         $this->context->markPullRequestMerged();
@@ -1100,18 +1105,18 @@ MD);
      */
     public function dryRunStartNextFeature(string $agent, array $extraArguments = []): string
     {
-        $arguments = array_merge(['work-start', '--agent', $agent, '--dry-run'], $extraArguments);
+        $arguments = array_merge(['work-start', '--dry-run'], $extraArguments);
 
-        return $this->runBacklog($arguments);
+        return $this->runBacklog($arguments, ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
-     * @param list<string> $extraArguments Additional CLI arguments after --agent
+     * @param list<string> $extraArguments Additional CLI arguments
      */
     public function assertWorkStartFails(string $agent, string $needle, array $extraArguments = []): void
     {
-        $arguments = array_merge(['work-start', '--agent', $agent], $extraArguments);
-        $this->assertBacklogFails($arguments, $needle);
+        $arguments = array_merge(['work-start'], $extraArguments);
+        $this->assertBacklogFails($arguments, $needle, ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -1146,12 +1151,14 @@ MD);
      *
      * @param list<string> $argsA Arguments for the first command
      * @param list<string> $argsB Arguments for the second command
+     * @param array<string, string> $envA Environment variables for the first command
+     * @param array<string, string> $envB Environment variables for the second command
      * @return array{array{int, string}, array{int, string}} Results as [[codeA, outputA], [codeB, outputB]]
      */
-    public function runTwoConcurrentBacklog(array $argsA, array $argsB): array
+    public function runTwoConcurrentBacklog(array $argsA, array $argsB, array $envA = [], array $envB = []): array
     {
-        $cmdA = $this->buildBacklogCommand($argsA);
-        $cmdB = $this->buildBacklogCommand($argsB);
+        $cmdA = $this->buildBacklogCommand($argsA, $envA);
+        $cmdB = $this->buildBacklogCommand($argsB, $envB);
 
         $descriptors = [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']];
         $procA = proc_open($cmdA, $descriptors, $pipesA, $this->context->projectRoot);

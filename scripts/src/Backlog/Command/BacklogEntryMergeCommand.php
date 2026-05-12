@@ -68,10 +68,9 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
      */
     private function resolveReviewer(array $options): string
     {
-        $agentOption = $options['agent'] ?? null;
-        $reviewer = is_string($agentOption) ? $this->boardService->sanitizeString($agentOption) : null;
+        $reviewer = $this->boardService->sanitizeString($this->requireCallerAgent());
         if ($reviewer === null) {
-            throw new \RuntimeException('entry-merge requires --agent=<reviewer>.');
+            throw new \RuntimeException('Command requires SOMANAGER_AGENT=<code>.');
         }
 
         return $reviewer;
