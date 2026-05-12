@@ -1076,7 +1076,26 @@ final class BacklogBoardService
     }
 
     /**
-     * Creates a board entry from raw input text (short prefix or markdown format).
+     * Throws when the cleaned task title (after type-prefix extraction) does not declare
+     * an explicit [feature-slug] scope.
+     */
+    private function assertHasFeatureScope(string $cleanedTitle): void
+    {
+        if (!str_starts_with($cleanedTitle, '[')) {
+            throw new \RuntimeException(
+                'task-create requires an explicit [feature-slug] scope. ' .
+                'Use [feature-slug] Title, [feature-slug][task-slug] Title, or [type][feature-slug] Title — ' .
+                'for example: [tech][my-feature] My task title.'
+            );
+        }
+    }
+
+    /**
+     * Creates a board entry from a single-line input.
+     *
+     * The input must declare an explicit `[feature-slug]` scope after any type prefix is
+     * stripped. Bare text and type-only prefixes such as `[tech] Title` are rejected.
+     *
      * @param string $text
      * @return BoardEntry
      */
@@ -1084,15 +1103,17 @@ final class BacklogBoardService
     {
         [$type, $cleaned] = $this->extractTypePrefix($text);
 
+        if ($cleaned === '') {
+            throw new \RuntimeException('Task body cannot be empty.');
+        }
+
+        $this->assertHasFeatureScope($cleaned);
+
         if ($type !== null) {
             $entry = new BoardEntry($cleaned);
             $entry->setType($type->value);
 
             return $entry;
-        }
-
-        if ($cleaned === '') {
-            throw new \RuntimeException('Task body cannot be empty.');
         }
 
         return $this->parseEntryFromLines(['- ' . $cleaned]);
@@ -1103,8 +1124,10 @@ final class BacklogBoardService
      *
      * The first non-empty line is the task title (with an optional leading `- ` and
      * an optional task type prefix from {@see BacklogTaskType} placed anywhere in
-     * the leading bracket sequence). Remaining non-empty lines become sub-task lines
-     * indented by two spaces when not already indented.
+     * the leading bracket sequence). An explicit `[feature-slug]` scope is required
+     * after the type prefix is stripped; bare titles and type-only prefixes are rejected.
+     * Remaining non-empty lines become sub-task lines indented by two spaces when not
+     * already indented.
      *
      * @param array<int, string> $lines
      */
@@ -1138,6 +1161,8 @@ final class BacklogBoardService
         if (trim($firstCleaned) === '') {
             throw new \RuntimeException('Task title (first line of --body-file) cannot be empty.');
         }
+
+        $this->assertHasFeatureScope($firstCleaned);
 
         $extra = [];
         foreach (array_slice($cleaned, 1) as $line) {

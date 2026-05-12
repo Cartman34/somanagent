@@ -26,7 +26,7 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
 
     public function run(BacklogScriptTestDriver $driver, BacklogScriptTestContext $context): void
     {
-        $driver->createTodoTask(sprintf('[fix] %s', $context->fixFeature));
+        $driver->createTodoTask(sprintf('[fix][%s] %s', $context->fixFeature, $context->fixFeature));
         $driver->startNextFeature($context->agentPrimary);
         $driver->trackFeatureBranch($context->fixFeature);
         $driver->commitFeatureChange($context->agentPrimary, $context->fixFeature, 'test-feature-review-lifecycle.txt');
