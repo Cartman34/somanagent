@@ -45,6 +45,7 @@ It lets you assemble generic AI agent teams, assign them roles and skills, then 
 | Adding a translation key or migrating a French string | [translations.md](technical/translations.md) |
 | Configuring environment variables | [configuration.md](technical/configuration.md) |
 | Adding or modifying a script in `scripts/` | [scripts.md](development/scripts.md) |
+| Writing or updating a local spec under `local/specs/` | [spec-conventions.md](development/spec-conventions.md) |
 | Understanding the hexagonal architecture | [architecture.md](technical/architecture.md) |
 | Designing or reviewing a UI screen | [ui-usage-guidelines.md](functional/ui-usage-guidelines.md) |
 
@@ -54,6 +55,7 @@ It lets you assemble generic AI agent teams, assign them roles and skills, then 
 |---|---|
 | [Installation](development/installation.md) | Prerequisites and full setup |
 | [Scripts](development/scripts.md) | Available scripts in `scripts/` |
+| [Spec conventions](development/spec-conventions.md) | Conventions for writing and maintaining local specs under `local/specs/` |
 | [Script Backlog Test Scenarios](development/script-backlog-test-scenarios.md) | Reusable validation scenarios for `php scripts/backlog.php` |
 | [Symfony commands](development/commands.md) | Available `bin/console` commands |
 | [Fixtures](development/fixtures.md) | Reference seed data and sample workflows |
