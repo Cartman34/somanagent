@@ -53,10 +53,11 @@ final class BacklogReviewCancelCommand extends AbstractBacklogCommand
             throw new RuntimeException('review-cancel requires --agent=<reviewer>.');
         }
 
-        $reference = $commandArgs[0] ?? null;
-        if (!is_string($reference) || trim($reference) === '') {
+        $rawReference = $commandArgs[0] ?? null;
+        if (!is_string($rawReference) || trim($rawReference) === '') {
             throw new RuntimeException('review-cancel requires an explicit <feature> or <feature/task> reference.');
         }
+        $reference = trim($rawReference);
 
         $isManager = strtolower(trim((string) getenv('SOMANAGER_ROLE'))) === self::ROLE_MANAGER;
 

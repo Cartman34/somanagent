@@ -48,6 +48,19 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
         $driver->removeTodoTask('ambiguous-plain-ref');
         $driver->removeTodoTask('ambiguous-plain-ref-2');
 
+        // review-cancel guard runs before loadBoard, so we can exercise the explicit-reference
+        // contract directly here without bringing up a full review-stage flow.
+        $driver->assertReviewCancelFails(
+            $context->agentSecondary,
+            '',
+            'review-cancel requires an explicit <feature> or <feature/task> reference.',
+        );
+        $driver->assertReviewCancelFails(
+            $context->agentSecondary,
+            '   ',
+            'review-cancel requires an explicit <feature> or <feature/task> reference.',
+        );
+
         $driver->createTodoTask($context->plainFeature);
         $driver->assertTodoContains($context->plainFeature);
         $startOutput = $driver->startNextFeature($context->agentPrimary);
