@@ -12,7 +12,6 @@ namespace SoManAgent\Script\Backlog\Enum;
  */
 enum BacklogCommandName: string
 {
-    case HELP = 'help';
     case BASE_UPDATE = 'base-update';
     case STATUS = 'status';
     case TASK_CREATE = 'task-create';
@@ -57,8 +56,7 @@ enum BacklogCommandName: string
             self::TODO_LIST,
             self::REVIEW_LIST,
             self::REVIEW_NOTES,
-            self::REVIEW_CHECK,
-            self::HELP => false,
+            self::REVIEW_CHECK => false,
             default => true,
         };
     }

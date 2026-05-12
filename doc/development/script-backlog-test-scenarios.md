@@ -7,7 +7,7 @@ Use this document when validating a refactor or behavior change in the local bac
 ## Scope
 
 This document covers:
-- global help and per-command help
+- global help and per-command help via --help
 - todo task management
 - feature start/release/assignment/status flows
 - child task start/review/rework/merge flows
@@ -73,21 +73,22 @@ Each scenario below must create its own `test-*` backlog input immediately befor
 
 ### Goal
 
-Validate that backlog help is available globally and per command.
+Validate that backlog help is available globally and per command via `--help`.
 
 ### Steps
 
 1. `php scripts/backlog.php`
-2. `php scripts/backlog.php help`
-3. `php scripts/backlog.php help work-start`
-4. `php scripts/backlog.php work-start --help`
-5. `php scripts/backlog.php help review-request`
+2. `php scripts/backlog.php work-start --help`
+3. `php scripts/backlog.php review-request --help`
+4. `php scripts/backlog.php help`
+5. `php scripts/backlog.php help work-start`
 
 ### Expected checks
 
-- global help prints command list and global options
-- per-command help prints description, options, examples, and notes
-- `help <command>` and `<command> --help` are equivalent
+- global help (no arguments) prints command list and global options
+- per-command help (`<command> --help`) prints description, options, examples, and notes
+- `help` alone returns "Unknown command: help. Run with --help for the list of available commands."
+- `help work-start` returns the same unknown-command error (no silent fallback)
 
 ## Scenario 2 - Todo Management
 
@@ -531,7 +532,7 @@ After validation:
 When the full scenario set is too expensive, run at least:
 
 1. `php scripts/backlog.php`
-2. `php scripts/backlog.php help work-start`
+2. `php scripts/backlog.php work-start --help`
 3. `php scripts/backlog.php todo-list`
 4. `php scripts/backlog.php feature-list`
 5. `php scripts/backlog.php worktree-list`

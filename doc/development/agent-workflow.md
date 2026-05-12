@@ -113,7 +113,7 @@ Rules:
 
 1. Use `php scripts/backlog.php` for the full local workflow.
 2. Use `php scripts/backlog.php --help` for the global backlog help.
-3. Use `php scripts/backlog.php help <command>` or `php scripts/backlog.php <command> --help` for one command.
+3. Use `php scripts/backlog.php <command> --help` for one command.
 4. Every developer command on `backlog.php` requires `--agent=<code>`.
 5. Reviewer commands on `backlog.php` use `--agent` only when explicitly required (e.g. `review-next`, `review-cancel`, `review-check`, `review-approve`, `review-reject`, `entry-merge`).
 6. The agent code must never leave local backlog files.

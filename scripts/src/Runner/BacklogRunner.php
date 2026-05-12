@@ -63,7 +63,7 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->configureTestFileOverrides($options);
 
         try {
-            if ($command === '' || $command === BacklogCommandName::HELP->value) {
+            if ($command === '') {
                 $this->optionValidator()->assertGlobalOptionsAccepted($options);
             } else {
                 $this->optionValidator()->assertCommandOptionsAccepted($command, $options);
@@ -74,19 +74,6 @@ final class BacklogRunner extends AbstractScriptRunner
 
         if ($command === '') {
             $this->printHelp();
-
-            return 0;
-        }
-
-        if ($command === BacklogCommandName::HELP->value) {
-            $targetCommand = $commandArgs[0] ?? '';
-            if ($targetCommand === '') {
-                $this->printHelp();
-
-                return 0;
-            }
-
-            $this->printCommandHelp($targetCommand);
 
             return 0;
         }

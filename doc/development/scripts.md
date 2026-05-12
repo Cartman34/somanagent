@@ -77,8 +77,7 @@ Runs the documented local backlog workflow, including feature start/review/merge
 
 ```bash
 php scripts/backlog.php
-php scripts/backlog.php help
-php scripts/backlog.php help work-start
+php scripts/backlog.php work-start --help
 php scripts/backlog.php base-update my-feature
 php scripts/backlog.php work-start --help
 php scripts/backlog.php work-start --agent agent-01
@@ -92,7 +91,7 @@ php scripts/backlog.php worktree-restore --agent agent-01 --force
 
 Notes:
 - run `php scripts/backlog.php` for the global backlog help
-- use `php scripts/backlog.php help <command>` or `php scripts/backlog.php <command> --help` for one command
+- use `php scripts/backlog.php <command> --help` for one command
 - developer commands require `--agent=<code>`
 - reviewer commands (`review-check`, `review-approve`, `review-reject`, `review-next`, `review-cancel`) require `--agent=<reviewer>`
 - `base-update` refreshes the recorded Git base after a rebase; features update `origin/main` before using the merge base with it, and local child tasks default to the merge base with their parent feature branch
