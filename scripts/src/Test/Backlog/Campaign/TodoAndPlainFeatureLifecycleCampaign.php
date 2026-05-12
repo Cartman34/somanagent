@@ -48,6 +48,15 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
 
         $driver->createTodoTask($context->assignFeature);
         $driver->startNextFeature($context->agentPrimary);
+        $driver->assignFeatureAsManager($context->assignFeature, $context->agentPrimary);
+        $driver->assertStatusContains($context->agentPrimary, $context->assignFeature, true);
+        $driver->assertAssignFeatureFails(
+            $context->assignFeature,
+            $context->agentSecondary,
+            ['SOMANAGER_ROLE' => 'manager'],
+            sprintf('Entry %s is already assigned to %s.', $context->assignFeature, $context->agentPrimary),
+        );
+        $driver->unassignEntryAsManager($context->assignFeature, self::MANAGER_AGENT);
         $driver->assignFeatureAsManager($context->assignFeature, $context->agentSecondary);
         $driver->assertStatusContains($context->agentSecondary, $context->assignFeature, true);
 

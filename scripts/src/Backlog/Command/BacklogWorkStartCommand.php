@@ -23,7 +23,7 @@ use SoManAgent\Script\Service\GitService;
  * Unified command for starting work on the next queued backlog task.
  *
  * Behaviour depends on the queued task prefix combination (any order, type-aware):
- *   [type][feature][task] text  → child kind=task under an existing or new kind=feature container (agent=none)
+ *   [type][feature][task] text  → child kind=task under an existing or new unassigned kind=feature container
  *   [type][feature] text        → plain kind=feature with an explicit slug, assigned to the agent
  *   [type] text                 → plain kind=feature with a slug derived from the task text, assigned to the agent
  *   text (no prefix)            → plain kind=feature with a slug derived from the task text, default type=feat

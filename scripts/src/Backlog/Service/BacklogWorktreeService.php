@@ -395,10 +395,17 @@ final class BacklogWorktreeService
             } elseif ($branch !== null && isset($activeEntriesByBranch[$branch])) {
                 $feature = $activeEntriesByBranch[$branch]->getFeature();
                 $agent = $activeEntriesByBranch[$branch]->getAgent();
-                $expectedPath = $this->worktreesRoot . '/' . $agent;
                 $dirty = $this->git->hasLocalChanges($path);
 
-                if ($path !== $expectedPath) {
+                if ($agent === '') {
+                    if ($dirty) {
+                        $state = WorktreeState::DIRTY;
+                        $action = WorktreeAction::MANUAL_REVIEW;
+                    } else {
+                        $state = WorktreeState::ORPHAN;
+                        $action = WorktreeAction::CLEAN;
+                    }
+                } elseif ($path !== $this->worktreesRoot . '/' . $agent) {
                     $state = WorktreeState::BLOCKED;
                     $action = WorktreeAction::MANUAL_REVIEW;
                 } elseif ($dirty) {
@@ -797,7 +804,7 @@ final class BacklogWorktreeService
             $branch = $entry->getBranch() ?? '';
             $feature = $entry->getFeature() ?? '';
             $agent = $entry->getAgent() ?? '';
-            if ($branch === '' || $feature === '' || $agent === '') {
+            if ($branch === '' || $feature === '') {
                 continue;
             }
 

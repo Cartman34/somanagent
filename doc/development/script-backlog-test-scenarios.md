@@ -199,7 +199,7 @@ Validate `feature-release` on a feature with no actual development ahead of base
 
 ### Goal
 
-Validate feature assignment and unassignment permissions.
+Validate feature/task assignment and unassignment permissions.
 
 ### Steps
 
@@ -207,19 +207,28 @@ Validate feature assignment and unassignment permissions.
    - `php scripts/backlog.php task-create test-assign-feature`
 2. Start it:
    - `php scripts/backlog.php work-start --agent d01`
-3. Run with manager role:
+3. Refresh the same assignment:
+   - `SOMANAGER_ROLE=manager php scripts/backlog.php feature-assign test-assign-feature --agent d01`
+4. Try to assign to another agent while the entry is already assigned:
    - `SOMANAGER_ROLE=manager php scripts/backlog.php feature-assign test-assign-feature --agent d02`
-4. Inspect:
-   - `php scripts/backlog.php status --agent d02`
-5. Unassign with manager role:
+5. Unassign it with manager role:
    - `SOMANAGER_ROLE=manager php scripts/backlog.php entry-unassign test-assign-feature --agent m01`
-6. Unassign a child task with manager role using `<feature/task>`:
+6. Assign the unassigned entry with manager role:
+   - `SOMANAGER_ROLE=manager php scripts/backlog.php feature-assign test-assign-feature --agent d02`
+7. Inspect:
+   - `php scripts/backlog.php status --agent d02`
+8. Unassign with manager role:
+   - `SOMANAGER_ROLE=manager php scripts/backlog.php entry-unassign test-assign-feature --agent m01`
+9. Unassign a child task with manager role using `<feature/task>`:
    - `SOMANAGER_ROLE=manager php scripts/backlog.php entry-unassign test-assign-feature/cleanup --agent m01`
-7. Unassign the caller agent's single active entry without an explicit reference:
+10. Unassign the caller agent's single active entry without an explicit reference:
    - `SOMANAGER_ROLE=manager php scripts/backlog.php entry-unassign --agent d02`
 
 ### Expected checks
 
+- assignment accepts an entry already assigned to the same target agent
+- assignment refuses an entry already assigned to a different real agent
+- assignment accepts an entry with missing `agent` metadata or legacy `agent: none`
 - assignment updates `meta.agent`
 - target worktree is prepared for the assigned agent
 - unassignment removes the assignment cleanly on an explicitly referenced feature or task even when `--agent` is a manager caller code, and still works on the caller agent's single active entry when no reference is provided
@@ -314,7 +323,7 @@ Validate local merge of one approved child task into its parent feature.
 ### Expected checks
 
 - child task active entry disappears
-- parent feature remains active with `agent=none`
+- parent feature remains active and unassigned
 - parent contribution block still records the merged child content
 - child task worktree cleanup follows documented behavior
 
@@ -343,7 +352,7 @@ Validate that after merging task A, `work-start` picks up the next queued scoped
 ### Expected checks
 
 - second child task is created as active `kind=task` assigned to d01
-- parent feature container (`kind=feature`) remains with `agent=none` throughout
+- parent feature container (`kind=feature`) remains unassigned throughout
 - contribution blocks record both merged child tasks after step 6
 - agent has no active entry after the merge
 
