@@ -229,7 +229,7 @@ MD);
      */
     public function assertTodoContains(string $needle): void
     {
-        $this->assertOutputContains($this->runBacklog(['task-todo-list']), $needle);
+        $this->assertOutputContains($this->runBacklog(['todo-list']), $needle);
     }
 
     /**

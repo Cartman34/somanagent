@@ -7,7 +7,7 @@
 // Usage: php scripts/backlog.php
 // Usage: php scripts/backlog.php help
 // Usage: php scripts/backlog.php help work-start
-// Usage: php scripts/backlog.php task-todo-list
+// Usage: php scripts/backlog.php todo-list
 // Usage: php scripts/backlog.php work-start --agent agent-01
 // Usage: php scripts/backlog.php review-request --agent agent-01
 // Usage: php scripts/backlog.php review-check --agent r01 my-feature

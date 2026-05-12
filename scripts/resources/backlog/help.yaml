@@ -25,7 +25,7 @@ examples:
   - 'php scripts/backlog.php status --agent agent-01'
   - 'php scripts/backlog.php base-update my-feature'
   - 'php scripts/backlog.php task-create "Add toast notifications on success and error flows"'
-  - 'php scripts/backlog.php task-todo-list'
+  - 'php scripts/backlog.php todo-list'
   - 'php scripts/backlog.php task-remove 8'
   - 'php scripts/backlog.php review-request --agent agent-01'
   - 'php scripts/backlog.php entry-merge onboarding/task-copy-review --agent cp-01'

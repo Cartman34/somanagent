@@ -14,7 +14,7 @@ use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 /**
  * Command for listing tasks in the todo section.
  */
-final class BacklogTaskTodoListCommand extends AbstractBacklogCommand
+final class BacklogTodoListCommand extends AbstractBacklogCommand
 {
     public function __construct(BacklogPresenter $presenter, bool $dryRun, string $projectRoot, BacklogBoardService $boardService)
     {
