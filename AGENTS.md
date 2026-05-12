@@ -32,7 +32,6 @@ Read this file first. Open additional files only when the active task requires t
 - Pending backlog: `local/backlog-board.md`
 - Review state: `local/backlog-review.md`
 - Files under `local/` are local-only and must not be committed.
-- For `local/backlog-board.md` and `local/backlog-review.md`, always follow the `## Règles d'usage` section in each file.
 - Never edit local backlog files manually when `php scripts/backlog.php` covers the action.
 - For detailed backlog rules and workflow behavior, read `doc/development/agent-workflow.md` when needed.
 

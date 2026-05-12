@@ -12,7 +12,7 @@ Read this file only when a task needs backlog, worktree, feature, or command beh
 Rules:
 
 - Files under `local/` are local-only and must not be committed.
-- For `local/backlog-board.md` and `local/backlog-review.md`, always follow the `## Usage rules` section in each file.
+- The backlog board canonical title is `# Backlog board`. It contains only three sections: `To do`, `In progress`, and `Suggestions`. Any `## Usage rules` or legacy `## Règles d'usage` section is automatically stripped the next time `backlog.php` saves the board.
 - The backlog board uses these working sections:
   `To do` = queued priorities,
   `In progress` = active features with workflow state in `meta.stage`,
