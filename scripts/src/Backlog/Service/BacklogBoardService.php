@@ -516,7 +516,7 @@ final class BacklogBoardService
 
         if ($matches === []) {
             throw new \RuntimeException(sprintf(
-                'No queued task found for reference: %s. Run task-todo-list to see queued references.',
+                'No queued task found for reference: %s. Run todo-list to see queued references.',
                 $normalized,
             ));
         }
