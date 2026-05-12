@@ -15,9 +15,6 @@ use SoManAgent\Script\Backlog\Command\BacklogFeatureCloseCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureListCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureMergeCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureReleaseCommand;
-use SoManAgent\Script\Backlog\Command\BacklogFeatureReviewApproveCommand;
-use SoManAgent\Script\Backlog\Command\BacklogFeatureReviewCheckCommand;
-use SoManAgent\Script\Backlog\Command\BacklogFeatureReviewRejectCommand;
 use SoManAgent\Script\Backlog\Command\BacklogEntryMergeCommand;
 use SoManAgent\Script\Backlog\Command\BacklogEntryRenameCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReworkCommand;
@@ -36,9 +33,6 @@ use SoManAgent\Script\Backlog\Command\BacklogReviewRequestCommand;
 use SoManAgent\Script\Backlog\Command\BacklogStatusCommand;
 use SoManAgent\Script\Backlog\Command\BacklogTaskCreateCommand;
 use SoManAgent\Script\Backlog\Command\BacklogTaskRemoveCommand;
-use SoManAgent\Script\Backlog\Command\BacklogTaskReviewApproveCommand;
-use SoManAgent\Script\Backlog\Command\BacklogTaskReviewCheckCommand;
-use SoManAgent\Script\Backlog\Command\BacklogTaskReviewRejectCommand;
 use SoManAgent\Script\Backlog\Command\BacklogTodoListCommand;
 use SoManAgent\Script\Backlog\Command\BacklogWorktreeCleanCommand;
 use SoManAgent\Script\Backlog\Command\BacklogWorktreeListCommand;
@@ -94,12 +88,6 @@ final class BacklogCommandFactory
     private ?RetryPolicy $retryPolicy = null;
     private ?BacklogFeatureMergeCommand $featureMergeCommand = null;
     private ?BacklogFeatureTaskMergeCommand $featureTaskMergeCommand = null;
-    private ?BacklogFeatureReviewCheckCommand $featureReviewCheckCommand = null;
-    private ?BacklogFeatureReviewApproveCommand $featureReviewApproveCommand = null;
-    private ?BacklogFeatureReviewRejectCommand $featureReviewRejectCommand = null;
-    private ?BacklogTaskReviewCheckCommand $taskReviewCheckCommand = null;
-    private ?BacklogTaskReviewApproveCommand $taskReviewApproveCommand = null;
-    private ?BacklogTaskReviewRejectCommand $taskReviewRejectCommand = null;
 
     /**
      * Constructor.
@@ -151,9 +139,6 @@ final class BacklogCommandFactory
             BacklogCommandName::TODO_LIST->value => BacklogTodoListCommand::class,
             BacklogCommandName::TASK_REMOVE->value => BacklogTaskRemoveCommand::class,
             BacklogCommandName::REVIEW_REQUEST->value => BacklogReviewRequestCommand::class,
-            BacklogCommandName::TASK_REVIEW_CHECK->value => BacklogTaskReviewCheckCommand::class,
-            BacklogCommandName::TASK_REVIEW_REJECT->value => BacklogTaskReviewRejectCommand::class,
-            BacklogCommandName::TASK_REVIEW_APPROVE->value => BacklogTaskReviewApproveCommand::class,
             BacklogCommandName::REWORK->value => BacklogReworkCommand::class,
             BacklogCommandName::ENTRY_MERGE->value => BacklogEntryMergeCommand::class,
             BacklogCommandName::ENTRY_RENAME->value => BacklogEntryRenameCommand::class,
@@ -172,9 +157,6 @@ final class BacklogCommandFactory
             BacklogCommandName::FEATURE_BLOCK->value => BacklogFeatureBlockCommand::class,
             BacklogCommandName::FEATURE_UNBLOCK->value => BacklogFeatureUnblockCommand::class,
             BacklogCommandName::FEATURE_LIST->value => BacklogFeatureListCommand::class,
-            BacklogCommandName::FEATURE_REVIEW_CHECK->value => BacklogFeatureReviewCheckCommand::class,
-            BacklogCommandName::FEATURE_REVIEW_REJECT->value => BacklogFeatureReviewRejectCommand::class,
-            BacklogCommandName::FEATURE_REVIEW_APPROVE->value => BacklogFeatureReviewApproveCommand::class,
             BacklogCommandName::FEATURE_CLOSE->value => BacklogFeatureCloseCommand::class,
             BacklogCommandName::FEATURE_MERGE->value => BacklogFeatureMergeCommand::class,
         ];
@@ -478,141 +460,5 @@ final class BacklogCommandFactory
         }
 
         return $this->featureTaskMergeCommand;
-    }
-
-    /**
-     * Get the feature review check command (internal implementation, not public).
-     *
-     * @return BacklogFeatureReviewCheckCommand
-     */
-    public function getFeatureReviewCheckCommand(): BacklogFeatureReviewCheckCommand
-    {
-        if ($this->featureReviewCheckCommand === null) {
-            $this->featureReviewCheckCommand = new BacklogFeatureReviewCheckCommand(
-                $this->getPresenter(),
-                $this->dryRun,
-                $this->projectRoot,
-                $this->getBoardService(),
-                $this->getWorktreeService(),
-                $this,
-                $this->getFilesystemClient(),
-            );
-            $this->featureReviewCheckCommand->setBoardPath($this->boardPath);
-            $this->featureReviewCheckCommand->setReviewFilePath($this->reviewFilePath);
-        }
-
-        return $this->featureReviewCheckCommand;
-    }
-
-    /**
-     * Get the feature review approve command (internal implementation, not public).
-     *
-     * @return BacklogFeatureReviewApproveCommand
-     */
-    public function getFeatureReviewApproveCommand(): BacklogFeatureReviewApproveCommand
-    {
-        if ($this->featureReviewApproveCommand === null) {
-            $this->featureReviewApproveCommand = new BacklogFeatureReviewApproveCommand(
-                $this->getPresenter(),
-                $this->dryRun,
-                $this->projectRoot,
-                $this->getBoardService(),
-                $this->getGitService(),
-                $this->getPullRequestService(),
-            );
-            $this->featureReviewApproveCommand->setBoardPath($this->boardPath);
-            $this->featureReviewApproveCommand->setReviewFilePath($this->reviewFilePath);
-        }
-
-        return $this->featureReviewApproveCommand;
-    }
-
-    /**
-     * Get the feature review reject command (internal implementation, not public).
-     *
-     * @return BacklogFeatureReviewRejectCommand
-     */
-    public function getFeatureReviewRejectCommand(): BacklogFeatureReviewRejectCommand
-    {
-        if ($this->featureReviewRejectCommand === null) {
-            $this->featureReviewRejectCommand = new BacklogFeatureReviewRejectCommand(
-                $this->getPresenter(),
-                $this->dryRun,
-                $this->projectRoot,
-                $this->getBoardService(),
-                $this->getReviewBodyFormatter(),
-            );
-            $this->featureReviewRejectCommand->setBoardPath($this->boardPath);
-            $this->featureReviewRejectCommand->setReviewFilePath($this->reviewFilePath);
-        }
-
-        return $this->featureReviewRejectCommand;
-    }
-
-    /**
-     * Get the task review check command (internal implementation, not public).
-     *
-     * @return BacklogTaskReviewCheckCommand
-     */
-    public function getTaskReviewCheckCommand(): BacklogTaskReviewCheckCommand
-    {
-        if ($this->taskReviewCheckCommand === null) {
-            $this->taskReviewCheckCommand = new BacklogTaskReviewCheckCommand(
-                $this->getPresenter(),
-                $this->dryRun,
-                $this->projectRoot,
-                $this->getBoardService(),
-                $this->getWorktreeService(),
-                $this,
-                $this->getFilesystemClient(),
-            );
-            $this->taskReviewCheckCommand->setBoardPath($this->boardPath);
-            $this->taskReviewCheckCommand->setReviewFilePath($this->reviewFilePath);
-        }
-
-        return $this->taskReviewCheckCommand;
-    }
-
-    /**
-     * Get the task review approve command (internal implementation, not public).
-     *
-     * @return BacklogTaskReviewApproveCommand
-     */
-    public function getTaskReviewApproveCommand(): BacklogTaskReviewApproveCommand
-    {
-        if ($this->taskReviewApproveCommand === null) {
-            $this->taskReviewApproveCommand = new BacklogTaskReviewApproveCommand(
-                $this->getPresenter(),
-                $this->dryRun,
-                $this->projectRoot,
-                $this->getBoardService(),
-            );
-            $this->taskReviewApproveCommand->setBoardPath($this->boardPath);
-            $this->taskReviewApproveCommand->setReviewFilePath($this->reviewFilePath);
-        }
-
-        return $this->taskReviewApproveCommand;
-    }
-
-    /**
-     * Get the task review reject command (internal implementation, not public).
-     *
-     * @return BacklogTaskReviewRejectCommand
-     */
-    public function getTaskReviewRejectCommand(): BacklogTaskReviewRejectCommand
-    {
-        if ($this->taskReviewRejectCommand === null) {
-            $this->taskReviewRejectCommand = new BacklogTaskReviewRejectCommand(
-                $this->getPresenter(),
-                $this->dryRun,
-                $this->projectRoot,
-                $this->getBoardService(),
-                $this->getReviewBodyFormatter(),
-            );
-            $this->taskReviewRejectCommand->setBoardPath($this->boardPath);
-            $this->taskReviewRejectCommand->setReviewFilePath($this->reviewFilePath);
-        }
-
-        return $this->taskReviewRejectCommand;
     }
 }

@@ -26,9 +26,6 @@ enum BacklogCommandName: string
     case REVIEW_NEXT = 'review-next';
     case REVIEW_NOTES = 'review-notes';
     case REVIEW_REQUEST = 'review-request';
-    case TASK_REVIEW_CHECK = 'task-review-check';
-    case TASK_REVIEW_REJECT = 'task-review-reject';
-    case TASK_REVIEW_APPROVE = 'task-review-approve';
     case REWORK = 'rework';
     case ENTRY_MERGE = 'entry-merge';
     case ENTRY_RENAME = 'entry-rename';
@@ -43,9 +40,6 @@ enum BacklogCommandName: string
     case WORKTREE_LIST = 'worktree-list';
     case WORKTREE_CLEAN = 'worktree-clean';
     case WORKTREE_RESTORE = 'worktree-restore';
-    case FEATURE_REVIEW_CHECK = 'feature-review-check';
-    case FEATURE_REVIEW_REJECT = 'feature-review-reject';
-    case FEATURE_REVIEW_APPROVE = 'feature-review-approve';
     case FEATURE_CLOSE = 'feature-close';
     case FEATURE_MERGE = 'feature-merge';
 
@@ -64,8 +58,6 @@ enum BacklogCommandName: string
             self::REVIEW_LIST,
             self::REVIEW_NOTES,
             self::REVIEW_CHECK,
-            self::FEATURE_REVIEW_CHECK,
-            self::TASK_REVIEW_CHECK,
             self::HELP => false,
             default => true,
         };

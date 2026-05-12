@@ -1,4 +1,0 @@
-description: 'Deprecated. Use review-reject instead.'
-notes:
-  - 'This command is no longer available as a public command.'
-  - 'Use: php scripts/backlog.php review-reject --agent=<reviewer> <feature/task> --body-file=<path>'

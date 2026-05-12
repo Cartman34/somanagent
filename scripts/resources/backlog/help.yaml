@@ -30,7 +30,7 @@ examples:
   - 'php scripts/backlog.php task-remove my-feature/my-task'
   - 'php scripts/backlog.php review-request --agent agent-01'
   - 'php scripts/backlog.php entry-merge onboarding/task-copy-review --agent cp-01'
-  - 'php scripts/backlog.php task-review-approve onboarding/task-copy-review'
+  - 'php scripts/backlog.php review-approve --agent cp-01 onboarding/task-copy-review'
   - 'php scripts/backlog.php rework --agent agent-01 onboarding/task-copy-review'
   - 'php scripts/backlog.php work-start --agent agent-01'
   - 'php scripts/backlog.php work-start --agent agent-01 my-feature'

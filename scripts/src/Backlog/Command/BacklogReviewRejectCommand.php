@@ -7,36 +7,39 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\BacklogCommandFactory;
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use SoManAgent\Script\Backlog\Service\BacklogReviewBodyFormatter;
 
 /**
- * Unified command for rejecting a feature or task review and recording reviewer blockers.
+ * Reviewer command that rejects a feature or task review and records reviewer blockers.
  *
- * Delegates to feature-review-reject or task-review-reject based on the reference kind.
- * Short task references (bare task slug without the parent feature) are refused.
+ * Carries the feature and task logic directly. Short task references (bare task slug without the
+ * parent feature) are refused.
  */
 final class BacklogReviewRejectCommand extends AbstractBacklogCommand
 {
-    private BacklogCommandFactory $commandFactory;
+    private BacklogReviewBodyFormatter $reviewBodyFormatter;
 
     /**
      * @param BacklogPresenter $presenter
      * @param bool $dryRun
      * @param string $projectRoot
      * @param BacklogBoardService $boardService
-     * @param BacklogCommandFactory $commandFactory
+     * @param BacklogReviewBodyFormatter $reviewBodyFormatter
      */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
         BacklogBoardService $boardService,
-        BacklogCommandFactory $commandFactory
+        BacklogReviewBodyFormatter $reviewBodyFormatter
     ) {
         parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
-        $this->commandFactory = $commandFactory;
+        $this->reviewBodyFormatter = $reviewBodyFormatter;
     }
 
     /**
@@ -60,15 +63,30 @@ final class BacklogReviewRejectCommand extends AbstractBacklogCommand
             throw new \RuntimeException('review-reject requires --body-file=<path>.');
         }
 
-        $delegatedOptions = ['body-file' => $bodyFile];
+        $board = $this->loadBoard();
+        $review = $this->loadReviewFile();
 
         if (str_contains($reference, '/')) {
-            $this->commandFactory->getTaskReviewRejectCommand()->performReject([$reference], $delegatedOptions);
+            $match = $this->boardService->resolveTaskByReference($board, $reference, BacklogCommandName::REVIEW_REJECT->value);
+            $entry = $match->getEntry();
+            $this->assertStageAllowsReviewMutation($entry, 'rejected');
+
+            $reviewKey = $this->boardService->getTaskReviewKey($entry);
+            $entry->setStage(BacklogBoard::STAGE_REJECTED);
+            $entry->setReviewer(null);
+            $review->setReview($reviewKey, $this->reviewBodyFormatter->fromFile($bodyFile));
+            $this->saveBoard($board, BacklogCommandName::REVIEW_REJECT->value);
+            $this->saveReviewFile($review, BacklogCommandName::REVIEW_REJECT->value);
+
+            $this->presenter->displaySuccess(sprintf(
+                'Rejected task %s, moved to %s',
+                $reviewKey,
+                $this->boardService->getStageLabel(BacklogBoard::STAGE_REJECTED),
+            ));
 
             return;
         }
 
-        $board = $this->loadBoard();
         $slug = $this->boardService->normalizeFeatureSlug($reference);
         if ($this->boardService->findParentFeatureEntry($board, $slug) === null) {
             $taskMatches = $this->boardService->findTaskEntriesByTaskSlug($board, $slug);
@@ -80,6 +98,43 @@ final class BacklogReviewRejectCommand extends AbstractBacklogCommand
             }
         }
 
-        $this->commandFactory->getFeatureReviewRejectCommand()->performReject([$reference], $delegatedOptions);
+        $match = $this->boardService->resolveFeature($board, $slug);
+        $entry = $match->getEntry();
+        $this->assertStageAllowsReviewMutation($entry, 'rejected');
+
+        $entry->setStage(BacklogBoard::STAGE_REJECTED);
+        $entry->setReviewer(null);
+        $review->setReview($slug, $this->reviewBodyFormatter->fromFile($bodyFile));
+        $this->saveBoard($board, BacklogCommandName::REVIEW_REJECT->value);
+        $this->saveReviewFile($review, BacklogCommandName::REVIEW_REJECT->value);
+
+        $this->presenter->displaySuccess(sprintf(
+            'Rejected feature %s, moved to %s',
+            $slug,
+            $this->boardService->getStageLabel(BacklogBoard::STAGE_REJECTED),
+        ));
+    }
+
+    /**
+     * Refuses unless the entry is in review or reviewing stage.
+     */
+    private function assertStageAllowsReviewMutation(BoardEntry $entry, string $action): void
+    {
+        $stage = $this->boardService->getFeatureStage($entry);
+        if ($stage === BacklogBoard::STAGE_IN_REVIEW || $stage === BacklogBoard::STAGE_REVIEWING) {
+            return;
+        }
+
+        $label = $this->boardService->checkIsTaskEntry($entry)
+            ? sprintf('Task %s', $this->boardService->getTaskReviewKey($entry))
+            : sprintf('Feature %s', $entry->getFeature() ?? '');
+
+        throw new \RuntimeException(sprintf(
+            '%s must be in %s or %s to be %s.',
+            $label,
+            $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_REVIEW),
+            $this->boardService->getStageLabel(BacklogBoard::STAGE_REVIEWING),
+            $action,
+        ));
     }
 }
