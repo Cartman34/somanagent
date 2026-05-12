@@ -470,6 +470,99 @@ final class BacklogBoardService
     }
 
     /**
+     * Computes the stable reference identifier of a queued todo entry from its text.
+     *
+     * The reference matches the eventual feature/task slugs that {@see BacklogWorkStartCommand}
+     * would assign on promotion, so it stays valid across todo reorderings and is the only
+     * trustworthy identity for mutations on queued entries.
+     */
+    public function computeQueuedEntryReference(BoardEntry $entry): string
+    {
+        [, $cleaned] = $this->extractTypePrefix($entry->getText());
+
+        $scoped = $this->extractScopedTaskMetadata($cleaned);
+        if ($scoped !== null) {
+            return $scoped['featureGroup'] . '/' . $scoped['task'];
+        }
+
+        $single = $this->extractSingleFeaturePrefixMetadata($cleaned);
+        if ($single !== null) {
+            return $single['featureSlug'];
+        }
+
+        return $this->normalizeFeatureSlug($cleaned);
+    }
+
+    /**
+     * Resolves a queued todo entry by its stable reference, throwing when missing or ambiguous.
+     *
+     * The reference is a `<feature>` or `<feature>/<task>` slug pair as returned by
+     * {@see computeQueuedEntryReference}. Both sides are normalized through the feature
+     * slugger so users can pass any reasonable casing or hyphenation.
+     *
+     * @return array{0: int, 1: BoardEntry} Tuple [0-based index in todo section, matched entry]
+     */
+    public function resolveQueuedEntryByReference(BacklogBoard $board, string $reference, string $command): array
+    {
+        $normalized = $this->normalizeQueuedEntryReference($reference, $command);
+        $entries = $board->getEntries(BacklogBoard::SECTION_TODO);
+        $matches = [];
+
+        foreach ($entries as $index => $entry) {
+            if ($this->computeQueuedEntryReference($entry) === $normalized) {
+                $matches[] = [$index, $entry];
+            }
+        }
+
+        if ($matches === []) {
+            throw new \RuntimeException(sprintf(
+                'No queued task found for reference: %s. Run todo-list to see queued references.',
+                $normalized,
+            ));
+        }
+
+        if (count($matches) > 1) {
+            throw new \RuntimeException(sprintf(
+                'Ambiguous queued reference %s: matches %d queued tasks. Rename one of them or pass a more specific <feature/task>.',
+                $normalized,
+                count($matches),
+            ));
+        }
+
+        return $matches[0];
+    }
+
+    /**
+     * Normalizes a user-provided queued reference into the canonical slug form used by
+     * {@see computeQueuedEntryReference}.
+     */
+    public function normalizeQueuedEntryReference(string $reference, string $command): string
+    {
+        $trimmed = trim($reference);
+        if ($trimmed === '') {
+            throw new \RuntimeException(sprintf('%s requires a queued task reference (feature or feature/task slug).', $command));
+        }
+
+        if (str_contains($trimmed, '/')) {
+            [$feature, $task] = array_pad(explode('/', $trimmed, 2), 2, '');
+            $feature = $this->normalizeFeatureSlug($feature);
+            $task = $this->normalizeFeatureSlug($task);
+            if ($feature === '' || $task === '') {
+                throw new \RuntimeException(sprintf('%s requires a non-empty feature and task slug in <feature/task>.', $command));
+            }
+
+            return $feature . '/' . $task;
+        }
+
+        $slug = $this->normalizeFeatureSlug($trimmed);
+        if ($slug === '') {
+            throw new \RuntimeException(sprintf('%s requires a non-empty reference slug.', $command));
+        }
+
+        return $slug;
+    }
+
+    /**
      * Resolves the single active task for an agent, throwing on none or multiple.
      * @param BacklogBoard $board, string $agent
      * @return BoardEntryMatch

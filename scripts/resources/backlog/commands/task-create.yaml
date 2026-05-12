@@ -21,7 +21,8 @@ examples:
   - "php scripts/backlog.php task-create $'[tech][backlog-entry-types] Multi-line task title\\n  - First sub-task\\n  - Second sub-task'"
   - 'php scripts/backlog.php task-create --body-file=local/tmp/new-task.md'
 notes:
-  - 'Recommended: always include both a [type] prefix (feat / fix / tech) and a [feature-slug] (and [task-slug] when the task is a child) so the queued entry is unambiguous.'
+  - 'Recommended: always include both a [type] prefix (feat / fix / tech) and a [feature-slug] (and [task-slug] when the task is a child) so the queued entry is unambiguous and the task-remove reference stays stable.'
+  - '`--index` values are advisory: out-of-range values clamp to start (>=1) or end (<= entryCount + 1) and emit a warning, while the task is still inserted; passing `--position=index` without `--index` is rejected.'
   - 'Supported task type prefixes: [feat], [fix], [tech] (case-insensitive). Only one type prefix is allowed per entry.'
   - 'Type prefix is recognized at any position in the leading bracket sequence: [type][feature-slug][task-slug] text, [feature-slug][type] text and [feature-slug][task-slug][type] text all work.'
   - 'Supports scoped task prefixes [feature-slug][task-slug] for child tasks attached to a parent feature container.'
