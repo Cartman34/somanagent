@@ -45,16 +45,25 @@ final class FakeAgentClientLauncher implements AgentClientLauncher
         $this->available = $available;
     }
 
+    /**
+     * Returns the client type this launcher handles.
+     */
     public function client(): AgentClient
     {
         return $this->clientEnum;
     }
 
+    /**
+     * Returns whether the underlying CLI is considered available.
+     */
     public function isAvailable(): bool
     {
         return $this->available;
     }
 
+    /**
+     * Records the worktree argument; skips actual preparation.
+     */
     public function prepareWorktree(string $worktree, string $contextFilePath): void
     {
         $this->lastPreparedWorktree = $worktree;
@@ -83,6 +92,9 @@ final class FakeAgentClientLauncher implements AgentClientLauncher
         return ['/bin/true', []];
     }
 
+    /**
+     * Always returns null — no real client session to capture.
+     */
     public function captureCurrentSessionId(string $worktree): ?string
     {
         return null;

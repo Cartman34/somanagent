@@ -28,17 +28,26 @@ final class AgentStatusCommandTest
 {
     private string $tmpDir;
 
+    /**
+     * Creates temp directory for test fixtures.
+     */
     public function __construct()
     {
         $this->tmpDir = sys_get_temp_dir() . '/backlog-agent-status-test-' . uniqid('', true);
         mkdir($this->tmpDir, 0755, true);
     }
 
+    /**
+     * Removes temp directory and all its contents.
+     */
     public function __destruct()
     {
         $this->rmdir($this->tmpDir);
     }
 
+    /**
+     * Runs every test case and returns the cumulative number of failures.
+     */
     public function run(): int
     {
         $failed = 0;

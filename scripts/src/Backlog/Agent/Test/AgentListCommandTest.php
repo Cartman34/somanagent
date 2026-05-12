@@ -28,12 +28,18 @@ final class AgentListCommandTest
 {
     private string $tmpDir;
 
+    /**
+     * Creates temp directory for test fixtures.
+     */
     public function __construct()
     {
         $this->tmpDir = sys_get_temp_dir() . '/backlog-agent-list-test-' . uniqid('', true);
         mkdir($this->tmpDir, 0755, true);
     }
 
+    /**
+     * Removes temp directory and all its contents.
+     */
     public function __destruct()
     {
         $this->rmdir($this->tmpDir);

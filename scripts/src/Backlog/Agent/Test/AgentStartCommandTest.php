@@ -40,17 +40,26 @@ final class AgentStartCommandTest
 {
     private string $tmpDir;
 
+    /**
+     * Creates temp directory for test fixtures.
+     */
     public function __construct()
     {
         $this->tmpDir = sys_get_temp_dir() . '/backlog-agent-start-test-' . uniqid('', true);
         mkdir($this->tmpDir, 0755, true);
     }
 
+    /**
+     * Removes temp directory and all its contents.
+     */
     public function __destruct()
     {
         $this->rmdir($this->tmpDir);
     }
 
+    /**
+     * Runs every test case and returns the cumulative number of failures.
+     */
     public function run(): int
     {
         $failed = 0;
@@ -148,7 +157,7 @@ final class AgentStartCommandTest
         try {
             $cmd->handle(['claude'], ['reviewer' => true, 'reset' => true]);
         } catch (\RuntimeException $e) {
-            $threw = str_contains($e->getMessage(), '--reset is not allowed with --reviewer');
+            $threw = str_contains($e->getMessage(), '--reset is only allowed with --developer');
         }
         if (!$threw) {
             echo "FAIL testRejectsResetWithReviewer: expected --reset/--reviewer rejection\n";
