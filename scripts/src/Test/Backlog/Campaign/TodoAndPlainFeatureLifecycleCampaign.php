@@ -123,6 +123,8 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
         $driver->releaseFeature($context->agentPrimary, $singlePrefixSlug);
         $driver->removeFirstTodoTask();
 
+        $this->assertWorkStartWithExplicitTarget($driver, $context);
+
         $committedFeature = $context->plainFeature . '-committed-release';
         $driver->createTodoTask($committedFeature);
         $driver->startNextFeature($context->agentPrimary);
@@ -133,5 +135,41 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
             $committedFeature,
             'Active entry already has development work and cannot be released back to todo.',
         );
+    }
+
+    /**
+     * Validates that `work-start <reference>` consumes the explicit target instead of
+     * the head, and refuses with a clear error when the target does not match any
+     * queued entry.
+     */
+    private function assertWorkStartWithExplicitTarget(
+        BacklogScriptTestDriver $driver,
+        BacklogScriptTestContext $context,
+    ): void {
+        $headSlug = 'work-start-head';
+        $targetSlug = 'work-start-target';
+
+        $driver->createTodoTask(sprintf('[%s] Head entry that should stay queued', $headSlug));
+        $driver->createTodoTask(sprintf('[%s] Explicit target entry', $targetSlug));
+
+        $driver->assertWorkStartFails(
+            $context->agentPrimary,
+            'No queued task found for reference: unknown-slug-that-does-not-exist',
+            ['unknown-slug-that-does-not-exist'],
+        );
+        if ($driver->checkManagedWorktreeExists($context->agentPrimary)) {
+            throw new \RuntimeException('A refused work-start must not create a managed worktree.');
+        }
+        $driver->assertTodoContains($headSlug);
+        $driver->assertTodoContains($targetSlug);
+
+        $output = $driver->startNextFeature($context->agentPrimary, $targetSlug);
+        $driver->assertFeatureStartOutputContains($output, $targetSlug);
+        $driver->assertActiveFeatureExists($targetSlug);
+        $driver->assertTodoContains($headSlug);
+
+        $driver->releaseFeature($context->agentPrimary, $targetSlug);
+        $driver->removeFirstTodoTask();
+        $driver->removeFirstTodoTask();
     }
 }

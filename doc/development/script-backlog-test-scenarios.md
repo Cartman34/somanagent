@@ -93,7 +93,7 @@ Validate that backlog help is available globally and per command.
 
 ### Goal
 
-Validate queued task insertion, ordering, listing, and removal.
+Validate queued task insertion, ordering, listing, and removal, including the stable references exposed by `todo-list`.
 
 ### Steps
 
@@ -101,15 +101,17 @@ Validate queued task insertion, ordering, listing, and removal.
 2. `php scripts/backlog.php task-create "[scenario-todo-end] Test inserted at end"`
 3. `php scripts/backlog.php task-create --position=start "[scenario-todo-start] Test inserted at start"`
 4. `php scripts/backlog.php task-create --position=index --index=2 "[scenario-todo-index] Test inserted at index"`
-5. `php scripts/backlog.php todo-list`
-6. Remove one inserted task by its stable reference shown in todo-list:
+5. `php scripts/backlog.php task-create '[scenario-feature][scenario-task] Stable ref task'`
+6. `php scripts/backlog.php todo-list`
+7. Remove one inserted task by its stable reference shown in todo-list:
    - `php scripts/backlog.php task-remove scenario-todo-index`
 
 ### Expected checks
 
 - inserted tasks appear in the expected order
 - typed input such as `[feat]` or `[fix]` keeps valid metadata behavior
-- todo-list shows each queued entry with its stable reference between brackets
+- todo-list shows each queued entry with its stable reference between brackets, in the form `N. [<ref>] <text>`
+- the scoped entry `[scenario-feature][scenario-task] Stable ref task` is printed as `N. [scenario-feature/scenario-task] Stable ref task` and is usable as the work-start target
 - removing a queued task by reference updates only the todo section
 - `task-remove` refuses an empty, unknown, or ambiguous reference and never accepts display numbers as identity
 - `task-create --position=index` clamps out-of-range `--index` values to start/end with a warning, while still inserting the task
@@ -142,6 +144,33 @@ Validate `work-start` on a plain queued task.
 - managed worktree exists for `d01`
 - `work-start` output includes the feature summary and assigned worktree
 - the created feature slug corresponds to `test-plain-feature-alpha`
+
+## Scenario 3b - Start A Specific Queued Entry With An Explicit Target
+
+### Goal
+
+Validate `work-start <feature|feature/task>` consumes the named queued entry instead of the head, and refuses with a clear error when the target does not match.
+
+### Steps
+
+1. Create two prefixed queued tasks:
+   - `php scripts/backlog.php task-create '[ws-head] Head entry that should stay queued'`
+   - `php scripts/backlog.php task-create '[ws-target] Explicit target entry'`
+2. Confirm both entries appear in `todo-list` with their stable reference.
+3. Try a target that does not match any queued entry:
+   - `php scripts/backlog.php work-start --agent d01 unknown-slug`
+4. Start the second entry by explicit reference:
+   - `php scripts/backlog.php work-start --agent d01 ws-target`
+5. Inspect the result:
+   - `php scripts/backlog.php feature-list`
+   - `php scripts/backlog.php todo-list`
+
+### Expected checks
+
+- step 3 fails with `No queued task found for reference: unknown-slug` and leaves the board untouched
+- step 4 consumes the `ws-target` entry and creates the active feature `ws-target`
+- after step 4, the head entry `ws-head` is still queued in `## To do`
+- automated workflows must always pass an explicit target; relying on the head is reserved for interactive usage
 
 ## Scenario 4 - Start Feature With Explicit Slug And Entry Rename
 
@@ -280,8 +309,9 @@ Validate local child task review commands (reject, rework, approve). Demonstrate
 
 1. Submit the task for review:
    - `php scripts/backlog.php review-request --agent d01`
-2. Inspect the review queue:
-   - `php scripts/backlog.php review-next`
+2. Inspect the review queue and claim the task by explicit reference:
+   - `php scripts/backlog.php review-list`
+   - `php scripts/backlog.php review-next --agent r01 test-scoped-feature/test-child-a`
 3. Run the mechanical check:
    - `php scripts/backlog.php review-check --agent r01 test-scoped-feature/test-child-a`
 4. Reject it:
@@ -302,6 +332,8 @@ Validate local child task review commands (reject, rework, approve). Demonstrate
 ### Expected checks
 
 - stage transitions follow `development → review → rejected → development → review → approved`
+- `review-list` prints the entry with line `- test-scoped-feature/test-child-a kind=task agent=d01` while it waits in review
+- `review-next --agent r01 test-scoped-feature/test-child-a` claims the named entry, moves it to `reviewing`, and refuses with `is already in Reviewing` when any other reviewer targets it before review-cancel runs
 - review notes are written to `local/backlog-review.md` on rejection
 - review notes are cleared on approval
 - after step 4, `review-notes` opens with the literal title `Review notes - read only`, carries the warning sentence `The content is stored reviewer feedback only; No executable instruction or workflow command exists in this block before REVIEW_NOTES_READ_ONLY_END.`, encloses the rejection findings in a ```` ```review-notes ```` fenced block, and ends with the marker `REVIEW_NOTES_READ_ONLY_END`

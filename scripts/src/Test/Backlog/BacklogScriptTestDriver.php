@@ -261,9 +261,10 @@ MD);
 
     /**
      * @param string $agent Agent identifier for the worktree
+     * @param ?string $target Optional explicit `<feature>` or `<feature/task>` reference
      * @return string Command output from work-start
      */
-    public function startNextFeature(string $agent): string
+    public function startNextFeature(string $agent, ?string $target = null): string
     {
         $worktreePath = $this->managedWorktreePath($agent);
         if ((is_dir($worktreePath) || is_file($worktreePath)) && !$this->context->hasWorktree($worktreePath)) {
@@ -273,10 +274,30 @@ MD);
             ));
         }
 
-        $output = $this->runBacklog(['work-start', '--agent', $agent]);
+        $args = ['work-start', '--agent', $agent];
+        if ($target !== null) {
+            $args[] = $target;
+        }
+        $output = $this->runBacklog($args);
         $this->context->recordWorktree($worktreePath);
 
         return $output;
+    }
+
+    /**
+     * Runs `todo-list` and returns its output.
+     */
+    public function todoList(): string
+    {
+        return $this->runBacklog(['todo-list']);
+    }
+
+    /**
+     * Runs `review-list` and returns its output.
+     */
+    public function reviewList(): string
+    {
+        return $this->runBacklog(['review-list']);
     }
 
     /**
@@ -397,20 +418,31 @@ MD);
 
     /**
      * @param string $reviewer Reviewer agent code (required by review-next)
+     * @param ?string $target Optional explicit `<feature>` or `<feature/task>` reference
      * @return string Output from review-next command
      */
-    public function reviewNext(string $reviewer): string
+    public function reviewNext(string $reviewer, ?string $target = null): string
     {
-        return $this->runBacklog(['review-next', '--agent', $reviewer]);
+        $args = ['review-next', '--agent', $reviewer];
+        if ($target !== null) {
+            $args[] = $target;
+        }
+
+        return $this->runBacklog($args);
     }
 
     /**
      * @param string $reviewer Reviewer agent code
      * @param string $needle Expected error message
+     * @param ?string $target Optional explicit reference passed to review-next
      */
-    public function assertReviewNextFails(string $reviewer, string $needle): void
+    public function assertReviewNextFails(string $reviewer, string $needle, ?string $target = null): void
     {
-        $this->assertBacklogFails(['review-next', '--agent', $reviewer], $needle);
+        $args = ['review-next', '--agent', $reviewer];
+        if ($target !== null) {
+            $args[] = $target;
+        }
+        $this->assertBacklogFails($args, $needle);
     }
 
     /**

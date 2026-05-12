@@ -28,6 +28,7 @@ use SoManAgent\Script\Backlog\Command\BacklogFeatureUnblockCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewApproveCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewCancelCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewCheckCommand;
+use SoManAgent\Script\Backlog\Command\BacklogReviewListCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewNextCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewNotesCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewRejectCommand;
@@ -160,6 +161,7 @@ final class BacklogCommandFactory
             BacklogCommandName::REVIEW_CHECK->value => BacklogReviewCheckCommand::class,
             BacklogCommandName::REVIEW_APPROVE->value => BacklogReviewApproveCommand::class,
             BacklogCommandName::REVIEW_REJECT->value => BacklogReviewRejectCommand::class,
+            BacklogCommandName::REVIEW_LIST->value => BacklogReviewListCommand::class,
             BacklogCommandName::REVIEW_NEXT->value => BacklogReviewNextCommand::class,
             BacklogCommandName::REVIEW_NOTES->value => BacklogReviewNotesCommand::class,
             BacklogCommandName::WORK_START->value => BacklogWorkStartCommand::class,

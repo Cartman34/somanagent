@@ -1,12 +1,20 @@
-description: 'Claim the next task or feature waiting in review and move it to the reviewing stage'
+description: 'Claim a task or feature waiting in review and move it to the reviewing stage'
+arguments:
+  -
+    name: '[<feature|feature/task>]'
+    description: 'Optional stable reference exposed by `review-list`. When omitted, review-next claims the first entry waiting in review implicitly.'
 options:
   -
     name: '--agent'
     description: 'Reviewer agent code (required)'
 examples:
   - 'php scripts/backlog.php review-next --agent cp-01'
+  - 'php scripts/backlog.php review-next --agent cp-01 my-feature'
+  - 'php scripts/backlog.php review-next --agent cp-01 my-feature/my-task'
 notes:
-  - 'Selects the first active backlog entry in the review stage, transitions it to reviewing, and records the reviewer.'
+  - 'Without a target, selects the first active backlog entry in the review stage, transitions it to reviewing, and records the reviewer.'
+  - 'With an explicit target, claims the named entry only if it is still in the review stage. Refuses with a clear error when the entry is already in reviewing (claimed by another reviewer) or no longer in review.'
+  - 'Automated workflows must always pass an explicit target; relying on the implicit head of the list is reserved for interactive usage.'
   - 'Refuses when the reviewer already has an entry in the reviewing stage; run review-cancel first to release it.'
   - 'Entries already in the reviewing stage are skipped and not available to other reviewers.'
   - 'The output includes Kind, Feature, Task or Ref when relevant, Branch, Base, Stage, Reviewer, PR, Summary, Next, and Blocker.'
