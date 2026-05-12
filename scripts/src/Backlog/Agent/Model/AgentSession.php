@@ -19,11 +19,13 @@ final class AgentSession
      * @param string $code Agent code (e.g. d01, r02, m03)
      * @param AgentClient $client AI client that was launched
      * @param AgentRole $role Role of the session
-     * @param int $pid PID of the launched process
+     * @param int $pid PID of the PHP wrapper process (kept for diagnostics and stale-wrapper detection)
      * @param string $worktree Absolute path to the agent worktree
      * @param \DateTimeImmutable $startedAt When the session was started
-     * @param \DateTimeImmutable $lastSeenAt When the process was last confirmed alive
+     * @param \DateTimeImmutable $lastSeenAt Last time a backlog-agent subcommand observed this entry and refreshed its PID/process status
      * @param string|null $sessionId Optional client-specific session identifier
+     * @param int|null $clientPid Actual AI client process PID when known; null when the launcher cannot determine it
+     * @param int|null $processGroupId Process group to terminate on stop; required when the client is launched through an intermediate shell or wrapper
      */
     public function __construct(
         public readonly string $code,
@@ -34,13 +36,23 @@ final class AgentSession
         public readonly \DateTimeImmutable $startedAt,
         public readonly \DateTimeImmutable $lastSeenAt,
         public readonly ?string $sessionId,
+        public readonly ?int $clientPid = null,
+        public readonly ?int $processGroupId = null,
     ) {}
 
     /**
-     * Returns true when the PID corresponds to a running process.
+     * Returns true when at least one tracked process (client, then wrapper) is alive.
+     *
+     * The client process is checked first because the wrapper may exit while the client is still running
+     * (typical race when the wrapper crashes mid-session). When client_pid is null the check falls back
+     * to the wrapper pid.
      */
     public function isAlive(): bool
     {
+        if ($this->clientPid !== null && $this->clientPid > 0 && posix_kill($this->clientPid, 0) !== false) {
+            return true;
+        }
+
         if ($this->pid <= 0) {
             return false;
         }
@@ -57,6 +69,8 @@ final class AgentSession
             'client' => $this->client->value,
             'role' => $this->role->value,
             'pid' => $this->pid,
+            'client_pid' => $this->clientPid,
+            'process_group_id' => $this->processGroupId,
             'worktree' => $this->worktree,
             'started_at' => $this->startedAt->format(\DateTimeInterface::ATOM),
             'last_seen_at' => $this->lastSeenAt->format(\DateTimeInterface::ATOM),
@@ -78,6 +92,8 @@ final class AgentSession
             startedAt: new \DateTimeImmutable((string) ($data['started_at'] ?? 'now')),
             lastSeenAt: new \DateTimeImmutable((string) ($data['last_seen_at'] ?? 'now')),
             sessionId: isset($data['session_id']) ? (string) $data['session_id'] : null,
+            clientPid: isset($data['client_pid']) && $data['client_pid'] !== null ? (int) $data['client_pid'] : null,
+            processGroupId: isset($data['process_group_id']) && $data['process_group_id'] !== null ? (int) $data['process_group_id'] : null,
         );
     }
 
@@ -95,6 +111,8 @@ final class AgentSession
             startedAt: $this->startedAt,
             lastSeenAt: $lastSeenAt,
             sessionId: $this->sessionId,
+            clientPid: $this->clientPid,
+            processGroupId: $this->processGroupId,
         );
     }
 
@@ -112,6 +130,27 @@ final class AgentSession
             startedAt: $this->startedAt,
             lastSeenAt: $this->lastSeenAt,
             sessionId: $sessionId,
+            clientPid: $this->clientPid,
+            processGroupId: $this->processGroupId,
+        );
+    }
+
+    /**
+     * Returns a copy of this session with the client process identifiers recorded.
+     */
+    public function withClientProcess(?int $clientPid, ?int $processGroupId): self
+    {
+        return new self(
+            code: $this->code,
+            client: $this->client,
+            role: $this->role,
+            pid: $this->pid,
+            worktree: $this->worktree,
+            startedAt: $this->startedAt,
+            lastSeenAt: $this->lastSeenAt,
+            sessionId: $this->sessionId,
+            clientPid: $clientPid,
+            processGroupId: $processGroupId,
         );
     }
 }

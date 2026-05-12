@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Agent\Command;
 
 use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
+use SoManAgent\Script\Backlog\Agent\Client\InteractiveProcessRunner;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use SoManAgent\Script\Backlog\Agent\Exception\ActiveSessionException;
@@ -41,6 +42,7 @@ final class AgentStartCommand extends AbstractAgentCommand
     private BacklogWorktreeService $worktreeService;
     private AgentReviewerSelector $reviewerSelector;
     private BacklogBoardService $boardService;
+    private InteractiveProcessRunner $processRunner;
 
     /**
      * @param string $projectRoot
@@ -53,6 +55,7 @@ final class AgentStartCommand extends AbstractAgentCommand
      * @param BacklogWorktreeService $worktreeService
      * @param AgentReviewerSelector $reviewerSelector
      * @param BacklogBoardService $boardService
+     * @param InteractiveProcessRunner $processRunner
      */
     public function __construct(
         string $projectRoot,
@@ -65,6 +68,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         BacklogWorktreeService $worktreeService,
         AgentReviewerSelector $reviewerSelector,
         BacklogBoardService $boardService,
+        InteractiveProcessRunner $processRunner,
     ) {
         $this->projectRoot = $projectRoot;
         $this->worktreesRoot = $worktreesRoot;
@@ -76,6 +80,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         $this->worktreeService = $worktreeService;
         $this->reviewerSelector = $reviewerSelector;
         $this->boardService = $boardService;
+        $this->processRunner = $processRunner;
     }
 
     /**
@@ -205,18 +210,16 @@ final class AgentStartCommand extends AbstractAgentCommand
 
         chdir($worktree);
 
-        $command = escapeshellcmd($bin);
-        foreach ($binArgs as $arg) {
-            $command .= ' ' . escapeshellarg($arg);
-        }
-
-        $envPrefix = '';
-        foreach ($env as $key => $value) {
-            $envPrefix .= escapeshellarg($key . '=' . $value) . ' ';
-        }
-
-        $exitCode = 1;
-        passthru('env ' . $envPrefix . $command, $exitCode);
+        $sessionService = $this->sessionService;
+        $result = $this->processRunner->run(
+            $bin,
+            $binArgs,
+            $worktree,
+            $env,
+            static function (int $clientPid, ?int $pgid) use ($sessionService, $code): void {
+                $sessionService->updateClientProcess($code, $clientPid > 0 ? $clientPid : null, $pgid);
+            },
+        );
 
         $capturedId = $launcher->captureCurrentSessionId($worktree);
         if ($capturedId !== null) {
@@ -225,7 +228,7 @@ final class AgentStartCommand extends AbstractAgentCommand
 
         $this->sessionService->remove($code);
 
-        return $exitCode;
+        return $result->exitCode;
     }
 
     /**

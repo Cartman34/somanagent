@@ -148,6 +148,22 @@ final class AgentSessionService
     }
 
     /**
+     * Updates the recorded client process identifiers for the given agent code.
+     *
+     * Called right after the launcher spawns the actual client process so that `stop` can
+     * target the real client rather than only the PHP wrapper.
+     */
+    public function updateClientProcess(string $code, ?int $clientPid, ?int $processGroupId): void
+    {
+        $sessions = $this->load();
+        if (!isset($sessions[$code])) {
+            return;
+        }
+        $sessions[$code] = $sessions[$code]->withClientProcess($clientPid, $processGroupId);
+        $this->save($sessions);
+    }
+
+    /**
      * Creates a new session entry from raw parameters.
      */
     public function create(

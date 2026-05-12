@@ -79,6 +79,9 @@ final class AgentSessionsCommand extends AbstractAgentCommand
         }
 
         $session = $this->sessionService->get($code);
+        if ($session !== null) {
+            $this->sessionService->updateLastSeen($code);
+        }
 
         // Use the worktree stored in sessions.json (reviewer sessions use the developer's WA,
         // not .agent-worktrees/<rXX>).

@@ -107,6 +107,7 @@ final class AgentListCommand extends AbstractAgentCommand
         $rows = [];
         foreach ($sessions as $code => $session) {
             $alive = $session->isAlive();
+            $this->sessionService->updateLastSeen($code);
 
             if ($filterRunning && !$alive) {
                 continue;

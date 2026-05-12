@@ -181,6 +181,25 @@ Sessions for developer, reviewer, and manager agents are launched by the operato
 - prepares the `WA` (via `BacklogWorktreeService::prepareAgentWorktree` for developer/manager; reviewer reuses the developer WA)
 - generates `<WA>/local/agent-context.md` with the current task (or current review for reviewer), allowed commands, backlog vocabulary, and identification instructions
 - injects the env vars below into the CLI process
+- spawns the AI client as an interactive child process (STDIN/STDOUT/STDERR attached to the terminal) and records its real PID and process group in `local/tmp/agent-sessions.json` so `stop` can terminate the actual client, not only the PHP wrapper
+
+### Session Lifecycle And Stop Semantics
+
+`agent-sessions.json` tracks three identifiers per session:
+
+| Field | Meaning |
+|---|---|
+| `pid` | PID of the PHP wrapper process. Kept for diagnostics and stale-wrapper detection. |
+| `client_pid` | PID of the actual AI client process when known. May be `null` if the launcher cannot determine it. |
+| `process_group_id` | Process group to terminate on `stop`. Required when the client runs through an intermediate shell. |
+
+`stop --code=<code>` targets the recorded process group first, then `client_pid`, and finally the wrapper PID as a last resort. It sends `SIGTERM`, waits up to 5 seconds, and follows up with `SIGKILL` if the client did not exit. The `agent-sessions.json` entry is removed only after the termination attempt completes.
+
+`resume --code=<code>` refuses while any tracked process (client first, wrapper next) is still alive. Run `stop --code=<code>` to terminate the previous session before resuming.
+
+### last_seen_at Semantics
+
+`last_seen_at` is **not a heartbeat**. It records the last time a `backlog-agent.php` subcommand inspected the entry and refreshed its PID / process status. `list`, `status`, `sessions`, `resume`, and `stop` all update this timestamp for the entries they touch.
 
 ### Reviewer session context
 

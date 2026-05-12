@@ -48,6 +48,8 @@ final class AgentSessionServiceTest
         $failed += $this->testRemove();
         $failed += $this->testUpdateLastSeen();
         $failed += $this->testUpdateSessionId();
+        $failed += $this->testUpdateClientProcess();
+        $failed += $this->testClientProcessRoundTrip();
         $failed += $this->testLoadIgnoresMalformedEntries();
 
         return $failed;
@@ -144,6 +146,64 @@ final class AgentSessionServiceTest
             return 1;
         }
         echo "OK testUpdateSessionId\n";
+        $this->rmdir($dir);
+        return 0;
+    }
+
+    private function testUpdateClientProcess(): int
+    {
+        $dir = $this->tmpDir . '/clientproc-' . uniqid('', true);
+        mkdir($dir, 0755, true);
+        $service = new AgentSessionService($dir);
+
+        $service->add($this->makeSession('d01'));
+        $service->updateClientProcess('d01', 12346, 12346);
+
+        $got = $service->get('d01');
+        if ($got === null || $got->clientPid !== 12346 || $got->processGroupId !== 12346) {
+            echo "FAIL testUpdateClientProcess: expected clientPid=12346 pgid=12346, got clientPid="
+                . var_export($got?->clientPid, true) . ' pgid=' . var_export($got?->processGroupId, true) . "\n";
+            $this->rmdir($dir);
+            return 1;
+        }
+        echo "OK testUpdateClientProcess\n";
+        $this->rmdir($dir);
+        return 0;
+    }
+
+    private function testClientProcessRoundTrip(): int
+    {
+        $dir = $this->tmpDir . '/roundtrip-' . uniqid('', true);
+        mkdir($dir, 0755, true);
+        $service = new AgentSessionService($dir);
+
+        $now = new \DateTimeImmutable('2026-05-12T10:00:00+00:00');
+        $session = new AgentSession(
+            code: 'd07',
+            client: AgentClient::CLAUDE,
+            role: AgentRole::DEVELOPER,
+            pid: 100,
+            worktree: '/tmp/wa',
+            startedAt: $now,
+            lastSeenAt: $now,
+            sessionId: 'abc',
+            clientPid: 200,
+            processGroupId: 300,
+        );
+        $service->add($session);
+
+        $reloaded = $service->get('d07');
+        if ($reloaded === null
+            || $reloaded->pid !== 100
+            || $reloaded->clientPid !== 200
+            || $reloaded->processGroupId !== 300
+            || $reloaded->sessionId !== 'abc'
+        ) {
+            echo "FAIL testClientProcessRoundTrip: unexpected reloaded session\n";
+            $this->rmdir($dir);
+            return 1;
+        }
+        echo "OK testClientProcessRoundTrip\n";
         $this->rmdir($dir);
         return 0;
     }

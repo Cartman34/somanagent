@@ -102,6 +102,7 @@ final class AgentStatusCommand extends AbstractAgentCommand
         }
 
         $alive = $session->isAlive();
+        $this->sessionService->updateLastSeen($code);
         $relWorktree = str_replace($this->projectRoot . '/', '', $session->worktree);
 
         $current = '—';
@@ -168,6 +169,7 @@ final class AgentStatusCommand extends AbstractAgentCommand
         $rows = [];
         foreach ($sessions as $code => $session) {
             $alive = $session->isAlive();
+            $this->sessionService->updateLastSeen($code);
             $relWorktree = str_replace($this->projectRoot . '/', '', $session->worktree);
             $rows[] = [
                 'code' => $code,

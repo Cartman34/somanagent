@@ -13,13 +13,16 @@ use SoManAgent\Script\Backlog\Agent\Test\AgentClientLauncherRegistryTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentCliOptionValidatorTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentCodeServiceTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentContextBuilderTest;
+use SoManAgent\Script\Backlog\Agent\Test\AgentResumeCommandTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentReviewerSelectorTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentSessionServiceTest;
+use SoManAgent\Script\Backlog\Agent\Test\AgentStopCommandTest;
 use SoManAgent\Script\Backlog\Agent\Test\BacklogAgentRunnerStrictOptionsTest;
 use SoManAgent\Script\Backlog\Agent\Test\ClaudeAgentLauncherTest;
 use SoManAgent\Script\Backlog\Agent\Test\CodexAgentLauncherTest;
 use SoManAgent\Script\Backlog\Agent\Test\GeminiAgentLauncherTest;
 use SoManAgent\Script\Backlog\Agent\Test\OpenCodeAgentLauncherTest;
+use SoManAgent\Script\Backlog\Agent\Test\SystemInteractiveProcessRunnerTest;
 use SoManAgent\Script\Backlog\Agent\Test\WorktreeScriptProxyTest;
 use SoManAgent\Script\Console;
 
@@ -47,6 +50,9 @@ $suites = [
     'CodexAgentLauncherTest' => CodexAgentLauncherTest::class,
     'GeminiAgentLauncherTest' => GeminiAgentLauncherTest::class,
     'OpenCodeAgentLauncherTest' => OpenCodeAgentLauncherTest::class,
+    'SystemInteractiveProcessRunnerTest' => SystemInteractiveProcessRunnerTest::class,
+    'AgentStopCommandTest' => AgentStopCommandTest::class,
+    'AgentResumeCommandTest' => AgentResumeCommandTest::class,
 ];
 
 if ($suite !== null && !isset($suites[$suite])) {

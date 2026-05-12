@@ -11,7 +11,11 @@ use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
 use SoManAgent\Script\Backlog\Agent\Client\ClaudeAgentLauncher;
 use SoManAgent\Script\Backlog\Agent\Client\CodexAgentLauncher;
 use SoManAgent\Script\Backlog\Agent\Client\GeminiAgentLauncher;
+use SoManAgent\Script\Backlog\Agent\Client\InteractiveProcessRunner;
 use SoManAgent\Script\Backlog\Agent\Client\OpenCodeAgentLauncher;
+use SoManAgent\Script\Backlog\Agent\Client\PosixProcessSignaler;
+use SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
+use SoManAgent\Script\Backlog\Agent\Client\SystemInteractiveProcessRunner;
 use SoManAgent\Script\Backlog\Agent\Command\AbstractAgentCommand;
 use SoManAgent\Script\Backlog\Agent\Command\AgentListCommand;
 use SoManAgent\Script\Backlog\Agent\Command\AgentResumeCommand;
@@ -58,6 +62,8 @@ final class BacklogAgentRunner extends AbstractScriptRunner
     private ?BacklogWorktreeService $worktreeService = null;
     private ?ConsoleClient $consoleClient = null;
     private ?GitClient $gitClient = null;
+    private ?InteractiveProcessRunner $processRunner = null;
+    private ?ProcessSignaler $processSignaler = null;
 
     /**
      * {@inheritdoc}
@@ -198,6 +204,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                     $this->worktreeService($boardPath, $worktreesRoot),
                     new AgentReviewerSelector($this->boardService(), $this->sessionService(), $worktreesRoot),
                     $this->boardService(),
+                    $this->processRunner(),
                 ),
                 'list' => new AgentListCommand(
                     $this->console,
@@ -216,6 +223,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                 'stop' => new AgentStopCommand(
                     $this->console,
                     $this->sessionService(),
+                    $this->processSignaler(),
                 ),
                 'whoami' => new AgentWhoamiCommand(
                     $this->console,
@@ -230,6 +238,8 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                     $this->boardService(),
                     $this->worktreeService($boardPath, $worktreesRoot),
                     $boardPath,
+                    $this->processRunner(),
+                    $this->processSignaler(),
                 ),
                 'sessions' => new AgentSessionsCommand(
                     $this->console,
@@ -346,5 +356,23 @@ final class BacklogAgentRunner extends AbstractScriptRunner
         }
 
         return $this->gitClient;
+    }
+
+    private function processRunner(): InteractiveProcessRunner
+    {
+        if ($this->processRunner === null) {
+            $this->processRunner = new SystemInteractiveProcessRunner();
+        }
+
+        return $this->processRunner;
+    }
+
+    private function processSignaler(): ProcessSignaler
+    {
+        if ($this->processSignaler === null) {
+            $this->processSignaler = new PosixProcessSignaler();
+        }
+
+        return $this->processSignaler;
     }
 }

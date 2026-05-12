@@ -272,7 +272,7 @@ When a reviewer starts on a new entry (not a reuse), the launcher:
 
 If any subsequent preparation step fails (WA missing and unreconstructable, concurrent session conflict), the launcher rolls the board back to `stage=review` and clears `meta.reviewer` before erroring.
 
-Once the client process starts (`passthru`), no automatic rollback occurs; the entry remains at `stage=reviewing` until the manager or a backlog command changes it.
+Once the interactive client process starts, no automatic rollback occurs; the entry remains at `stage=reviewing` until the manager or a backlog command changes it. The launcher also records the client process PID and process group in `local/tmp/agent-sessions.json` so `stop --code=<rXX>` terminates the actual client; `resume` is refused while any tracked process is still alive. See `doc/development/agent-workflow.md` for the full lifecycle.
 
 ### Owned reviewing entry reuse
 

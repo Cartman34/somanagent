@@ -86,6 +86,8 @@ The following environment variables are injected into every session:
 
 A context file is generated at `<WA>/local/agent-context.md` on every session start and resume. It summarises the current task, allowed commands, and backlog vocabulary. Do not commit or push this file.
 
+The launcher spawns the AI client as an interactive child process and records its real PID and process group in `local/tmp/agent-sessions.json`, so `php scripts/backlog-agent.php stop --code=<dXX>` terminates the actual client (SIGTERM, then SIGKILL after 5 seconds if it does not exit), not only the PHP wrapper. A `resume` is refused while any tracked process is still alive — run `stop` first. See `doc/development/agent-workflow.md` for the full lifecycle and `last_seen_at` semantics.
+
 Run `php scripts/backlog-agent.php whoami` from inside the WA to confirm the session identity.
 
 ## Read Only When Needed
