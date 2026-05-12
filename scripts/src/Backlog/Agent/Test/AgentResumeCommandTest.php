@@ -30,12 +30,18 @@ final class AgentResumeCommandTest
 {
     private string $tmpDir;
 
+    /**
+     * Creates a temporary directory used by each test for an isolated sessions.json.
+     */
     public function __construct()
     {
         $this->tmpDir = sys_get_temp_dir() . '/backlog-agent-resume-test-' . uniqid('', true);
         mkdir($this->tmpDir, 0755, true);
     }
 
+    /**
+     * Removes the temporary directory on cleanup.
+     */
     public function __destruct()
     {
         $this->rmdir($this->tmpDir);

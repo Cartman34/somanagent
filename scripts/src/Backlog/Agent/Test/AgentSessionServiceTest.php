@@ -50,6 +50,8 @@ final class AgentSessionServiceTest
         $failed += $this->testUpdateSessionId();
         $failed += $this->testUpdateClientProcess();
         $failed += $this->testClientProcessRoundTrip();
+        $failed += $this->testLoadsLegacyEntryWithoutClientProcessFields();
+        $failed += $this->testIsAliveUsesClientPidFirst();
         $failed += $this->testLoadIgnoresMalformedEntries();
 
         return $failed;
@@ -206,6 +208,101 @@ final class AgentSessionServiceTest
         echo "OK testClientProcessRoundTrip\n";
         $this->rmdir($dir);
         return 0;
+    }
+
+    private function testLoadsLegacyEntryWithoutClientProcessFields(): int
+    {
+        $dir = $this->tmpDir . '/legacy-' . uniqid('', true);
+        mkdir($dir . '/local/tmp', 0755, true);
+        file_put_contents($dir . '/local/tmp/agent-sessions.json', json_encode([
+            'd01' => [
+                'client' => 'claude',
+                'role' => 'developer',
+                'pid' => 4242,
+                'worktree' => '/tmp/wa',
+                'started_at' => '2026-01-01T00:00:00+00:00',
+                'last_seen_at' => '2026-01-01T00:00:00+00:00',
+                'session_id' => null,
+            ],
+        ]));
+
+        $service = new AgentSessionService($dir);
+        $session = $service->get('d01');
+
+        if ($session === null || $session->clientPid !== null || $session->processGroupId !== null || $session->pid !== 4242) {
+            echo "FAIL testLoadsLegacyEntryWithoutClientProcessFields: legacy schema not handled gracefully\n";
+            $this->rmdir($dir);
+            return 1;
+        }
+        echo "OK testLoadsLegacyEntryWithoutClientProcessFields\n";
+        $this->rmdir($dir);
+        return 0;
+    }
+
+    private function testIsAliveUsesClientPidFirst(): int
+    {
+        $now = new \DateTimeImmutable();
+        $currentPid = (int) getmypid();
+
+        // Live client_pid wins even when wrapper pid is fake/dead.
+        $live = new AgentSession(
+            code: 'd01',
+            client: AgentClient::CLAUDE,
+            role: AgentRole::DEVELOPER,
+            pid: 1, // unrelated, may or may not be alive depending on system; isAlive must rely on clientPid first
+            worktree: '/tmp',
+            startedAt: $now,
+            lastSeenAt: $now,
+            sessionId: null,
+            clientPid: $currentPid,
+            processGroupId: null,
+        );
+        if (!$live->isAlive()) {
+            echo "FAIL testIsAliveUsesClientPidFirst: expected alive when clientPid points to current PHP pid\n";
+            return 1;
+        }
+
+        // Both PIDs dead: isAlive must return false.
+        $deadPid = $this->pickGuaranteedDeadPid();
+        $dead = new AgentSession(
+            code: 'd02',
+            client: AgentClient::CLAUDE,
+            role: AgentRole::DEVELOPER,
+            pid: $deadPid,
+            worktree: '/tmp',
+            startedAt: $now,
+            lastSeenAt: $now,
+            sessionId: null,
+            clientPid: $deadPid,
+            processGroupId: null,
+        );
+        if ($dead->isAlive()) {
+            echo "FAIL testIsAliveUsesClientPidFirst: expected dead when both PIDs are dead\n";
+            return 1;
+        }
+
+        echo "OK testIsAliveUsesClientPidFirst\n";
+        return 0;
+    }
+
+    /**
+     * Returns a PID that is extremely unlikely to be alive on a standard Linux host.
+     */
+    private function pickGuaranteedDeadPid(): int
+    {
+        // /proc/sys/kernel/pid_max is typically 4194304; pick well below to avoid permission issues
+        // but high enough to be unlikely. Verify it is not alive on the current system.
+        $candidate = 2_000_000;
+        if (posix_kill($candidate, 0)) {
+            // Already alive — unlikely but possible. Bump until we find a dead one.
+            for ($i = $candidate; $i < $candidate + 100; $i++) {
+                if (!posix_kill($i, 0)) {
+                    return $i;
+                }
+            }
+        }
+
+        return $candidate;
     }
 
     private function testLoadIgnoresMalformedEntries(): int

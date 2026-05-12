@@ -23,12 +23,18 @@ final class AgentStopCommandTest
 {
     private string $tmpDir;
 
+    /**
+     * Creates a temporary directory used by each test for an isolated sessions.json.
+     */
     public function __construct()
     {
         $this->tmpDir = sys_get_temp_dir() . '/backlog-agent-stop-test-' . uniqid('', true);
         mkdir($this->tmpDir, 0755, true);
     }
 
+    /**
+     * Removes the temporary directory on cleanup.
+     */
     public function __destruct()
     {
         $this->rmdir($this->tmpDir);
@@ -211,18 +217,10 @@ final class AgentStopCommandTest
         );
         $service->add($session);
 
+        // Dead session, no --cleanup: stop refuses but should still refresh last_seen_at on the entry it inspected.
         $signaler = new FakeProcessSignaler();
-        $signaler->setAlive(1100, true);
 
         $cmd = new AgentStopCommand(Console::getInstance(), $service, $signaler, 1);
-        $cmd->handle([], ['code' => 'd01']);
-
-        // After handle, the session is removed; we can't read last_seen_at. Use a separate path that
-        // exercises updateLastSeen without removing: simulate by using --cleanup on dead session.
-        // Recreate session and re-run with dead PID + --cleanup to keep observation effect visible.
-        $service->add($session);
-        $signaler->setAlive(1100, false);
-
         try {
             $cmd->handle([], ['code' => 'd01']);
             echo "FAIL testUpdatesLastSeenOnObservation: expected refusal on dead PID without --cleanup\n";
@@ -233,12 +231,7 @@ final class AgentStopCommandTest
         }
 
         $reloaded = $service->get('d01');
-        if ($reloaded === null) {
-            echo "FAIL testUpdatesLastSeenOnObservation: session disappeared\n";
-            $this->rmdir($dir);
-            return 1;
-        }
-        if ($reloaded->lastSeenAt <= $past) {
+        if ($reloaded === null || $reloaded->lastSeenAt <= $past) {
             echo "FAIL testUpdatesLastSeenOnObservation: last_seen_at not refreshed\n";
             $this->rmdir($dir);
             return 1;

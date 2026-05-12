@@ -29,6 +29,9 @@ final class FakeProcessSignaler implements ProcessSignaler
      */
     public bool $sigtermKills = true;
 
+    /**
+     * Marks the given PID as alive or dead for subsequent isAlive() calls.
+     */
     public function setAlive(int $pid, bool $alive): void
     {
         $this->alive[$pid] = $alive;
