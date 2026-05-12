@@ -1091,7 +1091,11 @@ final class BacklogBoardService
     }
 
     /**
-     * Creates a board entry from raw input text (short prefix or markdown format).
+     * Creates a board entry from a single-line input.
+     *
+     * The input must declare an explicit `[feature-slug]` scope after any type prefix is
+     * stripped. Bare text and type-only prefixes such as `[tech] Title` are rejected.
+     *
      * @param string $text
      * @return BoardEntry
      */
@@ -1120,8 +1124,10 @@ final class BacklogBoardService
      *
      * The first non-empty line is the task title (with an optional leading `- ` and
      * an optional task type prefix from {@see BacklogTaskType} placed anywhere in
-     * the leading bracket sequence). Remaining non-empty lines become sub-task lines
-     * indented by two spaces when not already indented.
+     * the leading bracket sequence). An explicit `[feature-slug]` scope is required
+     * after the type prefix is stripped; bare titles and type-only prefixes are rejected.
+     * Remaining non-empty lines become sub-task lines indented by two spaces when not
+     * already indented.
      *
      * @param array<int, string> $lines
      */
