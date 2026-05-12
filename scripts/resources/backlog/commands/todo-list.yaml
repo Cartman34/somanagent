@@ -1,3 +1,8 @@
-description: 'List queued todo tasks in priority order'
+description: 'List queued todo tasks in priority order, with the stable reference usable by work-start'
 examples:
   - 'php scripts/backlog.php todo-list'
+notes:
+  - 'Each line is shaped `N. <ref> <text>` where <ref> is the stable reference exposed to mutating commands (work-start).'
+  - 'A queued entry prefixed `[feature-slug]` exposes <ref> = feature-slug; an entry prefixed `[feature-slug][task-slug]` exposes <ref> = feature-slug/task-slug.'
+  - 'Entries without a `[feature-slug]` or `[feature-slug][task-slug]` prefix have no stable reference and cannot be targeted explicitly by work-start.'
+  - 'Automated workflows must always name the explicit reference when triggering work-start, never rely on the implicit head of the list.'

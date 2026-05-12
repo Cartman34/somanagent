@@ -12,6 +12,7 @@ use SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
 use SoManAgent\Script\Backlog\Enum\BacklogTaskType;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
+use SoManAgent\Script\Backlog\Model\BoardEntryMatch;
 use SoManAgent\Script\Backlog\Model\ManagedWorktree;
 use SoManAgent\Script\Backlog\Model\WorkStartPlan;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
@@ -71,6 +72,7 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
             throw new \RuntimeException('Option --agent is required.');
         }
         $branchTypeOverride = is_string($options['branch-type'] ?? null) ? $options['branch-type'] : '';
+        $explicitReference = $commandArgs[0] ?? null;
 
         $board = $this->loadBoard();
 
@@ -79,9 +81,18 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
             throw new \RuntimeException($this->boardService->describeActiveEntryConflict($activeEntries, $agent));
         }
 
-        $target = $this->boardService->fetchNextTodoTask($board);
-        if ($target === null) {
-            throw new \RuntimeException('No backlog task available to start.');
+        if ($explicitReference !== null) {
+            [$matchIndex, $matchEntry] = $this->boardService->resolveQueuedEntryByReference(
+                $board,
+                $explicitReference,
+                BacklogCommandName::WORK_START->value,
+            );
+            $target = new BoardEntryMatch(BacklogBoard::SECTION_TODO, $matchIndex, $matchEntry);
+        } else {
+            $target = $this->boardService->fetchNextTodoTask($board);
+            if ($target === null) {
+                throw new \RuntimeException('No backlog task available to start.');
+            }
         }
 
         $first = $target->getEntry();

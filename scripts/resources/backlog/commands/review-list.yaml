@@ -1,0 +1,8 @@
+description: 'List entries waiting in the review stage, with the stable reference usable by review-next'
+examples:
+  - 'php scripts/backlog.php review-list'
+notes:
+  - 'Each line is shaped `- <ref> kind=<feature|task> agent=<x> pr=<y>` where <ref> is the stable reference exposed to review-next.'
+  - 'For a feature entry, <ref> is the feature slug; for a child task, <ref> is `<feature-slug>/<task-slug>`.'
+  - 'Only entries in the `review` stage are listed; entries already claimed in the `reviewing` stage are excluded.'
+  - 'Automated workflows must always name the explicit reference when triggering review-next, never rely on the implicit head of the list.'

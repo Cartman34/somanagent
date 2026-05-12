@@ -10,6 +10,7 @@ Read this file only when the active task requires reviewer workflow details.
 - `review-approve`
 - `review-reject`
 - `review-cancel`
+- `review-list`
 - `review-next`
 - `review-notes`
 - `feature-close`
@@ -75,7 +76,7 @@ Rules:
 ### `todo-list`
 
 1. Run `php scripts/backlog.php todo-list`.
-2. The script prints queued tasks in priority order. Each line shows the display index, the queued entry's stable reference between brackets, and the original task text. Numbers are advisory only and never accepted as mutation identity.
+2. The script prints queued tasks in priority order, one per line shaped `N. [<ref>] <text>`. `<ref>` is the queued entry's stable reference and the only valid target for mutating commands (`task-remove`, `work-start`). Numbers are advisory only and never accepted as mutation identity.
 
 ### `task-remove`
 
@@ -83,13 +84,20 @@ Rules:
 2. The reference is the stable slug shown between brackets by `todo-list`: a feature slug for plain queued tasks, or a `<feature>/<task>` pair for scoped child tasks.
 3. The script refuses an empty, unknown, or ambiguous reference; rename a colliding queued task or pass `<feature/task>` to disambiguate.
 
+### `review-list`
+
+1. Run `php scripts/backlog.php review-list`.
+2. The script prints entries waiting in `meta.stage=review`, one per line shaped `- <ref> kind=<feature|task> agent=<x> ...`, where `<ref>` is the stable reference usable by `review-next`.
+3. Entries already in `meta.stage=reviewing` are excluded because they are claimed by another reviewer.
+
 ### `review-next`
 
-1. Run `php scripts/backlog.php review-next --agent=<reviewer>`.
-2. The script selects the first entry with `meta.stage=review`, transitions it to `meta.stage=reviewing`, records the reviewer in `meta.reviewer`, and displays the entry.
-3. The command refuses if the reviewer already has an entry in `reviewing`. Run `review-cancel` first to release it.
-4. Entries already in `reviewing` (claimed by another reviewer) are skipped.
-5. Use `Kind` and `Ref`/`Feature` in the output to choose the matching review check command.
+1. Run `php scripts/backlog.php review-next --agent=<reviewer> [<feature|feature/task>]`.
+2. Without a target, the script selects the first entry with `meta.stage=review`, transitions it to `meta.stage=reviewing`, records the reviewer in `meta.reviewer`, and displays the entry.
+3. With an explicit `<feature|feature/task>` reference (the same shape printed by `review-list`), the script claims that exact entry. It refuses with a clear error when the entry is already in `meta.stage=reviewing` (claimed by another reviewer) or no longer in `meta.stage=review`.
+4. Automated workflows must always pass an explicit target; the implicit head form is reserved for interactive usage.
+5. The command refuses if the reviewer already has an entry in `reviewing`. Run `review-cancel` first to release it.
+6. Use `Kind` and `Ref`/`Feature` in the output to choose the matching review check command.
 
 ### `review-cancel`
 

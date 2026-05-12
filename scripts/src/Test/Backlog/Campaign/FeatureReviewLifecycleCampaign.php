@@ -38,8 +38,23 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
 
         $driver->requestFeatureReview($context->agentPrimary);
 
-        // review-next claims the entry and transitions it to reviewing
-        $reviewNextOutput = $driver->reviewNext($context->agentSecondary);
+        // review-list exposes the stable reference for entries waiting in review
+        $reviewListOutput = $driver->reviewList();
+        $driver->assertOutputContainsAll($reviewListOutput, [
+            '- ' . $context->fixFeature . ' ',
+            'kind=feature',
+            'agent=' . $context->agentPrimary,
+        ]);
+
+        // review-next with an unknown explicit target refuses without claiming anything
+        $driver->assertReviewNextFails(
+            $context->agentSecondary,
+            'No active entry matches reference "unknown-feature-target"',
+            'unknown-feature-target',
+        );
+
+        // review-next claims the entry by explicit reference and transitions it to reviewing
+        $reviewNextOutput = $driver->reviewNext($context->agentSecondary, $context->fixFeature);
         if (!str_contains($reviewNextOutput, $context->fixFeature)) {
             throw new \RuntimeException('Expected review-next to return the active feature review.');
         }
@@ -52,6 +67,13 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
 
         // reviewer already has a reviewing entry — refusing a second claim is expected
         $driver->assertReviewNextFails($context->agentSecondary, 'already has an entry in Reviewing');
+
+        // another reviewer targeting the already-claimed entry is refused with a clear message
+        $driver->assertReviewNextFails(
+            'test-r-other',
+            'is already in Reviewing',
+            $context->fixFeature,
+        );
 
         // feature-list should show the reviewing entry with reviewer field
         $featureListOutput = $driver->runBacklog(['feature-list']);

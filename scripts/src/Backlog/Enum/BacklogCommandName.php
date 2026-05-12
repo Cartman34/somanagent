@@ -13,27 +13,6 @@ namespace SoManAgent\Script\Backlog\Enum;
 enum BacklogCommandName: string
 {
     case HELP = 'help';
-
-    /**
-     * Returns true when this command mutates board, review, worktree, or associated state.
-     *
-     * Read-only commands skip the mutation lock entirely.
-     */
-    public function isMutating(): bool
-    {
-        return match($this) {
-            self::STATUS,
-            self::FEATURE_LIST,
-            self::WORKTREE_LIST,
-            self::TODO_LIST,
-            self::REVIEW_NOTES,
-            self::REVIEW_CHECK,
-            self::FEATURE_REVIEW_CHECK,
-            self::TASK_REVIEW_CHECK,
-            self::HELP => false,
-            default => true,
-        };
-    }
     case BASE_UPDATE = 'base-update';
     case STATUS = 'status';
     case TASK_CREATE = 'task-create';
@@ -43,6 +22,7 @@ enum BacklogCommandName: string
     case REVIEW_CHECK = 'review-check';
     case REVIEW_APPROVE = 'review-approve';
     case REVIEW_REJECT = 'review-reject';
+    case REVIEW_LIST = 'review-list';
     case REVIEW_NEXT = 'review-next';
     case REVIEW_NOTES = 'review-notes';
     case REVIEW_REQUEST = 'review-request';
@@ -68,4 +48,26 @@ enum BacklogCommandName: string
     case FEATURE_REVIEW_APPROVE = 'feature-review-approve';
     case FEATURE_CLOSE = 'feature-close';
     case FEATURE_MERGE = 'feature-merge';
+
+    /**
+     * Returns true when this command mutates board, review, worktree, or associated state.
+     *
+     * Read-only commands skip the mutation lock entirely.
+     */
+    public function isMutating(): bool
+    {
+        return match($this) {
+            self::STATUS,
+            self::FEATURE_LIST,
+            self::WORKTREE_LIST,
+            self::TODO_LIST,
+            self::REVIEW_LIST,
+            self::REVIEW_NOTES,
+            self::REVIEW_CHECK,
+            self::FEATURE_REVIEW_CHECK,
+            self::TASK_REVIEW_CHECK,
+            self::HELP => false,
+            default => true,
+        };
+    }
 }

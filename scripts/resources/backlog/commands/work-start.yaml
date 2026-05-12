@@ -1,4 +1,8 @@
-description: 'Start work on the next queued backlog task'
+description: 'Start work on a queued backlog task, optionally targeting an explicit reference'
+arguments:
+  -
+    name: '[<feature|feature/task>]'
+    description: 'Optional stable reference exposed by `todo-list`. When omitted, work-start consumes the first queued entry implicitly.'
 options:
   -
     name: '--agent'
@@ -8,11 +12,16 @@ options:
     description: 'Override branch type. Allowed values: feat, fix, tech (rejected if unknown).'
 examples:
   - 'php scripts/backlog.php work-start --agent agent-01'
+  - 'php scripts/backlog.php work-start --agent agent-01 my-feature'
+  - 'php scripts/backlog.php work-start --agent agent-01 my-feature/my-task'
   - 'php scripts/backlog.php work-start --agent agent-01 --branch-type=fix'
   - 'php scripts/backlog.php work-start --agent agent-01 --branch-type=tech'
   - 'php scripts/backlog.php work-start --agent agent-01 --dry-run'
 notes:
-  - 'Reads the next queued entry from the board `To do` section.'
+  - 'Without a target, reads the next queued entry from the board `To do` section.'
+  - 'With an explicit target, locates the first queued entry whose `[feature-slug]` or `[feature-slug][task-slug]` prefix matches the reference exposed by `todo-list`. Refuses with a clear error when the reference does not match any queued entry.'
+  - 'Only entries carrying a `[feature-slug]` or `[feature-slug][task-slug]` prefix have a stable reference; bare text entries can only be taken implicitly without a target.'
+  - 'Automated workflows must always pass an explicit target; relying on the implicit head of the list is reserved for interactive usage.'
   - 'Refuses if the agent already has any active entry (kind=task or kind=feature).'
   - 'Accepts plain task text and derives the feature slug from that text.'
   - 'Accepts task type prefixes [feat], [fix] and [tech] (case-insensitive). The prefix may appear at any position in the leading bracket sequence.'
