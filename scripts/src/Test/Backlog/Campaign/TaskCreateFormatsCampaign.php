@@ -28,9 +28,9 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
     public function run(BacklogScriptTestDriver $driver, BacklogScriptTestContext $context): void
     {
         foreach (['feat', 'fix', 'tech'] as $type) {
-            $driver->createTodoTask(sprintf('[%s] Single-line %s task', $type, $type));
+            $driver->createTodoTask(sprintf('[%s][test-%s-single] Single-line %s task', $type, $type, $type));
             $driver->assertBoardTodoBlock([
-                sprintf('- Single-line %s task', $type),
+                sprintf('- [test-%s-single] Single-line %s task', $type, $type),
                 '  meta:',
                 sprintf('    type: %s', $type),
             ]);
@@ -97,11 +97,11 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
         $driver->removeFirstTodoTask();
 
         $driver->createTodoTaskFromBodyFile([
-            '- [feat] Bullet leading body file task',
+            '- [feat][test-bullet-feature] Bullet leading body file task',
             'Unindented sub-task that should be auto-indented',
         ], 'task-create-body-file-bullet.md');
         $driver->assertBoardTodoBlock([
-            '- Bullet leading body file task',
+            '- [test-bullet-feature] Bullet leading body file task',
             '  Unindented sub-task that should be auto-indented',
             '  meta:',
             '    type: feat',
@@ -152,7 +152,26 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
 
         $driver->assertTaskCreateFails(
             'task-create with --position=index requires --index=',
-            ['Missing index value', '--position=index'],
+            ['[test-missing-index] Missing index value', '--position=index'],
+        );
+
+        // Rejection: bare title without any scope prefix.
+        $driver->assertTaskCreateFails(
+            'task-create requires an explicit [feature-slug] scope',
+            ['Bare title without scope'],
+        );
+
+        // Rejection: type prefix alone, no feature scope.
+        $driver->assertTaskCreateFails(
+            'task-create requires an explicit [feature-slug] scope',
+            ['[tech] Type only no feature scope'],
+        );
+
+        // Rejection: bare title in --body-file mode.
+        $noScopeBodyFile = $driver->createBodyFile('task-create-no-scope-body.md', ['Bare title in body file', '  - sub-task']);
+        $driver->assertTaskCreateFails(
+            'task-create requires an explicit [feature-slug] scope',
+            ['--body-file=' . $noScopeBodyFile],
         );
     }
 }

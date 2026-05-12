@@ -68,7 +68,7 @@ Read this file only when the active task requires developer workflow details.
 2. By default the script appends the task to the end of `## To do`.
 3. `--position=start` inserts at the start of `## To do`.
 4. `--position=index --index=<n>` inserts at the requested 1-based position and clamps out-of-range values to the start or the end.
-5. Keep the task title short and put the breakdown on indented sub-task lines below it. **Always include both** a type prefix (`[feat]`, `[fix]` or `[tech]`) and a `[feature-slug]` (plus `[task-slug]` for child tasks) so the queued entry is unambiguous. The type prefix may appear at any position in the leading bracket sequence.
+5. Keep the task title short and put the breakdown on indented sub-task lines below it. **A `[feature-slug]` scope is required** (plus `[task-slug]` for child tasks); `task-create` rejects entries without one. Including a `[type]` prefix (`[feat]`, `[fix]` or `[tech]`) is strongly recommended so the queued entry is unambiguous. The type prefix may appear at any position in the leading bracket sequence.
 6. Multi-line tasks: pass the full body as one quoted argument with `\n` line breaks (Bash `$'...'` literal), or use `--body-file=<path>` to read the body from a file. The first non-empty line is the title; the remaining non-empty lines become indented sub-tasks (auto-indented to two spaces when missing).
 7. Do not edit `local/backlog-board.md` manually for long tasks; use `--body-file=<path>` (typically under `local/tmp/`) instead.
 

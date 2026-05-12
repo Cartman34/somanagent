@@ -1076,6 +1076,21 @@ final class BacklogBoardService
     }
 
     /**
+     * Throws when the cleaned task title (after type-prefix extraction) does not declare
+     * an explicit [feature-slug] scope.
+     */
+    private function assertHasFeatureScope(string $cleanedTitle): void
+    {
+        if (!str_starts_with($cleanedTitle, '[')) {
+            throw new \RuntimeException(
+                'task-create requires an explicit [feature-slug] scope. ' .
+                'Use [feature-slug] Title, [feature-slug][task-slug] Title, or [type][feature-slug] Title — ' .
+                'for example: [tech][my-feature] My task title.'
+            );
+        }
+    }
+
+    /**
      * Creates a board entry from raw input text (short prefix or markdown format).
      * @param string $text
      * @return BoardEntry
@@ -1084,15 +1099,17 @@ final class BacklogBoardService
     {
         [$type, $cleaned] = $this->extractTypePrefix($text);
 
+        if ($cleaned === '') {
+            throw new \RuntimeException('Task body cannot be empty.');
+        }
+
+        $this->assertHasFeatureScope($cleaned);
+
         if ($type !== null) {
             $entry = new BoardEntry($cleaned);
             $entry->setType($type->value);
 
             return $entry;
-        }
-
-        if ($cleaned === '') {
-            throw new \RuntimeException('Task body cannot be empty.');
         }
 
         return $this->parseEntryFromLines(['- ' . $cleaned]);
@@ -1138,6 +1155,8 @@ final class BacklogBoardService
         if (trim($firstCleaned) === '') {
             throw new \RuntimeException('Task title (first line of --body-file) cannot be empty.');
         }
+
+        $this->assertHasFeatureScope($firstCleaned);
 
         $extra = [];
         foreach (array_slice($cleaned, 1) as $line) {

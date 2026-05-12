@@ -26,7 +26,7 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
 
     public function run(BacklogScriptTestDriver $driver, BacklogScriptTestContext $context): void
     {
-        $driver->createTodoTask('test-remove-task');
+        $driver->createTodoTask('[test-remove-task] test-remove-task');
         $driver->assertTodoContains('test-remove-task');
         $driver->assertTodoContains('[test-remove-task]');
         $driver->assertTaskRemoveFails('', 'requires a queued task reference');
@@ -61,11 +61,11 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
             'review-cancel requires an explicit <feature> or <feature/task> reference.',
         );
 
-        $driver->createTodoTask($context->plainFeature);
+        $driver->createTodoTask(sprintf('[%s] %s', $context->plainFeature, $context->plainFeature));
         $driver->assertTodoContains($context->plainFeature);
         $startOutput = $driver->startNextFeature($context->agentPrimary);
         $driver->assertFeatureStartOutputContains($startOutput, '[Feature]');
-        $driver->assertFeatureStartOutputContains($startOutput, 'Summary: ' . $context->plainFeature);
+        $driver->assertFeatureStartOutputContains($startOutput, 'Feature: ' . $context->plainFeature);
         $driver->assertFeatureStartOutputContains($startOutput, '[Worktree]');
         $driver->assertFeatureStartOutputContains($startOutput, $context->agentPrimary);
         $driver->assertStatusContains($context->agentPrimary, $context->plainFeature, true);
@@ -77,7 +77,7 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
         $driver->assertTodoContains($context->plainFeature);
         $driver->removeFirstTodoTask();
 
-        $driver->createTodoTask($context->assignFeature);
+        $driver->createTodoTask(sprintf('[%s] %s', $context->assignFeature, $context->assignFeature));
         $driver->startNextFeature($context->agentPrimary);
         $driver->assignFeatureAsManager($context->assignFeature, $context->agentPrimary);
         $driver->assertStatusContains($context->agentPrimary, $context->assignFeature, true);
@@ -126,7 +126,7 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
         $this->assertWorkStartWithExplicitTarget($driver, $context);
 
         $committedFeature = $context->plainFeature . '-committed-release';
-        $driver->createTodoTask($committedFeature);
+        $driver->createTodoTask(sprintf('[%s] %s', $committedFeature, $committedFeature));
         $driver->startNextFeature($context->agentPrimary);
         $driver->trackFeatureBranch($committedFeature);
         $driver->commitAndRevertFeatureChange($context->agentPrimary, $committedFeature, 'test-release-commit-history.txt');
