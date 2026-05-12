@@ -13,6 +13,27 @@ namespace SoManAgent\Script\Backlog\Enum;
 enum BacklogCommandName: string
 {
     case HELP = 'help';
+
+    /**
+     * Returns true when this command mutates board, review, worktree, or associated state.
+     *
+     * Read-only commands skip the mutation lock entirely.
+     */
+    public function isMutating(): bool
+    {
+        return match($this) {
+            self::STATUS,
+            self::FEATURE_LIST,
+            self::WORKTREE_LIST,
+            self::TASK_TODO_LIST,
+            self::REVIEW_NOTES,
+            self::REVIEW_CHECK,
+            self::FEATURE_REVIEW_CHECK,
+            self::TASK_REVIEW_CHECK,
+            self::HELP => false,
+            default => true,
+        };
+    }
     case BASE_UPDATE = 'base-update';
     case STATUS = 'status';
     case TASK_CREATE = 'task-create';

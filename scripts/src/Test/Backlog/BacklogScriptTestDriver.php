@@ -1193,6 +1193,46 @@ MD);
     }
 
     /**
+     * Runs two backlog commands in parallel and returns their [exitCode, output] pairs.
+     *
+     * Both processes are launched concurrently and collected after both finish.
+     * Suitable for concurrency tests where serial execution would defeat the purpose.
+     *
+     * @param list<string> $argsA Arguments for the first command
+     * @param list<string> $argsB Arguments for the second command
+     * @return array{array{int, string}, array{int, string}} Results as [[codeA, outputA], [codeB, outputB]]
+     */
+    public function runTwoConcurrentBacklog(array $argsA, array $argsB): array
+    {
+        $cmdA = $this->buildBacklogCommand($argsA);
+        $cmdB = $this->buildBacklogCommand($argsB);
+
+        $descriptors = [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']];
+        $procA = proc_open($cmdA, $descriptors, $pipesA, $this->context->projectRoot);
+        $procB = proc_open($cmdB, $descriptors, $pipesB, $this->context->projectRoot);
+
+        if ($procA === false || $procB === false) {
+            throw new \RuntimeException('Failed to start concurrent backlog processes.');
+        }
+
+        fclose($pipesA[0]);
+        fclose($pipesB[0]);
+
+        $outA = (string) stream_get_contents($pipesA[1]) . (string) stream_get_contents($pipesA[2]);
+        fclose($pipesA[1]);
+        fclose($pipesA[2]);
+
+        $outB = (string) stream_get_contents($pipesB[1]) . (string) stream_get_contents($pipesB[2]);
+        fclose($pipesB[1]);
+        fclose($pipesB[2]);
+
+        $codeA = proc_close($procA);
+        $codeB = proc_close($procB);
+
+        return [[$codeA, $outA], [$codeB, $outB]];
+    }
+
+    /**
      * @param list<string> $arguments Backlog command arguments
      * @param array<string, string> $env Environment variables
      * @return string Command output

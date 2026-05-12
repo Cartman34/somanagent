@@ -13,6 +13,7 @@ use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
 use SoManAgent\Script\Test\Backlog\Campaign\CampaignInterface;
 use SoManAgent\Script\Test\Backlog\Campaign\FeatureReviewLifecycleCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\HelpCampaign;
+use SoManAgent\Script\Test\Backlog\Campaign\MutationLockCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\ScopedTaskLifecycleCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\TaskCreateFormatsCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\TodoAndPlainFeatureLifecycleCampaign;
@@ -42,7 +43,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
     {
         return array_merge(
             [
-                ['name' => '--campaign', 'description' => 'Campaign to run: help, todo-and-plain-feature-lifecycle, scoped-task-lifecycle, task-create-formats, work-start-type-prefix, feature-review-lifecycle, or all'],
+                ['name' => '--campaign', 'description' => 'Campaign to run: help, todo-and-plain-feature-lifecycle, scoped-task-lifecycle, task-create-formats, work-start-type-prefix, feature-review-lifecycle, mutation-lock, or all'],
                 ['name' => '--allow-remote', 'description' => 'Allow campaigns that push branches or create/merge GitHub PRs'],
                 ['name' => '--keep-artifacts', 'description' => 'Keep temporary backlog/review files under local/tmp/ after execution'],
             ],
@@ -145,6 +146,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
                 $campaigns['work-start-type-prefix'],
                 $campaigns['todo-and-plain-feature-lifecycle'],
                 $campaigns['scoped-task-lifecycle'],
+                $campaigns['mutation-lock'],
             ];
 
             if ($allowRemote) {
@@ -164,6 +166,10 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
             throw new \RuntimeException('feature-review-lifecycle requires --allow-remote.');
         }
 
+        if ($requestedCampaign === 'mutation-lock' && $this->dryRun) {
+            throw new \RuntimeException('mutation-lock campaign cannot run in dry-run mode: the lock is skipped when --dry-run is set.');
+        }
+
         return [$campaigns[$requestedCampaign]];
     }
 
@@ -179,6 +185,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
                 'work-start-type-prefix' => new WorkStartTypePrefixCampaign(),
                 'todo-and-plain-feature-lifecycle' => new TodoAndPlainFeatureLifecycleCampaign(),
                 'scoped-task-lifecycle' => new ScopedTaskLifecycleCampaign(),
+                'mutation-lock' => new MutationLockCampaign(),
                 'feature-review-lifecycle' => new FeatureReviewLifecycleCampaign(),
             ];
         }
