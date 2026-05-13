@@ -1,0 +1,16 @@
+description: 'Set or clear a named extra-metadata key on an active entry identified by its entry-ref'
+arguments:
+  -
+    name: 'entry-ref'
+    description: 'Reference of the active entry to update. Accepts a feature slug or a feature/task composite reference.'
+  -
+    name: 'key=value'
+    description: 'Metadata assignment in key=value form. Pass an empty value (key=) to clear the key.'
+notes:
+  - 'The entry-ref must identify an entry currently in the In progress section.'
+  - 'Only the key "database" is accepted. Other keys are rejected.'
+  - 'Pass an empty value (database=) to remove the key from the entry metadata.'
+examples:
+  - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=agent-01 php scripts/backlog.php entry-set-meta my-feature database=agent_01_migrate_gen'
+  - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=agent-01 php scripts/backlog.php entry-set-meta my-feature database='
+  - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=agent-01 php scripts/backlog.php entry-set-meta my-feature/my-task database=agent_01_migrate_gen'

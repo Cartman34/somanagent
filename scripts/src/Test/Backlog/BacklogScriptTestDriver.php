@@ -752,12 +752,109 @@ MD);
     }
 
     /**
+     * Runs migrate.php --generate with the given agent code.
+     *
+     * Skipped in dry-run mode and when --allow-integration is not set (requires a live local
+     * PostgreSQL on localhost:5432). Asserts that the command runs locally (no Docker), that the
+     * temp DB name is derived from the agent code, that DATABASE_URL targets localhost:5432, and
+     * that board meta is cleared after the command completes.
+     *
+     * @param string $agent Agent code used to name the temporary database
+     */
+    public function runMigrateGenerate(string $agent): void
+    {
+        if ($this->context->dryRun) {
+            return;
+        }
+
+        if (!$this->context->allowIntegration) {
+            $this->console->warn('[migrate --generate] Skipped: --allow-integration not set (requires a live local PostgreSQL on localhost:5432).');
+
+            return;
+        }
+
+        $expectedDbName = preg_replace('/[^a-z0-9]/', '_', strtolower($agent)) . '_migrate_gen';
+
+        $command = sprintf(
+            'SOMANAGER_ROLE=developer SOMANAGER_AGENT=%s php scripts/migrate.php --generate',
+            escapeshellarg($agent),
+        );
+        [$code, $output] = $this->consoleClient->captureWithExitCode($command);
+        if ($code !== 0) {
+            throw new \RuntimeException(sprintf(
+                "migrate.php --generate failed (exit %d):\n%s",
+                $code,
+                $output,
+            ));
+        }
+
+        if (!str_contains($output, $expectedDbName)) {
+            throw new \RuntimeException(sprintf(
+                "migrate.php --generate output does not mention expected temp DB name '%s':\n%s",
+                $expectedDbName,
+                $output,
+            ));
+        }
+
+        if (!str_contains($output, 'localhost:5432')) {
+            throw new \RuntimeException(sprintf(
+                "migrate.php --generate output does not mention 'localhost:5432' — command may not be running locally:\n%s",
+                $output,
+            ));
+        }
+
+        $this->assertBoardLacksText('    database:');
+    }
+
+    /**
      * @param string $agent Agent whose active entry is renamed
      * @param string $newText New entry text
      */
     public function renameEntry(string $agent, string $newText): void
     {
         $this->runBacklog(['entry-rename', $newText], ['SOMANAGER_AGENT' => $agent]);
+    }
+
+    /**
+     * Sets or clears an extra-metadata key on the given active entry.
+     *
+     * @param string $agent Agent code used as SOMANAGER_AGENT
+     * @param string $entryRef Feature slug or feature/task reference identifying the active entry
+     * @param string $assignment Key=value assignment, e.g. "database=my_db" or "database=" to clear
+     */
+    public function setEntryMeta(string $agent, string $entryRef, string $assignment): void
+    {
+        $this->runBacklog(['entry-set-meta', $entryRef, $assignment], ['SOMANAGER_AGENT' => $agent]);
+    }
+
+    /**
+     * Asserts that entry-set-meta fails and that the output contains the expected needle.
+     *
+     * @param string $agent Agent code used as SOMANAGER_AGENT
+     * @param string $entryRef Feature slug or feature/task reference passed to the command
+     * @param string $assignment Key=value assignment passed to the command
+     * @param string $needle Expected substring of the failure output
+     */
+    public function assertSetEntryMetaFails(string $agent, string $entryRef, string $assignment, string $needle): void
+    {
+        $this->assertBacklogFails(['entry-set-meta', $entryRef, $assignment], $needle, ['SOMANAGER_AGENT' => $agent]);
+    }
+
+    /**
+     * Asserts that the backlog board file contains the given text fragment.
+     *
+     * @param string $needle Text expected anywhere in the board file
+     */
+    public function assertBoardContains(string $needle): void
+    {
+        $contents = (string) file_get_contents($this->context->boardPath);
+        if (!str_contains($contents, $needle)) {
+            throw new \RuntimeException(sprintf(
+                "Expected backlog board to contain:\n%s\n--- actual board ---\n%s",
+                $needle,
+                $contents,
+            ));
+        }
     }
 
     /**

@@ -107,9 +107,15 @@ php scripts/migrate.php
 
 ### Create a New Migration
 ```bash
-php scripts/console.php doctrine:migrations:diff
+php scripts/migrate.php --generate
 ```
-Automatically generates a migration from the diff between entities and the database.
+Generates a migration from the diff between the current entities and a temporary isolated database.
+The shared application database is never used as the diff target.
+When run from a WA, the agent code is detected automatically from the worktree path.
+The temporary database is named `{agentCode}_migrate_gen` and is dropped after the diff.
+
+> **Do not use `php scripts/console.php doctrine:migrations:diff` directly** — it diffs against
+> the shared application database, which may contain uncommitted changes from other agents.
 
 ### Rollback
 ```bash

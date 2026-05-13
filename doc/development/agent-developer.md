@@ -14,6 +14,7 @@ Read this file only when the active task requires developer workflow details.
 - `review-request`
 - `rework`
 - `entry-rename`
+- `entry-set-meta`
 - `work-start`
 - `feature-release`
 - `entry-merge`
@@ -45,6 +46,8 @@ Read this file only when the active task requires developer workflow details.
 - When one step is prefixed with `WP:`, the working directory must be `WP`.
 - When one step is prefixed with `WA:`, the working directory must be the active agent `WA`.
 - Forbidden for `Developer`: `php scripts/console.php`, `php scripts/node.php`, `php scripts/db.php`, `php scripts/dev.php`, `php scripts/health.php`, `php scripts/github.php`, and any script that talks to containers, runtime, database, network, or GitHub.
+- Exception: `php scripts/migrate.php` (and `--generate`) is allowed to apply and generate Doctrine migrations. Run it from the `WA`. See [Commands](commands.md#create-a-new-migration) for details.
+- `php scripts/migrate.php --generate` runs entirely locally (no Docker, no `psql`): it uses PHP/PDO and `php bin/console` to manage and query the temporary database on `localhost:5432`. Any local execution error (PHP cannot connect to the database, or Doctrine failure) must be escalated immediately to the user. Report: the PHP DSN attempted, the working directory, the exact error output, and the action expected (e.g. start the Docker PostgreSQL service). Do not mask the blocker, retry silently, or let it be discovered by the reviewer.
 - For frontend TypeScript validation, do not run raw `npx tsc`; use `php scripts/validate-files.php --with-types <changed-frontend-files>` so the same check is available to mechanical review.
 - If a command is not explicitly allowed for `Developer`, do not run it.
 
@@ -104,6 +107,15 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-cre
 2. The script updates the main text of the agent's active entry, whether it is a `kind=task` or a `kind=feature`.
 3. For `kind=task`, the corresponding contribution line inside the parent feature container is also updated to keep them in sync.
 4. The agent can only rename their own active entry.
+
+### `entry-set-meta`
+
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-set-meta <entry-ref> <key>=<value>`.
+2. `<entry-ref>` is required and must identify an active (in-progress) entry: a feature slug or a `feature/task` composite reference.
+3. Sets the named extra-metadata key on the targeted entry. Pass an empty value (`<key>=`) to clear the key.
+4. Only the key `database` is accepted. Any other key is rejected.
+5. The command fails when no active entry matches the provided entry-ref.
+6. Used internally by `php scripts/migrate.php --generate` to record and clear the temporary database name on the active entry during the migration generation flow.
 
 ### `review-notes`
 
