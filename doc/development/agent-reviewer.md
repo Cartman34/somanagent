@@ -157,7 +157,7 @@ Also check:
 
 ### `review-reject`
 
-1. Prepare the review body file under `local/tmp/`: one plain finding per line, optional leading numbers or bullets, no Markdown headings.
+1. Prepare the review body file under `local/tmp/`: one plain finding per line kept verbatim, no Markdown headings.
 2. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-reject <entry-ref> --body-file=<path>`.
 3. Use the stable `<entry-ref>` for the target feature or child task entry.
 4. Short task references are refused; use `<entry-ref>`.
