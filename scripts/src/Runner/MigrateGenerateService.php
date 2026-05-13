@@ -20,20 +20,21 @@ use SoManAgent\Script\TextSlugger;
  * agents never share the same target. A per-agent file lock prevents the same
  * agent from running two concurrent generate operations.
  *
- * All PostgreSQL and Doctrine operations run locally against localhost:5432.
- * No Docker or container is involved. If psql or PHP is missing, or if the
- * local database is unreachable, the command fails immediately with a clear
- * error; there is no Docker fallback.
+ * All database management (CREATE / DROP) uses PHP PDO connecting to localhost:5432.
+ * Doctrine commands run locally via php bin/console from the project's backend/ directory.
+ * No Docker or psql binary is involved. If the local PHP/DB path is unavailable the command
+ * fails immediately with a clear structured error; there is no Docker fallback.
  *
  * Steps (each step name appears in the error when it fails):
  *   1. agent detection   — resolve the agent code from the WA path or env
- *   2. lock              — acquire the per-agent advisory lock
- *   3. initial cleanup   — drop any leftover temporary database from a prior run
- *   4. db creation       — create the temporary database
- *   5. backlog meta      — record the temp DB name on the active backlog entry (non-fatal)
- *   6. migrations        — apply existing migrations on the temporary database
- *   7. doctrine diff     — run doctrine:migrations:diff against the temporary database
- *   8. final cleanup     — drop the temporary database, clear backlog meta, and release the lock
+ *   2. prerequisites     — verify PHP can connect to PostgreSQL on localhost:5432
+ *   3. lock              — acquire the per-agent advisory lock
+ *   4. initial cleanup   — drop any leftover temporary database from a prior run
+ *   5. db creation       — create the temporary database
+ *   6. backlog meta      — record the temp DB name on the active backlog entry (non-fatal)
+ *   7. migrations        — apply existing migrations on the temporary database
+ *   8. doctrine diff     — run doctrine:migrations:diff against the temporary database
+ *   9. final cleanup     — drop the temporary database, clear backlog meta, and release the lock
  */
 final class MigrateGenerateService
 {
@@ -72,7 +73,10 @@ final class MigrateGenerateService
         $this->console->info("Temp DB: {$dbName}");
 
         $credentials = $this->parseDatabaseUrl();
-        $this->assertLocalPrerequisites();
+
+        // ── Step: prerequisites ───────────────────────────────────────────────
+        $this->console->step('Checking prerequisites — PHP connection to local PostgreSQL');
+        $this->assertLocalPrerequisites($credentials);
 
         // ── Step: lock ────────────────────────────────────────────────────────
         $this->console->step('Acquiring per-agent lock');
@@ -140,23 +144,30 @@ final class MigrateGenerateService
     // ── Private helpers ───────────────────────────────────────────────────────
 
     /**
-     * Verifies that local prerequisites are available before starting the flow.
+     * Verifies that PHP can connect to PostgreSQL on localhost:5432 before starting the flow.
      *
-     * Exits via console->fail() with a structured error when psql is not found in PATH,
-     * reporting the command attempted, the working directory, the cause, and the action expected.
+     * Exits via console->fail() with a structured error (PHP DSN, working directory, cause,
+     * and action) when the connection cannot be established.
+     *
+     * @param array{scheme: string, user: string, password: string, query: string} $credentials
      */
-    private function assertLocalPrerequisites(): void
+    private function assertLocalPrerequisites(array $credentials): void
     {
-        $code = $this->app->runCommand('command -v psql > /dev/null 2>&1');
-        if ($code !== 0) {
+        $dsn = sprintf('pgsql:host=%s;port=%s;dbname=postgres', self::PG_HOST, self::PG_PORT);
+        try {
+            new \PDO($dsn, $credentials['user'], $credentials['password'], [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+            ]);
+        } catch (\PDOException $e) {
             $this->console->fail(implode("\n", [
-                '[prerequisites] psql is not available.',
-                '  Command: psql -h ' . self::PG_HOST . ' -p ' . self::PG_PORT . ' -U <user> -d postgres -c ...',
+                '[prerequisites] Cannot connect to PostgreSQL on ' . self::PG_HOST . ':' . self::PG_PORT . '.',
+                '  PHP DSN: ' . $dsn,
                 '  Working directory: ' . $this->projectRoot,
-                '  Cause: psql binary not found in PATH.',
-                '  Action: install the PostgreSQL client (e.g. sudo apt install postgresql-client) and ensure psql is in PATH.',
+                '  Cause: ' . $e->getMessage(),
+                '  Action: ensure the Docker PostgreSQL service is running and accessible on localhost:5432 (e.g. run docker compose up -d db from WP).',
             ]));
         }
+        $this->console->ok('PHP connected to local PostgreSQL successfully.');
     }
 
     /**
@@ -209,10 +220,11 @@ final class MigrateGenerateService
      */
     private function dropDatabase(string $dbName, array $credentials): void
     {
-        $sql  = sprintf('DROP DATABASE IF EXISTS %s', $this->quoteIdent($dbName));
-        $code = $this->runPsql($sql, $credentials);
-        if ($code !== 0) {
-            throw new \RuntimeException("[initial cleanup] Could not drop database {$dbName} (exit {$code}).");
+        try {
+            $pdo = $this->openPostgresConnection($credentials);
+            $pdo->exec(sprintf('DROP DATABASE IF EXISTS %s', $this->quoteIdent($dbName)));
+        } catch (\PDOException $e) {
+            throw new \RuntimeException("[initial cleanup] Could not drop database {$dbName}: " . $e->getMessage());
         }
         $this->console->ok("Old temp DB removed (if existed).");
     }
@@ -222,10 +234,11 @@ final class MigrateGenerateService
      */
     private function createDatabase(string $dbName, array $credentials): void
     {
-        $sql  = sprintf('CREATE DATABASE %s', $this->quoteIdent($dbName));
-        $code = $this->runPsql($sql, $credentials);
-        if ($code !== 0) {
-            throw new \RuntimeException("[db creation] Could not create database {$dbName} (exit {$code}).");
+        try {
+            $pdo = $this->openPostgresConnection($credentials);
+            $pdo->exec(sprintf('CREATE DATABASE %s', $this->quoteIdent($dbName)));
+        } catch (\PDOException $e) {
+            throw new \RuntimeException("[db creation] Could not create database {$dbName}: " . $e->getMessage());
         }
         $this->console->ok("Temp DB created: {$dbName}");
     }
@@ -236,15 +249,11 @@ final class MigrateGenerateService
     private function safeDropDatabase(string $dbName, array $credentials): void
     {
         try {
-            $sql  = sprintf('DROP DATABASE IF EXISTS %s', $this->quoteIdent($dbName));
-            $code = $this->runPsql($sql, $credentials);
-            if ($code !== 0) {
-                $this->console->warn("[final cleanup] Could not drop temp DB {$dbName} (exit {$code}) — manual cleanup may be needed.");
-            } else {
-                $this->console->ok("Temp DB dropped: {$dbName}");
-            }
+            $pdo = $this->openPostgresConnection($credentials);
+            $pdo->exec(sprintf('DROP DATABASE IF EXISTS %s', $this->quoteIdent($dbName)));
+            $this->console->ok("Temp DB dropped: {$dbName}");
         } catch (\Throwable $e) {
-            $this->console->warn("[final cleanup] Error while dropping temp DB: " . $e->getMessage());
+            $this->console->warn("[final cleanup] Could not drop temp DB {$dbName}: " . $e->getMessage() . " — manual cleanup may be needed.");
         }
     }
 
@@ -385,20 +394,20 @@ final class MigrateGenerateService
     }
 
     /**
-     * Runs a psql command against localhost:5432 using the extracted project credentials.
+     * Opens a PHP PDO connection to the postgres system database on localhost:5432.
      *
      * @param array{scheme: string, user: string, password: string, query: string} $credentials
+     *
+     * @throws \PDOException when the connection cannot be established
      */
-    private function runPsql(string $sql, array $credentials): int
+    private function openPostgresConnection(array $credentials): \PDO
     {
-        return $this->app->runCommand(sprintf(
-            'PGPASSWORD=%s psql -h %s -p %s -U %s -d postgres -c %s',
-            escapeshellarg($credentials['password']),
-            escapeshellarg(self::PG_HOST),
-            escapeshellarg(self::PG_PORT),
-            escapeshellarg($credentials['user']),
-            escapeshellarg($sql),
-        ));
+        $dsn = sprintf('pgsql:host=%s;port=%s;dbname=postgres', self::PG_HOST, self::PG_PORT);
+        $pdo = new \PDO($dsn, $credentials['user'], $credentials['password'], [
+            \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+        ]);
+
+        return $pdo;
     }
 
     /**

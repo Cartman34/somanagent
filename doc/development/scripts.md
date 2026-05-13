@@ -166,6 +166,8 @@ php scripts/migrate.php --generate  # generate a migration diff using an isolate
 `--generate` creates a temporary database named `{agentCode}_migrate_gen`, applies all existing migrations on it, then runs `doctrine:migrations:diff`. The temporary database is dropped after the diff.
 When invoked from a WA, the agent code is derived from the worktree path. Outside a WA, `SOMANAGER_AGENT` is used as fallback.
 
+`--generate` runs entirely locally without Docker or `psql`: it uses PHP/PDO to create and drop the temporary database on `localhost:5432`, and runs `php bin/console` from the checkout's `backend/` directory. The Docker PostgreSQL service must be running and accessible on `localhost:5432`. If the PHP/DB connection fails, the command exits with a structured error indicating the DSN, working directory, cause, and action expected.
+
 ---
 
 ### `claude-auth.php`
