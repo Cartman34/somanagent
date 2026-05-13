@@ -185,6 +185,10 @@ final class AgentListCommand extends AbstractAgentCommand
 
         $code = $session->code;
 
+        if ($session->role->value === 'manager') {
+            return 'manager ' . $session->worktree;
+        }
+
         if ($session->role->value === 'reviewer') {
             $match = $this->boardService->findReviewingEntryByReviewer($board, $code);
             if ($match !== null) {

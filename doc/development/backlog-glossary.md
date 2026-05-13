@@ -52,6 +52,7 @@ The workflow state of an active backlog entry, recorded in `meta.stage`.
 |---|---|
 | `development` | Open for editing on the entry branch. |
 | `review` | Submitted for review, frozen for the developer. |
+| `reviewing` | A reviewer has claimed the entry and is actively reviewing it. |
 | `rejected` | Review returned the entry with notes recorded in `local/backlog-review.md`. |
 | `approved` | Reviewer marked the entry as OK. |
 

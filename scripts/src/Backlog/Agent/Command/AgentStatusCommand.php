@@ -109,7 +109,9 @@ final class AgentStatusCommand extends AbstractAgentCommand
         if (is_file($this->boardPath)) {
             try {
                 $board = $this->boardService->loadBoard($this->boardPath);
-                if ($session->role->value === 'reviewer') {
+                if ($session->role->value === 'manager') {
+                    $current = 'manager ' . $session->worktree;
+                } elseif ($session->role->value === 'reviewer') {
                     $match = $this->boardService->findReviewingEntryByReviewer($board, $code);
                     if ($match !== null) {
                         $entry = $match->getEntry();
@@ -217,6 +219,10 @@ final class AgentStatusCommand extends AbstractAgentCommand
     {
         if ($board === null) {
             return '—';
+        }
+
+        if ($session->role->value === 'manager') {
+            return 'manager ' . $session->worktree;
         }
 
         if ($session->role->value === 'reviewer') {
