@@ -107,7 +107,7 @@ final class MigrateGenerateService
 
                 // ── Step: doctrine diff ───────────────────────────────────────
                 $this->console->step('Generating migration diff');
-                $code = $this->runDoctrineCommand('doctrine:migrations:diff', $databaseUrl);
+                $code = $this->runDoctrineCommand('doctrine:migrations:diff', $databaseUrl, ['--allow-empty-diff']);
                 if ($code !== 0) {
                     throw new \RuntimeException("[doctrine diff] doctrine:migrations:diff failed (exit {$code}).");
                 }
@@ -416,16 +416,21 @@ final class MigrateGenerateService
      * Executed locally without Docker; requires PHP and the configured database to be available
      * on the local system. If either is missing the command exits non-zero with an error from the
      * local toolchain.
+     *
+     * @param list<string> $extraArgs Additional CLI arguments appended after --no-interaction
      */
-    private function runDoctrineCommand(string $subCommand, string $databaseUrl): int
+    private function runDoctrineCommand(string $subCommand, string $databaseUrl, array $extraArgs = []): int
     {
         $backendDir = $this->projectRoot . '/backend';
 
+        $extra = implode(' ', array_map('escapeshellarg', $extraArgs));
+
         return $this->app->runCommand(sprintf(
-            'cd %s && DATABASE_URL=%s php bin/console %s --no-interaction',
+            'cd %s && DATABASE_URL=%s php bin/console %s --no-interaction%s',
             escapeshellarg($backendDir),
             escapeshellarg($databaseUrl),
             escapeshellarg($subCommand),
+            $extra !== '' ? ' ' . $extra : '',
         ));
     }
 

@@ -81,6 +81,11 @@ final class MigrateRunner extends AbstractScriptRunner
      */
     private function detectAgentCode(): string
     {
+        $fromEnv = trim((string) getenv('SOMANAGER_AGENT'));
+        if ($fromEnv !== '') {
+            return $fromEnv;
+        }
+
         if ($this->scriptFile !== null) {
             try {
                 $context = WorktreeScriptProxy::detect($this->scriptFile);
@@ -92,9 +97,7 @@ final class MigrateRunner extends AbstractScriptRunner
             }
         }
 
-        $fromEnv = trim((string) getenv('SOMANAGER_AGENT'));
-
-        return $fromEnv !== '' ? $fromEnv : 'main';
+        return 'main';
     }
 
     /**

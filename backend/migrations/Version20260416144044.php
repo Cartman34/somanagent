@@ -28,9 +28,9 @@ final class Version20260416144044 extends AbstractMigration
             <<<'SQL'
                 UPDATE agent_action
                 SET allowed_effects = CASE action_key
-                    WHEN 'product.specify' THEN '%s'
-                    WHEN 'tech.plan' THEN '%s'
-                    ELSE '%s'
+                    WHEN 'product.specify' THEN '%s'::json
+                    WHEN 'tech.plan' THEN '%s'::json
+                    ELSE '%s'::json
                 END
             SQL,
             $productEffects,

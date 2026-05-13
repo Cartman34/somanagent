@@ -22,7 +22,7 @@ final class Version20260410090000 extends AbstractMigration
      */
     public function up(Schema $schema): void
     {
-        $this->addSql('ALTER TABLE ticket ADD initial_request LONGTEXT DEFAULT NULL, ADD initial_title VARCHAR(255) DEFAULT NULL');
+        $this->addSql('ALTER TABLE ticket ADD initial_request TEXT DEFAULT NULL, ADD initial_title VARCHAR(255) DEFAULT NULL');
     }
 
     /**
