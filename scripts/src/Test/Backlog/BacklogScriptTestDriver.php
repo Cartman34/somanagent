@@ -752,6 +752,33 @@ MD);
     }
 
     /**
+     * Runs migrate.php --generate with the given agent code.
+     *
+     * Skipped silently in dry-run mode. Requires Docker (php + db services) to be running.
+     *
+     * @param string $agent Agent code used to name the temporary database
+     */
+    public function runMigrateGenerate(string $agent): void
+    {
+        if ($this->context->dryRun) {
+            return;
+        }
+
+        $command = sprintf(
+            'SOMANAGER_AGENT=%s php scripts/migrate.php --generate',
+            escapeshellarg($agent),
+        );
+        [$code, $output] = $this->consoleClient->captureWithExitCode($command);
+        if ($code !== 0) {
+            throw new \RuntimeException(sprintf(
+                "migrate.php --generate failed (exit %d):\n%s",
+                $code,
+                $output,
+            ));
+        }
+    }
+
+    /**
      * @param string $agent Agent whose active entry is renamed
      * @param string $newText New entry text
      */
