@@ -22,9 +22,10 @@ use SoManAgent\Script\Console;
  *   2. lock              — acquire the per-agent advisory lock
  *   3. initial cleanup   — drop any leftover temporary database from a prior run
  *   4. db creation       — create the temporary database
- *   5. migrations        — apply existing migrations on the temporary database
- *   6. doctrine diff     — run doctrine:migrations:diff against the temporary database
- *   7. final cleanup     — drop the temporary database and release the lock
+ *   5. backlog meta      — record the temp DB name on the active backlog entry (non-fatal)
+ *   6. migrations        — apply existing migrations on the temporary database
+ *   7. doctrine diff     — run doctrine:migrations:diff against the temporary database
+ *   8. final cleanup     — drop the temporary database, clear backlog meta, and release the lock
  */
 final class MigrateGenerateService
 {

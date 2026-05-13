@@ -9,5 +9,5 @@ notes:
   - 'Pass an empty value (database=) to remove the key from the entry metadata.'
   - 'Fails when the agent has no active entry.'
 examples:
-  - 'SOMANAGER_AGENT=d04 php scripts/backlog.php entry-set-meta database=d04_migrate_gen'
-  - 'SOMANAGER_AGENT=d04 php scripts/backlog.php entry-set-meta database='
+  - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php entry-set-meta database=agent_01_migrate_gen'
+  - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php entry-set-meta database='

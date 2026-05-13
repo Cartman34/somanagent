@@ -521,6 +521,44 @@ Validate explicit failures and guardrails.
 11. Call a backlog command with a documented option (`--body-file=<path>`, `--branch-type=<value>`, `--base=<ref>`, or `--agent=<code>` on commands that still declare it) and confirm it is accepted.
 12. Call `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php --unknown-global` and confirm it fails with `Unknown global option(s): --unknown-global`.
 
+## Scenario 16 - Entry Set Meta
+
+### Goal
+
+Validate that `entry-set-meta` sets, overwrites, and clears the `database` key on the active entry, and that illegal calls are rejected.
+
+### Precondition
+
+An active feature entry exists for agent `d01` (e.g. from Scenario 3).
+
+### Steps
+
+1. `SOMANAGER_AGENT=d01 php scripts/backlog.php entry-set-meta database=d01_migrate_gen`
+   — sets the key
+2. `php scripts/backlog.php status --agent=d01`
+   — `database: d01_migrate_gen` must appear in the meta block
+3. `SOMANAGER_AGENT=d01 php scripts/backlog.php entry-set-meta database=d01_migrate_gen_v2`
+   — overwrites the key
+4. `php scripts/backlog.php status --agent=d01`
+   — `database: d01_migrate_gen_v2` must be present; `d01_migrate_gen` must be gone
+5. `SOMANAGER_AGENT=d01 php scripts/backlog.php entry-set-meta database=`
+   — clears the key (empty value)
+6. `php scripts/backlog.php status --agent=d01`
+   — no `database:` line in the meta block
+7. `SOMANAGER_AGENT=d01 php scripts/backlog.php entry-set-meta unknown-key=value`
+   — must fail with `does not support key "unknown-key"`
+8. `SOMANAGER_AGENT=d01 php scripts/backlog.php entry-set-meta database`
+   — must fail with `key=value argument`
+9. `SOMANAGER_AGENT=d99 php scripts/backlog.php entry-set-meta database=some_db`
+   — must fail with `has no active entry` (agent with no active entry)
+
+### Expected checks
+
+- board file reflects each set/clear immediately after the command
+- unknown keys are rejected before the board is touched
+- missing `=` is rejected before the board is touched
+- agents with no active entry are rejected
+
 ## Cleanup
 
 After validation:
