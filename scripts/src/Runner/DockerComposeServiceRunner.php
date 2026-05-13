@@ -14,6 +14,10 @@ use SoManAgent\Script\Application;
  */
 final class DockerComposeServiceRunner
 {
+    /**
+     * @param Application $app
+     * @param string $service Docker Compose service name (e.g. "php", "db")
+     */
     public function __construct(
         private readonly Application $app,
         private readonly string $service,
