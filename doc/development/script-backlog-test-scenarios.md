@@ -232,7 +232,7 @@ Validate `feature-release` on a feature with no actual development ahead of base
 
 ### Goal
 
-Validate feature/task assignment and unassignment permissions.
+Validate entry assignment and unassignment permissions.
 
 ### Steps
 

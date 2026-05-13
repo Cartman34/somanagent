@@ -14,7 +14,7 @@ use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 /**
  * Lists queued tasks in priority order with their stable mutation reference.
  *
- * Each line shows the display index, the stable feature (or feature/task) slug
+ * Each line shows the display index, the stable `<entry-ref>`
  * between brackets, and the original task text. Display numbers are advisory
  * only; mutations such as task-remove always require the stable reference.
  */

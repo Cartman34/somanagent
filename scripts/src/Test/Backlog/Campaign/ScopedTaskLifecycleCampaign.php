@@ -97,10 +97,10 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->requestTaskReview($context->agentPrimary);
         $driver->approveTaskViaUnifiedCommand($context->agentSecondary, $taskARef);
 
-        // status <feature/task> must resolve the task entry directly.
+        // status <entry-ref> must resolve the task entry directly.
         $driver->assertStatusContains($taskARef, 'Kind: task');
         $driver->assertStatusContains($taskARef, 'Ref: ' . $taskARef);
-        // feature-list must show kind=task and full feature/task reference for task entries.
+        // feature-list must show kind=task and full <entry-ref> for task entries.
         $featureListOutput = $driver->runBacklog(['feature-list']);
         $driver->assertContains($featureListOutput, $taskARef . ' kind=task');
         $driver->assertContains($featureListOutput, $context->scopedFeature . ' kind=feature');

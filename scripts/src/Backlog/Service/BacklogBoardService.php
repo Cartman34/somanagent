@@ -364,7 +364,7 @@ final class BacklogBoardService
     }
 
     /**
-     * Resolves a task entry from a reference string (feature/task or task-only).
+     * Resolves a task entry from a reference string (<entry-ref> or bare task slug).
      * @param BacklogBoard $board, string $reference, string $command
      * @return BoardEntryMatch
      */
