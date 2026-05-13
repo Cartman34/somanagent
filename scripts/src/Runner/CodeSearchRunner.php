@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Runner;
 
 /**
- * Searches a term across backend PHP and frontend TS/TSX source files.
+ * Searches a term across backend PHP, frontend TS/TSX, scripts PHP, doc Markdown, and YAML resource files.
  */
 final class CodeSearchRunner extends AbstractScriptRunner
 {
@@ -27,13 +27,18 @@ final class CodeSearchRunner extends AbstractScriptRunner
     private const SCOPE_BACKEND = 'backend';
     private const SCOPE_FRONTEND = 'frontend';
     private const SCOPE_SCRIPTS = 'scripts';
+    private const SCOPE_DOC = 'doc';
+    private const SCOPE_RESOURCES = 'resources';
 
-    /** @var array<string, array<int, array{path: string, exts: array<int, string>, globs: array<int, string>}>> */
+    /** @var array<string, array<int, array{path: string, exts: array<int, string>, globs: array<int, string>, recursive?: bool}>> */
     private const SCOPE_DIRECTORIES = [
         self::SCOPE_ALL => [
             ['path' => 'backend/src', 'exts' => ['php'], 'globs' => ['*.php']],
             ['path' => 'frontend/src', 'exts' => ['ts', 'tsx'], 'globs' => ['*.ts', '*.tsx']],
             ['path' => 'scripts/src', 'exts' => ['php'], 'globs' => ['*.php']],
+            ['path' => 'doc', 'exts' => ['md'], 'globs' => ['*.md']],
+            ['path' => 'scripts/resources', 'exts' => ['yaml'], 'globs' => ['*.yaml']],
+            ['path' => '.', 'exts' => ['md'], 'globs' => ['*.md'], 'recursive' => false],
         ],
         self::SCOPE_BACKEND => [
             ['path' => 'backend/src', 'exts' => ['php'], 'globs' => ['*.php']],
@@ -44,11 +49,18 @@ final class CodeSearchRunner extends AbstractScriptRunner
         self::SCOPE_SCRIPTS => [
             ['path' => 'scripts/src', 'exts' => ['php'], 'globs' => ['*.php']],
         ],
+        self::SCOPE_DOC => [
+            ['path' => 'doc', 'exts' => ['md'], 'globs' => ['*.md']],
+            ['path' => '.', 'exts' => ['md'], 'globs' => ['*.md'], 'recursive' => false],
+        ],
+        self::SCOPE_RESOURCES => [
+            ['path' => 'scripts/resources', 'exts' => ['yaml'], 'globs' => ['*.yaml']],
+        ],
     ];
 
     protected function getDescription(): string
     {
-        return 'Search a term across backend PHP and frontend TS/TSX source files';
+        return 'Search a term across backend PHP, frontend TS/TSX, scripts PHP, doc Markdown, and YAML resource files';
     }
 
     protected function getArguments(): array
@@ -65,6 +77,8 @@ final class CodeSearchRunner extends AbstractScriptRunner
             ['name' => '--backend', 'description' => 'Search only in backend/src/'],
             ['name' => '--frontend', 'description' => 'Search only in frontend/src/'],
             ['name' => '--scripts', 'description' => 'Search only in scripts/src/'],
+            ['name' => '--doc', 'description' => 'Search only in doc/**/*.md and root *.md files (AGENTS.md, CLAUDE.md, …)'],
+            ['name' => '--resources', 'description' => 'Search only in scripts/resources/**/*.yaml'],
             ['name' => '--context', 'description' => 'Show N lines of context before/after each match (default: 0)'],
         ];
     }
@@ -78,11 +92,13 @@ final class CodeSearchRunner extends AbstractScriptRunner
             'php scripts/code-search.php --backend AgentController',
             'php scripts/code-search.php --frontend useAgent --context 2',
             'php scripts/code-search.php --scripts CodeSearchRunner',
+            'php scripts/code-search.php --doc SOMANAGER_AGENT',
+            'php scripts/code-search.php --resources review-request',
         ];
     }
 
     /**
-     * Executes a source search across backend and frontend code.
+     * Executes a source search across configured scopes (backend, frontend, scripts, doc, resources).
      *
      * @param list<string> $args
      * @return int
@@ -90,7 +106,7 @@ final class CodeSearchRunner extends AbstractScriptRunner
     public function run(array $args): int
     {
         if ($args === []) {
-            $this->console->fail('Missing search term. Usage: php scripts/code-search.php <term> [--backend|--frontend|--scripts] [--context N]');
+            $this->console->fail('Missing search term. Usage: php scripts/code-search.php <term> [--backend|--frontend|--scripts|--doc|--resources] [--context N]');
         }
 
         $term    = null;
@@ -109,6 +125,14 @@ final class CodeSearchRunner extends AbstractScriptRunner
             }
             if ($args[$i] === '--scripts') {
                 $scope = self::SCOPE_SCRIPTS;
+                continue;
+            }
+            if ($args[$i] === '--doc') {
+                $scope = self::SCOPE_DOC;
+                continue;
+            }
+            if ($args[$i] === '--resources') {
+                $scope = self::SCOPE_RESOURCES;
                 continue;
             }
             if ($args[$i] === '--engine' && isset($args[$i + 1])) {
@@ -157,9 +181,15 @@ final class CodeSearchRunner extends AbstractScriptRunner
                 continue;
             }
 
-            $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($path, \RecursiveDirectoryIterator::SKIP_DOTS)
-            );
+            $recursive = $dirConfig['recursive'] ?? true;
+
+            if ($recursive) {
+                $iterator = new \RecursiveIteratorIterator(
+                    new \RecursiveDirectoryIterator($path, \RecursiveDirectoryIterator::SKIP_DOTS)
+                );
+            } else {
+                $iterator = new \DirectoryIterator($path);
+            }
 
             foreach ($iterator as $file) {
                 if (!$file->isFile()) {
@@ -225,7 +255,7 @@ final class CodeSearchRunner extends AbstractScriptRunner
         $commands = [];
 
         foreach ($this->getScopeDirectories($scope) as $dirConfig) {
-            $commands[] = $this->buildRipgrepCommand($term, $context, $dirConfig['globs'], [$dirConfig['path']]);
+            $commands[] = $this->buildRipgrepCommand($term, $context, $dirConfig['globs'], [$dirConfig['path']], $dirConfig['recursive'] ?? true);
         }
 
         $outputs = [];
@@ -251,7 +281,7 @@ final class CodeSearchRunner extends AbstractScriptRunner
     }
 
     /**
-     * @return array<int, array{path: string, exts: array<int, string>, globs: array<int, string>}>
+     * @return array<int, array{path: string, exts: array<int, string>, globs: array<int, string>, recursive?: bool}>
      */
     private function getScopeDirectories(string $scope): array
     {
@@ -262,9 +292,14 @@ final class CodeSearchRunner extends AbstractScriptRunner
      * @param array<string> $globs
      * @param array<string> $paths
      */
-    private function buildRipgrepCommand(string $term, int $context, array $globs, array $paths): string
+    private function buildRipgrepCommand(string $term, int $context, array $globs, array $paths, bool $recursive = true): string
     {
         $parts = ['rg', '-n', '-i', '--color', 'never'];
+
+        if (!$recursive) {
+            $parts[] = '--max-depth';
+            $parts[] = '0';
+        }
 
         if ($context > 0) {
             $parts[] = '-C';
