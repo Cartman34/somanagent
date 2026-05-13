@@ -41,12 +41,14 @@ final class MigrateGenerateService
     /**
      * @param Application $app
      * @param string $agentCode Resolved agent code (e.g. "d04")
-     * @param string $projectRoot Absolute path to the project root (WA or WP)
+     * @param string $projectRoot Absolute path to the project root (WA or WP), used for lock files and DATABASE_URL
+     * @param string $boardRoot Absolute path to the WP root where the canonical backlog board lives
      */
     public function __construct(
         private readonly Application $app,
         private readonly string $agentCode,
         private readonly string $projectRoot,
+        private readonly string $boardRoot,
     ) {
         $this->phpRunner = new DockerComposeServiceRunner($app, 'php');
         $this->dbRunner  = new DockerComposeServiceRunner($app, 'db');
@@ -110,7 +112,11 @@ final class MigrateGenerateService
                 // ── Step: final cleanup ───────────────────────────────────────
                 $this->console->step('Final cleanup — dropping temp DB');
                 $this->safeDropDatabase($dbName);
-                $this->clearDatabaseFromBacklog();
+                try {
+                    $this->clearDatabaseFromBacklog();
+                } catch (\Throwable $e) {
+                    $this->console->warn("[final cleanup] Error while clearing backlog meta: " . $e->getMessage());
+                }
             }
         } finally {
             $this->releaseLock($lockHandle, $lockPath);
@@ -224,7 +230,7 @@ final class MigrateGenerateService
         }
 
         $code = $this->app->runCommand(sprintf(
-            'SOMANAGER_AGENT=%s php scripts/backlog.php entry-set-meta %s %s',
+            'SOMANAGER_ROLE=developer SOMANAGER_AGENT=%s php scripts/backlog.php entry-set-meta %s %s',
             escapeshellarg($this->agentCode),
             escapeshellarg($entryRef),
             escapeshellarg('database=' . $dbName),
@@ -244,7 +250,7 @@ final class MigrateGenerateService
         }
 
         $code = $this->app->runCommand(sprintf(
-            'SOMANAGER_AGENT=%s php scripts/backlog.php entry-set-meta %s %s',
+            'SOMANAGER_ROLE=developer SOMANAGER_AGENT=%s php scripts/backlog.php entry-set-meta %s %s',
             escapeshellarg($this->agentCode),
             escapeshellarg($entryRef),
             escapeshellarg('database='),
@@ -263,7 +269,7 @@ final class MigrateGenerateService
      */
     private function detectActiveEntryRef(string $agentCode): ?string
     {
-        $boardPath = $this->projectRoot . '/local/backlog-board.md';
+        $boardPath = $this->boardRoot . '/local/backlog-board.md';
         if (!is_file($boardPath)) {
             return null;
         }

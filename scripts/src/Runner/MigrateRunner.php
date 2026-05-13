@@ -58,7 +58,8 @@ final class MigrateRunner extends AbstractScriptRunner
 
         if (isset($options['generate'])) {
             $agentCode = $this->detectAgentCode();
-            return (new MigrateGenerateService($this->app, $agentCode, $this->projectRoot))->run();
+            $boardRoot = $this->detectBoardRoot();
+            return (new MigrateGenerateService($this->app, $agentCode, $this->projectRoot, $boardRoot))->run();
         }
 
         try {
@@ -94,5 +95,28 @@ final class MigrateRunner extends AbstractScriptRunner
         $fromEnv = trim((string) getenv('SOMANAGER_AGENT'));
 
         return $fromEnv !== '' ? $fromEnv : 'main';
+    }
+
+    /**
+     * Resolves the WP (main worktree) root where the canonical backlog board lives.
+     *
+     * When running inside a linked WA, returns the main worktree root so that
+     * board reads target the live board in WP, not the WA copy.
+     * Falls back to $projectRoot when the script is not in a linked worktree.
+     */
+    private function detectBoardRoot(): string
+    {
+        if ($this->scriptFile !== null) {
+            try {
+                $context = WorktreeScriptProxy::detect($this->scriptFile);
+                if ($context->isLinkedWorktree()) {
+                    return $context->getMainRoot();
+                }
+            } catch (\RuntimeException) {
+                // Not in git repo or path cannot be resolved — fall through
+            }
+        }
+
+        return $this->projectRoot;
     }
 }

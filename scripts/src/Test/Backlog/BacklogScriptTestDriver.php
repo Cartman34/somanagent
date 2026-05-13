@@ -754,7 +754,9 @@ MD);
     /**
      * Runs migrate.php --generate with the given agent code.
      *
-     * Skipped silently in dry-run mode. Requires Docker (php + db services) to be running.
+     * Skipped in dry-run mode and when --allow-integration is not set (requires Docker).
+     * Asserts that the temp DB name matches the expected pattern and that board meta
+     * is cleared after the command completes.
      *
      * @param string $agent Agent code used to name the temporary database
      */
@@ -764,8 +766,16 @@ MD);
             return;
         }
 
+        if (!$this->context->allowIntegration) {
+            $this->console->warn('[migrate --generate] Skipped: --allow-integration not set (requires Docker).');
+
+            return;
+        }
+
+        $expectedDbName = preg_replace('/[^a-z0-9]/', '_', strtolower($agent)) . '_migrate_gen';
+
         $command = sprintf(
-            'SOMANAGER_AGENT=%s php scripts/migrate.php --generate',
+            'SOMANAGER_ROLE=developer SOMANAGER_AGENT=%s php scripts/migrate.php --generate',
             escapeshellarg($agent),
         );
         [$code, $output] = $this->consoleClient->captureWithExitCode($command);
@@ -776,6 +786,16 @@ MD);
                 $output,
             ));
         }
+
+        if (!str_contains($output, $expectedDbName)) {
+            throw new \RuntimeException(sprintf(
+                "migrate.php --generate output does not mention expected temp DB name '%s':\n%s",
+                $expectedDbName,
+                $output,
+            ));
+        }
+
+        $this->assertBoardLacksText('    database:');
     }
 
     /**

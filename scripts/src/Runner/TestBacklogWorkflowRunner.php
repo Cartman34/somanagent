@@ -46,6 +46,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
             [
                 ['name' => '--campaign', 'description' => 'Campaign to run: help, board-format-normalization, todo-and-plain-feature-lifecycle, scoped-task-lifecycle, task-create-formats, work-start-type-prefix, feature-review-lifecycle, mutation-lock, or all'],
                 ['name' => '--allow-remote', 'description' => 'Allow campaigns that push branches or create/merge GitHub PRs'],
+                ['name' => '--allow-integration', 'description' => 'Allow steps that require Docker/app containers to be running (e.g. migrate --generate)'],
                 ['name' => '--keep-artifacts', 'description' => 'Keep temporary backlog/review files under local/tmp/ after execution'],
             ],
             $this->getExecutionModeOptions(),
@@ -57,6 +58,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
         return [
             'php scripts/test-backlog-workflow.php',
             'php scripts/test-backlog-workflow.php --campaign scoped-task-lifecycle',
+            'php scripts/test-backlog-workflow.php --allow-integration --campaign todo-and-plain-feature-lifecycle',
             'php scripts/test-backlog-workflow.php --allow-remote --campaign feature-review-lifecycle',
         ];
     }
@@ -79,6 +81,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
         }
         $requestedCampaign = trim((string) $rawCampaign);
         $allowRemote = isset($options['allow-remote']);
+        $allowIntegration = isset($options['allow-integration']);
         $keepArtifacts = isset($options['keep-artifacts']);
         $runToken = sprintf('%s-%04d', date('YmdHis'), random_int(1000, 9999));
 
@@ -98,6 +101,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
             tmpDir: $this->projectRoot . '/local/tmp',
             worktreesRoot: $worktreesRoot,
             allowRemote: $allowRemote,
+            allowIntegration: $allowIntegration,
             keepArtifacts: $keepArtifacts,
             dryRun: $this->dryRun,
             verbose: $this->verbose,
