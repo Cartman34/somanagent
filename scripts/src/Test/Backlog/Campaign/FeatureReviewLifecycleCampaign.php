@@ -104,7 +104,7 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         // unified commands: reviewer required and body-file required guards
         $driver->assertReviewCheckFails('', $context->fixFeature, 'Command requires SOMANAGER_AGENT=<code>.');
         $driver->assertReviewRejectFails($context->agentSecondary, $context->fixFeature, null, 'review-reject requires --body-file=<path>.');
-        $driver->assertReviewApproveFails($context->agentSecondary, $context->fixFeature, null, 'Option --body-file is required.');
+        $driver->assertReviewApproveFails($context->agentSecondary, $context->fixFeature, null, 'review-approve requires --body-file=<path> for feature approvals.');
 
         // approve path via unified commands (without review-next, entry stays in review — commands accept both stages)
         $driver->reviewCheck($context->agentSecondary, $context->fixFeature);

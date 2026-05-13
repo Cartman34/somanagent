@@ -125,7 +125,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->requestTaskReview($context->agentPrimary);
         // unified review-reject for task covers the task delegation path
         $driver->rejectReviewViaUnifiedCommand($context->agentSecondary, $taskBRef, $rejectFeatureTaskB);
-        $driver->assertReviewContains('1. Reject second child task for coverage.');
+        $driver->assertReviewContains('3. Reject second child task for coverage.');
         $driver->rework($context->agentPrimary, $taskBRef);
         $driver->requestTaskReview($context->agentPrimary);
         $driver->approveTaskViaUnifiedCommand($context->agentSecondary, $taskBRef);
