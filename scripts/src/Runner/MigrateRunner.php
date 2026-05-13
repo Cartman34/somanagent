@@ -81,9 +81,11 @@ final class MigrateRunner extends AbstractScriptRunner
      */
     private function detectAgentCode(): string
     {
-        // SOMANAGER_AGENT is checked first so that an explicit caller context
-        // (workflow prefix, test runner) always wins over the WA path heuristic.
-        // WA-path detection is only the fallback for interactive use without the prefix.
+        // SOMANAGER_AGENT is checked first: without this, running
+        // "SOMANAGER_AGENT=foo php scripts/migrate.php --generate" from inside a
+        // linked WA would silently ignore the explicit agent and use the WA directory
+        // name instead, because WorktreeScriptProxy::detect sees the WA script path.
+        // WA-path detection is kept as a fallback for interactive use without the prefix.
         $fromEnv = trim((string) getenv('SOMANAGER_AGENT'));
         if ($fromEnv !== '') {
             return $fromEnv;
