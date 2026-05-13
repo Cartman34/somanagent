@@ -275,7 +275,19 @@ final class AgentStatusCommandTest
             $boardPath,
             $service,
             $boardService,
+            $this->defaultSignaler(),
         );
+    }
+
+    /**
+     * Returns a FakeProcessSignaler with the current PHP process PID marked alive.
+     */
+    private function defaultSignaler(): FakeProcessSignaler
+    {
+        $s = new FakeProcessSignaler();
+        $s->setAlive((int) getmypid(), true);
+
+        return $s;
     }
 
     /**

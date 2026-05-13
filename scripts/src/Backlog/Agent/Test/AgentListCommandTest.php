@@ -291,7 +291,21 @@ final class AgentListCommandTest
             $boardPath,
             $service,
             $boardService,
+            $this->defaultSignaler(),
         );
+    }
+
+    /**
+     * Returns a FakeProcessSignaler with the current PHP process PID marked alive.
+     *
+     * Preserves the convention used by makeSession(): pass getmypid() for alive, 0 for dead.
+     */
+    private function defaultSignaler(): FakeProcessSignaler
+    {
+        $s = new FakeProcessSignaler();
+        $s->setAlive((int) getmypid(), true);
+
+        return $s;
     }
 
     /**
@@ -314,8 +328,8 @@ final class AgentListCommandTest
     /**
      * Builds an AgentSession with controllable liveness via the wrapper pid.
      *
-     * Pass `getmypid()` for an "alive" session and `0` for a "dead" one — the model's
-     * isAlive() returns false on pid<=0 without touching posix_kill.
+     * Pass `getmypid()` for an "alive" session — defaultSignaler() marks that PID alive.
+     * Pass `0` for a "dead" session — FakeProcessSignaler returns false for unknown PIDs.
      */
     private function makeSession(string $code, AgentRole $role, int $pid): AgentSession
     {

@@ -15,6 +15,7 @@ use SoManAgent\Script\Backlog\Agent\Client\InteractiveProcessRunner;
 use SoManAgent\Script\Backlog\Agent\Client\OpenCodeAgentLauncher;
 use SoManAgent\Script\Backlog\Agent\Client\PosixProcessSignaler;
 use SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
+use SoManAgent\Script\Backlog\Agent\Client\ShellProcessRunner;
 use SoManAgent\Script\Backlog\Agent\Client\SystemInteractiveProcessRunner;
 use SoManAgent\Script\Backlog\Agent\Command\AbstractAgentCommand;
 use SoManAgent\Script\Backlog\Agent\Command\AgentListCommand;
@@ -205,6 +206,8 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                     new AgentReviewerSelector($this->boardService(), $this->sessionService(), $worktreesRoot),
                     $this->boardService(),
                     $this->processRunner(),
+                    $this->processSignaler(),
+                    new ShellProcessRunner(),
                 ),
                 'list' => new AgentListCommand(
                     $this->console,
@@ -212,6 +215,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                     $boardPath,
                     $this->sessionService(),
                     $this->boardService(),
+                    $this->processSignaler(),
                 ),
                 'status' => new AgentStatusCommand(
                     $this->console,
@@ -219,6 +223,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                     $boardPath,
                     $this->sessionService(),
                     $this->boardService(),
+                    $this->processSignaler(),
                 ),
                 'stop' => new AgentStopCommand(
                     $this->console,
@@ -292,6 +297,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                 $boardPath,
                 $this->boardService(),
                 $this->sessionService(),
+                $this->processSignaler(),
             );
         }
 

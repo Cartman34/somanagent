@@ -223,7 +223,7 @@ final class AgentStartCommandTest
         $registry = new AgentClientLauncherRegistry();
         $registry->register($launcher);
 
-        $codeService = new AgentCodeService($dir, $worktreesRoot, $boardPath, $boardService, $sessionService);
+        $codeService = new AgentCodeService($dir, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler());
         $contextBuilder = new AgentContextBuilder($dir, $boardPath, $boardService);
         $worktreeService = (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor();
         $processRunner = new FakeInteractiveProcessRunner();
@@ -240,6 +240,8 @@ final class AgentStartCommandTest
             $reviewerSelector,
             $boardService,
             $processRunner,
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
         );
 
         // --code=r01 avoids touching AgentCodeService::allocateForRole.
@@ -302,6 +304,7 @@ final class AgentStartCommandTest
             $this->tmpDir . '/board.md',
             $boardService,
             $sessionService,
+            new FakeProcessSignaler(),
         );
         $contextBuilder = new AgentContextBuilder($this->tmpDir, $this->tmpDir . '/board.md', $boardService);
         $worktreeService = (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor();
@@ -320,6 +323,8 @@ final class AgentStartCommandTest
             $reviewerSelector,
             $boardService,
             $processRunner,
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
         );
     }
 

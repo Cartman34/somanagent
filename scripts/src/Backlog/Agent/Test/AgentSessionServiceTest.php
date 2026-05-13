@@ -242,67 +242,50 @@ final class AgentSessionServiceTest
     private function testIsAliveUsesClientPidFirst(): int
     {
         $now = new \DateTimeImmutable();
-        $currentPid = (int) getmypid();
 
-        // Live client_pid wins even when wrapper pid is fake/dead.
+        $signaler = new FakeProcessSignaler();
+        $signaler->setAlive(9001, true);  // clientPid alive
+        $signaler->setAlive(1, false);    // wrapper pid dead (ensures clientPid is checked first)
+
+        // Live client_pid wins even when wrapper pid is reported dead.
         $live = new AgentSession(
             code: 'd01',
             client: AgentClient::CLAUDE,
             role: AgentRole::DEVELOPER,
-            pid: 1, // unrelated, may or may not be alive depending on system; isAlive must rely on clientPid first
+            pid: 1,
             worktree: '/tmp',
             startedAt: $now,
             lastSeenAt: $now,
             sessionId: null,
-            clientPid: $currentPid,
+            clientPid: 9001,
             processGroupId: null,
         );
-        if (!$live->isAlive()) {
-            echo "FAIL testIsAliveUsesClientPidFirst: expected alive when clientPid points to current PHP pid\n";
+        if (!$live->isAlive($signaler)) {
+            echo "FAIL testIsAliveUsesClientPidFirst: expected alive when clientPid is alive\n";
             return 1;
         }
 
         // Both PIDs dead: isAlive must return false.
-        $deadPid = $this->pickGuaranteedDeadPid();
+        $deadSignaler = new FakeProcessSignaler();
         $dead = new AgentSession(
             code: 'd02',
             client: AgentClient::CLAUDE,
             role: AgentRole::DEVELOPER,
-            pid: $deadPid,
+            pid: 9002,
             worktree: '/tmp',
             startedAt: $now,
             lastSeenAt: $now,
             sessionId: null,
-            clientPid: $deadPid,
+            clientPid: 9003,
             processGroupId: null,
         );
-        if ($dead->isAlive()) {
+        if ($dead->isAlive($deadSignaler)) {
             echo "FAIL testIsAliveUsesClientPidFirst: expected dead when both PIDs are dead\n";
             return 1;
         }
 
         echo "OK testIsAliveUsesClientPidFirst\n";
         return 0;
-    }
-
-    /**
-     * Returns a PID that is extremely unlikely to be alive on a standard Linux host.
-     */
-    private function pickGuaranteedDeadPid(): int
-    {
-        // /proc/sys/kernel/pid_max is typically 4194304; pick well below to avoid permission issues
-        // but high enough to be unlikely. Verify it is not alive on the current system.
-        $candidate = 2_000_000;
-        if (posix_kill($candidate, 0)) {
-            // Already alive — unlikely but possible. Bump until we find a dead one.
-            for ($i = $candidate; $i < $candidate + 100; $i++) {
-                if (!posix_kill($i, 0)) {
-                    return $i;
-                }
-            }
-        }
-
-        return $candidate;
     }
 
     private function testLoadIgnoresMalformedEntries(): int

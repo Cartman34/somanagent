@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Agent\Service;
 
+use SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use SoManAgent\Script\Backlog\Agent\Exception\ActiveSessionException;
 use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
@@ -26,6 +27,7 @@ final class AgentCodeService
     private BacklogBoardService $boardService;
     private AgentSessionService $sessionService;
     private string $boardPath;
+    private ProcessSignaler $signaler;
 
     /**
      * @param string $projectRoot Absolute path to the main workspace
@@ -33,6 +35,7 @@ final class AgentCodeService
      * @param string $boardPath Absolute path to the backlog board file
      * @param BacklogBoardService $boardService
      * @param AgentSessionService $sessionService
+     * @param ProcessSignaler $signaler Used to check process aliveness when raising ActiveSessionException
      */
     public function __construct(
         string $projectRoot,
@@ -40,12 +43,14 @@ final class AgentCodeService
         string $boardPath,
         BacklogBoardService $boardService,
         AgentSessionService $sessionService,
+        ProcessSignaler $signaler,
     ) {
         $this->projectRoot = $projectRoot;
         $this->worktreesRoot = $worktreesRoot;
         $this->boardPath = $boardPath;
         $this->boardService = $boardService;
         $this->sessionService = $sessionService;
+        $this->signaler = $signaler;
     }
 
     /**
@@ -93,7 +98,7 @@ final class AgentCodeService
         $session = $this->sessionService->get($code);
         if ($session !== null) {
             $label = $currentLabel ?? $this->deriveCurrentLabel($code, $board);
-            throw new ActiveSessionException($session, $this->projectRoot, $label);
+            throw new ActiveSessionException($session, $this->projectRoot, $this->signaler, $label);
         }
     }
 

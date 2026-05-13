@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Agent\Model;
 
+use SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 
@@ -47,9 +48,9 @@ final class AgentSession
      * (typical race when the wrapper crashes mid-session). When client_pid is null the check falls back
      * to the wrapper pid.
      */
-    public function isAlive(): bool
+    public function isAlive(ProcessSignaler $signaler): bool
     {
-        if ($this->clientPid !== null && $this->clientPid > 0 && posix_kill($this->clientPid, 0) !== false) {
+        if ($this->clientPid !== null && $this->clientPid > 0 && $signaler->isAlive($this->clientPid)) {
             return true;
         }
 
@@ -57,7 +58,7 @@ final class AgentSession
             return false;
         }
 
-        return posix_kill($this->pid, 0) !== false;
+        return $signaler->isAlive($this->pid);
     }
 
     /**

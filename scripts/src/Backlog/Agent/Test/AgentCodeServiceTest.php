@@ -206,7 +206,7 @@ final class AgentCodeServiceTest
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         $sessionService = new AgentSessionService($projectRoot);
 
-        return new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService);
+        return new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler());
     }
 
     private function rmdir(string $dir): void

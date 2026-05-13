@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Agent\Exception;
 
+use SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
 use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 
 /**
@@ -17,12 +18,13 @@ final class ActiveSessionException extends \RuntimeException
     /**
      * @param AgentSession $session Active session for the requested code
      * @param string $projectRoot Absolute path to the main workspace (used to shorten worktree path)
+     * @param ProcessSignaler $signaler Used to check whether the session's process is still alive
      * @param string|null $current Human-readable label of the current backlog task, if any
      */
-    public function __construct(AgentSession $session, string $projectRoot, ?string $current = null)
+    public function __construct(AgentSession $session, string $projectRoot, ProcessSignaler $signaler, ?string $current = null)
     {
         $relativeWorktree = str_replace($projectRoot . '/', '', $session->worktree);
-        $pidStatus = $session->isAlive() ? 'running' : 'dead';
+        $pidStatus = $session->isAlive($signaler) ? 'running' : 'dead';
 
         $message = sprintf(
             "Code %s already has an active session:\n" .
@@ -45,7 +47,7 @@ final class ActiveSessionException extends \RuntimeException
             $current ?? '—',
         );
 
-        if ($session->isAlive()) {
+        if ($session->isAlive($signaler)) {
             $message .= sprintf(
                 "  - Stop the session       : php scripts/backlog-agent.php stop --code=%s\n" .
                 "  - Use a different code   : drop --code or pass an unused one\n" .

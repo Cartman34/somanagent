@@ -9,6 +9,8 @@ namespace SoManAgent\Script\Backlog\Agent\Command;
 
 use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
 use SoManAgent\Script\Backlog\Agent\Client\InteractiveProcessRunner;
+use SoManAgent\Script\Backlog\Agent\Client\ProcessRunner;
+use SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use SoManAgent\Script\Backlog\Agent\Exception\ActiveSessionException;
@@ -43,6 +45,8 @@ final class AgentStartCommand extends AbstractAgentCommand
     private AgentReviewerSelector $reviewerSelector;
     private BacklogBoardService $boardService;
     private InteractiveProcessRunner $processRunner;
+    private ProcessSignaler $signaler;
+    private ProcessRunner $shellRunner;
 
     /**
      * @param string $projectRoot
@@ -56,6 +60,8 @@ final class AgentStartCommand extends AbstractAgentCommand
      * @param AgentReviewerSelector $reviewerSelector
      * @param BacklogBoardService $boardService
      * @param InteractiveProcessRunner $processRunner
+     * @param ProcessSignaler $signaler
+     * @param ProcessRunner $shellRunner
      */
     public function __construct(
         string $projectRoot,
@@ -69,6 +75,8 @@ final class AgentStartCommand extends AbstractAgentCommand
         AgentReviewerSelector $reviewerSelector,
         BacklogBoardService $boardService,
         InteractiveProcessRunner $processRunner,
+        ProcessSignaler $signaler,
+        ProcessRunner $shellRunner,
     ) {
         $this->projectRoot = $projectRoot;
         $this->worktreesRoot = $worktreesRoot;
@@ -81,6 +89,8 @@ final class AgentStartCommand extends AbstractAgentCommand
         $this->reviewerSelector = $reviewerSelector;
         $this->boardService = $boardService;
         $this->processRunner = $processRunner;
+        $this->signaler = $signaler;
+        $this->shellRunner = $shellRunner;
     }
 
     /**
@@ -317,7 +327,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         $existingReviewer = $this->reviewerSelector->findExistingReviewerForWorktree($worktree);
         if ($existingReviewer !== null && !$force) {
             $this->rollbackReviewTransition($takenEntry, $takenBoard);
-            throw new ActiveSessionException($existingReviewer, $this->projectRoot);
+            throw new ActiveSessionException($existingReviewer, $this->projectRoot, $this->signaler);
         }
 
         $developerSession = $this->reviewerSelector->findActiveDeveloperForWorktree($worktree);
@@ -408,8 +418,8 @@ final class AgentStartCommand extends AbstractAgentCommand
      */
     private function hasLocalChanges(string $worktree): bool
     {
-        $output = shell_exec(sprintf('git -C %s status --porcelain 2>/dev/null', escapeshellarg($worktree)));
+        $output = $this->shellRunner->output('git status --porcelain', $worktree);
 
-        return $output !== null && trim((string) $output) !== '';
+        return $output !== null && trim($output) !== '';
     }
 }
