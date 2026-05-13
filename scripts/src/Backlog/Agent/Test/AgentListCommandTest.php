@@ -58,6 +58,8 @@ final class AgentListCommandTest
         $failed += $this->testAllIncludesDeadSessions();
         $failed += $this->testDerivesDeveloperEntryFromBoard();
         $failed += $this->testDerivesReviewerEntryFromBoard();
+        $failed += $this->testDerivesManagerLabelWithBoard();
+        $failed += $this->testDerivesManagerLabelWithMissingBoard();
         $failed += $this->testRefreshesLastSeenOnInspection();
 
         return $failed;
@@ -191,6 +193,61 @@ final class AgentListCommandTest
             return 1;
         }
         echo "OK testDerivesReviewerEntryFromBoard\n";
+        return 0;
+    }
+
+    private function testDerivesManagerLabelWithBoard(): int
+    {
+        $dir = $this->scratch('manager-board');
+        $service = new AgentSessionService($dir);
+        $worktree = $this->tmpDir . '/wa-m01';
+        $service->add(new AgentSession(
+            code: 'm01',
+            client: AgentClient::CLAUDE,
+            role: AgentRole::MANAGER,
+            pid: getmypid() ?: 1,
+            worktree: $worktree,
+            startedAt: new \DateTimeImmutable(),
+            lastSeenAt: new \DateTimeImmutable(),
+            sessionId: null,
+        ));
+
+        $boardPath = $dir . '/board.md';
+        $this->writeBoard($boardPath, []);
+
+        $output = $this->captureHandle($this->buildCommand($service, $dir, $boardPath), ['all' => true]);
+
+        if (!str_contains($output, 'manager ' . $worktree)) {
+            echo "FAIL testDerivesManagerLabelWithBoard: expected 'manager {$worktree}' in output\n{$output}\n";
+            return 1;
+        }
+        echo "OK testDerivesManagerLabelWithBoard\n";
+        return 0;
+    }
+
+    private function testDerivesManagerLabelWithMissingBoard(): int
+    {
+        $dir = $this->scratch('manager-no-board');
+        $service = new AgentSessionService($dir);
+        $worktree = $this->tmpDir . '/wa-m02';
+        $service->add(new AgentSession(
+            code: 'm02',
+            client: AgentClient::CLAUDE,
+            role: AgentRole::MANAGER,
+            pid: getmypid() ?: 1,
+            worktree: $worktree,
+            startedAt: new \DateTimeImmutable(),
+            lastSeenAt: new \DateTimeImmutable(),
+            sessionId: null,
+        ));
+
+        $output = $this->captureHandle($this->buildCommand($service, $dir, $dir . '/missing.md'), ['all' => true]);
+
+        if (!str_contains($output, 'manager ' . $worktree)) {
+            echo "FAIL testDerivesManagerLabelWithMissingBoard: expected 'manager {$worktree}' even without board\n{$output}\n";
+            return 1;
+        }
+        echo "OK testDerivesManagerLabelWithMissingBoard\n";
         return 0;
     }
 

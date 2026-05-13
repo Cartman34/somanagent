@@ -175,19 +175,19 @@ final class AgentListCommand extends AbstractAgentCommand
     }
 
     /**
-     * Derives the feature/task label for a session from the backlog board.
+     * Derives the `current` column label: manager CWD, reviewer entry, or developer active entry.
      */
     private function deriveCurrentLabel(AgentSession $session, ?BacklogBoard $board): string
     {
+        if ($session->role->value === 'manager') {
+            return 'manager ' . $session->worktree;
+        }
+
         if ($board === null) {
             return '—';
         }
 
         $code = $session->code;
-
-        if ($session->role->value === 'manager') {
-            return 'manager ' . $session->worktree;
-        }
 
         if ($session->role->value === 'reviewer') {
             $match = $this->boardService->findReviewingEntryByReviewer($board, $code);

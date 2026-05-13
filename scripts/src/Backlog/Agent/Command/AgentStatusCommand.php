@@ -105,31 +105,33 @@ final class AgentStatusCommand extends AbstractAgentCommand
         $this->sessionService->updateLastSeen($code);
         $relWorktree = str_replace($this->projectRoot . '/', '', $session->worktree);
 
-        $current = '—';
-        if (is_file($this->boardPath)) {
-            try {
-                $board = $this->boardService->loadBoard($this->boardPath);
-                if ($session->role->value === 'manager') {
-                    $current = 'manager ' . $session->worktree;
-                } elseif ($session->role->value === 'reviewer') {
-                    $match = $this->boardService->findReviewingEntryByReviewer($board, $code);
-                    if ($match !== null) {
-                        $entry = $match->getEntry();
-                        $feature = $entry->getFeature() ?? '';
-                        $task = $entry->getTask() ?? '';
-                        $current = '[reviewing] ' . ($task !== '' ? "{$feature}/{$task}" : $feature);
+        if ($session->role->value === 'manager') {
+            $current = 'manager ' . $session->worktree;
+        } else {
+            $current = '—';
+            if (is_file($this->boardPath)) {
+                try {
+                    $board = $this->boardService->loadBoard($this->boardPath);
+                    if ($session->role->value === 'reviewer') {
+                        $match = $this->boardService->findReviewingEntryByReviewer($board, $code);
+                        if ($match !== null) {
+                            $entry = $match->getEntry();
+                            $feature = $entry->getFeature() ?? '';
+                            $task = $entry->getTask() ?? '';
+                            $current = '[reviewing] ' . ($task !== '' ? "{$feature}/{$task}" : $feature);
+                        }
+                    } else {
+                        $entries = $this->boardService->findActiveEntriesByAgent($board, $code);
+                        if ($entries !== []) {
+                            $entry = $entries[0]->getEntry();
+                            $feature = $entry->getFeature() ?? '';
+                            $task = $entry->getTask() ?? '';
+                            $current = $task !== '' ? "{$feature}/{$task}" : $feature;
+                        }
                     }
-                } else {
-                    $entries = $this->boardService->findActiveEntriesByAgent($board, $code);
-                    if ($entries !== []) {
-                        $entry = $entries[0]->getEntry();
-                        $feature = $entry->getFeature() ?? '';
-                        $task = $entry->getTask() ?? '';
-                        $current = $task !== '' ? "{$feature}/{$task}" : $feature;
-                    }
+                } catch (\RuntimeException) {
+                    // skip
                 }
-            } catch (\RuntimeException) {
-                // skip
             }
         }
 
@@ -213,16 +215,16 @@ final class AgentStatusCommand extends AbstractAgentCommand
     }
 
     /**
-     * Derives the feature/task label for a session from the backlog board.
+     * Derives the `current` column label: manager CWD, reviewer entry, or developer active entry.
      */
     private function deriveCurrentLabel(AgentSession $session, ?BacklogBoard $board): string
     {
-        if ($board === null) {
-            return '—';
-        }
-
         if ($session->role->value === 'manager') {
             return 'manager ' . $session->worktree;
+        }
+
+        if ($board === null) {
+            return '—';
         }
 
         if ($session->role->value === 'reviewer') {
