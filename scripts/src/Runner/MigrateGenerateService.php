@@ -72,6 +72,7 @@ final class MigrateGenerateService
         $this->console->info("Temp DB: {$dbName}");
 
         $credentials = $this->parseDatabaseUrl();
+        $this->assertLocalPrerequisites();
 
         // ── Step: lock ────────────────────────────────────────────────────────
         $this->console->step('Acquiring per-agent lock');
@@ -137,6 +138,26 @@ final class MigrateGenerateService
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
+
+    /**
+     * Verifies that local prerequisites are available before starting the flow.
+     *
+     * Exits via console->fail() with a structured error when psql is not found in PATH,
+     * reporting the command attempted, the working directory, the cause, and the action expected.
+     */
+    private function assertLocalPrerequisites(): void
+    {
+        $code = $this->app->runCommand('command -v psql > /dev/null 2>&1');
+        if ($code !== 0) {
+            $this->console->fail(implode("\n", [
+                '[prerequisites] psql is not available.',
+                '  Command: psql -h ' . self::PG_HOST . ' -p ' . self::PG_PORT . ' -U <user> -d postgres -c ...',
+                '  Working directory: ' . $this->projectRoot,
+                '  Cause: psql binary not found in PATH.',
+                '  Action: install the PostgreSQL client (e.g. sudo apt install postgresql-client) and ensure psql is in PATH.',
+            ]));
+        }
+    }
 
     /**
      * Acquires an exclusive advisory file lock for this agent.
