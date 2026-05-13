@@ -47,6 +47,7 @@ Use one active role only.
   - `Manager`: `doc/development/agent-manager.md`
   - `Reviewer / CP`: `doc/development/agent-reviewer.md`
 - Shared backlog and workflow rules are documented in `doc/development/agent-workflow.md`.
+- After a context compression, recover role and agent code from the conversation summary before asking the user. Only ask if they are genuinely absent from the summary.
 
 ## Git Rules
 
