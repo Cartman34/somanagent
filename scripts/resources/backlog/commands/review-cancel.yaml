@@ -1,7 +1,7 @@
 description: 'Release a reviewing entry back to the review stage'
 arguments:
   -
-    name: '<feature|feature/task>'
+    name: '<entry-ref>'
     description: 'Entry reference to release (required: stable slug, no implicit resolution by agent)'
 examples:
   - 'SOMANAGER_AGENT=cp-01 php scripts/backlog.php review-cancel my-feature'

@@ -1,8 +1,8 @@
 description: 'Approve a feature or task review'
 arguments:
   -
-    name: '<feature|feature/task>'
-    description: 'Feature slug or fully qualified task reference to approve'
+    name: '<entry-ref>'
+    description: 'Entry reference to approve'
 options:
   -
     name: '--body-file'
@@ -11,6 +11,6 @@ examples:
   - 'SOMANAGER_AGENT=r01 php scripts/backlog.php review-approve delete-question-reply --body-file local/tmp/pr_body.md'
   - 'SOMANAGER_AGENT=r01 php scripts/backlog.php review-approve onboarding/task-copy-review'
 notes:
-  - 'Use <feature> for feature entries, <feature/task> for child task entries.'
-  - 'Short task references (bare task slug without the parent feature) are refused; use <feature/task>.'
+  - 'Use <entry-ref> for both feature and child task entries.'
+  - 'Short task references (bare task slug without the parent feature) are refused; use <entry-ref>.'
   - '--body-file is required for feature approvals and rejected for task approvals.'

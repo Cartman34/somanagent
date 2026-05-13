@@ -1,8 +1,8 @@
 description: 'Move a rejected or approved task or feature back to development'
 arguments:
   -
-    name: '[<feature>|<task>|<feature/task>]'
-    description: 'Optional explicit reference. Use <feature/task> for a child task, a plain slug for a feature or a uniquely named task.'
+    name: '[<entry-ref>]'
+    description: 'Optional explicit entry reference.'
 examples:
   - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php rework'
   - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php rework onboarding/task-copy-review'
@@ -10,7 +10,7 @@ examples:
 notes:
   - 'Use after a reviewer rejection to resume work on the displayed feedback, or after a merge conflict on an approved entry to fix the conflict locally.'
   - 'Without an explicit reference, resolves the single rejected or approved entry assigned to the caller agent. Errors if the agent has more than one reworkable entry.'
-  - 'With a <feature/task> reference, targets that child task. With a plain slug, tries feature first then task; errors if both match.'
+  - 'With an <entry-ref>, targets that entry. Without a reference, resolves the caller agent single reworkable entry.'
   - 'Displays stored review notes from local/backlog-review.md before the success message when the entry came from a rejection. Approved entries had their notes cleared at approval time, so none are printed.'
   - 'Reopens the entry branch in the agent worktree. Review notes are preserved until the next review request clears them.'
   - 'Has no GitHub side-effect: the existing PR stays as it is. Re-submit via review-request once the issue is fixed.'

@@ -55,7 +55,7 @@ final class BacklogReviewNotesCommand extends AbstractBacklogCommand
      * Resolves the target entry, loads its stored reviewer notes from local/backlog-review.md,
      * and prints them inside the documented protected, read-only block. Never mutates backlog state.
      *
-     * @param list<string> $commandArgs Optional positional reference: <feature>, <task>, or <feature/task>
+     * @param list<string> $commandArgs Optional positional reference: <entry-ref>
      * @param array<string, bool|string> $options Recognises --agent=<code> to enforce ownership and to resolve the single active entry of an agent
      */
     public function handle(array $commandArgs, array $options): void
@@ -67,7 +67,7 @@ final class BacklogReviewNotesCommand extends AbstractBacklogCommand
 
         $reference = $commandArgs[0] ?? null;
         if ($reference === null && $agent === null) {
-            throw new RuntimeException('review-notes requires either --agent=<code> or a reference (<feature>, <task>, or <feature/task>).');
+            throw new RuntimeException('review-notes requires either --agent=<code> or a reference (<entry-ref>).');
         }
 
         $board = $this->loadBoard();
@@ -122,7 +122,7 @@ final class BacklogReviewNotesCommand extends AbstractBacklogCommand
         }
         if (count($entries) > 1) {
             throw new RuntimeException(sprintf(
-                'Agent %s has multiple active entries. Provide an explicit reference (<feature>, <task>, or <feature/task>).',
+                'Agent %s has multiple active entries. Provide an explicit reference (<entry-ref>).',
                 $agent,
             ));
         }
@@ -151,7 +151,7 @@ final class BacklogReviewNotesCommand extends AbstractBacklogCommand
 
         if ($featureMatch !== null && $taskMatches !== []) {
             throw new RuntimeException(sprintf(
-                'Ambiguous reference %s: matches both a feature and a task. Use <feature/task> to disambiguate.',
+                'Ambiguous reference %s: matches both a feature and a task. Use a full <entry-ref> to disambiguate.',
                 $reference,
             ));
         }
@@ -166,7 +166,7 @@ final class BacklogReviewNotesCommand extends AbstractBacklogCommand
         if ($taskMatches !== []) {
             if (count($taskMatches) > 1) {
                 throw new RuntimeException(sprintf(
-                    'review-notes requires <feature/task> because task slug %s is not unique.',
+                    'review-notes requires a full <entry-ref> because task slug %s is not unique.',
                     $slug,
                 ));
             }

@@ -1,7 +1,7 @@
 description: 'Start work on a queued backlog task, optionally targeting an explicit reference'
 arguments:
   -
-    name: '[<feature|feature/task>]'
+    name: '[<entry-ref>]'
     description: 'Optional stable reference exposed by `todo-list`. When omitted, work-start consumes the first queued entry implicitly.'
 options:
   -
@@ -26,5 +26,5 @@ notes:
   - 'Accepts scoped task entries in the form [feature-slug][task-slug] Task text to start or attach a local child task under an existing unassigned parent feature container.'
   - 'Combinations are explicit: [type][feature-slug] text, [type][feature-slug][task-slug] text, [feature-slug][type] text, [feature-slug][task-slug][type] text are all valid; only one type prefix is allowed per entry.'
   - 'Branch prefix matches the type 1:1: feat → feat/<slug>, fix → fix/<slug>, tech → tech/<slug> for plain features and feat/<feature>--<task>, fix/<feature>--<task>, tech/<feature>--<task> for scoped tasks.'
-  - 'Validates the queued entry fully (type, feature/task slugs, conflicts) before any worktree, branch or backlog mutation. A refusal leaves no leftover worktree or backlog state.'
+  - 'Validates the queued entry fully (type, feature and task slugs, conflicts) before any worktree, branch or backlog mutation. A refusal leaves no leftover worktree or backlog state.'
   - 'With --dry-run, prints the resolved interpretation (kind, type, feature, task, branches) and performs no Git, worktree or backlog mutation. Git reads (fetch/origin/main) remain enabled.'

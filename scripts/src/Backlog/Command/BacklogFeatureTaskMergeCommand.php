@@ -53,7 +53,7 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
     public function handle(array $commandArgs, array $options): void
     {
         throw new \RuntimeException(
-            'feature-task-merge is no longer a public command. Use: php scripts/backlog.php entry-merge <feature/task> --agent=<reviewer>',
+            'feature-task-merge is no longer a public command. Use: php scripts/backlog.php entry-merge <entry-ref> --agent=<reviewer>',
         );
     }
 
@@ -74,7 +74,7 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
                 : $this->boardService->resolveSingleTaskForAgent($board, $agent);
         } else {
             if ($this->boardService->sanitizeString($commandArgs[0] ?? null) === null) {
-                throw new \RuntimeException('feature-task-merge requires <feature/task> when used without --agent.');
+                throw new \RuntimeException('feature-task-merge requires a full <entry-ref> when used without --agent.');
             }
 
             $match = $this->boardService->resolveTaskByReference($board, $commandArgs[0], BacklogCommandName::FEATURE_TASK_MERGE->value);

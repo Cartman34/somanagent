@@ -18,7 +18,7 @@ use RuntimeException;
  * Releases a reviewing entry back to the review stage.
  *
  * The reviewer who claimed the entry (via review-next) must pass an explicit
- * `<feature>` or `<feature/task>` reference: no implicit resolution by agent so
+ * `<entry-ref>`: no implicit resolution by agent so
  * the mutation never silently retargets a different entry. A manager
  * (SOMANAGER_ROLE=manager) may force-cancel any stuck review with the same
  * explicit reference contract.
@@ -52,7 +52,7 @@ final class BacklogReviewCancelCommand extends AbstractBacklogCommand
 
         $rawReference = $commandArgs[0] ?? null;
         if (!is_string($rawReference) || trim($rawReference) === '') {
-            throw new RuntimeException('review-cancel requires an explicit <feature> or <feature/task> reference.');
+            throw new RuntimeException('review-cancel requires an explicit <entry-ref> reference.');
         }
         $reference = trim($rawReference);
 
@@ -104,7 +104,7 @@ final class BacklogReviewCancelCommand extends AbstractBacklogCommand
 
         if ($featureMatch !== null && $taskMatches !== []) {
             throw new RuntimeException(sprintf(
-                'Ambiguous reference %s: matches both a feature and a task. Use <feature/task> to disambiguate.',
+                'Ambiguous reference %s: matches both a feature and a task. Use a full <entry-ref> to disambiguate.',
                 $reference,
             ));
         }
@@ -116,7 +116,7 @@ final class BacklogReviewCancelCommand extends AbstractBacklogCommand
         if ($taskMatches !== []) {
             if (count($taskMatches) > 1) {
                 throw new RuntimeException(sprintf(
-                    'review-cancel requires <feature/task> because task slug %s is not unique.',
+                    'review-cancel requires a full <entry-ref> because task slug %s is not unique.',
                     $slug,
                 ));
             }

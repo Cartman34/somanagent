@@ -154,7 +154,7 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
     /**
      * Builds the read-only plan describing the queued task interpretation.
      *
-     * Validates the type override and feature/task slug shape; rejects conflicts
+     * Validates the type override and feature and task slug shape; rejects conflicts
      * (existing feature, duplicate task slug) without performing any mutation.
      */
     private function buildPlan(

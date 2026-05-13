@@ -52,7 +52,7 @@ final class BacklogReviewRejectCommand extends AbstractBacklogCommand
 
         $reference = trim($commandArgs[0] ?? '');
         if ($reference === '') {
-            throw new \RuntimeException('review-reject requires <feature> or <feature/task>.');
+            throw new \RuntimeException('review-reject requires <entry-ref>.');
         }
 
         $bodyFile = $options['body-file'] ?? null;
@@ -89,7 +89,7 @@ final class BacklogReviewRejectCommand extends AbstractBacklogCommand
             $taskMatches = $this->boardService->findTaskEntriesByTaskSlug($board, $slug);
             if ($taskMatches !== []) {
                 throw new \RuntimeException(sprintf(
-                    'review-reject refuses short task reference `%s`; use `<feature/task>` instead.',
+                    'review-reject refuses short task reference `%s`; use `<entry-ref>` instead.',
                     $slug,
                 ));
             }

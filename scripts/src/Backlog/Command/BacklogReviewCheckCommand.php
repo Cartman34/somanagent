@@ -63,7 +63,7 @@ final class BacklogReviewCheckCommand extends AbstractBacklogCommand
 
         $reference = trim($commandArgs[0] ?? '');
         if ($reference === '') {
-            throw new \RuntimeException('review-check requires <feature> or <feature/task>.');
+            throw new \RuntimeException('review-check requires <entry-ref>.');
         }
 
         $board = $this->loadBoard();
@@ -84,7 +84,7 @@ final class BacklogReviewCheckCommand extends AbstractBacklogCommand
             $taskMatches = $this->boardService->findTaskEntriesByTaskSlug($board, $slug);
             if ($taskMatches !== []) {
                 throw new \RuntimeException(sprintf(
-                    'review-check refuses short task reference `%s`; use `<feature/task>` instead.',
+                    'review-check refuses short task reference `%s`; use `<entry-ref>` instead.',
                     $slug,
                 ));
             }

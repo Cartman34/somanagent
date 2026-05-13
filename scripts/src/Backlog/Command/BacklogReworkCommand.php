@@ -133,7 +133,7 @@ final class BacklogReworkCommand extends AbstractBacklogCommand
 
             if ($featureMatch !== null && $taskMatches !== []) {
                 throw new RuntimeException(sprintf(
-                    'Ambiguous reference %s: matches both a feature and a task. Use <feature/task> to disambiguate.',
+                    'Ambiguous reference %s: matches both a feature and a task. Use a full <entry-ref> to disambiguate.',
                     $reference,
                 ));
             }
@@ -145,7 +145,7 @@ final class BacklogReworkCommand extends AbstractBacklogCommand
             if ($taskMatches !== []) {
                 if (count($taskMatches) > 1) {
                     throw new RuntimeException(sprintf(
-                        'rework requires <feature/task> because task slug %s is not unique.',
+                        'rework requires a full <entry-ref> because task slug %s is not unique.',
                         $slug,
                     ));
                 }

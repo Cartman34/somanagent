@@ -235,7 +235,7 @@ MD);
     /**
      * Remove a queued todo task by its stable reference.
      *
-     * @param string $reference Feature slug or feature/task slug pair
+     * @param string $reference <entry-ref>
      */
     public function removeTodoTask(string $reference): void
     {
@@ -263,7 +263,7 @@ MD);
 
     /**
      * @param string $agent Agent identifier for the worktree
-     * @param ?string $target Optional explicit `<feature>` or `<feature/task>` reference
+     * @param ?string $target Optional explicit `<entry-ref>`
      * @return string Command output from work-start
      */
     public function startNextFeature(string $agent, ?string $target = null): string
@@ -312,7 +312,7 @@ MD);
     }
 
     /**
-     * @param string $reference Entry reference (`<feature>`, `<task>`, or `<feature/task>`) to assign
+     * @param string $reference Entry reference (`<entry-ref>`) to assign
      * @param string $agent Agent to assign the entry to
      */
     public function assignFeatureAsManager(string $reference, string $agent): void
@@ -323,7 +323,7 @@ MD);
     /**
      * Asserts that `feature-assign` fails with the given message.
      *
-     * @param string $reference Entry reference (`<feature>`, `<task>`, or `<feature/task>`) to assign
+     * @param string $reference Entry reference (`<entry-ref>`) to assign
      * @param string $agent Agent code passed via `--agent`
      * @param array<string, string> $env Environment variables (typically SOMANAGER_ROLE / SOMANAGER_AGENT)
      * @param string $needle Expected substring of the failure output
@@ -336,7 +336,7 @@ MD);
     /**
      * Unassigns an entry (feature or task) using the manager role.
      *
-     * @param ?string $reference Optional explicit reference (`<feature>`, `<task>`, or `<feature/task>`).
+     * @param ?string $reference Optional explicit reference (`<entry-ref>`).
      *                           When null, the script falls back to the agent's single active entry.
      * @param string $agent Caller agent code passed via `--agent`.
      */
@@ -355,7 +355,7 @@ MD);
      * Asserts that `entry-unassign` fails with the given message when invoked under the
      * provided role/agent environment.
      *
-     * @param ?string $reference Optional explicit reference (`<feature>`, `<task>`, or `<feature/task>`).
+     * @param ?string $reference Optional explicit reference (`<entry-ref>`).
      * @param string $agent Caller agent code passed via `--agent`.
      * @param array<string, string> $env Environment variables (typically SOMANAGER_ROLE / SOMANAGER_AGENT).
      * @param string $needle Expected substring of the failure output.
@@ -420,7 +420,7 @@ MD);
 
     /**
      * @param string $reviewer Reviewer agent code (required by review-next)
-     * @param ?string $target Optional explicit `<feature>` or `<feature/task>` reference
+     * @param ?string $target Optional explicit `<entry-ref>`
      * @return string Output from review-next command
      */
     public function reviewNext(string $reviewer, ?string $target = null): string
@@ -476,7 +476,7 @@ MD);
 
     /**
      * @param string $reviewer Reviewer agent code
-     * @param string $reference Feature slug or fully qualified task reference
+     * @param string $reference <entry-ref>
      * @return string Command output
      */
     public function reviewCheck(string $reviewer, string $reference): string
@@ -486,7 +486,7 @@ MD);
 
     /**
      * @param string $reviewer Reviewer agent code
-     * @param string $reference Feature slug or fully qualified task reference
+     * @param string $reference <entry-ref>
      * @param string $needle Expected error message
      */
     public function assertReviewCheckFails(string $reviewer, string $reference, string $needle): void
@@ -520,7 +520,7 @@ MD);
      * Approve a task via the unified review-approve command.
      *
      * @param string $reviewer Reviewer agent code
-     * @param string $reference Fully qualified task reference (<feature/task>)
+     * @param string $reference Fully qualified task reference (`<entry-ref>`)
      */
     public function approveTaskViaUnifiedCommand(string $reviewer, string $reference): void
     {
@@ -547,7 +547,7 @@ MD);
      * Reject a feature or task via the unified review-reject command.
      *
      * @param string $reviewer Reviewer agent code
-     * @param string $reference Feature slug or fully qualified task reference
+     * @param string $reference <entry-ref>
      * @param string $bodyFile Path to reject body file
      */
     public function rejectReviewViaUnifiedCommand(string $reviewer, string $reference, string $bodyFile): void
@@ -610,7 +610,7 @@ MD);
     /**
      * Assert the active task entry has the expected stage value.
      *
-     * @param string $reference Task reference (<feature>/<task>)
+     * @param string $reference Task reference (<entry-ref>)
      * @param string $expectedStage One of BacklogBoard::STAGE_* constants
      */
     public function assertTaskStage(string $reference, string $expectedStage): void
@@ -632,7 +632,7 @@ MD);
      * Run review-notes with optional agent and optional positional reference.
      *
      * @param string|null $agent Agent owning the entry, or null when only a positional reference is used
-     * @param string|null $reference Positional reference (<feature>, <task>, or <feature/task>), or null
+     * @param string|null $reference Positional reference (<entry-ref>), or null
      * @return string Command output for further assertions
      */
     public function reviewNotes(?string $agent, ?string $reference): string
@@ -709,7 +709,7 @@ MD);
     {
         $this->assertBacklogFails(
             ['entry-merge'],
-            'entry-merge requires <feature> or <feature/task>.',
+            'entry-merge requires <entry-ref>.',
             ['SOMANAGER_AGENT' => $agent],
         );
     }

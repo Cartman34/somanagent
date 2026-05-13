@@ -53,12 +53,12 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
         $driver->assertReviewCancelFails(
             $context->agentSecondary,
             '',
-            'review-cancel requires an explicit <feature> or <feature/task> reference.',
+            'review-cancel requires an explicit <entry-ref> reference.',
         );
         $driver->assertReviewCancelFails(
             $context->agentSecondary,
             '   ',
-            'review-cancel requires an explicit <feature> or <feature/task> reference.',
+            'review-cancel requires an explicit <entry-ref> reference.',
         );
 
         $driver->createTodoTask(sprintf('[%s] %s', $context->plainFeature, $context->plainFeature));

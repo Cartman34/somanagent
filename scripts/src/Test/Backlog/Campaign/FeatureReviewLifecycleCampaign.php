@@ -82,7 +82,7 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         }
 
         // review-cancel requires an explicit reference; never auto-resolves by agent
-        $driver->assertReviewCancelFails($context->agentSecondary, '', 'review-cancel requires an explicit <feature> or <feature/task> reference.');
+        $driver->assertReviewCancelFails($context->agentSecondary, '', 'review-cancel requires an explicit <entry-ref> reference.');
         // review-cancel releases the entry back to review
         $driver->reviewCancel($context->agentSecondary, $context->fixFeature);
         $driver->assertReviewCancelFails($context->agentSecondary, $context->fixFeature, 'Reviewing');

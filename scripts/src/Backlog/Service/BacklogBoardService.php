@@ -396,7 +396,7 @@ final class BacklogBoardService
         }
         if (count($matches) > 1) {
             throw new \RuntimeException(sprintf(
-                '%s requires <feature/task> because task slug %s is not unique.',
+                '%s requires a full <entry-ref> because task slug %s is not unique.',
                 $command,
                 $task,
             ));
@@ -474,7 +474,7 @@ final class BacklogBoardService
     /**
      * Computes the stable reference identifier of a queued todo entry from its text.
      *
-     * The reference matches the eventual feature/task slugs that {@see BacklogWorkStartCommand}
+     * The reference matches the eventual feature and task slugs that {@see BacklogWorkStartCommand}
      * would assign on promotion, so it stays valid across todo reorderings and is the only
      * trustworthy identity for mutations on queued entries.
      */
@@ -498,7 +498,7 @@ final class BacklogBoardService
     /**
      * Resolves a queued todo entry by its stable reference, throwing when missing or ambiguous.
      *
-     * The reference is a `<feature>` or `<feature>/<task>` slug pair as returned by
+     * The reference is an `<entry-ref>` as returned by
      * {@see computeQueuedEntryReference}. Both sides are normalized through the feature
      * slugger so users can pass any reasonable casing or hyphenation.
      *
@@ -525,7 +525,7 @@ final class BacklogBoardService
 
         if (count($matches) > 1) {
             throw new \RuntimeException(sprintf(
-                'Ambiguous queued reference %s: matches %d queued tasks. Rename one of them or pass a more specific <feature/task>.',
+                'Ambiguous queued reference %s: matches %d queued tasks. Rename one of them or pass a more specific entry reference.',
                 $normalized,
                 count($matches),
             ));
@@ -542,7 +542,7 @@ final class BacklogBoardService
     {
         $trimmed = trim($reference);
         if ($trimmed === '') {
-            throw new \RuntimeException(sprintf('%s requires a queued task reference (feature or feature/task slug).', $command));
+            throw new \RuntimeException(sprintf('%s requires a queued task reference (<entry-ref>).', $command));
         }
 
         if (str_contains($trimmed, '/')) {
@@ -550,7 +550,7 @@ final class BacklogBoardService
             $feature = $this->normalizeFeatureSlug($feature);
             $task = $this->normalizeFeatureSlug($task);
             if ($feature === '' || $task === '') {
-                throw new \RuntimeException(sprintf('%s requires a non-empty feature and task slug in <feature/task>.', $command));
+                throw new \RuntimeException(sprintf('%s requires a non-empty feature and task slug in <entry-ref>.', $command));
             }
 
             return $feature . '/' . $task;
@@ -699,7 +699,7 @@ final class BacklogBoardService
                 BacklogBoard::STAGE_IN_PROGRESS => "run `review-request --agent={$agent}` to submit the task for review",
                 BacklogBoard::STAGE_IN_REVIEW   => 'wait for reviewer action on the active task',
                 BacklogBoard::STAGE_REJECTED    => "run `rework --agent={$agent}` to resume development on the rejected task",
-                BacklogBoard::STAGE_APPROVED    => "run `entry-merge <feature/task> --agent={$agent}` to merge the task into its parent feature",
+                BacklogBoard::STAGE_APPROVED    => "run `entry-merge <entry-ref> --agent={$agent}` to merge the task into its parent feature",
                 default                         => 'check status',
             };
         }
@@ -1025,7 +1025,7 @@ final class BacklogBoardService
      * Extracts an optional task type prefix from anywhere in the leading bracket sequence.
      *
      * Recognizes any case of {@see BacklogTaskType} as the type prefix. Other leading
-     * `[token]` brackets are kept verbatim (they remain feature/task slug prefixes that
+     * `[token]` brackets are kept verbatim (they remain feature and task slug prefixes that
      * downstream `extractScopedTaskMetadata` / `extractSingleFeaturePrefixMetadata`
      * still resolve). Only one type prefix is allowed; duplicates raise a RuntimeException.
      *

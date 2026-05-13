@@ -1,7 +1,7 @@
 description: 'Claim a task or feature waiting in review and move it to the reviewing stage'
 arguments:
   -
-    name: '[<feature|feature/task>]'
+    name: '[<entry-ref>]'
     description: 'Optional stable reference exposed by `review-list`. When omitted, review-next claims the first entry waiting in review implicitly.'
 examples:
   - 'SOMANAGER_AGENT=cp-01 php scripts/backlog.php review-next'

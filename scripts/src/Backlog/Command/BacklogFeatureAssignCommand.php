@@ -59,7 +59,7 @@ final class BacklogFeatureAssignCommand extends AbstractBacklogCommand
             throw new RuntimeException('Option --agent is required.');
         }
         if (!isset($commandArgs[0])) {
-            throw new RuntimeException('feature-assign requires <feature> or <feature/task>.');
+            throw new RuntimeException('feature-assign requires <entry-ref>.');
         }
         $reference = $commandArgs[0];
         $board = $this->loadBoard();
@@ -99,7 +99,7 @@ final class BacklogFeatureAssignCommand extends AbstractBacklogCommand
     /**
      * Resolves an active feature or task from a positional reference.
      *
-     * Supports `<feature>`, `<task-slug>`, and `<feature/task>` forms. A plain slug that
+     * Supports stable `<entry-ref>` values, plus legacy bare task slugs. A plain slug that
      * matches both a feature and a task is rejected as ambiguous.
      *
      * @param BacklogBoard $board Loaded backlog board
@@ -118,7 +118,7 @@ final class BacklogFeatureAssignCommand extends AbstractBacklogCommand
 
         if ($featureMatch !== null && $taskMatches !== []) {
             throw new RuntimeException(sprintf(
-                'Ambiguous reference %s: matches both a feature and a task. Use <feature/task> to disambiguate.',
+                'Ambiguous reference %s: matches both a feature and a task. Use a full <entry-ref> to disambiguate.',
                 $reference,
             ));
         }
@@ -130,7 +130,7 @@ final class BacklogFeatureAssignCommand extends AbstractBacklogCommand
         if ($taskMatches !== []) {
             if (count($taskMatches) > 1) {
                 throw new RuntimeException(sprintf(
-                    'feature-assign requires <feature/task> because task slug %s is not unique.',
+                    'feature-assign requires a full <entry-ref> because task slug %s is not unique.',
                     $slug,
                 ));
             }

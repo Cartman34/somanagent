@@ -14,7 +14,7 @@ use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 
 /**
- * Command for resolving and merging a feature or a fully qualified task reference.
+ * Command for resolving and merging one backlog entry.
  */
 final class BacklogEntryMergeCommand extends AbstractBacklogCommand
 {
@@ -80,7 +80,7 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
     {
         $reference = trim($commandArgs[0] ?? '');
         if ($reference === '') {
-            throw new \RuntimeException('entry-merge requires <feature> or <feature/task>.');
+            throw new \RuntimeException('entry-merge requires <entry-ref>.');
         }
 
         return $reference;
@@ -96,7 +96,7 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
             $taskMatches = $this->boardService->findTaskEntriesByTaskSlug($board, $feature);
             if ($taskMatches !== []) {
                 throw new \RuntimeException(sprintf(
-                    'entry-merge refuses short task reference `%s`; use `<feature/task>` instead.',
+                    'entry-merge refuses short task reference `%s`; use `<entry-ref>` instead.',
                     $feature,
                 ));
             }
@@ -154,7 +154,7 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
     {
         [$featurePart, $taskPart] = array_pad(explode('/', $reference, 2), 2, '');
         if (trim($featurePart) === '' || trim($taskPart) === '') {
-            throw new \RuntimeException('entry-merge task references must use `<feature/task>` with both parts filled.');
+            throw new \RuntimeException('entry-merge task references must use `<entry-ref>` with both parts filled.');
         }
 
         $feature = $this->boardService->normalizeFeatureSlug($featurePart);
@@ -176,7 +176,7 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
         }
 
         throw new \RuntimeException(sprintf(
-            'Task not found for entry-merge: %s/%s. Use an active `<feature/task>` reference.',
+            'Task not found for entry-merge: %s/%s. Use an active `<entry-ref>`.',
             $feature,
             $task,
         ));

@@ -1,4 +1,4 @@
 description: 'Deprecated. Use entry-merge instead.'
 notes:
   - 'This command is no longer available as a public command.'
-  - 'Use: php scripts/backlog.php entry-merge <feature> --agent=<reviewer>'
+  - 'Use: php scripts/backlog.php entry-merge <entry-ref> --agent=<reviewer>'

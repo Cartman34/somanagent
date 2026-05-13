@@ -17,7 +17,7 @@ use SoManAgent\Script\Backlog\Service\BacklogPresenter;
  * Command for listing entries waiting in the review stage, with their stable references.
  *
  * Lists only entries in the `review` stage so reviewers can pick an explicit
- * target through `review-next <feature|feature/task>`. Entries already in the
+ * target through `review-next <entry-ref>`. Entries already in the
  * `reviewing` stage are excluded because they have already been claimed.
  */
 final class BacklogReviewListCommand extends AbstractBacklogCommand

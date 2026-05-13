@@ -150,7 +150,7 @@ Validate `work-start` on a plain queued task.
 
 ### Goal
 
-Validate `work-start <feature|feature/task>` consumes the named queued entry instead of the head, and refuses with a clear error when the target does not match.
+Validate `work-start <entry-ref>` consumes the named queued entry instead of the head, and refuses with a clear error when the target does not match.
 
 ### Steps
 
@@ -252,7 +252,7 @@ Validate feature/task assignment and unassignment permissions.
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php status --agent d02`
 8. Unassign with manager role:
    - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-unassign test-assign-feature --agent m01`
-9. Unassign a child task with manager role using `<feature/task>`:
+9. Unassign a child task with manager role using `<entry-ref>`:
    - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-unassign test-assign-feature/cleanup --agent m01`
 10. Unassign the caller agent's single active entry without an explicit reference:
    - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-unassign --agent d02`
@@ -511,7 +511,7 @@ Validate explicit failures and guardrails.
 1. Run one backlog command from a `WA` and confirm it fails.
 2. Call a developer command without the required caller context and confirm it fails.
 3. Verify that passing `--agent` on commands that no longer declare it produces `Unknown option(s)` instead of being silently accepted.
-4. Try `status` without `<feature>` and without `--agent` and confirm it fails.
+4. Try `status` without `<entry-ref>` and without `--agent` and confirm it fails.
 5. Try to merge or release with invalid stage and confirm it fails.
 6. Try to reuse an already-active child task slug and confirm it fails.
 7. Call `review-notes` with no `--agent` and no positional reference; confirm it fails with `review-notes requires either --agent=<code> or a reference …`.

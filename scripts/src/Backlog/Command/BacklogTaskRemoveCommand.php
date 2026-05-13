@@ -15,8 +15,7 @@ use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 /**
  * Removes a queued task from the todo section using its stable reference.
  *
- * Queued tasks are identified by the slug pair that {@see BacklogWorkStartCommand}
- * would assign on promotion (`<feature>` or `<feature>/<task>`). Display numbers
+ * Queued tasks are identified by their `<entry-ref>` as shown by todo-list. Display numbers
  * shown by todo-list are advisory only and never accepted as mutation identity.
  */
 final class BacklogTaskRemoveCommand extends AbstractBacklogCommand

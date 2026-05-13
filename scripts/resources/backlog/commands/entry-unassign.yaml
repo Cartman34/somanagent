@@ -1,7 +1,7 @@
 description: 'Remove the current agent assignment from one active backlog entry (feature or task)'
 arguments:
   -
-    name: '[<feature>|<task>|<feature/task>]'
+    name: '[<entry-ref>]'
     description: 'Optional explicit reference. Without it, the command resolves the caller agent single active entry.'
 options:
   -
@@ -15,4 +15,4 @@ notes:
   - 'The caller role is controlled by `SOMANAGER_ROLE`.'
   - 'With `SOMANAGER_ROLE=developer`, `SOMANAGER_AGENT` must match `--agent` and the developer may only unassign its own active entry.'
   - 'With `SOMANAGER_ROLE=manager`, an explicit reference may target an entry assigned to any developer agent.'
-  - 'A plain slug that matches both a feature and a task is rejected as ambiguous; use `<feature/task>` to disambiguate.'
+  - 'A plain slug that matches both a feature and a task is rejected as ambiguous; use `<entry-ref>` to disambiguate.'

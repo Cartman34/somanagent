@@ -1,7 +1,7 @@
 description: 'Assign an unassigned active feature or task to one developer agent'
 arguments:
   -
-    name: '<feature|task|feature/task>'
+    name: '<entry-ref>'
     description: 'Active entry reference to assign'
 options:
   -
@@ -13,4 +13,4 @@ examples:
 notes:
   - 'The target entry must be unassigned or already assigned to the same target agent. Missing `agent` metadata and legacy `agent: none` both mean unassigned.'
   - 'An entry assigned to a different real agent must be unassigned before another agent can be assigned.'
-  - 'A plain slug that matches both a feature and a task is rejected as ambiguous; use `<feature/task>` to disambiguate.'
+  - 'A plain slug that matches both a feature and a task is rejected as ambiguous; use `<entry-ref>` to disambiguate.'

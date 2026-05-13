@@ -1,11 +1,11 @@
-description: 'Remove one queued todo task by its stable feature or feature/task reference'
+description: 'Remove one queued todo task by its stable <entry-ref>'
 arguments:
   -
-    name: '<feature|feature/task>'
-    description: 'Stable slug shown in brackets by todo-list (feature slug, or feature/task pair for scoped tasks)'
+    name: '<entry-ref>'
+    description: 'Stable entry reference shown in brackets by todo-list'
 examples:
   - 'php scripts/backlog.php task-remove my-feature'
   - 'php scripts/backlog.php task-remove my-feature/my-task'
 notes:
   - 'Queued display numbers shown by todo-list are advisory only; pass the bracketed reference to identify the task.'
-  - 'Refuses when the reference is missing, unknown, or matches more than one queued task; rename a colliding queued task or pass <feature/task> to disambiguate.'
+  - 'Refuses when the reference is missing, unknown, or matches more than one queued task; rename a colliding queued task or pass a full <entry-ref> to disambiguate.'

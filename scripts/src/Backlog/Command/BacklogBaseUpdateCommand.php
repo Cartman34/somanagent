@@ -48,7 +48,7 @@ final class BacklogBaseUpdateCommand extends AbstractBacklogCommand
     {
         $target = trim($commandArgs[0] ?? '');
         if ($target === '') {
-            throw new \RuntimeException('base-update requires <feature|feature/task>.');
+            throw new \RuntimeException('base-update requires <entry-ref>.');
         }
 
         $board = $this->loadBoard();

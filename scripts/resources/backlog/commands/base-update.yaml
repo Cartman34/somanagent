@@ -1,8 +1,8 @@
 description: 'Update the recorded Git base for an active feature or task after a rebase'
 arguments:
   -
-    name: '<feature|feature/task>'
-    description: 'Feature slug or task review key to update'
+    name: '<entry-ref>'
+    description: 'Entry reference to update'
 options:
   -
     name: '--base'
@@ -14,6 +14,6 @@ examples:
 notes:
   - 'Without --base, features update origin/main first, then use the merge base between origin/main and their branch.'
   - 'Without --base, local child tasks use the merge base between their parent feature branch and their task branch.'
-  - 'Child tasks must be targeted with the full <feature/task> reference; a bare task slug is never accepted.'
+  - 'Child tasks must be targeted with the full <entry-ref>; a bare task slug is never accepted.'
   - 'The selected base must resolve to a commit and be an ancestor of the entry branch.'
   - '--base is exceptional: use it only when the automatically resolved merge base is incorrect and you have a specific, validated Git ref to substitute.'

@@ -1,8 +1,8 @@
 description: 'Recreate the managed worktree for an active feature or task without changing backlog state'
 arguments:
   -
-    name: '<feature>'
-    description: 'Feature slug to restore when --agent is not used'
+    name: '<entry-ref>'
+    description: 'Entry reference to restore when --agent is not used'
 options:
   -
     name: '--agent'

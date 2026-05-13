@@ -88,8 +88,7 @@ final class BacklogReviewNextCommand extends AbstractBacklogCommand
     /**
      * Locates the active entry matching the given reference and verifies it is still in review.
      *
-     * The reference is the same shape exposed by `review-list`: `<feature>` for
-     * a feature entry, `<feature>/<task>` for a child task entry. The lookup
+     * The reference is an `<entry-ref>` as exposed by `review-list`. The lookup
      * uses the recorded `meta.feature` and `meta.task` of active entries.
      */
     private function resolveExplicitTarget(BacklogBoard $board, string $reference): BoardEntry
@@ -102,7 +101,7 @@ final class BacklogReviewNextCommand extends AbstractBacklogCommand
         $slashCount = substr_count($trimmed, '/');
         if ($slashCount > 1) {
             throw new RuntimeException(sprintf(
-                'Invalid target reference "%s": expected <feature> or <feature/task>.',
+                'Invalid target reference "%s": expected <entry-ref>.',
                 $reference,
             ));
         }

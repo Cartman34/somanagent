@@ -263,7 +263,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
     }
 
     /**
-     * Verify entry-unassign on a child task across the three reference forms (`<feature/task>`,
+     * Verify entry-unassign on a child task across reference forms (`<entry-ref>`,
      * `<task>` simple slug, and ambiguity rejection on a slug colliding with a feature).
      *
      * Runs first so it leaves agentPrimary and agentSecondary free for the review-notes

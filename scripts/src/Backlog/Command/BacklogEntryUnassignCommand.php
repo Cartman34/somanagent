@@ -91,7 +91,7 @@ final class BacklogEntryUnassignCommand extends AbstractBacklogCommand
     /**
      * Resolves an active entry from a positional reference.
      *
-     * Supports `<feature>`, `<task-slug>`, and `<feature/task>` forms. A plain slug that
+     * Supports stable `<entry-ref>` values, plus legacy bare task slugs. A plain slug that
      * matches both a feature and a task is rejected as ambiguous.
      *
      * @param BacklogBoard $board
@@ -110,7 +110,7 @@ final class BacklogEntryUnassignCommand extends AbstractBacklogCommand
 
         if ($featureMatch !== null && $taskMatches !== []) {
             throw new RuntimeException(sprintf(
-                'Ambiguous reference %s: matches both a feature and a task. Use <feature/task> to disambiguate.',
+                'Ambiguous reference %s: matches both a feature and a task. Use a full <entry-ref> to disambiguate.',
                 $reference,
             ));
         }
@@ -122,7 +122,7 @@ final class BacklogEntryUnassignCommand extends AbstractBacklogCommand
         if ($taskMatches !== []) {
             if (count($taskMatches) > 1) {
                 throw new RuntimeException(sprintf(
-                    'entry-unassign requires <feature/task> because task slug %s is not unique.',
+                    'entry-unassign requires a full <entry-ref> because task slug %s is not unique.',
                     $slug,
                 ));
             }
