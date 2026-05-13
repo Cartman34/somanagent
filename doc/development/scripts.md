@@ -76,23 +76,23 @@ php scripts/help.php migrate.php  # detail for one script
 Runs the documented local backlog workflow, including feature start/review/merge and local child task submit/review/merge flows. Can be run from a `WA`: execution is automatically proxied to the equivalent script in `WP` so backlog state always lives in `WP`'s `local/`.
 
 ```bash
-php scripts/backlog.php
-php scripts/backlog.php base-update my-feature
-php scripts/backlog.php work-start --help
-php scripts/backlog.php work-start --agent agent-01
-php scripts/backlog.php review-request --agent agent-01
-php scripts/backlog.php entry-rename --agent agent-01 "New description"
-php scripts/backlog.php review-approve --agent r01 my-feature/my-task
-php scripts/backlog.php rework --agent agent-01 my-feature/my-task
-php scripts/backlog.php entry-merge my-feature/my-task --agent agent-01
-php scripts/backlog.php worktree-restore --agent agent-01 --force
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php base-update my-feature
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php work-start --help
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php work-start my-feature
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php review-request
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-rename "New description"
+SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=r01 php scripts/backlog.php review-approve my-feature/my-task
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php rework my-feature/my-task
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-merge my-feature/my-task
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php worktree-restore --agent d01 --force
 ```
 
 Notes:
-- run `php scripts/backlog.php` for the global backlog help
-- use `php scripts/backlog.php <command> --help` for one command
-- developer commands require `--agent=<code>`
-- reviewer commands (`review-check`, `review-approve`, `review-reject`, `review-next`, `review-cancel`) require `--agent=<reviewer>`
+- run `SOMANAGER_ROLE=<role> SOMANAGER_AGENT=<code> php scripts/backlog.php` for the global backlog help
+- use `SOMANAGER_ROLE=<role> SOMANAGER_AGENT=<code> php scripts/backlog.php <command> --help` for one command
+- agent commands must keep the prefix order `SOMANAGER_ROLE` then `SOMANAGER_AGENT`
+- `--agent` is used only by commands where it identifies a target or explicit lookup, not to repeat the caller
 - `base-update` refreshes the recorded Git base after a rebase; features update `origin/main` before using the merge base with it, and local child tasks default to the merge base with their parent feature branch
 - `worktree-restore` validates copied PHP vendors with `autoload.php` witnesses and can recreate a clean managed worktree with `--force`
 - `work-start` reads the next queued board entry, accepts plain text, the type prefixes `[feat]` / `[fix]` / `[tech]` (case-insensitive, at any position in the leading bracket sequence), a single `[feature-slug]` prefix, and scoped entries like `[feature-slug][task-slug] Task text`, then prints the started task or feature details with the assigned worktree

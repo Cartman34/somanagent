@@ -10,7 +10,7 @@ Read this file only when the active task requires backlog management or workflow
 - edit documentation under `doc/`
 - edit workflow and tooling scripts under `scripts/`
 - perform backlog, review, and merge workflow actions when needed
-- run `php scripts/backlog.php ...` from `WP` only; backlog commands are not allowed from `WA`
+- run `SOMANAGER_ROLE=manager SOMANAGER_AGENT=<code> php scripts/backlog.php ...` from `WP` only; backlog commands are not allowed from `WA`
 
 ## Do Not
 
@@ -30,7 +30,7 @@ Read this file only when the active task requires backlog management or workflow
 - Missing `agent` metadata and legacy `agent: none` both mean the entry is unassigned; a different real agent code must be unassigned first before a new assignment.
 - `Manager` can unassign any active entry (feature or task) from any developer agent through `entry-unassign`.
 - For `entry-unassign`, `--agent=<code>` identifies the manager caller. Use an explicit `<feature>`, `<task>`, or `<feature/task>` reference to choose the entry to unassign.
-- For `feature-assign` and `entry-unassign`, export `SOMANAGER_ROLE=manager` before running `php scripts/backlog.php ...`.
+- Every manager backlog command must be prefixed exactly as `SOMANAGER_ROLE=manager SOMANAGER_AGENT=<code> php scripts/backlog.php ...`.
 
 ## Guidance
 

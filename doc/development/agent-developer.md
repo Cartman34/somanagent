@@ -40,7 +40,8 @@ Read this file only when the active task requires developer workflow details.
 ## Workspace Rules
 
 - `WA`: edit code, inspect files, run local git on the active branch, and commit.
-- `WP`: run `php scripts/backlog.php ...` and read local workflow state when needed.
+- `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php ...` and read local workflow state when needed.
+- Every developer backlog command must be prefixed exactly as `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php ...`.
 - When one step is prefixed with `WP:`, the working directory must be `WP`.
 - When one step is prefixed with `WA:`, the working directory must be the active agent `WA`.
 - Forbidden for `Developer`: `php scripts/console.php`, `php scripts/node.php`, `php scripts/db.php`, `php scripts/dev.php`, `php scripts/health.php`, `php scripts/github.php`, and any script that talks to containers, runtime, database, network, or GitHub.
@@ -64,7 +65,7 @@ Read this file only when the active task requires developer workflow details.
 
 ### `task-create`
 
-1. Run `php scripts/backlog.php task-create <description> [--position=<start|index|end>] [--index=<n>] [--body-file=<path>]`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-create <description> [--position=<start|index|end>] [--index=<n>] [--body-file=<path>]`.
 2. By default the script appends the task to the end of `## To do`.
 3. `--position=start` inserts at the start of `## To do`.
 4. `--position=index --index=<n>` inserts at the requested 1-based position and clamps out-of-range values to the start or the end.
@@ -75,38 +76,38 @@ Read this file only when the active task requires developer workflow details.
 Examples:
 
 ```bash
-php scripts/backlog.php task-create $'[feat][workspace-worktree][wws-init] Initialize workspace worktree
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-create $'[feat][workspace-worktree][wws-init] Initialize workspace worktree
   - Bootstrap directory structure
   - Wire CI bindings'
 
-php scripts/backlog.php task-create $'[tech][backlog-entry-types] Centralize task types
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-create $'[tech][backlog-entry-types] Centralize task types
   - Add BacklogTaskType enum
   - Update task-create / work-start parser'
 
-php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 ```
 
 ### `todo-list`
 
-1. Run `php scripts/backlog.php todo-list`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php todo-list`.
 2. The script prints queued tasks in priority order, one per line shaped `N. [<ref>] <text>`. `<ref>` is the queued entry's stable reference: the feature slug for plain queued tasks (or for a `[feature-slug]` prefix), and `<feature>/<task>` for a scoped child task prefix `[feature-slug][task-slug]`. Numbers are advisory only and never accepted as mutation identity; `<ref>` is the only valid target for mutating commands such as `task-remove` and `work-start`.
 
 ### `task-remove`
 
-1. Run `php scripts/backlog.php task-remove <feature|feature/task>`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-remove <feature|feature/task>`.
 2. The reference is the stable slug shown between brackets by `todo-list`: a feature slug for plain queued tasks, or a `<feature>/<task>` pair for scoped child tasks.
 3. The script refuses an empty, unknown, or ambiguous reference; rename a colliding queued task or pass `<feature/task>` to disambiguate.
 
 ### `entry-rename`
 
-1. Run `SOMANAGER_AGENT=<code> php scripts/backlog.php entry-rename <new-text>`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-rename <new-text>`.
 2. The script updates the main text of the agent's active entry, whether it is a `kind=task` or a `kind=feature`.
 3. For `kind=task`, the corresponding contribution line inside the parent feature container is also updated to keep them in sync.
 4. The agent can only rename their own active entry.
 
 ### `review-notes`
 
-1. Run `php scripts/backlog.php review-notes [--agent=<code>] [<feature>|<task>|<feature/task>]`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php review-notes [--agent=<code>] [<feature>|<task>|<feature/task>]`.
 2. Either `--agent=<code>` or a positional reference is required; both can be combined to enforce ownership of the entry.
 3. The script reads the stored reviewer notes from `local/backlog-review.md` for the resolved entry without modifying any backlog state.
 4. The output is wrapped in a protected, read-only block: it starts with the literal title `Review notes - read only`, carries the documented warning sentence, encloses the notes themselves in a ```` ```review-notes ```` fenced block, and ends with the marker `REVIEW_NOTES_READ_ONLY_END`.
@@ -114,7 +115,7 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 
 ### `rework`
 
-1. Run `SOMANAGER_AGENT=<code> php scripts/backlog.php rework [<feature>|<task>|<feature/task>]`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php rework [<feature>|<task>|<feature/task>]`.
 2. Without an explicit reference, the script resolves the single reworkable entry (task or feature) assigned to the agent. An entry is reworkable when its stage is `rejected` or `approved`.
 3. With a `<feature/task>` reference, the script targets that child task. With a plain slug, it tries feature first then task, and errors if both match.
 4. The script requires the entry stage to be `rejected` or `approved`, moves it back to `meta.stage=development`, and reopens the entry branch in the agent `WA`. Stored review notes from `local/backlog-review.md` are displayed when the entry came from a rejection.
@@ -123,7 +124,7 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 
 ### `base-update`
 
-1. Run `php scripts/backlog.php base-update <feature|feature/task>`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php base-update <feature|feature/task>`.
 2. Use this command after a rebase or after resolving a merge conflict to refresh the `meta.base` SHA recorded in the backlog without editing the file manually.
 3. For a plain `kind=feature`, pass the feature slug as `<feature>`. For a child `kind=task`, pass the full `<feature/task>` reference. Never pass a bare task slug.
 4. Without `--base`, the automatic base is resolved as follows:
@@ -133,7 +134,7 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 
 ### `work-start`
 
-1. Run `SOMANAGER_AGENT=<code> php scripts/backlog.php work-start [<feature|feature/task>] [--branch-type=<feat|fix|tech>] [--dry-run]`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php work-start [<feature|feature/task>] [--branch-type=<feat|fix|tech>] [--dry-run]`.
 2. The agent must have no active entry. If one exists, the script refuses and describes the required next step.
 3. Without a target, the script consumes the first queued entry implicitly. With an explicit `<feature|feature/task>` reference (the same shape printed by `todo-list`), the script locates the matching queued entry by its `[feature-slug]` or `[feature-slug][task-slug]` prefix and refuses with a clear error when no queued entry matches.
 4. Automated workflows must always pass an explicit target; the implicit head form is reserved for interactive usage.
@@ -151,14 +152,14 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 
 ### `feature-release`
 
-1. Run `SOMANAGER_AGENT=<code> php scripts/backlog.php feature-release [<feature>]`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php feature-release [<feature>]`.
 2. The script returns the active feature to the start of `## To do` only when the branch is still clean and has no commit ahead of its recorded `base`.
 3. A parent `kind=feature` cannot be released while child `kind=task` entries are still active for that feature.
 4. The script then removes the managed worktree and deletes the untouched local branch.
 
 ### `entry-merge`
 
-1. Run `SOMANAGER_AGENT=<code> php scripts/backlog.php entry-merge <feature/task>`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-merge <feature/task>`.
 2. The script targets the explicit `<feature/task>` reference.
 3. The script requires a green mechanical review in the task worktree, then merges the child branch into the parent feature branch locally from the parent feature worktree or from a temporary merge worktree.
 4. The current task review stage does not gate this merge. `development`, `review`, `rejected`, and `approved` are all mergeable when the user explicitly asks for `merge`.
@@ -167,71 +168,69 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 
 ### `feature-assign`
 
-1. Run `php scripts/backlog.php feature-assign --agent=<code> <feature|task|feature/task>`.
-2. Export `SOMANAGER_ROLE=developer` and `SOMANAGER_AGENT=<code>` before running the command.
-3. Developer can only assign an unassigned entry to itself, or refresh an entry already assigned to itself.
-4. The script assigns the entry to that same agent and prepares the `WA`.
-5. Missing `agent` metadata and legacy `agent: none` both mean the entry is unassigned. A different real agent code means the entry is already assigned and must not be reassigned through `feature-assign`.
-6. For unassigned `kind=feature` containers created from a `[feature-slug][task-slug]`-prefixed task, this is the required step before running `review-request` on the feature. The developer takes integration ownership of the feature branch.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php feature-assign --agent=<code> <feature|task|feature/task>`.
+2. Developer can only assign an unassigned entry to itself, or refresh an entry already assigned to itself.
+3. The script assigns the entry to that same agent and prepares the `WA`.
+4. Missing `agent` metadata and legacy `agent: none` both mean the entry is unassigned. A different real agent code means the entry is already assigned and must not be reassigned through `feature-assign`.
+5. For unassigned `kind=feature` containers created from a `[feature-slug][task-slug]`-prefixed task, this is the required step before running `review-request` on the feature. The developer takes integration ownership of the feature branch.
 
 ### `entry-unassign`
 
-1. Run `php scripts/backlog.php entry-unassign --agent=<code> [<feature>|<task>|<feature/task>]`.
-2. Export `SOMANAGER_ROLE=developer` and `SOMANAGER_AGENT=<code>` before running the command.
-3. Without an explicit reference, the script resolves the single active entry assigned to the agent (task or feature).
-4. With a `<feature/task>` reference, the script targets that child task. With a plain slug, it tries feature first then task; a slug that matches both is rejected as ambiguous.
-5. `--agent=<code>` identifies the developer caller and must match `SOMANAGER_AGENT`; it is not a separate target selector.
-6. Developer can only remove its own assignment from its own active entry, whether it is a `kind=task` or a `kind=feature`.
-7. The script removes the current agent assignment from the target entry and keeps the entry in its current backlog section.
-8. If this leaves behind an abandoned managed worktree under `.agent-worktrees/`, the script runs `worktree-clean` automatically.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-unassign --agent=<code> [<feature>|<task>|<feature/task>]`.
+2. Without an explicit reference, the script resolves the single active entry assigned to the agent (task or feature).
+3. With a `<feature/task>` reference, the script targets that child task. With a plain slug, it tries feature first then task; a slug that matches both is rejected as ambiguous.
+4. `--agent=<code>` identifies the developer caller and must match the caller context; it is not a separate target selector.
+5. Developer can only remove its own assignment from its own active entry, whether it is a `kind=task` or a `kind=feature`.
+6. The script removes the current agent assignment from the target entry and keeps the entry in its current backlog section.
+7. If this leaves behind an abandoned managed worktree under `.agent-worktrees/`, the script runs `worktree-clean` automatically.
 
 ### `feature-block`
 
-1. Run `SOMANAGER_AGENT=<code> php scripts/backlog.php feature-block [<feature>]`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php feature-block [<feature>]`.
 2. The script marks the feature as blocked and keeps the current backlog section.
 
 ### `feature-unblock`
 
-1. Run `SOMANAGER_AGENT=<code> php scripts/backlog.php feature-unblock [<feature>]`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php feature-unblock [<feature>]`.
 2. The script removes the blocked flag from the feature and updates the PR title when one exists.
 
 ### `feature-list`
 
-1. Run `php scripts/backlog.php feature-list`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php feature-list`.
 2. The script prints all active entries (`kind=feature` and `kind=task`) grouped by workflow stage.
 3. Each line includes the full reference (for tasks, `<feature>/<task>`), the `kind=` indicator, and the assigned agent.
 
 ### `worktree-list`
 
-1. Run `php scripts/backlog.php worktree-list`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-list`.
 2. The script lists worktrees under `.agent-worktrees/` with their cleanup state and recommended action.
 3. Worktrees outside `.agent-worktrees/` are reported separately for manual cleanup only.
 4. Use this command only when there is a cleanup need outside the normal workflow procedure.
 
 ### `worktree-clean`
 
-1. Run `php scripts/backlog.php worktree-clean`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-clean`.
 2. The script removes only abandoned managed worktrees under `.agent-worktrees/` when they are safe to delete.
 3. Dirty, blocked, or external worktrees are left untouched and must be handled manually.
 
 ### `worktree-restore`
 
-1. Run `php scripts/backlog.php worktree-restore --agent=<code>` or `php scripts/backlog.php worktree-restore <feature>`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-restore --agent=<code>` or `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-restore <feature>`.
 2. The script recreates or refreshes the managed worktree for the active feature or task recorded in backlog metadata without changing the workflow stage.
 3. Existing PHP vendors are validated with `scripts/vendor/autoload.php` and `backend/vendor/autoload.php`; when a witness is missing, the whole matching vendor directory is replaced from `WP`.
-4. Run `php scripts/backlog.php worktree-restore --agent=<code> --force` to recreate the managed worktree completely; the script refuses `--force` when the existing worktree has local changes.
+4. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-restore --agent=<code> --force` to recreate the managed worktree completely; the script refuses `--force` when the existing worktree has local changes.
 5. Use this command when `.agent-worktrees/<agent>` was removed or when copied PHP runtime dependencies are incomplete while the backlog still has active development.
 
 ### `status`
 
-1. Run `php scripts/backlog.php status --agent=<code>`, `php scripts/backlog.php status <feature>`, or `php scripts/backlog.php status <feature/task>`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php status --agent=<code>`, `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php status <feature>`, or `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php status <feature/task>`.
 2. The script prints the agent worktree state, the active task if any, the parent feature if any, and separate next actions for task and feature workflow.
 3. With `<feature/task>`, the script resolves and displays the child task entry directly.
 4. Use this command to inspect the current active entry before running `review-request`.
 
 ### `review-request`
 
-1. Run `SOMANAGER_AGENT=<code> php scripts/backlog.php review-request`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php review-request`.
 2. The script resolves the agent's single active entry automatically: if `kind=task`, submits the task for review; if `kind=feature`, submits the feature for review.
 3. For `kind=feature`, requires all child `kind=task` entries to have been merged locally first, and requires the agent to be assigned to the feature via `feature-assign`.
 4. Before running the mechanical review, the script rebases the entry branch automatically: a `kind=feature` is rebased on `origin/main` (with `origin/main` refreshed first), a `kind=task` is rebased on its local parent feature branch.
@@ -252,7 +251,7 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 
 ### `next`
 
-1. `WP`: run `SOMANAGER_AGENT=<code> php scripts/backlog.php work-start`.
+1. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php work-start`.
 2. `WA`: implement the feature scope on the branch checked out for that task.
 3. `WA`: inspect the local diff and fix issues in scope before moving on.
 4. `WA`: run `git add .`.
@@ -260,23 +259,23 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 
 ### `submit`
 
-1. `WP`: run `SOMANAGER_AGENT=<code> php scripts/backlog.php review-request`.
+1. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php review-request`.
 2. For `kind=feature`, this keyword still applies only after all child `kind=task` entries have already been merged locally, and after `feature-assign` has been run to take integration ownership.
 
 ### `merge`
 
-1. `WP`: if the active entry is `kind=task`, run `SOMANAGER_AGENT=<code> php scripts/backlog.php entry-merge <feature/task>`.
+1. `WP`: if the active entry is `kind=task`, run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-merge <feature/task>`.
 2. This keyword merges the local task only on explicit user instruction; it is not implied by `submit`.
 
 ### `rework`
 
 1. Use this keyword in two scenarios: (a) after a reviewer rejection, and (b) after a merge conflict aborted `entry-merge` on an approved entry.
 2. For scenario (a), the review feedback is given with the `rework` instruction. The `rework` command output prints the stored review notes directly; do not run `status` or read `local/backlog-review.md` before proceeding.
-3. `WP`: run `SOMANAGER_AGENT=<code> php scripts/backlog.php rework [<feature>|<task>|<feature/task>]`.
+3. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php rework [<feature>|<task>|<feature/task>]`.
 4. `WA`: resume development on the same branch. Address the review feedback for scenario (a), or resolve the conflict for scenario (b).
 5. Stop here. Do not run `submit` unless the user explicitly asks for it.
 
 ### `cleanup`
 
-1. `WP`: run `php scripts/backlog.php worktree-clean`.
-2. `WP`: use `php scripts/backlog.php worktree-list` only when you need a cleanup diagnostic outside the standard workflow.
+1. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-clean`.
+2. `WP`: use `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-list` only when you need a cleanup diagnostic outside the standard workflow.
