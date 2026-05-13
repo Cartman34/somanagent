@@ -122,6 +122,8 @@ final class BacklogBoardService
             return;
         }
 
+        $this->normalizeBoardForSave($board);
+
         $chunks = [$board->getTitle(), ''];
         $rawSections = $board->getRawSections();
 
@@ -1600,6 +1602,34 @@ final class BacklogBoardService
         }
 
         return $entries;
+    }
+
+    /**
+     * Strips legacy rule sections, normalizes the board title, and ensures all
+     * mandatory sections appear in the saved output.
+     */
+    private function normalizeBoardForSave(BacklogBoard $board): void
+    {
+        if (in_array($board->getTitle(), BacklogBoard::LEGACY_TITLES, true)) {
+            $board->setTitle(BacklogBoard::TITLE);
+        }
+
+        $filteredOrder = array_values(array_filter(
+            $board->getSectionOrder(),
+            static fn(string $section) => !in_array($section, BacklogBoard::LEGACY_RULE_SECTIONS, true),
+        ));
+
+        if (!in_array(BacklogBoard::SECTION_SUGGESTIONS, $filteredOrder, true)) {
+            $filteredOrder[] = BacklogBoard::SECTION_SUGGESTIONS;
+        }
+
+        $board->setSectionOrder($filteredOrder);
+
+        $rawSections = $board->getRawSections();
+        foreach (BacklogBoard::LEGACY_RULE_SECTIONS as $legacySection) {
+            unset($rawSections[$legacySection]);
+        }
+        $board->setRawSections($rawSections);
     }
 
     private function updateManagedSectionOrder(BacklogBoard $board): void
