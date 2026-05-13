@@ -47,6 +47,7 @@ Read this file only when the active task requires developer workflow details.
 - When one step is prefixed with `WA:`, the working directory must be the active agent `WA`.
 - Forbidden for `Developer`: `php scripts/console.php`, `php scripts/node.php`, `php scripts/db.php`, `php scripts/dev.php`, `php scripts/health.php`, `php scripts/github.php`, and any script that talks to containers, runtime, database, network, or GitHub.
 - Exception: `php scripts/migrate.php` (and `--generate`) is allowed to apply and generate Doctrine migrations. Run it from the `WA`. See [Commands](commands.md#create-a-new-migration) for details.
+- Any Docker or container error during `php scripts/migrate.php` (including `--generate`) must be escalated immediately to the user. Report: the exact command run, the working directory, the exact error output, and the action expected. Do not mask the blocker, retry silently, or let it be discovered by the reviewer.
 - For frontend TypeScript validation, do not run raw `npx tsc`; use `php scripts/validate-files.php --with-types <changed-frontend-files>` so the same check is available to mechanical review.
 - If a command is not explicitly allowed for `Developer`, do not run it.
 

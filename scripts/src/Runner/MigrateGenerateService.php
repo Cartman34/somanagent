@@ -81,10 +81,10 @@ final class MigrateGenerateService
             $this->console->step('Creating temp DB');
             $this->createDatabase($dbName);
 
-            // ── Step: record in backlog meta ──────────────────────────────────
-            $this->recordDatabaseInBacklog($dbName);
-
             try {
+                // ── Step: record in backlog meta ──────────────────────────────
+                $this->recordDatabaseInBacklog($dbName);
+
                 $databaseUrl = $this->buildTempDatabaseUrl($dbName);
 
                 // ── Step: migrations ──────────────────────────────────────────
