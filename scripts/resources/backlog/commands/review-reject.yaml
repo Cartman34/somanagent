@@ -13,4 +13,4 @@ examples:
 notes:
   - 'Use <entry-ref> for both feature and child task entries.'
   - 'Short task references (bare task slug without the parent feature) are refused; use <entry-ref>.'
-  - 'The body file must contain plain findings only: one finding per line kept verbatim. Lines that start with one or more `#` characters followed by a space (e.g. `# Note`, `## Summary`) are rejected as Markdown headings.'
+  - 'The body file must contain plain findings only: one finding per line kept verbatim. Lines that start with `#`, `##`, or `###` followed by a space are rejected as Markdown headings; `####` and above are allowed.'

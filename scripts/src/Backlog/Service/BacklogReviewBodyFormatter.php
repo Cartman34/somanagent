@@ -39,7 +39,7 @@ final class BacklogReviewBodyFormatter
         $items = [];
 
         foreach ($lines as $line) {
-            if (preg_match('/^#{1,6}\s/', $line) === 1) {
+            if (preg_match('/^#{1,3}\s/', $line) === 1) {
                 throw new \RuntimeException('Review body items must be plain findings. Remove Markdown headings from --body-file.');
             }
             $items[] = $line;
