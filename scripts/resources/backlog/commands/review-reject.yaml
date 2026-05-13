@@ -6,11 +6,11 @@ arguments:
 options:
   -
     name: '--body-file'
-    description: 'Local file containing one plain rejection finding per line (required)'
+    description: 'Local file containing rejection findings (one per line, kept verbatim, no Markdown headings) (required)'
 examples:
   - 'SOMANAGER_AGENT=r01 php scripts/backlog.php review-reject delete-question-reply --body-file local/tmp/review.md'
   - 'SOMANAGER_AGENT=r01 php scripts/backlog.php review-reject onboarding/task-copy-review --body-file local/tmp/review.md'
 notes:
   - 'Use <entry-ref> for both feature and child task entries.'
   - 'Short task references (bare task slug without the parent feature) are refused; use <entry-ref>.'
-  - 'The body file must contain plain findings only: one finding per line, optional leading numbers or bullets, no Markdown headings.'
+  - 'The body file must contain plain findings only: one finding per line kept verbatim. Lines that start with `#`, `##`, or `###` followed by a space are rejected as Markdown headings; `####` and above are allowed.'

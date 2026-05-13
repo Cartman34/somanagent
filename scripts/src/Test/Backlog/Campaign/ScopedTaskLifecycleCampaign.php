@@ -48,7 +48,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->assertStatusContains($context->scopedFeature, $renamedTaskText);
 
         $rejectBody = $driver->createBodyFile('test-task-review-reject.md', ['1. Reject child task for test workflow.']);
-        $invalidRejectBody = $driver->createBodyFile('test-task-review-invalid.md', ['1. ### Task review']);
+        $invalidRejectBody = $driver->createBodyFile('test-task-review-invalid.md', ['### Task review']);
 
         $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_IN_PROGRESS);
         $driver->assertReworkFails($context->agentPrimary, $taskARef, 'rework only accepts');
@@ -125,7 +125,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->requestTaskReview($context->agentPrimary);
         // unified review-reject for task covers the task delegation path
         $driver->rejectReviewViaUnifiedCommand($context->agentSecondary, $taskBRef, $rejectFeatureTaskB);
-        $driver->assertReviewContains('1. Reject second child task for coverage.');
+        $driver->assertReviewContains('3. Reject second child task for coverage.');
         $driver->rework($context->agentPrimary, $taskBRef);
         $driver->requestTaskReview($context->agentPrimary);
         $driver->approveTaskViaUnifiedCommand($context->agentSecondary, $taskBRef);
