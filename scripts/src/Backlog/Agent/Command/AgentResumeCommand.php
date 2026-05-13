@@ -142,6 +142,9 @@ final class AgentResumeCommand extends AbstractAgentCommand
         if (!is_dir($worktree)) {
             if ($role === AgentRole::REVIEWER) {
                 $worktree = $this->reconstructReviewerWorktree($code, $worktree);
+                if ($worktree !== $existingSession->worktree) {
+                    $this->sessionService->updateWorktree($code, $worktree);
+                }
             } else {
                 throw new \RuntimeException(sprintf("Worktree not found for code '%s' at %s.", $code, $worktree));
             }

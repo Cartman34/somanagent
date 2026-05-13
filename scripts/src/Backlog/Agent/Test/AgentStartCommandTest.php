@@ -19,7 +19,12 @@ use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
+use SoManAgent\Script\Application;
+use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Client\FilesystemClient;
+use SoManAgent\Script\Client\GitClient;
+use SoManAgent\Script\Client\ProjectScriptClient;
+use SoManAgent\Script\RetryPolicy;
 use SoManAgent\Script\TextSlugger;
 
 /**
@@ -71,6 +76,9 @@ final class AgentStartCommandTest
         $failed += $this->testRejectsResetWithReviewer();
         $failed += $this->testRaisesClientNotInstalledWhenLauncherUnavailable();
         $failed += $this->testReviewerModeReusesOwnedReviewingEntry();
+        $failed += $this->testReviewerModeRollsBackTakenReviewWhenPreparationFails();
+        $failed += $this->testDeveloperResetRefusesDirtyWorktree();
+        $failed += $this->testDeveloperResetRemovesAndRecreatesCleanWorktree();
 
         return $failed;
     }
@@ -286,6 +294,194 @@ final class AgentStartCommandTest
         return 0;
     }
 
+    private function testReviewerModeRollsBackTakenReviewWhenPreparationFails(): int
+    {
+        $dir = $this->scratchDir('reviewer-rollback');
+        $boardPath = $dir . '/board.md';
+        $worktreesRoot = $dir . '/worktrees';
+        $devWa = $worktreesRoot . '/d04';
+        mkdir($devWa, 0755, true);
+
+        $this->writeBoard($boardPath, [
+            '- crypto-feature',
+            '  meta:',
+            '    kind: feature',
+            '    feature: crypto-feature',
+            '    branch: feat/crypto-feature',
+            '    type: feat',
+            '    stage: review',
+            '    agent: d04',
+        ]);
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($dir);
+        $reviewerSelector = new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot);
+
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $launcher->prepareException = new \RuntimeException('prepare failed');
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        $cmd = new AgentStartCommand(
+            $dir,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($dir, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            $sessionService,
+            new AgentContextBuilder($dir, $boardPath, $boardService),
+            (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor(),
+            $reviewerSelector,
+            $boardService,
+            new FakeInteractiveProcessRunner(),
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
+        );
+
+        $previousCwd = getcwd();
+        $threw = false;
+        try {
+            $cmd->handle(['claude'], ['reviewer' => true, 'code' => 'r01']);
+        } catch (\RuntimeException $e) {
+            $threw = str_contains($e->getMessage(), 'prepare failed');
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        if (!$threw) {
+            echo "FAIL testReviewerModeRollsBackTakenReviewWhenPreparationFails: expected preparation failure\n";
+            return 1;
+        }
+
+        $reloaded = $boardService->loadBoard($boardPath);
+        $entry = $reloaded->getEntries(BacklogBoard::SECTION_ACTIVE)[0] ?? null;
+        if ($entry === null || $entry->getStage() !== BacklogBoard::STAGE_IN_REVIEW || $entry->getReviewer() !== null) {
+            echo "FAIL testReviewerModeRollsBackTakenReviewWhenPreparationFails: expected stage=review and reviewer cleared\n";
+            return 1;
+        }
+
+        echo "OK testReviewerModeRollsBackTakenReviewWhenPreparationFails\n";
+        return 0;
+    }
+
+    private function testDeveloperResetRefusesDirtyWorktree(): int
+    {
+        $projectRoot = $this->createGitProject('reset-dirty');
+        $worktreesRoot = $projectRoot . '/.agent-worktrees';
+        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $worktree = $worktreesRoot . '/d05';
+        if (!is_dir(dirname($boardPath))) {
+            mkdir(dirname($boardPath), 0755, true);
+        }
+        $this->writeBoard($boardPath, []);
+        $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' worktree add --detach ' . escapeshellarg($worktree) . ' HEAD');
+        file_put_contents($worktree . '/dirty.txt', 'dirty');
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($projectRoot);
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+        $shellRunner = new FakeProcessRunner();
+        $shellRunner->outputMap['git status --porcelain|' . $worktree] = '?? dirty.txt';
+
+        $cmd = new AgentStartCommand(
+            $projectRoot,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            $sessionService,
+            new AgentContextBuilder($projectRoot, $boardPath, $boardService),
+            $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
+            new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot),
+            $boardService,
+            new FakeInteractiveProcessRunner(),
+            new FakeProcessSignaler(),
+            $shellRunner,
+        );
+
+        $threw = false;
+        try {
+            $cmd->handle(['claude'], ['developer' => true, 'code' => 'd05', 'reset' => true]);
+        } catch (\RuntimeException $e) {
+            $threw = str_contains($e->getMessage(), 'is dirty');
+        }
+
+        if (!$threw) {
+            echo "FAIL testDeveloperResetRefusesDirtyWorktree: expected dirty worktree refusal\n";
+            return 1;
+        }
+        if (!is_dir($worktree)) {
+            echo "FAIL testDeveloperResetRefusesDirtyWorktree: dirty worktree must not be removed\n";
+            return 1;
+        }
+
+        echo "OK testDeveloperResetRefusesDirtyWorktree\n";
+        return 0;
+    }
+
+    private function testDeveloperResetRemovesAndRecreatesCleanWorktree(): int
+    {
+        $projectRoot = $this->createGitProject('reset-clean');
+        $worktreesRoot = $projectRoot . '/.agent-worktrees';
+        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $worktree = $worktreesRoot . '/d06';
+        $this->writeBoard($boardPath, []);
+        $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' worktree add --detach ' . escapeshellarg($worktree) . ' HEAD');
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($projectRoot);
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+        $processRunner = new FakeInteractiveProcessRunner();
+
+        $cmd = new AgentStartCommand(
+            $projectRoot,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            $sessionService,
+            new AgentContextBuilder($projectRoot, $boardPath, $boardService),
+            $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
+            new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot),
+            $boardService,
+            $processRunner,
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
+        );
+
+        $previousCwd = getcwd();
+        try {
+            chdir($projectRoot);
+            $cmd->handle(['claude'], ['developer' => true, 'code' => 'd06', 'reset' => true]);
+        } catch (\Throwable $e) {
+            echo "FAIL testDeveloperResetRemovesAndRecreatesCleanWorktree: unexpected " . get_class($e) . ': ' . $e->getMessage() . "\n";
+            return 1;
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        if (!is_dir($worktree) || !file_exists($worktree . '/.git')) {
+            echo "FAIL testDeveloperResetRemovesAndRecreatesCleanWorktree: expected recreated git worktree\n";
+            return 1;
+        }
+        if ($processRunner->lastCall === null || $processRunner->lastCall['cwd'] !== $worktree) {
+            $cwd = $processRunner->lastCall['cwd'] ?? '<null>';
+            echo "FAIL testDeveloperResetRemovesAndRecreatesCleanWorktree: process runner cwd '{$cwd}', expected '{$worktree}'\n";
+            return 1;
+        }
+
+        echo "OK testDeveloperResetRemovesAndRecreatesCleanWorktree\n";
+        return 0;
+    }
+
     /**
      * Builds an AgentStartCommand with reflection-built heavy collaborators.
      *
@@ -344,6 +540,63 @@ final class AgentStartCommandTest
         $path = $this->tmpDir . '/' . $label . '-' . uniqid('', true);
         mkdir($path, 0755, true);
         return $path;
+    }
+
+    private function createGitProject(string $label): string
+    {
+        $projectRoot = $this->scratchDir($label);
+        mkdir($projectRoot . '/local', 0755, true);
+        mkdir($projectRoot . '/scripts/vendor', 0755, true);
+        mkdir($projectRoot . '/backend/vendor', 0755, true);
+        mkdir($projectRoot . '/frontend/node_modules', 0755, true);
+        file_put_contents($projectRoot . '/.env', "DATABASE_URL=sqlite:///%kernel.project_dir%/var/test.db\n");
+        file_put_contents($projectRoot . '/scripts/vendor/autoload.php', "<?php\n");
+        file_put_contents($projectRoot . '/backend/vendor/autoload.php', "<?php\n");
+        file_put_contents($projectRoot . '/frontend/node_modules/.keep', '');
+        $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' init --initial-branch=main');
+        $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' config user.email test@example.invalid');
+        $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' config user.name "Test User"');
+        $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' add .');
+        $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' commit -m init');
+
+        return $projectRoot;
+    }
+
+    private function buildRealWorktreeService(
+        string $projectRoot,
+        string $worktreesRoot,
+        BacklogBoardService $boardService,
+    ): BacklogWorktreeService {
+        $app = Application::getInstance();
+        $console = new ConsoleClient($projectRoot, false, $app, static function (string $message): void {});
+        $git = new GitClient(false, $console, new RetryPolicy(0, 0));
+
+        return new BacklogWorktreeService(
+            $projectRoot,
+            $worktreesRoot,
+            false,
+            '',
+            $boardService,
+            $console,
+            $git,
+            new ProjectScriptClient($console),
+            new FilesystemClient(),
+        );
+    }
+
+    private function runShell(string $command): void
+    {
+        $output = [];
+        $code = 0;
+        exec($command . ' 2>&1', $output, $code);
+        if ($code !== 0) {
+            throw new \RuntimeException(sprintf(
+                "Command failed with exit code %d: %s\n%s",
+                $code,
+                $command,
+                implode("\n", $output),
+            ));
+        }
     }
 
     private function rmdir(string $dir): void

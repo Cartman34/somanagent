@@ -27,6 +27,8 @@ final class FakeAgentClientLauncher implements AgentClientLauncher
 
     public ?string $lastLaunchedWorktree = null;
 
+    public ?\Throwable $prepareException = null;
+
     /** @var list<SessionInfo> */
     private array $sessions;
 
@@ -67,6 +69,9 @@ final class FakeAgentClientLauncher implements AgentClientLauncher
     public function prepareWorktree(string $worktree, string $contextFilePath): void
     {
         $this->lastPreparedWorktree = $worktree;
+        if ($this->prepareException !== null) {
+            throw $this->prepareException;
+        }
     }
 
     /**

@@ -16,7 +16,12 @@ use SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
+use SoManAgent\Script\Application;
+use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Client\FilesystemClient;
+use SoManAgent\Script\Client\GitClient;
+use SoManAgent\Script\Client\ProjectScriptClient;
+use SoManAgent\Script\RetryPolicy;
 use SoManAgent\Script\TextSlugger;
 
 /**
@@ -58,6 +63,7 @@ final class AgentResumeCommandTest
         $failed += $this->testRefusesWhenClientPidStillAlive();
         $failed += $this->testRefusesWhenWrapperPidStillAlive();
         $failed += $this->testUpdatesLastSeenBeforeAliveCheck();
+        $failed += $this->testPersistsReconstructedReviewerWorktreeBeforeLaunchPreparation();
 
         return $failed;
     }
@@ -186,29 +192,119 @@ final class AgentResumeCommandTest
         return 0;
     }
 
+    private function testPersistsReconstructedReviewerWorktreeBeforeLaunchPreparation(): int
+    {
+        $projectRoot = $this->createGitProject('reviewer-reconstruct');
+        $worktreesRoot = $projectRoot . '/.agent-worktrees';
+        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $expectedWorktree = $worktreesRoot . '/d04';
+        mkdir(dirname($boardPath), 0755, true);
+        $this->writeBoard($boardPath, [
+            '- crypto-feature',
+            '  meta:',
+            '    kind: feature',
+            '    feature: crypto-feature',
+            '    branch: feat/crypto-feature',
+            '    type: feat',
+            '    stage: reviewing',
+            '    agent: d04',
+            '    reviewer: r01',
+        ]);
+        $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' branch feat/crypto-feature');
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($projectRoot);
+        $now = new \DateTimeImmutable();
+        $sessionService->add(new AgentSession(
+            code: 'r01',
+            client: AgentClient::CLAUDE,
+            role: AgentRole::REVIEWER,
+            pid: 9000,
+            worktree: $worktreesRoot . '/missing-d04',
+            startedAt: $now,
+            lastSeenAt: $now,
+            sessionId: 'review-session',
+            clientPid: null,
+            processGroupId: null,
+        ));
+
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $launcher->prepareException = new \RuntimeException('stop after reconstruction');
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        $cmd = $this->buildCommand(
+            $sessionService,
+            new FakeProcessSignaler(),
+            $projectRoot,
+            $boardPath,
+            $registry,
+            $boardService,
+            $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
+        );
+
+        $threw = false;
+        $previousCwd = getcwd();
+        try {
+            chdir($projectRoot);
+            $cmd->handle([], ['code' => 'r01']);
+        } catch (\RuntimeException $e) {
+            $threw = str_contains($e->getMessage(), 'stop after reconstruction');
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        if (!$threw) {
+            echo "FAIL testPersistsReconstructedReviewerWorktreeBeforeLaunchPreparation: expected launcher preparation failure\n";
+            return 1;
+        }
+
+        $reloaded = $sessionService->get('r01');
+        if ($reloaded === null || $reloaded->worktree !== $expectedWorktree) {
+            $actual = $reloaded === null ? '<missing>' : $reloaded->worktree;
+            echo "FAIL testPersistsReconstructedReviewerWorktreeBeforeLaunchPreparation: session worktree '{$actual}', expected '{$expectedWorktree}'\n";
+            return 1;
+        }
+
+        echo "OK testPersistsReconstructedReviewerWorktreeBeforeLaunchPreparation\n";
+        return 0;
+    }
+
     /**
      * Builds an AgentResumeCommand with the minimum dependencies needed for the early-return branches.
      * Heavy services are constructed without their constructors via reflection.
      */
-    private function buildCommand(AgentSessionService $sessionService, FakeProcessSignaler $signaler): AgentResumeCommand
+    private function buildCommand(
+        AgentSessionService $sessionService,
+        FakeProcessSignaler $signaler,
+        ?string $projectRoot = null,
+        ?string $boardPath = null,
+        ?AgentClientLauncherRegistry $registry = null,
+        ?BacklogBoardService $boardService = null,
+        ?BacklogWorktreeService $worktreeService = null,
+    ): AgentResumeCommand
     {
-        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $projectRoot ??= $this->tmpDir;
+        $boardPath ??= $this->tmpDir . '/board.md';
+        $boardService ??= new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
 
-        $contextBuilder = new AgentContextBuilder($this->tmpDir, $this->tmpDir . '/board.md', $boardService);
+        $contextBuilder = new AgentContextBuilder($projectRoot, $boardPath, $boardService);
 
-        $registry = new AgentClientLauncherRegistry();
+        $registry ??= new AgentClientLauncherRegistry();
 
-        $worktreeService = (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor();
+        $worktreeService ??= (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor();
         $processRunner = new FakeInteractiveProcessRunner();
 
         return new AgentResumeCommand(
-            $this->tmpDir,
+            $projectRoot,
             $registry,
             $contextBuilder,
             $sessionService,
             $boardService,
             $worktreeService,
-            $this->tmpDir . '/board.md',
+            $boardPath,
             $processRunner,
             $signaler,
         );
@@ -232,6 +328,74 @@ final class AgentResumeCommandTest
             clientPid: $clientPid,
             processGroupId: null,
         );
+    }
+
+    /**
+     * @param list<string> $activeLines
+     */
+    private function writeBoard(string $path, array $activeLines): void
+    {
+        $content = "# Test backlog\n\n## To do\n\n## In progress\n\n"
+            . implode("\n", $activeLines)
+            . "\n\n## Suggestions\n";
+        file_put_contents($path, $content);
+    }
+
+    private function createGitProject(string $label): string
+    {
+        $projectRoot = $this->tmpDir . '/' . $label . '-' . uniqid('', true);
+        mkdir($projectRoot, 0755, true);
+        mkdir($projectRoot . '/scripts/vendor', 0755, true);
+        mkdir($projectRoot . '/backend/vendor', 0755, true);
+        mkdir($projectRoot . '/frontend/node_modules', 0755, true);
+        file_put_contents($projectRoot . '/.env', "DATABASE_URL=sqlite:///%kernel.project_dir%/var/test.db\n");
+        file_put_contents($projectRoot . '/scripts/vendor/autoload.php', "<?php\n");
+        file_put_contents($projectRoot . '/backend/vendor/autoload.php', "<?php\n");
+        file_put_contents($projectRoot . '/frontend/node_modules/.keep', '');
+        $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' init --initial-branch=main');
+        $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' config user.email test@example.invalid');
+        $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' config user.name "Test User"');
+        $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' add .');
+        $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' commit -m init');
+
+        return $projectRoot;
+    }
+
+    private function buildRealWorktreeService(
+        string $projectRoot,
+        string $worktreesRoot,
+        BacklogBoardService $boardService,
+    ): BacklogWorktreeService {
+        $app = Application::getInstance();
+        $console = new ConsoleClient($projectRoot, false, $app, static function (string $message): void {});
+        $git = new GitClient(false, $console, new RetryPolicy(0, 0));
+
+        return new BacklogWorktreeService(
+            $projectRoot,
+            $worktreesRoot,
+            false,
+            '',
+            $boardService,
+            $console,
+            $git,
+            new ProjectScriptClient($console),
+            new FilesystemClient(),
+        );
+    }
+
+    private function runShell(string $command): void
+    {
+        $output = [];
+        $code = 0;
+        exec($command . ' 2>&1', $output, $code);
+        if ($code !== 0) {
+            throw new \RuntimeException(sprintf(
+                "Command failed with exit code %d: %s\n%s",
+                $code,
+                $command,
+                implode("\n", $output),
+            ));
+        }
     }
 
     private function rmdir(string $dir): void

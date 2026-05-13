@@ -319,7 +319,7 @@ Two situations block the launch by default:
 php scripts/backlog-agent.php start claude --reviewer --developer=d04 --force
 ```
 
-`--force` overrides both conflict types. It does not override a missing WA (the developer WA must exist before a reviewer can enter it), and it does not override an entry already at `stage=reviewing` for a different reviewer.
+`--force` overrides both conflict types. It does not override an entry already at `stage=reviewing` for a different reviewer.
 
 ### Resuming an interrupted reviewer session
 
@@ -330,7 +330,7 @@ php scripts/backlog-agent.php resume --code=<rXX> --session=<id>
 
 The `resume` command reads the `worktree` stored in `sessions.json` rather than computing a worktree path from the reviewer code. This ensures reviewer sessions correctly resume inside the shared developer WA.
 
-If the stored developer WA no longer exists, the launcher attempts to reconstruct it via `prepareFeatureAgentWorktree` using the board's `stage=reviewing` entry owned by this reviewer. If reconstruction fails (no board, no entry, or git error), the command errors with an explicit message naming the missing path and reason.
+If the stored developer WA no longer exists, the launcher attempts to reconstruct it via `prepareFeatureAgentWorktree` using the board's `stage=reviewing` entry owned by this reviewer. When reconstruction returns a different path than the one stored in `sessions.json`, `resume` persists the reconstructed developer WA path before preparing the client. If reconstruction fails (no board, no entry, or git error), the command errors with an explicit message naming the missing path and reason.
 
 ### Listing past CLI sessions
 

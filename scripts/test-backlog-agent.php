@@ -23,6 +23,7 @@ use SoManAgent\Script\Backlog\Agent\Test\AgentStartCommandTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentStatusCommandTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentStopCommandTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentWhoamiCommandTest;
+use SoManAgent\Script\Backlog\Agent\Test\BacklogBoardServiceReviewingTest;
 use SoManAgent\Script\Backlog\Agent\Test\BacklogAgentRunnerStrictOptionsTest;
 use SoManAgent\Script\Backlog\Agent\Test\ClaudeAgentLauncherTest;
 use SoManAgent\Script\Backlog\Agent\Test\CodexAgentLauncherTest;
@@ -49,6 +50,7 @@ $suites = [
     'AgentStartCommandManagerTest' => AgentStartCommandManagerTest::class,
     'AgentContextBuilderTest' => AgentContextBuilderTest::class,
     'AgentReviewerSelectorTest' => AgentReviewerSelectorTest::class,
+    'BacklogBoardServiceReviewingTest' => BacklogBoardServiceReviewingTest::class,
     'AgentClientLauncherRegistryTest' => AgentClientLauncherRegistryTest::class,
     'AgentCliOptionValidatorTest' => AgentCliOptionValidatorTest::class,
     'BacklogAgentRunnerStrictOptionsTest' => BacklogAgentRunnerStrictOptionsTest::class,

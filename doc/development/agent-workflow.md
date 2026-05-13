@@ -196,7 +196,7 @@ Sessions for developer, reviewer, and manager agents are launched by the operato
 
 `stop --code=<code>` targets the recorded process group first, then `client_pid`, and finally the wrapper PID as a last resort. It sends `SIGTERM`, waits up to 5 seconds, and follows up with `SIGKILL` if the client did not exit. The `agent-sessions.json` entry is removed only after the termination attempt completes.
 
-`resume --code=<code>` refuses while any tracked process (client first, wrapper next) is still alive. Run `stop --code=<code>` to terminate the previous session before resuming.
+`resume --code=<code>` refuses while any tracked process (client first, wrapper next) is still alive. Run `stop --code=<code>` to terminate the previous session before resuming. For reviewer sessions, `resume` uses the stored developer WA path; if that path is missing but the reviewer still owns a `stage=reviewing` entry, the launcher reconstructs the developer WA and updates `agent-sessions.json` with the reconstructed path before preparing the client.
 
 ### last_seen_at Semantics
 

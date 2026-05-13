@@ -148,6 +148,31 @@ final class AgentSessionService
     }
 
     /**
+     * Updates the recorded worktree path for the given agent code.
+     */
+    public function updateWorktree(string $code, string $worktree): void
+    {
+        $sessions = $this->load();
+        if (!isset($sessions[$code])) {
+            return;
+        }
+        $session = $sessions[$code];
+        $sessions[$code] = new AgentSession(
+            code: $session->code,
+            client: $session->client,
+            role: $session->role,
+            pid: $session->pid,
+            worktree: $worktree,
+            startedAt: $session->startedAt,
+            lastSeenAt: $session->lastSeenAt,
+            sessionId: $session->sessionId,
+            clientPid: $session->clientPid,
+            processGroupId: $session->processGroupId,
+        );
+        $this->save($sessions);
+    }
+
+    /**
      * Updates the recorded client process identifiers for the given agent code.
      *
      * Called right after the launcher spawns the actual client process so that `stop` can
