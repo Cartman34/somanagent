@@ -761,6 +761,63 @@ MD);
     }
 
     /**
+     * Sets or clears an extra-metadata key on the agent's active entry.
+     *
+     * @param string $agent Agent whose active entry is targeted
+     * @param string $assignment Key=value assignment, e.g. "database=my_db" or "database=" to clear
+     */
+    public function setEntryMeta(string $agent, string $assignment): void
+    {
+        $this->runBacklog(['entry-set-meta', $assignment], ['SOMANAGER_AGENT' => $agent]);
+    }
+
+    /**
+     * Asserts that entry-set-meta fails and that the output contains the expected needle.
+     *
+     * @param string $agent Agent used as caller
+     * @param string $assignment Key=value assignment passed to the command
+     * @param string $needle Expected substring of the failure output
+     */
+    public function assertSetEntryMetaFails(string $agent, string $assignment, string $needle): void
+    {
+        $this->assertBacklogFails(['entry-set-meta', $assignment], $needle, ['SOMANAGER_AGENT' => $agent]);
+    }
+
+    /**
+     * Asserts that the backlog board file contains the given text fragment.
+     *
+     * @param string $needle Text expected anywhere in the board file
+     */
+    public function assertBoardContains(string $needle): void
+    {
+        $contents = (string) file_get_contents($this->context->boardPath);
+        if (!str_contains($contents, $needle)) {
+            throw new \RuntimeException(sprintf(
+                "Expected backlog board to contain:\n%s\n--- actual board ---\n%s",
+                $needle,
+                $contents,
+            ));
+        }
+    }
+
+    /**
+     * Asserts that the backlog board file does not contain the given text fragment.
+     *
+     * @param string $needle Text that must not appear in the board file
+     */
+    public function assertBoardMissing(string $needle): void
+    {
+        $contents = (string) file_get_contents($this->context->boardPath);
+        if (str_contains($contents, $needle)) {
+            throw new \RuntimeException(sprintf(
+                "Expected backlog board NOT to contain:\n%s\n--- actual board ---\n%s",
+                $needle,
+                $contents,
+            ));
+        }
+    }
+
+    /**
      * @param string $agent Agent requesting the review
      */
     public function requestFeatureReview(string $agent): void

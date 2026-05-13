@@ -24,19 +24,28 @@ final class DockerComposeServiceRunner
      * Executes a command inside the configured service.
      *
      * @param list<string> $command
+     * @param bool $tty
+     * @param array<string, string> $env Extra environment variables passed with -e KEY=VALUE
      */
-    public function run(array $command, bool $tty = false): int
+    public function run(array $command, bool $tty = false, array $env = []): int
     {
         if ($command === []) {
             throw new \InvalidArgumentException('A Docker Compose command requires at least one argument.');
         }
 
         $execArgs = $tty ? '' : '-T ';
-        $parts    = implode(' ', array_map('escapeshellarg', $command));
+
+        $envArgs = '';
+        foreach ($env as $key => $val) {
+            $envArgs .= '-e ' . escapeshellarg($key . '=' . $val) . ' ';
+        }
+
+        $parts = implode(' ', array_map('escapeshellarg', $command));
 
         return $this->app->runCommand(sprintf(
-            'docker compose exec %s%s %s',
+            'docker compose exec %s%s%s %s',
             $execArgs,
+            $envArgs,
             escapeshellarg($this->service),
             $parts,
         ));

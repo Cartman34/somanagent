@@ -7,10 +7,14 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Runner;
 
+use SoManAgent\Script\WorktreeScriptProxy;
+
 /**
  * Migrate script runner.
  *
  * Runs Doctrine migrations inside the PHP container.
+ * With --generate, produces an isolated diff against a temporary database
+ * so that the shared application database is never used as the diff target.
  */
 final class MigrateRunner extends AbstractScriptRunner
 {
@@ -30,6 +34,7 @@ final class MigrateRunner extends AbstractScriptRunner
     {
         return [
             ['name' => '--dry-run', 'description' => 'Show SQL queries without executing'],
+            ['name' => '--generate', 'description' => 'Generate a new migration from the current entity diff using an isolated temporary database'],
         ];
     }
 
@@ -38,16 +43,24 @@ final class MigrateRunner extends AbstractScriptRunner
         return [
             'php scripts/migrate.php',
             'php scripts/migrate.php --dry-run',
+            'php scripts/migrate.php --generate',
         ];
     }
 
     /**
-     * Runs Doctrine migrations through the shared Doctrine runner.
+     * Runs Doctrine migrations or generates a diff, depending on the flags.
      *
      * @param list<string> $args
      */
     public function run(array $args): int
     {
+        [, $options] = $this->parseArgs($args);
+
+        if (isset($options['generate'])) {
+            $agentCode = $this->detectAgentCode();
+            return (new MigrateGenerateService($this->app, $agentCode, $this->projectRoot))->run();
+        }
+
         try {
             return (new DoctrineRunner($this->app))->run(['migrate', ...$args]);
         } catch (\RuntimeException $e) {
@@ -55,5 +68,31 @@ final class MigrateRunner extends AbstractScriptRunner
         } catch (\InvalidArgumentException $e) {
             $this->console->fail($e->getMessage());
         }
+    }
+
+    /**
+     * Resolves the agent code for the current execution context.
+     *
+     * When running inside a linked WA the agent code is extracted from the
+     * last path segment of the WA root (e.g. ".agent-worktrees/d04" → "d04").
+     * Outside a linked WA the SOMANAGER_AGENT env var is used as fallback,
+     * and "main" is returned when neither is available.
+     */
+    private function detectAgentCode(): string
+    {
+        if ($this->scriptFile !== null) {
+            try {
+                $context = WorktreeScriptProxy::detect($this->scriptFile);
+                if ($context->isLinkedWorktree()) {
+                    return basename($context->getCurrentRoot());
+                }
+            } catch (\RuntimeException) {
+                // Not in git repo or path cannot be resolved — fall through
+            }
+        }
+
+        $fromEnv = trim((string) getenv('SOMANAGER_AGENT'));
+
+        return $fromEnv !== '' ? $fromEnv : 'main';
     }
 }

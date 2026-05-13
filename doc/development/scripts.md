@@ -155,12 +155,16 @@ php scripts/dev.php --stop    # stop
 ---
 
 ### `migrate.php`
-Runs Doctrine migrations in the PHP container.
+Runs Doctrine migrations in the PHP container, or generates a new migration diff against an isolated temporary database.
 
 ```bash
 php scripts/migrate.php             # run migrations
 php scripts/migrate.php --dry-run   # simulate without applying
+php scripts/migrate.php --generate  # generate a migration diff using an isolated temp DB
 ```
+
+`--generate` creates a temporary database named `{agentCode}_migrate_gen`, applies all existing migrations on it, then runs `doctrine:migrations:diff`. The temporary database is dropped after the diff.
+When invoked from a WA, the agent code is derived from the worktree path. Outside a WA, `SOMANAGER_AGENT` is used as fallback.
 
 ---
 

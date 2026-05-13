@@ -17,6 +17,7 @@ use SoManAgent\Script\Backlog\Command\BacklogFeatureMergeCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureReleaseCommand;
 use SoManAgent\Script\Backlog\Command\BacklogEntryMergeCommand;
 use SoManAgent\Script\Backlog\Command\BacklogEntryRenameCommand;
+use SoManAgent\Script\Backlog\Command\BacklogEntrySetMetaCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReworkCommand;
 use SoManAgent\Script\Backlog\Command\BacklogWorkStartCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureTaskMergeCommand;
@@ -142,6 +143,7 @@ final class BacklogCommandFactory
             BacklogCommandName::REWORK->value => BacklogReworkCommand::class,
             BacklogCommandName::ENTRY_MERGE->value => BacklogEntryMergeCommand::class,
             BacklogCommandName::ENTRY_RENAME->value => BacklogEntryRenameCommand::class,
+            BacklogCommandName::ENTRY_SET_META->value => BacklogEntrySetMetaCommand::class,
             BacklogCommandName::REVIEW_CANCEL->value => BacklogReviewCancelCommand::class,
             BacklogCommandName::REVIEW_CHECK->value => BacklogReviewCheckCommand::class,
             BacklogCommandName::REVIEW_APPROVE->value => BacklogReviewApproveCommand::class,

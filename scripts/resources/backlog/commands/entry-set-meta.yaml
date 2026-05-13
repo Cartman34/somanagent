@@ -1,0 +1,13 @@
+description: 'Set or clear a named extra-metadata key on the caller agent''s active entry'
+arguments:
+  -
+    name: 'key=value'
+    description: 'Metadata assignment in key=value form. Pass an empty value (key=) to clear the key.'
+notes:
+  - 'Requires SOMANAGER_AGENT to identify the calling agent.'
+  - 'Only the key "database" is accepted. Other keys are rejected.'
+  - 'Pass an empty value (database=) to remove the key from the entry metadata.'
+  - 'Fails when the agent has no active entry.'
+examples:
+  - 'SOMANAGER_AGENT=d04 php scripts/backlog.php entry-set-meta database=d04_migrate_gen'
+  - 'SOMANAGER_AGENT=d04 php scripts/backlog.php entry-set-meta database='
