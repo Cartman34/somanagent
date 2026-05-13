@@ -754,9 +754,10 @@ MD);
     /**
      * Runs migrate.php --generate with the given agent code.
      *
-     * Skipped in dry-run mode and when --allow-integration is not set (requires Docker).
-     * Asserts that the temp DB name matches the expected pattern and that board meta
-     * is cleared after the command completes.
+     * Skipped in dry-run mode and when --allow-integration is not set (requires a live local
+     * PostgreSQL on localhost:5432). Asserts that the command runs locally (no Docker), that the
+     * temp DB name is derived from the agent code, that DATABASE_URL targets localhost:5432, and
+     * that board meta is cleared after the command completes.
      *
      * @param string $agent Agent code used to name the temporary database
      */
@@ -767,7 +768,7 @@ MD);
         }
 
         if (!$this->context->allowIntegration) {
-            $this->console->warn('[migrate --generate] Skipped: --allow-integration not set (requires Docker).');
+            $this->console->warn('[migrate --generate] Skipped: --allow-integration not set (requires a live local PostgreSQL on localhost:5432).');
 
             return;
         }
@@ -791,6 +792,13 @@ MD);
             throw new \RuntimeException(sprintf(
                 "migrate.php --generate output does not mention expected temp DB name '%s':\n%s",
                 $expectedDbName,
+                $output,
+            ));
+        }
+
+        if (!str_contains($output, 'localhost:5432')) {
+            throw new \RuntimeException(sprintf(
+                "migrate.php --generate output does not mention 'localhost:5432' — command may not be running locally:\n%s",
                 $output,
             ));
         }

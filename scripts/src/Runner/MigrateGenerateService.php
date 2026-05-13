@@ -20,6 +20,11 @@ use SoManAgent\Script\TextSlugger;
  * agents never share the same target. A per-agent file lock prevents the same
  * agent from running two concurrent generate operations.
  *
+ * All PostgreSQL and Doctrine operations run locally against localhost:5432.
+ * No Docker or container is involved. If psql or PHP is missing, or if the
+ * local database is unreachable, the command fails immediately with a clear
+ * error; there is no Docker fallback.
+ *
  * Steps (each step name appears in the error when it fails):
  *   1. agent detection   — resolve the agent code from the WA path or env
  *   2. lock              — acquire the per-agent advisory lock
@@ -33,15 +38,15 @@ use SoManAgent\Script\TextSlugger;
 final class MigrateGenerateService
 {
     private const LOCK_TIMEOUT_SECONDS = 30;
+    private const PG_HOST = 'localhost';
+    private const PG_PORT = '5432';
 
-    private DockerComposeServiceRunner $phpRunner;
-    private DockerComposeServiceRunner $dbRunner;
     private readonly Console $console;
 
     /**
      * @param Application $app
      * @param string $agentCode Resolved agent code (e.g. "d04")
-     * @param string $projectRoot Absolute path to the project root (WA or WP), used for lock files and DATABASE_URL
+     * @param string $projectRoot Absolute path to the project root (WA or WP), used for lock files, .env and backend/
      * @param string $boardRoot Absolute path to the WP root where the canonical backlog board lives
      */
     public function __construct(
@@ -50,9 +55,7 @@ final class MigrateGenerateService
         private readonly string $projectRoot,
         private readonly string $boardRoot,
     ) {
-        $this->phpRunner = new DockerComposeServiceRunner($app, 'php');
-        $this->dbRunner  = new DockerComposeServiceRunner($app, 'db');
-        $this->console   = $app->console;
+        $this->console = $app->console;
     }
 
     /**
@@ -68,6 +71,8 @@ final class MigrateGenerateService
         $this->console->info("Agent: {$this->agentCode}");
         $this->console->info("Temp DB: {$dbName}");
 
+        $credentials = $this->parseDatabaseUrl();
+
         // ── Step: lock ────────────────────────────────────────────────────────
         $this->console->step('Acquiring per-agent lock');
         $lockHandle = $this->acquireLock($lockPath);
@@ -75,43 +80,36 @@ final class MigrateGenerateService
         try {
             // ── Step: initial cleanup ─────────────────────────────────────────
             $this->console->step('Initial cleanup — dropping leftover temp DB');
-            $this->dropDatabase($dbName);
+            $this->dropDatabase($dbName, $credentials);
 
             // ── Step: db creation ─────────────────────────────────────────────
             $this->console->step('Creating temp DB');
-            $this->createDatabase($dbName);
+            $this->createDatabase($dbName, $credentials);
 
             try {
                 // ── Step: record in backlog meta ──────────────────────────────
                 $this->recordDatabaseInBacklog($dbName);
 
-                $databaseUrl = $this->buildTempDatabaseUrl($dbName);
+                $databaseUrl = $this->buildTempDatabaseUrl($dbName, $credentials);
+                $this->console->info(sprintf('DB host: %s:%s', self::PG_HOST, self::PG_PORT));
 
                 // ── Step: migrations ──────────────────────────────────────────
                 $this->console->step('Applying existing migrations on temp DB');
-                $code = $this->phpRunner->run(
-                    ['php', 'bin/console', 'doctrine:migrations:migrate', '--no-interaction'],
-                    false,
-                    ['DATABASE_URL' => $databaseUrl],
-                );
+                $code = $this->runDoctrineCommand('doctrine:migrations:migrate', $databaseUrl);
                 if ($code !== 0) {
                     throw new \RuntimeException("[migrations] doctrine:migrations:migrate failed (exit {$code}).");
                 }
 
                 // ── Step: doctrine diff ───────────────────────────────────────
                 $this->console->step('Generating migration diff');
-                $code = $this->phpRunner->run(
-                    ['php', 'bin/console', 'doctrine:migrations:diff', '--no-interaction'],
-                    false,
-                    ['DATABASE_URL' => $databaseUrl],
-                );
+                $code = $this->runDoctrineCommand('doctrine:migrations:diff', $databaseUrl);
                 if ($code !== 0) {
                     throw new \RuntimeException("[doctrine diff] doctrine:migrations:diff failed (exit {$code}).");
                 }
             } finally {
                 // ── Step: final cleanup ───────────────────────────────────────
                 $this->console->step('Final cleanup — dropping temp DB');
-                $this->safeDropDatabase($dbName);
+                $this->safeDropDatabase($dbName, $credentials);
                 try {
                     $this->clearDatabaseFromBacklog();
                 } catch (\Throwable $e) {
@@ -185,31 +183,40 @@ final class MigrateGenerateService
         fclose($handle);
     }
 
-    private function dropDatabase(string $dbName): void
+    /**
+     * @param array{scheme: string, user: string, password: string, query: string} $credentials
+     */
+    private function dropDatabase(string $dbName, array $credentials): void
     {
-        $sql = sprintf('DROP DATABASE IF EXISTS %s', $this->quoteIdent($dbName));
-        $code = $this->dbRunner->run(['psql', '-U', 'somanagent', '-d', 'postgres', '-c', $sql]);
+        $sql  = sprintf('DROP DATABASE IF EXISTS %s', $this->quoteIdent($dbName));
+        $code = $this->runPsql($sql, $credentials);
         if ($code !== 0) {
             throw new \RuntimeException("[initial cleanup] Could not drop database {$dbName} (exit {$code}).");
         }
         $this->console->ok("Old temp DB removed (if existed).");
     }
 
-    private function createDatabase(string $dbName): void
+    /**
+     * @param array{scheme: string, user: string, password: string, query: string} $credentials
+     */
+    private function createDatabase(string $dbName, array $credentials): void
     {
-        $sql = sprintf('CREATE DATABASE %s', $this->quoteIdent($dbName));
-        $code = $this->dbRunner->run(['psql', '-U', 'somanagent', '-d', 'postgres', '-c', $sql]);
+        $sql  = sprintf('CREATE DATABASE %s', $this->quoteIdent($dbName));
+        $code = $this->runPsql($sql, $credentials);
         if ($code !== 0) {
             throw new \RuntimeException("[db creation] Could not create database {$dbName} (exit {$code}).");
         }
         $this->console->ok("Temp DB created: {$dbName}");
     }
 
-    private function safeDropDatabase(string $dbName): void
+    /**
+     * @param array{scheme: string, user: string, password: string, query: string} $credentials
+     */
+    private function safeDropDatabase(string $dbName, array $credentials): void
     {
         try {
             $sql  = sprintf('DROP DATABASE IF EXISTS %s', $this->quoteIdent($dbName));
-            $code = $this->dbRunner->run(['psql', '-U', 'somanagent', '-d', 'postgres', '-c', $sql]);
+            $code = $this->runPsql($sql, $credentials);
             if ($code !== 0) {
                 $this->console->warn("[final cleanup] Could not drop temp DB {$dbName} (exit {$code}) — manual cleanup may be needed.");
             } else {
@@ -294,15 +301,16 @@ final class MigrateGenerateService
     }
 
     /**
-     * Reads DATABASE_URL from the project root .env and replaces the database name
-     * with the given temporary database name.
+     * Parses DATABASE_URL from the project root .env and extracts connection credentials.
      *
      * Handles the three common .env value formats:
      *   DATABASE_URL=postgresql://...        (unquoted)
      *   DATABASE_URL="postgresql://..."      (double-quoted)
      *   DATABASE_URL='postgresql://...'      (single-quoted)
+     *
+     * @return array{scheme: string, user: string, password: string, query: string}
      */
-    private function buildTempDatabaseUrl(string $dbName): string
+    private function parseDatabaseUrl(): array
     {
         $envFile = $this->projectRoot . '/.env';
         $content = is_file($envFile) ? file_get_contents($envFile) : false;
@@ -315,14 +323,80 @@ final class MigrateGenerateService
             throw new \RuntimeException("[migrations] DATABASE_URL not found in .env");
         }
 
-        $url = ($matches[2] ?? '') !== '' ? $matches[2] : (($matches[3] ?? '') !== '' ? $matches[3] : ($matches[4] ?? ''));
-        $replaced = preg_replace('#/([^/?]+)(\?|$)#', '/' . $dbName . '$2', $url, 1);
+        $url    = ($matches[2] ?? '') !== '' ? $matches[2] : (($matches[3] ?? '') !== '' ? $matches[3] : ($matches[4] ?? ''));
+        $parsed = parse_url($url);
 
-        if (!is_string($replaced) || $replaced === $url) {
-            throw new \RuntimeException("[migrations] Could not substitute database name in DATABASE_URL.");
+        if ($parsed === false || !isset($parsed['scheme'], $parsed['user'])) {
+            throw new \RuntimeException("[migrations] Cannot parse DATABASE_URL — expected postgresql://user:pass@host:port/dbname.");
         }
 
-        return $replaced;
+        return [
+            'scheme'   => $parsed['scheme'],
+            'user'     => $parsed['user'],
+            'password' => $parsed['pass'] ?? '',
+            'query'    => $parsed['query'] ?? '',
+        ];
+    }
+
+    /**
+     * Builds a DATABASE_URL pointing to localhost:5432 with the given temporary database name,
+     * preserving the scheme and credentials extracted from the project's .env.
+     *
+     * @param array{scheme: string, user: string, password: string, query: string} $credentials
+     */
+    private function buildTempDatabaseUrl(string $dbName, array $credentials): string
+    {
+        $url = sprintf(
+            '%s://%s:%s@%s:%s/%s',
+            $credentials['scheme'],
+            rawurlencode($credentials['user']),
+            rawurlencode($credentials['password']),
+            self::PG_HOST,
+            self::PG_PORT,
+            rawurlencode($dbName),
+        );
+
+        if ($credentials['query'] !== '') {
+            $url .= '?' . $credentials['query'];
+        }
+
+        return $url;
+    }
+
+    /**
+     * Runs a psql command against localhost:5432 using the extracted project credentials.
+     *
+     * @param array{scheme: string, user: string, password: string, query: string} $credentials
+     */
+    private function runPsql(string $sql, array $credentials): int
+    {
+        return $this->app->runCommand(sprintf(
+            'PGPASSWORD=%s psql -h %s -p %s -U %s -d postgres -c %s',
+            escapeshellarg($credentials['password']),
+            escapeshellarg(self::PG_HOST),
+            escapeshellarg(self::PG_PORT),
+            escapeshellarg($credentials['user']),
+            escapeshellarg($sql),
+        ));
+    }
+
+    /**
+     * Runs a Symfony console command from the project's backend/ directory with the given DATABASE_URL.
+     *
+     * Executed locally without Docker; requires PHP and the configured database to be available
+     * on the local system. If either is missing the command exits non-zero with an error from the
+     * local toolchain.
+     */
+    private function runDoctrineCommand(string $subCommand, string $databaseUrl): int
+    {
+        $backendDir = $this->projectRoot . '/backend';
+
+        return $this->app->runCommand(sprintf(
+            'cd %s && DATABASE_URL=%s php bin/console %s --no-interaction',
+            escapeshellarg($backendDir),
+            escapeshellarg($databaseUrl),
+            escapeshellarg($subCommand),
+        ));
     }
 
     /**
