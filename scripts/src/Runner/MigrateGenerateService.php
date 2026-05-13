@@ -239,6 +239,11 @@ final class MigrateGenerateService
     /**
      * Reads DATABASE_URL from the project root .env and replaces the database name
      * with the given temporary database name.
+     *
+     * Handles the three common .env value formats:
+     *   DATABASE_URL=postgresql://...        (unquoted)
+     *   DATABASE_URL="postgresql://..."      (double-quoted)
+     *   DATABASE_URL='postgresql://...'      (single-quoted)
      */
     private function buildTempDatabaseUrl(string $dbName): string
     {
@@ -249,11 +254,11 @@ final class MigrateGenerateService
             throw new \RuntimeException("[migrations] Cannot read .env file: {$envFile}");
         }
 
-        if (preg_match('/^DATABASE_URL=["\']?(.+?)["\']?\s*$/m', $content, $matches) !== 1) {
+        if (preg_match('/^DATABASE_URL=("([^"]+)"|\'([^\']+)\'|([^\s]+))\s*$/m', $content, $matches) !== 1) {
             throw new \RuntimeException("[migrations] DATABASE_URL not found in .env");
         }
 
-        $url = trim($matches[1]);
+        $url = ($matches[2] ?? '') !== '' ? $matches[2] : (($matches[3] ?? '') !== '' ? $matches[3] : ($matches[4] ?? ''));
         $replaced = preg_replace('#/([^/?]+)(\?|$)#', '/' . $dbName . '$2', $url, 1);
 
         if (!is_string($replaced) || $replaced === $url) {

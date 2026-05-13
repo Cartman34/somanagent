@@ -52,5 +52,8 @@ final class EntrySetMetaCampaign implements CampaignInterface
 
         // ── Rejection: no active entry ────────────────────────────────────────
         $driver->assertSetEntryMetaFails('agent-without-entry', 'database=some_db', 'has no active entry');
+
+        // ── Cleanup: release the feature (no commits were made) ───────────────
+        $driver->releaseFeature($agent, 'set-meta-test');
     }
 }
