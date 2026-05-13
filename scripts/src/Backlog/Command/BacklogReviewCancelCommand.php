@@ -48,10 +48,7 @@ final class BacklogReviewCancelCommand extends AbstractBacklogCommand
      */
     public function handle(array $commandArgs, array $options): void
     {
-        $agent = $options['agent'] ?? null;
-        if (!is_string($agent) || $agent === '') {
-            throw new RuntimeException('review-cancel requires --agent=<reviewer>.');
-        }
+        $agent = $this->requireCallerAgent();
 
         $rawReference = $commandArgs[0] ?? null;
         if (!is_string($rawReference) || trim($rawReference) === '') {
@@ -59,7 +56,7 @@ final class BacklogReviewCancelCommand extends AbstractBacklogCommand
         }
         $reference = trim($rawReference);
 
-        $isManager = strtolower(trim((string) getenv('SOMANAGER_ROLE'))) === self::ROLE_MANAGER;
+        $isManager = $this->readCallerRole() === self::ROLE_MANAGER;
 
         $board = $this->loadBoard();
         $entry = $this->resolveByReference($board, $reference);

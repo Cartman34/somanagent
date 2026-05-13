@@ -40,10 +40,7 @@ final class BacklogReviewNextCommand extends AbstractBacklogCommand
      */
     public function handle(array $commandArgs, array $options): void
     {
-        $agent = $options['agent'] ?? null;
-        if (!is_string($agent) || $agent === '') {
-            throw new RuntimeException('review-next requires --agent=<reviewer>.');
-        }
+        $agent = $this->requireCallerAgent();
         $explicitReference = $commandArgs[0] ?? null;
 
         $board = $this->loadBoard();

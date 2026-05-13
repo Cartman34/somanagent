@@ -1,10 +1,6 @@
-description: 'Rename the active entry text for the given agent'
-options:
-  -
-    name: '--agent'
-    description: 'Developer agent code whose active entry is renamed'
+description: 'Rename the active entry text for the caller agent'
 examples:
-  - 'php scripts/backlog.php entry-rename --agent agent-01 "New description for the active task or feature"'
+  - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php entry-rename "New description for the active task or feature"'
 notes:
   - 'Accepts the agent''s single active entry, whether kind=task or kind=feature.'
   - 'For kind=task, also updates the matching contribution line in the parent feature container to keep them in sync.'

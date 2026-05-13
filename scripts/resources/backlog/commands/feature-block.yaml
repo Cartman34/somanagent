@@ -3,13 +3,9 @@ arguments:
   -
     name: '[<feature>]'
     description: 'Optional explicit feature slug'
-options:
-  -
-    name: '--agent'
-    description: 'Developer agent code owning the feature'
 examples:
-  - 'php scripts/backlog.php feature-block --agent agent-01'
-  - 'php scripts/backlog.php feature-block delete-question-reply --agent agent-01'
+  - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php feature-block'
+  - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php feature-block delete-question-reply'
 notes:
-  - 'Without an explicit feature argument, resolves the single active feature assigned to the provided agent.'
+  - 'Without an explicit feature argument, resolves the single active feature assigned to the caller agent.'
   - 'If the feature already has a PR, the command updates the PR title to include the blocked marker.'

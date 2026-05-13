@@ -46,8 +46,10 @@ final class MutationLockCampaign implements CampaignInterface
         // without corrupting the board. Without the lock they would race on the queued tasks
         // and both might consume the first task, leaving the board inconsistent.
         [[$codeAlpha, $outAlpha], [$codeBeta, $outBeta]] = $driver->runTwoConcurrentBacklog(
-            ['work-start', '--agent', $agentAlpha],
-            ['work-start', '--agent', $agentBeta],
+            ['work-start'],
+            ['work-start'],
+            ['SOMANAGER_AGENT' => $agentAlpha],
+            ['SOMANAGER_AGENT' => $agentBeta],
         );
 
         if ($codeAlpha !== 0) {

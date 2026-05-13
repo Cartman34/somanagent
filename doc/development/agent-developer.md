@@ -99,7 +99,7 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 
 ### `entry-rename`
 
-1. Run `php scripts/backlog.php entry-rename --agent=<code> <new-text>`.
+1. Run `SOMANAGER_AGENT=<code> php scripts/backlog.php entry-rename <new-text>`.
 2. The script updates the main text of the agent's active entry, whether it is a `kind=task` or a `kind=feature`.
 3. For `kind=task`, the corresponding contribution line inside the parent feature container is also updated to keep them in sync.
 4. The agent can only rename their own active entry.
@@ -114,7 +114,7 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 
 ### `rework`
 
-1. Run `php scripts/backlog.php rework --agent=<code> [<feature>|<task>|<feature/task>]`.
+1. Run `SOMANAGER_AGENT=<code> php scripts/backlog.php rework [<feature>|<task>|<feature/task>]`.
 2. Without an explicit reference, the script resolves the single reworkable entry (task or feature) assigned to the agent. An entry is reworkable when its stage is `rejected` or `approved`.
 3. With a `<feature/task>` reference, the script targets that child task. With a plain slug, it tries feature first then task, and errors if both match.
 4. The script requires the entry stage to be `rejected` or `approved`, moves it back to `meta.stage=development`, and reopens the entry branch in the agent `WA`. Stored review notes from `local/backlog-review.md` are displayed when the entry came from a rejection.
@@ -133,7 +133,7 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 
 ### `work-start`
 
-1. Run `php scripts/backlog.php work-start --agent=<code> [<feature|feature/task>] [--branch-type=<feat|fix|tech>] [--dry-run]`.
+1. Run `SOMANAGER_AGENT=<code> php scripts/backlog.php work-start [<feature|feature/task>] [--branch-type=<feat|fix|tech>] [--dry-run]`.
 2. The agent must have no active entry. If one exists, the script refuses and describes the required next step.
 3. Without a target, the script consumes the first queued entry implicitly. With an explicit `<feature|feature/task>` reference (the same shape printed by `todo-list`), the script locates the matching queued entry by its `[feature-slug]` or `[feature-slug][task-slug]` prefix and refuses with a clear error when no queued entry matches.
 4. Automated workflows must always pass an explicit target; the implicit head form is reserved for interactive usage.
@@ -151,14 +151,14 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 
 ### `feature-release`
 
-1. Run `php scripts/backlog.php feature-release --agent=<code> [<feature>]`.
+1. Run `SOMANAGER_AGENT=<code> php scripts/backlog.php feature-release [<feature>]`.
 2. The script returns the active feature to the start of `## To do` only when the branch is still clean and has no commit ahead of its recorded `base`.
 3. A parent `kind=feature` cannot be released while child `kind=task` entries are still active for that feature.
 4. The script then removes the managed worktree and deletes the untouched local branch.
 
 ### `entry-merge`
 
-1. Run `php scripts/backlog.php entry-merge <feature/task> --agent=<code>`.
+1. Run `SOMANAGER_AGENT=<code> php scripts/backlog.php entry-merge <feature/task>`.
 2. The script targets the explicit `<feature/task>` reference.
 3. The script requires a green mechanical review in the task worktree, then merges the child branch into the parent feature branch locally from the parent feature worktree or from a temporary merge worktree.
 4. The current task review stage does not gate this merge. `development`, `review`, `rejected`, and `approved` are all mergeable when the user explicitly asks for `merge`.
@@ -187,12 +187,12 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 
 ### `feature-block`
 
-1. Run `php scripts/backlog.php feature-block --agent=<code> [<feature>]`.
+1. Run `SOMANAGER_AGENT=<code> php scripts/backlog.php feature-block [<feature>]`.
 2. The script marks the feature as blocked and keeps the current backlog section.
 
 ### `feature-unblock`
 
-1. Run `php scripts/backlog.php feature-unblock --agent=<code> [<feature>]`.
+1. Run `SOMANAGER_AGENT=<code> php scripts/backlog.php feature-unblock [<feature>]`.
 2. The script removes the blocked flag from the feature and updates the PR title when one exists.
 
 ### `feature-list`
@@ -229,7 +229,7 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 
 ### `review-request`
 
-1. Run `php scripts/backlog.php review-request --agent=<code>`.
+1. Run `SOMANAGER_AGENT=<code> php scripts/backlog.php review-request`.
 2. The script resolves the agent's single active entry automatically: if `kind=task`, submits the task for review; if `kind=feature`, submits the feature for review.
 3. For `kind=feature`, requires all child `kind=task` entries to have been merged locally first, and requires the agent to be assigned to the feature via `feature-assign`.
 4. Before running the mechanical review, the script rebases the entry branch automatically: a `kind=feature` is rebased on `origin/main` (with `origin/main` refreshed first), a `kind=task` is rebased on its local parent feature branch.
@@ -250,7 +250,7 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 
 ### `next`
 
-1. `WP`: run `php scripts/backlog.php work-start --agent=<code>`.
+1. `WP`: run `SOMANAGER_AGENT=<code> php scripts/backlog.php work-start`.
 2. `WA`: implement the feature scope on the branch checked out for that task.
 3. `WA`: inspect the local diff and fix issues in scope before moving on.
 4. `WA`: run `git add .`.
@@ -258,19 +258,19 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 
 ### `submit`
 
-1. `WP`: run `php scripts/backlog.php review-request --agent=<code>`.
+1. `WP`: run `SOMANAGER_AGENT=<code> php scripts/backlog.php review-request`.
 2. For `kind=feature`, this keyword still applies only after all child `kind=task` entries have already been merged locally, and after `feature-assign` has been run to take integration ownership.
 
 ### `merge`
 
-1. `WP`: if the active entry is `kind=task`, run `php scripts/backlog.php entry-merge <feature/task> --agent=<code>`.
+1. `WP`: if the active entry is `kind=task`, run `SOMANAGER_AGENT=<code> php scripts/backlog.php entry-merge <feature/task>`.
 2. This keyword merges the local task only on explicit user instruction; it is not implied by `submit`.
 
 ### `rework`
 
 1. Use this keyword in two scenarios: (a) after a reviewer rejection, and (b) after a merge conflict aborted `entry-merge` on an approved entry.
 2. For scenario (a), the review feedback is given with the `rework` instruction. The `rework` command output prints the stored review notes directly; do not run `status` or read `local/backlog-review.md` before proceeding.
-3. `WP`: run `php scripts/backlog.php rework --agent=<code> [<feature>|<task>|<feature/task>]`.
+3. `WP`: run `SOMANAGER_AGENT=<code> php scripts/backlog.php rework [<feature>|<task>|<feature/task>]`.
 4. `WA`: resume development on the same branch. Address the review feedback for scenario (a), or resolve the conflict for scenario (b).
 5. Stop here. Do not run `submit` unless the user explicitly asks for it.
 

@@ -40,10 +40,7 @@ final class BacklogEntryRenameCommand extends AbstractBacklogCommand
      */
     public function handle(array $commandArgs, array $options): void
     {
-        $agent = $options['agent'] ?? null;
-        if (!is_string($agent)) {
-            throw new \RuntimeException('Option --agent is required.');
-        }
+        $agent = $this->requireCallerAgent();
 
         $newText = $this->boardService->sanitizeString(implode(' ', $commandArgs));
         if ($newText === null || $newText === '') {

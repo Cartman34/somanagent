@@ -90,8 +90,8 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->assertEntryMergeShortTaskReferenceFails($context->childA);
         $taskMergeBody = $driver->createBodyFile('test-entry-merge-task-body.md', ['Task merges do not accept PR body files.']);
         $driver->assertEntryMergeTaskBodyFileFails($taskARef, $taskMergeBody);
-        // Auto-resolve path: rework --agent without explicit reference must pick the single approved entry.
-        $reworkApprovedOutput = $driver->runBacklog(['rework', '--agent', $context->agentPrimary]);
+        // Auto-resolve path: SOMANAGER_AGENT without explicit reference must pick the single approved entry.
+        $reworkApprovedOutput = $driver->runBacklog(['rework'], ['SOMANAGER_AGENT' => $context->agentPrimary]);
         $driver->assertContains($reworkApprovedOutput, 'moved back to In development from Approved');
         $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_IN_PROGRESS);
         $driver->requestTaskReview($context->agentPrimary);

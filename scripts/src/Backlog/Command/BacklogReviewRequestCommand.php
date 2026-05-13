@@ -58,10 +58,7 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
      */
     public function handle(array $commandArgs, array $options): void
     {
-        $agent = $options['agent'] ?? null;
-        if (!is_string($agent)) {
-            throw new \RuntimeException('Option --agent is required.');
-        }
+        $agent = $this->requireCallerAgent();
 
         $board = $this->loadBoard();
         $activeEntries = $this->boardService->findActiveEntriesByAgent($board, $agent);

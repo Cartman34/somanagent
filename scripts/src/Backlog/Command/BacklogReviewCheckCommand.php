@@ -59,10 +59,7 @@ final class BacklogReviewCheckCommand extends AbstractBacklogCommand
      */
     public function handle(array $commandArgs, array $options): void
     {
-        $reviewer = $options['agent'] ?? null;
-        if (!is_string($reviewer) || $reviewer === '') {
-            throw new \RuntimeException('review-check requires --agent=<reviewer>.');
-        }
+        $this->requireCallerAgent();
 
         $reference = trim($commandArgs[0] ?? '');
         if ($reference === '') {

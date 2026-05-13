@@ -92,7 +92,7 @@ Rules:
 
 ### `review-next`
 
-1. Run `php scripts/backlog.php review-next --agent=<reviewer> [<feature|feature/task>]`.
+1. Run `SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-next [<feature|feature/task>]`.
 2. Without a target, the script selects the first entry with `meta.stage=review`, transitions it to `meta.stage=reviewing`, records the reviewer in `meta.reviewer`, and displays the entry.
 3. With an explicit `<feature|feature/task>` reference (the same shape printed by `review-list`), the script claims that exact entry. It refuses with a clear error when the entry is already in `meta.stage=reviewing` (claimed by another reviewer) or no longer in `meta.stage=review`.
 4. Automated workflows must always pass an explicit target; the implicit head form is reserved for interactive usage.
@@ -101,10 +101,10 @@ Rules:
 
 ### `review-cancel`
 
-1. Run `php scripts/backlog.php review-cancel <feature|feature/task> --agent=<reviewer>`.
+1. Run `SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-cancel <feature|feature/task>`.
 2. The reference is mandatory: review-cancel never auto-resolves the entry from the agent code, so the mutation cannot silently retarget another claim.
-3. Moves the entry from `reviewing` back to `review` and clears `meta.reviewer` after verifying the entry's stored reviewer matches `--agent`.
-4. A manager (`SOMANAGER_ROLE=manager`) may force-cancel any stuck reviewing entry with the same explicit reference contract.
+3. Moves the entry from `reviewing` back to `review` and clears `meta.reviewer` after verifying the entry's stored reviewer matches `SOMANAGER_AGENT`.
+4. A manager (`SOMANAGER_ROLE=manager` combined with `SOMANAGER_AGENT=<manager>`) may force-cancel any stuck reviewing entry with the same explicit reference contract.
 
 ### `review-notes`
 
@@ -133,11 +133,11 @@ Rules:
 
 ### `review-check`
 
-1. Run `php scripts/backlog.php review-check --agent=<reviewer> <feature>` for a feature entry.
-2. Run `php scripts/backlog.php review-check --agent=<reviewer> <feature/task>` for a child task entry.
+1. Run `SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-check <feature>` for a feature entry.
+2. Run `SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-check <feature/task>` for a child task entry.
 3. The script runs the mechanical review for the matching entry kind.
 4. Short task references (bare task slug without the parent feature) are refused; use `<feature/task>`.
-5. The `--agent` value is the reviewer code of the caller and is required.
+5. `SOMANAGER_AGENT` identifies the reviewer caller and is required.
 6. If the mechanical review fails, the entry is automatically rejected with a standard message.
 
 Block on:
@@ -158,16 +158,16 @@ Also check:
 ### `review-reject`
 
 1. Prepare the review body file under `local/tmp/`: one plain finding per line, optional leading numbers or bullets, no Markdown headings.
-2. Run `php scripts/backlog.php review-reject --agent=<reviewer> <feature> --body-file=<path>` for a feature.
-3. Run `php scripts/backlog.php review-reject --agent=<reviewer> <feature/task> --body-file=<path>` for a task.
+2. Run `SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-reject <feature> --body-file=<path>` for a feature.
+3. Run `SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-reject <feature/task> --body-file=<path>` for a task.
 4. Short task references are refused; use `<feature/task>`.
 5. `--body-file` is required for both feature and task rejections.
 
 ### `review-approve`
 
 1. For a feature: prepare the approved PR body file under `local/tmp/`.
-2. Run `php scripts/backlog.php review-approve --agent=<reviewer> <feature> --body-file=<path>` for a feature.
-3. Run `php scripts/backlog.php review-approve --agent=<reviewer> <feature/task>` for a task.
+2. Run `SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-approve <feature> --body-file=<path>` for a feature.
+3. Run `SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-approve <feature/task>` for a task.
 4. Short task references are refused; use `<feature/task>`.
 5. `--body-file` is required for feature approvals and rejected for task approvals.
 
@@ -182,11 +182,11 @@ Also check:
 
 ### `entry-merge`
 
-1. Run `php scripts/backlog.php entry-merge <feature|feature/task> --agent=<reviewer>`.
+1. Run `SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-merge <feature|feature/task>`.
 2. Use `<feature>` to merge an approved feature into `main`.
 3. Use `<feature/task>` to merge one local child task into its parent feature branch.
-4. Do not use a short task slug with `entry-merge`; `entry-merge <task> --agent=<reviewer>` is refused even when the task slug is unique.
-5. The `--agent` value is the reviewer code of the caller. It is not a developer owner lookup and is not passed to the developer form of `feature-task-merge`.
+4. Do not use a short task slug with `entry-merge`; a short task reference is refused even when the task slug is unique.
+5. `SOMANAGER_AGENT` is the reviewer code of the caller. It is not a developer owner lookup and is not passed to the developer form of `feature-task-merge`.
 6. The command prints the resolved type, target, merge target, and equivalent internal command before running the merge.
 7. Add `--body-file=<path>` only for feature merges when the existing PR body must be replaced before merging.
 8. If a feature merge aborts on a conflict, the entry stays in `approved`. The assigned developer must run `rework` on the same entry to move it back to `development`, fix the conflict, then resubmit through `review-request`.
@@ -210,10 +210,10 @@ Also check:
 
 ### `review`
 
-1. Run `php scripts/backlog.php review-next --agent=<reviewer>`.
+1. Run `SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-next`.
 2. The entry moves to `reviewing` and the reviewer is recorded.
 3. Use `Ref` or `Feature` from the output as the reference for the next command.
-4. Run `php scripts/backlog.php review-check --agent=<reviewer> <feature>` for a feature, or `php scripts/backlog.php review-check --agent=<reviewer> <feature/task>` for a task.
+4. Run `SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-check <feature>` for a feature, or `SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-check <feature/task>` for a task.
 5. If the mechanical review fails, stop: the command rejects the current target automatically.
 6. If the mechanical review passes, continue the technical and functional review manually.
 7. End the review by running `review-approve` or `review-reject` for that target.
@@ -221,13 +221,13 @@ Also check:
 ### `approve`
 
 1. Prepare the approved PR body file under `local/tmp/` for a feature.
-2. Run `php scripts/backlog.php review-approve --agent=<reviewer> <feature> --body-file=<path>` for a feature.
-3. Run `php scripts/backlog.php review-approve --agent=<reviewer> <feature/task>` for a task.
+2. Run `SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-approve <feature> --body-file=<path>` for a feature.
+3. Run `SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-approve <feature/task>` for a task.
 
 ### `merge`
 
-1. For a feature merge, run `php scripts/backlog.php entry-merge <feature> --agent=<reviewer>`. Prepare a final PR body file under `local/tmp/` and pass `--body-file=<path>` only when the PR body must be updated before merge.
-2. For a task merge, run `php scripts/backlog.php entry-merge <feature/task> --agent=<reviewer>`.
+1. For a feature merge, run `SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-merge <feature>`. Prepare a final PR body file under `local/tmp/` and pass `--body-file=<path>` only when the PR body must be updated before merge.
+2. For a task merge, run `SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-merge <feature/task>`.
 
 ### `cleanup`
 
