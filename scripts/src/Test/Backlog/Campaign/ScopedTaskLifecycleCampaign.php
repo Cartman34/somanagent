@@ -48,7 +48,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->assertStatusContains($context->scopedFeature, $renamedTaskText);
 
         $rejectBody = $driver->createBodyFile('test-task-review-reject.md', ['1. Reject child task for test workflow.']);
-        $invalidRejectBody = $driver->createBodyFile('test-task-review-invalid.md', ['1. ### Task review']);
+        $invalidRejectBody = $driver->createBodyFile('test-task-review-invalid.md', ['### Task review']);
 
         $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_IN_PROGRESS);
         $driver->assertReworkFails($context->agentPrimary, $taskARef, 'rework only accepts');
