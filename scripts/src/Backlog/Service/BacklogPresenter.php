@@ -72,6 +72,7 @@ final class BacklogPresenter
     {
         $stage = $this->boardService->getFeatureStage($entry);
         $this->console->line('Kind: ' . $this->boardService->getEntryKind($entry));
+        $this->console->line('Agent: ' . ($entry->getAgent() ?? BacklogMetaValue::NONE->value));
         if ($this->boardService->checkIsTaskEntry($entry)) {
             $this->console->line('Feature: ' . ($entry->getFeature() ?? '-'));
             $this->console->line('Task: ' . ($entry->getTask() ?? '-'));
@@ -172,11 +173,20 @@ final class BacklogPresenter
     public function displayEntryLine(BoardEntry $entry): void
     {
         $stage = $this->boardService->getFeatureStage($entry);
+        $isTask = $this->boardService->checkIsTaskEntry($entry);
+        $feature = $entry->getFeature() ?? '-';
+        $reference = $isTask
+            ? $feature . '/' . ($entry->getTask() ?? '-')
+            : $feature;
+
         $parts = [
-            $entry->getFeature() ?? '-',
-            'agent=' . ($entry->getAgent() ?? '-'),
-            'pr=' . $this->describePrStatus($entry),
+            $reference,
+            'kind=' . $this->boardService->getEntryKind($entry),
+            'agent=' . ($entry->getAgent() ?? BacklogMetaValue::NONE->value),
         ];
+        if (!$isTask) {
+            $parts[] = 'pr=' . $this->describePrStatus($entry);
+        }
         if ($stage === BacklogBoard::STAGE_REVIEWING) {
             $parts[] = 'reviewer=' . ($entry->getReviewer() ?? '-');
         }

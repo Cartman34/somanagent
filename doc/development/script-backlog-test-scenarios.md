@@ -349,17 +349,23 @@ Validate local merge of one approved child task into its parent feature.
 
 ### Steps
 
-1. Merge the approved task:
+1. Before merging, inspect the active task entry directly:
+   - `SOMANAGER_AGENT=d01 php scripts/backlog.php status test-scoped-feature/test-child-a`
+2. Verify `feature-list` shows the task with full reference and kind indicator:
+   - `SOMANAGER_AGENT=d01 php scripts/backlog.php feature-list`
+3. Merge the approved task:
    - `SOMANAGER_AGENT=d01 php scripts/backlog.php entry-merge test-scoped-feature/test-child-a`
-2. Inspect:
+4. Inspect:
    - `php scripts/backlog.php status test-scoped-feature`
    - `php scripts/backlog.php feature-list`
    - `php scripts/backlog.php worktree-list`
 
 ### Expected checks
 
-- child task active entry disappears
-- parent feature remains active and is auto-assigned to d01 (the task's developer agent)
+- step 1: `status test-scoped-feature/test-child-a` prints `[Task]` section with the task details
+- step 2: `feature-list` shows the task as `- test-scoped-feature/test-child-a kind=task agent=d01` and the parent as `- test-scoped-feature kind=feature agent=none`
+- after step 3: child task active entry disappears
+- after step 3: parent feature remains active with **no agent** (`agent=none`) — task merge does not auto-assign the parent
 - parent contribution block still records the merged child content
 - child task worktree cleanup follows documented behavior
 
@@ -373,13 +379,13 @@ Validate that after merging task A, `work-start` picks up the next queued scoped
 
 1. Create the second scoped child task:
    - `php scripts/backlog.php task-create [test-scoped-feature][test-child-b] Implement test child task B`
-2. Confirm the agent's only active entry is the parent feature container (auto-assigned on task A merge):
+2. Confirm the agent has no active entry (parent feature has `agent=none` after task A merge):
    - `php scripts/backlog.php status --agent d01`
-3. Pick up task B (work-start allows this when the only active entry is the parent feature for that scoped task):
+3. Pick up task B (`work-start` allows this since d01 has no active entry):
    - `SOMANAGER_AGENT=d01 php scripts/backlog.php work-start`
 4. Inspect:
    - `php scripts/backlog.php status test-scoped-feature`
-5. Submit, review, and approve task B (same cycle as Scenario 7):
+5. Submit, review, and approve task B (same cycle as Scenario 8):
    - `SOMANAGER_AGENT=d01 php scripts/backlog.php review-request`
    - `SOMANAGER_AGENT=r01 php scripts/backlog.php review-approve test-scoped-feature/test-child-b`
 6. Merge task B:
@@ -388,9 +394,9 @@ Validate that after merging task A, `work-start` picks up the next queued scoped
 ### Expected checks
 
 - second child task is created as active `kind=task` assigned to d01
-- parent feature container (`kind=feature`) is assigned to d01 throughout (auto-assigned on task A merge, kept on task B merge)
+- parent feature container (`kind=feature`) has **no agent** throughout, since task merges do not auto-assign it
 - contribution blocks record both merged child tasks after step 6
-- after step 6, agent has only the parent feature entry active (auto-assigned; assign explicitly if review is next)
+- after step 6, agent d01 has no active entry; take ownership with `feature-assign` before `review-request`
 
 ## Scenario 11 - Feature Review Flow
 

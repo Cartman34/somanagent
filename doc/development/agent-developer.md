@@ -163,7 +163,7 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 3. The script requires a green mechanical review in the task worktree, then merges the child branch into the parent feature branch locally from the parent feature worktree or from a temporary merge worktree.
 4. The current task review stage does not gate this merge. `development`, `review`, `rejected`, and `approved` are all mergeable when the user explicitly asks for `merge`.
 5. The child task entry is removed from `## In progress` after the local merge. The child task worktree is removed when that agent no longer owns any active task.
-6. The parent `kind=feature` entry remains, keeps the merged task content in its aggregated lines, and is moved back to `development` so the remote review flow must be requested again on the parent branch.
+6. The parent `kind=feature` entry remains, keeps the merged task content in its aggregated lines, and is moved back to `development` so the remote review flow must be requested again on the parent branch. The parent's agent assignment is never modified by a task merge — use `feature-assign` to take integration ownership of the feature after all tasks are merged.
 
 ### `feature-assign`
 
@@ -198,7 +198,8 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 ### `feature-list`
 
 1. Run `php scripts/backlog.php feature-list`.
-2. The script prints active features grouped by workflow stage.
+2. The script prints all active entries (`kind=feature` and `kind=task`) grouped by workflow stage.
+3. Each line includes the full reference (for tasks, `<feature>/<task>`), the `kind=` indicator, and the assigned agent.
 
 ### `worktree-list`
 
@@ -223,9 +224,10 @@ php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
 
 ### `status`
 
-1. Run `php scripts/backlog.php status --agent=<code>` or `php scripts/backlog.php status <feature>`.
+1. Run `php scripts/backlog.php status --agent=<code>`, `php scripts/backlog.php status <feature>`, or `php scripts/backlog.php status <feature/task>`.
 2. The script prints the agent worktree state, the active task if any, the parent feature if any, and separate next actions for task and feature workflow.
-3. Use this command to inspect the current active entry before running `review-request`.
+3. With `<feature/task>`, the script resolves and displays the child task entry directly.
+4. Use this command to inspect the current active entry before running `review-request`.
 
 ### `review-request`
 

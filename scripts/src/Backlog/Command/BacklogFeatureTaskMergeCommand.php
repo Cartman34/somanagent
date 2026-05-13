@@ -111,9 +111,6 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
         }
 
         $this->boardService->removeActiveEntryAt($board, $match->getIndex());
-        if ($parent->getEntry()->getAgent() === null) {
-            $parent->getEntry()->setAgent($taskAgent);
-        }
         $this->invalidateFeatureReviewState($parent->getEntry());
         $review->clearReview($this->boardService->getTaskReviewKey($entry));
         $this->saveBoard($board, BacklogCommandName::FEATURE_TASK_MERGE->value);
