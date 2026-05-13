@@ -31,12 +31,11 @@ final class BacklogReviewBodyFormatter
      */
     public function fromString(string $contents): array
     {
-        $contents = trim($contents);
-        if ($contents === '') {
+        if (trim($contents) === '') {
             return [self::DEFAULT_EMPTY_REVIEW_ITEM];
         }
 
-        $lines = array_values(array_filter(array_map('trim', preg_split('/\R/', $contents) ?: [])));
+        $lines = array_values(array_filter(preg_split('/\R/', $contents) ?: [], static fn(string $line): bool => $line !== ''));
         $items = [];
 
         foreach ($lines as $line) {
