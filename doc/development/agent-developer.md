@@ -107,6 +107,15 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-cre
 3. For `kind=task`, the corresponding contribution line inside the parent feature container is also updated to keep them in sync.
 4. The agent can only rename their own active entry.
 
+### `entry-set-meta`
+
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-set-meta <entry-ref> <key>=<value>`.
+2. `<entry-ref>` is required and must identify an active (in-progress) entry: a feature slug or a `feature/task` composite reference.
+3. Sets the named extra-metadata key on the targeted entry. Pass an empty value (`<key>=`) to clear the key.
+4. Only the key `database` is accepted. Any other key is rejected.
+5. The command fails when no active entry matches the provided entry-ref.
+6. Used internally by `php scripts/migrate.php --generate` to record and clear the temporary database name on the active entry during the migration generation flow.
+
 ### `review-notes`
 
 1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php review-notes [--agent=<code>] [<entry-ref>]`.

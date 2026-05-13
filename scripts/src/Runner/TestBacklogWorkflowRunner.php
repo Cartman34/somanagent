@@ -12,6 +12,7 @@ use SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
 use SoManAgent\Script\Test\Backlog\Campaign\BoardFormatNormalizationCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\CampaignInterface;
+use SoManAgent\Script\Test\Backlog\Campaign\BoardFormatNormalizationCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\FeatureReviewLifecycleCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\HelpCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\MutationLockCampaign;

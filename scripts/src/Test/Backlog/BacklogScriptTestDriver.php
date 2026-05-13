@@ -788,26 +788,28 @@ MD);
     }
 
     /**
-     * Sets or clears an extra-metadata key on the agent's active entry.
+     * Sets or clears an extra-metadata key on the given active entry.
      *
-     * @param string $agent Agent whose active entry is targeted
+     * @param string $agent Agent code used as SOMANAGER_AGENT
+     * @param string $entryRef Feature slug or feature/task reference identifying the active entry
      * @param string $assignment Key=value assignment, e.g. "database=my_db" or "database=" to clear
      */
-    public function setEntryMeta(string $agent, string $assignment): void
+    public function setEntryMeta(string $agent, string $entryRef, string $assignment): void
     {
-        $this->runBacklog(['entry-set-meta', $assignment], ['SOMANAGER_AGENT' => $agent]);
+        $this->runBacklog(['entry-set-meta', $entryRef, $assignment], ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
      * Asserts that entry-set-meta fails and that the output contains the expected needle.
      *
-     * @param string $agent Agent used as caller
+     * @param string $agent Agent code used as SOMANAGER_AGENT
+     * @param string $entryRef Feature slug or feature/task reference passed to the command
      * @param string $assignment Key=value assignment passed to the command
      * @param string $needle Expected substring of the failure output
      */
-    public function assertSetEntryMetaFails(string $agent, string $assignment, string $needle): void
+    public function assertSetEntryMetaFails(string $agent, string $entryRef, string $assignment, string $needle): void
     {
-        $this->assertBacklogFails(['entry-set-meta', $assignment], $needle, ['SOMANAGER_AGENT' => $agent]);
+        $this->assertBacklogFails(['entry-set-meta', $entryRef, $assignment], $needle, ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -830,9 +832,9 @@ MD);
     /**
      * Asserts that the backlog board file does not contain the given text fragment.
      *
-     * @param string $needle Text that must not appear in the board file
+     * @param string $needle Text that must not appear anywhere in the board file
      */
-    public function assertBoardMissing(string $needle): void
+    public function assertBoardLacksText(string $needle): void
     {
         $contents = (string) file_get_contents($this->context->boardPath);
         if (str_contains($contents, $needle)) {

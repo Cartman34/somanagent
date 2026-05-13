@@ -75,16 +75,17 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
         $driver->assertWorktreeListContains($context->agentPrimary);
 
         // ── entry-set-meta: set, overwrite, clear, rejection cases ───────────
-        $driver->setEntryMeta($context->agentPrimary, 'database=test_db_v1');
+        $driver->setEntryMeta($context->agentPrimary, $context->plainFeature, 'database=test_db_v1');
         $driver->assertBoardContains('    database: test_db_v1');
-        $driver->setEntryMeta($context->agentPrimary, 'database=test_db_v2');
+        $driver->setEntryMeta($context->agentPrimary, $context->plainFeature, 'database=test_db_v2');
         $driver->assertBoardContains('    database: test_db_v2');
-        $driver->assertBoardMissing('    database: test_db_v1');
-        $driver->setEntryMeta($context->agentPrimary, 'database=');
-        $driver->assertBoardMissing('    database:');
-        $driver->assertSetEntryMetaFails($context->agentPrimary, 'unknown-key=value', 'does not support key "unknown-key"');
-        $driver->assertSetEntryMetaFails($context->agentPrimary, 'database', 'key=value argument');
-        $driver->assertSetEntryMetaFails($context->agentSecondary, 'database=some_db', 'has no active entry');
+        $driver->assertBoardLacksText('    database: test_db_v1');
+        $driver->setEntryMeta($context->agentPrimary, $context->plainFeature, 'database=');
+        $driver->assertBoardLacksText('    database:');
+        $driver->assertSetEntryMetaFails($context->agentPrimary, $context->plainFeature, 'unknown-key=value', 'does not support key "unknown-key"');
+        $driver->assertSetEntryMetaFails($context->agentPrimary, $context->plainFeature, 'database', 'key=value argument');
+        $driver->assertSetEntryMetaFails($context->agentPrimary, '', 'database=some_db', '<entry-ref> argument');
+        $driver->assertSetEntryMetaFails($context->agentPrimary, 'does-not-exist', 'database=some_db', 'No active entry found for entry-ref');
 
         // ── migrate --generate: end-to-end isolated DB lifecycle (requires Docker) ──
         $driver->runMigrateGenerate($context->agentPrimary);

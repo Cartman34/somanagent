@@ -8,7 +8,10 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Runner;
 
 use SoManAgent\Script\Application;
+use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Client\FilesystemClient;
 use SoManAgent\Script\Console;
+use SoManAgent\Script\TextSlugger;
 
 /**
  * Runs doctrine:migrations:diff against a temporary isolated database.
@@ -213,11 +216,18 @@ final class MigrateGenerateService
 
     private function recordDatabaseInBacklog(string $dbName): void
     {
-        $agent = $this->agentCode;
-        $code  = $this->app->runCommand(sprintf(
-            'SOMANAGER_AGENT=%s php scripts/backlog.php entry-set-meta database=%s',
-            escapeshellarg($agent),
-            escapeshellarg($dbName),
+        $entryRef = $this->detectActiveEntryRef($this->agentCode);
+        if ($entryRef === null) {
+            $this->console->warn("Could not detect active entry-ref — skipping backlog meta record (non-fatal).");
+
+            return;
+        }
+
+        $code = $this->app->runCommand(sprintf(
+            'SOMANAGER_AGENT=%s php scripts/backlog.php entry-set-meta %s %s',
+            escapeshellarg($this->agentCode),
+            escapeshellarg($entryRef),
+            escapeshellarg('database=' . $dbName),
         ));
         if ($code !== 0) {
             $this->console->warn("Could not record temp DB in backlog metadata (non-fatal).");
@@ -226,15 +236,55 @@ final class MigrateGenerateService
 
     private function clearDatabaseFromBacklog(): void
     {
-        $agent = $this->agentCode;
-        $code  = $this->app->runCommand(sprintf(
-            'SOMANAGER_AGENT=%s php scripts/backlog.php entry-set-meta %s',
-            escapeshellarg($agent),
+        $entryRef = $this->detectActiveEntryRef($this->agentCode);
+        if ($entryRef === null) {
+            $this->console->warn("Could not detect active entry-ref — skipping backlog meta clear (non-fatal).");
+
+            return;
+        }
+
+        $code = $this->app->runCommand(sprintf(
+            'SOMANAGER_AGENT=%s php scripts/backlog.php entry-set-meta %s %s',
+            escapeshellarg($this->agentCode),
+            escapeshellarg($entryRef),
             escapeshellarg('database='),
         ));
         if ($code !== 0) {
             $this->console->warn("Could not clear temp DB from backlog metadata (non-fatal).");
         }
+    }
+
+    /**
+     * Reads the backlog board and returns the entry-ref (feature or feature/task) for the
+     * first in-progress entry assigned to the given agent.
+     *
+     * Returns null when the board file is missing or no matching entry is found.
+     * The result is used as the explicit <entry-ref> argument to entry-set-meta.
+     */
+    private function detectActiveEntryRef(string $agentCode): ?string
+    {
+        $boardPath = $this->projectRoot . '/local/backlog-board.md';
+        if (!is_file($boardPath)) {
+            return null;
+        }
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $board        = $boardService->loadBoard($boardPath);
+        $matches      = $boardService->findActiveEntriesByAgent($board, $agentCode);
+
+        if ($matches === []) {
+            return null;
+        }
+
+        $entry   = $matches[0]->getEntry();
+        $feature = $entry->getFeature();
+        $task    = $entry->getTask();
+
+        if ($feature === null) {
+            return null;
+        }
+
+        return $task !== null ? "{$feature}/{$task}" : $feature;
     }
 
     /**

@@ -525,39 +525,42 @@ Validate explicit failures and guardrails.
 
 ### Goal
 
-Validate that `entry-set-meta` sets, overwrites, and clears the `database` key on the active entry, and that illegal calls are rejected.
+Validate that `entry-set-meta` sets, overwrites, and clears the `database` key on an active entry identified by its entry-ref, and that illegal calls are rejected.
 
 ### Precondition
 
-An active feature entry exists for agent `d01` (e.g. from Scenario 3).
+An active entry `my-feature` exists in the In progress section (e.g. from Scenario 3).
 
 ### Steps
 
-1. `SOMANAGER_AGENT=d01 php scripts/backlog.php entry-set-meta database=d01_migrate_gen`
-   — sets the key
-2. `php scripts/backlog.php status --agent=d01`
+1. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-set-meta my-feature database=d01_migrate_gen`
+   — sets the key on the entry identified by `my-feature`
+2. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php status --agent=d01`
    — `database: d01_migrate_gen` must appear in the meta block
-3. `SOMANAGER_AGENT=d01 php scripts/backlog.php entry-set-meta database=d01_migrate_gen_v2`
+3. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-set-meta my-feature database=d01_migrate_gen_v2`
    — overwrites the key
-4. `php scripts/backlog.php status --agent=d01`
+4. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php status --agent=d01`
    — `database: d01_migrate_gen_v2` must be present; `d01_migrate_gen` must be gone
-5. `SOMANAGER_AGENT=d01 php scripts/backlog.php entry-set-meta database=`
+5. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-set-meta my-feature database=`
    — clears the key (empty value)
-6. `php scripts/backlog.php status --agent=d01`
+6. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php status --agent=d01`
    — no `database:` line in the meta block
-7. `SOMANAGER_AGENT=d01 php scripts/backlog.php entry-set-meta unknown-key=value`
+7. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-set-meta my-feature unknown-key=value`
    — must fail with `does not support key "unknown-key"`
-8. `SOMANAGER_AGENT=d01 php scripts/backlog.php entry-set-meta database`
+8. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-set-meta my-feature database`
    — must fail with `key=value argument`
-9. `SOMANAGER_AGENT=d99 php scripts/backlog.php entry-set-meta database=some_db`
-   — must fail with `has no active entry` (agent with no active entry)
+9. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-set-meta database=some_db`
+   — must fail with `<entry-ref> argument` (no entry-ref provided)
+10. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-set-meta does-not-exist database=some_db`
+    — must fail with `No active entry found for entry-ref: does-not-exist`
 
 ### Expected checks
 
 - board file reflects each set/clear immediately after the command
 - unknown keys are rejected before the board is touched
-- missing `=` is rejected before the board is touched
-- agents with no active entry are rejected
+- missing `=` in assignment is rejected before the board is touched
+- missing entry-ref argument is rejected with a clear message
+- non-existent entry-ref is rejected with a clear message
 
 ## Cleanup
 
