@@ -97,7 +97,18 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->requestTaskReview($context->agentPrimary);
         $driver->approveTaskViaUnifiedCommand($context->agentSecondary, $taskARef);
 
+        // status <feature/task> must resolve the task entry directly.
+        $driver->assertStatusContains($taskARef, 'Kind: task');
+        $driver->assertStatusContains($taskARef, 'Ref: ' . $taskARef);
+        // feature-list must show kind=task and full feature/task reference for task entries.
+        $featureListOutput = $driver->runBacklog(['feature-list']);
+        $driver->assertContains($featureListOutput, $taskARef . ' kind=task');
+        $driver->assertContains($featureListOutput, $context->scopedFeature . ' kind=feature');
+
         $driver->mergeTask($taskARef);
+
+        // After task merge, parent must keep no agent (no auto-assignment).
+        $driver->assertStatusContains($context->scopedFeature, 'Agent: none');
 
         $driver->createTodoTask(sprintf('[%s][%s] Implement test child task B', $context->scopedFeature, $context->childB));
         $driver->startNextFeature($context->agentPrimary);
@@ -124,8 +135,42 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->closeFeature($context->scopedFeature);
         $driver->assertActiveFeatureMissing($context->scopedFeature);
 
+        $this->assertParentAssignmentPreservedOnTaskMerge($driver, $context);
         $this->assertEntryUnassignForTaskAndAmbiguity($driver, $context);
         $this->assertReviewNotesAmbiguityAndMissingReference($driver, $context);
+    }
+
+    /**
+     * Create a scoped task whose parent feature is manually pre-assigned to a non-task-developer agent,
+     * merge the task, and verify that the pre-existing assignment is preserved (no overwrite on merge).
+     */
+    private function assertParentAssignmentPreservedOnTaskMerge(
+        BacklogScriptTestDriver $driver,
+        BacklogScriptTestContext $context,
+    ): void {
+        $feature = 'test-preserve-parent-assign';
+        $task = 'test-preserve-task';
+        $taskRef = $feature . '/' . $task;
+
+        $driver->createTodoTask(sprintf('[%s][%s] Task for parent-assignment-preservation test', $feature, $task));
+        $driver->startNextFeature($context->agentPrimary);
+
+        // Simulate a feature container that was explicitly assigned to a different agent
+        // before the task merge. The parent has no `agent:` line when unset, so we insert
+        // one between `feature:` and `branch:` (which is unique to the feature meta block).
+        $driver->replaceBoardText(
+            sprintf("    feature: %s\n    branch:", $feature),
+            sprintf("    feature: %s\n    agent: %s\n    branch:", $feature, $context->agentSecondary),
+        );
+
+        $driver->requestTaskReview($context->agentPrimary);
+        $driver->approveTaskViaUnifiedCommand($context->agentSecondary, $taskRef);
+        $driver->mergeTask($taskRef);
+
+        // The pre-existing assignment on the parent must survive the task merge.
+        $driver->assertStatusContains($feature, 'Agent: ' . $context->agentSecondary);
+
+        $driver->closeFeature($feature);
     }
 
     /**

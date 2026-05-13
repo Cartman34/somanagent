@@ -43,10 +43,10 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
     }
 
     /**
-     * Prints the backlog status for one agent or one feature, with worktree state and a `Review notes: stored` hint
+     * Prints the backlog status for one agent, feature, or child task, with worktree state and a `Review notes: stored` hint
      * when reviewer notes exist for the active entry. Never prints the notes themselves; never mutates backlog state.
      *
-     * @param list<string> $commandArgs Optional positional <feature> reference; ignored when --agent is provided
+     * @param list<string> $commandArgs Optional positional <feature> or <feature/task> reference; ignored when --agent is provided
      * @param array<string, bool|string> $options Recognises --agent=<code> to resolve the active task and feature for one agent
      */
     public function handle(array $commandArgs, array $options): void
@@ -128,11 +128,30 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
 
     private function statusForFeature(BacklogBoard $board, string $requestedTarget): void
     {
+        if (str_contains($requestedTarget, '/')) {
+            $this->statusForTask($board, $requestedTarget);
+
+            return;
+        }
+
         $target = $this->boardService->normalizeFeatureSlug($requestedTarget);
         $match = $this->boardService->resolveFeature($board, $target);
         $entry = $match->getEntry();
 
         $this->presenter->displayLine('[Feature]');
+        $this->presenter->displayEntryStatus($entry);
+        $this->displayReviewNotesHint($entry, $this->loadReviewKeys());
+
+        $this->presenter->displayLine('');
+        $this->statusWorktree($board, $entry->getAgent());
+    }
+
+    private function statusForTask(BacklogBoard $board, string $requestedTarget): void
+    {
+        $match = $this->boardService->resolveTaskByReference($board, $requestedTarget, BacklogCommandName::STATUS->value);
+        $entry = $match->getEntry();
+
+        $this->presenter->displayLine('[Task]');
         $this->presenter->displayEntryStatus($entry);
         $this->displayReviewNotesHint($entry, $this->loadReviewKeys());
 
