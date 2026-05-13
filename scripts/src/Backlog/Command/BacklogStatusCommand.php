@@ -43,7 +43,7 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
     }
 
     /**
-     * Prints the backlog status for one agent, feature, or child task, with worktree state and a `Review notes: stored` hint
+     * Prints the backlog status for one agent or entry, with worktree state and a `Review notes: stored` hint
      * when reviewer notes exist for the active entry. Never prints the notes themselves; never mutates backlog state.
      *
      * @param list<string> $commandArgs Optional positional <entry-ref>; ignored when --agent is provided

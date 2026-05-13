@@ -198,7 +198,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-cre
 
 1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php feature-list`.
 2. The script prints all active entries (`kind=feature` and `kind=task`) grouped by workflow stage.
-3. Each line includes the full reference (for tasks, `<feature>/<task>`), the `kind=` indicator, and the assigned agent.
+3. Each line includes the `<entry-ref>`, the `kind=` indicator, and the assigned agent.
 
 ### `worktree-list`
 
