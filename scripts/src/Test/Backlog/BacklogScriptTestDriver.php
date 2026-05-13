@@ -830,23 +830,6 @@ MD);
     }
 
     /**
-     * Asserts that the backlog board file does not contain the given text fragment.
-     *
-     * @param string $needle Text that must not appear anywhere in the board file
-     */
-    public function assertBoardLacksText(string $needle): void
-    {
-        $contents = (string) file_get_contents($this->context->boardPath);
-        if (str_contains($contents, $needle)) {
-            throw new \RuntimeException(sprintf(
-                "Expected backlog board NOT to contain:\n%s\n--- actual board ---\n%s",
-                $needle,
-                $contents,
-            ));
-        }
-    }
-
-    /**
      * @param string $agent Agent requesting the review
      */
     public function requestFeatureReview(string $agent): void
