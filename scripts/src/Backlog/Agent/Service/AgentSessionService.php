@@ -15,7 +15,7 @@ use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
  * Reads and writes the agent sessions registry at local/tmp/agent-sessions.json (WP only).
  *
  * JSON key = agent code (unique). Fields: client, role, pid, worktree,
- * started_at, last_seen_at, session_id.
+ * started_at, last_seen_at, session_id, client_pid, tmux_session.
  * Forbidden fields in JSON: feature, task, reviewing (always derived from backlog).
  */
 final class AgentSessionService
@@ -167,24 +167,39 @@ final class AgentSessionService
             lastSeenAt: $session->lastSeenAt,
             sessionId: $session->sessionId,
             clientPid: $session->clientPid,
-            processGroupId: $session->processGroupId,
+            tmuxSession: $session->tmuxSession,
         );
         $this->save($sessions);
     }
 
     /**
-     * Updates the recorded client process identifiers for the given agent code.
+     * Updates the recorded client PID for the given agent code.
      *
      * Called right after the launcher spawns the actual client process so that `stop` can
      * target the real client rather than only the PHP wrapper.
      */
-    public function updateClientProcess(string $code, ?int $clientPid, ?int $processGroupId): void
+    public function updateClientPid(string $code, ?int $clientPid): void
     {
         $sessions = $this->load();
         if (!isset($sessions[$code])) {
             return;
         }
-        $sessions[$code] = $sessions[$code]->withClientProcess($clientPid, $processGroupId);
+        $sessions[$code] = $sessions[$code]->withClientPid($clientPid);
+        $this->save($sessions);
+    }
+
+    /**
+     * Updates the tmux session name for the given agent code.
+     *
+     * Set to the tmux session name (e.g. somanagent-d01) when driver=tmux, or null when driver=direct.
+     */
+    public function updateTmuxSession(string $code, ?string $tmuxSession): void
+    {
+        $sessions = $this->load();
+        if (!isset($sessions[$code])) {
+            return;
+        }
+        $sessions[$code] = $sessions[$code]->withTmuxSession($tmuxSession);
         $this->save($sessions);
     }
 

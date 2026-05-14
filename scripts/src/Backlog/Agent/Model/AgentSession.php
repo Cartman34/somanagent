@@ -26,7 +26,7 @@ final class AgentSession
      * @param \DateTimeImmutable $lastSeenAt Last time a backlog-agent subcommand observed this entry and refreshed its PID/process status
      * @param string|null $sessionId Optional client-specific session identifier
      * @param int|null $clientPid Actual AI client process PID when known; null when the launcher cannot determine it
-     * @param int|null $processGroupId Process group to terminate on stop; required when the client is launched through an intermediate shell or wrapper
+     * @param string|null $tmuxSession Name of the tmux session (e.g. somanagent-d01) when driver=tmux; null when driver=direct
      */
     public function __construct(
         public readonly string $code,
@@ -38,7 +38,7 @@ final class AgentSession
         public readonly \DateTimeImmutable $lastSeenAt,
         public readonly ?string $sessionId,
         public readonly ?int $clientPid = null,
-        public readonly ?int $processGroupId = null,
+        public readonly ?string $tmuxSession = null,
     ) {}
 
     /**
@@ -71,7 +71,7 @@ final class AgentSession
             'role' => $this->role->value,
             'pid' => $this->pid,
             'client_pid' => $this->clientPid,
-            'process_group_id' => $this->processGroupId,
+            'tmux_session' => $this->tmuxSession,
             'worktree' => $this->worktree,
             'started_at' => $this->startedAt->format(\DateTimeInterface::ATOM),
             'last_seen_at' => $this->lastSeenAt->format(\DateTimeInterface::ATOM),
@@ -94,7 +94,7 @@ final class AgentSession
             lastSeenAt: new \DateTimeImmutable((string) ($data['last_seen_at'] ?? 'now')),
             sessionId: isset($data['session_id']) ? (string) $data['session_id'] : null,
             clientPid: isset($data['client_pid']) ? (int) $data['client_pid'] : null,
-            processGroupId: isset($data['process_group_id']) ? (int) $data['process_group_id'] : null,
+            tmuxSession: isset($data['tmux_session']) ? (string) $data['tmux_session'] : null,
         );
     }
 
@@ -113,7 +113,7 @@ final class AgentSession
             lastSeenAt: $lastSeenAt,
             sessionId: $this->sessionId,
             clientPid: $this->clientPid,
-            processGroupId: $this->processGroupId,
+            tmuxSession: $this->tmuxSession,
         );
     }
 
@@ -132,14 +132,14 @@ final class AgentSession
             lastSeenAt: $this->lastSeenAt,
             sessionId: $sessionId,
             clientPid: $this->clientPid,
-            processGroupId: $this->processGroupId,
+            tmuxSession: $this->tmuxSession,
         );
     }
 
     /**
-     * Returns a copy of this session with the client process identifiers recorded.
+     * Returns a copy of this session with the client PID updated.
      */
-    public function withClientProcess(?int $clientPid, ?int $processGroupId): self
+    public function withClientPid(?int $clientPid): self
     {
         return new self(
             code: $this->code,
@@ -151,7 +151,26 @@ final class AgentSession
             lastSeenAt: $this->lastSeenAt,
             sessionId: $this->sessionId,
             clientPid: $clientPid,
-            processGroupId: $processGroupId,
+            tmuxSession: $this->tmuxSession,
+        );
+    }
+
+    /**
+     * Returns a copy of this session with the tmux session name updated.
+     */
+    public function withTmuxSession(?string $tmuxSession): self
+    {
+        return new self(
+            code: $this->code,
+            client: $this->client,
+            role: $this->role,
+            pid: $this->pid,
+            worktree: $this->worktree,
+            startedAt: $this->startedAt,
+            lastSeenAt: $this->lastSeenAt,
+            sessionId: $this->sessionId,
+            clientPid: $this->clientPid,
+            tmuxSession: $tmuxSession,
         );
     }
 }

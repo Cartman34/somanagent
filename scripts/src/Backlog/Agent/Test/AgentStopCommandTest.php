@@ -17,7 +17,8 @@ use SoManAgent\Script\Console;
 /**
  * Unit tests for AgentStopCommand.
  *
- * Exercises the SIGTERM/SIGKILL flow using a FakeProcessSignaler, so no real processes are touched.
+ * Exercises the alive-check/stop/cleanup flow using a FakeSessionDriver,
+ * so no real processes or tmux sessions are touched.
  */
 final class AgentStopCommandTest
 {
@@ -47,9 +48,7 @@ final class AgentStopCommandTest
     {
         $failed = 0;
 
-        $failed += $this->testTargetsProcessGroupBeforeClientPid();
-        $failed += $this->testFallbackToClientPidWhenNoProcessGroup();
-        $failed += $this->testSigkillFollowupWhenSigtermIgnored();
+        $failed += $this->testStopsAliveSessionAndRemovesEntry();
         $failed += $this->testRefusesDeadSessionWithoutCleanup();
         $failed += $this->testCleanupRemovesStaleSession();
         $failed += $this->testUpdatesLastSeenOnObservation();
@@ -57,81 +56,30 @@ final class AgentStopCommandTest
         return $failed;
     }
 
-    private function testTargetsProcessGroupBeforeClientPid(): int
+    private function testStopsAliveSessionAndRemovesEntry(): int
     {
-        $dir = $this->tmpDir . '/pgid-' . uniqid('', true);
+        $dir = $this->tmpDir . '/alive-' . uniqid('', true);
         mkdir($dir, 0755, true);
         $service = new AgentSessionService($dir);
-        $service->add($this->makeSession('d01', clientPid: 555, processGroupId: 555));
+        $service->add($this->makeSession('d01'));
 
-        $signaler = new FakeProcessSignaler();
-        $signaler->setAlive(555, true);
-        $signaler->sigtermKills = true;
+        $driver = new FakeSessionDriver();
+        $driver->setAlive('d01', true);
 
-        $cmd = new AgentStopCommand(Console::getInstance(), $service, $signaler, 1);
+        $cmd = new AgentStopCommand(Console::getInstance(), $service, $driver);
         $cmd->handle([], ['code' => 'd01']);
 
-        if (count($signaler->signals) < 1 || $signaler->signals[0]['pid'] !== -555 || $signaler->signals[0]['signal'] !== SIGTERM) {
-            echo "FAIL testTargetsProcessGroupBeforeClientPid: expected SIGTERM to -555, got "
-                . var_export($signaler->signals, true) . "\n";
+        if ($driver->lastStoppedSession === null || $driver->lastStoppedSession->code !== 'd01') {
+            echo "FAIL testStopsAliveSessionAndRemovesEntry: driver->stop() was not called with d01\n";
             $this->rmdir($dir);
             return 1;
         }
         if ($service->has('d01')) {
-            echo "FAIL testTargetsProcessGroupBeforeClientPid: session not removed\n";
+            echo "FAIL testStopsAliveSessionAndRemovesEntry: session not removed after stop\n";
             $this->rmdir($dir);
             return 1;
         }
-        echo "OK testTargetsProcessGroupBeforeClientPid\n";
-        $this->rmdir($dir);
-        return 0;
-    }
-
-    private function testFallbackToClientPidWhenNoProcessGroup(): int
-    {
-        $dir = $this->tmpDir . '/clientpid-' . uniqid('', true);
-        mkdir($dir, 0755, true);
-        $service = new AgentSessionService($dir);
-        $service->add($this->makeSession('d01', clientPid: 700, processGroupId: null));
-
-        $signaler = new FakeProcessSignaler();
-        $signaler->setAlive(700, true);
-
-        $cmd = new AgentStopCommand(Console::getInstance(), $service, $signaler, 1);
-        $cmd->handle([], ['code' => 'd01']);
-
-        if ($signaler->signals === [] || $signaler->signals[0]['pid'] !== 700) {
-            echo "FAIL testFallbackToClientPidWhenNoProcessGroup: expected signal to client PID 700\n";
-            $this->rmdir($dir);
-            return 1;
-        }
-        echo "OK testFallbackToClientPidWhenNoProcessGroup\n";
-        $this->rmdir($dir);
-        return 0;
-    }
-
-    private function testSigkillFollowupWhenSigtermIgnored(): int
-    {
-        $dir = $this->tmpDir . '/sigkill-' . uniqid('', true);
-        mkdir($dir, 0755, true);
-        $service = new AgentSessionService($dir);
-        $service->add($this->makeSession('d01', clientPid: 800, processGroupId: 800));
-
-        $signaler = new FakeProcessSignaler();
-        $signaler->setAlive(800, true);
-        $signaler->sigtermKills = false; // simulate stuck client
-
-        $cmd = new AgentStopCommand(Console::getInstance(), $service, $signaler, 1);
-        $cmd->handle([], ['code' => 'd01']);
-
-        $signals = array_map(fn(array $s): int => $s['signal'], $signaler->signals);
-        if (!in_array(SIGTERM, $signals, true) || !in_array(SIGKILL, $signals, true)) {
-            echo "FAIL testSigkillFollowupWhenSigtermIgnored: expected SIGTERM then SIGKILL, got "
-                . var_export($signals, true) . "\n";
-            $this->rmdir($dir);
-            return 1;
-        }
-        echo "OK testSigkillFollowupWhenSigtermIgnored\n";
+        echo "OK testStopsAliveSessionAndRemovesEntry\n";
         $this->rmdir($dir);
         return 0;
     }
@@ -141,11 +89,12 @@ final class AgentStopCommandTest
         $dir = $this->tmpDir . '/dead-' . uniqid('', true);
         mkdir($dir, 0755, true);
         $service = new AgentSessionService($dir);
-        $service->add($this->makeSession('d01', clientPid: 900, processGroupId: 900));
+        $service->add($this->makeSession('d01'));
 
-        $signaler = new FakeProcessSignaler(); // 900 not alive
+        $driver = new FakeSessionDriver();
+        // d01 not alive by default
 
-        $cmd = new AgentStopCommand(Console::getInstance(), $service, $signaler, 1);
+        $cmd = new AgentStopCommand(Console::getInstance(), $service, $driver);
 
         $threw = false;
         try {
@@ -174,11 +123,12 @@ final class AgentStopCommandTest
         $dir = $this->tmpDir . '/cleanup-' . uniqid('', true);
         mkdir($dir, 0755, true);
         $service = new AgentSessionService($dir);
-        $service->add($this->makeSession('d01', clientPid: 1000, processGroupId: 1000));
+        $service->add($this->makeSession('d01'));
 
-        $signaler = new FakeProcessSignaler(); // dead
+        $driver = new FakeSessionDriver();
+        // d01 not alive
 
-        $cmd = new AgentStopCommand(Console::getInstance(), $service, $signaler, 1);
+        $cmd = new AgentStopCommand(Console::getInstance(), $service, $driver);
         $cmd->handle([], ['code' => 'd01', 'cleanup' => true]);
 
         if ($service->has('d01')) {
@@ -186,8 +136,8 @@ final class AgentStopCommandTest
             $this->rmdir($dir);
             return 1;
         }
-        if ($signaler->signals !== []) {
-            echo "FAIL testCleanupRemovesStaleSession: no signal should be sent to a dead PID\n";
+        if ($driver->lastStoppedSession !== null) {
+            echo "FAIL testCleanupRemovesStaleSession: stop() should not be called for a dead session\n";
             $this->rmdir($dir);
             return 1;
         }
@@ -212,18 +162,16 @@ final class AgentStopCommandTest
             startedAt: $past,
             lastSeenAt: $past,
             sessionId: null,
-            clientPid: 1100,
-            processGroupId: 1100,
         );
         $service->add($session);
 
-        // Dead session, no --cleanup: stop refuses but should still refresh last_seen_at on the entry it inspected.
-        $signaler = new FakeProcessSignaler();
+        // Dead session, no --cleanup: stop refuses but should still refresh last_seen_at.
+        $driver = new FakeSessionDriver();
 
-        $cmd = new AgentStopCommand(Console::getInstance(), $service, $signaler, 1);
+        $cmd = new AgentStopCommand(Console::getInstance(), $service, $driver);
         try {
             $cmd->handle([], ['code' => 'd01']);
-            echo "FAIL testUpdatesLastSeenOnObservation: expected refusal on dead PID without --cleanup\n";
+            echo "FAIL testUpdatesLastSeenOnObservation: expected refusal on dead session without --cleanup\n";
             $this->rmdir($dir);
             return 1;
         } catch (\RuntimeException) {
@@ -241,11 +189,7 @@ final class AgentStopCommandTest
         return 0;
     }
 
-    /**
-     * @param int|null $clientPid
-     * @param int|null $processGroupId
-     */
-    private function makeSession(string $code, ?int $clientPid = null, ?int $processGroupId = null): AgentSession
+    private function makeSession(string $code): AgentSession
     {
         $now = new \DateTimeImmutable();
         return new AgentSession(
@@ -257,8 +201,7 @@ final class AgentStopCommandTest
             startedAt: $now,
             lastSeenAt: $now,
             sessionId: null,
-            clientPid: $clientPid,
-            processGroupId: $processGroupId,
+            clientPid: null,
         );
     }
 

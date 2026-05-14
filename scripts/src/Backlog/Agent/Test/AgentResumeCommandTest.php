@@ -73,7 +73,7 @@ final class AgentResumeCommandTest
         $dir = $this->tmpDir . '/nosession-' . uniqid('', true);
         mkdir($dir, 0755, true);
 
-        $cmd = $this->buildCommand(new AgentSessionService($dir), new FakeProcessSignaler());
+        $cmd = $this->buildCommand(new AgentSessionService($dir), new FakeSessionDriver());
 
         $threw = false;
         try {
@@ -99,10 +99,10 @@ final class AgentResumeCommandTest
         $service = new AgentSessionService($dir);
         $service->add($this->makeSession('d01', wrapperPid: 100, clientPid: 5000));
 
-        $signaler = new FakeProcessSignaler();
-        $signaler->setAlive(5000, true);
+        $driver = new FakeSessionDriver();
+        $driver->setAlive('d01', true);
 
-        $cmd = $this->buildCommand($service, $signaler);
+        $cmd = $this->buildCommand($service, $driver);
 
         $threw = false;
         try {
@@ -128,10 +128,10 @@ final class AgentResumeCommandTest
         $service = new AgentSessionService($dir);
         $service->add($this->makeSession('d01', wrapperPid: 7000, clientPid: null));
 
-        $signaler = new FakeProcessSignaler();
-        $signaler->setAlive(7000, true);
+        $driver = new FakeSessionDriver();
+        $driver->setAlive('d01', true);
 
-        $cmd = $this->buildCommand($service, $signaler);
+        $cmd = $this->buildCommand($service, $driver);
 
         $threw = false;
         try {
@@ -166,14 +166,13 @@ final class AgentResumeCommandTest
             lastSeenAt: $past,
             sessionId: null,
             clientPid: 8000,
-            processGroupId: 8000,
         );
         $service->add($session);
 
-        $signaler = new FakeProcessSignaler();
-        $signaler->setAlive(8000, true);
+        $driver = new FakeSessionDriver();
+        $driver->setAlive('d01', true);
 
-        $cmd = $this->buildCommand($service, $signaler);
+        $cmd = $this->buildCommand($service, $driver);
 
         try {
             $cmd->handle([], ['code' => 'd01']);
@@ -225,7 +224,6 @@ final class AgentResumeCommandTest
             lastSeenAt: $now,
             sessionId: 'review-session',
             clientPid: null,
-            processGroupId: null,
         ));
 
         $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
@@ -235,7 +233,7 @@ final class AgentResumeCommandTest
 
         $cmd = $this->buildCommand(
             $sessionService,
-            new FakeProcessSignaler(),
+            new FakeSessionDriver(),
             $projectRoot,
             $boardPath,
             $registry,
@@ -278,7 +276,7 @@ final class AgentResumeCommandTest
      */
     private function buildCommand(
         AgentSessionService $sessionService,
-        FakeProcessSignaler $signaler,
+        FakeSessionDriver $driver,
         ?string $projectRoot = null,
         ?string $boardPath = null,
         ?AgentClientLauncherRegistry $registry = null,
@@ -295,7 +293,6 @@ final class AgentResumeCommandTest
         $registry ??= new AgentClientLauncherRegistry();
 
         $worktreeService ??= (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor();
-        $processRunner = new FakeInteractiveProcessRunner();
 
         return new AgentResumeCommand(
             $projectRoot,
@@ -305,8 +302,7 @@ final class AgentResumeCommandTest
             $boardService,
             $worktreeService,
             $boardPath,
-            $processRunner,
-            $signaler,
+            $driver,
         );
     }
 
@@ -326,7 +322,6 @@ final class AgentResumeCommandTest
             lastSeenAt: $now,
             sessionId: null,
             clientPid: $clientPid,
-            processGroupId: null,
         );
     }
 

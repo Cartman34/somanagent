@@ -8,8 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Agent\Command;
 
 use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
-use SoManAgent\Script\Backlog\Agent\Client\InteractiveProcessRunner;
-use SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
+use SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use SoManAgent\Script\Backlog\Agent\Exception\ClientNotInstalledException;
@@ -34,8 +33,7 @@ final class AgentResumeCommand extends AbstractAgentCommand
     private BacklogBoardService $boardService;
     private BacklogWorktreeService $worktreeService;
     private string $boardPath;
-    private InteractiveProcessRunner $processRunner;
-    private ProcessSignaler $signaler;
+    private SessionDriverInterface $sessionDriver;
 
     /**
      * @param string $projectRoot
@@ -45,8 +43,7 @@ final class AgentResumeCommand extends AbstractAgentCommand
      * @param BacklogBoardService $boardService
      * @param BacklogWorktreeService $worktreeService
      * @param string $boardPath
-     * @param InteractiveProcessRunner $processRunner
-     * @param ProcessSignaler $signaler
+     * @param SessionDriverInterface $sessionDriver
      */
     public function __construct(
         string $projectRoot,
@@ -56,8 +53,7 @@ final class AgentResumeCommand extends AbstractAgentCommand
         BacklogBoardService $boardService,
         BacklogWorktreeService $worktreeService,
         string $boardPath,
-        InteractiveProcessRunner $processRunner,
-        ProcessSignaler $signaler,
+        SessionDriverInterface $sessionDriver,
     ) {
         $this->projectRoot = $projectRoot;
         $this->registry = $registry;
@@ -66,8 +62,7 @@ final class AgentResumeCommand extends AbstractAgentCommand
         $this->boardService = $boardService;
         $this->worktreeService = $worktreeService;
         $this->boardPath = $boardPath;
-        $this->processRunner = $processRunner;
-        $this->signaler = $signaler;
+        $this->sessionDriver = $sessionDriver;
     }
 
     /**
@@ -120,7 +115,7 @@ final class AgentResumeCommand extends AbstractAgentCommand
 
         $this->sessionService->updateLastSeen($code);
 
-        if ($this->isAnyTrackedProcessAlive($existingSession)) {
+        if ($this->sessionDriver->isAlive($existingSession)) {
             throw new \RuntimeException(sprintf(
                 "Session %s is still running (a tracked process is alive). Stop it first:\n" .
                 "  php scripts/backlog-agent.php stop --code=%s",
@@ -169,14 +164,18 @@ final class AgentResumeCommand extends AbstractAgentCommand
 
         chdir($worktree);
 
-        $sessionService = $this->sessionService;
-        $result = $this->processRunner->run(
+        $sessionSvc = $this->sessionService;
+        $exitCode = $this->sessionDriver->resume(
+            $code,
             $bin,
             $binArgs,
             $worktree,
             $env,
-            static function (int $clientPid, ?int $pgid) use ($sessionService, $code): void {
-                $sessionService->updateClientProcess($code, $clientPid > 0 ? $clientPid : null, $pgid);
+            static function (int $clientPid, ?string $tmuxSession) use ($sessionSvc, $code): void {
+                $sessionSvc->updateClientPid($code, $clientPid > 0 ? $clientPid : null);
+                if ($tmuxSession !== null) {
+                    $sessionSvc->updateTmuxSession($code, $tmuxSession);
+                }
             },
         );
 
@@ -187,19 +186,7 @@ final class AgentResumeCommand extends AbstractAgentCommand
 
         $this->sessionService->remove($code);
 
-        return $result->exitCode;
-    }
-
-    /**
-     * Returns true when any process recorded in the session is still alive (client first, wrapper next).
-     */
-    private function isAnyTrackedProcessAlive(AgentSession $session): bool
-    {
-        if ($session->clientPid !== null && $session->clientPid > 0 && $this->signaler->isAlive($session->clientPid)) {
-            return true;
-        }
-
-        return $session->pid > 0 && $this->signaler->isAlive($session->pid);
+        return $exitCode;
     }
 
     /**

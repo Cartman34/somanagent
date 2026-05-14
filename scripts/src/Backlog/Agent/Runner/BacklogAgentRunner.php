@@ -10,13 +10,15 @@ namespace SoManAgent\Script\Backlog\Agent\Runner;
 use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
 use SoManAgent\Script\Backlog\Agent\Client\ClaudeAgentLauncher;
 use SoManAgent\Script\Backlog\Agent\Client\CodexAgentLauncher;
+use SoManAgent\Script\Backlog\Agent\Client\DirectSessionDriver;
 use SoManAgent\Script\Backlog\Agent\Client\GeminiAgentLauncher;
-use SoManAgent\Script\Backlog\Agent\Client\InteractiveProcessRunner;
 use SoManAgent\Script\Backlog\Agent\Client\OpenCodeAgentLauncher;
 use SoManAgent\Script\Backlog\Agent\Client\PosixProcessSignaler;
 use SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
+use SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use SoManAgent\Script\Backlog\Agent\Client\ShellProcessRunner;
 use SoManAgent\Script\Backlog\Agent\Client\SystemInteractiveProcessRunner;
+use SoManAgent\Script\Backlog\Agent\Client\TmuxSessionDriver;
 use SoManAgent\Script\Backlog\Agent\Command\AbstractAgentCommand;
 use SoManAgent\Script\Backlog\Agent\Command\AgentListCommand;
 use SoManAgent\Script\Backlog\Agent\Command\AgentResumeCommand;
@@ -45,6 +47,10 @@ use SoManAgent\Script\TextSlugger;
  *
  * Parses the subcommand, renders help, and delegates to the matching
  * AbstractAgentCommand implementation.
+ *
+ * The session driver is selected by the environment variable BACKLOG_AGENT_SESSION_DRIVER:
+ *   - tmux   (default): wraps sessions in named tmux sessions; SSH-resilient
+ *   - direct: spawns clients via proc_open; degraded mode, no SSH resilience
  */
 final class BacklogAgentRunner extends AbstractScriptRunner
 {
@@ -63,7 +69,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
     private ?BacklogWorktreeService $worktreeService = null;
     private ?ConsoleClient $consoleClient = null;
     private ?GitClient $gitClient = null;
-    private ?InteractiveProcessRunner $processRunner = null;
+    private ?SessionDriverInterface $sessionDriver = null;
     private ?ProcessSignaler $processSignaler = null;
 
     /**
@@ -205,7 +211,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                     $this->worktreeService($boardPath, $worktreesRoot),
                     new AgentReviewerSelector($this->boardService(), $this->sessionService(), $worktreesRoot),
                     $this->boardService(),
-                    $this->processRunner(),
+                    $this->sessionDriver(),
                     $this->processSignaler(),
                     new ShellProcessRunner(),
                 ),
@@ -215,7 +221,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                     $boardPath,
                     $this->sessionService(),
                     $this->boardService(),
-                    $this->processSignaler(),
+                    $this->sessionDriver(),
                 ),
                 'status' => new AgentStatusCommand(
                     $this->console,
@@ -223,12 +229,12 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                     $boardPath,
                     $this->sessionService(),
                     $this->boardService(),
-                    $this->processSignaler(),
+                    $this->sessionDriver(),
                 ),
                 'stop' => new AgentStopCommand(
                     $this->console,
                     $this->sessionService(),
-                    $this->processSignaler(),
+                    $this->sessionDriver(),
                 ),
                 'whoami' => new AgentWhoamiCommand(
                     $this->console,
@@ -243,8 +249,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                     $this->boardService(),
                     $this->worktreeService($boardPath, $worktreesRoot),
                     $boardPath,
-                    $this->processRunner(),
-                    $this->processSignaler(),
+                    $this->sessionDriver(),
                 ),
                 'sessions' => new AgentSessionsCommand(
                     $this->console,
@@ -364,13 +369,25 @@ final class BacklogAgentRunner extends AbstractScriptRunner
         return $this->gitClient;
     }
 
-    private function processRunner(): InteractiveProcessRunner
+    /**
+     * Creates the session driver selected by BACKLOG_AGENT_SESSION_DRIVER (default: tmux).
+     */
+    private function sessionDriver(): SessionDriverInterface
     {
-        if ($this->processRunner === null) {
-            $this->processRunner = new SystemInteractiveProcessRunner();
+        if ($this->sessionDriver === null) {
+            $driverName = (string) (getenv('BACKLOG_AGENT_SESSION_DRIVER') ?: 'tmux');
+
+            $this->sessionDriver = match ($driverName) {
+                'direct' => new DirectSessionDriver(
+                    new SystemInteractiveProcessRunner(),
+                    $this->processSignaler(),
+                    $this->console,
+                ),
+                default => new TmuxSessionDriver(new ShellProcessRunner(), $this->console),
+            };
         }
 
-        return $this->processRunner;
+        return $this->sessionDriver;
     }
 
     private function processSignaler(): ProcessSignaler

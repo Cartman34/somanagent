@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Agent\Command;
 
-use SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
+use SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
@@ -27,7 +27,7 @@ final class AgentStatusCommand extends AbstractAgentCommand
     private string $boardPath;
     private AgentSessionService $sessionService;
     private BacklogBoardService $boardService;
-    private ProcessSignaler $signaler;
+    private SessionDriverInterface $sessionDriver;
 
     /**
      * @param Console $console
@@ -35,7 +35,7 @@ final class AgentStatusCommand extends AbstractAgentCommand
      * @param string $boardPath
      * @param AgentSessionService $sessionService
      * @param BacklogBoardService $boardService
-     * @param ProcessSignaler $signaler
+     * @param SessionDriverInterface $sessionDriver Used to check session liveness
      */
     public function __construct(
         Console $console,
@@ -43,14 +43,14 @@ final class AgentStatusCommand extends AbstractAgentCommand
         string $boardPath,
         AgentSessionService $sessionService,
         BacklogBoardService $boardService,
-        ProcessSignaler $signaler,
+        SessionDriverInterface $sessionDriver,
     ) {
         $this->console = $console;
         $this->projectRoot = $projectRoot;
         $this->boardPath = $boardPath;
         $this->sessionService = $sessionService;
         $this->boardService = $boardService;
-        $this->signaler = $signaler;
+        $this->sessionDriver = $sessionDriver;
     }
 
     /**
@@ -106,7 +106,7 @@ final class AgentStatusCommand extends AbstractAgentCommand
             throw new \RuntimeException(sprintf("No session found for code '%s'.", $code));
         }
 
-        $alive = $session->isAlive($this->signaler);
+        $alive = $this->sessionDriver->isAlive($session);
         $this->sessionService->updateLastSeen($code);
         $relWorktree = str_replace($this->projectRoot . '/', '', $session->worktree);
 
@@ -177,7 +177,7 @@ final class AgentStatusCommand extends AbstractAgentCommand
 
         $rows = [];
         foreach ($sessions as $code => $session) {
-            $alive = $session->isAlive($this->signaler);
+            $alive = $this->sessionDriver->isAlive($session);
             $this->sessionService->updateLastSeen($code);
             $relWorktree = str_replace($this->projectRoot . '/', '', $session->worktree);
             $rows[] = [

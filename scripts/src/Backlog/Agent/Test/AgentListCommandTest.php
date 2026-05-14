@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Agent\Test;
 
+use SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use SoManAgent\Script\Backlog\Agent\Command\AgentListCommand;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
@@ -291,21 +292,42 @@ final class AgentListCommandTest
             $boardPath,
             $service,
             $boardService,
-            $this->defaultSignaler(),
+            $this->defaultDriver(),
         );
     }
 
     /**
-     * Returns a FakeProcessSignaler with the current PHP process PID marked alive.
+     * Returns a SessionDriverInterface that considers a session alive when its pid != 0.
      *
      * Preserves the convention used by makeSession(): pass getmypid() for alive, 0 for dead.
      */
-    private function defaultSignaler(): FakeProcessSignaler
+    private function defaultDriver(): SessionDriverInterface
     {
-        $s = new FakeProcessSignaler();
-        $s->setAlive((int) getmypid(), true);
+        return new class implements SessionDriverInterface {
+            public function checkDependencies(): void {}
 
-        return $s;
+            public function sessionExists(string $agentCode): bool
+            {
+                return false;
+            }
+
+            public function launch(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
+            {
+                return 0;
+            }
+
+            public function resume(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
+            {
+                return 0;
+            }
+
+            public function stop(AgentSession $session): void {}
+
+            public function isAlive(AgentSession $session): bool
+            {
+                return $session->pid !== 0;
+            }
+        };
     }
 
     /**

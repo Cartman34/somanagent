@@ -48,7 +48,8 @@ final class AgentSessionServiceTest
         $failed += $this->testRemove();
         $failed += $this->testUpdateLastSeen();
         $failed += $this->testUpdateSessionId();
-        $failed += $this->testUpdateClientProcess();
+        $failed += $this->testUpdateClientPid();
+        $failed += $this->testUpdateTmuxSession();
         $failed += $this->testClientProcessRoundTrip();
         $failed += $this->testLoadsLegacyEntryWithoutClientProcessFields();
         $failed += $this->testIsAliveUsesClientPidFirst();
@@ -152,23 +153,42 @@ final class AgentSessionServiceTest
         return 0;
     }
 
-    private function testUpdateClientProcess(): int
+    private function testUpdateClientPid(): int
     {
-        $dir = $this->tmpDir . '/clientproc-' . uniqid('', true);
+        $dir = $this->tmpDir . '/clientpid-' . uniqid('', true);
         mkdir($dir, 0755, true);
         $service = new AgentSessionService($dir);
 
         $service->add($this->makeSession('d01'));
-        $service->updateClientProcess('d01', 12346, 12346);
+        $service->updateClientPid('d01', 12346);
 
         $got = $service->get('d01');
-        if ($got === null || $got->clientPid !== 12346 || $got->processGroupId !== 12346) {
-            echo "FAIL testUpdateClientProcess: expected clientPid=12346 pgid=12346, got clientPid="
-                . var_export($got?->clientPid, true) . ' pgid=' . var_export($got?->processGroupId, true) . "\n";
+        if ($got === null || $got->clientPid !== 12346) {
+            echo "FAIL testUpdateClientPid: expected clientPid=12346, got " . var_export($got?->clientPid, true) . "\n";
             $this->rmdir($dir);
             return 1;
         }
-        echo "OK testUpdateClientProcess\n";
+        echo "OK testUpdateClientPid\n";
+        $this->rmdir($dir);
+        return 0;
+    }
+
+    private function testUpdateTmuxSession(): int
+    {
+        $dir = $this->tmpDir . '/tmuxsession-' . uniqid('', true);
+        mkdir($dir, 0755, true);
+        $service = new AgentSessionService($dir);
+
+        $service->add($this->makeSession('d01'));
+        $service->updateTmuxSession('d01', 'somanagent-d01');
+
+        $got = $service->get('d01');
+        if ($got === null || $got->tmuxSession !== 'somanagent-d01') {
+            echo "FAIL testUpdateTmuxSession: expected tmuxSession='somanagent-d01', got " . var_export($got?->tmuxSession, true) . "\n";
+            $this->rmdir($dir);
+            return 1;
+        }
+        echo "OK testUpdateTmuxSession\n";
         $this->rmdir($dir);
         return 0;
     }
@@ -190,7 +210,7 @@ final class AgentSessionServiceTest
             lastSeenAt: $now,
             sessionId: 'abc',
             clientPid: 200,
-            processGroupId: 300,
+            tmuxSession: 'somanagent-d07',
         );
         $service->add($session);
 
@@ -198,7 +218,7 @@ final class AgentSessionServiceTest
         if ($reloaded === null
             || $reloaded->pid !== 100
             || $reloaded->clientPid !== 200
-            || $reloaded->processGroupId !== 300
+            || $reloaded->tmuxSession !== 'somanagent-d07'
             || $reloaded->sessionId !== 'abc'
         ) {
             echo "FAIL testClientProcessRoundTrip: unexpected reloaded session\n";
@@ -229,7 +249,7 @@ final class AgentSessionServiceTest
         $service = new AgentSessionService($dir);
         $session = $service->get('d01');
 
-        if ($session === null || $session->clientPid !== null || $session->processGroupId !== null || $session->pid !== 4242) {
+        if ($session === null || $session->clientPid !== null || $session->tmuxSession !== null || $session->pid !== 4242) {
             echo "FAIL testLoadsLegacyEntryWithoutClientProcessFields: legacy schema not handled gracefully\n";
             $this->rmdir($dir);
             return 1;
@@ -258,7 +278,6 @@ final class AgentSessionServiceTest
             lastSeenAt: $now,
             sessionId: null,
             clientPid: 9001,
-            processGroupId: null,
         );
         if (!$live->isAlive($signaler)) {
             echo "FAIL testIsAliveUsesClientPidFirst: expected alive when clientPid is alive\n";
@@ -277,7 +296,6 @@ final class AgentSessionServiceTest
             lastSeenAt: $now,
             sessionId: null,
             clientPid: 9003,
-            processGroupId: null,
         );
         if ($dead->isAlive($deadSignaler)) {
             echo "FAIL testIsAliveUsesClientPidFirst: expected dead when both PIDs are dead\n";

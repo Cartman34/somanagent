@@ -27,9 +27,11 @@ use SoManAgent\Script\Backlog\Agent\Test\BacklogBoardServiceReviewingTest;
 use SoManAgent\Script\Backlog\Agent\Test\BacklogAgentRunnerStrictOptionsTest;
 use SoManAgent\Script\Backlog\Agent\Test\ClaudeAgentLauncherTest;
 use SoManAgent\Script\Backlog\Agent\Test\CodexAgentLauncherTest;
+use SoManAgent\Script\Backlog\Agent\Test\DirectSessionDriverTest;
 use SoManAgent\Script\Backlog\Agent\Test\GeminiAgentLauncherTest;
 use SoManAgent\Script\Backlog\Agent\Test\OpenCodeAgentLauncherTest;
 use SoManAgent\Script\Backlog\Agent\Test\SystemInteractiveProcessRunnerTest;
+use SoManAgent\Script\Backlog\Agent\Test\TmuxSessionDriverTest;
 use SoManAgent\Script\Backlog\Agent\Test\WorktreeScriptProxyTest;
 use SoManAgent\Script\Console;
 
@@ -57,9 +59,11 @@ $suites = [
     'WorktreeScriptProxyTest' => WorktreeScriptProxyTest::class,
     'ClaudeAgentLauncherTest' => ClaudeAgentLauncherTest::class,
     'CodexAgentLauncherTest' => CodexAgentLauncherTest::class,
+    'DirectSessionDriverTest' => DirectSessionDriverTest::class,
     'GeminiAgentLauncherTest' => GeminiAgentLauncherTest::class,
     'OpenCodeAgentLauncherTest' => OpenCodeAgentLauncherTest::class,
     'SystemInteractiveProcessRunnerTest' => SystemInteractiveProcessRunnerTest::class,
+    'TmuxSessionDriverTest' => TmuxSessionDriverTest::class,
     'AgentStopCommandTest' => AgentStopCommandTest::class,
     'AgentResumeCommandTest' => AgentResumeCommandTest::class,
     'AgentStartCommandTest' => AgentStartCommandTest::class,

@@ -182,7 +182,16 @@ Sessions for developer, reviewer, and manager agents are launched by the operato
 - prepares the `WA` (via `BacklogWorktreeService::prepareAgentWorktree` for developer/manager; reviewer reuses the developer WA)
 - generates `<WA>/local/agent-context.md` with the current task (or current review for reviewer), allowed commands, backlog vocabulary, and identification instructions
 - injects the env vars below into the CLI process
-- spawns the AI client as an interactive child process (STDIN/STDOUT/STDERR attached to the terminal) and records its real PID and process group in `local/tmp/agent-sessions.json` so `stop` can terminate the actual client, not only the PHP wrapper
+- spawns the AI client via the active **session driver** and records its real PID (and tmux session name when applicable) in `local/tmp/agent-sessions.json` so `stop` can terminate the actual client, not only the PHP wrapper
+
+### Session Drivers
+
+The session driver is selected by the environment variable `BACKLOG_AGENT_SESSION_DRIVER` (default: `tmux`):
+
+| Value | Behaviour |
+|---|---|
+| `tmux` (default) | Wraps each session in a named tmux session (`somanagent-<code>`). SSH-resilient: the client continues running after the terminal disconnects. |
+| `direct` | Spawns the client via `proc_open`. Simpler but not SSH-resilient. |
 
 ### Session Lifecycle And Stop Semantics
 
@@ -192,11 +201,11 @@ Sessions for developer, reviewer, and manager agents are launched by the operato
 |---|---|
 | `pid` | PID of the PHP wrapper process. Kept for diagnostics and stale-wrapper detection. |
 | `client_pid` | PID of the actual AI client process when known. May be `null` if the launcher cannot determine it. |
-| `process_group_id` | Process group to terminate on `stop`. Required when the client runs through an intermediate shell. |
+| `tmux_session` | Name of the tmux session (e.g. `somanagent-d01`) when driver=tmux; `null` for driver=direct. |
 
-`stop --code=<code>` targets the recorded process group first, then `client_pid`, and finally the wrapper PID as a last resort. It sends `SIGTERM`, waits up to 5 seconds, and follows up with `SIGKILL` if the client did not exit. The `agent-sessions.json` entry is removed only after the termination attempt completes.
+`stop --code=<code>` delegates to the session driver. For `tmux`: kills the named tmux session. For `direct`: sends `SIGTERM` to `client_pid` (then wrapper PID as fallback), waits up to 5 seconds, and follows up with `SIGKILL` if the client did not exit. The `agent-sessions.json` entry is removed only after the termination attempt completes.
 
-`resume --code=<code>` refuses while any tracked process (client first, wrapper next) is still alive. Run `stop --code=<code>` to terminate the previous session before resuming. For reviewer sessions, `resume` uses the stored developer WA path; if that path is missing but the reviewer still owns a `stage=reviewing` entry, the launcher reconstructs the developer WA and updates `agent-sessions.json` with the reconstructed path before preparing the client.
+`resume --code=<code>` refuses while the session is still alive (tmux session exists for driver=tmux, or the tracked process is alive for driver=direct). Run `stop --code=<code>` to terminate the previous session before resuming. For reviewer sessions, `resume` uses the stored developer WA path; if that path is missing but the reviewer still owns a `stage=reviewing` entry, the launcher reconstructs the developer WA and updates `agent-sessions.json` with the reconstructed path before preparing the client.
 
 ### last_seen_at Semantics
 

@@ -1,0 +1,89 @@
+<?php
+/**
+ * @author Florent HAZARD <f.hazard@sowapps.com>
+ */
+
+declare(strict_types=1);
+
+namespace SoManAgent\Script\Backlog\Agent\Client;
+
+use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
+
+/**
+ * Abstracts the lifecycle of an AI agent session: launch, resume, stop, and liveness detection.
+ *
+ * Two implementations are provided:
+ *   - TmuxSessionDriver: wraps each session in a named tmux session (somanagent-<code>). SSH-resilient.
+ *     Requires the tmux binary. Enabled with BACKLOG_AGENT_SESSION_DRIVER=tmux (default).
+ *   - DirectSessionDriver: spawns the client directly via proc_open. Degraded mode:
+ *     no SSH resilience, resume reconnects the client CLI but not the live terminal session.
+ *     Enabled with BACKLOG_AGENT_SESSION_DRIVER=direct.
+ */
+interface SessionDriverInterface
+{
+    /**
+     * Validates that all dependencies required by this driver are available.
+     *
+     * @throws \RuntimeException with a user-readable diagnostic and install hint when a dependency is missing
+     */
+    public function checkDependencies(): void;
+
+    /**
+     * Returns true when the driver has an existing session for the given agent code.
+     *
+     * For TmuxSessionDriver: checks whether the tmux session somanagent-<code> already exists.
+     * For DirectSessionDriver: always returns false (proc_open has no persistent session concept).
+     *
+     * @param string $agentCode Agent code (e.g. d01)
+     */
+    public function sessionExists(string $agentCode): bool;
+
+    /**
+     * Launches the AI client as an interactive session and blocks until exit.
+     *
+     * @param string $agentCode Agent code (e.g. d01); used to name the tmux session
+     * @param string $bin Absolute or PATH-resolvable client binary
+     * @param list<string> $args Arguments for the client binary
+     * @param string $cwd Working directory for the session
+     * @param array<string, string> $env Full environment for the client process
+     * @param callable(int $clientPid, ?string $tmuxSession): void $onSpawned Called once right after spawn, before blocking
+     * @return int Exit code (0 = success)
+     */
+    public function launch(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int;
+
+    /**
+     * Re-launches the AI client for an interrupted session and blocks until exit.
+     *
+     * For TmuxSessionDriver: re-attaches to the existing tmux session when alive; otherwise creates
+     * a new session and launches the client in resume mode.
+     * For DirectSessionDriver: same as launch() — no live terminal session to re-attach.
+     *
+     * @param string $agentCode Agent code (e.g. d01); used to locate or create the tmux session
+     * @param string $bin Absolute or PATH-resolvable client binary
+     * @param list<string> $args Arguments for the client binary (resume flags already embedded)
+     * @param string $cwd Working directory for the session
+     * @param array<string, string> $env Full environment for the client process
+     * @param callable(int $clientPid, ?string $tmuxSession): void $onSpawned Called once right after spawn, before blocking
+     * @return int Exit code (0 = success)
+     */
+    public function resume(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int;
+
+    /**
+     * Terminates the session tracked by the given AgentSession entry.
+     *
+     * For TmuxSessionDriver: kills the tmux session by name (tmux kill-session).
+     * For DirectSessionDriver: sends SIGTERM to the recorded client PID (or wrapper PID),
+     * waits up to the configured grace period, then follows up with SIGKILL.
+     *
+     * @throws \RuntimeException when the session cannot be stopped and cleanup fails
+     */
+    public function stop(AgentSession $session): void;
+
+    /**
+     * Returns true when the session associated with the given AgentSession entry is still alive.
+     *
+     * For TmuxSessionDriver: checks whether session->tmuxSession still exists via tmux has-session.
+     * For DirectSessionDriver: checks session->clientPid (then session->pid) via ProcessSignaler.
+     */
+    public function isAlive(AgentSession $session): bool;
+}

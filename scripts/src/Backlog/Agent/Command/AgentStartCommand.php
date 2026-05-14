@@ -8,9 +8,9 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Agent\Command;
 
 use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
-use SoManAgent\Script\Backlog\Agent\Client\InteractiveProcessRunner;
 use SoManAgent\Script\Backlog\Agent\Client\ProcessRunner;
 use SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
+use SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use SoManAgent\Script\Backlog\Agent\Exception\ActiveSessionException;
@@ -44,7 +44,7 @@ final class AgentStartCommand extends AbstractAgentCommand
     private BacklogWorktreeService $worktreeService;
     private AgentReviewerSelector $reviewerSelector;
     private BacklogBoardService $boardService;
-    private InteractiveProcessRunner $processRunner;
+    private SessionDriverInterface $sessionDriver;
     private ProcessSignaler $signaler;
     private ProcessRunner $shellRunner;
 
@@ -59,9 +59,9 @@ final class AgentStartCommand extends AbstractAgentCommand
      * @param BacklogWorktreeService $worktreeService
      * @param AgentReviewerSelector $reviewerSelector
      * @param BacklogBoardService $boardService
-     * @param InteractiveProcessRunner $processRunner
-     * @param ProcessSignaler $signaler
-     * @param ProcessRunner $shellRunner
+     * @param SessionDriverInterface $sessionDriver
+     * @param ProcessSignaler $signaler Used for ActiveSessionException liveness check
+     * @param ProcessRunner $shellRunner Used to check for local changes in the worktree
      */
     public function __construct(
         string $projectRoot,
@@ -74,7 +74,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         BacklogWorktreeService $worktreeService,
         AgentReviewerSelector $reviewerSelector,
         BacklogBoardService $boardService,
-        InteractiveProcessRunner $processRunner,
+        SessionDriverInterface $sessionDriver,
         ProcessSignaler $signaler,
         ProcessRunner $shellRunner,
     ) {
@@ -88,7 +88,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         $this->worktreeService = $worktreeService;
         $this->reviewerSelector = $reviewerSelector;
         $this->boardService = $boardService;
-        $this->processRunner = $processRunner;
+        $this->sessionDriver = $sessionDriver;
         $this->signaler = $signaler;
         $this->shellRunner = $shellRunner;
     }
@@ -170,6 +170,9 @@ final class AgentStartCommand extends AbstractAgentCommand
             throw new \RuntimeException('--reset is only allowed with --developer.');
         }
 
+        // Validate driver dependencies (e.g. tmux binary) before any worktree work.
+        $this->sessionDriver->checkDependencies();
+
         $codeOption = $this->getSingleOption($options, 'code');
 
         if ($codeOption !== null) {
@@ -177,6 +180,17 @@ final class AgentStartCommand extends AbstractAgentCommand
             $code = $codeOption;
         } else {
             $code = $this->codeService->allocateForRole($role);
+        }
+
+        // Refuse when the driver already tracks a live session for this code (e.g. orphan tmux session).
+        if ($this->sessionDriver->sessionExists($code)) {
+            throw new \RuntimeException(sprintf(
+                "A live driver session already exists for agent code '%s'.\n" .
+                "Stop it first or use a different code:\n" .
+                "  php scripts/backlog-agent.php stop --code=%s",
+                $code,
+                $code,
+            ));
         }
 
         $launcher = $this->registry->get($client);
@@ -221,14 +235,18 @@ final class AgentStartCommand extends AbstractAgentCommand
 
         chdir($worktree);
 
-        $sessionService = $this->sessionService;
-        $result = $this->processRunner->run(
+        $sessionSvc = $this->sessionService;
+        $exitCode = $this->sessionDriver->launch(
+            $code,
             $bin,
             $binArgs,
             $worktree,
             $env,
-            static function (int $clientPid, ?int $pgid) use ($sessionService, $code): void {
-                $sessionService->updateClientProcess($code, $clientPid > 0 ? $clientPid : null, $pgid);
+            static function (int $clientPid, ?string $tmuxSession) use ($sessionSvc, $code): void {
+                $sessionSvc->updateClientPid($code, $clientPid > 0 ? $clientPid : null);
+                if ($tmuxSession !== null) {
+                    $sessionSvc->updateTmuxSession($code, $tmuxSession);
+                }
             },
         );
 
@@ -239,7 +257,7 @@ final class AgentStartCommand extends AbstractAgentCommand
 
         $this->sessionService->remove($code);
 
-        return $result->exitCode;
+        return $exitCode;
     }
 
     /**

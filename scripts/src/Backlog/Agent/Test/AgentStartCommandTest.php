@@ -234,7 +234,7 @@ final class AgentStartCommandTest
         $codeService = new AgentCodeService($dir, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler());
         $contextBuilder = new AgentContextBuilder($dir, $boardPath, $boardService);
         $worktreeService = (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor();
-        $processRunner = new FakeInteractiveProcessRunner();
+        $driver = new FakeSessionDriver();
 
         $cmd = new AgentStartCommand(
             $dir,
@@ -247,7 +247,7 @@ final class AgentStartCommandTest
             $worktreeService,
             $reviewerSelector,
             $boardService,
-            $processRunner,
+            $driver,
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
         );
@@ -270,9 +270,9 @@ final class AgentStartCommandTest
             echo "FAIL testReviewerModeReusesOwnedReviewingEntry: launcher launched '{$launcher->lastLaunchedWorktree}', expected '{$devWa}'\n";
             return 1;
         }
-        if ($processRunner->lastCall === null || $processRunner->lastCall['cwd'] !== $devWa) {
-            $cwd = $processRunner->lastCall['cwd'] ?? '<null>';
-            echo "FAIL testReviewerModeReusesOwnedReviewingEntry: process runner cwd '{$cwd}', expected '{$devWa}'\n";
+        if ($driver->lastLaunchCall === null || $driver->lastLaunchCall['cwd'] !== $devWa) {
+            $cwd = $driver->lastLaunchCall['cwd'] ?? '<null>';
+            echo "FAIL testReviewerModeReusesOwnedReviewingEntry: session driver cwd '{$cwd}', expected '{$devWa}'\n";
             return 1;
         }
 
@@ -333,7 +333,7 @@ final class AgentStartCommandTest
             (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor(),
             $reviewerSelector,
             $boardService,
-            new FakeInteractiveProcessRunner(),
+            new FakeSessionDriver(),
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
         );
@@ -398,7 +398,7 @@ final class AgentStartCommandTest
             $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
             new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot),
             $boardService,
-            new FakeInteractiveProcessRunner(),
+            new FakeSessionDriver(),
             new FakeProcessSignaler(),
             $shellRunner,
         );
@@ -437,7 +437,7 @@ final class AgentStartCommandTest
         $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
         $registry = new AgentClientLauncherRegistry();
         $registry->register($launcher);
-        $processRunner = new FakeInteractiveProcessRunner();
+        $driver = new FakeSessionDriver();
 
         $cmd = new AgentStartCommand(
             $projectRoot,
@@ -450,7 +450,7 @@ final class AgentStartCommandTest
             $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
             new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot),
             $boardService,
-            $processRunner,
+            $driver,
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
         );
@@ -472,9 +472,9 @@ final class AgentStartCommandTest
             echo "FAIL testDeveloperResetRemovesAndRecreatesCleanWorktree: expected recreated git worktree\n";
             return 1;
         }
-        if ($processRunner->lastCall === null || $processRunner->lastCall['cwd'] !== $worktree) {
-            $cwd = $processRunner->lastCall['cwd'] ?? '<null>';
-            echo "FAIL testDeveloperResetRemovesAndRecreatesCleanWorktree: process runner cwd '{$cwd}', expected '{$worktree}'\n";
+        if ($driver->lastLaunchCall === null || $driver->lastLaunchCall['cwd'] !== $worktree) {
+            $cwd = $driver->lastLaunchCall['cwd'] ?? '<null>';
+            echo "FAIL testDeveloperResetRemovesAndRecreatesCleanWorktree: session driver cwd '{$cwd}', expected '{$worktree}'\n";
             return 1;
         }
 
@@ -505,7 +505,6 @@ final class AgentStartCommandTest
         $contextBuilder = new AgentContextBuilder($this->tmpDir, $this->tmpDir . '/board.md', $boardService);
         $worktreeService = (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor();
         $reviewerSelector = new AgentReviewerSelector($boardService, $sessionService, $this->tmpDir . '/worktrees');
-        $processRunner = new FakeInteractiveProcessRunner();
 
         return new AgentStartCommand(
             $this->tmpDir,
@@ -518,7 +517,7 @@ final class AgentStartCommandTest
             $worktreeService,
             $reviewerSelector,
             $boardService,
-            $processRunner,
+            new FakeSessionDriver(),
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
         );
