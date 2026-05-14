@@ -1,0 +1,6 @@
+description: 'System dependency manager for Ubuntu 24+ — check and install required packages via apt.'
+examples:
+  - 'php scripts/install-deps.php check'
+  - 'php scripts/install-deps.php install'
+  - 'php scripts/install-deps.php check --help'
+  - 'php scripts/install-deps.php install --help'
