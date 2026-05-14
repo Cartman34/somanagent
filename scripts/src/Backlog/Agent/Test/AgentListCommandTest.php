@@ -304,25 +304,43 @@ final class AgentListCommandTest
     private function defaultDriver(): SessionDriverInterface
     {
         return new class implements SessionDriverInterface {
+            /**
+             * {@inheritdoc}
+             */
             public function checkDependencies(): void {}
 
+            /**
+             * {@inheritdoc}
+             */
             public function sessionExists(string $agentCode): bool
             {
                 return false;
             }
 
+            /**
+             * {@inheritdoc}
+             */
             public function launch(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
             {
                 return 0;
             }
 
+            /**
+             * {@inheritdoc}
+             */
             public function resume(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
             {
                 return 0;
             }
 
+            /**
+             * {@inheritdoc}
+             */
             public function stop(AgentSession $session): void {}
 
+            /**
+             * {@inheritdoc}
+             */
             public function isAlive(AgentSession $session): bool
             {
                 return $session->pid !== 0;

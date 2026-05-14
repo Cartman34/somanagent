@@ -151,6 +151,9 @@ final class DirectSessionDriver implements SessionDriverInterface
      * InteractiveProcessRunner calls back with (clientPid, processGroupId). This driver
      * forwards (clientPid, null) to the SessionDriverInterface caller: the direct driver
      * never populates a tmux session name.
+     *
+     * @param list<string> $args
+     * @param array<string, string> $env
      */
     private function run(string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
     {

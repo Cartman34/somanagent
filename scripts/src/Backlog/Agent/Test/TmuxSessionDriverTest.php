@@ -164,12 +164,18 @@ final class TmuxSessionDriverTest
             /** @var list<string> */
             public array $calledCommands = [];
 
+            /**
+             * {@inheritdoc}
+             */
             public function succeeds(string $command): bool
             {
                 $this->calledCommands[] = $command;
                 return true;
             }
 
+            /**
+             * {@inheritdoc}
+             */
             public function output(string $command, string $cwd = ''): ?string
             {
                 return null;

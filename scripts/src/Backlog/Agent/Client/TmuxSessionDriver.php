@@ -188,6 +188,9 @@ final class TmuxSessionDriver implements SessionDriverInterface
      * Writes a temporary shell wrapper script that exports env vars and execs the client binary.
      *
      * Returns the absolute path to the written script.
+     *
+     * @param list<string> $args
+     * @param array<string, string> $env
      */
     private function writeWrapperScript(string $bin, array $args, array $env): string
     {
