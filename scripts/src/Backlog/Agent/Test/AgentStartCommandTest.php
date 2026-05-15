@@ -660,6 +660,7 @@ final class AgentStartCommandTest
             $driver,
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
+            new FakeBacklogCommandRunner(),
         );
 
         $previousCwd = getcwd();
