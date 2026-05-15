@@ -205,7 +205,9 @@ final class TmuxSessionDriverTest
     private function testStopCallsKillSession(): int
     {
         $runner = new class implements \SoManAgent\Script\Backlog\Agent\Client\ProcessRunner {
-            /** @var list<string> */
+            /**
+             * @var list<string>
+             */
             public array $calledCommands = [];
 
             /**

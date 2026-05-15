@@ -26,6 +26,10 @@ namespace SoManAgent\Script\DevEnv;
  */
 final class SystemSourceQuerier implements SourceQuerierInterface
 {
+    /**
+     * @param CommandRunnerInterface $commandRunner Runner for shell commands (apt-cache, npm, dpkg, lsb_release)
+     * @param HttpFetcherInterface   $httpFetcher   Fetcher for HTTP requests (Packages.gz, GitHub API)
+     */
     public function __construct(
         private readonly CommandRunnerInterface $commandRunner,
         private readonly HttpFetcherInterface $httpFetcher,
