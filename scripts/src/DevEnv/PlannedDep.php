@@ -46,12 +46,4 @@ final class PlannedDep
     {
         return in_array($this->action, [self::ACTION_INSTALL, self::ACTION_UPGRADE, self::ACTION_CONFIRM], true);
     }
-
-    /**
-     * Returns true when the dep was already installed on the system before this run.
-     */
-    public function isPreExisting(): bool
-    {
-        return $this->entry->preExisting || $this->installedVersion !== null;
-    }
 }

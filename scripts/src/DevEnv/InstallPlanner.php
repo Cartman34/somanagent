@@ -9,6 +9,7 @@ namespace SoManAgent\Script\DevEnv;
 
 use SoManAgent\Script\DevEnv\Model\Dependency;
 use SoManAgent\Script\DevEnv\Model\LockEntry;
+use SoManAgent\Script\DevEnv\Model\Lockfile;
 use SoManAgent\Script\DevEnv\Model\Manifest;
 
 /**
@@ -39,7 +40,7 @@ final class InstallPlanner
      * @param \SoManAgent\Script\DevEnv\Model\Lockfile $lockfile  Lockfile with target versions
      * @param StateInspector $inspector Current system state detector
      */
-    public function plan(Manifest $manifest, \SoManAgent\Script\DevEnv\Model\Lockfile $lockfile, StateInspector $inspector): InstallPlan
+    public function plan(Manifest $manifest, Lockfile $lockfile, StateInspector $inspector): InstallPlan
     {
         $depMap = [];
         foreach ($manifest->dependencies as $dep) {

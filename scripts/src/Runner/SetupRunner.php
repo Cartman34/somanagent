@@ -16,6 +16,7 @@ use SoManAgent\Script\DevEnv\Installer\ProjectDepsInstaller;
 use SoManAgent\Script\DevEnv\Installer\SystemDepsInstaller;
 use SoManAgent\Script\DevEnv\LockfileManager;
 use SoManAgent\Script\DevEnv\ManifestParser;
+use SoManAgent\Script\DevEnv\Model\Lockfile;
 use SoManAgent\Script\DevEnv\PlannedDep;
 use SoManAgent\Script\DevEnv\PreviewBuilder;
 use SoManAgent\Script\DevEnv\StateInspector;
@@ -170,6 +171,7 @@ final class SetupRunner extends AbstractScriptRunner
 
         if ($this->dryRun) {
             $preview->renderSimulatedCommands($plan, $installers);
+            $this->renderProjectStepsDryRun();
 
             return 0;
         }
@@ -205,7 +207,7 @@ final class SetupRunner extends AbstractScriptRunner
         array $installers,
         LockfileManager $lockfileManager,
         string $lockPath,
-        \SoManAgent\Script\DevEnv\Model\Lockfile $lockfile,
+        Lockfile $lockfile,
     ): void {
         $toApply = $plan->toApply();
 
@@ -223,6 +225,26 @@ final class SetupRunner extends AbstractScriptRunner
             // Persist after each installer so partial progress is saved on failure
             $lockfileManager->write($lockPath, $lockfile);
         }
+    }
+
+    /**
+     * Prints the project-level setup steps that would run in dry-run mode.
+     *
+     * Project steps are not lockfile-driven, so they are not included in
+     * PreviewBuilder::renderSimulatedCommands() — this method covers the gap.
+     */
+    private function renderProjectStepsDryRun(): void
+    {
+        $commands = (new ProjectDepsInstaller($this->app, $this->console))->getSimulatedCommands();
+        if ($commands === []) {
+            return;
+        }
+
+        $this->console->line('  [dry-run] Project setup steps (conditional on containers running):');
+        foreach ($commands as $cmd) {
+            $this->console->line("    {$cmd}");
+        }
+        $this->console->line();
     }
 
     /**

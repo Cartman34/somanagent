@@ -35,17 +35,9 @@ final class ProjectDepsInstaller
     }
 
     /**
-     * Returns true when this installer has nothing to do for a given PlannedDep.
-     *
-     * ProjectDepsInstaller is not driven by lockfile entries; use runProjectSteps() directly.
-     */
-    public function supports(\SoManAgent\Script\DevEnv\PlannedDep $dep): bool
-    {
-        return false;
-    }
-
-    /**
      * Returns simulated commands for the project-level setup steps.
+     *
+     * Used during dry-run to display what would run without applying.
      *
      * @return list<string>
      */

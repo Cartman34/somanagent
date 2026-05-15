@@ -220,13 +220,13 @@ final class InstallPlannerTest
 
         $plan = (new InstallPlanner())->plan($manifest, $lockfile, $inspector);
 
-        // With older version found, should default to UPGRADE (no policy from manifest)
-        if ($plan->items[0]->action !== PlannedDep::ACTION_UPGRADE) {
-            // Could also be INSTALL if binary not detected — both valid outcomes
-            if ($plan->items[0]->action !== PlannedDep::ACTION_INSTALL) {
-                echo "FAIL testOrphanedLockfileEntryDefaultsToUpgrade: expected UPGRADE or INSTALL, got {$plan->items[0]->action}\n";
-                return 1;
-            }
+        // FakeCommandRunner returns 'orphan 0.5.0' for the --version probe → 0.5.0 < 1.0.0 → UPGRADE.
+        // INSTALL is also accepted as a defensive fallback (e.g. if detection regex changes).
+        if ($plan->items[0]->action !== PlannedDep::ACTION_UPGRADE
+            && $plan->items[0]->action !== PlannedDep::ACTION_INSTALL
+        ) {
+            echo "FAIL testOrphanedLockfileEntryDefaultsToUpgrade: expected UPGRADE or INSTALL, got {$plan->items[0]->action}\n";
+            return 1;
         }
 
         echo "OK testOrphanedLockfileEntryDefaultsToUpgrade\n";
