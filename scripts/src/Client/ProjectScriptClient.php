@@ -53,6 +53,42 @@ final class ProjectScriptClient
     }
 
     /**
+     * Executes a known project script with an environment variable prefix and throws on failure.
+     *
+     * @param array<string, string> $env
+     */
+    public function runWithEnv(AppScript $script, array $env, string $arguments = '', ?string $projectRoot = null): void
+    {
+        $this->console->run($this->commandWithEnv($script, $env, $arguments, $projectRoot));
+    }
+
+    /**
+     * Builds the shell command with an environment variable prefix.
+     *
+     * @param array<string, string> $env
+     */
+    public function commandWithEnv(AppScript $script, array $env, string $arguments = '', ?string $projectRoot = null): string
+    {
+        $envParts = [];
+        foreach ($env as $key => $value) {
+            $envParts[] = sprintf('%s=%s', $key, escapeshellarg($value));
+        }
+        $envStr = implode(' ', $envParts);
+
+        if ($projectRoot !== null) {
+            return trim(sprintf(
+                'cd %s && %s php %s %s',
+                escapeshellarg($this->console->toRelativeProjectPath($projectRoot)),
+                $envStr,
+                escapeshellarg($script->value),
+                trim($arguments),
+            ));
+        }
+
+        return trim(sprintf('%s php %s %s', $envStr, escapeshellarg($script->value), trim($arguments)));
+    }
+
+    /**
      * Builds the shell command used to execute one known project script.
      */
     public function command(AppScript $script, string $arguments = '', ?string $projectRoot = null): string

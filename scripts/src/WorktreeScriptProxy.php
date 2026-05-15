@@ -105,7 +105,7 @@ final class WorktreeScriptProxy
 
         $mainScript = $instance->getMainScriptPath();
         if (!is_file($mainScript)) {
-            fwrite(STDERR, "❌ Script not found in main worktree: {$mainScript}\n");
+            fwrite(STDERR, self::formatMissingScriptError($instance->getRelativePath(), $mainScript) . "\n");
             exit(1);
         }
 
@@ -150,6 +150,31 @@ final class WorktreeScriptProxy
     public function getMainScriptPath(): string
     {
         return $this->mainRoot . '/' . $this->relativePath;
+    }
+
+    /**
+     * Returns the script path relative to its current worktree root.
+     *
+     * @return string
+     */
+    public function getRelativePath(): string
+    {
+        return $this->relativePath;
+    }
+
+    /**
+     * Builds the standard message printed when the equivalent script is missing in the main worktree.
+     *
+     * Shared across every script that calls {@see self::run()} so the error stays consistent
+     * regardless of which proxied script was invoked.
+     */
+    public static function formatMissingScriptError(string $relativePath, string $mainScriptPath): string
+    {
+        return sprintf(
+            '❌ Proxy error: requested script `%s` is missing from main worktree at `%s`.',
+            $relativePath,
+            $mainScriptPath,
+        );
     }
 
     private static function buildGitClient(): GitClient

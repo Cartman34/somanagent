@@ -257,3 +257,85 @@ Also check:
 
 1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php worktree-clean`.
 2. Use `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php worktree-list` only when you need a cleanup diagnostic outside the standard workflow.
+
+## Launching a reviewer session
+
+Use `php scripts/backlog-agent.php start <client> --reviewer` to open a reviewer session inside the developer WA. The reviewer reuses the developer's worktree; no new git worktree is created.
+
+### Review board transition
+
+When a reviewer starts on a new entry (not a reuse), the launcher:
+
+1. Sets `meta.stage=reviewing` and `meta.reviewer=<rXX>` in the board.
+2. Saves the board immediately.
+3. Stores the developer WA path as `worktree` in `sessions.json`.
+
+If any subsequent preparation step fails (WA missing and unreconstructable, concurrent session conflict), the launcher rolls the board back to `stage=review` and clears `meta.reviewer` before erroring.
+
+Once the interactive client process starts, no automatic rollback occurs; the entry remains at `stage=reviewing` until the manager or a backlog command changes it. The launcher also records the client PID (and tmux session name when applicable) in `local/tmp/agent-sessions.json`. The active session driver determines how `stop` and `resume` work: the default tmux driver is SSH-resilient (the client keeps running after a disconnect; `resume` re-attaches to the detached session; `stop` kills the tmux session), while the direct driver (`BACKLOG_AGENT_SESSION_DRIVER=direct`) uses SIGTERM/SIGKILL and refuses resume while the tracked client process is alive. See `doc/development/agent-workflow.md` for the full lifecycle.
+
+### Owned reviewing entry reuse
+
+If the reviewer already has an entry at `stage=reviewing` with `meta.reviewer=<rXX>` in the board (from a prior interrupted session), the launcher reuses that entry without a new transition. The existing `stage=reviewing` and `meta.reviewer` are preserved.
+
+This reuse takes priority over all targeting flags (`--feature`, `--task`, `--developer`).
+
+### Auto-selection
+
+Without any targeting flag (and no owned reviewing entry), the launcher selects the first entry at `meta.stage=review` whose developer WA is not already claimed by another reviewer session:
+
+```
+php scripts/backlog-agent.php start claude --reviewer
+```
+
+If all review-stage entries are already being reviewed, the command errors. Pass `--feature`, `--task`, or `--developer` to target an explicit entry, or `--force` to override.
+
+### Targeting a specific entry
+
+```
+php scripts/backlog-agent.php start claude --reviewer --feature=<slug>
+php scripts/backlog-agent.php start claude --reviewer --task=<feature/task>
+php scripts/backlog-agent.php start claude --reviewer --developer=<dXX>
+```
+
+- `--feature=<slug>`: select the `kind=feature` entry at `stage=review` or `stage=reviewing` (same reviewer) matching that slug.
+- `--task=<feature/task>`: select the `kind=task` entry at `stage=review` or `stage=reviewing` (same reviewer) matching the full reference. A bare task slug is never accepted.
+- `--developer=<dXX>`: select the single active entry assigned to that developer code at `stage=review` or `stage=reviewing` (same reviewer).
+
+If a targeting flag matches an entry already at `stage=reviewing` for a **different** reviewer, the command errors regardless of `--force`.
+
+### Reviewer code
+
+Without `--code=<rXX>`, the launcher auto-allocates the lowest free reviewer code. Pass `--code=<rXX>` to use an explicit reviewer code.
+
+### Concurrent session conflicts
+
+Two situations block the launch by default:
+
+1. **Another reviewer is already reviewing the same WA** — a different reviewer session has the same worktree in `agent-sessions.json`. Use `--force` to proceed anyway.
+2. **A developer session is active in the target WA** — a developer or manager session occupies the same worktree. Filesystem conflicts are likely under concurrent access. Use `--force` to proceed at your own risk; prefer stopping the developer session first with `php scripts/backlog-agent.php stop --code=<dXX>`.
+
+```
+php scripts/backlog-agent.php start claude --reviewer --developer=d04 --force
+```
+
+`--force` overrides both conflict types. It does not override an entry already at `stage=reviewing` for a different reviewer.
+
+### Resuming an interrupted reviewer session
+
+```
+php scripts/backlog-agent.php resume --code=<rXX>
+php scripts/backlog-agent.php resume --code=<rXX> --session=<id>
+```
+
+The `resume` command reads the `worktree` stored in `sessions.json` rather than computing a worktree path from the reviewer code. This ensures reviewer sessions correctly resume inside the shared developer WA.
+
+If the stored developer WA no longer exists, the launcher attempts to reconstruct it via `prepareFeatureAgentWorktree` using the board's `stage=reviewing` entry owned by this reviewer. When reconstruction returns a different path than the one stored in `sessions.json`, `resume` persists the reconstructed developer WA path before preparing the client. If reconstruction fails (no board, no entry, or git error), the command errors with an explicit message naming the missing path and reason.
+
+### Listing past CLI sessions
+
+```
+php scripts/backlog-agent.php sessions --code=<rXX>
+```
+
+Uses the same `worktree` from `sessions.json` — the developer WA — to query the client's session history.

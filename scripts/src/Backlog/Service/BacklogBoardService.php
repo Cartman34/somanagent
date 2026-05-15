@@ -648,6 +648,27 @@ final class BacklogBoardService
     }
 
     /**
+     * Returns the single entry owned by the reviewer at stage=reviewing, or null.
+     *
+     * @param BacklogBoard $board
+     * @param string $reviewer The reviewer agent code (e.g. r01)
+     * @return BoardEntryMatch|null
+     */
+    public function findReviewingEntryByReviewer(BacklogBoard $board, string $reviewer): ?BoardEntryMatch
+    {
+        foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $index => $entry) {
+            if ($this->getNormalizedStage($entry->getStage()) !== BacklogBoard::STAGE_REVIEWING) {
+                continue;
+            }
+            if ($entry->getReviewer() === $reviewer) {
+                return new BoardEntryMatch(BacklogBoard::SECTION_ACTIVE, $index, $entry);
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Builds an informative conflict error when an agent already has an active entry.
      *
      * @param array<int, BoardEntryMatch> $activeEntries

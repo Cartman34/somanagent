@@ -1,0 +1,13 @@
+description: 'Re-launch the CLI for an interrupted session, reconnecting to the previous CLI conversation.'
+options:
+  - name: '--code=<code>'
+    description: 'Agent code of the interrupted session (required). Client and role are derived from the sessions.json entry.'
+  - name: '--session=<id>'
+    description: 'Resume a specific CLI session ID in the WA. Omit to continue the last session.'
+examples:
+  - 'php scripts/backlog-agent.php resume --code=d04'
+  - 'php scripts/backlog-agent.php resume --code=d04 --session=abc-uuid'
+notes:
+  - '--code is required.'
+  - 'Refused when the session is already live (registered PID is still running).'
+  - 'Reconstructs the WA path from sessions.json when the recorded path no longer exists.'

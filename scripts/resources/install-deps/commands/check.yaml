@@ -1,0 +1,8 @@
+description: 'Verify that each required system dependency is installed and meets the minimum version.'
+examples:
+  - 'php scripts/install-deps.php check'
+notes:
+  - 'Exits with code 0 when all dependencies are satisfied, code 1 when any is missing or outdated.'
+  - 'Prints a status line per dependency: ok, missing, or version insufficient.'
+  - 'When issues are detected, lists the apt commands required to resolve them.'
+  - 'Targets Ubuntu 24+ only (apt-based systems).'

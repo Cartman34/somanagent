@@ -60,6 +60,41 @@ Read this file only when the active task requires developer workflow details.
 - start a second visible backlog entry for the same feature
 - edit `local/backlog-board.md` or `local/backlog-review.md` manually
 
+## Session Environment
+
+Developer sessions are started by the operator with:
+
+```
+php scripts/backlog-agent.php start <client> --developer [--code=<dXX>]
+```
+
+Supported clients:
+
+- `claude`: supported end to end by `ClaudeAgentLauncher`.
+- `codex`: supported end to end by `CodexAgentLauncher`.
+- `opencode`: supported end to end by `OpenCodeAgentLauncher`.
+- `gemini`: supported end to end by `GeminiAgentLauncher`. Context is injected via the `GEMINI_SYSTEM_MD` env var.
+
+The following environment variables are injected into every session:
+
+| Variable | Value |
+|---|---|
+| `SOMANAGER_AGENT` | Agent code (e.g. `d04`) |
+| `SOMANAGER_ROLE` | `developer` |
+| `SOMANAGER_CLIENT` | `claude`, `codex`, `opencode`, or `gemini` |
+| `SOMANAGER_WP` | Absolute path to the main workspace |
+
+A context file is generated at `<WA>/local/agent-context.md` on every session start and resume. It summarises the current task, allowed commands, and backlog vocabulary. Do not commit or push this file.
+
+The launcher spawns the AI client via the active **session driver** and records the client PID (and tmux session name when applicable) in `local/tmp/agent-sessions.json`:
+
+- **tmux driver** (default): wraps the session in a named tmux session (`somanagent-<code>`). SSH-resilient — the client keeps running after a terminal disconnect. `stop` kills the tmux session; `resume` re-attaches to it.
+- **direct driver** (`BACKLOG_AGENT_SESSION_DRIVER=direct`): spawns the client via `proc_open`. Not SSH-resilient. `stop` sends SIGTERM then SIGKILL after 5 seconds.
+
+A `resume` re-attaches to a detached tmux session, but is refused while the PHP wrapper is still alive or when the direct driver still has a live client process. See `doc/development/agent-workflow.md` for the full lifecycle and `last_seen_at` semantics.
+
+Run `php scripts/backlog-agent.php whoami` from inside the WA to confirm the session identity.
+
 ## Read Only When Needed
 
 - `local/backlog-board.md` for feature state

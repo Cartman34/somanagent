@@ -1,0 +1,9 @@
+description: 'Install missing or outdated system dependencies via apt, in transitive dependency order.'
+examples:
+  - 'php scripts/install-deps.php install'
+notes:
+  - 'Checks all dependencies first; skips apt entirely when every dependency is already satisfied.'
+  - 'Runs sudo apt-get update before installing packages.'
+  - 'Installs packages in the order required by transitive dependency resolution.'
+  - 'Requires sudo privileges for apt-get.'
+  - 'Targets Ubuntu 24+ only (apt-based systems).'

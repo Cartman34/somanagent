@@ -38,6 +38,7 @@ Rules:
 - Use `SOMANAGER_ROLE=<role> SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-list` to inspect managed worktrees under `.agent-worktrees/`.
 - Use `SOMANAGER_ROLE=<role> SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-clean` to remove only abandoned managed worktrees that are safe to delete.
 - Worktrees outside `.agent-worktrees/` are never auto-removed by backlog commands; inspect them manually, then use `git worktree remove <path>` or `git worktree prune`.
+- Manager sessions run in WP by default; no manager WA is created automatically. A manager may inspect or switch to a WA when the documented manager workflow permits it.
 
 ## Feature Identity Rules
 
@@ -62,7 +63,9 @@ Rules:
 9. Every developer commit on a feature branch must start with `[<slug>]`.
 10. Review and approval must be scoped from the recorded `base` commit, not from the current `main`.
 11. Active workflow state is stored in `meta.stage` with one of:
-   `development`, `review`, `rejected`, `approved`.
+   `development`, `review`, `reviewing`, `rejected`, `approved`.
+   `reviewing` is set automatically by `backlog-agent.php start --reviewer` when a reviewer session takes a `review`-stage entry; the field `meta.reviewer` records the reviewer agent code (e.g. `r01`).
+   `reviewing` entries are visible to `list`, `status --code=<rXX>`, and `whoami` and are reported as `[reviewing] <feature>[/<task>]`.
 12. The `meta:` block is absent from queued tasks that have never been taken.
 13. Inside one active entry, `meta:` is always the final block. The entry ends on the next blank line, next root `- ...`, or next section title.
 
@@ -171,3 +174,76 @@ Rules:
 4. If `WP` is currently on the `main` branch, the workflow uses `git pull --ff-only` so the working tree is also updated.
 5. If `WP` is on another branch, the workflow runs `git branch -f main origin/main` to advance the local ref without touching the working tree. This is non-blocking: failures are logged as warnings and the workflow continues.
 6. The best-effort sync is skipped with an explicit warning when local `main` is checked out in another worktree (a concurrent agent worktree has it active) or when local `main` has diverged from `origin/main` (its tip is not an ancestor of `origin/main`). In neither case does the workflow block or fail.
+
+## Agent Session Launcher
+
+Sessions for developer, reviewer, and manager agents are launched by the operator using `php scripts/backlog-agent.php`. Each session:
+
+- prepares the `WA` (via `BacklogWorktreeService::prepareAgentWorktree` for developer/manager; reviewer reuses the developer WA)
+- generates `<WA>/local/agent-context.md` with the current task (or current review for reviewer), allowed commands, backlog vocabulary, and identification instructions
+- injects the env vars below into the CLI process
+- spawns the AI client via the active **session driver** and records its real PID (and tmux session name when applicable) in `local/tmp/agent-sessions.json` so `stop` can terminate the actual client, not only the PHP wrapper
+
+### Session Drivers
+
+The session driver is selected by the environment variable `BACKLOG_AGENT_SESSION_DRIVER` (default: `tmux`):
+
+| Value | Behaviour |
+|---|---|
+| `tmux` (default) | Wraps each session in a named tmux session (`somanagent-<code>`). SSH-resilient: the client continues running after the terminal disconnects. |
+| `direct` | Spawns the client via `proc_open`. Simpler but not SSH-resilient. |
+
+### Session Lifecycle And Stop Semantics
+
+`agent-sessions.json` tracks three identifiers per session:
+
+| Field | Meaning |
+|---|---|
+| `pid` | PID of the PHP wrapper process. Kept for diagnostics and stale-wrapper detection. |
+| `client_pid` | PID of the actual AI client process when known. May be `null` if the launcher cannot determine it. |
+| `tmux_session` | Name of the tmux session (e.g. `somanagent-d01`) when driver=tmux; `null` for driver=direct. |
+
+`stop --code=<code>` delegates to the session driver. For `tmux`: kills the named tmux session. For `direct`: sends `SIGTERM` to `client_pid` (then wrapper PID as fallback), waits up to 5 seconds, and follows up with `SIGKILL` if the client did not exit. The `agent-sessions.json` entry is removed only after the termination attempt completes.
+
+`resume --code=<code>` refuses when the PHP wrapper is still alive. When the wrapper is dead but the driver still reports an alive session, behaviour depends on the driver: `tmux` allows resume because it re-attaches to the detached named session, while `direct` refuses because the tracked client process is still running and resume would start a second client instance. Run `stop --code=<code>` to terminate a direct live session before resuming. For reviewer sessions, `resume` uses the stored developer WA path; if that path is missing but the reviewer still owns a `stage=reviewing` entry, the launcher reconstructs the developer WA and updates `agent-sessions.json` with the reconstructed path before preparing the client.
+
+### last_seen_at Semantics
+
+`last_seen_at` is **not a heartbeat**. It records the last time a `backlog-agent.php` subcommand inspected the entry and refreshed its PID / process status. `list`, `status`, `sessions`, `resume`, and `stop` all update this timestamp for the entries they touch.
+
+### Reviewer session context
+
+The context file for a reviewer session derives its "Current task" section from the board's `stage=reviewing` entry that has `meta.reviewer=<rXX>`. It shows Feature, Task, Ref, Developer, Branch, Base, Stage, and Reviewer fields. If no reviewing entry is found, the section reads "No review assigned."
+
+The reviewer's `<WA>/local/agent-context.md` is written into the **developer's WA** (the shared worktree), not a dedicated reviewer worktree.
+
+### Session Environment Variables
+
+| Variable | Value |
+|---|---|
+| `SOMANAGER_AGENT` | Agent code (e.g. `d04`) |
+| `SOMANAGER_ROLE` | `developer`, `reviewer`, or `manager` |
+| `SOMANAGER_CLIENT` | `claude`, `codex`, `opencode`, or `gemini` |
+| `SOMANAGER_WP` | Absolute path to the main workspace (`WP`) |
+
+These variables are available inside the running session. Read them with `getenv('SOMANAGER_AGENT')` or `$SOMANAGER_AGENT` in the shell.
+
+### WA Isolation Rule
+
+An agent running in a session started by `backlog-agent.php` must:
+
+- read and write source files **only inside its own `WA`** (the path reported by `SOMANAGER_AGENT` and the working directory)
+- never access `$SOMANAGER_WP` directly to read or write source files
+- never run scripts that require the WP runtime (containers, database, GitHub API) unless explicitly allowed for the role
+
+### Context File
+
+`<WA>/local/agent-context.md` is generated fresh on every `start` and `resume`. It is hidden from `git status` via `.git/info/exclude` of the WA. Do not commit or push it.
+
+### Strict CLI Options
+
+`backlog-agent.php` rejects unknown CLI options. Each subcommand accepts the options declared by its `getOptions()` method, plus the runner-level options `--help` and `--force-current-worktree`. Both the `--option=value` and `--option value` forms are validated. A typo such as `--as=<code>` instead of `--code=<code>` produces an `Unknown option(s) for command \`<subcommand>\`` error.
+
+### Worktree Script Proxy
+
+Scripts that proxy execution from a linked worktree to the main worktree (currently `backlog-agent.php` and `backlog.php`) share a standard error when the equivalent script is missing from the main worktree: `❌ Proxy error: requested script \`<relative path>\` is missing from main worktree at \`<absolute WP path>\`.`. Use `--force-current-worktree` to bypass the proxy and run the script in place when the WP version is intentionally absent (typical during the integration of a new script).

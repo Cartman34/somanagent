@@ -33,6 +33,45 @@ Read this file only when the active task requires backlog management or workflow
 - For `entry-unassign`, `--agent=<code>` identifies the manager caller. Use an explicit `<entry-ref>` to choose the entry to unassign.
 - Every manager backlog command must be prefixed exactly as `SOMANAGER_ROLE=manager SOMANAGER_AGENT=<code> php scripts/backlog.php ...`.
 
+## Session Environment
+
+Manager sessions are started by the operator with:
+
+```
+php scripts/backlog-agent.php start <client> --manager [--code=<mXX>]
+```
+
+Manager sessions run in WP by default. No `.agent-worktrees/<mXX>` directory is created automatically. The `--reset` flag is not supported for the manager role.
+
+A manager may inspect or switch to a WA when the documented manager workflow allows it; this must be done manually from within the WP session.
+
+Supported clients:
+
+- `claude`: supported end to end by `ClaudeAgentLauncher`.
+- `codex`: supported end to end by `CodexAgentLauncher`.
+- `opencode`: supported end to end by `OpenCodeAgentLauncher`.
+- `gemini`: supported end to end by `GeminiAgentLauncher`. Context is injected via the `GEMINI_SYSTEM_MD` env var.
+
+The following environment variables are injected into every session:
+
+| Variable | Value |
+|---|---|
+| `SOMANAGER_AGENT` | Agent code (e.g. `m01`) |
+| `SOMANAGER_ROLE` | `manager` |
+| `SOMANAGER_CLIENT` | `claude`, `codex`, `opencode`, or `gemini` |
+| `SOMANAGER_WP` | Absolute path to the main workspace |
+
+A context file is generated at `<WP>/local/agent-context.md` on every session start and resume. It summarises the current task, allowed commands, and backlog vocabulary. Do not commit or push this file.
+
+The launcher spawns the AI client via the active **session driver** and records the client PID (and tmux session name when applicable) in `local/tmp/agent-sessions.json`:
+
+- **tmux driver** (default): wraps the session in a named tmux session (`somanagent-<code>`). SSH-resilient — the client keeps running after a terminal disconnect. `stop` kills the tmux session; `resume` re-attaches to it.
+- **direct driver** (`BACKLOG_AGENT_SESSION_DRIVER=direct`): spawns the client via `proc_open`. Not SSH-resilient. `stop` sends SIGTERM then SIGKILL after 5 seconds.
+
+A `resume` re-attaches to a detached tmux session, but is refused while the PHP wrapper is still alive or when the direct driver still has a live client process. See `doc/development/agent-workflow.md` for the full lifecycle and `last_seen_at` semantics.
+
+Run `php scripts/backlog-agent.php whoami` from WP to confirm the session identity.
+
 ## Guidance
 
 - use `doc/development/agent-workflow.md` for the shared backlog model and state transitions

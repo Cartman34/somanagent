@@ -61,6 +61,7 @@ It lets you assemble generic AI agent teams, assign them roles and skills, then 
 | [Fixtures](development/fixtures.md) | Reference seed data and sample workflows |
 | [Troubleshooting](development/troubleshooting.md) | Quick local recovery notes and useful checks |
 | [Agent workflow](development/agent-workflow.md) | Shared backlog, feature, and worktree rules for AI agents |
+| [Backlog glossary](development/backlog-glossary.md) | Definitions of terms and acronyms used by the local backlog |
 | [Agent developer workflow](development/agent-developer.md) | Detailed workflow for the `Developer` role |
 | [Agent manager workflow](development/agent-manager.md) | Detailed workflow and boundaries for the `Manager` role |
 | [Agent reviewer workflow](development/agent-reviewer.md) | Detailed workflow for the `Reviewer / CP` role |

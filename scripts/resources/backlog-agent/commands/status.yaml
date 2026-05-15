@@ -1,0 +1,10 @@
+description: 'Show session details for one agent or a summary of all sessions.'
+options:
+  - name: '--code=<code>'
+    description: 'Show full details for this agent code'
+examples:
+  - 'php scripts/backlog-agent.php status'
+  - 'php scripts/backlog-agent.php status --code=d04'
+notes:
+  - 'Without --code, prints a summary line per active session.'
+  - 'With --code, prints full details including worktree path, backlog entry, and current label.'

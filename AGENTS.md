@@ -49,6 +49,23 @@ Use one active role only.
 - Shared backlog and workflow rules are documented in `doc/development/agent-workflow.md`.
 - After a context compression, recover role and agent code from the conversation summary before asking the user. Only ask if they are genuinely absent from the summary.
 
+## Agent Session Launcher
+
+Sessions are started by the operator using `php scripts/backlog-agent.php start <client> --developer|--reviewer|--manager`.
+
+When a session is active, the following environment variables are injected into the process:
+
+| Variable | Value |
+|---|---|
+| `SOMANAGER_AGENT` | Agent code (e.g. `d04`) |
+| `SOMANAGER_ROLE` | `developer`, `reviewer`, or `manager` |
+| `SOMANAGER_CLIENT` | `claude`, `codex`, `opencode`, or `gemini` |
+| `SOMANAGER_WP` | Absolute path to the main workspace |
+
+A context file is generated at `<WA>/local/agent-context.md` on every session start and resume. It contains the working directory, current task, allowed commands, user keywords, and backlog vocabulary. Read it when context is needed.
+
+Run `php scripts/backlog-agent.php whoami` from inside a WA to confirm the session identity.
+
 ## Git Rules
 
 - Always use `git add .` unless selective staging is actually required.
