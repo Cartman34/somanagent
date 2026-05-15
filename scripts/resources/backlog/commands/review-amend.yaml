@@ -1,0 +1,20 @@
+description: 'Replace review notes on a rejected feature or task without changing its stage'
+arguments:
+  -
+    name: '<entry-ref>'
+    description: 'Entry reference to amend'
+options:
+  -
+    name: '--body-file'
+    description: 'Local file containing replacement review findings (one per line, kept verbatim, no Markdown headings) (required)'
+examples:
+  - 'SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=r01 php scripts/backlog.php review-amend delete-question-reply --body-file local/tmp/review.md'
+  - 'SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=r01 php scripts/backlog.php review-amend onboarding/task-copy-review --body-file local/tmp/review.md'
+notes:
+  - 'Restricted to the reviewer role (SOMANAGER_ROLE=reviewer).'
+  - 'The entry must be in rejected stage; amending is not available in any other stage.'
+  - 'No check is made against which reviewer originally rejected the entry; any reviewer may amend.'
+  - 'Use <entry-ref> for both feature and child task entries.'
+  - 'Short task references (bare task slug without the parent feature) are refused; use <entry-ref>.'
+  - 'The body file must contain plain findings only: one finding per line kept verbatim. Lines that start with `#`, `##`, or `###` followed by a space are rejected as Markdown headings; `####` and above are allowed.'
+  - 'Amended notes are visible to the developer via review-notes and during the next rework.'

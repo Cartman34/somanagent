@@ -122,6 +122,7 @@ MD);
         $this->assertOutputContains($this->runBacklog(['review-check', '--help']), 'review-check');
         $this->assertOutputContains($this->runBacklog(['review-approve', '--help']), 'review-approve');
         $this->assertOutputContains($this->runBacklog(['review-reject', '--help']), 'review-reject');
+        $this->assertOutputContains($this->runBacklog(['review-amend', '--help']), 'review-amend');
         // Regression: `help` and `help <command>` must be unknown commands, not silent aliases.
         $this->assertCommandIsUnknown('help');
         $this->assertBacklogFails(
@@ -572,6 +573,39 @@ MD);
     }
 
     /**
+     * Amend review notes on a rejected feature or task via review-amend.
+     *
+     * @param string $reviewer Reviewer agent code
+     * @param string $reference <entry-ref>
+     * @param string $bodyFile Path to body file with replacement findings
+     */
+    public function reviewAmend(string $reviewer, string $reference, string $bodyFile): void
+    {
+        $this->runBacklog(
+            ['review-amend', $reference, '--body-file', $bodyFile],
+            ['SOMANAGER_ROLE' => 'reviewer', 'SOMANAGER_AGENT' => $reviewer],
+        );
+    }
+
+    /**
+     * @param string $reviewer Reviewer agent code
+     * @param string $reference Feature slug or task reference
+     * @param string|null $bodyFile Path to body file (null to omit --body-file)
+     * @param string $needle Expected error message
+     * @param array<string, string> $extraEnv Additional env vars (e.g. override SOMANAGER_ROLE)
+     */
+    public function assertReviewAmendFails(string $reviewer, string $reference, ?string $bodyFile, string $needle, array $extraEnv = []): void
+    {
+        $args = ['review-amend', $reference];
+        if ($bodyFile !== null) {
+            $args[] = '--body-file';
+            $args[] = $bodyFile;
+        }
+        $env = array_merge(['SOMANAGER_ROLE' => 'reviewer', 'SOMANAGER_AGENT' => $reviewer], $extraEnv);
+        $this->assertBacklogFails($args, $needle, $env);
+    }
+
+    /**
      * Assert that the given command name is rejected as unknown, with no specific legacy text.
      *
      * @param string $name Command name expected to be unknown
@@ -582,6 +616,59 @@ MD);
             [$name],
             sprintf('Unknown command: %s. Run with --help for the list of available commands.', $name),
         );
+    }
+
+    /**
+     * Reopen an approved entry for a new review cycle.
+     *
+     * @param string $role Caller role: 'manager' or 'reviewer'
+     * @param string $agent Caller agent code
+     * @param string $reference Mandatory stable reference (<entry-ref>)
+     */
+    public function reviewReopen(string $role, string $agent, string $reference): void
+    {
+        $this->runBacklog(['review-reopen', $reference], [
+            'SOMANAGER_ROLE' => $role,
+            'SOMANAGER_AGENT' => $agent,
+        ]);
+    }
+
+    /**
+     * Injects review notes directly into the review file, bypassing backlog.php.
+     *
+     * Use this only to set up note-clearing tests: notes are normally cleared by
+     * `review-approve`, so a direct injection is the only way to place notes in the
+     * file while an entry is already in `approved` state.
+     *
+     * @param string $key Review key: feature slug or feature/task composite reference
+     * @param list<string> $lines Note lines to inject
+     */
+    public function injectReviewNote(string $key, array $lines): void
+    {
+        $service = $this->boardService();
+        $review = $service->loadReviewFile($this->context->reviewPath);
+        $review->setReview($key, $lines);
+        $service->saveReviewFile($review);
+    }
+
+    /**
+     * Asserts that review-reopen fails with the expected error message.
+     *
+     * @param string $role Caller role: 'manager' or 'reviewer'
+     * @param string $agent Caller agent code
+     * @param string $reference Reference passed to review-reopen (empty to omit)
+     * @param string $needle Expected substring of the failure output
+     */
+    public function assertReviewReopenFails(string $role, string $agent, string $reference, string $needle): void
+    {
+        $args = ['review-reopen'];
+        if ($reference !== '') {
+            $args[] = $reference;
+        }
+        $this->assertBacklogFails($args, $needle, [
+            'SOMANAGER_ROLE' => $role,
+            'SOMANAGER_AGENT' => $agent,
+        ]);
     }
 
     public function rework(string $agent, string $reference = ''): void
