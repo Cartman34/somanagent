@@ -44,14 +44,10 @@ final class VersionConstraint
             '>' => version_compare($normalized, $constraintNormalized, '>'),
             '<=' => version_compare($normalized, $constraintNormalized, '<='),
             '<' => version_compare($normalized, $constraintNormalized, '<'),
-            '=', '==' => version_compare($normalized, $constraintNormalized, '=='),
+            '=' => version_compare($normalized, $constraintNormalized, '=='),
             '!=' => version_compare($normalized, $constraintNormalized, '!='),
             '^' => $this->satisfiesCaret($normalized, $constraintNormalized),
             '~' => $this->satisfiesTilde($normalized, $constraintNormalized),
-            default => throw new \InvalidArgumentException(sprintf(
-                'Unsupported constraint operator: %s',
-                $operator,
-            )),
         };
     }
 
@@ -104,7 +100,7 @@ final class VersionConstraint
     private function satisfiesCaret(string $version, string $constraintVersion): bool
     {
         $parts = explode('.', $constraintVersion);
-        $major = (int) ($parts[0] ?? 0);
+        $major = (int) $parts[0];
         $minor = (int) ($parts[1] ?? 0);
 
         if ($major > 0) {
@@ -127,7 +123,7 @@ final class VersionConstraint
     private function satisfiesTilde(string $version, string $constraintVersion): bool
     {
         $parts = explode('.', $constraintVersion);
-        $major = (int) ($parts[0] ?? 0);
+        $major = (int) $parts[0];
         $minor = (int) ($parts[1] ?? 0);
 
         if (count($parts) >= 2) {
