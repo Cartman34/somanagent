@@ -1,0 +1,18 @@
+description: 'Re-resolve manifest constraints against available sources and apply diffs to the system.'
+options:
+  - name: '--preview-only'
+    description: 'Show the resolution diff and install plan, then exit without applying. Mutually exclusive with --dry-run.'
+  - name: '--dry-run'
+    description: 'Show the plan and simulated commands, then exit without applying. Mutually exclusive with --preview-only.'
+  - name: '--force'
+    description: 'Apply without asking for confirmation (preview still printed for traceability).'
+examples:
+  - 'php scripts/setup.php update'
+  - 'php scripts/setup.php update --preview-only'
+  - 'php scripts/setup.php update --dry-run'
+  - 'php scripts/setup.php update --force'
+notes:
+  - 'Queries each source declared in the manifest (apt-cache, npm view, GitHub releases API) to resolve the highest satisfying version.'
+  - 'Writes the new lockfile to scripts/resources/dependencies.lock after a successful apply.'
+  - 'Idempotent: running update with an unchanged manifest produces the same lockfile with no system mutations.'
+  - '--preview-only and --dry-run are mutually exclusive.'

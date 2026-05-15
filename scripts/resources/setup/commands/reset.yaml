@@ -1,0 +1,20 @@
+description: 'Drop the database and remove Docker volumes. Does NOT touch host dependencies or client binaries.'
+options:
+  - name: '--keep-volumes'
+    description: 'Stop Docker containers but preserve volumes (skip docker compose down -v).'
+  - name: '--preview-only'
+    description: 'Show the reset plan and exit without applying. Mutually exclusive with --dry-run.'
+  - name: '--dry-run'
+    description: 'Show the plan and simulated commands, then exit without applying. Mutually exclusive with --preview-only.'
+  - name: '--force'
+    description: 'Apply without asking for confirmation.'
+examples:
+  - 'php scripts/setup.php reset'
+  - 'php scripts/setup.php reset --preview-only'
+  - 'php scripts/setup.php reset --keep-volumes'
+  - 'php scripts/setup.php reset --force'
+notes:
+  - 'Destructive: all database data is permanently deleted. Explicit confirmation is always required unless --force is passed.'
+  - 'Host dependencies (apt packages, npm clients, binaries) are NOT touched by reset.'
+  - 'After reset, run setup.php install to restore project-level dependencies (composer, npm, migrations).'
+  - '--preview-only and --dry-run are mutually exclusive.'

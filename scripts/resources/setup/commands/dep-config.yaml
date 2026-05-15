@@ -1,0 +1,20 @@
+description: 'Read or write per-dep overrides stored in the lockfile. Mutation is local and reversible (no --force).'
+arguments:
+  - name: '<action>'
+    description: 'Action to perform: get, set, or unset.'
+  - name: '<dep>'
+    description: 'Dependency key as declared in the manifest (e.g. claude, docker-engine).'
+  - name: '[property]'
+    description: 'Property name (required for set and unset; optional for get). V1: on_uninstall_pre_existing.'
+  - name: '[value]'
+    description: 'Value to set (required for set). V1 values for on_uninstall_pre_existing: keep | restore.'
+examples:
+  - 'php scripts/setup.php dep-config get claude'
+  - 'php scripts/setup.php dep-config get claude on_uninstall_pre_existing'
+  - 'php scripts/setup.php dep-config set claude on_uninstall_pre_existing restore'
+  - 'php scripts/setup.php dep-config unset claude on_uninstall_pre_existing'
+notes:
+  - 'Overrides are stored in the lockfile and take precedence over manifest defaults during uninstall.'
+  - 'Idempotent: set with the same value is a no-op; unset on a missing property is a no-op.'
+  - 'V1 exposes only on_uninstall_pre_existing (keep | restore). The list is extensible via the spec.'
+  - 'No --force flag — mutation is local and easily reversible with unset.'
