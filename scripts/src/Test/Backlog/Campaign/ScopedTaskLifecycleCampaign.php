@@ -250,12 +250,14 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->removeTodoTask(sprintf('%s/%s', $guardFeature, $guardTaskD));
 
         // Test C: work-start on a child task reverts parent from approved to development
+        // task-create must run while parent is in development so it does not trigger the revert;
+        // only work-start should see the approved stage and be responsible for the transition.
+        $driver->createTodoTask(sprintf('[%s][%s] Task E for work-start revert guard', $guardFeature, $guardTaskE));
         $driver->replaceBoardText(
             "    stage: development\n    feature: {$guardFeature}",
             "    stage: approved\n    feature: {$guardFeature}",
         );
         $driver->assertFeatureStage($guardFeature, BacklogBoard::STAGE_APPROVED);
-        $driver->createTodoTask(sprintf('[%s][%s] Task E for work-start revert guard', $guardFeature, $guardTaskE));
         $driver->startNextFeature($context->agentPrimary, $guardTaskERef);
         $driver->assertFeatureStage($guardFeature, BacklogBoard::STAGE_IN_PROGRESS);
 
