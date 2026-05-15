@@ -20,12 +20,18 @@ final class ProjectDepsInstallerTest
 {
     private string $tmpDir;
 
+    /**
+     * Creates a fresh temporary directory used as a fake backend root for all test cases.
+     */
     public function __construct()
     {
         $this->tmpDir = sys_get_temp_dir() . '/somanagent_test_' . uniqid('', true);
         mkdir($this->tmpDir, 0o700, true);
     }
 
+    /**
+     * Removes the temporary directory after all tests have run.
+     */
     public function __destruct()
     {
         $this->removeTmpDir($this->tmpDir);

@@ -24,6 +24,9 @@ final class FakeShellRunner implements ShellRunnerInterface
 
     private int $exitCode;
 
+    /**
+     * @param int $exitCode Exit code returned by every runCommand() call (default 0 = success)
+     */
     public function __construct(int $exitCode = 0)
     {
         $this->exitCode = $exitCode;
