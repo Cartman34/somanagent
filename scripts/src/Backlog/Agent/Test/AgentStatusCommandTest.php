@@ -295,6 +295,8 @@ final class AgentStatusCommandTest
 
             /**
              * {@inheritdoc}
+             *
+             * @phpstan-impure
              */
             public function sessionExists(string $agentCode): bool
             {
