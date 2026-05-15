@@ -1,0 +1,12 @@
+description: 'Stop a live agent session or remove a stale session entry.'
+options:
+  - name: '--code=<code>'
+    description: 'Agent code to stop (required)'
+  - name: '--cleanup'
+    description: 'Remove the session entry even if the PID is dead'
+examples:
+  - 'php scripts/backlog-agent.php stop --code=d04'
+  - 'php scripts/backlog-agent.php stop --code=d04 --cleanup'
+notes:
+  - '--code is required.'
+  - 'When the PID is already dead, use --cleanup to remove the stale session entry.'

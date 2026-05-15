@@ -45,8 +45,9 @@ use SoManAgent\Script\TextSlugger;
 /**
  * Entry-point dispatcher for scripts/backlog-agent.php.
  *
- * Parses the subcommand, renders help, and delegates to the matching
- * AbstractAgentCommand implementation.
+ * Parses the subcommand, renders YAML-based help, and delegates to the matching
+ * AbstractAgentCommand implementation. Help is driven by YAML resources under
+ * scripts/resources/backlog-agent/.
  *
  * The session driver is selected by the environment variable BACKLOG_AGENT_SESSION_DRIVER:
  *   - tmux   (default): wraps sessions in named tmux sessions; SSH-resilient
@@ -83,37 +84,9 @@ final class BacklogAgentRunner extends AbstractScriptRunner
     /**
      * {@inheritdoc}
      */
-    protected function getDescription(): string
+    protected function printHelp(): void
     {
-        return 'Unified launcher for AI coding agents in managed worktrees.';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getCommands(): array
-    {
-        $result = [];
-        foreach ($this->commands() as $name => $cmd) {
-            $result[] = ['name' => $name, 'description' => $cmd->getDescription()];
-        }
-
-        return $result;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getUsageExamples(): array
-    {
-        return [
-            'php scripts/backlog-agent.php start claude --developer',
-            'php scripts/backlog-agent.php start claude --developer --code=d04',
-            'php scripts/backlog-agent.php list',
-            'php scripts/backlog-agent.php stop --code=d04',
-            'php scripts/backlog-agent.php resume --code=d04',
-            'php scripts/backlog-agent.php help start',
-        ];
+        $this->printYamlHelp();
     }
 
     /**
@@ -131,7 +104,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
             $this->optionValidator()->assertGlobalOptionsAccepted($options);
             $target = $parsedArgs[0] ?? '';
             if ($target !== '') {
-                $this->printSubcommandHelp($target);
+                $this->printYamlCommandHelp($target);
 
                 return 0;
             }
@@ -148,46 +121,12 @@ final class BacklogAgentRunner extends AbstractScriptRunner
         $this->optionValidator()->assertCommandOptionsAccepted($subcommand, $cmd->getOptions(), $options);
 
         if (isset($options['help'])) {
-            $this->printSubcommandHelp($subcommand);
+            $this->printYamlCommandHelp($subcommand);
 
             return 0;
         }
 
         return $cmd->handle($parsedArgs, $options);
-    }
-
-    private function printSubcommandHelp(string $name): void
-    {
-        $cmd = $this->commands()[$name] ?? null;
-        if ($cmd === null) {
-            throw new \RuntimeException(sprintf("Unknown command: '%s'.", $name));
-        }
-
-        echo $cmd->getDescription() . "\n";
-
-        $arguments = $cmd->getArguments();
-        if ($arguments !== []) {
-            echo "\nArguments:\n";
-            foreach ($arguments as $arg) {
-                echo "  {$arg['name']}\n    {$arg['description']}\n";
-            }
-        }
-
-        $opts = $cmd->getOptions();
-        if ($opts !== []) {
-            echo "\nOptions:\n";
-            foreach ($opts as $opt) {
-                echo "  {$opt['name']}\n    {$opt['description']}\n";
-            }
-        }
-
-        $examples = $cmd->getUsageExamples();
-        if ($examples !== []) {
-            echo "\nExamples:\n";
-            foreach ($examples as $example) {
-                echo "  {$example}\n";
-            }
-        }
     }
 
     /**
