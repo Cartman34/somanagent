@@ -86,7 +86,12 @@ The following environment variables are injected into every session:
 
 A context file is generated at `<WA>/local/agent-context.md` on every session start and resume. It summarises the current task, allowed commands, and backlog vocabulary. Do not commit or push this file.
 
-The launcher spawns the AI client as an interactive child process and records its real PID and process group in `local/tmp/agent-sessions.json`, so `php scripts/backlog-agent.php stop --code=<dXX>` terminates the actual client (SIGTERM, then SIGKILL after 5 seconds if it does not exit), not only the PHP wrapper. A `resume` is refused while any tracked process is still alive — run `stop` first. See `doc/development/agent-workflow.md` for the full lifecycle and `last_seen_at` semantics.
+The launcher spawns the AI client via the active **session driver** and records the client PID (and tmux session name when applicable) in `local/tmp/agent-sessions.json`:
+
+- **tmux driver** (default): wraps the session in a named tmux session (`somanagent-<code>`). SSH-resilient — the client keeps running after a terminal disconnect. `stop` kills the tmux session; `resume` re-attaches to it.
+- **direct driver** (`BACKLOG_AGENT_SESSION_DRIVER=direct`): spawns the client via `proc_open`. Not SSH-resilient. `stop` sends SIGTERM then SIGKILL after 5 seconds.
+
+A `resume` is refused while the session is still alive — run `stop` first. See `doc/development/agent-workflow.md` for the full lifecycle and `last_seen_at` semantics.
 
 Run `php scripts/backlog-agent.php whoami` from inside the WA to confirm the session identity.
 
