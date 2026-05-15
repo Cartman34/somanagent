@@ -36,7 +36,7 @@ final class StateInspectorTest
     private function testDetectsAptPackage(): int
     {
         $runner = new FakeCommandRunner();
-        $runner->setOutput("dpkg-query -W -f='${Version}' 'git'", '2.39.2-0ubuntu0.22.04.1');
+        $runner->setOutput("dpkg-query -W -f='\${Version}' 'git'", '2.39.2-0ubuntu0.22.04.1');
 
         $dep = new Dependency('git', 'system', '>=2.30', 'apt', 'git', ['default']);
         $inspector = new StateInspector($runner);

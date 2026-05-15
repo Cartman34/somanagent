@@ -75,7 +75,7 @@ final class StateInspector
     private function detectApt(string $package): ?string
     {
         $output = $this->runner->output(sprintf(
-            "dpkg-query -W -f='${Version}' %s 2>/dev/null",
+            "dpkg-query -W -f='\${Version}' %s 2>/dev/null",
             escapeshellarg($package),
         ));
 

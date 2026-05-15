@@ -44,7 +44,7 @@ final class ManifestResolver
     {
         $manifestHash = hash('sha256', serialize($manifest));
         $errors = [];
-        $lockfile = new Lockfile($now, $manifestHash, $existing->entries);
+        $lockfile = new Lockfile(null, null, []);
 
         foreach ($manifest->dependencies as $dep) {
             try {
@@ -83,7 +83,7 @@ final class ManifestResolver
 
             if ($highest !== null) {
                 if ($existing !== null) {
-                    return $existing->withResolution($highest, $source, $existing->previousVersion, null, $now);
+                    return $existing->withResolution($highest, $source, $existing->previousVersion, $existing->sideEffects, $now);
                 }
 
                 return new LockEntry(
