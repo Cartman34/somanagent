@@ -76,7 +76,8 @@ final class AgentStartCommandTest
         $failed += $this->testRejectsResetWithReviewer();
         $failed += $this->testRaisesClientNotInstalledWhenLauncherUnavailable();
         $failed += $this->testReviewerModeReusesOwnedReviewingEntry();
-        $failed += $this->testReviewerModeRollsBackTakenReviewWhenPreparationFails();
+        $failed += $this->testReviewerModeCallsReviewNextWhenTakingEntry();
+        $failed += $this->testReviewerModeRollsBackViaCancelWhenPreparationFails();
         $failed += $this->testDeveloperResetRefusesDirtyWorktree();
         $failed += $this->testDeveloperResetRemovesAndRecreatesCleanWorktree();
 
@@ -250,6 +251,7 @@ final class AgentStartCommandTest
             $driver,
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
+            new FakeBacklogCommandRunner(),
         );
 
         // --code=r01 avoids touching AgentCodeService::allocateForRole.
@@ -294,8 +296,92 @@ final class AgentStartCommandTest
         return 0;
     }
 
-    private function testReviewerModeRollsBackTakenReviewWhenPreparationFails(): int
+    private function testReviewerModeCallsReviewNextWhenTakingEntry(): int
     {
+        // A reviewer picking up a fresh review entry must delegate the review→reviewing
+        // transition to BacklogCommandRunner::reviewNext(), not mutate the board directly.
+        $dir = $this->scratchDir('reviewer-takes');
+        $boardPath = $dir . '/board.md';
+        $worktreesRoot = $dir . '/worktrees';
+        $devWa = $worktreesRoot . '/d04';
+        mkdir($devWa, 0755, true);
+
+        $this->writeBoard($boardPath, [
+            '- crypto-feature',
+            '  meta:',
+            '    kind: feature',
+            '    feature: crypto-feature',
+            '    branch: feat/crypto-feature',
+            '    type: feat',
+            '    stage: review',
+            '    agent: d04',
+        ]);
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($dir);
+        $reviewerSelector = new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot);
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        $fakeRunner = new FakeBacklogCommandRunner();
+        // Simulate what review-next does: transition to reviewing so the reloaded board matches.
+        $fakeRunner->onReviewNext = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
+            $board = $boardService->loadBoard($boardPath);
+            foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
+                if ($entry->getFeature() === 'crypto-feature') {
+                    $entry->setStage(BacklogBoard::STAGE_REVIEWING);
+                    $entry->setReviewer($reviewerCode);
+                    $boardService->saveBoard($board);
+                    break;
+                }
+            }
+        };
+
+        $cmd = new AgentStartCommand(
+            $dir,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($dir, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            $sessionService,
+            new AgentContextBuilder($dir, $boardPath, $boardService),
+            (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor(),
+            $reviewerSelector,
+            $boardService,
+            new FakeSessionDriver(),
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
+            $fakeRunner,
+        );
+
+        $previousCwd = getcwd();
+        try {
+            $cmd->handle(['claude'], ['reviewer' => true, 'code' => 'r01']);
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        if (count($fakeRunner->calls) < 1 || $fakeRunner->calls[0]['method'] !== 'reviewNext') {
+            echo "FAIL testReviewerModeCallsReviewNextWhenTakingEntry: review-next was not called\n";
+            return 1;
+        }
+        if ($fakeRunner->calls[0]['reviewerCode'] !== 'r01' || $fakeRunner->calls[0]['entryRef'] !== 'crypto-feature') {
+            echo "FAIL testReviewerModeCallsReviewNextWhenTakingEntry: unexpected args: "
+                . json_encode($fakeRunner->calls[0]) . "\n";
+            return 1;
+        }
+
+        echo "OK testReviewerModeCallsReviewNextWhenTakingEntry\n";
+        return 0;
+    }
+
+    private function testReviewerModeRollsBackViaCancelWhenPreparationFails(): int
+    {
+        // When launcher.prepareWorktree() fails after review-next succeeded, the command
+        // must call BacklogCommandRunner::reviewCancel(), not mutate the board directly.
         $dir = $this->scratchDir('reviewer-rollback');
         $boardPath = $dir . '/board.md';
         $worktreesRoot = $dir . '/worktrees';
@@ -322,6 +408,32 @@ final class AgentStartCommandTest
         $registry = new AgentClientLauncherRegistry();
         $registry->register($launcher);
 
+        $fakeRunner = new FakeBacklogCommandRunner();
+        // Simulate review-next: set stage to reviewing in the board file.
+        $fakeRunner->onReviewNext = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
+            $board = $boardService->loadBoard($boardPath);
+            foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
+                if ($entry->getFeature() === 'crypto-feature') {
+                    $entry->setStage(BacklogBoard::STAGE_REVIEWING);
+                    $entry->setReviewer($reviewerCode);
+                    $boardService->saveBoard($board);
+                    break;
+                }
+            }
+        };
+        // Simulate review-cancel: restore stage to review in the board file.
+        $fakeRunner->onReviewCancel = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
+            $board = $boardService->loadBoard($boardPath);
+            foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
+                if ($entry->getFeature() === 'crypto-feature') {
+                    $entry->setStage(BacklogBoard::STAGE_IN_REVIEW);
+                    $entry->setReviewer(null);
+                    $boardService->saveBoard($board);
+                    break;
+                }
+            }
+        };
+
         $cmd = new AgentStartCommand(
             $dir,
             $worktreesRoot,
@@ -336,6 +448,7 @@ final class AgentStartCommandTest
             new FakeSessionDriver(),
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
+            $fakeRunner,
         );
 
         $previousCwd = getcwd();
@@ -351,18 +464,37 @@ final class AgentStartCommandTest
         }
 
         if (!$threw) {
-            echo "FAIL testReviewerModeRollsBackTakenReviewWhenPreparationFails: expected preparation failure\n";
+            echo "FAIL testReviewerModeRollsBackViaCancelWhenPreparationFails: expected preparation failure\n";
             return 1;
         }
 
+        // Verify review-cancel was called (delegation, not direct mutation)
+        $cancelCall = null;
+        foreach ($fakeRunner->calls as $call) {
+            if ($call['method'] === 'reviewCancel') {
+                $cancelCall = $call;
+                break;
+            }
+        }
+        if ($cancelCall === null) {
+            echo "FAIL testReviewerModeRollsBackViaCancelWhenPreparationFails: review-cancel was not called\n";
+            return 1;
+        }
+        if ($cancelCall['reviewerCode'] !== 'r01' || $cancelCall['entryRef'] !== 'crypto-feature') {
+            echo "FAIL testReviewerModeRollsBackViaCancelWhenPreparationFails: unexpected cancel args: "
+                . json_encode($cancelCall) . "\n";
+            return 1;
+        }
+
+        // Board must be back at stage=review (simulated by fakeRunner callbacks)
         $reloaded = $boardService->loadBoard($boardPath);
         $entry = $reloaded->getEntries(BacklogBoard::SECTION_ACTIVE)[0] ?? null;
         if ($entry === null || $entry->getStage() !== BacklogBoard::STAGE_IN_REVIEW || $entry->getReviewer() !== null) {
-            echo "FAIL testReviewerModeRollsBackTakenReviewWhenPreparationFails: expected stage=review and reviewer cleared\n";
+            echo "FAIL testReviewerModeRollsBackViaCancelWhenPreparationFails: expected stage=review and reviewer cleared\n";
             return 1;
         }
 
-        echo "OK testReviewerModeRollsBackTakenReviewWhenPreparationFails\n";
+        echo "OK testReviewerModeRollsBackViaCancelWhenPreparationFails\n";
         return 0;
     }
 
@@ -401,6 +533,7 @@ final class AgentStartCommandTest
             new FakeSessionDriver(),
             new FakeProcessSignaler(),
             $shellRunner,
+            new FakeBacklogCommandRunner(),
         );
 
         $threw = false;
@@ -453,6 +586,7 @@ final class AgentStartCommandTest
             $driver,
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
+            new FakeBacklogCommandRunner(),
         );
 
         $previousCwd = getcwd();
@@ -520,6 +654,7 @@ final class AgentStartCommandTest
             new FakeSessionDriver(),
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
+            new FakeBacklogCommandRunner(),
         );
     }
 

@@ -8,7 +8,9 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Agent\Runner;
 
 use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
+use SoManAgent\Script\Backlog\Agent\Client\BacklogCommandRunner;
 use SoManAgent\Script\Backlog\Agent\Client\ClaudeAgentLauncher;
+use SoManAgent\Script\Backlog\Agent\Client\ProjectBacklogCommandRunner;
 use SoManAgent\Script\Backlog\Agent\Client\CodexAgentLauncher;
 use SoManAgent\Script\Backlog\Agent\Client\DirectSessionDriver;
 use SoManAgent\Script\Backlog\Agent\Client\GeminiAgentLauncher;
@@ -72,6 +74,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
     private ?GitClient $gitClient = null;
     private ?SessionDriverInterface $sessionDriver = null;
     private ?ProcessSignaler $processSignaler = null;
+    private ?BacklogCommandRunner $backlogCommandRunner = null;
 
     /**
      * {@inheritdoc}
@@ -153,6 +156,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                     $this->sessionDriver(),
                     $this->processSignaler(),
                     new ShellProcessRunner(),
+                    $this->backlogCommandRunner(),
                 ),
                 'list' => new AgentListCommand(
                     $this->console,
@@ -336,5 +340,17 @@ final class BacklogAgentRunner extends AbstractScriptRunner
         }
 
         return $this->processSignaler;
+    }
+
+    private function backlogCommandRunner(): BacklogCommandRunner
+    {
+        if ($this->backlogCommandRunner === null) {
+            $this->backlogCommandRunner = new ProjectBacklogCommandRunner(
+                new ProjectScriptClient($this->consoleClient()),
+                $this->projectRoot,
+            );
+        }
+
+        return $this->backlogCommandRunner;
     }
 }

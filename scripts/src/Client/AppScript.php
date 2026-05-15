@@ -9,6 +9,7 @@ namespace SoManAgent\Script\Client;
 
 enum AppScript: string
 {
+    case BACKLOG = 'scripts/backlog.php';
     case GITHUB = 'scripts/github.php';
     case REVIEW = 'scripts/review.php';
 }

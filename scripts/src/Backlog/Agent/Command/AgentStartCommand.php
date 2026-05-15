@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Agent\Command;
 
 use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
+use SoManAgent\Script\Backlog\Agent\Client\BacklogCommandRunner;
 use SoManAgent\Script\Backlog\Agent\Client\ProcessRunner;
 use SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
 use SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
@@ -47,6 +48,7 @@ final class AgentStartCommand extends AbstractAgentCommand
     private SessionDriverInterface $sessionDriver;
     private ProcessSignaler $signaler;
     private ProcessRunner $shellRunner;
+    private BacklogCommandRunner $backlogCommandRunner;
 
     /**
      * @param string $projectRoot
@@ -62,6 +64,7 @@ final class AgentStartCommand extends AbstractAgentCommand
      * @param SessionDriverInterface $sessionDriver
      * @param ProcessSignaler $signaler Used for ActiveSessionException liveness check
      * @param ProcessRunner $shellRunner Used to check for local changes in the worktree
+     * @param BacklogCommandRunner $backlogCommandRunner Used to delegate review-next and review-cancel under the backlog lock
      */
     public function __construct(
         string $projectRoot,
@@ -77,6 +80,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         SessionDriverInterface $sessionDriver,
         ProcessSignaler $signaler,
         ProcessRunner $shellRunner,
+        BacklogCommandRunner $backlogCommandRunner,
     ) {
         $this->projectRoot = $projectRoot;
         $this->worktreesRoot = $worktreesRoot;
@@ -91,6 +95,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         $this->sessionDriver = $sessionDriver;
         $this->signaler = $signaler;
         $this->shellRunner = $shellRunner;
+        $this->backlogCommandRunner = $backlogCommandRunner;
     }
 
     /**
@@ -199,11 +204,11 @@ final class AgentStartCommand extends AbstractAgentCommand
             throw new ClientNotInstalledException($client);
         }
 
-        $takenEntry = null;
-        $takenBoard = null;
+        $takenEntryRef = null;
+        $takenReviewerCode = null;
 
         if ($role === AgentRole::REVIEWER) {
-            [$worktree, $takenEntry, $takenBoard] = $this->prepareReviewerMode($options, $code);
+            [$worktree, $takenEntryRef, $takenReviewerCode] = $this->prepareReviewerMode($options, $code);
         } elseif ($role === AgentRole::MANAGER) {
             $worktree = $this->projectRoot;
         } else {
@@ -229,7 +234,7 @@ final class AgentStartCommand extends AbstractAgentCommand
 
             $this->sessionService->create($code, $client, $role, (int) getmypid(), $worktree);
         } catch (\Throwable $e) {
-            $this->rollbackReviewTransition($takenEntry, $takenBoard);
+            $this->rollbackReviewTransition($takenEntryRef, $takenReviewerCode);
             throw $e;
         }
 
@@ -263,11 +268,12 @@ final class AgentStartCommand extends AbstractAgentCommand
     /**
      * Resolves and prepares the reviewer session: reuses an owned reviewing entry or takes a new one.
      *
-     * Returns [worktree, takenEntry|null, takenBoard|null].
-     * takenEntry/takenBoard are non-null only when a new review was taken (needed for rollback on failure).
+     * When a new entry is taken via review-next, [1] holds the entry ref and [2] the reviewer
+     * code so that rollbackReviewTransition() can release it via review-cancel on failure.
+     * Both are null when an already-reviewing entry is reused (no rollback needed).
      *
      * @param array<string, string|bool|array<bool|string>> $options
-     * @return array{0: string, 1: BoardEntry|null, 2: BacklogBoard|null}
+     * @return array{0: string, 1: string|null, 2: string|null}
      */
     private function prepareReviewerMode(array $options, string $reviewerCode): array
     {
@@ -289,8 +295,8 @@ final class AgentStartCommand extends AbstractAgentCommand
                 );
             }
             $worktree = $this->reviewerSelector->devCodeToWorktree($devCode);
-            $takenEntry = null;
-            $takenBoard = null;
+            $takenEntryRef = null;
+            $takenReviewerCode = null;
         } else {
             // Step 2+: select an entry to take
             if ($featureOpt !== null) {
@@ -314,17 +320,17 @@ final class AgentStartCommand extends AbstractAgentCommand
 
             $worktree = $this->reviewerSelector->devCodeToWorktree($devCode);
 
-            // Perform review transition only for newly selected review entries
+            // Delegate the review transition to backlog.php under the global mutation lock.
+            // Only applies when the entry is in review stage; an already-reviewing entry
+            // means the reviewer owns it via explicit targeting after step 1 missed it.
             if ($this->boardService->getNormalizedStage($entry->getStage()) === BacklogBoard::STAGE_IN_REVIEW) {
-                $entry->setStage(BacklogBoard::STAGE_REVIEWING);
-                $entry->setReviewer($reviewerCode);
-                $this->boardService->saveBoard($board);
-                $takenEntry = $entry;
-                $takenBoard = $board;
+                $entryRef = $this->buildEntryRef($entry);
+                $this->backlogCommandRunner->reviewNext($reviewerCode, $entryRef);
+                $takenEntryRef = $entryRef;
+                $takenReviewerCode = $reviewerCode;
             } else {
-                // Entry is already reviewing for this reviewer (matched via explicit flag after step 1 missed it)
-                $takenEntry = null;
-                $takenBoard = null;
+                $takenEntryRef = null;
+                $takenReviewerCode = null;
             }
         }
 
@@ -333,7 +339,7 @@ final class AgentStartCommand extends AbstractAgentCommand
             try {
                 $this->worktreeService->prepareFeatureAgentWorktree($entry);
             } catch (\RuntimeException $e) {
-                $this->rollbackReviewTransition($takenEntry, $takenBoard);
+                $this->rollbackReviewTransition($takenEntryRef, $takenReviewerCode);
                 throw new \RuntimeException(sprintf(
                     'Developer WA not present at %s and could not be reconstructed: %s',
                     $worktree,
@@ -344,13 +350,13 @@ final class AgentStartCommand extends AbstractAgentCommand
 
         $existingReviewer = $this->reviewerSelector->findExistingReviewerForWorktree($worktree);
         if ($existingReviewer !== null && !$force) {
-            $this->rollbackReviewTransition($takenEntry, $takenBoard);
+            $this->rollbackReviewTransition($takenEntryRef, $takenReviewerCode);
             throw new ActiveSessionException($existingReviewer, $this->projectRoot, $this->signaler);
         }
 
         $developerSession = $this->reviewerSelector->findActiveDeveloperForWorktree($worktree);
         if ($developerSession !== null && !$force) {
-            $this->rollbackReviewTransition($takenEntry, $takenBoard);
+            $this->rollbackReviewTransition($takenEntryRef, $takenReviewerCode);
             throw new \RuntimeException(sprintf(
                 'Developer %s is currently active in this worktree (pid %d, started %s). Stop their session first or use --force at your own risk (FS conflicts likely).',
                 $developerSession->code,
@@ -359,26 +365,44 @@ final class AgentStartCommand extends AbstractAgentCommand
             ));
         }
 
-        return [$worktree, $takenEntry, $takenBoard];
+        return [$worktree, $takenEntryRef, $takenReviewerCode];
     }
 
     /**
      * Rolls back a review transition from reviewing → review on best-effort basis.
+     *
+     * Delegates to review-cancel via BacklogCommandRunner so the release goes through
+     * the same lock and revalidation path as any other backlog mutation.
      * Accepts nullable parameters so callers can pass tracked state directly.
      */
-    private function rollbackReviewTransition(?BoardEntry $entry, ?BacklogBoard $board): void
+    private function rollbackReviewTransition(?string $entryRef, ?string $reviewerCode): void
     {
-        if ($entry === null || $board === null) {
+        if ($entryRef === null || $reviewerCode === null) {
             return;
         }
 
-        $entry->setStage(BacklogBoard::STAGE_IN_REVIEW);
-        $entry->setReviewer(null);
         try {
-            $this->boardService->saveBoard($board);
+            $this->backlogCommandRunner->reviewCancel($reviewerCode, $entryRef);
         } catch (\Exception) {
             // best-effort rollback; caller's original exception takes priority
         }
+    }
+
+    /**
+     * Returns the stable entry reference for use in backlog commands (<feature> or <feature>/<task>).
+     */
+    private function buildEntryRef(BoardEntry $entry): string
+    {
+        if ($this->boardService->checkIsTaskEntry($entry)) {
+            return $this->boardService->getTaskReviewKey($entry);
+        }
+
+        $feature = $entry->getFeature();
+        if ($feature === null || $feature === '') {
+            throw new \RuntimeException('Entry has no feature slug; cannot build entry reference.');
+        }
+
+        return $feature;
     }
 
     /**
