@@ -320,7 +320,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         );
 
         // Cleanup so the next campaign starts from a clean board.
-        $driver->releaseFeature($context->agentSecondary, $ambSlug);
+        $driver->releaseEntry($context->agentSecondary, $ambSlug);
         $driver->removeFirstTodoTask();
     }
 
@@ -366,7 +366,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
             sprintf('Ambiguous reference %s: matches both a feature and a task.', $taskSlug),
         );
 
-        $driver->releaseFeature($context->agentSecondary, $taskSlug);
+        $driver->releaseEntry($context->agentSecondary, $taskSlug);
         $driver->removeFirstTodoTask();
     }
 }

@@ -14,7 +14,7 @@ use SoManAgent\Script\Backlog\Command\BacklogFeatureBlockCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureCloseCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureListCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureMergeCommand;
-use SoManAgent\Script\Backlog\Command\BacklogFeatureReleaseCommand;
+use SoManAgent\Script\Backlog\Command\BacklogEntryReleaseCommand;
 use SoManAgent\Script\Backlog\Command\BacklogEntryMergeCommand;
 use SoManAgent\Script\Backlog\Command\BacklogEntryRenameCommand;
 use SoManAgent\Script\Backlog\Command\BacklogEntrySetMetaCommand;
@@ -156,7 +156,7 @@ final class BacklogCommandFactory
             BacklogCommandName::REVIEW_NEXT->value => BacklogReviewNextCommand::class,
             BacklogCommandName::REVIEW_NOTES->value => BacklogReviewNotesCommand::class,
             BacklogCommandName::WORK_START->value => BacklogWorkStartCommand::class,
-            BacklogCommandName::FEATURE_RELEASE->value => BacklogFeatureReleaseCommand::class,
+            BacklogCommandName::ENTRY_RELEASE->value => BacklogEntryReleaseCommand::class,
             BacklogCommandName::FEATURE_TASK_MERGE->value => BacklogFeatureTaskMergeCommand::class,
             BacklogCommandName::FEATURE_ASSIGN->value => BacklogFeatureAssignCommand::class,
             BacklogCommandName::ENTRY_UNASSIGN->value => BacklogEntryUnassignCommand::class,

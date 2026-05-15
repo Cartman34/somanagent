@@ -77,9 +77,9 @@ final class MutationLockCampaign implements CampaignInterface
         $driver->assertActiveFeatureExists(self::FEATURE_ALPHA);
         $driver->assertActiveFeatureExists(self::FEATURE_BETA);
 
-        // Cleanup: release both features (no commits, so feature-release is allowed).
-        $driver->releaseFeature($agentAlpha, self::FEATURE_ALPHA);
-        $driver->releaseFeature($agentBeta, self::FEATURE_BETA);
+        // Cleanup: release both features (no commits, so entry-release is allowed).
+        $driver->releaseEntry($agentAlpha, self::FEATURE_ALPHA);
+        $driver->releaseEntry($agentBeta, self::FEATURE_BETA);
 
         $driver->assertActiveFeatureMissing(self::FEATURE_ALPHA);
         $driver->assertActiveFeatureMissing(self::FEATURE_BETA);

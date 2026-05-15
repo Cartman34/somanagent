@@ -1,7 +1,7 @@
-description: 'Return one untouched active feature back to the todo section'
+description: 'Return one untouched active feature or task back to the todo section'
 examples:
-  - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php feature-release'
-  - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php feature-release delete-question-reply'
+  - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php entry-release'
+  - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php entry-release delete-question-reply'
 notes:
   - 'Without an explicit argument, resolves the current active task or feature owned by the caller agent.'
   - 'Only works when the active entry has no development work yet.'

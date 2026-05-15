@@ -110,7 +110,7 @@ final class WorkStartTypePrefixCampaign implements CampaignInterface
         $driver->assertTodoContains('Second feature instance with same slug');
 
         $driver->removeFirstTodoTask();
-        $driver->releaseFeature($primary, $duplicateSlug);
+        $driver->releaseEntry($primary, $duplicateSlug);
         $driver->removeFirstTodoTask();
     }
 }
