@@ -103,26 +103,19 @@ Run `php scripts/backlog-agent.php whoami` from inside the WA to confirm the ses
 
 ### `task-create`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-create <description> [--position=<start|index|end>] [--index=<n>] [--body-file=<path>]`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-create --body-file=<path> [--position=<start|index|end>] [--index=<n>]`.
 2. By default the script appends the task to the end of `## To do`.
 3. `--position=start` inserts at the start of `## To do`.
 4. `--position=index --index=<n>` inserts at the requested 1-based position and clamps out-of-range values to the start or the end.
 5. Keep the task title short and put the breakdown on indented sub-task lines below it. **A `[feature-slug]` scope is required** (plus `[task-slug]` for child tasks); `task-create` rejects entries without one. Including a `[type]` prefix (`[feat]`, `[fix]` or `[tech]`) is strongly recommended so the queued entry is unambiguous. The type prefix may appear at any position in the leading bracket sequence.
-6. Multi-line tasks: pass the full body as one quoted argument with `\n` line breaks (Bash `$'...'` literal), or use `--body-file=<path>` to read the body from a file. The first non-empty line is the title; the remaining non-empty lines become indented sub-tasks (auto-indented to two spaces when missing).
-7. Do not edit `local/backlog-board.md` manually for long tasks; use `--body-file=<path>` (typically under `local/tmp/`) instead.
+6. Always use `--body-file=<path>` (typically under `local/tmp/`) to pass the task body. The first non-empty line is the title; subsequent non-empty lines become indented sub-tasks (auto-indented to two spaces when missing). Inline positional task text is not accepted.
+7. Do not edit `local/backlog-board.md` manually.
 
 Examples:
 
 ```bash
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-create $'[feat][workspace-worktree][wws-init] Initialize workspace worktree
-  - Bootstrap directory structure
-  - Wire CI bindings'
-
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-create $'[tech][backlog-entry-types] Centralize task types
-  - Add BacklogTaskType enum
-  - Update task-create / work-start parser'
-
 SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md --position=index --index=2
 ```
 
 ### `todo-list`

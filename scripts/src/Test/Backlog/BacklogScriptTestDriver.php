@@ -212,11 +212,15 @@ MD);
     }
 
     /**
-     * @param string $text Task text to create
+     * Creates a queued task from inline text by writing it to a temporary body file.
+     *
+     * @param string $text Task text (single-line or multi-line with embedded newlines)
      */
     public function createTodoTask(string $text): void
     {
-        $this->runBacklog(['task-create', $text]);
+        $name = 'task-create-' . substr(md5($text), 0, 8) . '.md';
+        $lines = preg_split('/\R/', $text) ?: [$text];
+        $this->createTodoTaskFromBodyFile($lines, $name);
     }
 
     /**

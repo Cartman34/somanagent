@@ -13,10 +13,12 @@ use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
 /**
  * Task creation formats campaign.
  *
- * Covers the supported task-create input shapes: single-line text with optional
- * type prefix ([feat] / [fix] / [tech]), single-line text with feature/task scoped
- * prefix, type prefix at any position in the leading bracket sequence, multi-line
- * inline body with sub-tasks, and multi-line body read from --body-file=<path>.
+ * Covers the supported task-create input shapes, all via --body-file=<path>:
+ * single-line title with optional type prefix ([feat] / [fix] / [tech]),
+ * feature/task scoped prefix, type prefix at any position in the leading bracket
+ * sequence, multi-line body with sub-tasks, and bullet-leading body file.
+ * Also covers rejection of inline positional text, missing --body-file,
+ * duplicate type prefix, missing scope, and out-of-range --index clamping.
  */
 final class TaskCreateFormatsCampaign implements CampaignInterface
 {
@@ -108,14 +110,27 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
         ]);
         $driver->removeFirstTodoTask();
 
+        // Rejection: duplicate type prefix via body file.
+        $dupTypeFile = $driver->createBodyFile('task-create-dup-type.md', ['[feat][fix] Duplicate type']);
         $driver->assertTaskCreateFails(
             'Duplicate task type prefix',
-            ['[feat][fix] Duplicate type'],
+            ['--body-file=' . $dupTypeFile],
         );
 
+        // Rejection: inline positional text is no longer accepted (with or without --body-file).
         $driver->assertTaskCreateFails(
-            'task-create does not accept positional <text> when --body-file is used.',
+            'task-create no longer accepts inline task text',
+            ['[positional-only] Should fail'],
+        );
+        $driver->assertTaskCreateFails(
+            'task-create no longer accepts inline task text',
             ['Positional should not be allowed', '--body-file=' . $bodyFilePath],
+        );
+
+        // Rejection: no --body-file and no positional text.
+        $driver->assertTaskCreateFails(
+            'task-create requires --body-file=<path>',
+            [],
         );
 
         $driver->assertTaskCreateFails(
@@ -125,9 +140,10 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
 
         // --position=index clamps out-of-range values while still inserting the task.
         $driver->createTodoTask('[clamp-low] Task to anchor the queue for clamp coverage');
+        $clampZeroFile = $driver->createBodyFile('task-create-clamp-zero.md', ['[clamp-zero] Insert with --index=0 should clamp to start']);
         $clampLowOutput = $driver->runBacklog([
             'task-create',
-            '[clamp-zero] Insert with --index=0 should clamp to start',
+            '--body-file=' . $clampZeroFile,
             '--position=index',
             '--index=0',
         ]);
@@ -136,9 +152,10 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
             'inserting at position 1 instead',
         ]);
         $driver->assertTodoContains('[clamp-zero] Insert with --index=0 should clamp to start');
+        $clampHighFile = $driver->createBodyFile('task-create-clamp-high.md', ['[clamp-high] Insert with --index=99 should clamp to end']);
         $clampHighOutput = $driver->runBacklog([
             'task-create',
-            '[clamp-high] Insert with --index=99 should clamp to end',
+            '--body-file=' . $clampHighFile,
             '--position=index',
             '--index=99',
         ]);
@@ -150,24 +167,27 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
         $driver->removeTodoTask('clamp-low');
         $driver->removeTodoTask('clamp-high');
 
+        $missingIndexFile = $driver->createBodyFile('task-create-missing-index.md', ['[test-missing-index] Missing index value']);
         $driver->assertTaskCreateFails(
             'task-create with --position=index requires --index=',
-            ['[test-missing-index] Missing index value', '--position=index'],
+            ['--body-file=' . $missingIndexFile, '--position=index'],
         );
 
         // Rejection: bare title without any scope prefix.
+        $bareTitleFile = $driver->createBodyFile('task-create-bare-title.md', ['Bare title without scope']);
         $driver->assertTaskCreateFails(
             'task-create requires an explicit [feature-slug] scope',
-            ['Bare title without scope'],
+            ['--body-file=' . $bareTitleFile],
         );
 
         // Rejection: type prefix alone, no feature scope.
+        $typeOnlyFile = $driver->createBodyFile('task-create-type-only.md', ['[tech] Type only no feature scope']);
         $driver->assertTaskCreateFails(
             'task-create requires an explicit [feature-slug] scope',
-            ['[tech] Type only no feature scope'],
+            ['--body-file=' . $typeOnlyFile],
         );
 
-        // Rejection: bare title in --body-file mode.
+        // Rejection: bare title in --body-file mode with sub-tasks.
         $noScopeBodyFile = $driver->createBodyFile('task-create-no-scope-body.md', ['Bare title in body file', '  - sub-task']);
         $driver->assertTaskCreateFails(
             'task-create requires an explicit [feature-slug] scope',

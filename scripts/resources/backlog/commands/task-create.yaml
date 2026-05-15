@@ -1,8 +1,4 @@
-description: 'Append one new task at the end of the todo section'
-arguments:
-  -
-    name: '<text>'
-    description: 'Task text to append to the todo section (omit when --body-file is used)'
+description: 'Append one new task from --body-file at the end of the todo section'
 options:
   -
     name: '--position'
@@ -12,19 +8,16 @@ options:
     description: '1-based insert position used with --position=index'
   -
     name: '--body-file'
-    description: 'Read the task body from a file (typically under local/tmp/) for multi-line tasks; cannot be combined with positional <text>'
+    description: 'Path to a file containing the task body (required; typically under local/tmp/)'
 examples:
-  - 'php scripts/backlog.php task-create "[feat][audit-trail] Add audit trail view"'
-  - 'php scripts/backlog.php task-create "[fix][snapshot-bug] Fix snapshot crash"'
-  - 'php scripts/backlog.php task-create "[tech][backlog-entry-types] Centralize task types"'
-  - 'php scripts/backlog.php task-create "[feat][workspace-worktree][wws-init] Verify gitignore setup" --position=index --index=2'
-  - "php scripts/backlog.php task-create $'[tech][backlog-entry-types] Multi-line task title\\n  - First sub-task\\n  - Second sub-task'"
   - 'php scripts/backlog.php task-create --body-file=local/tmp/new-task.md'
+  - 'php scripts/backlog.php task-create --body-file=local/tmp/new-task.md --position=start'
+  - 'php scripts/backlog.php task-create --body-file=local/tmp/new-task.md --position=index --index=2'
 notes:
+  - 'Required: --body-file=<path> is mandatory. Inline positional task text is no longer accepted.'
+  - 'Body file format: first non-empty line is the task title; subsequent non-empty lines become indented sub-tasks (auto-indented to two spaces when missing). An optional leading "- " on the first line is accepted and stripped.'
   - 'Required: every task must declare an explicit [feature-slug] scope (and [task-slug] for child tasks). Tasks without a feature scope are rejected. Use [feature-slug] Title, [feature-slug][task-slug] Title, or [type][feature-slug] Title — for example: [tech][my-feature] My task title.'
   - 'A [type] prefix (feat / fix / tech) is recommended alongside the required [feature-slug] so the queued entry is unambiguous and the task-remove reference stays stable.'
   - '`--index` values are advisory: out-of-range values clamp to start (>=1) or end (<= entryCount + 1) and emit a warning, while the task is still inserted; passing `--position=index` without `--index` is rejected.'
   - 'Supported task type prefixes: [feat], [fix], [tech] (case-insensitive). Only one type prefix is allowed per entry.'
   - 'Type prefix is recognized at any position in the leading bracket sequence: [type][feature-slug][task-slug] text, [feature-slug][type] text and [feature-slug][task-slug][type] text all work.'
-  - 'Multi-line tasks: the first non-empty line is the task title; subsequent non-empty lines are stored as indented sub-tasks (auto-indented to two spaces when missing).'
-  - '--body-file expects the same multi-line format as a direct multi-line argument; an optional leading "- " on the first line is accepted and stripped.'
