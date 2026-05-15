@@ -22,6 +22,7 @@ enum BacklogCommandName: string
     case REVIEW_APPROVE = 'review-approve';
     case REVIEW_REJECT = 'review-reject';
     case REVIEW_AMEND = 'review-amend';
+    case REVIEW_REOPEN = 'review-reopen';
     case REVIEW_LIST = 'review-list';
     case REVIEW_NEXT = 'review-next';
     case REVIEW_NOTES = 'review-notes';

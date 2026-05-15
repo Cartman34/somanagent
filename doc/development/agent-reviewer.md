@@ -11,6 +11,7 @@ Read this file only when the active task requires reviewer workflow details.
 - `review-reject`
 - `review-amend`
 - `review-cancel`
+- `review-reopen`
 - `review-list`
 - `review-next`
 - `review-notes`
@@ -106,6 +107,16 @@ Rules:
 2. The reference is mandatory: review-cancel never auto-resolves the entry from the agent code, so the mutation cannot silently retarget another claim.
 3. Moves the entry from `reviewing` back to `review` and clears `meta.reviewer` after verifying the entry's stored reviewer matches the caller context.
 4. A manager using `SOMANAGER_ROLE=manager SOMANAGER_AGENT=<manager> php scripts/backlog.php ...` may force-cancel any stuck reviewing entry with the same explicit reference contract.
+
+### `review-reopen`
+
+1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-reopen <entry-ref>`.
+2. The entry must be in `approved` stage; any other stage is refused. An explicit `<entry-ref>` is always required — no auto-resolution.
+3. Clears any existing review notes for the entry from `local/backlog-review.md`.
+4. Reviewer behavior: transitions the entry from `approved` to `reviewing` and sets `meta.reviewer` to the calling reviewer code.
+5. Non-exclusive: a different reviewer may use `review-reopen` to claim an approved entry even if another reviewer was previously recorded in `meta.reviewer`.
+6. Use `review-reopen` when an approved entry must go through another review cycle — for example when a post-approval finding requires re-evaluation before `entry-merge` is called.
+7. A manager calling with `SOMANAGER_ROLE=manager` instead transitions the entry from `approved` to `review` and clears `meta.reviewer`, putting the entry back in the open queue.
 
 ### `review-notes`
 

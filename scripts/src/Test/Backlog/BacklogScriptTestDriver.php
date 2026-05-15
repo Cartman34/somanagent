@@ -618,6 +618,41 @@ MD);
         );
     }
 
+    /**
+     * Reopen an approved entry for a new review cycle.
+     *
+     * @param string $role Caller role: 'manager' or 'reviewer'
+     * @param string $agent Caller agent code
+     * @param string $reference Mandatory stable reference (<entry-ref>)
+     */
+    public function reviewReopen(string $role, string $agent, string $reference): void
+    {
+        $this->runBacklog(['review-reopen', $reference], [
+            'SOMANAGER_ROLE' => $role,
+            'SOMANAGER_AGENT' => $agent,
+        ]);
+    }
+
+    /**
+     * Asserts that review-reopen fails with the expected error message.
+     *
+     * @param string $role Caller role: 'manager' or 'reviewer'
+     * @param string $agent Caller agent code
+     * @param string $reference Reference passed to review-reopen (empty to omit)
+     * @param string $needle Expected substring of the failure output
+     */
+    public function assertReviewReopenFails(string $role, string $agent, string $reference, string $needle): void
+    {
+        $args = ['review-reopen'];
+        if ($reference !== '') {
+            $args[] = $reference;
+        }
+        $this->assertBacklogFails($args, $needle, [
+            'SOMANAGER_ROLE' => $role,
+            'SOMANAGER_AGENT' => $agent,
+        ]);
+    }
+
     public function rework(string $agent, string $reference = ''): void
     {
         $args = ['rework'];

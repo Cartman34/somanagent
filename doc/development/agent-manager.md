@@ -23,6 +23,7 @@ Read this file only when the active task requires backlog management or workflow
 - any backlog workflow command documented in `doc/development/agent-workflow.md`
 - reviewer flow commands documented in `doc/development/agent-reviewer.md`
 - developer backlog-management commands documented in `doc/development/agent-developer.md`
+- `review-reopen <entry-ref>` with `SOMANAGER_ROLE=manager`: transitions an approved entry from `approved` to `review` and clears `meta.reviewer`, putting it back in the open review queue without assigning it to a specific reviewer
 
 ## Assignment Authority
 

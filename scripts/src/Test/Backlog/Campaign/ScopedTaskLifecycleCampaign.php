@@ -93,6 +93,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $this->assertReviewNotesAbsentForTask($driver, $taskARef);
 
         $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_APPROVED);
+        $this->assertReviewReopenForTask($driver, $context, $taskARef);
         $driver->assertEntryMergeRequiresReviewer($taskARef);
         $driver->assertEntryMergeWithoutReferenceFails($context->agentPrimary);
         $driver->assertEntryMergeShortTaskReferenceFails($context->childA);
@@ -146,6 +147,50 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $this->assertParentAssignmentPreservedOnTaskMerge($driver, $context);
         $this->assertEntryUnassignForTaskAndAmbiguity($driver, $context);
         $this->assertReviewNotesAmbiguityAndMissingReference($driver, $context);
+    }
+
+    /**
+     * Exercises review-reopen for a task entry.
+     *
+     * Entry must be in APPROVED when called; leaves it in APPROVED on exit so the
+     * surrounding campaign can continue with the standard rework-from-approved path.
+     */
+    private function assertReviewReopenForTask(
+        BacklogScriptTestDriver $driver,
+        BacklogScriptTestContext $context,
+        string $taskRef,
+    ): void {
+        $manager = self::MANAGER_AGENT;
+        $reviewer = $context->agentSecondary;
+
+        // Refusal: missing entry-ref
+        $driver->assertReviewReopenFails('manager', $manager, '', 'review-reopen requires an explicit <entry-ref>');
+
+        // Refusal: wrong SOMANAGER_ROLE (developer is not allowed)
+        $driver->assertReviewReopenFails('developer', $context->agentPrimary, $taskRef, 'review-reopen requires SOMANAGER_ROLE=manager or SOMANAGER_ROLE=reviewer');
+
+        // Manager path: approved → review, meta.reviewer cleared
+        $driver->reviewReopen('manager', $manager, $taskRef);
+        $driver->assertTaskStage($taskRef, BacklogBoard::STAGE_IN_REVIEW);
+
+        // Refusal: stage is now review, not approved
+        $driver->assertReviewReopenFails('manager', $manager, $taskRef, 'review-reopen only accepts Approved');
+
+        // Re-approve to restore approved state for the reviewer path
+        $driver->approveTaskViaUnifiedCommand($reviewer, $taskRef);
+        $driver->assertTaskStage($taskRef, BacklogBoard::STAGE_APPROVED);
+
+        // Reviewer path: approved → reviewing, meta.reviewer = reviewer agent
+        $driver->reviewReopen('reviewer', $reviewer, $taskRef);
+        $driver->assertTaskStage($taskRef, BacklogBoard::STAGE_REVIEWING);
+
+        // Verify meta.reviewer is set to reviewer by confirming review-cancel succeeds for that reviewer
+        $driver->reviewCancel($reviewer, $taskRef);
+        $driver->assertTaskStage($taskRef, BacklogBoard::STAGE_IN_REVIEW);
+
+        // Re-approve: leaves the entry in APPROVED for the rest of the campaign
+        $driver->approveTaskViaUnifiedCommand($reviewer, $taskRef);
+        $driver->assertTaskStage($taskRef, BacklogBoard::STAGE_APPROVED);
     }
 
     /**
