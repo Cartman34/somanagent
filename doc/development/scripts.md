@@ -41,7 +41,7 @@ php scripts/help.php migrate.php
 | `test-backlog-agent.php` | PHP | Run unit tests for backlog-agent.php classes |
 | `test-validation.php` | PHP | Run unit tests for `scripts/src/Validation/` classes (ScriptExecBitValidator, ExecBitFixer, …) |
 | `setup.php` | PHP | Full installation (first time) |
-| `dev.php` | PHP | Start / stop the environment |
+| `server.php` | PHP | Manage Docker Compose services (start, stop, restart, status, health) |
 | `migrate.php` | PHP | Run Doctrine migrations |
 | `console.php` | PHP | Run a Symfony command |
 | `node.php` | PHP | Run reusable commands inside the Node container |
@@ -209,12 +209,21 @@ php scripts/setup.php --skip-frontend  # without npm install
 
 ---
 
-### `dev.php`
-Starts or stops the Docker environment.
+### `server.php`
+Manages Docker Compose services: start, stop, restart, status, and health checks. Mutation commands (`start`, `stop`, `restart`) accept `--preview-only`, `--dry-run`, and `--force`.
+
+Docker Compose profiles: db and redis have no profile (always started); php, worker, nginx, node, and mercure use the `full` profile.
 
 ```bash
-php scripts/dev.php           # start
-php scripts/dev.php --stop    # stop
+php scripts/server.php start             # start all services (full profile)
+php scripts/server.php start --minimal   # start db + redis only
+php scripts/server.php stop              # stop all services
+php scripts/server.php restart           # stop then start (full)
+php scripts/server.php status            # docker compose ps
+php scripts/server.php health            # health checks (pg_isready, redis-cli, HTTP)
+php scripts/server.php start --preview-only  # show plan without applying
+php scripts/server.php start --dry-run       # show plan + simulated commands without applying
+php scripts/server.php start --force         # apply without confirmation
 ```
 
 ---

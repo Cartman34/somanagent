@@ -37,7 +37,7 @@ final class HelpRunner extends AbstractScriptRunner
     {
         return [
             'php scripts/help.php',
-            'php scripts/help.php dev.php',
+            'php scripts/help.php server.php',
         ];
     }
 

@@ -43,7 +43,7 @@ The `setup.php` script:
 ## Starting After Installation
 
 ```bash
-php scripts/dev.php
+php scripts/server.php start
 ```
 
 ## Codex Local Configuration
@@ -68,7 +68,7 @@ URLs:
 ## Stopping the Environment
 
 ```bash
-php scripts/dev.php --stop
+php scripts/server.php stop
 ```
 
 ## Docker Structure

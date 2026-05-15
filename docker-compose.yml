@@ -4,6 +4,7 @@ services:
   # PHP-FPM (Symfony API)
   # ============================================================
   php:
+    profiles: [full]
     build:
       context: ./docker/php
       dockerfile: Dockerfile
@@ -35,6 +36,7 @@ services:
   # Messenger worker (agent task consumer)
   # ============================================================
   worker:
+    profiles: [full]
     build:
       context: ./docker/php
       dockerfile: Dockerfile
@@ -68,6 +70,7 @@ services:
   # Nginx (reverse proxy)
   # ============================================================
   nginx:
+    profiles: [full]
     build:
       context: ./docker/nginx
       dockerfile: Dockerfile
@@ -86,6 +89,7 @@ services:
   # Node.js (React frontend dev server + skills CLI)
   # ============================================================
   node:
+    profiles: [full]
     build:
       context: .
       dockerfile: docker/node/Dockerfile
@@ -106,6 +110,7 @@ services:
   # Mercure hub (standard realtime transport)
   # ============================================================
   mercure:
+    profiles: [full]
     image: dunglas/mercure:v0.15
     container_name: somanagent_mercure
     restart: unless-stopped

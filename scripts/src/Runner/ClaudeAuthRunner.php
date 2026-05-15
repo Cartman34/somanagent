@@ -113,7 +113,7 @@ final class ClaudeAuthRunner extends AbstractScriptRunner
             $data = $this->httpPost($url);
         } catch (\RuntimeException $e) {
             $this->console->line('  ❌ API unreachable: ' . $e->getMessage());
-            $this->console->line('  → Start the stack with: php scripts/dev.php');
+            $this->console->line('  → Start the stack with: php scripts/server.php start');
             return 1;
         }
 
