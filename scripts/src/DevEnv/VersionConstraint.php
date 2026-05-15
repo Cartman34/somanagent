@@ -78,14 +78,26 @@ final class VersionConstraint
     /**
      * Strips non-numeric suffixes from a version string to produce a comparable form.
      *
+     * Debian epochs (e.g. "1:2.43.0") are stripped before the numeric extraction
+     * so the epoch digit is never mistaken for the major version number.
+     *
      * Examples:
-     *   "8.4.3-1ubuntu1.0~22.04.1" → "8.4.3"
-     *   "24.0.7" → "24.0.7"
-     *   "1.0.62" → "1.0.62"
+     *   "8.4.3-1ubuntu1.0~22.04.1"       → "8.4.3"
+     *   "1:2.43.0-1ubuntu7.3"             → "2.43.0"
+     *   "5:24.0.7-1~ubuntu.22.04~jammy"   → "24.0.7"
+     *   "24.0.7"                           → "24.0.7"
+     *   "1.0.62"                           → "1.0.62"
      */
     public function normalize(string $version): string
     {
-        if (preg_match('/^(\d+(?:\.\d+)*)/', ltrim($version, 'v'), $m)) {
+        $v = ltrim($version, 'v');
+
+        // Strip Debian epoch (e.g. "1:2.43.0-1ubuntu7.3" → "2.43.0-1ubuntu7.3")
+        if (preg_match('/^\d+:(.+)$/', $v, $epoch)) {
+            $v = $epoch[1];
+        }
+
+        if (preg_match('/^(\d+(?:\.\d+)*)/', $v, $m)) {
             return $m[1];
         }
 

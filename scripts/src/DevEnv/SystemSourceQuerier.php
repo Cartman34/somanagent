@@ -10,33 +10,75 @@ namespace SoManAgent\Script\DevEnv;
 /**
  * Queries available package versions from real system sources.
  *
- * Uses apt-cache for apt packages, npm view for npm packages,
+ * Uses apt-cache for default apt packages, npm view for npm packages,
  * and the GitHub Releases API for github-release packages.
+ *
+ * Non-default apt sources (PPAs, HTTPS repos) are queried by fetching their
+ * Packages.gz file directly from the repository — no modification of
+ * /etc/apt/sources.list.d/ or apt update is performed. This works without
+ * root privileges and on machines where the source is not yet configured.
+ *
+ * PPA URL pattern:
+ *   https://ppa.launchpadcontent.net/{user}/{name}/ubuntu/dists/{codename}/main/binary-{arch}/Packages.gz
+ *
+ * HTTPS repo URL pattern:
+ *   {repo}/dists/{codename}/stable/binary-{arch}/Packages.gz
  */
 final class SystemSourceQuerier implements SourceQuerierInterface
 {
+    public function __construct(
+        private readonly CommandRunnerInterface $commandRunner,
+        private readonly HttpFetcherInterface $httpFetcher,
+    ) {
+    }
+
     /**
      * {@inheritdoc}
      */
     public function queryVersions(string $installer, string $source, string $package): array
     {
         return match ($installer) {
-            'apt' => $this->queryApt($package),
-            'npm-global' => $this->queryNpm($package),
+            'apt'            => $this->queryApt($source, $package),
+            'npm-global'     => $this->queryNpm($package),
             'github-release' => $this->queryGitHubReleases($source),
-            default => [],
+            default          => [],
         };
     }
 
     /**
-     * Queries apt-cache for the candidate version of a package.
+     * Dispatches to the appropriate apt query strategy based on the source.
      *
      * @return list<string>
      */
-    private function queryApt(string $package): array
+    private function queryApt(string $source, string $package): array
     {
-        $output = shell_exec(sprintf('apt-cache policy %s 2>/dev/null', escapeshellarg($package)));
-        if (!is_string($output)) {
+        if ($source === 'default') {
+            return $this->queryAptDefault($package);
+        }
+
+        if (str_starts_with($source, 'ppa:')) {
+            return $this->queryAptPpa($source, $package);
+        }
+
+        if (str_starts_with($source, 'https://') || str_starts_with($source, 'http://')) {
+            return $this->queryAptRepo($source, $package);
+        }
+
+        return [];
+    }
+
+    /**
+     * Queries the currently configured apt sources via apt-cache policy.
+     *
+     * @return list<string>
+     */
+    private function queryAptDefault(string $package): array
+    {
+        $output = $this->commandRunner->output(
+            sprintf('apt-cache policy %s 2>/dev/null', escapeshellarg($package)),
+        );
+
+        if ($output === null) {
             return [];
         }
 
@@ -50,14 +92,114 @@ final class SystemSourceQuerier implements SourceQuerierInterface
     }
 
     /**
+     * Queries a Launchpad PPA by fetching its Packages.gz file directly.
+     *
+     * @return list<string>
+     */
+    private function queryAptPpa(string $source, string $package): array
+    {
+        if (!preg_match('#^ppa:([^/]+)/([^/]+)$#', $source, $m)) {
+            return [];
+        }
+
+        $codename = $this->getUbuntuCodename();
+        if ($codename === null) {
+            return [];
+        }
+
+        $url = sprintf(
+            'https://ppa.launchpadcontent.net/%s/%s/ubuntu/dists/%s/main/binary-%s/Packages.gz',
+            rawurlencode($m[1]),
+            rawurlencode($m[2]),
+            rawurlencode($codename),
+            rawurlencode($this->getArchitecture()),
+        );
+
+        return $this->queryAptPackagesFile($url, $package);
+    }
+
+    /**
+     * Queries a generic HTTPS apt repository by fetching its Packages.gz file directly.
+     *
+     * Assumes the repository uses the standard Debian layout with a "stable" component.
+     *
+     * @return list<string>
+     */
+    private function queryAptRepo(string $source, string $package): array
+    {
+        $codename = $this->getUbuntuCodename();
+        if ($codename === null) {
+            return [];
+        }
+
+        $url = sprintf(
+            '%s/dists/%s/stable/binary-%s/Packages.gz',
+            rtrim($source, '/'),
+            rawurlencode($codename),
+            rawurlencode($this->getArchitecture()),
+        );
+
+        return $this->queryAptPackagesFile($url, $package);
+    }
+
+    /**
+     * Fetches a Packages (or Packages.gz) file and extracts all versions for a package.
+     *
+     * Attempts gzip decompression first; falls back to treating content as plain text
+     * when decompression fails (e.g. plain Packages file or test fixture).
+     *
+     * @return list<string>
+     */
+    private function queryAptPackagesFile(string $url, string $package): array
+    {
+        $raw = $this->httpFetcher->fetch($url);
+        if ($raw === null) {
+            return [];
+        }
+
+        // Suppress the warning: failure on non-gzip input is handled by the fallback below
+        $decompressed = @gzdecode($raw);
+        $content = $decompressed !== false ? $decompressed : $raw;
+
+        return $this->parsePackagesVersions($content, $package);
+    }
+
+    /**
+     * Parses a Debian Packages file and returns all versions for the given package name.
+     *
+     * @return list<string>
+     */
+    private function parsePackagesVersions(string $content, string $package): array
+    {
+        $versions = [];
+        $currentPackage = null;
+
+        foreach (explode("\n", str_replace("\r", '', $content)) as $line) {
+            if (str_starts_with($line, 'Package: ')) {
+                $currentPackage = trim(substr($line, 9));
+            } elseif ($currentPackage === $package && str_starts_with($line, 'Version: ')) {
+                $version = trim(substr($line, 9));
+                if ($version !== '') {
+                    $versions[] = $version;
+                }
+            }
+        }
+
+        return $versions;
+    }
+
+    /**
      * Queries npm for the latest published version of a package.
      *
      * @return list<string>
      */
     private function queryNpm(string $package): array
     {
-        $output = shell_exec(sprintf('npm view %s version 2>/dev/null', escapeshellarg($package)));
-        if (!is_string($output)) {
+        $output = $this->commandRunner->output(
+            sprintf('npm view %s version 2>/dev/null', escapeshellarg($package)),
+        );
+
+        if ($output === null) {
             return [];
         }
 
@@ -80,17 +222,10 @@ final class SystemSourceQuerier implements SourceQuerierInterface
             return [];
         }
 
-        $repo = $m[1];
-        $apiUrl = sprintf('https://api.github.com/repos/%s/releases/latest', $repo);
-        $context = stream_context_create([
-            'http' => [
-                'header' => "User-Agent: somanagent-setup\r\nAccept: application/vnd.github+json\r\n",
-                'timeout' => 5,
-            ],
-        ]);
+        $apiUrl = sprintf('https://api.github.com/repos/%s/releases/latest', $m[1]);
+        $response = $this->httpFetcher->fetch($apiUrl);
 
-        $response = @file_get_contents($apiUrl, false, $context);
-        if ($response === false) {
+        if ($response === null) {
             return [];
         }
 
@@ -102,5 +237,44 @@ final class SystemSourceQuerier implements SourceQuerierInterface
         $version = ltrim((string) $data['tag_name'], 'v');
 
         return $version !== '' ? [$version] : [];
+    }
+
+    /**
+     * Detects the Ubuntu distribution codename from /etc/os-release or lsb_release.
+     */
+    private function getUbuntuCodename(): ?string
+    {
+        if (is_readable('/etc/os-release')) {
+            $content = file_get_contents('/etc/os-release');
+            if (is_string($content) && preg_match('/^VERSION_CODENAME=(.+)$/m', $content, $m)) {
+                return trim($m[1], '"\'');
+            }
+        }
+
+        $output = $this->commandRunner->output('lsb_release -cs 2>/dev/null');
+        if ($output !== null) {
+            $codename = trim($output);
+            if ($codename !== '') {
+                return $codename;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Detects the system dpkg architecture, defaulting to amd64.
+     */
+    private function getArchitecture(): string
+    {
+        $output = $this->commandRunner->output('dpkg --print-architecture 2>/dev/null');
+        if ($output !== null) {
+            $arch = trim($output);
+            if ($arch !== '') {
+                return $arch;
+            }
+        }
+
+        return 'amd64';
     }
 }

@@ -25,6 +25,11 @@ final class FakeCommandRunner implements CommandRunnerInterface
     private int $callCount = 0;
 
     /**
+     * @var list<string>
+     */
+    private array $calls = [];
+
+    /**
      * Registers an output for a specific command.
      *
      * Pass null to simulate a command failure (non-zero exit / no output).
@@ -43,11 +48,22 @@ final class FakeCommandRunner implements CommandRunnerInterface
     }
 
     /**
+     * Returns every command string passed to output(), in call order.
+     *
+     * @return list<string>
+     */
+    public function getCalls(): array
+    {
+        return $this->calls;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function output(string $command): ?string
     {
         $this->callCount++;
+        $this->calls[] = $command;
 
         if (array_key_exists($command, $this->responses)) {
             return $this->responses[$command];

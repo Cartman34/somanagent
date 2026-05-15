@@ -25,6 +25,7 @@ use SoManAgent\Script\DevEnv\PlannedUninstall;
 use SoManAgent\Script\DevEnv\PreviewBuilder;
 use SoManAgent\Script\DevEnv\StateInspector;
 use SoManAgent\Script\DevEnv\SystemCommandRunner;
+use SoManAgent\Script\DevEnv\SystemHttpFetcher;
 use SoManAgent\Script\DevEnv\SystemSourceQuerier;
 use SoManAgent\Script\DevEnv\UninstallPlan;
 use SoManAgent\Script\DevEnv\VersionConstraint;
@@ -246,7 +247,7 @@ final class SetupRunner extends AbstractScriptRunner
         $inspector = new StateInspector(new SystemCommandRunner());
 
         // Resolve manifest constraints → new lockfile in memory
-        $resolver = new ManifestResolver(new SystemSourceQuerier());
+        $resolver = new ManifestResolver(new SystemSourceQuerier(new SystemCommandRunner(), new SystemHttpFetcher()));
         $newLockfile = $resolver->resolve($manifest, $existingLockfile, new \DateTimeImmutable());
 
         // Build install plan against the new lockfile to detect system diffs

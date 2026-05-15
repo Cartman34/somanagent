@@ -23,6 +23,7 @@ final class VersionConstraintTest
 
         $failed += $this->testGteOperator();
         $failed += $this->testNormalizeStripsUbuntuSuffix();
+        $failed += $this->testNormalizeStripsDebianEpoch();
         $failed += $this->testHighestReturnsBestSatisfying();
         $failed += $this->testHighestReturnsNullWhenNoneSatisfy();
         $failed += $this->testCaretConstraint();
@@ -74,6 +75,32 @@ final class VersionConstraintTest
         }
 
         echo "OK testNormalizeStripsUbuntuSuffix\n";
+        return 0;
+    }
+
+    private function testNormalizeStripsDebianEpoch(): int
+    {
+        $vc = new VersionConstraint();
+
+        // epoch must not be treated as major version number
+        if (!$vc->satisfies('1:2.43.0-1ubuntu7.3', '>=2.30')) {
+            echo "FAIL testNormalizeStripsDebianEpoch: 1:2.43.0-1ubuntu7.3 should satisfy >=2.30\n";
+            return 1;
+        }
+        if ($vc->satisfies('1:2.43.0-1ubuntu7.3', '>=3')) {
+            echo "FAIL testNormalizeStripsDebianEpoch: 1:2.43.0-1ubuntu7.3 should not satisfy >=3\n";
+            return 1;
+        }
+        if (!$vc->satisfies('5:24.0.7-1~ubuntu.22.04~jammy', '>=24')) {
+            echo "FAIL testNormalizeStripsDebianEpoch: 5:24.0.7-1~ubuntu.22.04~jammy should satisfy >=24\n";
+            return 1;
+        }
+        if ($vc->satisfies('5:24.0.7-1~ubuntu.22.04~jammy', '>=25')) {
+            echo "FAIL testNormalizeStripsDebianEpoch: 5:24.0.7-1~ubuntu.22.04~jammy should not satisfy >=25\n";
+            return 1;
+        }
+
+        echo "OK testNormalizeStripsDebianEpoch\n";
         return 0;
     }
 
