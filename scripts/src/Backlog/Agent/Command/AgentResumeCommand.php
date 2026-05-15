@@ -192,7 +192,8 @@ final class AgentResumeCommand extends AbstractAgentCommand
             $this->sessionService->updateSessionId($code, $capturedId);
         }
 
-        if ($this->sessionDriver->sessionExists($code)) {
+        $session = $this->sessionService->get($code);
+        if ($session !== null && $this->sessionDriver->isAlive($session)) {
             echo sprintf("Session détachée. Utilisez resume --code=%s pour vous rattacher.\n", $code);
             return 0;
         }

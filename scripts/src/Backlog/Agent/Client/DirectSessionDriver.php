@@ -67,7 +67,6 @@ final class DirectSessionDriver implements SessionDriverInterface
     /**
      * {@inheritdoc}
      *
-     * @phpstan-impure
      * The direct driver has no persistent session concept — always returns false.
      */
     public function sessionExists(string $agentCode): bool

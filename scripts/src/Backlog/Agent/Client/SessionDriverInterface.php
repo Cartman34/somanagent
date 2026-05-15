@@ -35,7 +35,6 @@ interface SessionDriverInterface
      * by running `tmux has-session`; the result can change between calls as tmux state evolves.
      * For DirectSessionDriver: always returns false (proc_open has no persistent session concept).
      *
-     * @phpstan-impure
      * @param string $agentCode Agent code (e.g. d01)
      */
     public function sessionExists(string $agentCode): bool;
@@ -45,9 +44,9 @@ interface SessionDriverInterface
      *
      * For TmuxSessionDriver: creates a named tmux session and attaches to it. Returns 0 whether
      * the session ended normally or the terminal was detached (Ctrl+B D, SSH disconnect).
-     * Callers must check sessionExists() after this returns to distinguish a detach
-     * (session still alive — do NOT remove the sessions.json entry) from a normal termination
-     * (session gone — remove the entry).
+     * Callers must call isAlive() with the refreshed AgentSession after this returns to distinguish
+     * a detach (session still alive — do NOT remove the sessions.json entry) from a normal
+     * termination (session gone — remove the entry).
      * For DirectSessionDriver: blocks until the client process exits; returns the client exit code.
      *
      * @param string $agentCode Agent code (e.g. d01); used to name the tmux session
@@ -65,8 +64,8 @@ interface SessionDriverInterface
      *
      * For TmuxSessionDriver: re-attaches to the existing tmux session when alive; otherwise creates
      * a new session and launches the client in resume mode. Returns 0 whether the session ended
-     * normally or was detached again. Callers must check sessionExists() after return to
-     * distinguish detach (keep the sessions.json entry) from termination (remove the entry).
+     * normally or was detached again. Callers must call isAlive() with the refreshed AgentSession
+     * after return to distinguish detach (keep the sessions.json entry) from termination (remove it).
      * For DirectSessionDriver: same as launch() — no live terminal session to re-attach.
      *
      * @param string $agentCode Agent code (e.g. d01); used to locate or create the tmux session

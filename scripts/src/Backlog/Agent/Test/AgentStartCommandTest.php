@@ -642,9 +642,9 @@ final class AgentStartCommandTest
         $registry = new AgentClientLauncherRegistry();
         $registry->register($launcher);
 
-        // Simulate tmux detach: after launch() returns, sessionExists returns true for 'd07'.
+        // Simulate tmux detach: after launch() returns, isAlive() returns true for 'd07'.
         $driver = new FakeSessionDriver();
-        $driver->existsAfterLaunch = ['d07'];
+        $driver->setAlive('d07', true);
 
         $cmd = new AgentStartCommand(
             $projectRoot,

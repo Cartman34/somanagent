@@ -223,11 +223,9 @@ final class AgentResumeCommandTest
         $service = new AgentSessionService($dir);
         $service->add($this->makeSession('d02', wrapperPid: 12300, clientPid: 55000, worktree: $worktree));
 
-        // Driver: isAlive=true (tmux session exists) but wrapper PID is dead → detach scenario.
-        // After resume() returns, sessionExists still returns true (another detach).
+        // Driver: isAlive=true (tmux session still alive after resume exits) → detach scenario.
         $driver = new FakeSessionDriver();
         $driver->setAlive('d02', true);
-        $driver->existsAfterLaunch = ['d02'];
 
         // Signaler: wrapper PID 12300 is dead (default false) → guard allows resume.
         $signaler = new FakeProcessSignaler();
