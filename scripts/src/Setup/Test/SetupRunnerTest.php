@@ -24,6 +24,9 @@ final class SetupRunnerTest
 {
     private string $projectRoot;
 
+    /**
+     * Resolves the project root from the test file location.
+     */
     public function __construct()
     {
         $this->projectRoot = dirname(__DIR__, 4);

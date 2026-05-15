@@ -21,7 +21,7 @@ use SoManAgent\Script\DevEnv\Model\Manifest;
  *   3. Applies the on_existing_below_min policy from the manifest when the
  *      installed version is strictly older than the locked version.
  *
- * All checks happen before the preview is shown (§3.2 anticipation complète).
+ * All checks happen before the preview is shown (spec §3.2: full anticipation).
  */
 final class InstallPlanner
 {
