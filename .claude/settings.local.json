@@ -54,7 +54,8 @@
       "Bash(cat)",
       "Bash(xargs -I{} basename {})",
       "Bash(GIT_EDITOR=true git *)",
-      "Bash(SOMANAGER_ROLE=* SOMANAGER_AGENT=* php *)"
+      "Bash(SOMANAGER_ROLE=* SOMANAGER_AGENT=* php *)",
+      "Bash(xargs -I {} basename {})"
     ]
   }
 }

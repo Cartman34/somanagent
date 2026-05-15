@@ -33,7 +33,7 @@ Read this file only when the active task requires developer workflow details.
 - manage one `WA` identified by the agent code
 - start work on the next queued task, optionally release untouched features, and continue development on the feature branch
 - commit on the feature branch with the feature slug prefix
-- critically challenge the implementation for gaps, regressions, and convention violations before considering it ready for review
+- self-challenge the implementation iteratively during initial development **and** rework — multiple cycles (after each meaningful chunk, before each commit, before `submit`), each cycle covering in one pass: code, tests, PHPDoc, help YAML, user docs, conventions, spec alignment, security. Fix every issue found and re-challenge; a single final pass leaves bugs for the reviewer. Report a brief summary of cycles to the user when applicable
 - update docs when required by the code change
 - keep `local/backlog-board.md` in sync with the current stage of the feature through `backlog.php`
 - rely on the prepared `WA` runtime state: `backend/vendor` and `frontend/node_modules` are copied from `WP` when the `WA` is created or when they are missing, while root `.env` and `backend/.env.local` are refreshed by the workflow
@@ -302,8 +302,10 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-cre
 1. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php work-start`.
 2. `WA`: implement the feature scope on the branch checked out for that task.
 3. `WA`: inspect the local diff and fix issues in scope before moving on.
-4. `WA`: run `git add .`.
-5. `WA`: run `git commit -m "[<feature-slug>] ..."` using the canonical feature identifier recorded in the backlog metadata and branch name.
+4. `WA`: run self-challenge cycles per the Responsibilities rule; fix and re-challenge until a full pass yields no findings.
+5. `WA`: run `git add .`.
+6. `WA`: run `git commit -m "[<feature-slug>] ..."` using the canonical feature identifier recorded in the backlog metadata and branch name.
+7. Report to the user a brief summary of self-challenge cycles: dimensions checked, issues found, fixes applied.
 
 ### `submit`
 
@@ -321,7 +323,8 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-cre
 2. For scenario (a), the review feedback is given with the `rework` instruction. The `rework` command output prints the stored review notes directly; do not run `status` or read `local/backlog-review.md` before proceeding.
 3. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php rework [<entry-ref>]`.
 4. `WA`: resume development on the same branch. Address the review feedback for scenario (a), or resolve the conflict for scenario (b).
-5. Stop here. Do not run `submit` unless the user explicitly asks for it.
+5. `WA`: run self-challenge cycles per the Responsibilities rule (same cadence as in `next`); fix and re-challenge until a full pass yields no findings, then report a brief summary to the user.
+6. Stop here. Do not run `submit` unless the user explicitly asks for it.
 
 ### `rebase`
 
