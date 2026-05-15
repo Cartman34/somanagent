@@ -184,42 +184,56 @@ final class SetupRunnerTest
 
     private function testMissingLockfileError(): int
     {
-        // Use a temp directory without a lockfile by overriding via a wrapper script
-        // Since the lockfile exists in this repo but is empty, this test verifies
-        // the error path by pointing to a non-existent path at runtime.
-        // We verify the real path exists (so the default case won't trigger missing-lockfile).
-        $lockPath = $this->projectRoot . '/scripts/resources/dependencies.lock';
+        // Point setup.php to a temp directory that has no lockfile via the
+        // SOMANAGER_PROJECT_ROOT env var, which SetupRunner reads to override
+        // the lockfile and manifest paths at runtime.
+        $tmpDir = sys_get_temp_dir() . '/setup_test_no_lock_' . uniqid();
+        mkdir($tmpDir, 0o755, true);
 
-        if (!is_file($lockPath)) {
-            // If lockfile truly doesn't exist, the missing-lockfile error fires
-            [$output, $exit] = $this->run_(['install', '--preview-only']);
+        try {
+            [$output, $exit] = $this->run_(
+                ['install', '--preview-only'],
+                ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
+            );
 
             if ($exit === 0) {
-                echo "FAIL testMissingLockfileError: expected non-zero exit\n";
+                echo "FAIL testMissingLockfileError: expected non-zero exit\nOutput: {$output}\n";
                 return 1;
             }
 
             if (!str_contains($output, 'Lockfile absent')) {
-                echo "FAIL testMissingLockfileError: expected 'Lockfile absent' in output\n";
+                echo "FAIL testMissingLockfileError: expected 'Lockfile absent' in output\nOutput: {$output}\n";
                 return 1;
             }
+        } finally {
+            @rmdir($tmpDir);
         }
 
-        // Lockfile exists — verify the preview-only path works (covered by another test)
-        echo "OK testMissingLockfileError (lockfile present — missing-lockfile path is logic-tested)\n";
+        echo "OK testMissingLockfileError\n";
         return 0;
     }
 
     /**
      * Runs setup.php with the given arguments and returns [stdout+stderr, exit_code].
      *
-     * @param list<string> $args
+     * @param list<string>         $args CLI arguments
+     * @param array<string,string> $env  Optional env vars prepended to the command
      * @return array{0: string, 1: int}
      */
-    private function run_(array $args): array
+    private function run_(array $args, array $env = []): array
     {
+        $envPrefix = '';
+        if ($env !== []) {
+            $parts = [];
+            foreach ($env as $key => $value) {
+                $parts[] = sprintf('%s=%s', $key, escapeshellarg($value));
+            }
+            $envPrefix = implode(' ', $parts) . ' ';
+        }
+
         $cmd = sprintf(
-            'php %s %s 2>&1',
+            '%sphp %s %s 2>&1',
+            $envPrefix,
             escapeshellarg($this->projectRoot . '/scripts/setup.php'),
             implode(' ', array_map('escapeshellarg', $args)),
         );

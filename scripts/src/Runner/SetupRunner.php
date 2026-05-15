@@ -135,8 +135,10 @@ final class SetupRunner extends AbstractScriptRunner
             throw new \RuntimeException('--preview-only and --dry-run are mutually exclusive.');
         }
 
-        $lockPath = $this->projectRoot . '/' . self::LOCK_PATH;
-        $manifestPath = $this->projectRoot . '/' . self::MANIFEST_PATH;
+        // SOMANAGER_PROJECT_ROOT allows tests to point to a temp directory without touching real files.
+        $root = (getenv('SOMANAGER_PROJECT_ROOT') ?: $this->projectRoot);
+        $lockPath = $root . '/' . self::LOCK_PATH;
+        $manifestPath = $root . '/' . self::MANIFEST_PATH;
 
         if (!is_file($lockPath)) {
             throw new \RuntimeException(
@@ -176,17 +178,14 @@ final class SetupRunner extends AbstractScriptRunner
             return 0;
         }
 
-        if (!$plan->hasActions()) {
-            $this->console->info('Nothing to install — all dependencies are up to date.');
-
-            return 0;
+        if ($plan->hasActions()) {
+            if (!$this->force && !$this->confirmApply()) {
+                return 0;
+            }
+            $this->applyInstall($plan, $installers, $lockfileManager, $lockPath, $lockfile);
+        } else {
+            $this->console->info('All host dependencies are already up to date.');
         }
-
-        if (!$this->force && !$this->confirmApply()) {
-            return 0;
-        }
-
-        $this->applyInstall($plan, $installers, $lockfileManager, $lockPath, $lockfile);
 
         (new ProjectDepsInstaller($this->app, $this->console))->runProjectSteps();
 
@@ -277,7 +276,7 @@ final class SetupRunner extends AbstractScriptRunner
             );
         }
 
-        echo '  Apply? [y/N] ';
+        $this->console->line('  Apply? [y/N]');
         $answer = trim((string) (fgets(STDIN) ?: ''));
         if (!preg_match('/^[yY]/', $answer)) {
             $this->console->info('Aborted.');
