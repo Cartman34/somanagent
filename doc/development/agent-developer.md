@@ -16,7 +16,7 @@ Read this file only when the active task requires developer workflow details.
 - `entry-rename`
 - `entry-set-meta`
 - `work-start`
-- `feature-release`
+- `entry-release`
 - `entry-merge`
 - `feature-assign`
 - `entry-unassign`
@@ -191,10 +191,10 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-cre
 11. The command output includes the started task when applicable, the parent feature summary and details, and the assigned worktree path and branch.
 12. `work-start` is local-only: it does not push and it does not create a PR.
 
-### `feature-release`
+### `entry-release`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php feature-release [<feature>]`.
-2. The script returns the active feature to the start of `## To do` only when the branch is still clean and has no commit ahead of its recorded `base`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-release [<entry-ref>]`.
+2. The script returns the active feature or task to the start of `## To do` only when the branch is still clean and has no commit ahead of its recorded `base`. Works on a task or feature.
 3. A parent `kind=feature` cannot be released while child `kind=task` entries are still active for that feature.
 4. The script then removes the managed worktree and deletes the untouched local branch.
 

@@ -726,7 +726,7 @@ final class BacklogBoardService
         }
 
         return match ($stage) {
-            BacklogBoard::STAGE_IN_PROGRESS => "run `review-request --agent={$agent}` to submit for review, or `feature-release --agent={$agent}` if no commits were made",
+            BacklogBoard::STAGE_IN_PROGRESS => "run `review-request --agent={$agent}` to submit for review, or `entry-release --agent={$agent}` if no commits were made",
             BacklogBoard::STAGE_IN_REVIEW   => 'wait for reviewer action on the active feature',
             BacklogBoard::STAGE_REJECTED    => "run `rework --agent={$agent}` to resume development on the rejected feature",
             BacklogBoard::STAGE_APPROVED    => 'wait for the manager to merge the feature',

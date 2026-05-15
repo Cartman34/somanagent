@@ -377,22 +377,22 @@ MD);
     }
 
     /**
-     * @param string $agent Agent releasing the feature
-     * @param string $feature Feature name to release
+     * @param string $agent      Agent releasing the entry
+     * @param string $entryRef   Entry ref to release (feature slug or feature/task)
      */
-    public function releaseFeature(string $agent, string $feature): void
+    public function releaseEntry(string $agent, string $entryRef): void
     {
-        $this->runBacklog(['feature-release', $feature], ['SOMANAGER_AGENT' => $agent]);
+        $this->runBacklog(['entry-release', $entryRef], ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
-     * @param string $agent Agent attempting the release
-     * @param string $feature Feature name to release
-     * @param string $needle Expected error message
+     * @param string $agent      Agent attempting the release
+     * @param string $entryRef   Entry ref to release
+     * @param string $needle     Expected error message
      */
-    public function assertReleaseFeatureFails(string $agent, string $feature, string $needle): void
+    public function assertReleaseEntryFails(string $agent, string $entryRef, string $needle): void
     {
-        $this->assertBacklogFails(['feature-release', $feature], $needle, ['SOMANAGER_AGENT' => $agent]);
+        $this->assertBacklogFails(['entry-release', $entryRef], $needle, ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**

@@ -32,7 +32,7 @@ examples:
   - 'php scripts/backlog.php work-start'
   - 'php scripts/backlog.php work-start my-feature'
   - 'php scripts/backlog.php work-start my-feature/my-task'
-  - 'php scripts/backlog.php feature-release'
+  - 'php scripts/backlog.php entry-release'
   - 'php scripts/backlog.php entry-merge my-feature/my-task'
   - 'php scripts/backlog.php feature-list'
   - 'php scripts/backlog.php worktree-list'

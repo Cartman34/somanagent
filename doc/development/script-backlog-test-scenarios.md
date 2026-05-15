@@ -194,7 +194,7 @@ Validate the single-prefix `[feature-slug] text` mode of `work-start` and the `e
 4. Inspect:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php status test-single-prefix`
 5. Release the feature:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php feature-release test-single-prefix`
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-release test-single-prefix`
 6. Create a scoped task to test entry-rename on a `kind=task` — write `[feat][test-scoped-feature][rename-task] Original task text` to `local/tmp/test-scoped-rename-task.md`, then:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php task-create --body-file=local/tmp/test-scoped-rename-task.md`
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php work-start`
@@ -215,12 +215,12 @@ Validate the single-prefix `[feature-slug] text` mode of `work-start` and the `e
 
 ### Goal
 
-Validate `feature-release` on a feature with no actual development ahead of base.
+Validate `entry-release` on a feature with no actual development ahead of base.
 
 ### Steps
 
 1. Release the active feature:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php feature-release`
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-release`
 2. Inspect:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php todo-list`
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php feature-list`

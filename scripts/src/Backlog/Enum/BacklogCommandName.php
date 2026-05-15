@@ -32,7 +32,7 @@ enum BacklogCommandName: string
     case ENTRY_RENAME = 'entry-rename';
     case ENTRY_SET_META = 'entry-set-meta';
     case WORK_START = 'work-start';
-    case FEATURE_RELEASE = 'feature-release';
+    case ENTRY_RELEASE = 'entry-release';
     case FEATURE_TASK_MERGE = 'feature-task-merge';
     case FEATURE_ASSIGN = 'feature-assign';
     case ENTRY_UNASSIGN = 'entry-unassign';

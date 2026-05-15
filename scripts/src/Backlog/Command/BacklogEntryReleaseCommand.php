@@ -18,7 +18,7 @@ use SoManAgent\Script\Service\GitService;
 /**
  * Command for releasing an active feature or task back to the todo section.
  */
-final class BacklogFeatureReleaseCommand extends AbstractBacklogCommand
+final class BacklogEntryReleaseCommand extends AbstractBacklogCommand
 {
     private BacklogWorktreeService $worktreeService;
 
@@ -120,7 +120,7 @@ final class BacklogFeatureReleaseCommand extends AbstractBacklogCommand
                     $this->gitService->deleteLocalBranch($parentBranch);
                 }
             }
-            $this->saveBoard($board, BacklogCommandName::FEATURE_RELEASE->value);
+            $this->saveBoard($board, BacklogCommandName::ENTRY_RELEASE->value);
             $cleaned = $this->worktreeService->cleanupManagedWorktreesForBranch($branch, $board);
             $this->gitService->deleteLocalBranch($branch);
 
@@ -133,12 +133,12 @@ final class BacklogFeatureReleaseCommand extends AbstractBacklogCommand
         }
 
         $feature = $entry->getFeature() ?? '';
-        $this->boardService->assertNoActiveTasksForFeature($board, $feature, BacklogCommandName::FEATURE_RELEASE->value);
+        $this->boardService->assertNoActiveTasksForFeature($board, $feature, BacklogCommandName::ENTRY_RELEASE->value);
         $todoEntries = $board->getEntries(BacklogBoard::SECTION_TODO);
         array_unshift($todoEntries, new BoardEntry($entry->getText(), $entry->getExtraLines()));
         $board->setEntries(BacklogBoard::SECTION_TODO, $todoEntries);
         $this->boardService->deleteFeature($board, $feature);
-        $this->saveBoard($board, BacklogCommandName::FEATURE_RELEASE->value);
+        $this->saveBoard($board, BacklogCommandName::ENTRY_RELEASE->value);
 
         $cleaned = $this->worktreeService->cleanupManagedWorktreesForBranch($branch, $board);
         $this->gitService->deleteLocalBranch($branch);

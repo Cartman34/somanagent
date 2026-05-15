@@ -90,7 +90,7 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
         // ── migrate --generate: end-to-end isolated DB lifecycle (requires Docker) ──
         $driver->runMigrateGenerate($context->agentPrimary);
 
-        $driver->releaseFeature($context->agentPrimary, $context->plainFeature);
+        $driver->releaseEntry($context->agentPrimary, $context->plainFeature);
         $driver->assertTodoContains($context->plainFeature);
         $driver->removeFirstTodoTask();
 
@@ -127,7 +127,7 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
             sprintf('Entry %s is assigned to %s. Developer role can only unassign its own entry.', $context->assignFeature, $context->agentSecondary),
         );
 
-        $driver->releaseFeature($context->agentSecondary, $context->assignFeature);
+        $driver->releaseEntry($context->agentSecondary, $context->assignFeature);
         $driver->assertTodoContains($context->assignFeature);
         $driver->removeFirstTodoTask();
 
@@ -137,7 +137,7 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
         $driver->assertFeatureStartOutputContains($startOutput, $singlePrefixSlug);
         $driver->renameEntry($context->agentPrimary, 'Renamed single prefix description');
         $driver->assertStatusContains($singlePrefixSlug, 'Renamed single prefix description');
-        $driver->releaseFeature($context->agentPrimary, $singlePrefixSlug);
+        $driver->releaseEntry($context->agentPrimary, $singlePrefixSlug);
         $driver->removeFirstTodoTask();
 
         $this->assertWorkStartWithExplicitTarget($driver, $context);
@@ -147,7 +147,7 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
         $driver->startNextFeature($context->agentPrimary);
         $driver->trackFeatureBranch($committedFeature);
         $driver->commitAndRevertFeatureChange($context->agentPrimary, $committedFeature, 'test-release-commit-history.txt');
-        $driver->assertReleaseFeatureFails(
+        $driver->assertReleaseEntryFails(
             $context->agentPrimary,
             $committedFeature,
             'Active entry already has development work and cannot be released back to todo.',
@@ -185,7 +185,7 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
         $driver->assertActiveFeatureExists($targetSlug);
         $driver->assertTodoContains($headSlug);
 
-        $driver->releaseFeature($context->agentPrimary, $targetSlug);
+        $driver->releaseEntry($context->agentPrimary, $targetSlug);
         $driver->removeFirstTodoTask();
         $driver->removeFirstTodoTask();
     }
