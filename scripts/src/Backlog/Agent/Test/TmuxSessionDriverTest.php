@@ -32,6 +32,7 @@ final class TmuxSessionDriverTest
         $failed += $this->testCheckDependenciesPassesWhenTmuxPresent();
         $failed += $this->testSessionExistsReturnsTrueWhenHasSessionSucceeds();
         $failed += $this->testSessionExistsReturnsFalseWhenHasSessionFails();
+        $failed += $this->testSessionExistsReturnsTrueAfterTmuxDetach();
         $failed += $this->testIsAliveReturnsTrueWhenTmuxSessionExists();
         $failed += $this->testIsAliveReturnsFalseWhenTmuxSessionGone();
         $failed += $this->testIsAliveReturnsFalseWhenTmuxSessionNull();
@@ -117,6 +118,26 @@ final class TmuxSessionDriverTest
             return 1;
         }
         echo "OK testSessionExistsReturnsFalseWhenHasSessionFails\n";
+        return 0;
+    }
+
+    /**
+     * After a tmux detach (Ctrl+B D or SSH disconnect), attach-session exits but the tmux session
+     * stays alive. sessionExists() must return true in that state so callers can detect the detach
+     * and keep the sessions.json entry.
+     */
+    private function testSessionExistsReturnsTrueAfterTmuxDetach(): int
+    {
+        $runner = new FakeProcessRunner();
+        $runner->succeedsResult = true; // tmux has-session still returns 0 (session alive after detach)
+
+        $driver = new TmuxSessionDriver($runner, Console::getInstance());
+
+        if (!$driver->sessionExists('d01')) {
+            echo "FAIL testSessionExistsReturnsTrueAfterTmuxDetach: expected true (session still alive after detach)\n";
+            return 1;
+        }
+        echo "OK testSessionExistsReturnsTrueAfterTmuxDetach\n";
         return 0;
     }
 

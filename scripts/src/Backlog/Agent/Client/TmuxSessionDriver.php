@@ -250,10 +250,12 @@ final class TmuxSessionDriver implements SessionDriverInterface
     }
 
     /**
-     * Attaches the current terminal to the tmux session and blocks until it ends.
+     * Attaches the current terminal to the tmux session and blocks until attach-session exits.
      *
-     * Returns 0 when the session ends normally. The client's exit code is not recoverable
-     * through tmux attach — callers should treat 0 as success.
+     * Returns 0 whether the session ended normally or the terminal was detached (Ctrl+B D, SSH
+     * disconnect). The client's exit code is not recoverable through tmux attach. Callers must
+     * call sessionExists() after this returns to distinguish a detach (session alive) from a
+     * normal termination (session gone).
      */
     private function attachAndWait(string $name): int
     {

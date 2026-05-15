@@ -25,6 +25,17 @@ final class FakeSessionDriver implements SessionDriverInterface
     /** @var array<string, bool> Codes that sessionExists() should return true for */
     private array $existingByCode = [];
 
+    /**
+     * When a code is in this list, sessionExists() returns true after the first launch() or
+     * resume() call for that code, simulating a tmux detach (session alive after attach exits).
+     *
+     * @var list<string>
+     */
+    public array $existsAfterLaunch = [];
+
+    /** @var list<string> Codes for which launch() or resume() has already been called */
+    private array $launchedCodes = [];
+
     public bool $dependencyCheckPasses = true;
 
     public int $nextExitCode = 0;
@@ -71,6 +82,10 @@ final class FakeSessionDriver implements SessionDriverInterface
      */
     public function sessionExists(string $agentCode): bool
     {
+        if (in_array($agentCode, $this->launchedCodes, true) && in_array($agentCode, $this->existsAfterLaunch, true)) {
+            return true;
+        }
+
         return $this->existingByCode[$agentCode] ?? false;
     }
 
@@ -81,6 +96,7 @@ final class FakeSessionDriver implements SessionDriverInterface
     {
         $this->lastLaunchCall = ['agentCode' => $agentCode, 'bin' => $bin, 'args' => $args, 'cwd' => $cwd];
         $onSpawned($this->nextClientPid, $this->nextTmuxSession);
+        $this->launchedCodes[] = $agentCode;
 
         return $this->nextExitCode;
     }
@@ -92,6 +108,7 @@ final class FakeSessionDriver implements SessionDriverInterface
     {
         $this->lastResumeCall = ['agentCode' => $agentCode, 'bin' => $bin, 'args' => $args, 'cwd' => $cwd];
         $onSpawned($this->nextClientPid, $this->nextTmuxSession);
+        $this->launchedCodes[] = $agentCode;
 
         return $this->nextExitCode;
     }

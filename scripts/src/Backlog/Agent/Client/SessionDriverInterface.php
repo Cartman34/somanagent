@@ -41,13 +41,20 @@ interface SessionDriverInterface
     /**
      * Launches the AI client as an interactive session and blocks until exit.
      *
+     * For TmuxSessionDriver: creates a named tmux session and attaches to it. Returns 0 whether
+     * the session ended normally or the terminal was detached (Ctrl+B D, SSH disconnect).
+     * Callers must check sessionExists() after this returns to distinguish a detach
+     * (session still alive — do NOT remove the sessions.json entry) from a normal termination
+     * (session gone — remove the entry).
+     * For DirectSessionDriver: blocks until the client process exits; returns the client exit code.
+     *
      * @param string $agentCode Agent code (e.g. d01); used to name the tmux session
      * @param string $bin Absolute or PATH-resolvable client binary
      * @param list<string> $args Arguments for the client binary
      * @param string $cwd Working directory for the session
      * @param array<string, string> $env Full environment for the client process
      * @param callable(int $clientPid, ?string $tmuxSession): void $onSpawned Called once right after spawn, before blocking
-     * @return int Exit code (0 = success)
+     * @return int Exit code (0 on normal exit or tmux detach; client exit code for direct driver)
      */
     public function launch(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int;
 
@@ -55,7 +62,9 @@ interface SessionDriverInterface
      * Re-launches the AI client for an interrupted session and blocks until exit.
      *
      * For TmuxSessionDriver: re-attaches to the existing tmux session when alive; otherwise creates
-     * a new session and launches the client in resume mode.
+     * a new session and launches the client in resume mode. Returns 0 whether the session ended
+     * normally or was detached again. Callers must check sessionExists() after return to
+     * distinguish detach (keep the sessions.json entry) from termination (remove the entry).
      * For DirectSessionDriver: same as launch() — no live terminal session to re-attach.
      *
      * @param string $agentCode Agent code (e.g. d01); used to locate or create the tmux session
@@ -64,7 +73,7 @@ interface SessionDriverInterface
      * @param string $cwd Working directory for the session
      * @param array<string, string> $env Full environment for the client process
      * @param callable(int $clientPid, ?string $tmuxSession): void $onSpawned Called once right after spawn, before blocking
-     * @return int Exit code (0 = success)
+     * @return int Exit code (0 on normal exit or tmux detach; client exit code for direct driver)
      */
     public function resume(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int;
 

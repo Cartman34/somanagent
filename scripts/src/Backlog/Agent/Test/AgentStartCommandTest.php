@@ -80,6 +80,7 @@ final class AgentStartCommandTest
         $failed += $this->testReviewerModeRollsBackViaCancelWhenPreparationFails();
         $failed += $this->testDeveloperResetRefusesDirtyWorktree();
         $failed += $this->testDeveloperResetRemovesAndRecreatesCleanWorktree();
+        $failed += $this->testLaunchKeepsSessionEntryWhenDriverReportsDetach();
 
         return $failed;
     }
@@ -621,6 +622,79 @@ final class AgentStartCommandTest
         }
 
         echo "OK testDeveloperResetRemovesAndRecreatesCleanWorktree\n";
+        return 0;
+    }
+
+    private function testLaunchKeepsSessionEntryWhenDriverReportsDetach(): int
+    {
+        // After attach-session exits with the tmux session still alive (detach scenario),
+        // the sessions.json entry must be kept so stop/list/status/resume can still reach the session.
+        $projectRoot = $this->createGitProject('detach-keep');
+        $worktreesRoot = $projectRoot . '/.agent-worktrees';
+        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $worktree = $worktreesRoot . '/d07';
+        $this->writeBoard($boardPath, []);
+        $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' worktree add --detach ' . escapeshellarg($worktree) . ' HEAD');
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($projectRoot);
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        // Simulate tmux detach: after launch() returns, sessionExists returns true for 'd07'.
+        $driver = new FakeSessionDriver();
+        $driver->existsAfterLaunch = ['d07'];
+
+        $cmd = new AgentStartCommand(
+            $projectRoot,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            $sessionService,
+            new AgentContextBuilder($projectRoot, $boardPath, $boardService),
+            $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
+            new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot),
+            $boardService,
+            $driver,
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
+        );
+
+        $previousCwd = getcwd();
+        $exitCode = null;
+        try {
+            chdir($projectRoot);
+            ob_start();
+            $exitCode = $cmd->handle(['claude'], ['developer' => true, 'code' => 'd07']);
+            $output = ob_get_clean();
+        } catch (\Throwable $e) {
+            ob_end_clean();
+            echo "FAIL testLaunchKeepsSessionEntryWhenDriverReportsDetach: unexpected " . get_class($e) . ': ' . $e->getMessage() . "\n";
+            return 1;
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        if ($exitCode !== 0) {
+            echo "FAIL testLaunchKeepsSessionEntryWhenDriverReportsDetach: expected exit code 0, got {$exitCode}\n";
+            return 1;
+        }
+
+        if ($sessionService->get('d07') === null) {
+            echo "FAIL testLaunchKeepsSessionEntryWhenDriverReportsDetach: sessions.json entry was removed on detach — it must be kept\n";
+            return 1;
+        }
+
+        if (!str_contains((string) $output, 'Session détachée')) {
+            echo "FAIL testLaunchKeepsSessionEntryWhenDriverReportsDetach: expected detach message in output\n";
+            return 1;
+        }
+
+        echo "OK testLaunchKeepsSessionEntryWhenDriverReportsDetach\n";
         return 0;
     }
 
