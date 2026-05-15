@@ -91,8 +91,6 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
         $featureBranch = $entry->getFeatureBranch() ?? '';
         $taskBranch = $entry->getBranch() ?? '';
         $parent = $this->boardService->resolveFeature($board, $feature);
-        $taskWorktree = $this->worktreeService->prepareFeatureAgentWorktree($entry);
-        $this->worktreeService->runReviewScript($taskWorktree, $entry->getBase());
         $this->worktreeService->assertBranchHasNoDirtyManagedWorktree($taskBranch);
         $mergeContext = $this->worktreeService->prepareFeatureMergeWorktree($featureBranch, $feature);
 

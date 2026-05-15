@@ -209,7 +209,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-cre
 
 1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-merge <entry-ref>`.
 2. The script targets the explicit `<entry-ref>`.
-3. The script requires a green mechanical review in the task worktree, then merges the child branch into the parent feature branch locally from the parent feature worktree or from a temporary merge worktree.
+3. The script merges the child branch into the parent feature branch locally from the parent feature worktree or from a temporary merge worktree.
 4. The current task review stage does not gate this merge. `development`, `review`, `rejected`, and `approved` are all mergeable when the user explicitly asks for `merge`.
 5. The child task entry is removed from `## In progress` after the local merge. The child task worktree is removed when that agent no longer owns any active task.
 6. The parent `kind=feature` entry remains, keeps the merged task content in its aggregated lines, and is moved back to `development` so the remote review flow must be requested again on the parent branch. The parent's agent assignment is never modified by a task merge — use `feature-assign` to take integration ownership of the feature after all tasks are merged.
