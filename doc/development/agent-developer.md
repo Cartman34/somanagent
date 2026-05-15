@@ -110,6 +110,7 @@ Run `php scripts/backlog-agent.php whoami` from inside the WA to confirm the ses
 5. Keep the task title short and put the breakdown on indented sub-task lines below it. **A `[feature-slug]` scope is required** (plus `[task-slug]` for child tasks); `task-create` rejects entries without one. Including a `[type]` prefix (`[feat]`, `[fix]` or `[tech]`) is strongly recommended so the queued entry is unambiguous. The type prefix may appear at any position in the leading bracket sequence.
 6. Always use `--body-file=<path>` (typically under `local/tmp/`) to pass the task body. The first non-empty line is the title; subsequent non-empty lines become indented sub-tasks (auto-indented to two spaces when missing). Inline positional task text is not accepted.
 7. Do not edit `local/backlog-board.md` manually.
+8. If the new task is a scoped child task (`[feature-slug][task-slug]`) and the parent feature is in `review`, `reviewing`, or `approved` stage, `task-create` automatically reverts the parent to `development` and clears `meta.reviewer`. A message is printed; no manual follow-up is needed.
 
 Examples:
 
@@ -190,6 +191,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-cre
 10. With `--dry-run`, the script prints the resolved interpretation (kind, type, feature, task, planned branches) and performs no Git, worktree or backlog mutation. Read-only Git operations (fetch, `origin/main` resolution) remain enabled.
 11. The command output includes the started task when applicable, the parent feature summary and details, and the assigned worktree path and branch.
 12. `work-start` is local-only: it does not push and it does not create a PR.
+13. When starting a scoped child task (`[feature-slug][task-slug]`) whose existing parent feature is in `review`, `reviewing`, or `approved` stage, `work-start` automatically reverts the parent to `development` and clears `meta.reviewer`. A message is printed; no manual follow-up is needed.
 
 ### `entry-release`
 

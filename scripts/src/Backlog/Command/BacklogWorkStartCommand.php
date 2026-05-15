@@ -302,7 +302,19 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
 
         $parent = $this->boardService->resolveFeature($board, $featureGroup);
         if (!$plan->featureContainerNeedsCreation) {
-            $this->boardService->invalidateFeatureReviewState($parent->getEntry());
+            $parentEntry = $parent->getEntry();
+            if ($this->boardService->isFeatureInReviewLikeStage($parentEntry)) {
+                $previousStage = $this->boardService->getStageLabel(
+                    $this->boardService->getFeatureStage($parentEntry)
+                );
+                $this->presenter->displayLine(sprintf(
+                    'Feature %s reverted to development because task %s was added (was %s).',
+                    $featureGroup,
+                    $task,
+                    $previousStage,
+                ));
+            }
+            $this->boardService->invalidateFeatureReviewState($parentEntry);
         }
 
         $taskBase = $this->gitService->getBranchHead($featureBranch);

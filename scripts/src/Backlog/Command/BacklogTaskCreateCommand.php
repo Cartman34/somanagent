@@ -52,6 +52,7 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
         $entry = $this->buildEntryFromInput($commandArgs, $options);
 
         $board = $this->loadBoard();
+        $this->revertParentIfInReview($board, $entry->getText());
         $entries = $board->getEntries(BacklogBoard::SECTION_TODO);
         $position = $this->resolveTaskCreatePosition($options, count($entries));
         array_splice($entries, $position, 0, [$entry]);
@@ -59,6 +60,35 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
         $this->saveBoard($board, BacklogCommandName::TASK_CREATE->value);
 
         $this->presenter->displaySuccess(sprintf('Added task to the todo section at position %d', $position + 1));
+    }
+
+    /**
+     * Reverts the parent feature to development when the entry is a scoped child task
+     * and the parent is in a review-like stage.
+     */
+    private function revertParentIfInReview(BacklogBoard $board, string $entryText): void
+    {
+        $scopedMeta = $this->boardService->extractScopedTaskMetadata($entryText);
+        if ($scopedMeta === null) {
+            return;
+        }
+
+        $parentMatch = $this->boardService->findParentFeatureEntry($board, $scopedMeta['featureGroup']);
+        if ($parentMatch === null || !$this->boardService->isFeatureInReviewLikeStage($parentMatch->getEntry())) {
+            return;
+        }
+
+        $previousStage = $this->boardService->getStageLabel(
+            $this->boardService->getFeatureStage($parentMatch->getEntry())
+        );
+        $this->boardService->invalidateFeatureReviewState($parentMatch->getEntry());
+        $this->presenter->displayLine(sprintf(
+            'Feature %s reverted to development because task %s/%s was added (was %s).',
+            $scopedMeta['featureGroup'],
+            $scopedMeta['featureGroup'],
+            $scopedMeta['task'],
+            $previousStage,
+        ));
     }
 
     /**

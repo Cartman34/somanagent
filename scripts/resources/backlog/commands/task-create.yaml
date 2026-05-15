@@ -14,6 +14,7 @@ examples:
   - 'php scripts/backlog.php task-create --body-file=local/tmp/new-task.md --position=start'
   - 'php scripts/backlog.php task-create --body-file=local/tmp/new-task.md --position=index --index=2'
 notes:
+  - 'If the new task is a scoped child task ([feature-slug][task-slug]) and the parent feature is in review, reviewing, or approved stage, the parent is automatically reverted to development and meta.reviewer is cleared. A message is printed to signal the revert.'
   - 'Required: --body-file=<path> is mandatory. Inline positional task text is no longer accepted.'
   - 'Body file format: first non-empty line is the task title; subsequent non-empty lines become indented sub-tasks (auto-indented to two spaces when missing). An optional leading "- " on the first line is accepted and stripped.'
   - 'Required: every task must declare an explicit [feature-slug] scope (and [task-slug] for child tasks). Tasks without a feature scope are rejected. Use [feature-slug] Title, [feature-slug][task-slug] Title, or [type][feature-slug] Title — for example: [tech][my-feature] My task title.'

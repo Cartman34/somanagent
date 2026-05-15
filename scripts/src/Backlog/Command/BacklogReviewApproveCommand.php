@@ -105,6 +105,7 @@ final class BacklogReviewApproveCommand extends AbstractBacklogCommand
         $entry = $match->getEntry();
         $this->boardService->checkIsFeatureEntry($entry) || throw new \RuntimeException('review-approve only applies to kind=feature entries.');
         $this->boardService->assertNoActiveTasksForFeature($board, $slug, BacklogCommandName::REVIEW_APPROVE->value);
+        $this->boardService->assertNoQueuedTasksForFeature($board, $slug, BacklogCommandName::REVIEW_APPROVE->value);
         $this->assertStageAllowsApprove($entry);
 
         $branch = $entry->getBranch() ?? '';

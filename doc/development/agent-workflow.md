@@ -118,6 +118,11 @@ Rules:
 2. A refusal during validation leaves no managed worktree and no backlog change behind; the queued task remains in place untouched.
 3. With `--dry-run`, `work-start` prints the full resolved interpretation (kind, type, feature slug, task slug, planned branches) and performs no Git, worktree or backlog mutation. Read-only Git operations such as `fetch` and resolving `origin/main` remain enabled.
 
+## Scope-Review Integrity Rules
+
+1. Adding a child task to a feature that is already under review invalidates that review. Both `task-create` and `work-start` enforce this: when the parent `kind=feature` is in `review`, `reviewing`, or `approved` stage and the new entry is a scoped child task (`[feature-slug][task-slug]`), the parent is automatically reverted to `development` and `meta.reviewer` is cleared. A message is printed to make the revert visible.
+2. Approving a feature that still has active child tasks (`kind=task` in `In progress`) or queued child tasks (`## To do`) is refused by `review-approve`. Both conditions must be resolved before the feature can be approved.
+
 ## Command Policy
 
 1. Use `SOMANAGER_ROLE=<role> SOMANAGER_AGENT=<code> php scripts/backlog.php ...` for the full local workflow.

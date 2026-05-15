@@ -28,3 +28,4 @@ notes:
   - 'Branch prefix matches the type 1:1: feat → feat/<slug>, fix → fix/<slug>, tech → tech/<slug> for plain features and feat/<feature>--<task>, fix/<feature>--<task>, tech/<feature>--<task> for scoped tasks.'
   - 'Validates the queued entry fully (type, feature and task slugs, conflicts) before any worktree, branch or backlog mutation. A refusal leaves no leftover worktree or backlog state.'
   - 'With --dry-run, prints the resolved interpretation (kind, type, feature, task, branches) and performs no Git, worktree or backlog mutation. Git reads (fetch/origin/main) remain enabled.'
+  - 'When starting a scoped child task ([feature-slug][task-slug]) whose parent feature is in review, reviewing, or approved stage, the parent is automatically reverted to development and meta.reviewer is cleared. A message is printed to signal the revert.'

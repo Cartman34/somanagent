@@ -1552,13 +1552,61 @@ final class BacklogBoardService
     }
 
     /**
-     * Resets a feature entry to in-progress if it is in review.
+     * Resets a feature entry to in-progress and clears reviewer metadata if it is in any review-like stage.
      * @param BoardEntry $featureEntry
      */
     public function invalidateFeatureReviewState(BoardEntry $featureEntry): void
     {
         if ($this->getFeatureStage($featureEntry) !== BacklogBoard::STAGE_IN_PROGRESS) {
             $featureEntry->setStage(BacklogBoard::STAGE_IN_PROGRESS);
+            $featureEntry->setReviewer(null);
+        }
+    }
+
+    /**
+     * Returns true when the feature is in a review-like stage (review, reviewing, or approved).
+     * @param BoardEntry $featureEntry
+     * @return bool
+     */
+    public function isFeatureInReviewLikeStage(BoardEntry $featureEntry): bool
+    {
+        return in_array($this->getFeatureStage($featureEntry), [
+            BacklogBoard::STAGE_IN_REVIEW,
+            BacklogBoard::STAGE_REVIEWING,
+            BacklogBoard::STAGE_APPROVED,
+        ], true);
+    }
+
+    /**
+     * Returns queued todo entries that are scoped child tasks of the given feature.
+     *
+     * @return array<int, BoardEntryMatch>
+     */
+    public function findQueuedTasksForFeature(BacklogBoard $board, string $feature): array
+    {
+        $matches = [];
+        foreach ($board->getEntries(BacklogBoard::SECTION_TODO) as $index => $entry) {
+            $scoped = $this->extractScopedTaskMetadata($entry->getText());
+            if ($scoped !== null && $scoped['featureGroup'] === $feature) {
+                $matches[] = new BoardEntryMatch(BacklogBoard::SECTION_TODO, $index, $entry);
+            }
+        }
+
+        return $matches;
+    }
+
+    /**
+     * Throws if the feature has any queued (not yet started) child tasks.
+     * @param BacklogBoard $board, string $feature, string $command
+     */
+    public function assertNoQueuedTasksForFeature(BacklogBoard $board, string $feature, string $command): void
+    {
+        if ($this->findQueuedTasksForFeature($board, $feature) !== []) {
+            throw new \RuntimeException(sprintf(
+                '%s cannot continue while feature %s has queued child tasks not yet started.',
+                $command,
+                $feature,
+            ));
         }
     }
 
