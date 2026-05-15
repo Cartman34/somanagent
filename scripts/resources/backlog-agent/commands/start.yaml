@@ -32,4 +32,4 @@ examples:
 notes:
   - 'Exactly one role flag (--developer, --reviewer, --manager) is required.'
   - 'Session driver is selected by BACKLOG_AGENT_SESSION_DRIVER=tmux|direct (default: tmux).'
-  - 'Run php scripts/install-deps.php check to verify system dependencies (e.g. tmux) before launching.'
+  - 'Run php scripts/setup.php install --preview-only to verify system dependencies (e.g. tmux) before launching.'

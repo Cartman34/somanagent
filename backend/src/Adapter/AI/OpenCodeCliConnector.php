@@ -169,7 +169,7 @@ class OpenCodeCliConnector extends AbstractConnector
                 name: 'runtime',
                 status: 'degraded',
                 summary: 'Binary not found.',
-                fixCommand: 'php scripts/install-clients.php opencode --docker',
+                fixCommand: 'php scripts/setup.php install',
             );
         }
 

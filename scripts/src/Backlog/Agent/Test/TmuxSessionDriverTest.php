@@ -67,8 +67,8 @@ final class TmuxSessionDriverTest
             echo "FAIL testCheckDependenciesThrowsWhenTmuxMissing: message does not mention 'tmux is not installed'\n";
             return 1;
         }
-        if (!str_contains($message, 'install-deps.php install')) {
-            echo "FAIL testCheckDependenciesThrowsWhenTmuxMissing: message does not mention 'install-deps.php install'\n";
+        if (!str_contains($message, 'setup.php install')) {
+            echo "FAIL testCheckDependenciesThrowsWhenTmuxMissing: message does not mention 'setup.php install'\n";
             return 1;
         }
         echo "OK testCheckDependenciesThrowsWhenTmuxMissing\n";

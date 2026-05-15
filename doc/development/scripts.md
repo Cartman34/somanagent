@@ -49,7 +49,6 @@ php scripts/help.php migrate.php
 | `console.php` | PHP | Run a Symfony command |
 | `node.php` | PHP | Run reusable commands inside the Node container |
 | `db.php` | PHP | Run database commands (PostgreSQL + Doctrine reset) |
-| `install-deps.php` | PHP | Check and install required system dependencies on Ubuntu 24+ via apt |
 | `code-search.php` | PHP | Search a term across backend, frontend, scripts, doc, and YAML resource files |
 | `github.php` | PHP | GitHub CLI helper for PR creation, listing, view and merge |
 | `logs.php` | PHP | Display Docker logs |
@@ -377,28 +376,6 @@ php scripts/db.php reset --fixtures --force
 ```
 
 Use this script in priority for repeated local database inspection instead of raw `docker exec ... psql ...`.
-
----
-
-### `install-deps.php`
-Checks and installs system-level dependencies required by the project tools on Ubuntu 24+.
-The dependency manifest is declared directly in the runner — add a new entry to extend coverage.
-
-Commands:
-- `check` — verify each dependency: reports ok, missing, or version insufficient, and prints the apt commands to fix issues
-- `install` — install missing or outdated packages via apt (runs check first, skips apt when everything is satisfied)
-
-```bash
-php scripts/install-deps.php check
-php scripts/install-deps.php install
-```
-
-Notes:
-- `check` exits with code 0 when all dependencies are satisfied, code 1 when any issue is found
-- `install` runs `sudo apt-get update` then `sudo apt-get install -y <packages>` and requires sudo privileges
-- both commands target Ubuntu 24+ only (apt-based systems)
-- transitive dependencies are resolved by listing other manifest keys in the `requires` field of each entry
-- to add a new dependency, declare it in `InstallDepsRunner::MANIFEST` with `package`, `minVersion`, `checkCommand`, `versionPattern`, and `requires`
 
 ---
 
