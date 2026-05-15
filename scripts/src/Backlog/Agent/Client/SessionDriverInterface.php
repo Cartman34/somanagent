@@ -31,9 +31,11 @@ interface SessionDriverInterface
     /**
      * Returns true when the driver has an existing session for the given agent code.
      *
-     * For TmuxSessionDriver: checks whether the tmux session somanagent-<code> already exists.
+     * For TmuxSessionDriver: checks whether the tmux session somanagent-<code> already exists
+     * by running `tmux has-session`; the result can change between calls as tmux state evolves.
      * For DirectSessionDriver: always returns false (proc_open has no persistent session concept).
      *
+     * @phpstan-impure
      * @param string $agentCode Agent code (e.g. d01)
      */
     public function sessionExists(string $agentCode): bool;
