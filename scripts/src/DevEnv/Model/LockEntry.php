@@ -92,6 +92,35 @@ final class LockEntry
     }
 
     /**
+     * Returns a copy recording the result of an install or upgrade operation.
+     *
+     * Updates resolved_at, previous_version, and side_effects. The pre_existing flag
+     * is immutable once true: if the lockfile already records pre_existing=true it is
+     * preserved; otherwise it is set from the wasPreExisting argument determined at
+     * install time (dep was already present on the system before this run).
+     */
+    public function withApplied(
+        bool $wasPreExisting,
+        ?string $previousVersion,
+        ?SideEffects $sideEffects,
+        \DateTimeImmutable $appliedAt,
+    ): self {
+        return new self(
+            $this->key,
+            $this->section,
+            $this->version,
+            $this->installer,
+            $this->package,
+            $this->source,
+            $this->preExisting || $wasPreExisting,
+            $previousVersion,
+            $sideEffects ?? $this->sideEffects,
+            $appliedAt,
+            $this->overrides,
+        );
+    }
+
+    /**
      * Returns a copy with the given per-dep override removed.
      */
     public function withoutOverride(string $property): self

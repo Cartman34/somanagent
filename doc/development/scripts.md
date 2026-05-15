@@ -40,8 +40,10 @@ php scripts/help.php migrate.php
 | `test-backlog-workflow.php` | PHP | Run reusable sequential validation campaigns for `backlog.php` on temporary backlog files |
 | `test-backlog-agent.php` | PHP | Run unit tests for backlog-agent.php classes |
 | `test-server.php` | PHP | Run tests for server.php |
+| `test-dev-env.php` | PHP | Run unit tests for the DevEnv manifest/lockfile/resolver/planner classes |
+| `test-setup.php` | PHP | Run subprocess integration tests for setup.php |
 | `test-validation.php` | PHP | Run unit tests for `scripts/src/Validation/` classes (ScriptExecBitValidator, ExecBitFixer, …) |
-| `setup.php` | PHP | Full installation (first time) |
+| `setup.php` | PHP | Manage host-level dependencies and project setup (install subcommand) |
 | `server.php` | PHP | Manage Docker Compose services (start, stop, restart, status, health) |
 | `migrate.php` | PHP | Run Doctrine migrations |
 | `console.php` | PHP | Run a Symfony command |
@@ -200,13 +202,52 @@ Notes:
 
 ---
 
-### `setup.php`
-Full project installation. Run once after cloning.
+### `test-dev-env.php`
+Runs unit tests for the DevEnv manifest/lockfile/resolver/planner classes. No Docker required.
 
 ```bash
-php scripts/setup.php
-php scripts/setup.php --skip-frontend  # without npm install
+php scripts/test-dev-env.php
+php scripts/test-dev-env.php --suite=ManifestParserTest
+php scripts/test-dev-env.php --suite=InstallPlannerTest
 ```
+
+Notes:
+- available suites: `VersionConstraintTest`, `ManifestParserTest`, `ManifestResolverTest`, `LockfileManagerTest`, `StateInspectorTest`, `InstallPlannerTest`
+- `--suite=<name>` runs only the named suite; omit to run all
+
+---
+
+### `test-setup.php`
+Runs subprocess integration tests for `setup.php`. Spawns the script as a child process; no Docker or actual package installation required.
+
+```bash
+php scripts/test-setup.php
+```
+
+---
+
+### `setup.php`
+Manages host-level dependencies and project setup. Subcommand-based runner.
+
+Subcommands:
+- `install` — install or upgrade host dependencies from the lockfile (`scripts/resources/dependencies.lock`)
+
+```bash
+php scripts/setup.php help
+php scripts/setup.php help install
+php scripts/setup.php install
+php scripts/setup.php install --preview-only
+php scripts/setup.php install --dry-run
+php scripts/setup.php install --force
+```
+
+Notes:
+- `install` reads `scripts/resources/dependencies.lock`; the file must exist (run `setup.php update` first if absent)
+- `--preview-only` shows the installation plan without applying it
+- `--dry-run` shows the plan and simulated commands without applying
+- `--force` skips the confirmation prompt and applies directly
+- `--preview-only` and `--dry-run` are mutually exclusive
+- BLOCKED items (version below minimum with `on_existing_below_min: error`) cause the command to exit before the preview is shown
 
 ---
 

@@ -1,0 +1,7 @@
+description: 'Manage host-level dependencies and project setup for the SoManAgent development environment.'
+examples:
+  - 'php scripts/setup.php install'
+  - 'php scripts/setup.php install --preview-only'
+  - 'php scripts/setup.php install --dry-run'
+  - 'php scripts/setup.php install --force'
+  - 'php scripts/setup.php help install'

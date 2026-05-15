@@ -10,6 +10,7 @@
 require_once __DIR__ . '/src/bootstrap.php';
 
 use SoManAgent\Script\Console;
+use SoManAgent\Script\DevEnv\Test\InstallPlannerTest;
 use SoManAgent\Script\DevEnv\Test\LockfileManagerTest;
 use SoManAgent\Script\DevEnv\Test\ManifestParserTest;
 use SoManAgent\Script\DevEnv\Test\ManifestResolverTest;
@@ -32,6 +33,7 @@ $suites = [
     'ManifestResolverTest' => ManifestResolverTest::class,
     'LockfileManagerTest' => LockfileManagerTest::class,
     'StateInspectorTest' => StateInspectorTest::class,
+    'InstallPlannerTest' => InstallPlannerTest::class,
 ];
 
 if ($suite !== null && !isset($suites[$suite])) {

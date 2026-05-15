@@ -7,199 +7,262 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Runner;
 
-use SoManAgent\Script\Environment;
+use SoManAgent\Script\DevEnv\InstallPlan;
+use SoManAgent\Script\DevEnv\InstallPlanner;
+use SoManAgent\Script\DevEnv\Installer\ClientsInstaller;
+use SoManAgent\Script\DevEnv\Installer\DockerInstaller;
+use SoManAgent\Script\DevEnv\Installer\InstallerInterface;
+use SoManAgent\Script\DevEnv\Installer\ProjectDepsInstaller;
+use SoManAgent\Script\DevEnv\Installer\SystemDepsInstaller;
+use SoManAgent\Script\DevEnv\LockfileManager;
+use SoManAgent\Script\DevEnv\ManifestParser;
+use SoManAgent\Script\DevEnv\PlannedDep;
+use SoManAgent\Script\DevEnv\PreviewBuilder;
+use SoManAgent\Script\DevEnv\StateInspector;
+use SoManAgent\Script\DevEnv\SystemCommandRunner;
 
 /**
- * Full setup script runner.
+ * Setup orchestrator for the SoManAgent development environment.
  *
- * Handles first-time setup of SoManAgent including Docker, dependencies, and migrations.
+ * Manages installation and lifecycle of host-level dependencies (apt, npm, GitHub releases)
+ * using a manifest + lockfile model (similar to Composer). Help is driven by YAML resources
+ * under scripts/resources/setup/.
+ *
+ * Subcommand status:
+ *   install   — implemented (this task)
+ *   update, verify, uninstall, reset, status, dep-config — not yet implemented (setup-lifecycle task)
+ *
+ * Execution modes available on install:
+ *   --preview-only  Show the installation plan and exit without applying
+ *   --dry-run       Show the plan and simulated commands, then exit without applying
+ *   --force         Apply without confirmation (preview still printed)
  */
 final class SetupRunner extends AbstractScriptRunner
 {
     public const NAME = 'setup';
+
+    private const MANIFEST_PATH = 'scripts/resources/dependencies.yaml';
+    private const LOCK_PATH = 'scripts/resources/dependencies.lock';
+
+    private bool $previewOnly = false;
+    private bool $force = false;
 
     protected function getName(): string
     {
         return self::NAME;
     }
 
-    protected function getDescription(): string
+    protected function printHelp(): void
     {
-        return 'Full setup of SoManAgent (first run)';
-    }
-
-    protected function getOptions(): array
-    {
-        return [
-            ['name' => '--skip-frontend', 'description' => 'Skip frontend dependency installation'],
-            ['name' => '--update', 'description' => 'Update dependencies instead of installing'],
-        ];
-    }
-
-    protected function getUsageExamples(): array
-    {
-        return [
-            'php scripts/setup.php',
-            'php scripts/setup.php --skip-frontend',
-            'php scripts/setup.php --update',
-        ];
+        $this->printYamlHelp();
     }
 
     /**
-     * Runs the end-to-end local setup flow, with an option to skip frontend dependencies.
+     * Execution-mode options are declared per-command in YAML; suppress the base-class defaults.
+     *
+     * @return list<never>
+     */
+    protected function getExecutionModeOptionsAsDtos(): array
+    {
+        return [];
+    }
+
+    /**
+     * @param list<string> $args
      */
     public function run(array $args): int
     {
-        $skipFrontend = in_array('--skip-frontend', $args, true);
-        $update = in_array('--update', $args, true);
-        $composerAction = $update ? 'update' : 'install';
+        [$parsedArgs, $options] = $this->parseArgs($args);
+        $subcommand = array_shift($parsedArgs) ?? '';
 
-        $run = function (string $cmd): void {
-            $code = $this->app->runCommand($cmd);
-            if ($code !== 0) {
-                throw new \RuntimeException("Command failed (exit $code): $cmd");
-            }
-        };
+        if ($subcommand === '' || $subcommand === 'help') {
+            $target = $parsedArgs[0] ?? '';
+            if ($target !== '') {
+                $this->printYamlCommandHelp($target);
 
-        $this->console->hr();
-        $this->console->line('     SoManAgent — Initial setup');
-        $this->console->hr();
-
-        if (Environment::isOnWindowsFilesystem()) {
-            $this->handleWindowsFilesystemWarning();
-        }
-
-        try {
-            $this->console->step('Checking PHP version');
-            $run('bash scripts/check-php.sh');
-
-            $this->console->step('Checking .env file');
-            if (!file_exists("{$this->projectRoot}/.env")) {
-                copy("{$this->projectRoot}/.env.dist", "{$this->projectRoot}/.env");
-                $this->console->ok('.env created from .env.dist');
-                $this->console->warn('Fill in the values in .env then re-run this script.');
                 return 0;
             }
-            $this->console->ok('.env present');
+            $this->printHelp();
 
-            $this->console->step('Preparing Docker shared auth directories');
-            $this->ensureDockerAuthDirectories();
-            $this->console->ok('Shared auth directories ready');
-
-            $this->console->step('Starting Docker containers');
-            $run('docker compose --profile full up -d --build');
-            $this->console->ok('Containers started');
-
-            $this->console->step(sprintf('Installing local PHP dependencies (composer %s)', $composerAction));
-            $run(sprintf('composer %s --working-dir=backend', $composerAction));
-            $this->console->ok(sprintf('Local composer dependencies %sed', $composerAction));
-
-            $this->console->step(sprintf('Installing container PHP dependencies (composer %s)', $composerAction));
-            $run(sprintf('docker compose exec -T php composer %s', $composerAction));
-            $this->console->ok(sprintf('Container composer dependencies %sed', $composerAction));
-
-            $this->console->step('Waiting for PostgreSQL');
-            $this->waitForPostgreSQL();
-            $this->console->ok('PostgreSQL ready');
-
-            $this->console->step('Running Doctrine migrations');
-            $run('docker compose exec -T php php bin/console doctrine:migrations:migrate --no-interaction');
-            $this->console->ok('Migrations complete');
-
-            if (!$skipFrontend) {
-                $this->console->step('Installing frontend dependencies (npm)');
-                $run('docker compose exec -T node npm install');
-                $this->console->ok('npm install done');
-            } else {
-                $this->console->info('Frontend skipped (--skip-frontend)');
-            }
-        } catch (\RuntimeException $e) {
-            $this->console->fail($e->getMessage());
+            return 0;
         }
 
+        if (isset($options['help'])) {
+            $this->printYamlCommandHelp($subcommand);
+
+            return 0;
+        }
+
+        return match ($subcommand) {
+            'install' => $this->runInstall($options),
+            'update', 'verify', 'uninstall', 'reset', 'status', 'dep-config' => throw new \RuntimeException(
+                sprintf(
+                    "Subcommand '%s' is not yet implemented. It will be available in a future task (setup-lifecycle).",
+                    $subcommand,
+                ),
+            ),
+            default => throw new \RuntimeException(
+                sprintf(
+                    "Unknown subcommand: '%s'. Run 'php scripts/setup.php help' for available commands.",
+                    $subcommand,
+                ),
+            ),
+        };
+    }
+
+    /**
+     * Implements `setup.php install` per spec §4.1.
+     *
+     * 1. Verifies the lockfile exists.
+     * 2. Reads lockfile + manifest, builds install plan.
+     * 3. Exits before preview if any dep is BLOCKED (§3.2).
+     * 4. Prints preview.
+     * 5. Exits without applying on --preview-only or --dry-run.
+     * 6. Asks confirmation unless --force.
+     * 7. Applies via installer modules and updates lockfile.
+     * 8. Runs project-level steps (composer, npm in container, migrations).
+     *
+     * @param array<string, bool|string|array<bool|string>> $options
+     */
+    private function runInstall(array $options): int
+    {
+        $this->previewOnly = isset($options['preview-only']);
+        $this->dryRun = isset($options['dry-run']);
+        $this->force = isset($options['force']);
+
+        if ($this->previewOnly && $this->dryRun) {
+            throw new \RuntimeException('--preview-only and --dry-run are mutually exclusive.');
+        }
+
+        $lockPath = $this->projectRoot . '/' . self::LOCK_PATH;
+        $manifestPath = $this->projectRoot . '/' . self::MANIFEST_PATH;
+
+        if (!is_file($lockPath)) {
+            throw new \RuntimeException(
+                "Lockfile absent — run 'php scripts/setup.php update' first to resolve dependencies.",
+            );
+        }
+
+        $lockfileManager = new LockfileManager();
+        $lockfile = $lockfileManager->read($lockPath);
+        $manifest = (new ManifestParser())->parseFile($manifestPath);
+        $inspector = new StateInspector(new SystemCommandRunner());
+
+        $plan = (new InstallPlanner())->plan($manifest, $lockfile, $inspector);
+
+        if ($plan->hasBlocked()) {
+            $blockedList = implode("\n", array_map(
+                static fn(PlannedDep $d): string => sprintf('  - %s: %s', $d->entry->key, $d->blockReason ?? 'blocked'),
+                $plan->blocked(),
+            ));
+            throw new \RuntimeException("Installation blocked by policy:\n{$blockedList}");
+        }
+
+        $installers = $this->buildInstallers();
+        $preview = new PreviewBuilder($this->console);
+
+        $this->console->step('install');
+        $preview->render($plan);
+
+        if ($this->previewOnly) {
+            return 0;
+        }
+
+        if ($this->dryRun) {
+            $preview->renderSimulatedCommands($plan, $installers);
+
+            return 0;
+        }
+
+        if (!$plan->hasActions()) {
+            $this->console->info('Nothing to install — all dependencies are up to date.');
+
+            return 0;
+        }
+
+        if (!$this->force && !$this->confirmApply()) {
+            return 0;
+        }
+
+        $this->applyInstall($plan, $installers, $lockfileManager, $lockPath, $lockfile);
+
+        (new ProjectDepsInstaller($this->app, $this->console))->runProjectSteps();
+
         $this->console->line();
-        $this->console->hr();
-        $this->console->line('  ✓ SoManAgent is ready!');
-        $this->console->line();
-        $this->console->line('  API  →  http://localhost:8080/api/health');
-        $this->console->line('  UI   →  http://localhost:5173');
-        $this->console->hr();
-        $this->console->line();
+        $this->console->ok('Installation complete.');
 
         return 0;
     }
 
-    private function handleWindowsFilesystemWarning(): void
-    {
-        $this->console->line();
-        $this->console->warn('Performance warning: project is on the Windows filesystem.');
-        $this->console->warn('  Path : ' . getcwd());
-        $this->console->warn('  Docker bind mounts from /mnt/* use the 9P protocol over Hyper-V.');
-        $this->console->warn('  This causes 5-20x slower PHP/DB I/O (e.g. 9s for a simple query).');
-        $this->console->line();
-        $this->console->info('Fix → migrate the project to the WSL native ext4 filesystem:');
-        $this->console->info('  bash scripts/wsl-migrate.sh');
-        $this->console->line();
-        $this->console->info('After migration, run this script again from the new location.');
-        $this->console->info('Your IDE can access WSL files via:');
-        $this->console->info('  \\\\wsl.localhost\\' . (getenv('WSL_DISTRO_NAME') ?: 'Ubuntu') . '\home\<user>\somanagent');
-        $this->console->line();
+    /**
+     * Applies all install actions and persists the updated lockfile after each installer.
+     *
+     * @param list<InstallerInterface>  $installers
+     * @param \SoManAgent\Script\DevEnv\Model\Lockfile $lockfile
+     */
+    private function applyInstall(
+        InstallPlan $plan,
+        array $installers,
+        LockfileManager $lockfileManager,
+        string $lockPath,
+        \SoManAgent\Script\DevEnv\Model\Lockfile $lockfile,
+    ): void {
+        $toApply = $plan->toApply();
 
-        if (!posix_isatty(STDIN)) {
-            $this->console->fail('Aborting: migrate to WSL filesystem first for acceptable performance.');
-        }
+        foreach ($installers as $installer) {
+            $batch = array_values(array_filter($toApply, fn(PlannedDep $d): bool => $installer->supports($d)));
+            if ($batch === []) {
+                continue;
+            }
 
-        echo '  Continue anyway? This will be slow. [y/N] ';
-        $answer = trim(fgets(STDIN) ?: '');
-        if (!preg_match('/^[yY]/', $answer)) {
-            $this->console->fail('Aborted. Run: bash scripts/wsl-migrate.sh');
+            $updatedEntries = $installer->install($batch);
+            foreach ($updatedEntries as $entry) {
+                $lockfile = $lockfile->withEntry($entry);
+            }
+
+            // Persist after each installer so partial progress is saved on failure
+            $lockfileManager->write($lockPath, $lockfile);
         }
-        $this->console->line();
     }
 
     /**
-     * Creates the Docker shared auth directories before containers start.
+     * Builds the ordered list of installer modules used by the install command.
      *
-     * These directories are bind-mounted in docker-compose.yml but are excluded from git (.docker/ is
-     * gitignored). Without pre-creation, Docker creates them as root on first run, which causes
-     * permission errors in the auth sync scripts running as the current user.
+     * @return list<InstallerInterface>
      */
-    private function ensureDockerAuthDirectories(): void
+    private function buildInstallers(): array
     {
-        $dirs = [
-            '.docker/claude/shared/.claude',
-            '.docker/codex/shared/.codex',
-            '.docker/opencode/shared/.local',
+        return [
+            new DockerInstaller($this->app, $this->console),
+            new SystemDepsInstaller($this->app, $this->console),
+            new ClientsInstaller($this->app, $this->console),
         ];
-
-        foreach ($dirs as $dir) {
-            $path = $this->projectRoot . '/' . $dir;
-            if (!is_dir($path)) {
-                if (!mkdir($path, 0o755, recursive: true)) {
-                    throw new \RuntimeException(sprintf('Failed to create directory: %s', $path));
-                }
-                $this->console->info(sprintf('Created %s', $dir));
-            }
-        }
     }
 
-    private function waitForPostgreSQL(): void
+    /**
+     * Prompts for confirmation on an interactive terminal.
+     *
+     * Throws when stdin is not a tty and neither --force, --preview-only nor --dry-run
+     * was passed, because there is no safe default for a potentially destructive operation
+     * in non-interactive mode.
+     */
+    private function confirmApply(): bool
     {
-        $tries  = 0;
-        $status = '';
-        do {
-            sleep(1);
-            $tries++;
-            exec('docker inspect --format={{.State.Health.Status}} somanagent_db 2>&1', $out, $code);
-            $status = trim($out[0] ?? '');
-            $out    = [];
-        } while ($status !== 'healthy' && $tries < 30);
-
-        if ($status !== 'healthy') {
+        if (function_exists('posix_isatty') && !posix_isatty(STDIN)) {
             throw new \RuntimeException(
-                "PostgreSQL did not become healthy after {$tries}s.\n" .
-                "  Run: docker compose logs db"
+                'Non-interactive: use --force to apply without confirmation, '
+                . 'or --preview-only / --dry-run to show the plan without applying.',
             );
         }
+
+        echo '  Apply? [y/N] ';
+        $answer = trim((string) (fgets(STDIN) ?: ''));
+        if (!preg_match('/^[yY]/', $answer)) {
+            $this->console->info('Aborted.');
+
+            return false;
+        }
+
+        return true;
     }
 }
