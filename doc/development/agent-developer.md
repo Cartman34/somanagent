@@ -287,6 +287,15 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-cre
 4. `WA`: resume development on the same branch. Address the review feedback for scenario (a), or resolve the conflict for scenario (b).
 5. Stop here. Do not run `submit` unless the user explicitly asks for it.
 
+### `rebase`
+
+This keyword applies only when the active entry is in `development` stage. Refuse and report if the entry is in any other stage.
+
+1. For a `kind=feature`: fetch `origin/main` first, then rebase the feature branch on `origin/main` in the `WA`. For a `kind=task`: rebase the task branch on its local parent feature branch in the `WA`.
+2. Resolve any conflicts manually in the `WA`, then complete the rebase.
+3. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php base-update <entry-ref>` to refresh `meta.base`.
+4. Stop. Do not run `submit` unless the user explicitly asks for it.
+
 ### `cleanup`
 
 1. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-clean`.
