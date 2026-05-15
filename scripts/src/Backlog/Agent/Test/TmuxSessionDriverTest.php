@@ -204,29 +204,7 @@ final class TmuxSessionDriverTest
 
     private function testStopCallsKillSession(): int
     {
-        $runner = new class implements \SoManAgent\Script\Backlog\Agent\Client\ProcessRunner {
-            /**
-             * @var list<string>
-             */
-            public $calledCommands = [];
-
-            /**
-             * {@inheritdoc}
-             */
-            public function succeeds(string $command): bool
-            {
-                $this->calledCommands[] = $command;
-                return true;
-            }
-
-            /**
-             * {@inheritdoc}
-             */
-            public function output(string $command, string $cwd = ''): ?string
-            {
-                return null;
-            }
-        };
+        $runner = new RecordingProcessRunner();
 
         $driver = new TmuxSessionDriver($runner, Console::getInstance());
         $session = $this->makeSession('d01', tmuxSession: 'somanagent-d01');
@@ -279,5 +257,34 @@ final class TmuxSessionDriverTest
             clientPid: null,
             tmuxSession: $tmuxSession,
         );
+    }
+}
+
+/**
+ * ProcessRunner that records all commands passed to succeeds().
+ */
+final class RecordingProcessRunner implements \SoManAgent\Script\Backlog\Agent\Client\ProcessRunner
+{
+    /**
+     * @var list<string>
+     */
+    public array $calledCommands = [];
+
+    /**
+     * {@inheritdoc}
+     */
+    public function succeeds(string $command): bool
+    {
+        $this->calledCommands[] = $command;
+
+        return true;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function output(string $command, string $cwd = ''): ?string
+    {
+        return null;
     }
 }
