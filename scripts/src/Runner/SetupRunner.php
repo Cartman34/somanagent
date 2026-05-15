@@ -87,7 +87,7 @@ final class SetupRunner extends AbstractScriptRunner
             $this->console->ok('Shared auth directories ready');
 
             $this->console->step('Starting Docker containers');
-            $run('docker compose up -d --build');
+            $run('docker compose --profile full up -d --build');
             $this->console->ok('Containers started');
 
             $this->console->step(sprintf('Installing local PHP dependencies (composer %s)', $composerAction));

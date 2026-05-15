@@ -90,7 +90,7 @@ php scripts/health.php
 ### Daily usage
 
 ```bash
-php scripts/dev.php          # start the dev environment
+php scripts/server.php start # start the dev environment
 php scripts/logs.php worker  # stream worker logs
 php scripts/health.php       # check application and connector health
 ```

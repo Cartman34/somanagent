@@ -39,6 +39,7 @@ php scripts/help.php migrate.php
 | `worktree-info.php` | PHP | Display the git worktree context for the current script (linked vs main worktree, roots) |
 | `test-backlog-workflow.php` | PHP | Run reusable sequential validation campaigns for `backlog.php` on temporary backlog files |
 | `test-backlog-agent.php` | PHP | Run unit tests for backlog-agent.php classes |
+| `test-server.php` | PHP | Run tests for server.php |
 | `test-validation.php` | PHP | Run unit tests for `scripts/src/Validation/` classes (ScriptExecBitValidator, ExecBitFixer, …) |
 | `setup.php` | PHP | Full installation (first time) |
 | `server.php` | PHP | Manage Docker Compose services (start, stop, restart, status, health) |
