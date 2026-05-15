@@ -72,6 +72,14 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->rejectReviewViaUnifiedCommand($context->agentSecondary, $taskARef, $rejectBody);
         $driver->assertReviewContains($taskARef);
         $this->assertReviewNotesForTask($driver, $context, $taskARef, '1. Reject child task for test workflow.');
+
+        // review-amend nominal on a task entry: replace notes, stage stays rejected
+        $amendedTaskBody = $driver->createBodyFile('test-task-review-amend.md', ['1. Amended finding for task review coverage.']);
+        $driver->reviewAmend($context->agentSecondary, $taskARef, $amendedTaskBody);
+        $driver->assertReviewContains('Amended finding for task review coverage.');
+        $driver->assertReviewMissing('Reject child task for test workflow.');
+        $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_REJECTED);
+
         $driver->rework($context->agentPrimary, $taskARef);
         $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_IN_PROGRESS);
         $driver->requestTaskReview($context->agentPrimary);

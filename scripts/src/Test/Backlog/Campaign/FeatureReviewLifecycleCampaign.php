@@ -114,6 +114,8 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $driver->assertReviewAmendFails($context->agentSecondary, $context->fixFeature, null, 'review-amend requires --body-file=<path>.');
         // review-amend: missing entry-ref is refused
         $driver->assertReviewAmendFails($context->agentSecondary, '', $amendedBody, 'review-amend requires <entry-ref>.');
+        // review-amend: unknown entry-ref is refused
+        $driver->assertReviewAmendFails($context->agentSecondary, 'unknown-feature-slug', $amendedBody, 'Feature not found:');
 
         $driver->rework($context->agentPrimary, $context->fixFeature);
         $driver->requestFeatureReview($context->agentPrimary);
