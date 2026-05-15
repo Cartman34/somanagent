@@ -133,7 +133,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-cre
 4. The script requires the entry stage to be `rejected` or `approved`, moves it back to `meta.stage=development`, and reopens the entry branch in the agent `WA`. Stored review notes from `local/backlog-review.md` are displayed when the entry came from a rejection.
 5. The review notes stay in `local/backlog-review.md` until the next `review-request` clears them.
 6. When recovering from a merge conflict on an approved entry, `rework` keeps the existing GitHub PR untouched; resubmit through `review-request` once the conflict is fixed.
-7. An entry can also transition from `approved` back to `reviewing` via `review-reopen` (reviewer or manager command). In that case the entry is not yet reworkable; wait for the reviewer to reject or approve again before `rework` becomes available.
+7. An entry can also transition from `approved` back to `reviewing` (reviewer path) or back to `review` (manager path) via `review-reopen`. In that case the entry is not yet reworkable; wait for the reviewer to reject or approve again before `rework` becomes available.
 
 ### `base-update`
 

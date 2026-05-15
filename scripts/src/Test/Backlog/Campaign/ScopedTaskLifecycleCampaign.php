@@ -166,6 +166,9 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         // Refusal: missing entry-ref
         $driver->assertReviewReopenFails('manager', $manager, '', 'review-reopen requires an explicit <entry-ref>');
 
+        // Refusal: valid format but non-existent reference
+        $driver->assertReviewReopenFails('manager', $manager, 'no-such-feature', 'No active entry found for reference');
+
         // Refusal: wrong SOMANAGER_ROLE (developer is not allowed)
         $driver->assertReviewReopenFails('developer', $context->agentPrimary, $taskRef, 'review-reopen requires SOMANAGER_ROLE=manager or SOMANAGER_ROLE=reviewer');
 
