@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Agent\Command;
 
 use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
+use SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
 use SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
@@ -34,6 +35,7 @@ final class AgentResumeCommand extends AbstractAgentCommand
     private BacklogWorktreeService $worktreeService;
     private string $boardPath;
     private SessionDriverInterface $sessionDriver;
+    private ProcessSignaler $signaler;
 
     /**
      * @param string $projectRoot
@@ -44,6 +46,7 @@ final class AgentResumeCommand extends AbstractAgentCommand
      * @param BacklogWorktreeService $worktreeService
      * @param string $boardPath
      * @param SessionDriverInterface $sessionDriver
+     * @param ProcessSignaler $signaler Used to check whether the PHP wrapper process is still alive
      */
     public function __construct(
         string $projectRoot,
@@ -54,6 +57,7 @@ final class AgentResumeCommand extends AbstractAgentCommand
         BacklogWorktreeService $worktreeService,
         string $boardPath,
         SessionDriverInterface $sessionDriver,
+        ProcessSignaler $signaler,
     ) {
         $this->projectRoot = $projectRoot;
         $this->registry = $registry;
@@ -63,6 +67,7 @@ final class AgentResumeCommand extends AbstractAgentCommand
         $this->worktreeService = $worktreeService;
         $this->boardPath = $boardPath;
         $this->sessionDriver = $sessionDriver;
+        $this->signaler = $signaler;
     }
 
     /**
@@ -115,7 +120,10 @@ final class AgentResumeCommand extends AbstractAgentCommand
 
         $this->sessionService->updateLastSeen($code);
 
-        if ($this->sessionDriver->isAlive($existingSession)) {
+        // Refuse resume only when the PHP wrapper is still blocking on the session (someone is
+        // actively attached). A detached tmux session (driver reports alive but PHP wrapper has
+        // already returned) is not a refusal case — resume should re-attach in that case.
+        if ($this->sessionDriver->isAlive($existingSession) && $this->signaler->isAlive($existingSession->pid)) {
             throw new \RuntimeException(sprintf(
                 "Session %s is still running (a tracked process is alive). Stop it first:\n" .
                 "  php scripts/backlog-agent.php stop --code=%s",

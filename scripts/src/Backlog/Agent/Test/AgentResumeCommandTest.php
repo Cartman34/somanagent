@@ -64,6 +64,7 @@ final class AgentResumeCommandTest
         $failed += $this->testRefusesWhenWrapperPidStillAlive();
         $failed += $this->testUpdatesLastSeenBeforeAliveCheck();
         $failed += $this->testPersistsReconstructedReviewerWorktreeBeforeLaunchPreparation();
+        $failed += $this->testResumeKeepsSessionEntryWhenDriverReportsDetach();
 
         return $failed;
     }
@@ -102,7 +103,11 @@ final class AgentResumeCommandTest
         $driver = new FakeSessionDriver();
         $driver->setAlive('d01', true);
 
-        $cmd = $this->buildCommand($service, $driver);
+        // Wrapper PID must be alive for the guard to refuse resume.
+        $signaler = new FakeProcessSignaler();
+        $signaler->setAlive(100, true);
+
+        $cmd = $this->buildCommand($service, $driver, signaler: $signaler);
 
         $threw = false;
         try {
@@ -131,7 +136,11 @@ final class AgentResumeCommandTest
         $driver = new FakeSessionDriver();
         $driver->setAlive('d01', true);
 
-        $cmd = $this->buildCommand($service, $driver);
+        // Wrapper PID must be alive for the guard to refuse resume.
+        $signaler = new FakeProcessSignaler();
+        $signaler->setAlive(7000, true);
+
+        $cmd = $this->buildCommand($service, $driver, signaler: $signaler);
 
         $threw = false;
         try {
@@ -172,7 +181,11 @@ final class AgentResumeCommandTest
         $driver = new FakeSessionDriver();
         $driver->setAlive('d01', true);
 
-        $cmd = $this->buildCommand($service, $driver);
+        // Wrapper PID alive so the guard throws (expected); we only care that last_seen was refreshed.
+        $signaler = new FakeProcessSignaler();
+        $signaler->setAlive(8000, true);
+
+        $cmd = $this->buildCommand($service, $driver, signaler: $signaler);
 
         try {
             $cmd->handle([], ['code' => 'd01']);
@@ -188,6 +201,84 @@ final class AgentResumeCommandTest
         }
         echo "OK testUpdatesLastSeenBeforeAliveCheck\n";
         $this->rmdir($dir);
+        return 0;
+    }
+
+    private function testResumeKeepsSessionEntryWhenDriverReportsDetach(): int
+    {
+        // After a tmux detach, the PHP wrapper (start) has returned but the tmux session is still
+        // alive. When the user runs resume: driver.isAlive() = true (tmux session alive), but the
+        // wrapper PID is dead (signaler default = false). The guard must not throw, resume must
+        // re-attach, and after attach exits again (another detach), the entry must be kept.
+        $dir = $this->tmpDir . '/resume-detach-' . uniqid('', true);
+        mkdir($dir, 0755, true);
+
+        $worktree = $dir . '/wa';
+        mkdir($worktree, 0755, true);
+
+        $boardPath = $dir . '/board.md';
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        file_put_contents($boardPath, "# Test\n\n## To do\n\n## In progress\n\n## Suggestions\n");
+
+        $service = new AgentSessionService($dir);
+        $service->add($this->makeSession('d02', wrapperPid: 12300, clientPid: 55000, worktree: $worktree));
+
+        // Driver: isAlive=true (tmux session exists) but wrapper PID is dead → detach scenario.
+        // After resume() returns, sessionExists still returns true (another detach).
+        $driver = new FakeSessionDriver();
+        $driver->setAlive('d02', true);
+        $driver->existsAfterLaunch = ['d02'];
+
+        // Signaler: wrapper PID 12300 is dead (default false) → guard allows resume.
+        $signaler = new FakeProcessSignaler();
+
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        $cmd = $this->buildCommand(
+            $service,
+            $driver,
+            projectRoot: $dir,
+            boardPath: $boardPath,
+            registry: $registry,
+            boardService: $boardService,
+            signaler: $signaler,
+        );
+
+        $previousCwd = getcwd();
+        $exitCode = null;
+        try {
+            chdir($worktree);
+            ob_start();
+            $exitCode = $cmd->handle([], ['code' => 'd02']);
+            $output = ob_get_clean();
+        } catch (\Throwable $e) {
+            ob_end_clean();
+            echo "FAIL testResumeKeepsSessionEntryWhenDriverReportsDetach: unexpected " . get_class($e) . ': ' . $e->getMessage() . "\n";
+            return 1;
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        if ($exitCode !== 0) {
+            echo "FAIL testResumeKeepsSessionEntryWhenDriverReportsDetach: expected exit code 0, got {$exitCode}\n";
+            return 1;
+        }
+
+        if ($service->get('d02') === null) {
+            echo "FAIL testResumeKeepsSessionEntryWhenDriverReportsDetach: sessions.json entry was removed on detach — it must be kept\n";
+            return 1;
+        }
+
+        if (!str_contains((string) $output, 'Session détachée')) {
+            echo "FAIL testResumeKeepsSessionEntryWhenDriverReportsDetach: expected detach message in output\n";
+            return 1;
+        }
+
+        echo "OK testResumeKeepsSessionEntryWhenDriverReportsDetach\n";
         return 0;
     }
 
@@ -271,8 +362,8 @@ final class AgentResumeCommandTest
     }
 
     /**
-     * Builds an AgentResumeCommand with the minimum dependencies needed for the early-return branches.
-     * Heavy services are constructed without their constructors via reflection.
+     * Builds an AgentResumeCommand with the minimum dependencies needed for the tested branches.
+     * Heavy services are constructed without their constructors via reflection unless overridden.
      */
     private function buildCommand(
         AgentSessionService $sessionService,
@@ -282,6 +373,7 @@ final class AgentResumeCommandTest
         ?AgentClientLauncherRegistry $registry = null,
         ?BacklogBoardService $boardService = null,
         ?BacklogWorktreeService $worktreeService = null,
+        ?FakeProcessSignaler $signaler = null,
     ): AgentResumeCommand
     {
         $projectRoot ??= $this->tmpDir;
@@ -294,6 +386,8 @@ final class AgentResumeCommandTest
 
         $worktreeService ??= (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor();
 
+        $signaler ??= new FakeProcessSignaler();
+
         return new AgentResumeCommand(
             $projectRoot,
             $registry,
@@ -303,13 +397,15 @@ final class AgentResumeCommandTest
             $worktreeService,
             $boardPath,
             $driver,
+            $signaler,
         );
     }
 
     /**
      * @param int|null $clientPid
+     * @param string|null $worktree Defaults to '/tmp/fake' for tests that do not exercise the worktree path
      */
-    private function makeSession(string $code, int $wrapperPid, ?int $clientPid): AgentSession
+    private function makeSession(string $code, int $wrapperPid, ?int $clientPid, ?string $worktree = null): AgentSession
     {
         $now = new \DateTimeImmutable();
         return new AgentSession(
@@ -317,7 +413,7 @@ final class AgentResumeCommandTest
             client: AgentClient::CLAUDE,
             role: AgentRole::DEVELOPER,
             pid: $wrapperPid,
-            worktree: '/tmp/fake',
+            worktree: $worktree ?? '/tmp/fake',
             startedAt: $now,
             lastSeenAt: $now,
             sessionId: null,

@@ -193,6 +193,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                     $this->worktreeService($boardPath, $worktreesRoot),
                     $boardPath,
                     $this->sessionDriver(),
+                    $this->processSignaler(),
                 ),
                 'sessions' => new AgentSessionsCommand(
                     $this->console,
