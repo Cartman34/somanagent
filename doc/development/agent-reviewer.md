@@ -218,10 +218,10 @@ Also check:
 
 ## User Keywords
 
-### `new <description>`
+### `new`
 
-1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php task-create <description>`.
-2. Prefix the description with `[feat]` or `[fix]`.
+1. Write the task body to a file under `local/tmp/` (e.g. `local/tmp/new-task.md`). First line = title with required `[type][feature-slug]` prefix; subsequent lines = indented sub-tasks.
+2. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php task-create --body-file=local/tmp/new-task.md`.
 3. Do not execute the task now.
 
 ### `review`
