@@ -8,6 +8,8 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Agent\Test;
 
 use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
+use SoManAgent\Script\Backlog\Agent\Client\DirectSessionDriver;
+use SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use SoManAgent\Script\Backlog\Agent\Command\AgentResumeCommand;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
@@ -21,6 +23,7 @@ use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Client\FilesystemClient;
 use SoManAgent\Script\Client\GitClient;
 use SoManAgent\Script\Client\ProjectScriptClient;
+use SoManAgent\Script\Console;
 use SoManAgent\Script\RetryPolicy;
 use SoManAgent\Script\TextSlugger;
 
@@ -101,12 +104,10 @@ final class AgentResumeCommandTest
         $service = new AgentSessionService($dir);
         $service->add($this->makeSession('d01', wrapperPid: 100, clientPid: 5000));
 
-        $driver = new FakeSessionDriver();
-        $driver->setAlive('d01', true);
-
-        // Wrapper PID must be alive for the guard to refuse resume.
+        // Client PID is alive while the wrapper is dead, so this isolates the direct-driver guard.
         $signaler = new FakeProcessSignaler();
-        $signaler->setAlive(100, true);
+        $signaler->setAlive(5000, true);
+        $driver = new DirectSessionDriver(new FakeInteractiveProcessRunner(), $signaler, Console::getInstance());
 
         $cmd = $this->buildCommand($service, $driver, signaler: $signaler);
 
@@ -399,7 +400,7 @@ final class AgentResumeCommandTest
      */
     private function buildCommand(
         AgentSessionService $sessionService,
-        FakeSessionDriver $driver,
+        SessionDriverInterface $driver,
         ?string $projectRoot = null,
         ?string $boardPath = null,
         ?AgentClientLauncherRegistry $registry = null,
