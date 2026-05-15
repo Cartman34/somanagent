@@ -144,6 +144,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->closeFeature($context->scopedFeature);
         $driver->assertActiveFeatureMissing($context->scopedFeature);
 
+        $this->assertScopeReviewGuards($driver, $context);
         $this->assertParentAssignmentPreservedOnTaskMerge($driver, $context);
         $this->assertEntryUnassignForTaskAndAmbiguity($driver, $context);
         $this->assertReviewNotesAmbiguityAndMissingReference($driver, $context);
@@ -200,6 +201,90 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         // Re-approve: leaves the entry in APPROVED for the rest of the campaign
         $driver->approveTaskViaUnifiedCommand($reviewer, $taskRef);
         $driver->assertTaskStage($taskRef, BacklogBoard::STAGE_APPROVED);
+    }
+
+    /**
+     * Verifies scope-review integrity guards:
+     *   - task-create on a parent in review reverts it to development
+     *   - task-create on a parent in reviewing reverts it and clears meta.reviewer
+     *   - work-start on a child task reverts a parent in approved to development
+     *   - review-approve on a feature with queued child tasks is refused
+     */
+    private function assertScopeReviewGuards(
+        BacklogScriptTestDriver $driver,
+        BacklogScriptTestContext $context,
+    ): void {
+        $guardFeature = 'test-scope-guard';
+        $guardTaskC = 'test-guard-c';
+        $guardTaskD = 'test-guard-d';
+        $guardTaskE = 'test-guard-e';
+        $guardTaskERef = $guardFeature . '/' . $guardTaskE;
+
+        // Setup: create a plain feature container owned by agentSecondary
+        $driver->createTodoTask(sprintf('[tech][%s] Feature container for scope review guard tests', $guardFeature));
+        $driver->startNextFeature($context->agentSecondary);
+
+        // Test A: task-create on parent in review reverts it to development
+        $driver->replaceBoardText(
+            "    stage: development\n    feature: {$guardFeature}",
+            "    stage: review\n    feature: {$guardFeature}",
+        );
+        $driver->assertFeatureStage($guardFeature, BacklogBoard::STAGE_IN_REVIEW);
+        $driver->createTodoTask(sprintf('[%s][%s] Task C for review revert guard', $guardFeature, $guardTaskC));
+        $driver->assertFeatureStage($guardFeature, BacklogBoard::STAGE_IN_PROGRESS);
+        $driver->removeTodoTask(sprintf('%s/%s', $guardFeature, $guardTaskC));
+
+        // Test B: task-create on parent in reviewing reverts it and clears meta.reviewer
+        $driver->replaceBoardText(
+            "    stage: development\n    feature: {$guardFeature}",
+            "    stage: reviewing\n    feature: {$guardFeature}",
+        );
+        $driver->replaceBoardText(
+            "    agent: {$context->agentSecondary}\n    branch: tech/{$guardFeature}",
+            "    agent: {$context->agentSecondary}\n    reviewer: test-r99\n    branch: tech/{$guardFeature}",
+        );
+        $driver->assertFeatureStage($guardFeature, BacklogBoard::STAGE_REVIEWING);
+        $driver->createTodoTask(sprintf('[%s][%s] Task D for reviewing revert guard', $guardFeature, $guardTaskD));
+        $driver->assertFeatureStage($guardFeature, BacklogBoard::STAGE_IN_PROGRESS);
+        $driver->assertFeatureReviewerCleared($guardFeature);
+        $driver->removeTodoTask(sprintf('%s/%s', $guardFeature, $guardTaskD));
+
+        // Test C: work-start on a child task reverts parent from approved to development
+        $driver->replaceBoardText(
+            "    stage: development\n    feature: {$guardFeature}",
+            "    stage: approved\n    feature: {$guardFeature}",
+        );
+        $driver->assertFeatureStage($guardFeature, BacklogBoard::STAGE_APPROVED);
+        $driver->createTodoTask(sprintf('[%s][%s] Task E for work-start revert guard', $guardFeature, $guardTaskE));
+        $driver->startNextFeature($context->agentPrimary, $guardTaskERef);
+        $driver->assertFeatureStage($guardFeature, BacklogBoard::STAGE_IN_PROGRESS);
+
+        // Cleanup task E so the guard feature is left with no active tasks
+        $driver->requestTaskReview($context->agentPrimary);
+        $driver->approveTaskViaUnifiedCommand($context->agentSecondary, $guardTaskERef);
+        $driver->mergeTask($guardTaskERef);
+
+        // Test D: review-approve is refused when the feature has queued child tasks
+        $driver->createTodoTask(sprintf('[%s][%s] Queued task to block feature approve', $guardFeature, $guardTaskC));
+        $driver->replaceBoardText(
+            "    stage: development\n    feature: {$guardFeature}",
+            "    stage: review\n    feature: {$guardFeature}",
+        );
+        $approveBodyQueuedTask = $driver->createBodyFile(
+            'test-scope-guard-approve-queued.md',
+            ['Approval body for queued task guard test.'],
+        );
+        $driver->assertReviewApproveFails(
+            $context->agentSecondary,
+            $guardFeature,
+            $approveBodyQueuedTask,
+            sprintf('cannot continue while feature %s has queued child tasks not yet started.', $guardFeature),
+        );
+
+        // Cleanup: remove queued task and close the guard feature
+        $driver->removeTodoTask(sprintf('%s/%s', $guardFeature, $guardTaskC));
+        $driver->closeFeature($guardFeature);
+        $driver->assertActiveFeatureMissing($guardFeature);
     }
 
     /**

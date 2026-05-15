@@ -186,6 +186,7 @@ Also check:
 3. Pass `--body-file` for a feature entry. Do not pass `--body-file` for a child task entry.
 4. Short task references are refused; use `<entry-ref>`.
 5. `--body-file` is required for feature approvals and rejected for task approvals.
+6. For feature approvals: refused if the feature has any active child task branches (`kind=task` in `In progress`) or any queued child tasks (`## To do`). Both blocks must be cleared before approving the feature.
 
 ### `feature-close`
 

@@ -720,6 +720,51 @@ MD);
     }
 
     /**
+     * Assert the active feature entry has the expected stage value.
+     *
+     * @param string $feature Feature slug
+     * @param string $expectedStage One of BacklogBoard::STAGE_* constants
+     */
+    public function assertFeatureStage(string $feature, string $expectedStage): void
+    {
+        $service = $this->boardService();
+        $match = $service->findParentFeatureEntry($this->board(), $feature);
+        if ($match === null) {
+            throw new \RuntimeException(sprintf('Expected active feature not found: %s', $feature));
+        }
+        $actual = $service->getFeatureStage($match->getEntry());
+        if ($actual !== $expectedStage) {
+            throw new \RuntimeException(sprintf(
+                'Expected feature %s to be in stage %s, got %s.',
+                $feature,
+                $expectedStage,
+                $actual,
+            ));
+        }
+    }
+
+    /**
+     * Assert the active feature entry has no reviewer metadata set.
+     *
+     * @param string $feature Feature slug
+     */
+    public function assertFeatureReviewerCleared(string $feature): void
+    {
+        $match = $this->boardService()->findParentFeatureEntry($this->board(), $feature);
+        if ($match === null) {
+            throw new \RuntimeException(sprintf('Expected active feature not found: %s', $feature));
+        }
+        $reviewer = $match->getEntry()->getReviewer();
+        if ($reviewer !== null) {
+            throw new \RuntimeException(sprintf(
+                'Expected feature %s to have no reviewer, got %s.',
+                $feature,
+                $reviewer,
+            ));
+        }
+    }
+
+    /**
      * Run review-notes with optional agent and optional positional reference.
      *
      * @param string|null $agent Agent owning the entry, or null when only a positional reference is used
