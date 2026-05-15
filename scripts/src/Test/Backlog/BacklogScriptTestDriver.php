@@ -634,6 +634,24 @@ MD);
     }
 
     /**
+     * Injects review notes directly into the review file, bypassing backlog.php.
+     *
+     * Use this only to set up note-clearing tests: notes are normally cleared by
+     * `review-approve`, so a direct injection is the only way to place notes in the
+     * file while an entry is already in `approved` state.
+     *
+     * @param string $key Review key: feature slug or feature/task composite reference
+     * @param list<string> $lines Note lines to inject
+     */
+    public function injectReviewNote(string $key, array $lines): void
+    {
+        $service = $this->boardService();
+        $review = $service->loadReviewFile($this->context->reviewPath);
+        $review->setReview($key, $lines);
+        $service->saveReviewFile($review);
+    }
+
+    /**
      * Asserts that review-reopen fails with the expected error message.
      *
      * @param string $role Caller role: 'manager' or 'reviewer'

@@ -172,9 +172,12 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         // Refusal: wrong SOMANAGER_ROLE (developer is not allowed)
         $driver->assertReviewReopenFails('developer', $context->agentPrimary, $taskRef, 'review-reopen requires SOMANAGER_ROLE=manager or SOMANAGER_ROLE=reviewer');
 
-        // Manager path: approved → review, meta.reviewer cleared
+        // Manager path: approved → review, existing notes cleared
+        $driver->injectReviewNote($taskRef, ['Fake note — manager reopen must clear this.']);
+        $driver->assertReviewContains('Fake note — manager reopen must clear this.');
         $driver->reviewReopen('manager', $manager, $taskRef);
         $driver->assertTaskStage($taskRef, BacklogBoard::STAGE_IN_REVIEW);
+        $driver->assertReviewMissing('Fake note — manager reopen must clear this.');
 
         // Refusal: stage is now review, not approved
         $driver->assertReviewReopenFails('manager', $manager, $taskRef, 'review-reopen only accepts Approved');
@@ -183,9 +186,12 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->approveTaskViaUnifiedCommand($reviewer, $taskRef);
         $driver->assertTaskStage($taskRef, BacklogBoard::STAGE_APPROVED);
 
-        // Reviewer path: approved → reviewing, meta.reviewer = reviewer agent
+        // Reviewer path: approved → reviewing, existing notes cleared, meta.reviewer set
+        $driver->injectReviewNote($taskRef, ['Fake note — reviewer reopen must clear this.']);
+        $driver->assertReviewContains('Fake note — reviewer reopen must clear this.');
         $driver->reviewReopen('reviewer', $reviewer, $taskRef);
         $driver->assertTaskStage($taskRef, BacklogBoard::STAGE_REVIEWING);
+        $driver->assertReviewMissing('Fake note — reviewer reopen must clear this.');
 
         // Verify meta.reviewer is set to reviewer by confirming review-cancel succeeds for that reviewer
         $driver->reviewCancel($reviewer, $taskRef);
