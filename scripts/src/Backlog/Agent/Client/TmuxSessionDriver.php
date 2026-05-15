@@ -53,7 +53,9 @@ final class TmuxSessionDriver implements SessionDriverInterface
         if (!$this->shellRunner->succeeds('command -v tmux')) {
             throw new \RuntimeException(
                 "tmux is not installed or not available in PATH.\n" .
-                "Install it before launching agents in tmux mode:\n" .
+                "Run the dependency manager to install it:\n" .
+                "  php scripts/install-deps.php install\n" .
+                "Or install it manually:\n" .
                 "  Debian/Ubuntu : sudo apt-get install tmux\n" .
                 "  macOS         : brew install tmux\n" .
                 "Alternatively, switch to the direct driver: BACKLOG_AGENT_SESSION_DRIVER=direct",

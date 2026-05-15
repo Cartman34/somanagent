@@ -49,14 +49,24 @@ final class TmuxSessionDriverTest
         $driver = new TmuxSessionDriver($runner, Console::getInstance());
 
         $threw = false;
+        $message = '';
         try {
             $driver->checkDependencies();
         } catch (\RuntimeException $e) {
-            $threw = str_contains($e->getMessage(), 'tmux is not installed');
+            $threw = true;
+            $message = $e->getMessage();
         }
 
         if (!$threw) {
-            echo "FAIL testCheckDependenciesThrowsWhenTmuxMissing: expected RuntimeException mentioning tmux\n";
+            echo "FAIL testCheckDependenciesThrowsWhenTmuxMissing: expected RuntimeException\n";
+            return 1;
+        }
+        if (!str_contains($message, 'tmux is not installed')) {
+            echo "FAIL testCheckDependenciesThrowsWhenTmuxMissing: message does not mention 'tmux is not installed'\n";
+            return 1;
+        }
+        if (!str_contains($message, 'install-deps.php install')) {
+            echo "FAIL testCheckDependenciesThrowsWhenTmuxMissing: message does not mention 'install-deps.php install'\n";
             return 1;
         }
         echo "OK testCheckDependenciesThrowsWhenTmuxMissing\n";
