@@ -98,8 +98,28 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $driver->rejectReviewViaUnifiedCommand($context->agentSecondary, $context->fixFeature, $rejectBody);
         $driver->assertReviewContains($context->fixFeature);
         $this->assertReviewNotesForFeature($driver, $context, '1. Reject feature review for workflow coverage.');
+
+        // review-amend: replace notes on a rejected feature
+        $amendedBody = $driver->createBodyFile('test-feature-review-amend.md', ['1. Amended finding for workflow coverage.']);
+        $driver->reviewAmend($context->agentSecondary, $context->fixFeature, $amendedBody);
+        $driver->assertReviewContains('Amended finding for workflow coverage.');
+        $driver->assertReviewMissing('Reject feature review for workflow coverage.');
+        $this->assertReviewNotesForFeature($driver, $context, '1. Amended finding for workflow coverage.');
+        // stage must still be rejected after amend
+        $driver->assertStatusContains($context->fixFeature, 'Stage: Rejected');
+
+        // review-amend: wrong role is refused
+        $driver->assertReviewAmendFails($context->agentSecondary, $context->fixFeature, $amendedBody, 'review-amend is restricted to the reviewer role', ['SOMANAGER_ROLE' => 'developer']);
+        // review-amend: missing body-file is refused
+        $driver->assertReviewAmendFails($context->agentSecondary, $context->fixFeature, null, 'review-amend requires --body-file=<path>.');
+        // review-amend: missing entry-ref is refused
+        $driver->assertReviewAmendFails($context->agentSecondary, '', $amendedBody, 'review-amend requires <entry-ref>.');
+
         $driver->rework($context->agentPrimary, $context->fixFeature);
         $driver->requestFeatureReview($context->agentPrimary);
+
+        // review-amend: non-rejected entry (now in review stage) is refused
+        $driver->assertReviewAmendFails($context->agentSecondary, $context->fixFeature, $amendedBody, 'must be in');
 
         // unified commands: reviewer required and body-file required guards
         $driver->assertReviewCheckFails('', $context->fixFeature, 'Command requires SOMANAGER_AGENT=<code>.');

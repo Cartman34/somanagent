@@ -122,6 +122,7 @@ MD);
         $this->assertOutputContains($this->runBacklog(['review-check', '--help']), 'review-check');
         $this->assertOutputContains($this->runBacklog(['review-approve', '--help']), 'review-approve');
         $this->assertOutputContains($this->runBacklog(['review-reject', '--help']), 'review-reject');
+        $this->assertOutputContains($this->runBacklog(['review-amend', '--help']), 'review-amend');
         // Regression: `help` and `help <command>` must be unknown commands, not silent aliases.
         $this->assertCommandIsUnknown('help');
         $this->assertBacklogFails(
@@ -569,6 +570,39 @@ MD);
             $args[] = $bodyFile;
         }
         $this->assertBacklogFails($args, $needle, ['SOMANAGER_AGENT' => $reviewer]);
+    }
+
+    /**
+     * Amend review notes on a rejected feature or task via review-amend.
+     *
+     * @param string $reviewer Reviewer agent code
+     * @param string $reference <entry-ref>
+     * @param string $bodyFile Path to body file with replacement findings
+     */
+    public function reviewAmend(string $reviewer, string $reference, string $bodyFile): void
+    {
+        $this->runBacklog(
+            ['review-amend', $reference, '--body-file', $bodyFile],
+            ['SOMANAGER_ROLE' => 'reviewer', 'SOMANAGER_AGENT' => $reviewer],
+        );
+    }
+
+    /**
+     * @param string $reviewer Reviewer agent code
+     * @param string $reference Feature slug or task reference
+     * @param string|null $bodyFile Path to body file (null to omit --body-file)
+     * @param string $needle Expected error message
+     * @param array<string, string> $extraEnv Additional env vars (e.g. override SOMANAGER_ROLE)
+     */
+    public function assertReviewAmendFails(string $reviewer, string $reference, ?string $bodyFile, string $needle, array $extraEnv = []): void
+    {
+        $args = ['review-amend', $reference];
+        if ($bodyFile !== null) {
+            $args[] = '--body-file';
+            $args[] = $bodyFile;
+        }
+        $env = array_merge(['SOMANAGER_ROLE' => 'reviewer', 'SOMANAGER_AGENT' => $reviewer], $extraEnv);
+        $this->assertBacklogFails($args, $needle, $env);
     }
 
     /**
