@@ -78,6 +78,16 @@ final class TmuxSessionDriver implements SessionDriverInterface
     /**
      * {@inheritdoc}
      *
+     * A live tmux session can be resumed because resume re-attaches to the existing terminal.
+     */
+    public function allowsResumeWhileAlive(): bool
+    {
+        return true;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * Creates a new detached tmux session, gets the pane PID, calls onSpawned, then attaches.
      * Throws when the tmux session somanagent-<code> already exists (use resume to reconnect).
      */

@@ -120,10 +120,11 @@ final class AgentResumeCommand extends AbstractAgentCommand
 
         $this->sessionService->updateLastSeen($code);
 
-        // Refuse resume only when the PHP wrapper is still blocking on the session (someone is
-        // actively attached). A detached tmux session (driver reports alive but PHP wrapper has
-        // already returned) is not a refusal case — resume should re-attach in that case.
-        if ($this->sessionDriver->isAlive($existingSession) && $this->signaler->isAlive($existingSession->pid)) {
+        // Refuse when the wrapper is still attached, or when the driver cannot safely resume an
+        // alive client process. Tmux can re-attach to a detached live session; direct cannot.
+        $isAlive = $this->sessionDriver->isAlive($existingSession);
+        $wrapperAlive = $this->signaler->isAlive($existingSession->pid);
+        if ($isAlive && ($wrapperAlive || !$this->sessionDriver->allowsResumeWhileAlive())) {
             throw new \RuntimeException(sprintf(
                 "Session %s is still running (a tracked process is alive). Stop it first:\n" .
                 "  php scripts/backlog-agent.php stop --code=%s",

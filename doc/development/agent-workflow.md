@@ -205,7 +205,7 @@ The session driver is selected by the environment variable `BACKLOG_AGENT_SESSIO
 
 `stop --code=<code>` delegates to the session driver. For `tmux`: kills the named tmux session. For `direct`: sends `SIGTERM` to `client_pid` (then wrapper PID as fallback), waits up to 5 seconds, and follows up with `SIGKILL` if the client did not exit. The `agent-sessions.json` entry is removed only after the termination attempt completes.
 
-`resume --code=<code>` refuses while the session is still alive (tmux session exists for driver=tmux, or the tracked process is alive for driver=direct). Run `stop --code=<code>` to terminate the previous session before resuming. For reviewer sessions, `resume` uses the stored developer WA path; if that path is missing but the reviewer still owns a `stage=reviewing` entry, the launcher reconstructs the developer WA and updates `agent-sessions.json` with the reconstructed path before preparing the client.
+`resume --code=<code>` refuses when the PHP wrapper is still alive. When the wrapper is dead but the driver still reports an alive session, behaviour depends on the driver: `tmux` allows resume because it re-attaches to the detached named session, while `direct` refuses because the tracked client process is still running and resume would start a second client instance. Run `stop --code=<code>` to terminate a direct live session before resuming. For reviewer sessions, `resume` uses the stored developer WA path; if that path is missing but the reviewer still owns a `stage=reviewing` entry, the launcher reconstructs the developer WA and updates `agent-sessions.json` with the reconstructed path before preparing the client.
 
 ### last_seen_at Semantics
 

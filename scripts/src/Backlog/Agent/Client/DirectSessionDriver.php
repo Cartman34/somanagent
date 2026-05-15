@@ -76,6 +76,16 @@ final class DirectSessionDriver implements SessionDriverInterface
 
     /**
      * {@inheritdoc}
+     *
+     * A live direct session means a client process is still running, so resume must refuse.
+     */
+    public function allowsResumeWhileAlive(): bool
+    {
+        return false;
+    }
+
+    /**
+     * {@inheritdoc}
      */
     public function launch(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
     {

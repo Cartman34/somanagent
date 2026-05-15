@@ -40,6 +40,16 @@ interface SessionDriverInterface
     public function sessionExists(string $agentCode): bool;
 
     /**
+     * Returns true when resume is allowed while this driver still reports the session as alive.
+     *
+     * For TmuxSessionDriver: true, because an alive tmux session with a dead PHP wrapper means the
+     * terminal was detached and resume should re-attach to the existing session.
+     * For DirectSessionDriver: false, because an alive direct session means the client process is
+     * still running and resume would start a second client instance.
+     */
+    public function allowsResumeWhileAlive(): bool;
+
+    /**
      * Launches the AI client as an interactive session and blocks until exit.
      *
      * For TmuxSessionDriver: creates a named tmux session and attaches to it. Returns 0 whether

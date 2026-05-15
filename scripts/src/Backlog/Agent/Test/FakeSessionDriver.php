@@ -25,6 +25,11 @@ final class FakeSessionDriver implements SessionDriverInterface
     /** @var array<string, bool> Codes that sessionExists() should return true for */
     private array $existingByCode = [];
 
+    /**
+     * Whether the fake driver allows resume when isAlive() returns true.
+     */
+    private bool $allowsResumeWhileAlive = false;
+
     public bool $dependencyCheckPasses = true;
 
     public int $nextExitCode = 0;
@@ -57,6 +62,14 @@ final class FakeSessionDriver implements SessionDriverInterface
     }
 
     /**
+     * Controls whether resume is allowed while isAlive() reports true.
+     */
+    public function setAllowsResumeWhileAlive(bool $allows): void
+    {
+        $this->allowsResumeWhileAlive = $allows;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function checkDependencies(): void
@@ -72,6 +85,14 @@ final class FakeSessionDriver implements SessionDriverInterface
     public function sessionExists(string $agentCode): bool
     {
         return $this->existingByCode[$agentCode] ?? false;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function allowsResumeWhileAlive(): bool
+    {
+        return $this->allowsResumeWhileAlive;
     }
 
     /**

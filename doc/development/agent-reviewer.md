@@ -272,7 +272,7 @@ When a reviewer starts on a new entry (not a reuse), the launcher:
 
 If any subsequent preparation step fails (WA missing and unreconstructable, concurrent session conflict), the launcher rolls the board back to `stage=review` and clears `meta.reviewer` before erroring.
 
-Once the interactive client process starts, no automatic rollback occurs; the entry remains at `stage=reviewing` until the manager or a backlog command changes it. The launcher also records the client PID (and tmux session name when applicable) in `local/tmp/agent-sessions.json`. The active session driver determines how `stop` and `resume` work: the default tmux driver is SSH-resilient (the client keeps running after a disconnect; `stop` kills the tmux session), while the direct driver (`BACKLOG_AGENT_SESSION_DRIVER=direct`) uses SIGTERM/SIGKILL. `resume` is refused while the session is still alive. See `doc/development/agent-workflow.md` for the full lifecycle.
+Once the interactive client process starts, no automatic rollback occurs; the entry remains at `stage=reviewing` until the manager or a backlog command changes it. The launcher also records the client PID (and tmux session name when applicable) in `local/tmp/agent-sessions.json`. The active session driver determines how `stop` and `resume` work: the default tmux driver is SSH-resilient (the client keeps running after a disconnect; `resume` re-attaches to the detached session; `stop` kills the tmux session), while the direct driver (`BACKLOG_AGENT_SESSION_DRIVER=direct`) uses SIGTERM/SIGKILL and refuses resume while the tracked client process is alive. See `doc/development/agent-workflow.md` for the full lifecycle.
 
 ### Owned reviewing entry reuse
 

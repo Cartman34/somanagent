@@ -320,6 +320,14 @@ final class AgentListCommandTest
             /**
              * {@inheritdoc}
              */
+            public function allowsResumeWhileAlive(): bool
+            {
+                return false;
+            }
+
+            /**
+             * {@inheritdoc}
+             */
             public function launch(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
             {
                 return 0;

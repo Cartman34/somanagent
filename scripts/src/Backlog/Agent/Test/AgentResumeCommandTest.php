@@ -62,6 +62,7 @@ final class AgentResumeCommandTest
         $failed += $this->testRefusesWhenNoSessionRecorded();
         $failed += $this->testRefusesWhenClientPidStillAlive();
         $failed += $this->testRefusesWhenWrapperPidStillAlive();
+        $failed += $this->testRefusesWhenDirectDriverClientAliveButWrapperDead();
         $failed += $this->testUpdatesLastSeenBeforeAliveCheck();
         $failed += $this->testPersistsReconstructedReviewerWorktreeBeforeLaunchPreparation();
         $failed += $this->testResumeKeepsSessionEntryWhenDriverReportsDetach();
@@ -158,6 +159,38 @@ final class AgentResumeCommandTest
         return 0;
     }
 
+    private function testRefusesWhenDirectDriverClientAliveButWrapperDead(): int
+    {
+        $dir = $this->tmpDir . '/direct-clientalive-' . uniqid('', true);
+        mkdir($dir, 0755, true);
+
+        $service = new AgentSessionService($dir);
+        $service->add($this->makeSession('d03', wrapperPid: 1200, clientPid: 5600));
+
+        $driver = new FakeSessionDriver();
+        $driver->setAlive('d03', true);
+
+        // Wrapper PID is dead by default, but direct driver cannot resume while the client lives.
+        $signaler = new FakeProcessSignaler();
+
+        $cmd = $this->buildCommand($service, $driver, signaler: $signaler);
+
+        $threw = false;
+        try {
+            $cmd->handle([], ['code' => 'd03']);
+        } catch (\RuntimeException $e) {
+            $threw = str_contains($e->getMessage(), 'still running');
+        }
+        if (!$threw) {
+            echo "FAIL testRefusesWhenDirectDriverClientAliveButWrapperDead: expected 'still running' error\n";
+            $this->rmdir($dir);
+            return 1;
+        }
+        echo "OK testRefusesWhenDirectDriverClientAliveButWrapperDead\n";
+        $this->rmdir($dir);
+        return 0;
+    }
+
     private function testUpdatesLastSeenBeforeAliveCheck(): int
     {
         $dir = $this->tmpDir . '/lastseen-resume-' . uniqid('', true);
@@ -226,6 +259,7 @@ final class AgentResumeCommandTest
         // Driver: isAlive=true (tmux session still alive after resume exits) → detach scenario.
         $driver = new FakeSessionDriver();
         $driver->setAlive('d02', true);
+        $driver->setAllowsResumeWhileAlive(true);
 
         // Signaler: wrapper PID 12300 is dead (default false) → guard allows resume.
         $signaler = new FakeProcessSignaler();

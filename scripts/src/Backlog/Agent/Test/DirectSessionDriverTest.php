@@ -32,6 +32,7 @@ final class DirectSessionDriverTest
 
         $failed += $this->testCheckDependenciesIsNoOp();
         $failed += $this->testSessionExistsAlwaysFalse();
+        $failed += $this->testDoesNotAllowResumeWhileAlive();
         $failed += $this->testIsAliveUsesClientPidFirst();
         $failed += $this->testIsAliveFallsBackToWrapperPid();
         $failed += $this->testIsAliveReturnsFalseWhenBothPidsDead();
@@ -68,6 +69,18 @@ final class DirectSessionDriverTest
             return 1;
         }
         echo "OK testSessionExistsAlwaysFalse\n";
+        return 0;
+    }
+
+    private function testDoesNotAllowResumeWhileAlive(): int
+    {
+        $driver = $this->makeDriver(new FakeInteractiveProcessRunner(), new FakeProcessSignaler());
+
+        if ($driver->allowsResumeWhileAlive()) {
+            echo "FAIL testDoesNotAllowResumeWhileAlive: expected false\n";
+            return 1;
+        }
+        echo "OK testDoesNotAllowResumeWhileAlive\n";
         return 0;
     }
 

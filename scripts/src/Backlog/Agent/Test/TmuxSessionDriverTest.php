@@ -32,6 +32,7 @@ final class TmuxSessionDriverTest
         $failed += $this->testCheckDependenciesPassesWhenTmuxPresent();
         $failed += $this->testSessionExistsReturnsTrueWhenHasSessionSucceeds();
         $failed += $this->testSessionExistsReturnsFalseWhenHasSessionFails();
+        $failed += $this->testAllowsResumeWhileAlive();
         $failed += $this->testSessionExistsReturnsTrueAfterTmuxDetach();
         $failed += $this->testIsAliveReturnsTrueWhenTmuxSessionExists();
         $failed += $this->testIsAliveReturnsFalseWhenTmuxSessionGone();
@@ -118,6 +119,18 @@ final class TmuxSessionDriverTest
             return 1;
         }
         echo "OK testSessionExistsReturnsFalseWhenHasSessionFails\n";
+        return 0;
+    }
+
+    private function testAllowsResumeWhileAlive(): int
+    {
+        $driver = new TmuxSessionDriver(new FakeProcessRunner(), Console::getInstance());
+
+        if (!$driver->allowsResumeWhileAlive()) {
+            echo "FAIL testAllowsResumeWhileAlive: expected true\n";
+            return 1;
+        }
+        echo "OK testAllowsResumeWhileAlive\n";
         return 0;
     }
 

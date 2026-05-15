@@ -68,7 +68,7 @@ The launcher spawns the AI client via the active **session driver** and records 
 - **tmux driver** (default): wraps the session in a named tmux session (`somanagent-<code>`). SSH-resilient — the client keeps running after a terminal disconnect. `stop` kills the tmux session; `resume` re-attaches to it.
 - **direct driver** (`BACKLOG_AGENT_SESSION_DRIVER=direct`): spawns the client via `proc_open`. Not SSH-resilient. `stop` sends SIGTERM then SIGKILL after 5 seconds.
 
-A `resume` is refused while the session is still alive — run `stop` first. See `doc/development/agent-workflow.md` for the full lifecycle and `last_seen_at` semantics.
+A `resume` re-attaches to a detached tmux session, but is refused while the PHP wrapper is still alive or when the direct driver still has a live client process. See `doc/development/agent-workflow.md` for the full lifecycle and `last_seen_at` semantics.
 
 Run `php scripts/backlog-agent.php whoami` from WP to confirm the session identity.
 
