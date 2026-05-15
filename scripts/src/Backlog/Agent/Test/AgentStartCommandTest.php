@@ -237,6 +237,7 @@ final class AgentStartCommandTest
         $worktreeService = (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor();
         $driver = new FakeSessionDriver();
 
+        $fakeRunner = new FakeBacklogCommandRunner();
         $cmd = new AgentStartCommand(
             $dir,
             $worktreesRoot,
@@ -251,7 +252,7 @@ final class AgentStartCommandTest
             $driver,
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
-            new FakeBacklogCommandRunner(),
+            $fakeRunner,
         );
 
         // --code=r01 avoids touching AgentCodeService::allocateForRole.
@@ -275,6 +276,13 @@ final class AgentStartCommandTest
         if ($driver->lastLaunchCall === null || $driver->lastLaunchCall['cwd'] !== $devWa) {
             $cwd = $driver->lastLaunchCall['cwd'] ?? '<null>';
             echo "FAIL testReviewerModeReusesOwnedReviewingEntry: session driver cwd '{$cwd}', expected '{$devWa}'\n";
+            return 1;
+        }
+
+        // review-next must NOT be called when the entry is already reviewing for this reviewer.
+        if (!empty($fakeRunner->calls)) {
+            echo "FAIL testReviewerModeReusesOwnedReviewingEntry: review-next must not be called for an owned reviewing entry, got "
+                . json_encode($fakeRunner->calls) . "\n";
             return 1;
         }
 

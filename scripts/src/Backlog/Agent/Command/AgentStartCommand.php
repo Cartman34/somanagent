@@ -328,6 +328,13 @@ final class AgentStartCommand extends AbstractAgentCommand
                 $this->backlogCommandRunner->reviewNext($reviewerCode, $entryRef);
                 $takenEntryRef = $entryRef;
                 $takenReviewerCode = $reviewerCode;
+                // Reload board so subsequent steps (e.g. prepareFeatureAgentWorktree) use the entry at
+                // its updated stage, consistent with the spec requirement.
+                $board = $this->boardService->loadBoard($this->boardPath);
+                $reloadedMatch = $this->reviewerSelector->findOwnedReviewingEntry($board, $reviewerCode);
+                if ($reloadedMatch !== null) {
+                    $entry = $reloadedMatch->getEntry();
+                }
             } else {
                 $takenEntryRef = null;
                 $takenReviewerCode = null;
