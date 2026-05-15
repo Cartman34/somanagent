@@ -148,7 +148,7 @@ final class DirectSessionDriver implements SessionDriverInterface
     /**
      * Delegates to the underlying process runner, adapting the onSpawned callback signature.
      *
-     * InteractiveProcessRunner calls back with (clientPid, processGroupId). This driver
+     * InteractiveProcessRunner calls back with (clientPid). This driver
      * forwards (clientPid, null) to the SessionDriverInterface caller: the direct driver
      * never populates a tmux session name.
      *
@@ -162,7 +162,7 @@ final class DirectSessionDriver implements SessionDriverInterface
             $args,
             $cwd,
             $env,
-            static function (int $clientPid, ?int $pgid) use ($onSpawned): void {
+            static function (int $clientPid) use ($onSpawned): void {
                 $onSpawned($clientPid, null);
             },
         );

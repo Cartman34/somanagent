@@ -195,7 +195,6 @@ final class DirectSessionDriverTest
     {
         $runner = new FakeInteractiveProcessRunner();
         $runner->nextClientPid = 999;
-        $runner->nextProcessGroupId = null;
 
         $driver = $this->makeDriver($runner, new FakeProcessSignaler());
 

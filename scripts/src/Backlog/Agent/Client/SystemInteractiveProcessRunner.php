@@ -40,16 +40,15 @@ final class SystemInteractiveProcessRunner implements InteractiveProcessRunner
 
         $status = proc_get_status($process);
         $clientPid = $status['pid'];
-        $processGroupId = $clientPid > 0 ? $this->resolveProcessGroupId($clientPid) : null;
 
         if ($onSpawned !== null) {
-            $onSpawned($clientPid, $processGroupId);
+            $onSpawned($clientPid);
         }
 
         $exitCode = $this->waitForExit($process);
         proc_close($process);
 
-        return new InteractiveProcessResult($exitCode, $clientPid > 0 ? $clientPid : null, $processGroupId);
+        return new InteractiveProcessResult($exitCode, $clientPid > 0 ? $clientPid : null);
     }
 
     /**
@@ -66,18 +65,5 @@ final class SystemInteractiveProcessRunner implements InteractiveProcessRunner
             }
             usleep(self::POLL_USEC);
         }
-    }
-
-    /**
-     * Resolves the process group id for the given PID, or null when unavailable.
-     */
-    private function resolveProcessGroupId(int $pid): ?int
-    {
-        if (!function_exists('posix_getpgid')) {
-            return null;
-        }
-        $pgid = posix_getpgid($pid);
-
-        return $pgid === false ? null : $pgid;
     }
 }

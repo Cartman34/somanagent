@@ -12,7 +12,7 @@ namespace SoManAgent\Script\Backlog\Agent\Client;
  *
  * Implementations must:
  *   - keep STDIN/STDOUT/STDERR attached to the controlling terminal so the user keeps a normal CLI chat,
- *   - expose the actual client PID and process group via the result so `stop` can terminate the client,
+ *   - expose the actual client PID via the result so `stop` can terminate the client,
  *   - block until the child exits and return its exit code.
  *
  * `$onSpawned` is invoked once, right after the child becomes visible and before waiting, so the caller
@@ -25,7 +25,7 @@ interface InteractiveProcessRunner
      * @param list<string> $args Arguments passed to the binary (no shell expansion)
      * @param string $cwd Working directory for the child process
      * @param array<string, string> $env Full environment passed to the child
-     * @param (callable(int $clientPid, ?int $processGroupId): void)|null $onSpawned Called once after spawn, before wait
+     * @param (callable(int $clientPid): void)|null $onSpawned Called once after spawn, before wait
      */
     public function run(string $bin, array $args, string $cwd, array $env, ?callable $onSpawned = null): InteractiveProcessResult;
 }

@@ -65,25 +65,24 @@ final class SystemInteractiveProcessRunnerTest
     private function testOnSpawnedReceivesClientPid(): int
     {
         $runner = new SystemInteractiveProcessRunner();
-        $captured = ['pid' => null, 'pgid' => null];
+        $capturedPid = null;
 
         $result = $runner->run(
             '/bin/sh',
             ['-c', 'exit 0'],
             sys_get_temp_dir(),
             $this->minimalEnv(),
-            function (int $pid, ?int $pgid) use (&$captured): void {
-                $captured['pid'] = $pid;
-                $captured['pgid'] = $pgid;
+            function (int $pid) use (&$capturedPid): void {
+                $capturedPid = $pid;
             },
         );
 
-        if ($captured['pid'] === null || $captured['pid'] <= 0) {
+        if ($capturedPid === null || $capturedPid <= 0) {
             echo "FAIL testOnSpawnedReceivesClientPid: expected positive pid in callback, got "
-                . var_export($captured['pid'], true) . "\n";
+                . var_export($capturedPid, true) . "\n";
             return 1;
         }
-        if ($result->clientPid !== $captured['pid']) {
+        if ($result->clientPid !== $capturedPid) {
             echo "FAIL testOnSpawnedReceivesClientPid: result.clientPid mismatch with callback pid\n";
             return 1;
         }

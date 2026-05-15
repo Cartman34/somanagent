@@ -24,7 +24,6 @@ final class FakeInteractiveProcessRunner implements InteractiveProcessRunner
 
     public int $nextExitCode = 0;
     public int $nextClientPid = 12345;
-    public ?int $nextProcessGroupId = 12345;
 
     /**
      * {@inheritdoc}
@@ -33,9 +32,9 @@ final class FakeInteractiveProcessRunner implements InteractiveProcessRunner
     {
         $this->lastCall = ['bin' => $bin, 'args' => $args, 'cwd' => $cwd, 'env' => $env];
         if ($onSpawned !== null) {
-            $onSpawned($this->nextClientPid, $this->nextProcessGroupId);
+            $onSpawned($this->nextClientPid);
         }
 
-        return new InteractiveProcessResult($this->nextExitCode, $this->nextClientPid, $this->nextProcessGroupId);
+        return new InteractiveProcessResult($this->nextExitCode, $this->nextClientPid);
     }
 }
