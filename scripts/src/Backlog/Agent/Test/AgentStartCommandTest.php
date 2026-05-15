@@ -689,7 +689,7 @@ final class AgentStartCommandTest
             return 1;
         }
 
-        if (!str_contains((string) $output, 'Session détachée')) {
+        if (!str_contains((string) $output, 'Session detached')) {
             echo "FAIL testLaunchKeepsSessionEntryWhenDriverReportsDetach: expected detach message in output\n";
             return 1;
         }
