@@ -24,8 +24,10 @@ php scripts/help.php migrate.php
 | `check-php.sh` | Bash | Check that PHP 8.4+ is installed |
 | `help.php` | PHP | Display help for all scripts |
 | `backlog.php` | PHP | Run the local backlog workflow for features, child tasks, reviews, and merges |
+| `backlog-agent.php` | PHP | Start and manage AI agent sessions in dedicated worktrees |
 | `worktree-info.php` | PHP | Display the git worktree context for the current script (linked vs main worktree, roots) |
 | `test-backlog-workflow.php` | PHP | Run reusable sequential validation campaigns for `backlog.php` on temporary backlog files |
+| `test-backlog-agent.php` | PHP | Run unit tests for backlog-agent.php classes |
 | `setup.php` | PHP | Full installation (first time) |
 | `dev.php` | PHP | Start / stop the environment |
 | `migrate.php` | PHP | Run Doctrine migrations |
@@ -100,6 +102,40 @@ Notes:
 - branch prefix matches the type 1:1 (`feat → feat/<slug>`, `fix → fix/<slug>`, `tech → tech/<slug>`); `--branch-type=<feat|fix|tech>` overrides the queued prefix and rejects unknown values
 - `work-start` validates the queued entry fully (type, slugs, conflicts) before any worktree, branch or backlog mutation; a refusal leaves no leftover state. With `--dry-run` it prints the resolved interpretation and performs no Git, worktree or backlog mutation (Git fetch / `origin/main` reads remain enabled)
 - child task review stays local; only the parent feature uses the remote PR flow
+
+---
+
+### `backlog-agent.php`
+Starts and manages AI agent sessions for Claude, Codex, OpenCode, and Gemini. Developer sessions run in dedicated `WA` worktrees, reviewer sessions reuse the target developer `WA`, and manager sessions run from `WP` by default.
+
+Subcommands:
+- `start` - start a new agent client session for one role
+- `list` - list recorded agent sessions
+- `status` - show one recorded agent session
+- `stop` - stop the recorded client session
+- `whoami` - display the current agent context
+- `resume` - resume the client stored in `agent-sessions.json`
+- `sessions` - list sessions exposed by the configured client
+
+```bash
+php scripts/backlog-agent.php help
+php scripts/backlog-agent.php help start
+php scripts/backlog-agent.php start claude --developer --code=d04
+php scripts/backlog-agent.php start codex --reviewer --code=r01
+php scripts/backlog-agent.php start opencode --manager --code=m01
+php scripts/backlog-agent.php list
+php scripts/backlog-agent.php status --code=d04
+php scripts/backlog-agent.php stop --code=d04
+php scripts/backlog-agent.php resume --code=d04
+php scripts/backlog-agent.php whoami
+php scripts/backlog-agent.php sessions --code=d04
+```
+
+Notes:
+- `BACKLOG_AGENT_SESSION_DRIVER=tmux|direct` selects the session driver
+- `tmux` is the default driver and keeps the live client session recoverable after terminal or SSH disconnects
+- `direct` is a degraded driver that keeps the previous interactive process behavior, without live terminal recovery
+- `resume` reads the client from `agent-sessions.json`; it does not accept a positional client argument
 
 ---
 

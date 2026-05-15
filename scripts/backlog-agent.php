@@ -10,7 +10,7 @@
 // Usage: php scripts/backlog-agent.php list
 // Usage: php scripts/backlog-agent.php status --code=d04
 // Usage: php scripts/backlog-agent.php stop --code=d04
-// Usage: php scripts/backlog-agent.php resume claude --code=d04
+// Usage: php scripts/backlog-agent.php resume --code=d04
 // Usage: php scripts/backlog-agent.php whoami
 // Usage: php scripts/backlog-agent.php sessions --code=d04
 
