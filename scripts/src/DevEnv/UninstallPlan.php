@@ -53,7 +53,7 @@ final class UninstallPlan
      * Returns side-effect file paths that should be removed after applying the plan.
      *
      * A path is only included when no KEEP entry still relies on it (spec §4.4:
-     * "sauf si la source reste nécessaire à une dep encore présente").
+     * a side-effect source is preserved as long as any remaining dep still needs it).
      *
      * @return list<string>
      */
