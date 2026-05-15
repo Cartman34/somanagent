@@ -7,6 +7,9 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Runner;
 
+use SoManAgent\Script\Server\HealthProbeInterface;
+use SoManAgent\Script\Server\NativeHealthProbe;
+
 /**
  * Docker Compose service manager for the SoManAgent development environment.
  *
@@ -31,6 +34,15 @@ final class ServerRunner extends AbstractScriptRunner
     private const SERVICES_MINIMAL = 'db, redis';
 
     private bool $previewOnly = false;
+
+    /**
+     * @param HealthProbeInterface $healthProbe Read-only service probe used by the health subcommand.
+     */
+    public function __construct(
+        private readonly HealthProbeInterface $healthProbe = new NativeHealthProbe(),
+    ) {
+        parent::__construct();
+    }
 
     protected function getName(): string
     {
@@ -232,46 +244,42 @@ final class ServerRunner extends AbstractScriptRunner
         $this->console->step('Checking service health');
         $allHealthy = true;
 
-        // PostgreSQL
-        $out = [];
-        exec('pg_isready -h localhost -p 5432 2>&1', $out, $pgCode);
-        $pgMsg = trim(implode(' ', $out));
-        if ($pgCode === 0) {
-            $this->console->ok("PostgreSQL: {$pgMsg}");
+        $postgres = $this->healthProbe->checkPostgreSql();
+        if ($postgres->healthy) {
+            $this->console->ok("PostgreSQL: {$postgres->message}");
         } else {
-            $this->console->line("  \u{274C} PostgreSQL: {$pgMsg}");
+            $this->console->line("  \u{274C} PostgreSQL: {$postgres->message}");
             $allHealthy = false;
         }
 
-        // Redis
-        $out = [];
-        exec('redis-cli -h localhost -p 6379 ping 2>&1', $out, $redisCode);
-        $redisMsg = trim(implode(' ', $out));
-        if ($redisCode === 0 && strtoupper($redisMsg) === 'PONG') {
-            $this->console->ok('Redis: PONG');
+        $redis = $this->healthProbe->checkRedis();
+        if ($redis->healthy) {
+            $this->console->ok("Redis: {$redis->message}");
         } else {
-            $this->console->line("  \u{274C} Redis: {$redisMsg}");
+            $this->console->line("  \u{274C} Redis: {$redis->message}");
             $allHealthy = false;
         }
 
         // Full-profile: nginx → API
-        if ($this->isContainerRunning('somanagent_nginx')) {
+        if ($this->healthProbe->isContainerRunning('somanagent_nginx')) {
             $this->console->line('');
             $this->console->step('Full-profile services');
-            if ($this->httpCheck('http://localhost:8080/api/health', 5)) {
-                $this->console->ok('API (nginx): reachable at http://localhost:8080/api/health');
+            $api = $this->healthProbe->checkHttp('http://localhost:8080/api/health', 5);
+            if ($api->healthy) {
+                $this->console->ok("API (nginx): {$api->message}");
             } else {
-                $this->console->line("  \u{274C} API (nginx): not reachable at http://localhost:8080/api/health");
+                $this->console->line("  \u{274C} API (nginx): {$api->message}");
                 $allHealthy = false;
             }
         }
 
         // Full-profile: mercure
-        if ($this->isContainerRunning('somanagent_mercure')) {
-            if ($this->httpCheck('http://localhost:8080/.well-known/mercure', 5)) {
-                $this->console->ok('Mercure: reachable at http://localhost:8080/.well-known/mercure');
+        if ($this->healthProbe->isContainerRunning('somanagent_mercure')) {
+            $mercure = $this->healthProbe->checkHttp('http://localhost:8080/.well-known/mercure', 5);
+            if ($mercure->healthy) {
+                $this->console->ok("Mercure: {$mercure->message}");
             } else {
-                $this->console->line("  \u{274C} Mercure: not reachable at http://localhost:8080/.well-known/mercure");
+                $this->console->line("  \u{274C} Mercure: {$mercure->message}");
                 $allHealthy = false;
             }
         }
@@ -334,18 +342,4 @@ final class ServerRunner extends AbstractScriptRunner
         return true;
     }
 
-    private function isContainerRunning(string $containerName): bool
-    {
-        $out = [];
-        exec('docker inspect --format={{.State.Running}} ' . escapeshellarg($containerName) . ' 2>/dev/null', $out, $code);
-
-        return $code === 0 && trim($out[0] ?? '') === 'true';
-    }
-
-    private function httpCheck(string $url, int $timeout = 5): bool
-    {
-        $ctx = stream_context_create(['http' => ['timeout' => $timeout, 'ignore_errors' => true]]);
-
-        return @file_get_contents($url, false, $ctx) !== false;
-    }
 }

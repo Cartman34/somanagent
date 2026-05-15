@@ -262,7 +262,7 @@ php scripts/server.php start --minimal   # start db + redis only
 php scripts/server.php stop              # stop all services
 php scripts/server.php restart           # stop then start (full)
 php scripts/server.php status            # docker compose ps
-php scripts/server.php health            # health checks (pg_isready, redis-cli, HTTP)
+php scripts/server.php health            # health checks via PHP native probes, without pg_isready/redis-cli
 php scripts/server.php start --preview-only  # show plan without applying
 php scripts/server.php start --dry-run       # show plan + simulated commands without applying
 php scripts/server.php start --force         # apply without confirmation
