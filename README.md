@@ -77,8 +77,9 @@ You define **Workflows** — sequences of steps that route tasks to the right ag
 cp .env.dist .env
 # Edit .env: set CLAUDE_API_KEY, GITHUB_TOKEN, and any other required values
 
-# 2. Full installation (containers, database, frontend)
-php scripts/setup.php
+# 2. Resolve and install host dependencies
+php scripts/setup.php update
+php scripts/setup.php install
 
 # 3. Verify everything is up
 php scripts/health.php

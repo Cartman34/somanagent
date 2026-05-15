@@ -12,7 +12,7 @@ examples:
   - 'php scripts/setup.php install --dry-run'
   - 'php scripts/setup.php install --force'
 notes:
-  - 'Requires the lockfile (scripts/resources/dependencies.lock). Run setup.php update first if the lockfile is missing.'
+  - 'Requires an initialized lockfile (scripts/resources/dependencies.lock). Run setup.php update first to generate it — absent or sentinel lockfiles (generated_at: ~) are both rejected.'
   - '--preview-only and --dry-run are mutually exclusive.'
   - 'Idempotent: running install after convergence is a no-op (all deps already at target version).'
   - 'Project steps (composer install, npm install, migrations) require containers to be running — skipped with a warning if not.'

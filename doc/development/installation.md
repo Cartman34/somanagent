@@ -29,16 +29,22 @@ cd somanagent
 cp .env.dist .env
 # Edit .env and set at minimum CLAUDE_API_KEY
 
-# 3. Run the automatic setup
-php scripts/setup.php
+# 3. Resolve host dependencies (generates the local lockfile)
+php scripts/setup.php update
+
+# 4. Install host dependencies
+php scripts/setup.php install
+
+# 5. Start the dev environment
+php scripts/server.php start
 ```
 
-The `setup.php` script:
-1. Checks that `.env` is present
-2. Starts Docker containers (`docker compose up -d --build`)
-3. Waits for PostgreSQL to be ready
-4. Runs Doctrine migrations
-5. Runs `npm install` in the Node container
+`setup.php update` resolves the manifest constraints against available sources and writes
+`scripts/resources/dependencies.lock` locally (the lockfile is not committed on this project
+because it contains per-host paths and pre-existing state).
+
+`setup.php install` reads the lockfile and installs or upgrades host-level dependencies
+(PHP, Docker, AI clients, etc.), then runs project-level steps (Composer, npm, Doctrine migrations).
 
 ## Starting After Installation
 

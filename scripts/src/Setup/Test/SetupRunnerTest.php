@@ -13,7 +13,7 @@ namespace SoManAgent\Script\Setup\Test;
  * Spawns the setup.php script as a child process to verify CLI behaviour without
  * requiring Docker or actual package installation. Covers:
  *   - Help display (runner-level and command-level)
- *   - install: --preview-only, --dry-run, mutual exclusion, missing lockfile, unknown subcommand
+ *   - install: --preview-only, --dry-run, mutual exclusion, missing lockfile, sentinel lockfile, unknown subcommand
  *   - update: --preview-only, --dry-run, mutual exclusion (empty manifest → no network queries)
  *   - verify: aligned (empty manifest + empty lockfile), and unlocked gap detection
  *   - uninstall: --preview-only with empty lockfile, --restore/--keep mutual exclusion
@@ -48,6 +48,7 @@ final class SetupRunnerTest
         $failed += $this->testMutualExclusionFlags();
         $failed += $this->testUnknownSubcommandError();
         $failed += $this->testMissingLockfileError();
+        $failed += $this->testSentinelLockfileError();
 
         // update
         $failed += $this->testUpdateCommandHelp();
@@ -135,16 +136,25 @@ final class SetupRunnerTest
 
     private function testInstallPreviewOnlyWithEmptyLockfile(): int
     {
-        [$output, $exit] = $this->run_(['install', '--preview-only']);
+        $tmpDir = $this->setUpTempProjectWithInitializedLockfile();
 
-        if ($exit !== 0) {
-            echo "FAIL testInstallPreviewOnlyWithEmptyLockfile: expected exit 0, got {$exit}\nOutput: {$output}\n";
-            return 1;
-        }
+        try {
+            [$output, $exit] = $this->run_(
+                ['install', '--preview-only'],
+                ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
+            );
 
-        if (!str_contains($output, 'Installation plan')) {
-            echo "FAIL testInstallPreviewOnlyWithEmptyLockfile: expected 'Installation plan' in output\n";
-            return 1;
+            if ($exit !== 0) {
+                echo "FAIL testInstallPreviewOnlyWithEmptyLockfile: expected exit 0, got {$exit}\nOutput: {$output}\n";
+                return 1;
+            }
+
+            if (!str_contains($output, 'Installation plan')) {
+                echo "FAIL testInstallPreviewOnlyWithEmptyLockfile: expected 'Installation plan' in output\nOutput: {$output}\n";
+                return 1;
+            }
+        } finally {
+            $this->removeTempProject($tmpDir);
         }
 
         echo "OK testInstallPreviewOnlyWithEmptyLockfile\n";
@@ -153,16 +163,25 @@ final class SetupRunnerTest
 
     private function testInstallDryRunWithEmptyLockfile(): int
     {
-        [$output, $exit] = $this->run_(['install', '--dry-run']);
+        $tmpDir = $this->setUpTempProjectWithInitializedLockfile();
 
-        if ($exit !== 0) {
-            echo "FAIL testInstallDryRunWithEmptyLockfile: expected exit 0, got {$exit}\nOutput: {$output}\n";
-            return 1;
-        }
+        try {
+            [$output, $exit] = $this->run_(
+                ['install', '--dry-run'],
+                ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
+            );
 
-        if (!str_contains($output, 'dry-run')) {
-            echo "FAIL testInstallDryRunWithEmptyLockfile: expected 'dry-run' in output\n";
-            return 1;
+            if ($exit !== 0) {
+                echo "FAIL testInstallDryRunWithEmptyLockfile: expected exit 0, got {$exit}\nOutput: {$output}\n";
+                return 1;
+            }
+
+            if (!str_contains($output, 'dry-run')) {
+                echo "FAIL testInstallDryRunWithEmptyLockfile: expected 'dry-run' in output\nOutput: {$output}\n";
+                return 1;
+            }
+        } finally {
+            $this->removeTempProject($tmpDir);
         }
 
         echo "OK testInstallDryRunWithEmptyLockfile\n";
@@ -221,8 +240,8 @@ final class SetupRunnerTest
                 return 1;
             }
 
-            if (!str_contains($output, 'Lockfile absent')) {
-                echo "FAIL testMissingLockfileError: expected 'Lockfile absent' in output\nOutput: {$output}\n";
+            if (!str_contains($output, 'Lockfile not initialized')) {
+                echo "FAIL testMissingLockfileError: expected 'Lockfile not initialized' in output\nOutput: {$output}\n";
                 return 1;
             }
         } finally {
@@ -230,6 +249,43 @@ final class SetupRunnerTest
         }
 
         echo "OK testMissingLockfileError\n";
+        return 0;
+    }
+
+    private function testSentinelLockfileError(): int
+    {
+        $tmpDir = sys_get_temp_dir() . '/setup_test_sentinel_' . uniqid();
+        $resourcesDir = $tmpDir . '/scripts/resources';
+        mkdir($resourcesDir, 0o755, true);
+
+        try {
+            // Write a sentinel lockfile (generated_at: ~ and empty sections — same as the one that was committed)
+            file_put_contents($resourcesDir . '/dependencies.lock', "generated_at: ~\nmanifest_hash: ~\nhost:\n  system: {}\n  docker: {}\n  clients: {}\n");
+            file_put_contents($resourcesDir . '/dependencies.yaml', "defaults:\n  on_existing_below_min: upgrade\n  on_uninstall_pre_existing: keep\nhost: {}\n");
+
+            [$output, $exit] = $this->run_(
+                ['install', '--preview-only'],
+                ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
+            );
+
+            if ($exit === 0) {
+                echo "FAIL testSentinelLockfileError: expected non-zero exit\nOutput: {$output}\n";
+                return 1;
+            }
+
+            if (!str_contains($output, 'Lockfile not initialized')) {
+                echo "FAIL testSentinelLockfileError: expected 'Lockfile not initialized' in output\nOutput: {$output}\n";
+                return 1;
+            }
+        } finally {
+            @unlink($resourcesDir . '/dependencies.lock');
+            @unlink($resourcesDir . '/dependencies.yaml');
+            @rmdir($resourcesDir);
+            @rmdir($tmpDir . '/scripts');
+            @rmdir($tmpDir);
+        }
+
+        echo "OK testSentinelLockfileError\n";
         return 0;
     }
 
@@ -824,6 +880,29 @@ final class SetupRunnerTest
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    /**
+     * Creates a minimal temp project with an initialized (non-sentinel) empty lockfile.
+     *
+     * Use this for install tests that need a valid lockfile with no deps.
+     *
+     * @return string Temp project root path
+     */
+    private function setUpTempProjectWithInitializedLockfile(): string
+    {
+        $tmpDir = sys_get_temp_dir() . '/setup_test_init_' . uniqid();
+        $resourcesDir = $tmpDir . '/scripts/resources';
+        mkdir($resourcesDir, 0o755, true);
+
+        $manifest = "defaults:\n  on_existing_below_min: upgrade\n  on_uninstall_pre_existing: keep\nhost: {}\n";
+        file_put_contents($resourcesDir . '/dependencies.yaml', $manifest);
+        file_put_contents(
+            $resourcesDir . '/dependencies.lock',
+            "generated_at: '2026-01-01T00:00:00+00:00'\nmanifest_hash: abc123\nhost: {}\n",
+        );
+
+        return $tmpDir;
+    }
 
     /**
      * Creates a minimal temp project tree for testing.

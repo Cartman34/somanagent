@@ -137,7 +137,7 @@ final class SetupRunner extends AbstractScriptRunner
     /**
      * Implements `setup.php install` per spec §4.1.
      *
-     * 1. Verifies the lockfile exists.
+     * 1. Verifies the lockfile is initialized (absent or sentinel → error).
      * 2. Reads lockfile + manifest, builds install plan.
      * 3. Exits before preview if any dep is BLOCKED (§3.2).
      * 4. Prints preview.
@@ -162,14 +162,9 @@ final class SetupRunner extends AbstractScriptRunner
         $lockPath = $root . '/' . self::LOCK_PATH;
         $manifestPath = $root . '/' . self::MANIFEST_PATH;
 
-        if (!is_file($lockPath)) {
-            throw new \RuntimeException(
-                "Lockfile absent — run 'php scripts/setup.php update' first to resolve dependencies.",
-            );
-        }
-
         $lockfileManager = new LockfileManager();
         $lockfile = $lockfileManager->read($lockPath);
+        $lockfileManager->assertInitialized($lockfile);
         $manifest = (new ManifestParser())->parseFile($manifestPath);
         $inspector = new StateInspector(new SystemCommandRunner());
 

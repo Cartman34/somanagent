@@ -241,7 +241,8 @@ php scripts/setup.php install --force
 ```
 
 Notes:
-- `install` reads `scripts/resources/dependencies.lock`; the file must exist (run `setup.php update` first if absent)
+- `install` reads `scripts/resources/dependencies.lock`; the file must be initialized (run `setup.php update` first — see below)
+- On this project the lockfile is **not committed** (it contains per-host paths and pre-existing state); each machine generates its own via `setup.php update`
 - `--preview-only` shows the installation plan without applying it
 - `--dry-run` shows the plan and simulated commands without applying
 - `--force` skips the confirmation prompt and applies directly

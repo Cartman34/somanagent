@@ -30,6 +30,23 @@ final class LockfileManager
     private const ALLOWED_OVERRIDES = ['on_uninstall_pre_existing'];
 
     /**
+     * Throws when the lockfile has not been initialized via `setup update`.
+     *
+     * A missing file (read() returns an empty model) and a sentinel lockfile
+     * (generated_at: null with no entries) are both treated as uninitialized.
+     *
+     * @throws \RuntimeException when the lockfile is absent or is a sentinel
+     */
+    public function assertInitialized(Lockfile $lockfile): void
+    {
+        if ($lockfile->generatedAt === null && $lockfile->entries === []) {
+            throw new \RuntimeException(
+                "Lockfile not initialized — run 'php scripts/setup.php update' first.",
+            );
+        }
+    }
+
+    /**
      * Reads the lockfile at the given path and returns a Lockfile model.
      *
      * Returns an empty Lockfile when the file does not exist.
