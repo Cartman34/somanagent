@@ -205,7 +205,7 @@ final class SetupRunner extends AbstractScriptRunner
             $this->console->info('All host dependencies are already up to date.');
         }
 
-        (new ProjectDepsInstaller($this->app, $this->console))->runProjectSteps();
+        (new ProjectDepsInstaller($this->app, $this->console, $this->projectRoot . '/backend'))->runProjectSteps();
 
         $this->console->line();
         $this->console->ok('Installation complete.');
@@ -1227,7 +1227,7 @@ final class SetupRunner extends AbstractScriptRunner
      */
     private function renderProjectStepsDryRun(): void
     {
-        $commands = (new ProjectDepsInstaller($this->app, $this->console))->getSimulatedCommands();
+        $commands = (new ProjectDepsInstaller($this->app, $this->console, $this->projectRoot . '/backend'))->getSimulatedCommands();
         if ($commands === []) {
             return;
         }

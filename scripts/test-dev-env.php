@@ -14,6 +14,7 @@ use SoManAgent\Script\DevEnv\Test\InstallPlannerTest;
 use SoManAgent\Script\DevEnv\Test\LockfileManagerTest;
 use SoManAgent\Script\DevEnv\Test\ManifestParserTest;
 use SoManAgent\Script\DevEnv\Test\ManifestResolverTest;
+use SoManAgent\Script\DevEnv\Test\ProjectDepsInstallerTest;
 use SoManAgent\Script\DevEnv\Test\StateInspectorTest;
 use SoManAgent\Script\DevEnv\Test\SystemSourceQuerierTest;
 use SoManAgent\Script\DevEnv\Test\VersionConstraintTest;
@@ -29,13 +30,14 @@ foreach (array_slice($argv, 1) as $arg) {
 
 /** @var array<string, class-string> */
 $suites = [
-    'VersionConstraintTest'    => VersionConstraintTest::class,
-    'SystemSourceQuerierTest'  => SystemSourceQuerierTest::class,
-    'ManifestParserTest'       => ManifestParserTest::class,
-    'ManifestResolverTest'     => ManifestResolverTest::class,
-    'LockfileManagerTest'      => LockfileManagerTest::class,
-    'StateInspectorTest'       => StateInspectorTest::class,
-    'InstallPlannerTest'       => InstallPlannerTest::class,
+    'VersionConstraintTest'       => VersionConstraintTest::class,
+    'SystemSourceQuerierTest'     => SystemSourceQuerierTest::class,
+    'ManifestParserTest'          => ManifestParserTest::class,
+    'ManifestResolverTest'        => ManifestResolverTest::class,
+    'LockfileManagerTest'         => LockfileManagerTest::class,
+    'StateInspectorTest'          => StateInspectorTest::class,
+    'InstallPlannerTest'          => InstallPlannerTest::class,
+    'ProjectDepsInstallerTest'    => ProjectDepsInstallerTest::class,
 ];
 
 if ($suite !== null && !isset($suites[$suite])) {

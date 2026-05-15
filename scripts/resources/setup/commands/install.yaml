@@ -15,5 +15,6 @@ notes:
   - 'Requires an initialized lockfile (scripts/resources/dependencies.lock). Run setup.php update first to generate it — absent or sentinel lockfiles (generated_at: ~) are both rejected.'
   - '--preview-only and --dry-run are mutually exclusive.'
   - 'Idempotent: running install after convergence is a no-op (all deps already at target version).'
-  - 'Project steps (composer install, npm install, migrations) require containers to be running — skipped with a warning if not.'
+  - 'composer install and npm install run inside their respective containers — skipped with a warning if the container is not running.'
+  - 'Doctrine migrations run via host PHP CLI (php backend/bin/console). Requires the db container to be up (error if absent); the php container is not required (compatible with server.php start --minimal).'
   - 'The lockfile is updated after each installer group so partial progress is saved on failure.'
