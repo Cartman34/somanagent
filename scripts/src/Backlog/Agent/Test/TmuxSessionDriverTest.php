@@ -208,7 +208,7 @@ final class TmuxSessionDriverTest
             /**
              * @var list<string>
              */
-            public array $calledCommands = [];
+            public $calledCommands = [];
 
             /**
              * {@inheritdoc}

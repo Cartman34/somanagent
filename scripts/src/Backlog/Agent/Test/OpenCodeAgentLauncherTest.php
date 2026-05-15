@@ -352,18 +352,10 @@ final class OpenCodeAgentLauncherTest
     {
         return new class($succeeds, $outputs) implements ProcessRunner {
             /**
-             * @var array<string, string>
-             */
-            private array $outputs;
-
-            /**
              * @param bool                  $succeeds Result returned by succeeds()
              * @param array<string, string> $outputs  Command → stdout map
              */
-            public function __construct(private bool $succeeds, array $outputs)
-            {
-                $this->outputs = $outputs;
-            }
+            public function __construct(private bool $succeeds, private $outputs) {}
 
             /**
              * Returns the configured availability result.
