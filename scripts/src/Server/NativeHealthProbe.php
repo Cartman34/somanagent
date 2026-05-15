@@ -75,7 +75,7 @@ final class NativeHealthProbe implements HealthProbeInterface
         $metadata = stream_get_meta_data($socket);
         fclose($socket);
 
-        if (($metadata['timed_out'] ?? false) === true) {
+        if ($metadata['timed_out'] === true) {
             return new HealthCheckResult(false, 'PING timed out');
         }
 
