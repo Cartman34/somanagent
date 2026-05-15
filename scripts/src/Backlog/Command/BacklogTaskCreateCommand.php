@@ -41,8 +41,8 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
     /**
      * Inserts a new queued task in the todo section.
      *
-     * Accepts either a positional `<text>` description (single line, multi-line via
-     * embedded newlines) or `--body-file=<path>` for longer multi-line bodies.
+     * Requires `--body-file=<path>` (typically under `local/tmp/`). Inline positional
+     * task text is not accepted.
      *
      * @param list<string> $commandArgs
      * @param array<string, bool|string|array<bool|string>> $options
@@ -62,44 +62,33 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
     }
 
     /**
-     * Builds a board entry from the positional arguments or from --body-file.
+     * Builds a board entry from --body-file.
      *
      * @param array<int, string> $commandArgs
      * @param array<string, bool|string|array<bool|string>> $options
      */
     private function buildEntryFromInput(array $commandArgs, array $options): BoardEntry
     {
+        if ($commandArgs !== [] && trim(implode(' ', $commandArgs)) !== '') {
+            throw new \RuntimeException('task-create no longer accepts inline task text. Use --body-file=<path> instead.');
+        }
+
         $bodyFile = $options['body-file'] ?? null;
 
-        if ($bodyFile !== null) {
-            if (!is_string($bodyFile) || trim($bodyFile) === '') {
-                throw new \RuntimeException('Option --body-file requires a non-empty path when provided.');
-            }
-            if ($commandArgs !== [] && trim(implode(' ', $commandArgs)) !== '') {
-                throw new \RuntimeException('task-create does not accept positional <text> when --body-file is used.');
-            }
-            $resolvedPath = $this->resolveBodyFilePath($bodyFile);
-            $contents = file_get_contents($resolvedPath);
-            if ($contents === false) {
-                throw new \RuntimeException(sprintf('Unable to read --body-file: %s', $bodyFile));
-            }
-            $lines = preg_split('/\R/', $contents) ?: [];
-
-            return $this->boardService->createEntryFromInputLines($lines);
+        if ($bodyFile === null) {
+            throw new \RuntimeException('task-create requires --body-file=<path>.');
         }
-
-        $text = implode(' ', $commandArgs);
-        if (trim($text) === '') {
-            throw new \RuntimeException('This command requires a task description or --body-file=<path>.');
+        if (!is_string($bodyFile) || trim($bodyFile) === '') {
+            throw new \RuntimeException('Option --body-file requires a non-empty path when provided.');
         }
-
-        if (preg_match('/\R/', $text) === 1) {
-            $lines = preg_split('/\R/', $text) ?: [];
-
-            return $this->boardService->createEntryFromInputLines($lines);
+        $resolvedPath = $this->resolveBodyFilePath($bodyFile);
+        $contents = file_get_contents($resolvedPath);
+        if ($contents === false) {
+            throw new \RuntimeException(sprintf('Unable to read --body-file: %s', $bodyFile));
         }
+        $lines = preg_split('/\R/', $contents) ?: [];
 
-        return $this->boardService->createEntryFromInput(trim($text));
+        return $this->boardService->createEntryFromInputLines($lines);
     }
 
     /**
