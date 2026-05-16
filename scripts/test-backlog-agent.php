@@ -14,6 +14,7 @@ use SoManAgent\Script\Backlog\Agent\Test\AgentCliOptionValidatorTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentCodeServiceTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentContextBuilderTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentListCommandTest;
+use SoManAgent\Script\Backlog\Agent\Test\AgentModelResolverTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentResumeCommandTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentReviewerSelectorTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentSessionServiceTest;
@@ -56,6 +57,7 @@ $suites = [
     'BacklogBoardServiceReviewingTest' => BacklogBoardServiceReviewingTest::class,
     'AgentClientLauncherRegistryTest' => AgentClientLauncherRegistryTest::class,
     'AgentCliOptionValidatorTest' => AgentCliOptionValidatorTest::class,
+    'AgentModelResolverTest' => AgentModelResolverTest::class,
     'BacklogAgentRunnerStrictOptionsTest' => BacklogAgentRunnerStrictOptionsTest::class,
     'WorktreeScriptProxyTest' => WorktreeScriptProxyTest::class,
     'ClaudeAgentLauncherTest' => ClaudeAgentLauncherTest::class,

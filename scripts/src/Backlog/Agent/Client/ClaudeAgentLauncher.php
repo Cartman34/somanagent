@@ -9,6 +9,7 @@ namespace SoManAgent\Script\Backlog\Agent\Client;
 
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use SoManAgent\Script\Backlog\Agent\Model\ResolvedModel;
 use SoManAgent\Script\Backlog\Agent\Model\SessionInfo;
 
 /**
@@ -52,7 +53,7 @@ final class ClaudeAgentLauncher extends AbstractAgentClientLauncher
      */
     public function requiredCliFlags(): array
     {
-        return ['--append-system-prompt', '--resume', '--continue'];
+        return ['--append-system-prompt', '--resume', '--continue', '--model', '--effort'];
     }
 
     /**
@@ -70,6 +71,7 @@ final class ClaudeAgentLauncher extends AbstractAgentClientLauncher
         AgentRole $role,
         ?string $resumeSessionId = null,
         bool $continueLast = false,
+        ?ResolvedModel $resolvedModel = null,
     ): array {
         if (!is_readable($contextFilePath)) {
             throw new \RuntimeException(sprintf('Unable to read agent context file: %s', $contextFilePath));
@@ -83,6 +85,10 @@ final class ClaudeAgentLauncher extends AbstractAgentClientLauncher
             '--append-system-prompt',
             $context,
         ];
+
+        if ($resolvedModel !== null) {
+            $args = array_merge($args, $resolvedModel->cliArgs);
+        }
 
         if ($resumeSessionId !== null) {
             $args[] = '--resume';

@@ -9,6 +9,7 @@ namespace SoManAgent\Script\Backlog\Agent\Client;
 
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use SoManAgent\Script\Backlog\Agent\Model\ResolvedModel;
 use SoManAgent\Script\Backlog\Agent\Model\SessionInfo;
 
 /**
@@ -55,7 +56,7 @@ final class OpenCodeAgentLauncher extends AbstractAgentClientLauncher
      */
     public function requiredCliFlags(): array
     {
-        return ['-s', '-c'];
+        return ['-s', '-c', '--model'];
     }
 
     /**
@@ -101,6 +102,7 @@ final class OpenCodeAgentLauncher extends AbstractAgentClientLauncher
         AgentRole $role,
         ?string $resumeSessionId = null,
         bool $continueLast = false,
+        ?ResolvedModel $resolvedModel = null,
     ): array {
         if ($resumeSessionId !== null) {
             return ['opencode', ['-s', $resumeSessionId]];
@@ -109,7 +111,7 @@ final class OpenCodeAgentLauncher extends AbstractAgentClientLauncher
             return ['opencode', ['-c']];
         }
 
-        return ['opencode', []];
+        return ['opencode', $resolvedModel !== null ? $resolvedModel->cliArgs : []];
     }
 
     /**

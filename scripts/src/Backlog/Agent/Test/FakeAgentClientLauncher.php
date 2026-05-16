@@ -10,6 +10,7 @@ namespace SoManAgent\Script\Backlog\Agent\Test;
 use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncher;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use SoManAgent\Script\Backlog\Agent\Model\ResolvedModel;
 use SoManAgent\Script\Backlog\Agent\Model\SessionInfo;
 
 /**
@@ -21,22 +22,55 @@ use SoManAgent\Script\Backlog\Agent\Model\SessionInfo;
  */
 final class FakeAgentClientLauncher implements AgentClientLauncher
 {
+    /**
+     * Last worktree passed to listSessions(), used to assert session lookup scope.
+     */
     public ?string $lastListWorktree = null;
 
+    /**
+     * Last worktree passed to prepareWorktree(), used to assert preparation scope.
+     */
     public ?string $lastPreparedWorktree = null;
 
+    /**
+     * Last worktree passed to buildLaunchCommand(), used to assert launch scope.
+     */
     public ?string $lastLaunchedWorktree = null;
 
+    /**
+     * Resolved model CLI args received by buildLaunchCommand(), used to assert model option propagation.
+     *
+     * @var list<string>|null
+     */
+    public ?array $lastResolvedModelCliArgs = null;
+
+    /**
+     * Optional exception thrown by prepareWorktree(), used to exercise rollback paths.
+     */
     public ?\Throwable $prepareException = null;
 
-    /** @var list<SessionInfo> */
+    /**
+     * Sessions returned by listSessions().
+     *
+     * @var list<SessionInfo>
+     */
     private array $sessions;
 
+    /**
+     * Client enum returned by client().
+     */
     private AgentClient $clientEnum;
 
+    /**
+     * Availability state returned by isAvailable().
+     */
     private bool $available;
 
-    /** @var list<string> */
+    /**
+     * CLI flags returned by requiredCliFlags().
+     *
+     * @var list<string>
+     */
     private array $cliFlags;
 
     /**
@@ -97,9 +131,12 @@ final class FakeAgentClientLauncher implements AgentClientLauncher
         AgentRole $role,
         ?string $resumeSessionId = null,
         bool $continueLast = false,
+        ?ResolvedModel $resolvedModel = null,
     ): array {
         $this->lastLaunchedWorktree = $worktree;
-        return ['/bin/true', []];
+        $this->lastResolvedModelCliArgs = $resolvedModel?->cliArgs;
+
+        return ['/bin/true', $resolvedModel !== null ? $resolvedModel->cliArgs : []];
     }
 
     /**

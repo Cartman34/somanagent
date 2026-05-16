@@ -43,6 +43,8 @@ Manager sessions are started by the operator with:
 php scripts/backlog-agent.php start <client> --manager [--code=<mXX>]
 ```
 
+Default model profile is `premium+medium`. The operator may override it with `--tier=economy|balanced|premium`, `--effort=low|medium|high`, or `--model=<raw-name>`.
+
 Manager sessions run in WP by default. No `.agent-worktrees/<mXX>` directory is created automatically. The `--reset` flag is not supported for the manager role.
 
 A manager may inspect or switch to a WA when the documented manager workflow allows it; this must be done manually from within the WP session.

@@ -137,6 +137,8 @@ Subcommands:
 php scripts/backlog-agent.php help
 php scripts/backlog-agent.php help start
 php scripts/backlog-agent.php start claude --developer --code=d04
+php scripts/backlog-agent.php start codex --developer --code=d04 --tier=economy --effort=low
+php scripts/backlog-agent.php start gemini --manager --code=m01 --model=gemini-2.5-pro
 php scripts/backlog-agent.php start codex --reviewer --code=r01
 php scripts/backlog-agent.php start opencode --manager --code=m01
 php scripts/backlog-agent.php list
@@ -148,10 +150,26 @@ php scripts/backlog-agent.php sessions --code=d04
 ```
 
 Notes:
+- `start` accepts `--tier=economy|balanced|premium`, `--effort=low|medium|high`, and `--model=<raw-name>`
+- default profile is `developer=balanced+medium`, `reviewer=balanced+medium`, `manager=premium+medium`
+- `--model` bypasses tier model selection and is mutually exclusive with `--tier`; canonical effort still applies on clients that support effort
+- `claude` uses `--model` and `--effort`; Claude Code documents aliases such as `haiku`, `sonnet`, and `opus`
+- `codex` uses `--model` and `--config model_reasoning_effort="<level>"`; Codex config documents `model_reasoning_effort`
+- `opencode` uses `--model provider/model`; the project mapping uses models listed by the local OpenCode provider cache
+- `gemini` uses `--model`; `--effort=low/high` prints a warning and is ignored because Gemini CLI has no effort flag
 - `BACKLOG_AGENT_SESSION_DRIVER=tmux|direct` selects the session driver
 - `tmux` is the default driver and keeps the live client session recoverable after terminal or SSH disconnects
 - `direct` is a degraded driver that keeps the previous interactive process behavior, without live terminal recovery
 - `resume` reads the client from `agent-sessions.json`; it does not accept a positional client argument
+
+Client option references:
+
+| Client | Model option | Effort option | Reference |
+|---|---|---|---|
+| `claude` | `--model <model>` | `--effort low|medium|high` | `https://code.claude.com/docs/en/cli-usage` |
+| `codex` | `--model <model>` | `--config model_reasoning_effort="<level>"` | `https://developers.openai.com/codex/config-reference` |
+| `opencode` | `--model provider/model` | none in project mapping | `https://dev.opencode.ai/docs/cli/` |
+| `gemini` | `--model <model>` | none | `https://google-gemini.github.io/gemini-cli/docs/get-started/configuration.html` |
 
 ---
 

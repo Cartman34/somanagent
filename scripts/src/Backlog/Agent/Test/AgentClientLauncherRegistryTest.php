@@ -13,6 +13,7 @@ use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use SoManAgent\Script\Backlog\Agent\Exception\ClientNotInstalledException;
+use SoManAgent\Script\Backlog\Agent\Model\ResolvedModel;
 use SoManAgent\Script\Backlog\Agent\Model\SessionInfo;
 
 /**
@@ -130,7 +131,14 @@ final class AgentClientLauncherRegistryTest
             /**
              * {@inheritdoc}
              */
-            public function buildLaunchCommand(string $worktree, string $contextFilePath, AgentRole $role, ?string $resumeSessionId = null, bool $continueLast = false): array
+            public function buildLaunchCommand(
+                string $worktree,
+                string $contextFilePath,
+                AgentRole $role,
+                ?string $resumeSessionId = null,
+                bool $continueLast = false,
+                ?ResolvedModel $resolvedModel = null,
+            ): array
             {
                 return ['echo', []];
             }

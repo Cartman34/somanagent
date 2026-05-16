@@ -14,6 +14,7 @@ use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Exception\ClientNotInstalledException;
 use SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
 use SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
+use SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
 use SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
@@ -75,6 +76,9 @@ final class AgentStartCommandTest
         $failed += $this->testRejectsMultipleRoleFlags();
         $failed += $this->testRejectsResetWithReviewer();
         $failed += $this->testRaisesClientNotInstalledWhenLauncherUnavailable();
+        $failed += $this->testTierOverrideIsForwardedToLauncher();
+        $failed += $this->testClaudeEffortOverrideIsForwardedToLauncher();
+        $failed += $this->testGeminiEffortOverridePrintsWarningWithoutEffortArg();
         $failed += $this->testReviewerModeReusesOwnedReviewingEntry();
         $failed += $this->testReviewerModeCallsReviewNextWhenTakingEntry();
         $failed += $this->testReviewerModeRollsBackViaCancelWhenPreparationFails();
@@ -198,6 +202,102 @@ final class AgentStartCommandTest
             return 1;
         }
         echo "OK testRaisesClientNotInstalledWhenLauncherUnavailable\n";
+        return 0;
+    }
+
+    private function testTierOverrideIsForwardedToLauncher(): int
+    {
+        $projectRoot = $this->createGitProject('model-tier');
+        $this->writeBoard($projectRoot . '/local/backlog-board.md', []);
+        $launcher = new FakeAgentClientLauncher(AgentClient::CODEX);
+        $cmd = $this->buildProjectCommand($projectRoot, $launcher, $this->buildModelResolver());
+
+        $previousCwd = getcwd();
+        try {
+            chdir($projectRoot);
+            $cmd->handle(['codex'], ['developer' => true, 'code' => 'd11', 'tier' => 'economy']);
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        $expected = ['--model', 'gpt-5.4-mini', '--config', 'model_reasoning_effort="medium"'];
+        if ($launcher->lastResolvedModelCliArgs !== $expected) {
+            echo "FAIL testTierOverrideIsForwardedToLauncher: expected " . json_encode($expected)
+                . ', got ' . json_encode($launcher->lastResolvedModelCliArgs) . "\n";
+            return 1;
+        }
+
+        echo "OK testTierOverrideIsForwardedToLauncher\n";
+        return 0;
+    }
+
+    private function testClaudeEffortOverrideIsForwardedToLauncher(): int
+    {
+        $projectRoot = $this->createGitProject('model-effort');
+        $this->writeBoard($projectRoot . '/local/backlog-board.md', []);
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $cmd = $this->buildProjectCommand($projectRoot, $launcher, $this->buildModelResolver());
+
+        $previousCwd = getcwd();
+        try {
+            chdir($projectRoot);
+            $cmd->handle(['claude'], ['developer' => true, 'code' => 'd12', 'effort' => 'high']);
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        $expected = ['--model', 'sonnet', '--effort', 'high'];
+        if ($launcher->lastResolvedModelCliArgs !== $expected) {
+            echo "FAIL testClaudeEffortOverrideIsForwardedToLauncher: expected " . json_encode($expected)
+                . ', got ' . json_encode($launcher->lastResolvedModelCliArgs) . "\n";
+            return 1;
+        }
+
+        echo "OK testClaudeEffortOverrideIsForwardedToLauncher\n";
+        return 0;
+    }
+
+    private function testGeminiEffortOverridePrintsWarningWithoutEffortArg(): int
+    {
+        $projectRoot = $this->createGitProject('model-gemini-warning');
+        $this->writeBoard($projectRoot . '/local/backlog-board.md', []);
+        $launcher = new FakeAgentClientLauncher(AgentClient::GEMINI);
+        $cmd = $this->buildProjectCommand($projectRoot, $launcher, $this->buildModelResolver());
+
+        $previousCwd = getcwd();
+        $buffering = false;
+        try {
+            chdir($projectRoot);
+            ob_start();
+            $buffering = true;
+            $cmd->handle(['gemini'], ['developer' => true, 'code' => 'd13', 'effort' => 'high']);
+            $output = ob_get_clean();
+            $buffering = false;
+        } finally {
+            if ($buffering && ob_get_level() > 0) {
+                ob_end_clean();
+            }
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        $expected = ['--model', 'gemini-2.5-flash'];
+        if ($launcher->lastResolvedModelCliArgs !== $expected) {
+            echo "FAIL testGeminiEffortOverridePrintsWarningWithoutEffortArg: expected " . json_encode($expected)
+                . ', got ' . json_encode($launcher->lastResolvedModelCliArgs) . "\n";
+            return 1;
+        }
+        if (!str_contains((string) $output, "effort 'high' is not supported by client 'gemini'")) {
+            echo "FAIL testGeminiEffortOverridePrintsWarningWithoutEffortArg: expected warning, got {$output}\n";
+            return 1;
+        }
+
+        echo "OK testGeminiEffortOverridePrintsWarningWithoutEffortArg\n";
         return 0;
     }
 
@@ -705,7 +805,7 @@ final class AgentStartCommandTest
      * Sufficient for input-validation and "client unavailable" branches, which fail
      * before any worktree / context / session mutation is attempted.
      */
-    private function buildCommand(AgentClientLauncher $launcher): AgentStartCommand
+    private function buildCommand(AgentClientLauncher $launcher, ?AgentModelResolver $modelResolver = null): AgentStartCommand
     {
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         $sessionService = new AgentSessionService($this->tmpDir);
@@ -738,7 +838,44 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             new FakeBacklogCommandRunner(),
+            $modelResolver,
         );
+    }
+
+    private function buildProjectCommand(
+        string $projectRoot,
+        AgentClientLauncher $launcher,
+        ?AgentModelResolver $modelResolver = null,
+    ): AgentStartCommand {
+        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $worktreesRoot = $projectRoot . '/.agent-worktrees';
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($projectRoot);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        return new AgentStartCommand(
+            $projectRoot,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            $sessionService,
+            new AgentContextBuilder($projectRoot, $boardPath, $boardService),
+            $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
+            new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot),
+            $boardService,
+            new FakeSessionDriver(),
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
+            new FakeBacklogCommandRunner(),
+            $modelResolver,
+        );
+    }
+
+    private function buildModelResolver(): AgentModelResolver
+    {
+        return new AgentModelResolver(dirname(__DIR__, 4) . '/resources/backlog-agent/model-mapping.yaml');
     }
 
     /**

@@ -69,6 +69,8 @@ Developer sessions are started by the operator with:
 php scripts/backlog-agent.php start <client> --developer [--code=<dXX>]
 ```
 
+Default model profile is `balanced+medium`. The operator may override it with `--tier=economy|balanced|premium`, `--effort=low|medium|high`, or `--model=<raw-name>`.
+
 Supported clients:
 
 - `claude`: supported end to end by `ClaudeAgentLauncher`.
