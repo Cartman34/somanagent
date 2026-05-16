@@ -75,8 +75,8 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
         $driver->assertTodoContains('Multiline inline task title');
         $driver->assertBoardTodoBlock([
             '- [multiline-feature][multiline-task] Multiline inline task title',
-            '  - First sub-task',
-            '  - Second sub-task',
+            '    - First sub-task',
+            '    - Second sub-task',
             '  meta:',
             '    type: feat',
         ]);
@@ -90,9 +90,9 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
         ], 'task-create-body-file.md');
         $driver->assertBoardTodoBlock([
             '- [body-file-feature][body-file-task] Body file task title',
-            '  - Sub-task one',
-            '  - Sub-task two',
-            '  - Sub-task three',
+            '    - Sub-task one',
+            '    - Sub-task two',
+            '    - Sub-task three',
             '  meta:',
             '    type: tech',
         ]);
@@ -107,6 +107,20 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
             '  Unindented sub-task that should be auto-indented',
             '  meta:',
             '    type: feat',
+        ]);
+        $driver->removeFirstTodoTask();
+
+        // Standard markdown nesting: top-level bullet (0 indent) and sub-bullet (2 spaces)
+        // must land at 2 and 4 spaces in the board respectively after the uniform +2 shift.
+        $driver->createTodoTaskFromBodyFile([
+            '[markdown-nesting-feature] Standard markdown nesting task',
+            '- Top-level item',
+            '  - Sub-level item',
+        ], 'task-create-markdown-nesting.md');
+        $driver->assertBoardTodoBlock([
+            '- [markdown-nesting-feature] Standard markdown nesting task',
+            '  - Top-level item',
+            '    - Sub-level item',
         ]);
         $driver->removeFirstTodoTask();
 

@@ -108,7 +108,7 @@ Rules:
 4. **Required at task creation:** every task must declare an explicit `[feature-slug]` scope (plus `[task-slug]` for child tasks); `task-create` rejects entries without one. Including a `[type]` prefix is also strongly recommended so the queued entry is unambiguous and `work-start` does not have to fall back on text-derived slugs.
 5. Type → branch prefix mapping is 1:1: `feat → feat/<slug>`, `fix → fix/<slug>`, `tech → tech/<slug>`. Scoped child tasks use `<type>/<feature-slug>--<task-slug>`.
 6. Adding a new task type requires extending the `BacklogTaskType` enum and is therefore a deliberate change, not something `task-create` infers from text.
-7. Keep the title short; put the breakdown on indented sub-task lines (two-space indent, one bullet per line). The script accepts unindented sub-task lines and auto-indents them to two spaces.
+7. Keep the title short; put the breakdown on sub-task lines below the title. All subsequent lines are shifted by +2 spaces: top-level bullets land at 2 spaces in the board, standard markdown sub-bullets (2-space indent) land at 4. Write a normal markdown file — nesting hierarchy is preserved.
 8. Always create queued tasks through `task-create` with `--body-file=<path>` (typically under `local/tmp/`). Inline positional task text is not accepted.
 9. Manual edits to `local/backlog-board.md` are not the way to add tasks. Use `--body-file=<path>` instead.
 
