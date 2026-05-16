@@ -39,6 +39,8 @@ final class TmuxSessionDriverTest
         $failed += $this->testIsAliveReturnsFalseWhenTmuxSessionNull();
         $failed += $this->testStopCallsKillSession();
         $failed += $this->testStopWarnsWhenNoTmuxSessionRecorded();
+        $failed += $this->testGetPanePidQuotesFormatToken();
+        $failed += $this->testGetPanePidThrowsWhenOutputIsTmuxDefault();
 
         return $failed;
     }
@@ -260,6 +262,87 @@ final class TmuxSessionDriverTest
         // Should not throw; should warn instead
         echo "OK testStopWarnsWhenNoTmuxSessionRecorded\n";
         return 0;
+    }
+
+    /**
+     * Regression guard: the `#{pane_pid}` format token must be wrapped in single quotes,
+     * otherwise the shell strips it as a comment and tmux falls back to its default summary.
+     * This test exercises the private `getPanePid` via reflection because the method is the
+     * exact contract that broke in production; testing it through `launch()` would also
+     * exercise unrelated tmux side effects.
+     */
+    private function testGetPanePidQuotesFormatToken(): int
+    {
+        $runner = new FakeProcessRunner();
+        $runner->outputMap = [
+            "tmux display-message -t 'somanagent-d03' -p '#{pane_pid}'" => "58250\n",
+        ];
+
+        $driver = new TmuxSessionDriver($runner, Console::getInstance());
+        $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'getPanePid');
+        $reflection->setAccessible(true);
+        $pid = $reflection->invoke($driver, 'somanagent-d03');
+
+        if ($pid !== 58250) {
+            echo "FAIL testGetPanePidQuotesFormatToken: expected pid 58250, got " . var_export($pid, true) . "\n";
+            return 1;
+        }
+        if (count($runner->outputCalls) !== 1) {
+            echo "FAIL testGetPanePidQuotesFormatToken: expected exactly 1 output() call, got " . count($runner->outputCalls) . "\n";
+            return 1;
+        }
+        $command = $runner->outputCalls[0];
+        if (!str_contains($command, "'#{pane_pid}'")) {
+            echo "FAIL testGetPanePidQuotesFormatToken: command does not quote the format token: {$command}\n";
+            return 1;
+        }
+        if (!str_contains($command, "'somanagent-d03'")) {
+            echo "FAIL testGetPanePidQuotesFormatToken: command does not include the escaped session name: {$command}\n";
+            return 1;
+        }
+
+        echo "OK testGetPanePidQuotesFormatToken\n";
+        return 0;
+    }
+
+    /**
+     * Regression guard: when tmux falls back to its default summary line (e.g. because the
+     * shell stripped the format), `getPanePid` must surface the parse failure as an explicit
+     * exception so the bug never returns silently.
+     */
+    private function testGetPanePidThrowsWhenOutputIsTmuxDefault(): int
+    {
+        $runner = new FakeProcessRunner();
+        $runner->outputMap = [
+            "tmux display-message -t 'somanagent-d03' -p '#{pane_pid}'"
+                => "[session] 0:window, current pane 0 - (-:-)\n",
+        ];
+
+        $driver = new TmuxSessionDriver($runner, Console::getInstance());
+        $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'getPanePid');
+        $reflection->setAccessible(true);
+
+        try {
+            $reflection->invoke($driver, 'somanagent-d03');
+        } catch (\ReflectionException $e) {
+            $previous = $e->getPrevious();
+            if (!$previous instanceof \RuntimeException || !str_contains($previous->getMessage(), 'Could not determine pane PID')) {
+                echo "FAIL testGetPanePidThrowsWhenOutputIsTmuxDefault: unexpected previous exception: " . var_export($previous, true) . "\n";
+                return 1;
+            }
+            echo "OK testGetPanePidThrowsWhenOutputIsTmuxDefault\n";
+            return 0;
+        } catch (\RuntimeException $e) {
+            if (!str_contains($e->getMessage(), 'Could not determine pane PID')) {
+                echo "FAIL testGetPanePidThrowsWhenOutputIsTmuxDefault: unexpected message: " . $e->getMessage() . "\n";
+                return 1;
+            }
+            echo "OK testGetPanePidThrowsWhenOutputIsTmuxDefault\n";
+            return 0;
+        }
+
+        echo "FAIL testGetPanePidThrowsWhenOutputIsTmuxDefault: expected RuntimeException\n";
+        return 1;
     }
 
     private function makeSession(string $code, ?string $tmuxSession = null): AgentSession

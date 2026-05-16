@@ -241,11 +241,18 @@ final class TmuxSessionDriver implements SessionDriverInterface
 
     /**
      * Returns the PID of the foreground process in the tmux session's active pane.
+     *
+     * The format string `#{pane_pid}` must be wrapped in literal single quotes so the
+     * shell does not strip it: `#` introduces a comment in /bin/sh, sh -c and the
+     * subprocess executors used by `proc_open`. Without the quotes, the shell silently
+     * truncates the command at `#`, tmux receives `-p` with no format and prints its
+     * default summary line, the parse returns 0, and the launch fails with an opaque
+     * "Could not determine pane PID" error.
      */
     private function getPanePid(string $name): int
     {
         $output = $this->shellRunner->output(
-            sprintf('tmux display-message -t %s -p #{pane_pid}', escapeshellarg($name)),
+            sprintf("tmux display-message -t %s -p '#{pane_pid}'", escapeshellarg($name)),
         );
 
         $pid = (int) trim((string) $output);
