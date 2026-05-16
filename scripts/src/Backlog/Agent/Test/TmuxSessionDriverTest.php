@@ -41,6 +41,9 @@ final class TmuxSessionDriverTest
         $failed += $this->testStopWarnsWhenNoTmuxSessionRecorded();
         $failed += $this->testGetPanePidQuotesFormatToken();
         $failed += $this->testGetPanePidThrowsWhenOutputIsTmuxDefault();
+        $failed += $this->testCreateSessionAppliesMouseOption();
+        $failed += $this->testCreateSessionAppliesHistoryLimit();
+        $failed += $this->testCreateSessionSetOptionFailureDoesNotThrow();
 
         return $failed;
     }
@@ -323,6 +326,79 @@ final class TmuxSessionDriverTest
 
         echo "FAIL testGetPanePidThrowsWhenOutputIsTmuxDefault: expected RuntimeException\n";
         return 1;
+    }
+
+    /**
+     * After createSession() succeeds, the driver must apply `tmux set-option -t <name> mouse on`
+     * so the mouse wheel enters copy mode and allows scrollback in the pane.
+     */
+    private function testCreateSessionAppliesMouseOption(): int
+    {
+        $runner = new FakeProcessRunner();
+        $driver = new TmuxSessionDriver($runner, Console::getInstance());
+        $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'createSession');
+        $reflection->setAccessible(true);
+        $reflection->invoke($driver, 'somanagent-d03', '/tmp/fake.sh', '/tmp/wa');
+
+        $mouseCalls = array_filter(
+            $runner->succeedsCalls,
+            static fn(string $c): bool => str_contains($c, 'set-option') && str_contains($c, 'mouse on'),
+        );
+        if ($mouseCalls === []) {
+            echo "FAIL testCreateSessionAppliesMouseOption: 'tmux set-option ... mouse on' was not called\n";
+            return 1;
+        }
+        echo "OK testCreateSessionAppliesMouseOption\n";
+        return 0;
+    }
+
+    /**
+     * After createSession() succeeds, the driver must apply `tmux set-option -t <name> history-limit 50000`
+     * to extend the scrollback buffer beyond the tmux default of 2 000 lines.
+     */
+    private function testCreateSessionAppliesHistoryLimit(): int
+    {
+        $runner = new FakeProcessRunner();
+        $driver = new TmuxSessionDriver($runner, Console::getInstance());
+        $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'createSession');
+        $reflection->setAccessible(true);
+        $reflection->invoke($driver, 'somanagent-d03', '/tmp/fake.sh', '/tmp/wa');
+
+        $histCalls = array_filter(
+            $runner->succeedsCalls,
+            static fn(string $c): bool => str_contains($c, 'set-option') && str_contains($c, 'history-limit 50000'),
+        );
+        if ($histCalls === []) {
+            echo "FAIL testCreateSessionAppliesHistoryLimit: 'tmux set-option ... history-limit 50000' was not called\n";
+            return 1;
+        }
+        echo "OK testCreateSessionAppliesHistoryLimit\n";
+        return 0;
+    }
+
+    /**
+     * If the set-option commands fail (tmux returns non-zero), createSession() must not throw.
+     * Mouse mode and history-limit are ergonomic options; the session must remain functional.
+     */
+    private function testCreateSessionSetOptionFailureDoesNotThrow(): int
+    {
+        $runner = new FakeProcessRunner();
+        // new-session succeeds; the two set-option calls fail
+        $runner->succeedsQueue = [true, false, false];
+
+        $driver = new TmuxSessionDriver($runner, Console::getInstance());
+        $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'createSession');
+        $reflection->setAccessible(true);
+
+        try {
+            $reflection->invoke($driver, 'somanagent-d03', '/tmp/fake.sh', '/tmp/wa');
+        } catch (\Throwable $e) {
+            $inner = $e instanceof \ReflectionException ? $e->getPrevious() : $e;
+            echo "FAIL testCreateSessionSetOptionFailureDoesNotThrow: unexpected exception: " . ($inner?->getMessage() ?? $e->getMessage()) . "\n";
+            return 1;
+        }
+        echo "OK testCreateSessionSetOptionFailureDoesNotThrow\n";
+        return 0;
     }
 
     private function makeSession(string $code, ?string $tmuxSession = null): AgentSession

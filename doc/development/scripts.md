@@ -149,7 +149,7 @@ php scripts/backlog-agent.php sessions --code=d04
 
 Notes:
 - `BACKLOG_AGENT_SESSION_DRIVER=tmux|direct` selects the session driver
-- `tmux` is the default driver and keeps the live client session recoverable after terminal or SSH disconnects
+- `tmux` is the default driver and keeps the live client session recoverable after terminal or SSH disconnects; mouse mode and a 50 000-line scrollback buffer are applied automatically so the mouse wheel can scroll the pane history
 - `direct` is a degraded driver that keeps the previous interactive process behavior, without live terminal recovery
 - `resume` reads the client from `agent-sessions.json`; it does not accept a positional client argument
 
