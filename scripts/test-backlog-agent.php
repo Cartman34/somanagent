@@ -29,6 +29,7 @@ use SoManAgent\Script\Backlog\Agent\Test\ClaudeAgentLauncherTest;
 use SoManAgent\Script\Backlog\Agent\Test\CodexAgentLauncherTest;
 use SoManAgent\Script\Backlog\Agent\Test\DirectSessionDriverTest;
 use SoManAgent\Script\Backlog\Agent\Test\GeminiAgentLauncherTest;
+use SoManAgent\Script\Backlog\Agent\Test\LauncherFlagValidatorTest;
 use SoManAgent\Script\Backlog\Agent\Test\OpenCodeAgentLauncherTest;
 use SoManAgent\Script\Backlog\Agent\Test\SystemInteractiveProcessRunnerTest;
 use SoManAgent\Script\Backlog\Agent\Test\TmuxSessionDriverTest;
@@ -61,6 +62,7 @@ $suites = [
     'CodexAgentLauncherTest' => CodexAgentLauncherTest::class,
     'DirectSessionDriverTest' => DirectSessionDriverTest::class,
     'GeminiAgentLauncherTest' => GeminiAgentLauncherTest::class,
+    'LauncherFlagValidatorTest' => LauncherFlagValidatorTest::class,
     'OpenCodeAgentLauncherTest' => OpenCodeAgentLauncherTest::class,
     'SystemInteractiveProcessRunnerTest' => SystemInteractiveProcessRunnerTest::class,
     'TmuxSessionDriverTest' => TmuxSessionDriverTest::class,

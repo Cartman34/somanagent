@@ -39,7 +39,7 @@ php scripts/help.php migrate.php
 | `worktree-info.php` | PHP | Display the git worktree context for the current script (linked vs main worktree, roots) |
 | `test-backlog-workflow.php` | PHP | Run reusable sequential validation campaigns for `backlog.php` on temporary backlog files |
 | `test-backlog-agent.php` | PHP | Run unit tests for backlog-agent.php classes |
-| `test-validation.php` | PHP | Run unit tests for `scripts/src/Validation/` classes (ScriptExecBitValidator, …) |
+| `test-validation.php` | PHP | Run unit tests for `scripts/src/Validation/` classes (ScriptExecBitValidator, ExecBitFixer, …) |
 | `setup.php` | PHP | Full installation (first time) |
 | `dev.php` | PHP | Start / stop the environment |
 | `migrate.php` | PHP | Run Doctrine migrations |
@@ -54,6 +54,8 @@ php scripts/help.php migrate.php
 | `review.php` | PHP | Run mechanical review checks (French strings, PHPDoc, JSDoc, translations, targeted validation, PHPStan) |
 | `validate-files.php` | PHP | Run targeted backend/frontend validations for an explicit file list |
 | `validate-backend-tests.php` | PHP | Run isolated local PHPUnit checks for backend unit tests from WSL without Docker services |
+| `validate-agent-launchers.php` | PHP | Cross-check `AgentClientLauncher` CLI flags against the local binary `--help` output |
+| `fix-permissions.php` | PHP | Restore the exec bit on shebang-bearing `scripts/*.php` entrypoints |
 | `phpunit.php` | PHP | Run PHPUnit on the project scopes |
 | `phpstan.php` | PHP | Run PHPStan static analysis on backend and/or scripts PHP sources |
 | `rector.php` | PHP | Apply automated code fixes to backend and/or scripts PHP sources via Rector |
@@ -541,6 +543,44 @@ php scripts/validate-files.php backend/src/Controller/TaskController.php fronten
 php scripts/validate-files.php --with-types backend/src/Service/StoryExecutionService.php
 php scripts/validate-files.php --with-types --review-scope backend/src/Service/StoryExecutionService.php
 ```
+
+---
+
+### `validate-agent-launchers.php`
+Cross-checks the CLI flags declared by each `AgentClientLauncher::requiredCliFlags()` against the local `<client> --help` output, so an upstream CLI removal (e.g. `claude` dropping `--cwd` in v2.x) is caught before it breaks a real agent launch.
+
+```bash
+php scripts/validate-agent-launchers.php
+```
+
+Rules:
+- exits `0` when every required flag is still advertised by the available binaries
+- exits `1` when at least one required flag is missing for an installed binary
+- skips a launcher (without failing) when its binary is not installed locally — keeps CI green on runners without optional clients
+- combines stdout and stderr when reading `<bin> --help` so short-help CLIs that print to stderr are covered
+
+---
+
+### `fix-permissions.php`
+Restores the exec bit on shebang-bearing `scripts/*.php` entrypoints. Mirror counterpart of the `ScriptExecBitValidator` plugged into `validate-files.php`: the validator reports regressions, this script repairs them.
+
+Crucially, both dimensions of the exec bit are checked:
+- the **filesystem** mode (`is_executable()`);
+- the **git index** mode (`100755` vs `100644`, read from `git ls-files --stage`).
+
+Under WSL with `core.filemode = false` a file can be executable on disk while still recorded as `100644` in the index — exactly the broken state a fresh clone would receive on another machine. This script catches and repairs that mismatch.
+
+```bash
+php scripts/fix-permissions.php           # apply the fix
+php scripts/fix-permissions.php --dry-run # list what would be fixed without touching anything
+```
+
+Rules:
+- scope is intentionally narrow: only `scripts/*.php` (no recursion, no other directories)
+- a file is fixed when it declares a `#!/usr/bin/env` shebang and either lacks the fs exec bit, or is tracked with a `100644` index mode
+- existing read/write bits are preserved — only the three exec bits are forced on
+- after `chmod +x`, the runner also runs `git update-index --chmod=+x` on every tracked file so the bit lands in the next commit
+- `--dry-run` lists the candidates and labels each row with its fs and index state, without changing anything
 
 ---
 

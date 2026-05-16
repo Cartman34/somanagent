@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Runner;
 
+use SoManAgent\Script\Validation\GitIndexModeReader;
 use SoManAgent\Script\Validation\OpenApiConsistencyValidator;
 use SoManAgent\Script\Validation\ScriptExecBitValidator;
 
@@ -223,14 +224,15 @@ final class ValidateFilesRunner extends AbstractScriptRunner
                 }
             }
 
-            $missingExecBit = (new ScriptExecBitValidator())->findMissingExecBit($scriptPhpFiles);
+            $execBitValidator = new ScriptExecBitValidator(new GitIndexModeReader($this->projectRoot));
+            $missingExecBit = $execBitValidator->findMissingExecBit($scriptPhpFiles);
             if ($missingExecBit === []) {
                 $results[] = sprintf('Script exec bit: OK (%d file%s)', count($scriptPhpFiles), count($scriptPhpFiles) > 1 ? 's' : '');
             } else {
                 $failed = true;
                 $results[] = sprintf('Script exec bit: FAIL (%d file%s missing exec bit)', count($missingExecBit), count($missingExecBit) > 1 ? 's' : '');
                 foreach ($missingExecBit as $file) {
-                    $results[] = '  - ' . $file . ' (run: git update-index --chmod=+x ' . $file . ')';
+                    $results[] = '  - ' . $file . ' (run: php scripts/fix-permissions.php — or `git update-index --chmod=+x ' . $file . '`)';
                 }
             }
         } else {

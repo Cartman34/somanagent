@@ -89,7 +89,8 @@ final class ClaudeAgentLauncherTest
 
         [$bin, $args] = $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER);
 
-        $expected = ['--cwd', '/worktree', '--append-system-prompt', 'context initial'];
+        // Strict equality enforces the absence of --cwd / /worktree (claude v2.x rejects --cwd).
+        $expected = ['--append-system-prompt', 'context initial'];
         if ($bin !== 'claude' || $args !== $expected) {
             echo "FAIL testBuildLaunchCommandInitial: unexpected command\n";
             return 1;
@@ -124,6 +125,10 @@ final class ClaudeAgentLauncherTest
             echo "FAIL testBuildLaunchCommandContinue: missing --continue\n";
             return 1;
         }
+        if (in_array('--cwd', $args, true) || in_array('/worktree', $args, true)) {
+            echo "FAIL testBuildLaunchCommandContinue: --cwd must not be passed in continue mode either (claude v2.x rejects it)\n";
+            return 1;
+        }
 
         echo "OK testBuildLaunchCommandContinue\n";
         return 0;
@@ -142,6 +147,10 @@ final class ClaudeAgentLauncherTest
         }
         if (in_array('--continue', $args, true)) {
             echo "FAIL testBuildLaunchCommandResumeId: resume id must not add --continue\n";
+            return 1;
+        }
+        if (in_array('--cwd', $args, true) || in_array('/worktree', $args, true)) {
+            echo "FAIL testBuildLaunchCommandResumeId: --cwd must not be passed in resume mode either (claude v2.x rejects it)\n";
             return 1;
         }
 

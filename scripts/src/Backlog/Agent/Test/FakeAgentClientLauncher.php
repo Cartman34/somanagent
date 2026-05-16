@@ -36,15 +36,20 @@ final class FakeAgentClientLauncher implements AgentClientLauncher
 
     private bool $available;
 
+    /** @var list<string> */
+    private array $cliFlags;
+
     /**
      * @param list<SessionInfo> $sessions Sessions returned by listSessions()
      * @param bool $available Value returned by isAvailable()
+     * @param list<string> $cliFlags Flags returned by requiredCliFlags()
      */
-    public function __construct(AgentClient $client, array $sessions = [], bool $available = true)
+    public function __construct(AgentClient $client, array $sessions = [], bool $available = true, array $cliFlags = [])
     {
         $this->clientEnum = $client;
         $this->sessions = $sessions;
         $this->available = $available;
+        $this->cliFlags = $cliFlags;
     }
 
     /**
@@ -112,5 +117,13 @@ final class FakeAgentClientLauncher implements AgentClientLauncher
     {
         $this->lastListWorktree = $worktree;
         return $this->sessions;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function requiredCliFlags(): array
+    {
+        return $this->cliFlags;
     }
 }

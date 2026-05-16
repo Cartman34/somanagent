@@ -12,6 +12,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/src/bootstrap.php';
 
 use SoManAgent\Script\Console;
+use SoManAgent\Script\Validation\Test\ExecBitFixerTest;
 use SoManAgent\Script\Validation\Test\ScriptExecBitValidatorTest;
 
 $console = Console::getInstance();
@@ -26,6 +27,7 @@ foreach (array_slice($argv, 1) as $arg) {
 /** @var array<string, class-string> $suites */
 $suites = [
     'ScriptExecBitValidatorTest' => ScriptExecBitValidatorTest::class,
+    'ExecBitFixerTest' => ExecBitFixerTest::class,
 ];
 
 if ($suite !== null && !isset($suites[$suite])) {

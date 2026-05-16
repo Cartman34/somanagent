@@ -50,6 +50,20 @@ final class ClaudeAgentLauncher extends AbstractAgentClientLauncher
     /**
      * {@inheritdoc}
      */
+    public function requiredCliFlags(): array
+    {
+        return ['--append-system-prompt', '--resume', '--continue'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * The working directory is positioned by the caller before launch (tmux `-c`
+     * for TmuxSessionDriver, `proc_open` cwd for DirectSessionDriver, and an
+     * explicit `chdir()` in AgentStartCommand). The `claude` binary itself does
+     * not accept a working-directory flag in v2.x, so $worktree is intentionally
+     * not passed on the command line.
+     */
     public function buildLaunchCommand(
         string $worktree,
         string $contextFilePath,
@@ -66,8 +80,6 @@ final class ClaudeAgentLauncher extends AbstractAgentClientLauncher
         }
 
         $args = [
-            '--cwd',
-            $worktree,
             '--append-system-prompt',
             $context,
         ];

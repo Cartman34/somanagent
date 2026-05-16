@@ -50,6 +50,14 @@ final class GeminiAgentLauncher extends AbstractAgentClientLauncher
 
     /**
      * {@inheritdoc}
+     */
+    public function requiredCliFlags(): array
+    {
+        return ['-r'];
+    }
+
+    /**
+     * {@inheritdoc}
      *
      * Adds GEMINI_SYSTEM_MD pointing to the context file so Gemini loads it as a system prompt.
      *
