@@ -193,7 +193,7 @@ The session driver is selected by the environment variable `BACKLOG_AGENT_SESSIO
 
 | Value | Behaviour |
 |---|---|
-| `tmux` (default) | Wraps each session in a named tmux session (`somanagent-<code>`). SSH-resilient: the client continues running after the terminal disconnects. |
+| `tmux` (default) | Wraps each session in a named tmux session (`somanagent-<code>`). SSH-resilient: the client continues running after the terminal disconnects. Mouse mode is enabled by default for scrollback; scroll with the mouse wheel to enter copy mode and browse pane history. |
 | `direct` | Spawns the client via `proc_open`. Simpler but not SSH-resilient. |
 
 ### Session Lifecycle And Stop Semantics

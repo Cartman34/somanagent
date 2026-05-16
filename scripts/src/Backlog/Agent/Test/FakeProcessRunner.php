@@ -19,6 +19,11 @@ final class FakeProcessRunner implements ProcessRunner
 {
     public bool $succeedsResult = true;
 
+    /**
+     * @var list<bool> Per-call result queue for succeeds(); shifts one entry per call, falls back to $succeedsResult when empty
+     */
+    public array $succeedsQueue = [];
+
     /** @var array<string, string|null> Keyed by "$command|$cwd" or bare "$command" */
     public array $outputMap = [];
 
@@ -34,6 +39,10 @@ final class FakeProcessRunner implements ProcessRunner
     public function succeeds(string $command): bool
     {
         $this->succeedsCalls[] = $command;
+
+        if ($this->succeedsQueue !== []) {
+            return (bool) array_shift($this->succeedsQueue);
+        }
 
         return $this->succeedsResult;
     }

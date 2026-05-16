@@ -21,6 +21,10 @@ use SoManAgent\Script\Console;
  * SSH-resilient: an SSH disconnect does not terminate the running AI client because the tmux session
  * survives on the server. Reconnect by running resume.
  *
+ * Mouse mode is enabled by default so the mouse wheel enters copy mode and allows scrolling through
+ * the pane history. The scrollback buffer is extended to 50 000 lines. Both settings are applied
+ * after session creation; failure is non-fatal and the session remains usable without them.
+ *
  * Enabled with BACKLOG_AGENT_SESSION_DRIVER=tmux (default).
  */
 final class TmuxSessionDriver implements SessionDriverInterface
@@ -224,6 +228,12 @@ final class TmuxSessionDriver implements SessionDriverInterface
 
     /**
      * Creates a detached tmux session running the wrapper script in the given working directory.
+     *
+     * After the session is created, mouse mode and an extended scrollback buffer are applied via
+     * set-option. The AI client runs in alt-screen mode, which bypasses the host terminal scrollback;
+     * mouse mode enables wheel-scroll in the pane via tmux copy mode. Both options are ergonomic
+     * improvements; if either set-option call fails, a warning is emitted and the session continues
+     * without that option.
      */
     private function createSession(string $name, string $wrapperPath, string $cwd): void
     {
@@ -236,6 +246,13 @@ final class TmuxSessionDriver implements SessionDriverInterface
 
         if (!$this->shellRunner->succeeds($command)) {
             throw new \RuntimeException(sprintf("Failed to create tmux session '%s'.", $name));
+        }
+
+        if (!$this->shellRunner->succeeds(sprintf('tmux set-option -t %s mouse on', escapeshellarg($name)))) {
+            $this->console->warn(sprintf("tmux set-option mouse on failed for session '%s'; mouse scrollback will not be available.", $name));
+        }
+        if (!$this->shellRunner->succeeds(sprintf('tmux set-option -t %s history-limit 50000', escapeshellarg($name)))) {
+            $this->console->warn(sprintf("tmux set-option history-limit failed for session '%s'; scrollback history uses the tmux default.", $name));
         }
     }
 

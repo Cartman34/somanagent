@@ -41,6 +41,9 @@ final class TmuxSessionDriverTest
         $failed += $this->testStopWarnsWhenNoTmuxSessionRecorded();
         $failed += $this->testGetPanePidQuotesFormatToken();
         $failed += $this->testGetPanePidThrowsWhenOutputIsTmuxDefault();
+        $failed += $this->testCreateSessionAppliesMouseOption();
+        $failed += $this->testCreateSessionAppliesHistoryLimit();
+        $failed += $this->testCreateSessionWarnsWhenSetOptionFails();
 
         return $failed;
     }
@@ -323,6 +326,92 @@ final class TmuxSessionDriverTest
 
         echo "FAIL testGetPanePidThrowsWhenOutputIsTmuxDefault: expected RuntimeException\n";
         return 1;
+    }
+
+    /**
+     * After createSession() succeeds, the driver must apply `tmux set-option -t <name> mouse on`
+     * so the mouse wheel enters copy mode and allows scrollback in the pane.
+     */
+    private function testCreateSessionAppliesMouseOption(): int
+    {
+        $runner = new FakeProcessRunner();
+        $driver = new TmuxSessionDriver($runner, Console::getInstance());
+        $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'createSession');
+        $reflection->setAccessible(true);
+        $reflection->invoke($driver, 'somanagent-d03', '/tmp/fake.sh', '/tmp/wa');
+
+        $mouseCalls = array_filter(
+            $runner->succeedsCalls,
+            static fn(string $c): bool => str_contains($c, 'set-option') && str_contains($c, 'mouse on'),
+        );
+        if ($mouseCalls === []) {
+            echo "FAIL testCreateSessionAppliesMouseOption: 'tmux set-option ... mouse on' was not called\n";
+            return 1;
+        }
+        echo "OK testCreateSessionAppliesMouseOption\n";
+        return 0;
+    }
+
+    /**
+     * After createSession() succeeds, the driver must apply `tmux set-option -t <name> history-limit 50000`
+     * to extend the scrollback buffer beyond the tmux default of 2 000 lines.
+     */
+    private function testCreateSessionAppliesHistoryLimit(): int
+    {
+        $runner = new FakeProcessRunner();
+        $driver = new TmuxSessionDriver($runner, Console::getInstance());
+        $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'createSession');
+        $reflection->setAccessible(true);
+        $reflection->invoke($driver, 'somanagent-d03', '/tmp/fake.sh', '/tmp/wa');
+
+        $histCalls = array_filter(
+            $runner->succeedsCalls,
+            static fn(string $c): bool => str_contains($c, 'set-option') && str_contains($c, 'history-limit 50000'),
+        );
+        if ($histCalls === []) {
+            echo "FAIL testCreateSessionAppliesHistoryLimit: 'tmux set-option ... history-limit 50000' was not called\n";
+            return 1;
+        }
+        echo "OK testCreateSessionAppliesHistoryLimit\n";
+        return 0;
+    }
+
+    /**
+     * If the set-option commands fail (tmux returns non-zero), createSession() must not throw
+     * and must emit a warning via Console::warn() for each failed option so the operator knows
+     * that mouse scrollback or the extended history limit is unavailable.
+     */
+    private function testCreateSessionWarnsWhenSetOptionFails(): int
+    {
+        $runner = new FakeProcessRunner();
+        // new-session succeeds; the two set-option calls fail
+        $runner->succeedsQueue = [true, false, false];
+
+        $driver = new TmuxSessionDriver($runner, Console::getInstance());
+        $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'createSession');
+        $reflection->setAccessible(true);
+
+        ob_start();
+        try {
+            $reflection->invoke($driver, 'somanagent-d03', '/tmp/fake.sh', '/tmp/wa');
+        } catch (\Throwable $e) {
+            ob_end_clean();
+            $inner = $e instanceof \ReflectionException ? $e->getPrevious() : $e;
+            echo "FAIL testCreateSessionWarnsWhenSetOptionFails: unexpected exception: " . ($inner?->getMessage() ?? $e->getMessage()) . "\n";
+            return 1;
+        }
+        $output = ob_get_clean();
+
+        if (!str_contains((string) $output, 'mouse')) {
+            echo "FAIL testCreateSessionWarnsWhenSetOptionFails: expected warning mentioning 'mouse', got: " . var_export($output, true) . "\n";
+            return 1;
+        }
+        if (!str_contains((string) $output, 'history-limit')) {
+            echo "FAIL testCreateSessionWarnsWhenSetOptionFails: expected warning mentioning 'history-limit', got: " . var_export($output, true) . "\n";
+            return 1;
+        }
+        echo "OK testCreateSessionWarnsWhenSetOptionFails\n";
+        return 0;
     }
 
     private function makeSession(string $code, ?string $tmuxSession = null): AgentSession
