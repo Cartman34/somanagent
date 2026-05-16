@@ -18,7 +18,7 @@ use SoManAgent\Script\Backlog\Service\BacklogBoardService;
  *
  * Handles auto-selection (first review-stage entry not yet claimed) and
  * explicit targeting via --feature, --task, or --developer flags.
- * Also detects concurrent reviewer and developer session conflicts.
+ * Also detects concurrent reviewer-vs-reviewer session conflicts.
  */
 final class AgentReviewerSelector
 {
@@ -199,20 +199,6 @@ final class AgentReviewerSelector
     {
         foreach ($this->sessionService->load() as $session) {
             if ($session->role === AgentRole::REVIEWER && $session->worktree === $worktree) {
-                return $session;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Returns any non-reviewer session (developer or manager) active in the given worktree, or null.
-     */
-    public function findActiveDeveloperForWorktree(string $worktree): ?AgentSession
-    {
-        foreach ($this->sessionService->load() as $session) {
-            if ($session->role !== AgentRole::REVIEWER && $session->worktree === $worktree) {
                 return $session;
             }
         }

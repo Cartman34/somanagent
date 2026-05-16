@@ -266,7 +266,7 @@ When a reviewer starts on a new entry (not a reuse), the launcher:
 2. Saves the board immediately.
 3. Stores the developer WA path as `worktree` in `sessions.json`.
 
-If any subsequent preparation step fails (WA missing and unreconstructable, concurrent session conflict), the launcher rolls the board back to `stage=review` and clears `meta.reviewer` before erroring.
+If any subsequent preparation step fails (WA missing and unreconstructable, reviewer-vs-reviewer conflict), the launcher rolls the board back to `stage=review` and clears `meta.reviewer` before erroring.
 
 Once the interactive client process starts, no automatic rollback occurs; the entry remains at `stage=reviewing` until the manager or a backlog command changes it. The launcher also records the client PID (and tmux session name when applicable) in `local/tmp/agent-sessions.json`. The active session driver determines how `stop` and `resume` work: the default tmux driver is SSH-resilient (the client keeps running after a disconnect; `resume` re-attaches to the detached session; `stop` kills the tmux session), while the direct driver (`BACKLOG_AGENT_SESSION_DRIVER=direct`) uses SIGTERM/SIGKILL and refuses resume while the tracked client process is alive. See `doc/development/agent-workflow.md` for the full lifecycle.
 
@@ -306,16 +306,17 @@ Without `--code=<rXX>`, the launcher auto-allocates the lowest free reviewer cod
 
 ### Concurrent session conflicts
 
-Two situations block the launch by default:
+One situation blocks the launch by default:
 
 1. **Another reviewer is already reviewing the same WA** — a different reviewer session has the same worktree in `agent-sessions.json`. Use `--force` to proceed anyway.
-2. **A developer session is active in the target WA** — a developer or manager session occupies the same worktree. Filesystem conflicts are likely under concurrent access. Use `--force` to proceed at your own risk; prefer stopping the developer session first with `php scripts/backlog-agent.php stop --code=<dXX>`.
+
+Reviewer sessions coexist with the active developer session on the shared WA without restriction. Two reviewers on the same WA remain refused; `--force` overrides that case only.
 
 ```
 php scripts/backlog-agent.php start claude --reviewer --developer=d10 --force
 ```
 
-`--force` overrides both conflict types. It does not override an entry already at `stage=reviewing` for a different reviewer.
+`--force` overrides the reviewer-vs-reviewer conflict. It does not override an entry already at `stage=reviewing` for a different reviewer.
 
 ### Resuming an interrupted reviewer session
 
