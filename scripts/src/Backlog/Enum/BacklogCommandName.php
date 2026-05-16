@@ -33,7 +33,6 @@ enum BacklogCommandName: string
     case ENTRY_SET_META = 'entry-set-meta';
     case WORK_START = 'work-start';
     case ENTRY_RELEASE = 'entry-release';
-    case FEATURE_TASK_MERGE = 'feature-task-merge';
     case FEATURE_ASSIGN = 'feature-assign';
     case ENTRY_UNASSIGN = 'entry-unassign';
     case FEATURE_BLOCK = 'feature-block';
@@ -43,7 +42,6 @@ enum BacklogCommandName: string
     case WORKTREE_CLEAN = 'worktree-clean';
     case WORKTREE_RESTORE = 'worktree-restore';
     case FEATURE_CLOSE = 'feature-close';
-    case FEATURE_MERGE = 'feature-merge';
 
     /**
      * Returns true when this command mutates board, review, worktree, or associated state.

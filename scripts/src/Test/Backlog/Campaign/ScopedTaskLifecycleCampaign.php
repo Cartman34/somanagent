@@ -138,7 +138,6 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->rework($context->agentPrimary, $taskBRef);
         $driver->requestTaskReview($context->agentPrimary);
         $driver->approveTaskViaUnifiedCommand($context->agentSecondary, $taskBRef);
-        $driver->mergeTaskWithLegacyCommand($taskBRef);
         $driver->mergeTask($taskBRef);
 
         $driver->closeFeature($context->scopedFeature);

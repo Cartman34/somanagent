@@ -134,7 +134,7 @@ Rules:
 1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php worktree-clean`.
 2. The script removes only abandoned managed worktrees under `.agent-worktrees/` when they are safe to delete.
 3. Dirty, blocked, or external worktrees are left untouched and must be handled manually.
-4. In the normal workflow, this command is mainly triggered automatically after `feature-close` and `feature-merge`, or manually through `cleanup`.
+4. In the normal workflow, this command is mainly triggered automatically after `feature-close` and `entry-merge`, or manually through `cleanup`.
 
 ### `review-check`
 
@@ -203,7 +203,7 @@ Also check:
 2. Use the stable `<entry-ref>` for the target feature or child task entry.
 3. A feature entry merges into `main`; a child task entry merges locally into its parent feature branch.
 4. Do not use a short task slug with `entry-merge`; `entry-merge <task>` is refused even when the task slug is unique.
-5. The caller context identifies the reviewer. It is not a developer owner lookup and is not passed to the developer form of `feature-task-merge`.
+5. The caller context identifies the reviewer. It is not a developer owner lookup.
 6. The command prints the resolved type, target, merge target, and equivalent internal command before running the merge.
 7. Pass `--body-file=<path>` only for feature merges, and only when the existing PR body must be replaced. Omit it to keep the body unchanged.
 8. If a feature merge aborts on a conflict, the entry stays in `approved`. The assigned developer must run `rework` on the same entry to move it back to `development`, fix the conflict, then resubmit through `review-request`.

@@ -77,7 +77,7 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
 
         if ($activeEntries !== []) {
             // Allow starting a scoped child task when the agent's only active entry is the parent
-            // feature container for that task (auto-assigned by feature-task-merge on prior task merge).
+            // feature container for that task (auto-assigned by entry-merge on prior task merge).
             // Only applies when no explicit reference is given; explicit references use the normal guard.
             $allowStart = false;
             if ($explicitReference === null && count($activeEntries) === 1) {

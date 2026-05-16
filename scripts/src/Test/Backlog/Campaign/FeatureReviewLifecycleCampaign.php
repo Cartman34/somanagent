@@ -134,7 +134,6 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $driver->blockFeature($context->agentPrimary, $context->fixFeature);
         $driver->assertStatusContains($context->fixFeature, 'Blocker: blocked');
         $driver->unblockFeature($context->agentPrimary, $context->fixFeature);
-        $driver->assertFeatureMergeIsDeprecated($context->fixFeature);
         $driver->mergeFeature($context->fixFeature);
         $driver->assertActiveFeatureMissing($context->fixFeature);
     }

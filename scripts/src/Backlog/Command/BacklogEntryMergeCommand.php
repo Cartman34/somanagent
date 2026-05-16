@@ -7,7 +7,6 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntryMatch;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
@@ -109,7 +108,7 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
         if (array_key_exists('body-file', $options)) {
             $delegatedOptions['body-file'] = $options['body-file'];
         }
-        $equivalentCommand = BacklogCommandName::FEATURE_MERGE->value . ' ' . $feature;
+        $equivalentCommand = 'feature-merge' . ' ' . $feature;
         if (isset($delegatedOptions['body-file']) && is_string($delegatedOptions['body-file'])) {
             $equivalentCommand .= ' --body-file ' . $delegatedOptions['body-file'];
         }
@@ -144,7 +143,7 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
             'task',
             $target,
             $parentFeature,
-            BacklogCommandName::FEATURE_TASK_MERGE->value . ' ' . $target,
+            'feature-task-merge' . ' ' . $target,
         );
 
         $this->featureTaskMergeCommand->performMerge([$target], []);
