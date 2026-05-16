@@ -13,15 +13,18 @@ use SoManAgent\Script\Backlog\Agent\Client\BacklogCommandRunner;
  * Recording stub for BacklogCommandRunner.
  *
  * Records every call in $calls and delegates to optional callbacks ($onReviewNext,
- * $onReviewCancel) so tests can inject board mutations that simulate the real commands.
+ * $onReviewCancel, $onWorkStart, $onEntryRelease) so tests can inject board mutations
+ * that simulate the real commands.
  */
 final class FakeBacklogCommandRunner implements BacklogCommandRunner
 {
     /**
      * Ordered list of calls received.
-     * Each entry: ['method' => 'reviewNext'|'reviewCancel', 'reviewerCode' => string, 'entryRef' => string]
+     * Each entry carries 'method' plus the method-specific keys:
+     *   reviewNext/reviewCancel: 'reviewerCode', 'entryRef'
+     *   workStart/entryRelease:  'developerCode', 'entryRef'
      *
-     * @var list<array{method: string, reviewerCode: string, entryRef: string}>
+     * @var list<array<string, string>>
      */
     public array $calls = [];
 
@@ -38,6 +41,20 @@ final class FakeBacklogCommandRunner implements BacklogCommandRunner
      * @var (callable(string, string): void)|null
      */
     public $onReviewCancel = null;
+
+    /**
+     * Optional callback invoked during workStart(). Receives (developerCode, entryRef).
+     *
+     * @var (callable(string, string): void)|null
+     */
+    public $onWorkStart = null;
+
+    /**
+     * Optional callback invoked during entryRelease(). Receives (developerCode, entryRef).
+     *
+     * @var (callable(string, string): void)|null
+     */
+    public $onEntryRelease = null;
 
     /**
      * {@inheritdoc}
@@ -58,6 +75,28 @@ final class FakeBacklogCommandRunner implements BacklogCommandRunner
         $this->calls[] = ['method' => 'reviewCancel', 'reviewerCode' => $reviewerCode, 'entryRef' => $entryRef];
         if ($this->onReviewCancel !== null) {
             ($this->onReviewCancel)($reviewerCode, $entryRef);
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function workStart(string $developerCode, string $entryRef): void
+    {
+        $this->calls[] = ['method' => 'workStart', 'developerCode' => $developerCode, 'entryRef' => $entryRef];
+        if ($this->onWorkStart !== null) {
+            ($this->onWorkStart)($developerCode, $entryRef);
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function entryRelease(string $developerCode, string $entryRef): void
+    {
+        $this->calls[] = ['method' => 'entryRelease', 'developerCode' => $developerCode, 'entryRef' => $entryRef];
+        if ($this->onEntryRelease !== null) {
+            ($this->onEntryRelease)($developerCode, $entryRef);
         }
     }
 }

@@ -47,6 +47,8 @@ Default model profile is `premium+medium`. The operator may override it with `--
 
 Manager sessions run in WP by default. No `.agent-worktrees/<mXX>` directory is created automatically. The `--reset` flag is not supported for the manager role.
 
+**No auto-pick:** unlike developer and reviewer roles, `start --manager` does not reserve any backlog entry automatically. The manager operates interactively from WP and triggers backlog actions manually.
+
 A manager may inspect or switch to a WA when the documented manager workflow allows it; this must be done manually from within the WP session.
 
 Supported clients:

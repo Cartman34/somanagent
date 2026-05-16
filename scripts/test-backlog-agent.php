@@ -16,6 +16,7 @@ use SoManAgent\Script\Backlog\Agent\Test\AgentContextBuilderTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentListCommandTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentModelResolverTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentResumeCommandTest;
+use SoManAgent\Script\Backlog\Agent\Test\AgentDeveloperSelectorTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentReviewerSelectorTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentSessionServiceTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentSessionsCommandTest;
@@ -54,6 +55,7 @@ $suites = [
     'AgentSessionServiceTest' => AgentSessionServiceTest::class,
     'AgentStartCommandManagerTest' => AgentStartCommandManagerTest::class,
     'AgentContextBuilderTest' => AgentContextBuilderTest::class,
+    'AgentDeveloperSelectorTest' => AgentDeveloperSelectorTest::class,
     'AgentReviewerSelectorTest' => AgentReviewerSelectorTest::class,
     'BacklogBoardServiceReviewingTest' => BacklogBoardServiceReviewingTest::class,
     'AgentClientLauncherRegistryTest' => AgentClientLauncherRegistryTest::class,

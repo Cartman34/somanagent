@@ -8,11 +8,11 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Agent\Client;
 
 /**
- * Delegates reviewer workflow transitions to the backlog script under the global mutation lock.
+ * Delegates reviewer and developer workflow transitions to the backlog script under the global mutation lock.
  *
  * Implementations must run the underlying backlog.php commands with the correct SOMANAGER_ROLE
  * and SOMANAGER_AGENT environment so that stage transitions go through the same revalidation
- * and file lock path used by every other reviewer workflow command.
+ * and file lock path used by every other workflow command.
  */
 interface BacklogCommandRunner
 {
@@ -35,4 +35,24 @@ interface BacklogCommandRunner
      * @throws \RuntimeException when the release fails.
      */
     public function reviewCancel(string $reviewerCode, string $entryRef): void;
+
+    /**
+     * Starts the developer's next queued task, transitioning it from todo to in-progress.
+     *
+     * Equivalent to:
+     *   SOMANAGER_ROLE=developer SOMANAGER_AGENT=<developerCode> php scripts/backlog.php work-start <entryRef>
+     *
+     * @throws \RuntimeException when work-start fails
+     */
+    public function workStart(string $developerCode, string $entryRef): void;
+
+    /**
+     * Releases an untouched entry back to the todo queue, rolling back a work-start.
+     *
+     * Equivalent to:
+     *   SOMANAGER_ROLE=developer SOMANAGER_AGENT=<developerCode> php scripts/backlog.php entry-release <entryRef>
+     *
+     * @throws \RuntimeException when entry-release fails
+     */
+    public function entryRelease(string $developerCode, string $entryRef): void;
 }

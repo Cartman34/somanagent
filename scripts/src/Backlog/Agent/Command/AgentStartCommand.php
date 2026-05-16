@@ -18,6 +18,7 @@ use SoManAgent\Script\Backlog\Agent\Exception\ActiveSessionException;
 use SoManAgent\Script\Backlog\Agent\Exception\ClientNotInstalledException;
 use SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
 use SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
+use SoManAgent\Script\Backlog\Agent\Service\AgentDeveloperSelector;
 use SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
 use SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
@@ -45,6 +46,7 @@ final class AgentStartCommand extends AbstractAgentCommand
     private AgentContextBuilder $contextBuilder;
     private BacklogWorktreeService $worktreeService;
     private AgentReviewerSelector $reviewerSelector;
+    private AgentDeveloperSelector $developerSelector;
     private BacklogBoardService $boardService;
     private SessionDriverInterface $sessionDriver;
     private ProcessSignaler $signaler;
@@ -62,11 +64,12 @@ final class AgentStartCommand extends AbstractAgentCommand
      * @param AgentContextBuilder $contextBuilder
      * @param BacklogWorktreeService $worktreeService
      * @param AgentReviewerSelector $reviewerSelector
+     * @param AgentDeveloperSelector $developerSelector Used to check for an active entry or auto-select the first queued task
      * @param BacklogBoardService $boardService
      * @param SessionDriverInterface $sessionDriver
      * @param ProcessSignaler $signaler Used for ActiveSessionException liveness check
      * @param ProcessRunner $shellRunner Used to check for local changes in the worktree
-     * @param BacklogCommandRunner $backlogCommandRunner Used to delegate review-next and review-cancel under the backlog lock
+     * @param BacklogCommandRunner $backlogCommandRunner Used to delegate review-next, review-cancel, work-start, and entry-release under the backlog lock
      * @param AgentModelResolver|null $modelResolver Resolves role/client model tier and effort into CLI args
      */
     public function __construct(
@@ -79,6 +82,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         AgentContextBuilder $contextBuilder,
         BacklogWorktreeService $worktreeService,
         AgentReviewerSelector $reviewerSelector,
+        AgentDeveloperSelector $developerSelector,
         BacklogBoardService $boardService,
         SessionDriverInterface $sessionDriver,
         ProcessSignaler $signaler,
@@ -95,6 +99,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         $this->contextBuilder = $contextBuilder;
         $this->worktreeService = $worktreeService;
         $this->reviewerSelector = $reviewerSelector;
+        $this->developerSelector = $developerSelector;
         $this->boardService = $boardService;
         $this->sessionDriver = $sessionDriver;
         $this->signaler = $signaler;
@@ -226,6 +231,8 @@ final class AgentStartCommand extends AbstractAgentCommand
 
         $takenEntryRef = null;
         $takenReviewerCode = null;
+        $takenWorkStartRef = null;
+        $takenWorkStartDevCode = null;
 
         if ($role === AgentRole::REVIEWER) {
             [$worktree, $takenEntryRef, $takenReviewerCode] = $this->prepareReviewerMode($options, $code);
@@ -239,6 +246,7 @@ final class AgentStartCommand extends AbstractAgentCommand
                 }
                 $this->worktreeService->removeAgentWorktreeForRestore($code);
             }
+            [$takenWorkStartRef, $takenWorkStartDevCode] = $this->prepareDeveloperMode($code);
             $this->worktreeService->prepareAgentWorktree($code);
         }
 
@@ -255,6 +263,7 @@ final class AgentStartCommand extends AbstractAgentCommand
             $this->sessionService->create($code, $client, $role, (int) getmypid(), $worktree);
         } catch (\Throwable $e) {
             $this->rollbackReviewTransition($takenEntryRef, $takenReviewerCode);
+            $this->rollbackWorkStart($takenWorkStartRef, $takenWorkStartDevCode);
             throw $e;
         }
 
@@ -405,6 +414,49 @@ final class AgentStartCommand extends AbstractAgentCommand
 
         try {
             $this->backlogCommandRunner->reviewCancel($reviewerCode, $entryRef);
+        } catch (\Exception) {
+            // best-effort rollback; caller's original exception takes priority
+        }
+    }
+
+    /**
+     * Prepares the developer session: auto-picks the first queued task when the developer
+     * has no active entry, or resumes silently when one is already in progress.
+     *
+     * Returns [$entryRef, $developerCode] when a task was taken (for rollback on failure),
+     * or [null, null] when resuming an existing entry (no rollback needed).
+     *
+     * @return array{0: string|null, 1: string|null}
+     */
+    private function prepareDeveloperMode(string $developerCode): array
+    {
+        $board = $this->boardService->loadBoard($this->boardPath);
+
+        if ($this->developerSelector->findOwnedActiveEntry($board, $developerCode) !== null) {
+            return [null, null];
+        }
+
+        $entryRef = $this->developerSelector->selectFirstQueued($board, $developerCode);
+        $this->backlogCommandRunner->workStart($developerCode, $entryRef);
+
+        return [$entryRef, $developerCode];
+    }
+
+    /**
+     * Rolls back a work-start transition on best-effort basis via entry-release.
+     *
+     * Delegates to entry-release via BacklogCommandRunner so the release goes through
+     * the same lock and revalidation path as any other backlog mutation.
+     * Accepts nullable parameters so callers can pass tracked state directly.
+     */
+    private function rollbackWorkStart(?string $entryRef, ?string $developerCode): void
+    {
+        if ($entryRef === null || $developerCode === null) {
+            return;
+        }
+
+        try {
+            $this->backlogCommandRunner->entryRelease($developerCode, $entryRef);
         } catch (\Exception) {
             // best-effort rollback; caller's original exception takes priority
         }

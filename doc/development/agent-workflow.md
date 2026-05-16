@@ -183,6 +183,11 @@ Rules:
 Sessions for developer, reviewer, and manager agents are launched by the operator using `php scripts/backlog-agent.php`. Each session:
 
 - prepares the `WA` (via `BacklogWorktreeService::prepareAgentWorktree` for developer/manager; reviewer reuses the developer WA)
+- **auto-picks an entry** for developer and reviewer roles on `start` (symmetric behaviour):
+  - **developer**: if no active entry, the first queued task is reserved via `work-start`; if an active entry already exists, resumes silently. If the todo queue is empty and no entry is active, the launch is refused.
+  - **reviewer**: if no owned reviewing entry, the first review-stage entry is claimed via `review-next`; if the reviewer already owns a reviewing entry, that entry is reused.
+  - **manager**: no auto-pick; runs in WP directly.
+  - `resume` **never** auto-picks for any role: it reconnects to the existing session without touching the backlog queue.
 - generates `<WA>/local/agent-context.md` with the current task (or current review for reviewer), allowed commands, backlog vocabulary, and identification instructions
 - injects the env vars below into the CLI process
 - spawns the AI client via the active **session driver** and records its real PID (and tmux session name when applicable) in `local/tmp/agent-sessions.json` so `stop` can terminate the actual client, not only the PHP wrapper
