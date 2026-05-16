@@ -210,6 +210,22 @@ The session driver is selected by the environment variable `BACKLOG_AGENT_SESSIO
 
 `resume --code=<code>` refuses when the PHP wrapper is still alive. When the wrapper is dead but the driver still reports an alive session, behaviour depends on the driver: `tmux` allows resume because it re-attaches to the detached named session, while `direct` refuses because the tracked client process is still running and resume would start a second client instance. Run `stop --code=<code>` to terminate a direct live session before resuming. For reviewer sessions, `resume` uses the stored developer WA path; if that path is missing but the reviewer still owns a `stage=reviewing` entry, the launcher reconstructs the developer WA and updates `agent-sessions.json` with the reconstructed path before preparing the client.
 
+`prune` batch-cleans invalid entries from `agent-sessions.json` without targeting one code. Auto-removed:
+
+| Case | Reason |
+|---|---|
+| `client_pid` AND `tmux_session` both null | launch never finalised (typical after a failed `getPanePid` lookup) |
+| Driver reports `isAlive()` = false | process gone (direct) or tmux session missing (tmux) |
+| Worktree missing on disk AND process not alive | orphan with no live counterpart |
+
+Kept with warning (unless `--force`):
+
+| Case | Reason |
+|---|---|
+| Worktree missing on disk BUT process still alive | orphan WA: run `stop --code=<code>` to terminate cleanly, then re-run prune, or pass `--force` to drop the entry without signalling the process |
+
+Flags: `--dry-run` previews the plan without mutating; `--force` also removes warning entries (does not signal the live process). The command is idempotent — running it again after convergence is a no-op.
+
 ### last_seen_at Semantics
 
 `last_seen_at` is **not a heartbeat**. It records the last time a `backlog-agent.php` subcommand inspected the entry and refreshed its PID / process status. `list`, `status`, `sessions`, `resume`, and `stop` all update this timestamp for the entries they touch.
