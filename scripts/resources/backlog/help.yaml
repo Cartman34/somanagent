@@ -34,7 +34,7 @@ examples:
   - 'php scripts/backlog.php work-start my-feature/my-task'
   - 'php scripts/backlog.php entry-release'
   - 'php scripts/backlog.php entry-merge my-feature/my-task'
-  - 'php scripts/backlog.php feature-list'
+  - 'php scripts/backlog.php list'
   - 'php scripts/backlog.php worktree-list'
   - 'php scripts/backlog.php worktree-clean --dry-run'
   - 'php scripts/backlog.php worktree-restore --agent d01'

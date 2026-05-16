@@ -38,7 +38,7 @@ enum BacklogCommandName: string
     case ENTRY_UNASSIGN = 'entry-unassign';
     case FEATURE_BLOCK = 'feature-block';
     case FEATURE_UNBLOCK = 'feature-unblock';
-    case FEATURE_LIST = 'feature-list';
+    case LIST = 'list';
     case WORKTREE_LIST = 'worktree-list';
     case WORKTREE_CLEAN = 'worktree-clean';
     case WORKTREE_RESTORE = 'worktree-restore';
@@ -54,7 +54,7 @@ enum BacklogCommandName: string
     {
         return match($this) {
             self::STATUS,
-            self::FEATURE_LIST,
+            self::LIST,
             self::WORKTREE_LIST,
             self::TODO_LIST,
             self::REVIEW_LIST,

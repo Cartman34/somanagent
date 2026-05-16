@@ -109,8 +109,8 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         // status <entry-ref> must resolve the task entry directly.
         $driver->assertStatusContains($taskARef, 'Kind: task');
         $driver->assertStatusContains($taskARef, 'Ref: ' . $taskARef);
-        // feature-list must show kind=task and full <entry-ref> for task entries.
-        $featureListOutput = $driver->runBacklog(['feature-list']);
+        // list must show kind=task and full <entry-ref> for task entries.
+        $featureListOutput = $driver->runBacklog(['list']);
         $driver->assertContains($featureListOutput, $taskARef . ' kind=task');
         $driver->assertContains($featureListOutput, $context->scopedFeature . ' kind=feature');
 
