@@ -54,6 +54,8 @@ final class AgentContextBuilderTest
         $failed += $this->testReviewerContextShowsCurrentReview();
         $failed += $this->testManagerContextShowsSessionInWP();
         $failed += $this->testManagerContextWorkingDirectoryRule();
+        $failed += $this->testDeveloperContextWithActiveEntryHasWorkflow();
+        $failed += $this->testReviewerContextWithActiveEntryHasWorkflow();
 
         return $failed;
     }
@@ -276,12 +278,121 @@ final class AgentContextBuilderTest
         return 0;
     }
 
+    private function testDeveloperContextWithActiveEntryHasWorkflow(): int
+    {
+        $projectRoot = $this->tmpDir . '/proj-dev-workflow-' . uniqid('', true);
+        mkdir($projectRoot . '/local', 0755, true);
+        mkdir($projectRoot . '/doc/development', 0755, true);
+
+        $boardPath = $projectRoot . '/local/backlog-board.md';
+        file_put_contents($boardPath, $this->boardWithFeatureAtDevelopment('my-feature', 'd01'));
+
+        // Minimal role doc with two keywords so we can assert `next` is removed but `submit` kept.
+        file_put_contents(
+            $projectRoot . '/doc/development/agent-developer.md',
+            "# Dev\n\n## User Keywords\n\n### `next`\n\n1. Run work-start.\n\n### `submit`\n\n1. Run review-request.\n",
+        );
+
+        $worktree = $projectRoot . '/wt';
+        mkdir($worktree . '/.git/info', 0755, true);
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $builder = new AgentContextBuilder($projectRoot, $boardPath, $boardService);
+
+        $path = $builder->build($worktree, 'd01', AgentRole::DEVELOPER);
+        $content = (string) file_get_contents($path);
+
+        $this->rmdir($projectRoot);
+
+        if (str_contains($content, '### `next`')) {
+            echo "FAIL testDeveloperContextWithActiveEntryHasWorkflow: `next` keyword must be absent\n";
+            return 1;
+        }
+        if (!str_contains($content, '## Workflow')) {
+            echo "FAIL testDeveloperContextWithActiveEntryHasWorkflow: ## Workflow section must be present\n";
+            return 1;
+        }
+        if (!str_contains($content, 'git add')) {
+            echo "FAIL testDeveloperContextWithActiveEntryHasWorkflow: developer workflow steps must be present\n";
+            return 1;
+        }
+        if (!str_contains($content, '### `submit`')) {
+            echo "FAIL testDeveloperContextWithActiveEntryHasWorkflow: other keywords must remain (submit)\n";
+            return 1;
+        }
+
+        echo "OK testDeveloperContextWithActiveEntryHasWorkflow\n";
+        return 0;
+    }
+
+    private function testReviewerContextWithActiveEntryHasWorkflow(): int
+    {
+        $projectRoot = $this->tmpDir . '/proj-rev-workflow-' . uniqid('', true);
+        mkdir($projectRoot . '/local', 0755, true);
+        mkdir($projectRoot . '/doc/development', 0755, true);
+
+        $boardPath = $projectRoot . '/local/backlog-board.md';
+        file_put_contents($boardPath, $this->boardWithFeatureAtReviewing('my-feature', 'd04', 'r01'));
+
+        // Minimal role doc with two keywords so we can assert `review` is removed but `approve` kept.
+        file_put_contents(
+            $projectRoot . '/doc/development/agent-reviewer.md',
+            "# Reviewer\n\n## User Keywords\n\n### `review`\n\n1. Run review-check.\n\n### `approve`\n\n1. Run review-approve.\n",
+        );
+
+        $worktree = $projectRoot . '/wt';
+        mkdir($worktree . '/.git/info', 0755, true);
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $builder = new AgentContextBuilder($projectRoot, $boardPath, $boardService);
+
+        $path = $builder->build($worktree, 'r01', AgentRole::REVIEWER);
+        $content = (string) file_get_contents($path);
+
+        $this->rmdir($projectRoot);
+
+        if (str_contains($content, '### `review`')) {
+            echo "FAIL testReviewerContextWithActiveEntryHasWorkflow: `review` keyword must be absent\n";
+            return 1;
+        }
+        if (!str_contains($content, '## Workflow')) {
+            echo "FAIL testReviewerContextWithActiveEntryHasWorkflow: ## Workflow section must be present\n";
+            return 1;
+        }
+        if (!str_contains($content, 'review-check')) {
+            echo "FAIL testReviewerContextWithActiveEntryHasWorkflow: reviewer workflow steps must be present\n";
+            return 1;
+        }
+        if (!str_contains($content, '### `approve`')) {
+            echo "FAIL testReviewerContextWithActiveEntryHasWorkflow: other keywords must remain (approve)\n";
+            return 1;
+        }
+
+        echo "OK testReviewerContextWithActiveEntryHasWorkflow\n";
+        return 0;
+    }
+
     private function makeBuilder(): AgentContextBuilder
     {
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         $boardPath = $this->tmpDir . '/nonexistent-board.md';
 
         return new AgentContextBuilder($this->tmpDir, $boardPath, $boardService);
+    }
+
+    private function boardWithFeatureAtDevelopment(string $feature, string $agent): string
+    {
+        return "# Tableau du backlog\n\n## To do\n\n## In progress\n\n" .
+            "- Feature {$feature}\n" .
+            "  meta:\n" .
+            "    kind: feature\n" .
+            "    stage: development\n" .
+            "    feature: {$feature}\n" .
+            "    agent: {$agent}\n" .
+            "    branch: feat/{$feature}\n" .
+            "    base: abc123def456\n" .
+            "    pr: none\n\n" .
+            "## Suggestions\n\n";
     }
 
     private function boardWithFeatureAtReview(string $feature, string $agent): string
