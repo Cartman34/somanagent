@@ -13,9 +13,9 @@ use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 
 /**
- * Command for listing active features.
+ * Command for listing all active backlog entries (features and tasks).
  */
-final class BacklogFeatureListCommand extends AbstractBacklogCommand
+final class BacklogListCommand extends AbstractBacklogCommand
 {
     public function __construct(
         BacklogPresenter $presenter,
@@ -47,7 +47,7 @@ final class BacklogFeatureListCommand extends AbstractBacklogCommand
         }
 
         if (!$printed) {
-            $this->presenter->displayLine('No active feature.');
+            $this->presenter->displayLine('No active entry.');
         }
     }
 }

@@ -12,7 +12,7 @@ use SoManAgent\Script\Backlog\Command\BacklogBaseUpdateCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureAssignCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureBlockCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureCloseCommand;
-use SoManAgent\Script\Backlog\Command\BacklogFeatureListCommand;
+use SoManAgent\Script\Backlog\Command\BacklogListCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureMergeCommand;
 use SoManAgent\Script\Backlog\Command\BacklogEntryReleaseCommand;
 use SoManAgent\Script\Backlog\Command\BacklogEntryMergeCommand;
@@ -162,7 +162,7 @@ final class BacklogCommandFactory
             BacklogCommandName::ENTRY_UNASSIGN->value => BacklogEntryUnassignCommand::class,
             BacklogCommandName::FEATURE_BLOCK->value => BacklogFeatureBlockCommand::class,
             BacklogCommandName::FEATURE_UNBLOCK->value => BacklogFeatureUnblockCommand::class,
-            BacklogCommandName::FEATURE_LIST->value => BacklogFeatureListCommand::class,
+            BacklogCommandName::LIST->value => BacklogListCommand::class,
             BacklogCommandName::FEATURE_CLOSE->value => BacklogFeatureCloseCommand::class,
             BacklogCommandName::FEATURE_MERGE->value => BacklogFeatureMergeCommand::class,
         ];

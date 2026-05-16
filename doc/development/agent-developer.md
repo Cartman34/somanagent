@@ -22,7 +22,7 @@ Read this file only when the active task requires developer workflow details.
 - `entry-unassign`
 - `feature-block`
 - `feature-unblock`
-- `feature-list`
+- `list`
 - `base-update`
 - `worktree-list`
 - `worktree-clean`
@@ -246,9 +246,9 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-cre
 1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php feature-unblock [<feature>]`.
 2. The script removes the blocked flag from the feature and updates the PR title when one exists.
 
-### `feature-list`
+### `list`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php feature-list`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php list`.
 2. The script prints all active entries (`kind=feature` and `kind=task`) grouped by workflow stage.
 3. Each line includes the `<entry-ref>`, the `kind=` indicator, and the assigned agent.
 

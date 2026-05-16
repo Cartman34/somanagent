@@ -136,7 +136,7 @@ Validate `work-start` on a plain queued task.
 3. Start it:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php work-start`
 4. Inspect result:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php feature-list`
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php list`
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php status --agent d01`
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php worktree-list`
 
@@ -167,7 +167,7 @@ Validate `work-start <entry-ref>` consumes the named queued entry instead of the
 4. Start the second entry by explicit reference:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php work-start ws-target`
 5. Inspect the result:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php feature-list`
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php list`
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php todo-list`
 
 ### Expected checks
@@ -223,7 +223,7 @@ Validate `entry-release` on a feature with no actual development ahead of base.
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-release`
 2. Inspect:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php todo-list`
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php feature-list`
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php list`
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php worktree-list`
 
 ### Expected checks
@@ -291,7 +291,7 @@ Validate `work-start` on scoped queued tasks.
 3. Start it:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php work-start`
 4. Inspect:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php feature-list`
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php list`
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php status test-scoped-feature`
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php worktree-list`
 
@@ -355,19 +355,19 @@ Validate local merge of one approved child task into its parent feature.
 
 1. Before merging, inspect the active task entry directly:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php status test-scoped-feature/test-child-a`
-2. Verify `feature-list` shows the task with full reference and kind indicator:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php feature-list`
+2. Verify `list` shows the task with full reference and kind indicator:
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php list`
 3. Merge the approved task:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-merge test-scoped-feature/test-child-a`
 4. Inspect:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php status test-scoped-feature`
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php feature-list`
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php list`
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php worktree-list`
 
 ### Expected checks
 
 - step 1: `status test-scoped-feature/test-child-a` prints `[Task]` section with the task details
-- step 2: `feature-list` shows the task as `- test-scoped-feature/test-child-a kind=task agent=d01` and the parent as `- test-scoped-feature kind=feature agent=none`
+- step 2: `list` shows the task as `- test-scoped-feature/test-child-a kind=task agent=d01` and the parent as `- test-scoped-feature kind=feature agent=none`
 - after step 3: child task active entry disappears
 - after step 3: parent feature remains active with **no agent** (`agent=none`) — task merge does not auto-assign the parent
 - parent contribution block still records the merged child content
@@ -475,7 +475,7 @@ Validate final feature closure and merge behavior.
 4. For the approved scoped feature, merge it:
    - `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=r01 php scripts/backlog.php entry-merge test-scoped-feature`
 5. Inspect:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php feature-list`
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php list`
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php worktree-list`
 
 ### Expected checks
@@ -574,7 +574,7 @@ After validation:
 2. Remove temporary files created under `local/tmp/`.
 3. Inspect `.agent-worktrees/` and clean any leftover managed worktrees.
 4. Confirm final local state with:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php feature-list`
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php list`
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php worktree-list`
 5. Confirm no leftover `test-*` active entries remain.
 
@@ -585,7 +585,7 @@ When the full scenario set is too expensive, run at least:
 1. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php`
 2. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php work-start --help`
 3. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php todo-list`
-4. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php feature-list`
+4. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php list`
 5. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php worktree-list`
 6. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php status --agent <known-agent>`
 

@@ -75,10 +75,10 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
             $context->fixFeature,
         );
 
-        // feature-list should show the reviewing entry with reviewer field
-        $featureListOutput = $driver->runBacklog(['feature-list']);
+        // list should show the reviewing entry with reviewer field
+        $featureListOutput = $driver->runBacklog(['list']);
         if (!str_contains($featureListOutput, 'reviewer=' . $context->agentSecondary)) {
-            throw new \RuntimeException('Expected feature-list to show reviewer=' . $context->agentSecondary);
+            throw new \RuntimeException('Expected list to show reviewer=' . $context->agentSecondary);
         }
 
         // review-cancel requires an explicit reference; never auto-resolves by agent

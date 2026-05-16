@@ -1,6 +1,6 @@
 description: 'List all active entries (features and tasks) grouped by backlog section'
 examples:
-  - 'php scripts/backlog.php feature-list'
+  - 'php scripts/backlog.php list'
 notes:
   - 'Each line includes the full reference (for tasks: `<feature>/<task>`), a `kind=feature` or `kind=task` indicator, and the assigned agent.'
   - 'Task entries do not have a PR; their `pr=` field is omitted.'
