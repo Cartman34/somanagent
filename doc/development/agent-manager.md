@@ -7,8 +7,9 @@ Read this file only when the active task requires backlog management or workflow
 ## Scope
 
 - manage the local backlog workflow and its operational states
-- edit documentation under `doc/`
-- edit workflow and tooling scripts under `scripts/`
+- author and maintain specs under `local/specs/` and `doc/development/spec-conventions.md` (manager owns the spec lifecycle)
+- **correct** existing documentation under `doc/` when wording is wrong, inconsistent, or out of date; do **not** add new sections or new normative content to non-spec doc — that is the developer's job during implementation
+- edit workflow and tooling scripts under `scripts/` for manager-level workflow concerns (not application code)
 - perform backlog, review, and merge workflow actions when needed
 - run `SOMANAGER_ROLE=manager SOMANAGER_AGENT=<code> php scripts/backlog.php ...` from `WP` only; backlog commands are not allowed from `WA`
 
@@ -16,6 +17,7 @@ Read this file only when the active task requires backlog management or workflow
 
 - edit application source code under `backend/`, `frontend/`, or `.docker/`
 - implement product or technical changes in the real application code
+- add new sections, new tables, or new normative content to existing files under `doc/` (developer territory); manager-side edits to non-spec doc are limited to fixing what is already in place
 - bypass `php scripts/backlog.php` when it already covers the needed backlog action
 
 ## Allowed Commands
