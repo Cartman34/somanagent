@@ -9,6 +9,17 @@ Project rule:
 - only fall back to direct `docker exec`, raw `bin/console`, or container-specific commands when no script exists
 - this keeps commands shorter, more consistent, and cheaper to use during day-to-day work
 
+## Invocation
+
+Two equivalent forms are supported from the project root for any script that carries a shebang:
+
+```bash
+php scripts/migrate.php          # explicit PHP interpreter
+./scripts/migrate.php            # rely on the script's shebang (#!/usr/bin/env php)
+```
+
+Both work because every runnable script under `scripts/` declares a `#!/usr/bin/env php` (or equivalent) shebang **and** carries the exec bit in the git index. The exec bit is enforced by `scripts/validate-files.php` at review time — see [Script Conventions / Executable Bit](scripts-conventions.md#executable-bit).
+
 ```bash
 # See all available scripts
 php scripts/help.php
@@ -28,6 +39,7 @@ php scripts/help.php migrate.php
 | `worktree-info.php` | PHP | Display the git worktree context for the current script (linked vs main worktree, roots) |
 | `test-backlog-workflow.php` | PHP | Run reusable sequential validation campaigns for `backlog.php` on temporary backlog files |
 | `test-backlog-agent.php` | PHP | Run unit tests for backlog-agent.php classes |
+| `test-validation.php` | PHP | Run unit tests for `scripts/src/Validation/` classes (ScriptExecBitValidator, …) |
 | `setup.php` | PHP | Full installation (first time) |
 | `dev.php` | PHP | Start / stop the environment |
 | `migrate.php` | PHP | Run Doctrine migrations |
@@ -168,6 +180,20 @@ Notes:
 - cleanup always runs in best effort and only acts on resources recorded by the test context
 - use `--keep-artifacts` to inspect temporary backlog and review files after the run
 - detailed reusable campaign intent is documented in `doc/development/script-backlog-test-scenarios.md`
+
+---
+
+### `test-validation.php`
+Runs unit tests for the `scripts/src/Validation/` classes (currently `ScriptExecBitValidator`). No Docker, no network.
+
+```bash
+php scripts/test-validation.php
+php scripts/test-validation.php --suite=ScriptExecBitValidatorTest
+```
+
+Notes:
+- available suites: `ScriptExecBitValidatorTest`
+- `--suite=<name>` runs only the named suite; omit to run all
 
 ---
 

@@ -50,6 +50,13 @@ These files are part of the project codebase and must follow explicit convention
 - `doc/development/scripts.md` must list runnable scripts that are intended for developer use.
 - Deeper rules or cross-cutting standards for scripts belong in this file, not in a local `README` inside `scripts/`.
 
+## Executable Bit
+
+- Every runnable script (any file under `scripts/` that starts with `#!`) must carry the exec bit in the git index, persisted via `git update-index --chmod=+x <file>`. Running `chmod +x` locally is not enough — the mode must be recorded in the index so it survives a fresh clone.
+- Verify the index mode with `git ls-files --stage scripts/*.php` — the leading column must read `100755` (not `100644`) for every shebang-bearing file.
+- This invariant is enforced at review time by `scripts/validate-files.php`, which reports `Script exec bit: FAIL` and prints a `git update-index --chmod=+x` recovery hint for each shebang-bearing script that lost its exec bit.
+- PHP files under `scripts/` that are not runnable (libraries, generated code, fixtures) intentionally have no shebang and are skipped by the validator.
+
 Expected author syntax:
 
 ```bash

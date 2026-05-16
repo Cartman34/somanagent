@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Runner;
 
 use SoManAgent\Script\Validation\OpenApiConsistencyValidator;
+use SoManAgent\Script\Validation\ScriptExecBitValidator;
 
 /**
  * Validate files script runner.
@@ -221,8 +222,20 @@ final class ValidateFilesRunner extends AbstractScriptRunner
                     }
                 }
             }
+
+            $missingExecBit = (new ScriptExecBitValidator())->findMissingExecBit($scriptPhpFiles);
+            if ($missingExecBit === []) {
+                $results[] = sprintf('Script exec bit: OK (%d file%s)', count($scriptPhpFiles), count($scriptPhpFiles) > 1 ? 's' : '');
+            } else {
+                $failed = true;
+                $results[] = sprintf('Script exec bit: FAIL (%d file%s missing exec bit)', count($missingExecBit), count($missingExecBit) > 1 ? 's' : '');
+                foreach ($missingExecBit as $file) {
+                    $results[] = '  - ' . $file . ' (run: git update-index --chmod=+x ' . $file . ')';
+                }
+            }
         } else {
             $results[] = 'Script PHP syntax: SKIP';
+            $results[] = 'Script exec bit: SKIP';
         }
 
         if ($needsContainerLint) {
