@@ -9,6 +9,7 @@ namespace SoManAgent\Script\Backlog\Agent\Client;
 
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use SoManAgent\Script\Backlog\Agent\Model\ResolvedModel;
 use SoManAgent\Script\Backlog\Agent\Model\SessionInfo;
 
 /**
@@ -53,7 +54,7 @@ final class GeminiAgentLauncher extends AbstractAgentClientLauncher
      */
     public function requiredCliFlags(): array
     {
-        return ['-r'];
+        return ['-r', '--model'];
     }
 
     /**
@@ -80,6 +81,7 @@ final class GeminiAgentLauncher extends AbstractAgentClientLauncher
         AgentRole $role,
         ?string $resumeSessionId = null,
         bool $continueLast = false,
+        ?ResolvedModel $resolvedModel = null,
     ): array {
         if ($resumeSessionId !== null) {
             return ['gemini', ['-r', $resumeSessionId]];
@@ -89,7 +91,7 @@ final class GeminiAgentLauncher extends AbstractAgentClientLauncher
             return ['gemini', ['-r', 'latest']];
         }
 
-        return ['gemini', []];
+        return ['gemini', $resolvedModel !== null ? $resolvedModel->cliArgs : []];
     }
 
     /**

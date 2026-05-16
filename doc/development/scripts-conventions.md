@@ -84,6 +84,12 @@ Expected author syntax:
 - Do not replace or delete the root of a bind-mounted directory when preserving the mount point matters; clear contents instead.
 - Prefer dedicated methods for directory creation, cleanup, copy, and hashing rather than duplicating filesystem logic inline.
 
+## Test Fixtures
+
+- Prefer using an existing project resource file in tests when the test validates the current production contract.
+- If a test needs example variants that should not change with production config, put them in an explicit `resources/` or `fixtures/` directory next to the relevant test suite.
+- Avoid large inline fixture strings in test methods when a named fixture file makes the intent clearer, even if that means keeping several fixture versions.
+
 ## Review Expectations
 
 A script change is not done until it also respects:

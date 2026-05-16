@@ -9,6 +9,7 @@ namespace SoManAgent\Script\Backlog\Agent\Client;
 
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use SoManAgent\Script\Backlog\Agent\Model\ResolvedModel;
 use SoManAgent\Script\Backlog\Agent\Model\SessionInfo;
 
 /**
@@ -63,6 +64,7 @@ interface AgentClientLauncher
      *
      * The framework chdir()s into $worktree before exec.
      *
+     * @param ResolvedModel|null $resolvedModel Optional start-only model args resolved from role defaults and CLI overrides
      * @return array{0: string, 1: list<string>}
      */
     public function buildLaunchCommand(
@@ -71,6 +73,7 @@ interface AgentClientLauncher
         AgentRole $role,
         ?string $resumeSessionId = null,
         bool $continueLast = false,
+        ?ResolvedModel $resolvedModel = null,
     ): array;
 
     /**

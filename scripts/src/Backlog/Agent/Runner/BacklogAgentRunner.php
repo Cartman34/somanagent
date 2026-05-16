@@ -33,6 +33,7 @@ use SoManAgent\Script\Backlog\Agent\Command\BacklogAgentPruneCommand;
 use SoManAgent\Script\Backlog\Agent\Service\AgentCliOptionValidator;
 use SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
 use SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
+use SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
 use SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
@@ -69,6 +70,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
     private ?AgentCodeService $codeService = null;
     private ?AgentContextBuilder $contextBuilder = null;
     private ?AgentCliOptionValidator $optionValidator = null;
+    private ?AgentModelResolver $modelResolver = null;
     private ?BacklogBoardService $boardService = null;
     private ?BacklogWorktreeService $worktreeService = null;
     private ?ConsoleClient $consoleClient = null;
@@ -158,6 +160,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                     $this->processSignaler(),
                     new ShellProcessRunner(),
                     $this->backlogCommandRunner(),
+                    $this->modelResolver(),
                 ),
                 'list' => new AgentListCommand(
                     $this->console,
@@ -220,6 +223,15 @@ final class BacklogAgentRunner extends AbstractScriptRunner
         }
 
         return $this->optionValidator;
+    }
+
+    private function modelResolver(): AgentModelResolver
+    {
+        if ($this->modelResolver === null) {
+            $this->modelResolver = new AgentModelResolver($this->projectRoot . '/scripts/resources/backlog-agent/model-mapping.yaml');
+        }
+
+        return $this->modelResolver;
     }
 
     private function registry(): AgentClientLauncherRegistry

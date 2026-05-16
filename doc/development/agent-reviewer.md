@@ -256,6 +256,8 @@ Also check:
 
 Use `php scripts/backlog-agent.php start <client> --reviewer` to open a reviewer session inside the developer WA. The reviewer reuses the developer's worktree; no new git worktree is created.
 
+Default model profile is `balanced+medium`. The operator may override it with `--tier=economy|balanced|premium`, `--effort=low|medium|high`, or `--model=<raw-name>`.
+
 ### Review board transition
 
 When a reviewer starts on a new entry (not a reuse), the launcher:

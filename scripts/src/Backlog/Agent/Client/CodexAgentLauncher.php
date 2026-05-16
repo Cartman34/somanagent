@@ -9,6 +9,7 @@ namespace SoManAgent\Script\Backlog\Agent\Client;
 
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use SoManAgent\Script\Backlog\Agent\Model\ResolvedModel;
 use SoManAgent\Script\Backlog\Agent\Model\SessionInfo;
 
 /**
@@ -71,7 +72,7 @@ final class CodexAgentLauncher extends AbstractAgentClientLauncher
      */
     public function requiredCliFlags(): array
     {
-        return ['-C', '--last'];
+        return ['-C', '--last', '--model', '--config'];
     }
 
     /**
@@ -83,6 +84,7 @@ final class CodexAgentLauncher extends AbstractAgentClientLauncher
         AgentRole $role,
         ?string $resumeSessionId = null,
         bool $continueLast = false,
+        ?ResolvedModel $resolvedModel = null,
     ): array {
         $args = ['-C', $worktree];
 
@@ -98,6 +100,10 @@ final class CodexAgentLauncher extends AbstractAgentClientLauncher
             $args[] = '--last';
 
             return ['codex', $args];
+        }
+
+        if ($resolvedModel !== null) {
+            $args = array_merge($args, $resolvedModel->cliArgs);
         }
 
         if (!is_readable($contextFilePath)) {

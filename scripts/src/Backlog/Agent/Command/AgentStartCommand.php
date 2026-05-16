@@ -18,6 +18,7 @@ use SoManAgent\Script\Backlog\Agent\Exception\ActiveSessionException;
 use SoManAgent\Script\Backlog\Agent\Exception\ClientNotInstalledException;
 use SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
 use SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
+use SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
 use SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
@@ -49,6 +50,7 @@ final class AgentStartCommand extends AbstractAgentCommand
     private ProcessSignaler $signaler;
     private ProcessRunner $shellRunner;
     private BacklogCommandRunner $backlogCommandRunner;
+    private ?AgentModelResolver $modelResolver;
 
     /**
      * @param string $projectRoot
@@ -65,6 +67,7 @@ final class AgentStartCommand extends AbstractAgentCommand
      * @param ProcessSignaler $signaler Used for ActiveSessionException liveness check
      * @param ProcessRunner $shellRunner Used to check for local changes in the worktree
      * @param BacklogCommandRunner $backlogCommandRunner Used to delegate review-next and review-cancel under the backlog lock
+     * @param AgentModelResolver|null $modelResolver Resolves role/client model tier and effort into CLI args
      */
     public function __construct(
         string $projectRoot,
@@ -81,6 +84,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         ProcessSignaler $signaler,
         ProcessRunner $shellRunner,
         BacklogCommandRunner $backlogCommandRunner,
+        ?AgentModelResolver $modelResolver = null,
     ) {
         $this->projectRoot = $projectRoot;
         $this->worktreesRoot = $worktreesRoot;
@@ -96,6 +100,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         $this->signaler = $signaler;
         $this->shellRunner = $shellRunner;
         $this->backlogCommandRunner = $backlogCommandRunner;
+        $this->modelResolver = $modelResolver;
     }
 
     /**
@@ -126,6 +131,9 @@ final class AgentStartCommand extends AbstractAgentCommand
             ['name' => '--reviewer', 'description' => 'Launch as reviewer role (reuses the developer WA)'],
             ['name' => '--manager', 'description' => 'Launch as manager role'],
             ['name' => '--code=<code>', 'description' => 'Explicit agent code (e.g. d04, r01). Omit to auto-allocate.'],
+            ['name' => '--tier=<tier>', 'description' => 'Model tier override: economy, balanced, premium'],
+            ['name' => '--effort=<effort>', 'description' => 'Reasoning effort override: low, medium, high'],
+            ['name' => '--model=<model>', 'description' => 'Raw model name override passed directly to the client'],
             ['name' => '--reset', 'description' => 'Remove and recreate the worktree before launching (developer only; refuses if dirty)'],
             ['name' => '--feature=<slug>', 'description' => 'Reviewer: target the feature entry at stage=review with this slug'],
             ['name' => '--task=<feature/task>', 'description' => 'Reviewer: target the task entry at stage=review with this reference'],
@@ -142,6 +150,8 @@ final class AgentStartCommand extends AbstractAgentCommand
         return [
             'php scripts/backlog-agent.php start claude --developer',
             'php scripts/backlog-agent.php start claude --developer --code=d04',
+            'php scripts/backlog-agent.php start codex --developer --tier=economy --effort=low',
+            'php scripts/backlog-agent.php start gemini --manager --model=gemini-2.5-pro',
             'php scripts/backlog-agent.php start claude --reviewer',
             'php scripts/backlog-agent.php start claude --reviewer --feature=my-feature',
             'php scripts/backlog-agent.php start claude --reviewer --task=my-feature/my-task',
@@ -170,9 +180,19 @@ final class AgentStartCommand extends AbstractAgentCommand
 
         $role = $this->resolveRole($options);
         $reset = isset($options['reset']);
+        $tierOverride = $this->getSingleOption($options, 'tier');
+        $effortOverride = $this->getSingleOption($options, 'effort');
+        $modelOverride = $this->getSingleOption($options, 'model');
 
         if ($reset && $role !== AgentRole::DEVELOPER) {
             throw new \RuntimeException('--reset is only allowed with --developer.');
+        }
+
+        $resolvedModel = $this->modelResolver?->resolve($client, $role, $tierOverride, $effortOverride, $modelOverride);
+        if ($resolvedModel !== null) {
+            foreach ($resolvedModel->warnings as $warning) {
+                echo "Warning: {$warning}\n";
+            }
         }
 
         // Validate driver dependencies (e.g. tmux binary) before any worktree work.
@@ -230,7 +250,7 @@ final class AgentStartCommand extends AbstractAgentCommand
             $baseEnv = $this->buildBaseEnv($code, $role, $client);
             $env = $launcher->buildEnvironment($baseEnv, $contextFilePath);
 
-            [$bin, $binArgs] = $launcher->buildLaunchCommand($worktree, $contextFilePath, $role);
+            [$bin, $binArgs] = $launcher->buildLaunchCommand($worktree, $contextFilePath, $role, null, false, $resolvedModel);
 
             $this->sessionService->create($code, $client, $role, (int) getmypid(), $worktree);
         } catch (\Throwable $e) {
