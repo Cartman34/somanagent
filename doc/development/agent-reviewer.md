@@ -310,7 +310,7 @@ Two situations block the launch by default:
 2. **A developer session is active in the target WA** — a developer or manager session occupies the same worktree. Filesystem conflicts are likely under concurrent access. Use `--force` to proceed at your own risk; prefer stopping the developer session first with `php scripts/backlog-agent.php stop --code=<dXX>`.
 
 ```
-php scripts/backlog-agent.php start claude --reviewer --developer=d04 --force
+php scripts/backlog-agent.php start claude --reviewer --developer=d10 --force
 ```
 
 `--force` overrides both conflict types. It does not override an entry already at `stage=reviewing` for a different reviewer.

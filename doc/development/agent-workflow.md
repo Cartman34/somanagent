@@ -224,7 +224,7 @@ The reviewer's `<WA>/local/agent-context.md` is written into the **developer's W
 
 | Variable | Value |
 |---|---|
-| `SOMANAGER_AGENT` | Agent code (e.g. `d04`) |
+| `SOMANAGER_AGENT` | Agent code (e.g. `d10`) |
 | `SOMANAGER_ROLE` | `developer`, `reviewer`, or `manager` |
 | `SOMANAGER_CLIENT` | `claude`, `codex`, `opencode`, or `gemini` |
 | `SOMANAGER_WP` | Absolute path to the main workspace (`WP`) |

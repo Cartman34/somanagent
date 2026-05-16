@@ -18,7 +18,9 @@ use SoManAgent\Script\Backlog\Model\BacklogBoard;
  * Allocates and validates agent codes (dXX / rXX / mXX).
  *
  * Allocation scans managed worktrees, active backlog entries, and agent-sessions.json
- * to find the lowest unused two-digit number for the requested role.
+ * to find the lowest unused two-digit number >= 10 for the requested role.
+ * Numbers 01-09 are reserved for explicit operator allocation via --code=<code>
+ * and are never produced by auto-allocation.
  */
 final class AgentCodeService
 {
@@ -54,13 +56,15 @@ final class AgentCodeService
     }
 
     /**
-     * Allocates the lowest free code for the given role.
+     * Allocates the lowest free code >= 10 for the given role.
+     *
+     * Numbers 01-09 are reserved for explicit operator allocation and are never produced here.
      */
     public function allocateForRole(AgentRole $role): string
     {
         $used = $this->collectUsedNumbers($role);
 
-        for ($n = 1; $n <= 99; $n++) {
+        for ($n = 10; $n <= 99; $n++) {
             if (!in_array($n, $used, true)) {
                 return sprintf('%s%02d', $role->codePrefix(), $n);
             }
@@ -79,7 +83,7 @@ final class AgentCodeService
     {
         if (!preg_match('/^[drm]\d{2,}$/', $code)) {
             throw new \RuntimeException(sprintf(
-                "Invalid agent code format '%s'. Expected format: <prefix><nn> (e.g. d01, r02, m03).",
+                "Invalid agent code format '%s'. Expected format: <prefix><nn> (e.g. d10, r10, m10).",
                 $code,
             ));
         }
