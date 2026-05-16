@@ -56,7 +56,8 @@
       "Bash(GIT_EDITOR=true git *)",
       "Bash(SOMANAGER_ROLE=* SOMANAGER_AGENT=* php *)",
       "Bash(tmux *)",
-      "Bash(claude --version)"
+      "Bash(claude --version)",
+      "Bash(echo \"exit=$?\")"
     ]
   }
 }
