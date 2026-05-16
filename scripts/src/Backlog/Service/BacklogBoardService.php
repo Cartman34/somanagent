@@ -1149,8 +1149,9 @@ final class BacklogBoardService
      * an optional task type prefix from {@see BacklogTaskType} placed anywhere in
      * the leading bracket sequence). An explicit `[feature-slug]` scope is required
      * after the type prefix is stripped; bare titles and type-only prefixes are rejected.
-     * Remaining non-empty lines become sub-task lines indented by two spaces when not
-     * already indented.
+     * Remaining non-empty lines are each shifted by +2 spaces unconditionally; empty
+     * lines are kept as-is. Standard markdown sub-bullets (2-space indent) therefore
+     * land at 4 spaces in the board, preserving nesting hierarchy.
      *
      * @param array<int, string> $lines
      */
@@ -1189,15 +1190,7 @@ final class BacklogBoardService
 
         $extra = [];
         foreach (array_slice($cleaned, 1) as $line) {
-            if ($line === '') {
-                $extra[] = '';
-                continue;
-            }
-            if (preg_match('/^\s/', $line) === 1) {
-                $extra[] = $line;
-                continue;
-            }
-            $extra[] = '  ' . $line;
+            $extra[] = $line !== '' ? '  ' . $line : '';
         }
 
         $entry = new BoardEntry(trim($firstCleaned), $extra);
