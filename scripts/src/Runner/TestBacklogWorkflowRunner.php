@@ -44,7 +44,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
     {
         return array_merge(
             [
-                ['name' => '--campaign', 'description' => 'Campaign to run: help, board-format-normalization, todo-and-plain-feature-lifecycle, scoped-task-lifecycle, task-create-formats, work-start-type-prefix, feature-review-lifecycle, mutation-lock, or all'],
+                ['name' => '--campaign', 'description' => 'Campaign to run: help, board-format-normalization, todo-and-plain-feature-lifecycle, scoped-task-lifecycle, entry-create-formats, work-start-type-prefix, feature-review-lifecycle, mutation-lock, or all'],
                 ['name' => '--allow-remote', 'description' => 'Allow campaigns that push branches or create/merge GitHub PRs'],
                 ['name' => '--allow-integration', 'description' => 'Allow steps that require Docker/app containers to be running (e.g. migrate --generate)'],
                 ['name' => '--keep-artifacts', 'description' => 'Keep temporary backlog/review files under local/tmp/ after execution'],
@@ -148,7 +148,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
             $resolved = [
                 $campaigns['help'],
                 $campaigns['board-format-normalization'],
-                $campaigns['task-create-formats'],
+                $campaigns['entry-create-formats'],
                 $campaigns['work-start-type-prefix'],
                 $campaigns['todo-and-plain-feature-lifecycle'],
                 $campaigns['scoped-task-lifecycle'],
@@ -193,7 +193,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
             $this->campaigns = [
                 'help' => new HelpCampaign(),
                 'board-format-normalization' => new BoardFormatNormalizationCampaign(),
-                'task-create-formats' => new TaskCreateFormatsCampaign(),
+                'entry-create-formats' => new TaskCreateFormatsCampaign(),
                 'work-start-type-prefix' => new WorkStartTypePrefixCampaign(),
                 'todo-and-plain-feature-lifecycle' => new TodoAndPlainFeatureLifecycleCampaign(),
                 'scoped-task-lifecycle' => new ScopedTaskLifecycleCampaign(),

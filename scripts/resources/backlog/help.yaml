@@ -8,7 +8,7 @@ options:
     description: 'Override branch type for work-start: feat or fix'
   -
     name: '--position'
-    description: 'Insertion position for task-create: start, index, end (default: end)'
+    description: 'Insertion position for entry-create: start, index, end (default: end)'
   -
     name: '--index'
     description: '1-based target position used when --position=index'
@@ -21,7 +21,7 @@ options:
 examples:
   - 'php scripts/backlog.php status'
   - 'php scripts/backlog.php base-update my-feature'
-  - 'php scripts/backlog.php task-create "Add toast notifications on success and error flows"'
+  - 'php scripts/backlog.php entry-create --body-file=local/tmp/new-task.md'
   - 'php scripts/backlog.php todo-list'
   - 'php scripts/backlog.php task-remove my-feature'
   - 'php scripts/backlog.php task-remove my-feature/my-task'

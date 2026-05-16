@@ -1106,7 +1106,7 @@ final class BacklogBoardService
     {
         if (!str_starts_with($cleanedTitle, '[')) {
             throw new \RuntimeException(
-                'task-create requires an explicit [feature-slug] scope. ' .
+                'entry-create requires an explicit [feature-slug] scope. ' .
                 'Use [feature-slug] Title, [feature-slug][task-slug] Title, or [type][feature-slug] Title — ' .
                 'for example: [tech][my-feature] My task title.'
             );

@@ -14,7 +14,7 @@ enum BacklogCommandName: string
 {
     case BASE_UPDATE = 'base-update';
     case STATUS = 'status';
-    case TASK_CREATE = 'task-create';
+    case ENTRY_CREATE = 'entry-create';
     case TODO_LIST = 'todo-list';
     case TASK_REMOVE = 'task-remove';
     case REVIEW_CANCEL = 'review-cancel';

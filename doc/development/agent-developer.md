@@ -6,7 +6,7 @@ Read this file only when the active task requires developer workflow details.
 
 ## Allowed Commands
 
-- `task-create`
+- `entry-create`
 - `status`
 - `todo-list`
 - `task-remove`
@@ -110,22 +110,22 @@ Run `php scripts/backlog-agent.php whoami` from inside the WA to confirm the ses
 
 ## Command Behavior
 
-### `task-create`
+### `entry-create`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-create --body-file=<path> [--position=<start|index|end>] [--index=<n>]`.
-2. By default the script appends the task to the end of `## To do`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --body-file=<path> [--position=<start|index|end>] [--index=<n>]`.
+2. By default the script appends the entry to the end of `## To do`.
 3. `--position=start` inserts at the start of `## To do`.
 4. `--position=index --index=<n>` inserts at the requested 1-based position and clamps out-of-range values to the start or the end.
-5. Keep the task title short and put the breakdown on indented sub-task lines below it. **A `[feature-slug]` scope is required** (plus `[task-slug]` for child tasks); `task-create` rejects entries without one. Including a `[type]` prefix (`[feat]`, `[fix]` or `[tech]`) is strongly recommended so the queued entry is unambiguous. The type prefix may appear at any position in the leading bracket sequence.
-6. Always use `--body-file=<path>` (typically under `local/tmp/`) to pass the task body. The first non-empty line is the title; subsequent lines are each shifted by +2 spaces — top-level bullets (0 indent) land at 2 spaces in the board, standard markdown sub-bullets (2-space indent) land at 4, preserving nesting hierarchy. Write a normal markdown file and the hierarchy is preserved. Inline positional task text is not accepted. **Body markdown is restricted**: bullet lists (nested, any depth) and inline formatting only (bold, italic, inline code). No headers, code blocks, tables, blockquotes, hr, or paragraphs outside bullets — anything else is squashed into bullets and detail is lost. Long content → `local/specs/<feature>-spec.md`, referenced from a bullet.
+5. Keep the entry title short and put the breakdown on indented sub-task lines below it. **A `[feature-slug]` scope is required** (plus `[task-slug]` for child tasks); `entry-create` rejects entries without one. Including a `[type]` prefix (`[feat]`, `[fix]` or `[tech]`) is strongly recommended so the queued entry is unambiguous. The type prefix may appear at any position in the leading bracket sequence.
+6. Always use `--body-file=<path>` (typically under `local/tmp/`) to pass the entry body. The first non-empty line is the title; subsequent lines are each shifted by +2 spaces — top-level bullets (0 indent) land at 2 spaces in the board, standard markdown sub-bullets (2-space indent) land at 4, preserving nesting hierarchy. Write a normal markdown file and the hierarchy is preserved. Inline positional text is not accepted. **Body markdown is restricted**: bullet lists (nested, any depth) and inline formatting only (bold, italic, inline code). No headers, code blocks, tables, blockquotes, hr, or paragraphs outside bullets — anything else is squashed into bullets and detail is lost. Long content → `local/specs/<feature>-spec.md`, referenced from a bullet.
 7. Do not edit `local/backlog-board.md` manually.
-8. If the new task is a scoped child task (`[feature-slug][task-slug]`) and the parent feature is in `review`, `reviewing`, or `approved` stage, `task-create` automatically reverts the parent to `development` and clears `meta.reviewer`. A message is printed; no manual follow-up is needed.
+8. The body prefix determines the semantic: `[feat-slug]` alone creates a seed feature entry; `[feat-slug][task-slug]` creates a scoped child task. If the new entry is a scoped child task and the parent feature is in `review`, `reviewing`, or `approved` stage, `entry-create` automatically reverts the parent to `development` and clears `meta.reviewer`. A message is printed; no manual follow-up is needed.
 
 Examples:
 
 ```bash
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md --position=index --index=2
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --body-file=local/tmp/new-feature-task.md
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --body-file=local/tmp/new-feature-task.md --position=index --index=2
 ```
 
 ### `todo-list`

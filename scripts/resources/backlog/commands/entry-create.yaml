@@ -1,0 +1,26 @@
+description: 'Append one new backlog entry from --body-file at the end of the todo section'
+options:
+  -
+    name: '--position'
+    description: 'Insert at start, index, or end (default: end)'
+  -
+    name: '--index'
+    description: '1-based insert position used with --position=index'
+  -
+    name: '--body-file'
+    description: 'Path to a file containing the entry body (required; typically under local/tmp/)'
+examples:
+  - 'php scripts/backlog.php entry-create --body-file=local/tmp/new-task.md'
+  - 'php scripts/backlog.php entry-create --body-file=local/tmp/new-task.md --position=start'
+  - 'php scripts/backlog.php entry-create --body-file=local/tmp/new-task.md --position=index --index=2'
+notes:
+  - 'The entry body prefix determines the semantic: [feat-slug] alone creates a seed feature entry; [feat-slug][task-slug] creates a scoped child task. The initial kind stored in the queue is always `task`; the actual kind (feature or task) is resolved when the entry is started with work-start.'
+  - 'If the new entry is a scoped child task ([feature-slug][task-slug]) and the parent feature is in review, reviewing, or approved stage, the parent is automatically reverted to development and meta.reviewer is cleared. A message is printed to signal the revert.'
+  - 'Required: --body-file=<path> is mandatory. Inline positional text is not accepted.'
+  - 'Body file format: first non-empty line is the entry title; subsequent lines are each shifted by +2 spaces (empty lines stay empty). Standard markdown sub-bullets written with 2-space indent land at 4 spaces in the board, top-level bullets at 2 — write a normal markdown file and hierarchy is preserved. An optional leading "- " on the first line is accepted and stripped.'
+  - 'Body markdown: bullet lists (nested, any depth) and inline formatting only (bold, italic, inline code). No headers, code blocks, tables, blockquotes, hr, or paragraphs outside bullets — anything else is squashed into bullets and detail is lost. Long content goes to local/specs/<feature>-spec.md, referenced from a bullet.'
+  - 'Required: every entry must declare an explicit [feature-slug] scope (and [task-slug] for child tasks). Entries without a feature scope are rejected. Use [feature-slug] Title, [feature-slug][task-slug] Title, or [type][feature-slug] Title — for example: [tech][my-feature] My entry title.'
+  - 'A [type] prefix (feat / fix / tech) is recommended alongside the required [feature-slug] so the queued entry is unambiguous and the task-remove reference stays stable.'
+  - '`--index` values are advisory: out-of-range values clamp to start (>=1) or end (<= entryCount + 1) and emit a warning, while the entry is still inserted; passing `--position=index` without `--index` is rejected.'
+  - 'Supported type prefixes: [feat], [fix], [tech] (case-insensitive). Only one type prefix is allowed per entry.'
+  - 'Type prefix is recognized at any position in the leading bracket sequence: [type][feature-slug][task-slug] text, [feature-slug][type] text and [feature-slug][task-slug][type] text all work.'
