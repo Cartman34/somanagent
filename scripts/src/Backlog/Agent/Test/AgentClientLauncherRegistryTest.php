@@ -138,6 +138,7 @@ final class AgentClientLauncherRegistryTest
                 ?string $resumeSessionId = null,
                 bool $continueLast = false,
                 ?ResolvedModel $resolvedModel = null,
+                ?string $initialPrompt = null,
             ): array
             {
                 return ['echo', []];

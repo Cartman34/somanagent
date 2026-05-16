@@ -85,6 +85,7 @@ final class CodexAgentLauncher extends AbstractAgentClientLauncher
         ?string $resumeSessionId = null,
         bool $continueLast = false,
         ?ResolvedModel $resolvedModel = null,
+        ?string $initialPrompt = null,
     ): array {
         $args = ['-C', $worktree];
 
@@ -114,7 +115,12 @@ final class CodexAgentLauncher extends AbstractAgentClientLauncher
             throw new \RuntimeException(sprintf('Unable to read agent context file: %s', $contextFilePath));
         }
 
-        $args[] = $context . self::SESSION_PROMPT_SUFFIX;
+        $prompt = $context . self::SESSION_PROMPT_SUFFIX;
+        if ($initialPrompt !== null) {
+            $prompt .= "\n\n" . $initialPrompt;
+        }
+
+        $args[] = $prompt;
 
         return ['codex', $args];
     }

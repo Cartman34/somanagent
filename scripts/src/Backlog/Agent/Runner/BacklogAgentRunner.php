@@ -34,6 +34,7 @@ use SoManAgent\Script\Backlog\Agent\Service\AgentCliOptionValidator;
 use SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
 use SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
 use SoManAgent\Script\Backlog\Agent\Service\AgentDeveloperSelector;
+use SoManAgent\Script\Backlog\Agent\Service\AgentLaunchPromptResolver;
 use SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
 use SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
@@ -71,6 +72,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
     private ?AgentCodeService $codeService = null;
     private ?AgentContextBuilder $contextBuilder = null;
     private ?AgentCliOptionValidator $optionValidator = null;
+    private ?AgentLaunchPromptResolver $launchPromptResolver = null;
     private ?AgentModelResolver $modelResolver = null;
     private ?BacklogBoardService $boardService = null;
     private ?BacklogWorktreeService $worktreeService = null;
@@ -163,6 +165,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                     new ShellProcessRunner(),
                     $this->backlogCommandRunner(),
                     $this->modelResolver(),
+                    $this->launchPromptResolver(),
                 ),
                 'list' => new AgentListCommand(
                     $this->console,
@@ -234,6 +237,15 @@ final class BacklogAgentRunner extends AbstractScriptRunner
         }
 
         return $this->modelResolver;
+    }
+
+    private function launchPromptResolver(): AgentLaunchPromptResolver
+    {
+        if ($this->launchPromptResolver === null) {
+            $this->launchPromptResolver = new AgentLaunchPromptResolver($this->projectRoot . '/scripts/resources/backlog-agent/launch-prompts.yaml');
+        }
+
+        return $this->launchPromptResolver;
     }
 
     private function registry(): AgentClientLauncherRegistry

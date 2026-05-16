@@ -19,6 +19,7 @@ use SoManAgent\Script\Backlog\Agent\Exception\ClientNotInstalledException;
 use SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
 use SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
 use SoManAgent\Script\Backlog\Agent\Service\AgentDeveloperSelector;
+use SoManAgent\Script\Backlog\Agent\Service\AgentLaunchPromptResolver;
 use SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
 use SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
@@ -53,6 +54,7 @@ final class AgentStartCommand extends AbstractAgentCommand
     private ProcessRunner $shellRunner;
     private BacklogCommandRunner $backlogCommandRunner;
     private ?AgentModelResolver $modelResolver;
+    private AgentLaunchPromptResolver $launchPromptResolver;
 
     /**
      * @param string $projectRoot
@@ -71,6 +73,7 @@ final class AgentStartCommand extends AbstractAgentCommand
      * @param ProcessRunner $shellRunner Used to check for local changes in the worktree
      * @param BacklogCommandRunner $backlogCommandRunner Used to delegate review-next, review-cancel, work-start, and entry-release under the backlog lock
      * @param AgentModelResolver|null $modelResolver Resolves role/client model tier and effort into CLI args
+     * @param AgentLaunchPromptResolver|null $launchPromptResolver Resolves role-specific initial prompts for auto-picked entries; defaults to the bundled scripts resource
      */
     public function __construct(
         string $projectRoot,
@@ -89,6 +92,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         ProcessRunner $shellRunner,
         BacklogCommandRunner $backlogCommandRunner,
         ?AgentModelResolver $modelResolver = null,
+        ?AgentLaunchPromptResolver $launchPromptResolver = null,
     ) {
         $this->projectRoot = $projectRoot;
         $this->worktreesRoot = $worktreesRoot;
@@ -106,6 +110,9 @@ final class AgentStartCommand extends AbstractAgentCommand
         $this->shellRunner = $shellRunner;
         $this->backlogCommandRunner = $backlogCommandRunner;
         $this->modelResolver = $modelResolver;
+        $this->launchPromptResolver = $launchPromptResolver ?? new AgentLaunchPromptResolver(
+            dirname(__DIR__, 4) . '/resources/backlog-agent/launch-prompts.yaml',
+        );
     }
 
     /**
@@ -233,9 +240,13 @@ final class AgentStartCommand extends AbstractAgentCommand
         $takenReviewerCode = null;
         $takenWorkStartRef = null;
         $takenWorkStartDevCode = null;
+        $initialPrompt = null;
 
         if ($role === AgentRole::REVIEWER) {
             [$worktree, $takenEntryRef, $takenReviewerCode] = $this->prepareReviewerMode($options, $code);
+            if ($takenEntryRef !== null) {
+                $initialPrompt = $this->launchPromptResolver->resolve(AgentRole::REVIEWER);
+            }
         } elseif ($role === AgentRole::MANAGER) {
             $worktree = $this->projectRoot;
         } else {
@@ -247,6 +258,9 @@ final class AgentStartCommand extends AbstractAgentCommand
                 $this->worktreeService->removeAgentWorktreeForRestore($code);
             }
             [$takenWorkStartRef, $takenWorkStartDevCode] = $this->prepareDeveloperMode($code);
+            if ($takenWorkStartRef !== null) {
+                $initialPrompt = $this->launchPromptResolver->resolve(AgentRole::DEVELOPER);
+            }
             $this->worktreeService->prepareAgentWorktree($code);
         }
 
@@ -258,7 +272,15 @@ final class AgentStartCommand extends AbstractAgentCommand
             $baseEnv = $this->buildBaseEnv($code, $role, $client);
             $env = $launcher->buildEnvironment($baseEnv, $contextFilePath);
 
-            [$bin, $binArgs] = $launcher->buildLaunchCommand($worktree, $contextFilePath, $role, null, false, $resolvedModel);
+            [$bin, $binArgs] = $launcher->buildLaunchCommand(
+                $worktree,
+                $contextFilePath,
+                $role,
+                null,
+                false,
+                $resolvedModel,
+                $initialPrompt,
+            );
 
             $this->sessionService->create($code, $client, $role, (int) getmypid(), $worktree);
         } catch (\Throwable $e) {

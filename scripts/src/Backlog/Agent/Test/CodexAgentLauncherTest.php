@@ -49,6 +49,7 @@ final class CodexAgentLauncherTest
         $failed += $this->testClient();
         $failed += $this->testIsAvailableUsesProcessRunner();
         $failed += $this->testBuildLaunchCommandInitial();
+        $failed += $this->testBuildLaunchCommandInitialPrompt();
         $failed += $this->testBuildLaunchCommandFailsWhenContextIsMissing();
         $failed += $this->testBuildLaunchCommandContinue();
         $failed += $this->testBuildLaunchCommandResumeId();
@@ -100,6 +101,31 @@ final class CodexAgentLauncherTest
         }
 
         echo "OK testBuildLaunchCommandInitial\n";
+        return 0;
+    }
+
+    private function testBuildLaunchCommandInitialPrompt(): int
+    {
+        $context = $this->writeContext('context initial');
+        $launcher = new CodexAgentLauncher($this->makeProcessRunner(true), $this->tmpDir);
+
+        [$bin, $args] = $launcher->buildLaunchCommand(
+            '/worktree',
+            $context,
+            AgentRole::DEVELOPER,
+            null,
+            false,
+            null,
+            'initial user prompt',
+        );
+
+        $expected = ['-C', '/worktree', "context initial\n\n--- Begin session ---\n\ninitial user prompt"];
+        if ($bin !== 'codex' || $args !== $expected) {
+            echo "FAIL testBuildLaunchCommandInitialPrompt: unexpected command\n";
+            return 1;
+        }
+
+        echo "OK testBuildLaunchCommandInitialPrompt\n";
         return 0;
     }
 

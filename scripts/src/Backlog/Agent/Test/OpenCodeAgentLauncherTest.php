@@ -51,6 +51,7 @@ final class OpenCodeAgentLauncherTest
         $failed += $this->testPrepareWorktreeNormalizesNonArrayInstructions();
         $failed += $this->testPrepareWorktreePreservesOtherKeys();
         $failed += $this->testBuildLaunchCommandInitial();
+        $failed += $this->testBuildLaunchCommandInitialPrompt();
         $failed += $this->testBuildLaunchCommandContinue();
         $failed += $this->testBuildLaunchCommandResumeId();
         $failed += $this->testCaptureCurrentSessionIdParsesFirstRow();
@@ -219,6 +220,30 @@ final class OpenCodeAgentLauncherTest
         }
 
         echo "OK testBuildLaunchCommandInitial\n";
+
+        return 0;
+    }
+
+    private function testBuildLaunchCommandInitialPrompt(): int
+    {
+        $launcher = new OpenCodeAgentLauncher($this->makeProcessRunner(true));
+        [$bin, $args] = $launcher->buildLaunchCommand(
+            '/worktree',
+            '/ctx.md',
+            AgentRole::DEVELOPER,
+            null,
+            false,
+            null,
+            'initial user prompt',
+        );
+
+        if ($bin !== 'opencode' || $args !== ['--prompt', 'initial user prompt']) {
+            echo "FAIL testBuildLaunchCommandInitialPrompt: unexpected command\n";
+
+            return 1;
+        }
+
+        echo "OK testBuildLaunchCommandInitialPrompt\n";
 
         return 0;
     }

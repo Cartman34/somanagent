@@ -153,6 +153,7 @@ Notes:
 - `start` accepts `--tier=economy|balanced|premium`, `--effort=low|medium|high`, and `--model=<raw-name>`
 - default profile is `developer=balanced+medium`, `reviewer=balanced+medium`, `manager=premium+medium`
 - `--model` bypasses tier model selection and is mutually exclusive with `--tier`; canonical effort still applies on clients that support effort
+- after a developer auto-pick or reviewer auto-claim, `start` sends the role prompt from `scripts/resources/backlog-agent/launch-prompts.yaml` as the initial user message; manager, `resume`, reuse, and no-auto-pick paths send no launch prompt
 - `claude` uses `--model` and `--effort`; Claude Code documents aliases such as `haiku`, `sonnet`, and `opus`
 - `codex` uses `--model` and `--config model_reasoning_effort="<level>"`; Codex config documents `model_reasoning_effort`
 - `opencode` uses `--model provider/model`; the project mapping uses models listed by the local OpenCode provider cache

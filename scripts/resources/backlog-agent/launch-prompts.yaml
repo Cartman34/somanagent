@@ -1,0 +1,3 @@
+prompts:
+  developer: "Démarre le développement de ta tâche définie dans le contexte, elle t'est déjà assignée."
+  reviewer: "Démarre la review définie dans le contexte, elle t'est déjà assignée."
