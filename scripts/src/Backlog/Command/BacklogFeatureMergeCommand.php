@@ -7,7 +7,6 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
@@ -80,12 +79,12 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
             $bodyFile = $bodyFileOption;
         }
 
-        $feature = $this->resolveFeatureReferenceArgument($board, $commandArgs, BacklogCommandName::FEATURE_MERGE->value);
+        $feature = $this->resolveFeatureReferenceArgument($board, $commandArgs, 'feature-merge');
 
         $match = $this->boardService->resolveFeature($board, $feature);
         $entry = $match->getEntry();
         $this->boardService->checkIsFeatureEntry($entry) || throw new \RuntimeException('feature-merge only applies to kind=feature entries.');
-        $this->boardService->assertNoActiveTasksForFeature($board, $feature, BacklogCommandName::FEATURE_MERGE->value);
+        $this->boardService->assertNoActiveTasksForFeature($board, $feature, 'feature-merge');
 
         if ($this->boardService->getFeatureStage($entry) !== BacklogBoard::STAGE_APPROVED) {
             throw new \RuntimeException(sprintf(
@@ -118,8 +117,8 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
 
         $this->boardService->deleteFeature($board, $feature);
         $review->clearReview($feature);
-        $this->saveBoard($board, BacklogCommandName::FEATURE_MERGE->value);
-        $this->saveReviewFile($review, BacklogCommandName::FEATURE_MERGE->value);
+        $this->saveBoard($board, 'feature-merge');
+        $this->saveReviewFile($review, 'feature-merge');
 
         $cleaned = $this->worktreeService->cleanupManagedWorktreesForBranch($branch, $board);
         $this->gitService->deleteRemoteBranch($branch);

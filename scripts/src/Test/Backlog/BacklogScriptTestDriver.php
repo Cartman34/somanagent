@@ -824,19 +824,6 @@ MD);
     }
 
     /**
-     * Assert that the deprecated feature-task-merge command is no longer public.
-     *
-     * @param string $reference Task reference
-     */
-    public function mergeTaskWithLegacyCommand(string $reference): void
-    {
-        $this->assertBacklogFails(
-            ['feature-task-merge', $reference],
-            'feature-task-merge is no longer a public command.',
-        );
-    }
-
-    /**
      * Assert entry-merge refuses to infer a task from the developer agent option.
      *
      * @param string $agent Developer agent that owns a task
@@ -1035,32 +1022,6 @@ MD);
         $this->assertOutputContains($output, 'Resolved type: feature');
         $this->assertOutputContains($output, 'Equivalent command: feature-merge ' . $feature);
         $this->context->markPullRequestMerged();
-    }
-
-    /**
-     * Assert that the deprecated feature-merge command is no longer public.
-     *
-     * @param string $feature Feature slug
-     */
-    public function mergeFeatureWithLegacyCommand(string $feature): void
-    {
-        $this->assertBacklogFails(
-            ['feature-merge', $feature],
-            'feature-merge is no longer a public command.',
-        );
-    }
-
-    /**
-     * Assert that the deprecated feature-merge command is no longer public.
-     *
-     * @param string $feature Feature slug
-     */
-    public function assertFeatureMergeIsDeprecated(string $feature): void
-    {
-        $this->assertBacklogFails(
-            ['feature-merge', $feature],
-            'feature-merge is no longer a public command.',
-        );
     }
 
     /**

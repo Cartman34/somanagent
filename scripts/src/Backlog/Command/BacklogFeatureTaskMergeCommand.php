@@ -7,7 +7,6 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
@@ -70,14 +69,14 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
         $agent = is_string($agentOption) ? $this->boardService->sanitizeString($agentOption) : null;
         if ($agent !== null) {
             $match = isset($commandArgs[0])
-                ? $this->boardService->resolveTaskByReference($board, $commandArgs[0], BacklogCommandName::FEATURE_TASK_MERGE->value)
+                ? $this->boardService->resolveTaskByReference($board, $commandArgs[0], 'feature-task-merge')
                 : $this->boardService->resolveSingleTaskForAgent($board, $agent);
         } else {
             if ($this->boardService->sanitizeString($commandArgs[0] ?? null) === null) {
                 throw new \RuntimeException('feature-task-merge requires a full <entry-ref> when used without --agent.');
             }
 
-            $match = $this->boardService->resolveTaskByReference($board, $commandArgs[0], BacklogCommandName::FEATURE_TASK_MERGE->value);
+            $match = $this->boardService->resolveTaskByReference($board, $commandArgs[0], 'feature-task-merge');
         }
         $entry = $match->getEntry();
         $this->boardService->checkIsTaskEntry($entry) || throw new \RuntimeException('feature-task-merge only applies to kind=task entries.');
@@ -111,8 +110,8 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
         $this->boardService->removeActiveEntryAt($board, $match->getIndex());
         $this->invalidateFeatureReviewState($parent->getEntry());
         $review->clearReview($this->boardService->getTaskReviewKey($entry));
-        $this->saveBoard($board, BacklogCommandName::FEATURE_TASK_MERGE->value);
-        $this->saveReviewFile($review, BacklogCommandName::FEATURE_TASK_MERGE->value);
+        $this->saveBoard($board, 'feature-task-merge');
+        $this->saveReviewFile($review, 'feature-task-merge');
 
         if ($mergeContext['temporary']) {
             $this->worktreeService->removeTemporaryMergeWorktree($mergeContext['path']);

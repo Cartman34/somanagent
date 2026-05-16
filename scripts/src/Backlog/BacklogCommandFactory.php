@@ -157,14 +157,12 @@ final class BacklogCommandFactory
             BacklogCommandName::REVIEW_NOTES->value => BacklogReviewNotesCommand::class,
             BacklogCommandName::WORK_START->value => BacklogWorkStartCommand::class,
             BacklogCommandName::ENTRY_RELEASE->value => BacklogEntryReleaseCommand::class,
-            BacklogCommandName::FEATURE_TASK_MERGE->value => BacklogFeatureTaskMergeCommand::class,
             BacklogCommandName::FEATURE_ASSIGN->value => BacklogFeatureAssignCommand::class,
             BacklogCommandName::ENTRY_UNASSIGN->value => BacklogEntryUnassignCommand::class,
             BacklogCommandName::FEATURE_BLOCK->value => BacklogFeatureBlockCommand::class,
             BacklogCommandName::FEATURE_UNBLOCK->value => BacklogFeatureUnblockCommand::class,
             BacklogCommandName::LIST->value => BacklogListCommand::class,
             BacklogCommandName::FEATURE_CLOSE->value => BacklogFeatureCloseCommand::class,
-            BacklogCommandName::FEATURE_MERGE->value => BacklogFeatureMergeCommand::class,
         ];
 
         $class = $map[$commandName] ?? null;
