@@ -18,7 +18,7 @@ Read this file only when the active task requires developer workflow details.
 - `work-start`
 - `entry-release`
 - `entry-merge`
-- `feature-assign`
+- `entry-assign`
 - `entry-unassign`
 - `feature-block`
 - `feature-unblock`
@@ -194,7 +194,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 7. After validation the script takes the target task from `## To do`, updates local `main` when possible, creates the branch in the agent worktree, moves the entry to `## In progress`, sets `meta.stage=development`, and authorizes development.
 8. Branch prefix follows the type 1:1: `feat → feat/<slug>`, `fix → fix/<slug>`, `tech → tech/<slug>` for plain features and `<type>/<feature-slug>--<task-slug>` for scoped tasks.
 9. Behaviour depends on the queued task prefix (after the optional `[feat]`/`[fix]`/`[tech]` type prefix):
-   - **`[feature-slug][task-slug] text`** — creates or reuses the parent `kind=feature` entry for `<feature-slug>` without agent assignment, and creates the child `kind=task` entry assigned to the agent on branch `<type>/<feature-slug>--<task-slug>`. The `kind=feature` container stays unassigned until a developer explicitly takes integration ownership with `feature-assign`.
+   - **`[feature-slug][task-slug] text`** — creates or reuses the parent `kind=feature` entry for `<feature-slug>` without agent assignment, and creates the child `kind=task` entry assigned to the agent on branch `<type>/<feature-slug>--<task-slug>`. The `kind=feature` container stays unassigned until a developer explicitly takes integration ownership with `entry-assign`.
    - **`[feature-slug] text`** — creates a plain `kind=feature` with the explicit slug `<feature-slug>`, assigned to the agent, on branch `<type>/<feature-slug>`.
    - **`text` (no feature prefix)** — creates a plain `kind=feature` with a slug derived from the task text, assigned to the agent.
 10. With `--dry-run`, the script prints the resolved interpretation (kind, type, feature, task, planned branches) and performs no Git, worktree or backlog mutation. Read-only Git operations (fetch, `origin/main` resolution) remain enabled.
@@ -216,15 +216,16 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 3. The script merges the child branch into the parent feature branch locally from the parent feature worktree or from a temporary merge worktree.
 4. The current task review stage does not gate this merge. `development`, `review`, `rejected`, and `approved` are all mergeable when the user explicitly asks for `merge`.
 5. The child task entry is removed from `## In progress` after the local merge. The child task worktree is removed when that agent no longer owns any active task.
-6. The parent `kind=feature` entry remains, keeps the merged task content in its aggregated lines, and is moved back to `development` so the remote review flow must be requested again on the parent branch. The parent's agent assignment is never modified by a task merge — use `feature-assign` to take integration ownership of the feature after all tasks are merged.
+6. The parent `kind=feature` entry remains, keeps the merged task content in its aggregated lines, and is moved back to `development` so the remote review flow must be requested again on the parent branch. The parent's agent assignment is never modified by a task merge — use `entry-assign` to take integration ownership of the feature after all tasks are merged.
 
-### `feature-assign`
+### `entry-assign`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php feature-assign --agent=<code> <entry-ref>`.
-2. Developer can only assign an unassigned entry to itself, or refresh an entry already assigned to itself.
-3. The script assigns the entry to that same agent and prepares the `WA`.
-4. Missing `agent` metadata and legacy `agent: none` both mean the entry is unassigned. A different real agent code means the entry is already assigned and must not be reassigned through `feature-assign`.
-5. For unassigned `kind=feature` containers created from a `[feature-slug][task-slug]`-prefixed task, this is the required step before running `review-request` on the feature. The developer takes integration ownership of the feature branch.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-assign --agent=<code> <entry-ref>`.
+2. Works on both `kind=feature` and `kind=task` entries.
+3. Developer can only assign an unassigned entry to itself, or refresh an entry already assigned to itself.
+4. The script assigns the entry to that same agent and prepares the `WA`.
+5. Missing `agent` metadata and legacy `agent: none` both mean the entry is unassigned. A different real agent code means the entry is already assigned and must not be reassigned through `entry-assign`.
+6. For unassigned `kind=feature` containers created from a `[feature-slug][task-slug]`-prefixed task, this is the required step before running `review-request` on the feature. The developer takes integration ownership of the feature branch.
 
 ### `entry-unassign`
 
@@ -284,18 +285,18 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 
 1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php review-request`.
 2. The script resolves the agent's single active entry automatically: if `kind=task`, submits the task for review; if `kind=feature`, submits the feature for review.
-3. For `kind=feature`, requires all child `kind=task` entries to have been merged locally first, and requires the agent to be assigned to the feature via `feature-assign`.
+3. For `kind=feature`, requires all child `kind=task` entries to have been merged locally first, and requires the agent to be assigned to the feature via `entry-assign`.
 4. Before running the mechanical review, the script rebases the entry branch automatically: a `kind=feature` is rebased on `origin/main` (with `origin/main` refreshed first), a `kind=task` is rebased on its local parent feature branch.
 5. After a successful rebase, `meta.base` is refreshed automatically to the new base commit. Manual `base-update` is not required after `review-request` succeeds.
 6. If the rebase fails (typically a conflict), the rebase is aborted, the command stops with a recovery hint, the entry stays in `development`, and the mechanical review is not run. The worktree is left clean by the abort. Update the branch manually in the worktree (rebase or merge onto the target and resolve the conflicts), then rerun `review-request`.
 
 ## Rules
 
-- An agent can have at most one active entry (`kind=task` or `kind=feature`) at a time. `work-start` and `feature-assign` enforce this at the script level and will refuse with the current active entry details and the required next step.
+- An agent can have at most one active entry (`kind=task` or `kind=feature`) at a time. `work-start` and `entry-assign` enforce this at the script level and will refuse with the current active entry details and the required next step.
 - Do not edit local backlog files directly.
 - A plain feature is considered done for Developer only when it is committed, mechanically valid, and passed to `meta.stage=review`.
 - A `kind=task` entry may be submitted for review with `review-request`, but it is considered done for Developer only when it is committed, mechanically valid, and merged locally into its parent feature branch with `entry-merge`.
-- For `feature-assign` and `entry-unassign`, `SOMANAGER_ROLE` must be `developer` and `SOMANAGER_AGENT` must match `--agent`.
+- For `entry-assign` and `entry-unassign`, `SOMANAGER_ROLE` must be `developer` and `SOMANAGER_AGENT` must match `--agent`.
 - User workflow keywords are procedural orders. For `next`, `submit`, `rework`, and `cleanup`, execute the documented command sequence exactly as written, even if memory suggests the feature state is inconsistent or unchanged.
 - If a needed backlog action is missing from `backlog.php`, stop and ask the user instead of editing the backlog manually.
 
@@ -315,7 +316,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 ### `submit`
 
 1. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php review-request`.
-2. For `kind=feature`, this keyword still applies only after all child `kind=task` entries have already been merged locally, and after `feature-assign` has been run to take integration ownership.
+2. For `kind=feature`, this keyword still applies only after all child `kind=task` entries have already been merged locally, and after `entry-assign` has been run to take integration ownership.
 
 ### `merge`
 

@@ -432,7 +432,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
             "    agent: none\n",
         );
         $driver->removeManagedWorktree($context->agentPrimary);
-        $driver->assignFeatureAsManager($taskRef, $context->agentSecondary);
+        $driver->assignEntryAsManager($taskRef, $context->agentSecondary);
         $driver->assertStatusContains($context->agentSecondary, $taskSlug, true);
         $driver->unassignEntryAsManager($taskRef, self::MANAGER_AGENT);
 

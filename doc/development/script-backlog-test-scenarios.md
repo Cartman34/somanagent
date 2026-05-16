@@ -245,13 +245,13 @@ Validate entry assignment and unassignment permissions.
 2. Start it:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php work-start`
 3. Refresh the same assignment:
-   - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php feature-assign test-assign-feature --agent d01`
+   - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-assign test-assign-feature --agent d01`
 4. Try to assign to another agent while the entry is already assigned:
-   - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php feature-assign test-assign-feature --agent d02`
+   - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-assign test-assign-feature --agent d02`
 5. Unassign it with manager role:
    - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-unassign test-assign-feature --agent m01`
 6. Assign the unassigned entry with manager role:
-   - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php feature-assign test-assign-feature --agent d02`
+   - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-assign test-assign-feature --agent d02`
 7. Inspect:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php status --agent d02`
 8. Unassign with manager role:
@@ -400,7 +400,7 @@ Validate that after merging task A, `work-start` picks up the next queued scoped
 - second child task is created as active `kind=task` assigned to d01
 - parent feature container (`kind=feature`) has **no agent** throughout, since task merges do not auto-assign it
 - contribution blocks record both merged child tasks after step 6
-- after step 6, agent d01 has no active entry; take ownership with `feature-assign` before `review-request`
+- after step 6, agent d01 has no active entry; take ownership with `entry-assign` before `review-request`
 
 ## Scenario 11 - Feature Review Flow
 
@@ -411,7 +411,7 @@ Validate remote feature review transitions once all child tasks are merged.
 ### Steps
 
 1. Developer takes integration ownership of the feature:
-   - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php feature-assign --agent d01 test-scoped-feature`
+   - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-assign --agent d01 test-scoped-feature`
 2. Submit the feature for review:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php review-request`
 3. Inspect:

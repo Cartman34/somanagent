@@ -320,22 +320,22 @@ MD);
      * @param string $reference Entry reference (`<entry-ref>`) to assign
      * @param string $agent Agent to assign the entry to
      */
-    public function assignFeatureAsManager(string $reference, string $agent): void
+    public function assignEntryAsManager(string $reference, string $agent): void
     {
-        $this->runBacklog(['feature-assign', $reference, '--agent', $agent], ['SOMANAGER_ROLE' => 'manager']);
+        $this->runBacklog(['entry-assign', $reference, '--agent', $agent], ['SOMANAGER_ROLE' => 'manager']);
     }
 
     /**
-     * Asserts that `feature-assign` fails with the given message.
+     * Asserts that `entry-assign` fails with the given message.
      *
      * @param string $reference Entry reference (`<entry-ref>`) to assign
      * @param string $agent Agent code passed via `--agent`
      * @param array<string, string> $env Environment variables (typically SOMANAGER_ROLE / SOMANAGER_AGENT)
      * @param string $needle Expected substring of the failure output
      */
-    public function assertAssignFeatureFails(string $reference, string $agent, array $env, string $needle): void
+    public function assertAssignEntryFails(string $reference, string $agent, array $env, string $needle): void
     {
-        $this->assertBacklogFails(['feature-assign', $reference, '--agent', $agent], $needle, $env);
+        $this->assertBacklogFails(['entry-assign', $reference, '--agent', $agent], $needle, $env);
     }
 
     /**
