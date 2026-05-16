@@ -43,7 +43,7 @@ final class TmuxSessionDriverTest
         $failed += $this->testGetPanePidThrowsWhenOutputIsTmuxDefault();
         $failed += $this->testCreateSessionAppliesMouseOption();
         $failed += $this->testCreateSessionAppliesHistoryLimit();
-        $failed += $this->testCreateSessionSetOptionFailureDoesNotThrow();
+        $failed += $this->testCreateSessionWarnsWhenSetOptionFails();
 
         return $failed;
     }
@@ -377,10 +377,11 @@ final class TmuxSessionDriverTest
     }
 
     /**
-     * If the set-option commands fail (tmux returns non-zero), createSession() must not throw.
-     * Mouse mode and history-limit are ergonomic options; the session must remain functional.
+     * If the set-option commands fail (tmux returns non-zero), createSession() must not throw
+     * and must emit a warning via Console::warn() for each failed option so the operator knows
+     * that mouse scrollback or the extended history limit is unavailable.
      */
-    private function testCreateSessionSetOptionFailureDoesNotThrow(): int
+    private function testCreateSessionWarnsWhenSetOptionFails(): int
     {
         $runner = new FakeProcessRunner();
         // new-session succeeds; the two set-option calls fail
@@ -390,14 +391,26 @@ final class TmuxSessionDriverTest
         $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'createSession');
         $reflection->setAccessible(true);
 
+        ob_start();
         try {
             $reflection->invoke($driver, 'somanagent-d03', '/tmp/fake.sh', '/tmp/wa');
         } catch (\Throwable $e) {
+            ob_end_clean();
             $inner = $e instanceof \ReflectionException ? $e->getPrevious() : $e;
-            echo "FAIL testCreateSessionSetOptionFailureDoesNotThrow: unexpected exception: " . ($inner?->getMessage() ?? $e->getMessage()) . "\n";
+            echo "FAIL testCreateSessionWarnsWhenSetOptionFails: unexpected exception: " . ($inner?->getMessage() ?? $e->getMessage()) . "\n";
             return 1;
         }
-        echo "OK testCreateSessionSetOptionFailureDoesNotThrow\n";
+        $output = ob_get_clean();
+
+        if (!str_contains((string) $output, 'mouse')) {
+            echo "FAIL testCreateSessionWarnsWhenSetOptionFails: expected warning mentioning 'mouse', got: " . var_export($output, true) . "\n";
+            return 1;
+        }
+        if (!str_contains((string) $output, 'history-limit')) {
+            echo "FAIL testCreateSessionWarnsWhenSetOptionFails: expected warning mentioning 'history-limit', got: " . var_export($output, true) . "\n";
+            return 1;
+        }
+        echo "OK testCreateSessionWarnsWhenSetOptionFails\n";
         return 0;
     }
 

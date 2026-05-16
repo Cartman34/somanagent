@@ -232,7 +232,8 @@ final class TmuxSessionDriver implements SessionDriverInterface
      * After the session is created, mouse mode and an extended scrollback buffer are applied via
      * set-option. The AI client runs in alt-screen mode, which bypasses the host terminal scrollback;
      * mouse mode enables wheel-scroll in the pane via tmux copy mode. Both options are ergonomic
-     * improvements; failure is silently ignored and the session remains functional without them.
+     * improvements; if either set-option call fails, a warning is emitted and the session continues
+     * without that option.
      */
     private function createSession(string $name, string $wrapperPath, string $cwd): void
     {
@@ -247,8 +248,12 @@ final class TmuxSessionDriver implements SessionDriverInterface
             throw new \RuntimeException(sprintf("Failed to create tmux session '%s'.", $name));
         }
 
-        $this->shellRunner->succeeds(sprintf('tmux set-option -t %s mouse on', escapeshellarg($name)));
-        $this->shellRunner->succeeds(sprintf('tmux set-option -t %s history-limit 50000', escapeshellarg($name)));
+        if (!$this->shellRunner->succeeds(sprintf('tmux set-option -t %s mouse on', escapeshellarg($name)))) {
+            $this->console->warn(sprintf("tmux set-option mouse on failed for session '%s'; mouse scrollback will not be available.", $name));
+        }
+        if (!$this->shellRunner->succeeds(sprintf('tmux set-option -t %s history-limit 50000', escapeshellarg($name)))) {
+            $this->console->warn(sprintf("tmux set-option history-limit failed for session '%s'; scrollback history uses the tmux default.", $name));
+        }
     }
 
     /**
