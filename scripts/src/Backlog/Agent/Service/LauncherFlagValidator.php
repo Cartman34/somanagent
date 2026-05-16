@@ -68,11 +68,13 @@ final class LauncherFlagValidator
     /**
      * Returns the combined stdout+stderr of `<client> --help`, or empty string when capture fails.
      *
-     * Help text often lands on stderr for short-help CLIs, so stderr is folded into stdout via `2>&1`.
+     * `$client` is the AgentClient enum string — one of the fixed values claude/codex/opencode/gemini —
+     * so it is safe to embed directly without shell escaping. Help text often lands on stderr for
+     * short-help CLIs, so stderr is folded into stdout via `2>&1`.
      */
     private function captureHelp(string $client): string
     {
-        $command = escapeshellarg($client) . ' --help 2>&1';
+        $command = $client . ' --help 2>&1';
         $output = $this->processRunner->output($command);
 
         return $output ?? '';

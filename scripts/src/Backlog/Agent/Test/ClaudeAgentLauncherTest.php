@@ -125,6 +125,10 @@ final class ClaudeAgentLauncherTest
             echo "FAIL testBuildLaunchCommandContinue: missing --continue\n";
             return 1;
         }
+        if (in_array('--cwd', $args, true) || in_array('/worktree', $args, true)) {
+            echo "FAIL testBuildLaunchCommandContinue: --cwd must not be passed in continue mode either (claude v2.x rejects it)\n";
+            return 1;
+        }
 
         echo "OK testBuildLaunchCommandContinue\n";
         return 0;
@@ -143,6 +147,10 @@ final class ClaudeAgentLauncherTest
         }
         if (in_array('--continue', $args, true)) {
             echo "FAIL testBuildLaunchCommandResumeId: resume id must not add --continue\n";
+            return 1;
+        }
+        if (in_array('--cwd', $args, true) || in_array('/worktree', $args, true)) {
+            echo "FAIL testBuildLaunchCommandResumeId: --cwd must not be passed in resume mode either (claude v2.x rejects it)\n";
             return 1;
         }
 
