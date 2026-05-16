@@ -295,13 +295,14 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-cre
 
 ### `next`
 
-1. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php work-start`.
-2. `WA`: implement the feature scope on the branch checked out for that task.
-3. `WA`: inspect the local diff and fix issues in scope before moving on.
-4. `WA`: run self-challenge cycles per the Responsibilities rule; fix and re-challenge until a full pass yields no findings.
-5. `WA`: run `git add .`.
-6. `WA`: run `git commit -m "[<feature-slug>] ..."` using the canonical feature identifier recorded in the backlog metadata and branch name.
-7. Report to the user a brief summary of self-challenge cycles: dimensions checked, issues found, fixes applied.
+1. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php todo-list` and read the first entry's `<entry-ref>` (the value in brackets at the start of each line).
+2. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php work-start <entry-ref>`. The explicit reference is required for agent-driven flows so that target selection is unambiguous and a concurrent agent cannot consume a different head between read and mutation.
+3. `WA`: implement the feature scope on the branch checked out for that task.
+4. `WA`: inspect the local diff and fix issues in scope before moving on.
+5. `WA`: run self-challenge cycles per the Responsibilities rule; fix and re-challenge until a full pass yields no findings.
+6. `WA`: run `git add .`.
+7. `WA`: run `git commit -m "[<feature-slug>] ..."` using the canonical feature identifier recorded in the backlog metadata and branch name.
+8. Report to the user a brief summary of self-challenge cycles: dimensions checked, issues found, fixes applied.
 
 ### `submit`
 

@@ -73,3 +73,17 @@ For specs under `<slug>-spec/`:
 - `00-index.md` carries the header above and a table of contents listing each thematic file with a one-line description and its dependencies on the other files of the same spec.
 - Each subsequent file starts with a `# <Titre>` and may use any internal structure.
 - A DCM file, when present, is placed at the root of the spec folder as `<slug>-dcm.md` and shares the same header conventions. There is no `dcm/` subfolder.
+
+## Spec lifecycle
+
+A local spec is a working draft, not durable documentation. It captures intent during design and negotiation, but its content must migrate to the durable surfaces of the project — code and `doc/` — as the work is implemented and reviewed.
+
+When a feature reaches the point where its spec has been fully implemented:
+
+- Every normative element of the spec must exist either in the codebase (logic, types, tests) or in `doc/` (user-facing documentation, conventions, workflow guides). Implementation details that the code already encodes do not need to be duplicated in `doc/`.
+- Historical sections (task tables, decision logs, review notes) carry no normative content and are discarded with the spec rather than migrated.
+- The spec file is then deleted under `local/specs/`. The git history of the spec itself stays available; nothing valuable is lost.
+
+The manager role owns this lifecycle: audit the spec against code and `doc/`, migrate any remaining normative content, create developer tasks for code or doc gaps that require implementation work, then delete the spec once the migration is complete.
+
+Specs are not a parallel documentation system. Keeping a spec alive after merge causes drift between spec, code, and doc — the exact failure mode this convention exists to prevent.
