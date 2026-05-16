@@ -17,6 +17,12 @@ use SoManAgent\Script\Backlog\Service\BacklogPresenter;
  */
 final class BacklogListCommand extends AbstractBacklogCommand
 {
+    /**
+     * @param BacklogPresenter $presenter
+     * @param bool $dryRun
+     * @param string $projectRoot
+     * @param BacklogBoardService $boardService
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
@@ -26,6 +32,10 @@ final class BacklogListCommand extends AbstractBacklogCommand
         parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
     }
 
+    /**
+     * @param list<string> $commandArgs
+     * @param array<string, bool|string|array<bool|string>> $options
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $board = $this->loadBoard();
