@@ -96,6 +96,8 @@ final class AgentStartCommandTest
         $failed += $this->testDeveloperRefusesWhenTodoEmpty();
         $failed += $this->testDeveloperSkipsAutoPickWhenAlreadyHasActiveEntry();
         $failed += $this->testDeveloperRollsBackViaEntryReleaseWhenPreparationFails();
+        $failed += $this->testHandleRestoresCwdOnSuccess();
+        $failed += $this->testHandleRestoresCwdWhenWorktreeDeletedDuringLaunch();
 
         return $failed;
     }
@@ -1399,6 +1401,152 @@ final class AgentStartCommandTest
         }
 
         echo "OK testDeveloperRollsBackViaEntryReleaseWhenPreparationFails\n";
+        return 0;
+    }
+
+    private function testHandleRestoresCwdOnSuccess(): int
+    {
+        // handle() does chdir($worktree) before launch; the cwd must be restored to whatever
+        // it was on entry when handle() returns, so subsequent shell commands in the caller
+        // do not inherit a stale (potentially deleted) directory.
+        $projectRoot = $this->createGitProject('cwd-restore-success');
+        $worktreesRoot = $projectRoot . '/.agent-worktrees';
+        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $worktree = $worktreesRoot . '/d14';
+
+        $this->writeBoard($boardPath, [
+            '- cwd-feature',
+            '  meta:',
+            '    kind: feature',
+            '    feature: cwd-feature',
+            '    branch: feat/cwd-feature',
+            '    stage: development',
+            '    agent: d14',
+        ]);
+        $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' worktree add --detach ' . escapeshellarg($worktree) . ' HEAD');
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($projectRoot);
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        $cmd = new AgentStartCommand(
+            $projectRoot,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            $sessionService,
+            new AgentContextBuilder($projectRoot, $boardPath, $boardService),
+            $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
+            new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot),
+            new AgentDeveloperSelector($boardService),
+            $boardService,
+            new FakeSessionDriver(),
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
+            new FakeBacklogCommandRunner(),
+        );
+
+        $cwdBefore = getcwd();
+        chdir($projectRoot);
+        $cwdEntry = getcwd();
+        $cwdAfter = null;
+        try {
+            $cmd->handle(['claude'], ['developer' => true, 'code' => 'd14']);
+            $cwdAfter = getcwd();
+        } catch (\Throwable $e) {
+            echo "FAIL testHandleRestoresCwdOnSuccess: unexpected " . get_class($e) . ': ' . $e->getMessage() . "\n";
+            return 1;
+        } finally {
+            if ($cwdBefore !== false) {
+                chdir($cwdBefore);
+            }
+        }
+
+        if ($cwdAfter !== $cwdEntry) {
+            echo "FAIL testHandleRestoresCwdOnSuccess: cwd after handle() is '{$cwdAfter}', expected '{$cwdEntry}'\n";
+            return 1;
+        }
+
+        echo "OK testHandleRestoresCwdOnSuccess\n";
+        return 0;
+    }
+
+    private function testHandleRestoresCwdWhenWorktreeDeletedDuringLaunch(): int
+    {
+        // Simulates the scenario where a concurrent worktree-clean removes the WA directory
+        // while the session is running. After handle() returns, PHP's cwd must be the original
+        // cwd — not the deleted worktree — so no "getcwd() failed" noise is emitted to the terminal.
+        $projectRoot = $this->createGitProject('cwd-restore-deleted-wa');
+        $worktreesRoot = $projectRoot . '/.agent-worktrees';
+        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $worktree = $worktreesRoot . '/d15';
+
+        $this->writeBoard($boardPath, [
+            '- cwd-del-feature',
+            '  meta:',
+            '    kind: feature',
+            '    feature: cwd-del-feature',
+            '    branch: feat/cwd-del-feature',
+            '    stage: development',
+            '    agent: d15',
+        ]);
+        $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' worktree add --detach ' . escapeshellarg($worktree) . ' HEAD');
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($projectRoot);
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        $driver = new FakeSessionDriver();
+        // Simulate a concurrent worktree-clean that removes the WA directory during the session.
+        $driver->onLaunchHook = function () use ($worktree): void {
+            $this->rmdir($worktree);
+        };
+
+        $cmd = new AgentStartCommand(
+            $projectRoot,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            $sessionService,
+            new AgentContextBuilder($projectRoot, $boardPath, $boardService),
+            $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
+            new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot),
+            new AgentDeveloperSelector($boardService),
+            $boardService,
+            $driver,
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
+            new FakeBacklogCommandRunner(),
+        );
+
+        $cwdBefore = getcwd();
+        chdir($projectRoot);
+        $cwdEntry = getcwd();
+        $cwdAfter = null;
+        try {
+            $cmd->handle(['claude'], ['developer' => true, 'code' => 'd15']);
+            $cwdAfter = getcwd();
+        } catch (\Throwable $e) {
+            echo "FAIL testHandleRestoresCwdWhenWorktreeDeletedDuringLaunch: unexpected " . get_class($e) . ': ' . $e->getMessage() . "\n";
+            return 1;
+        } finally {
+            if ($cwdBefore !== false) {
+                chdir($cwdBefore);
+            }
+        }
+
+        if ($cwdAfter !== $cwdEntry) {
+            echo "FAIL testHandleRestoresCwdWhenWorktreeDeletedDuringLaunch: cwd after handle() is '{$cwdAfter}', expected '{$cwdEntry}'\n";
+            return 1;
+        }
+
+        echo "OK testHandleRestoresCwdWhenWorktreeDeletedDuringLaunch\n";
         return 0;
     }
 
