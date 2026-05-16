@@ -69,6 +69,14 @@ final class CodexAgentLauncher extends AbstractAgentClientLauncher
     /**
      * {@inheritdoc}
      */
+    public function requiredCliFlags(): array
+    {
+        return ['-C', '--last'];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function buildLaunchCommand(
         string $worktree,
         string $contextFilePath,

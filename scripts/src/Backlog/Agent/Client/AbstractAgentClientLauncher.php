@@ -32,4 +32,15 @@ abstract class AbstractAgentClientLauncher implements AgentClientLauncher
     {
         return $baseEnv;
     }
+
+    /**
+     * Default: no flag dependency. Concrete launchers override when their
+     * buildLaunchCommand() relies on specific CLI options.
+     *
+     * @return list<string>
+     */
+    public function requiredCliFlags(): array
+    {
+        return [];
+    }
 }

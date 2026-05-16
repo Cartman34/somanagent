@@ -51,6 +51,14 @@ final class OpenCodeAgentLauncher extends AbstractAgentClientLauncher
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function requiredCliFlags(): array
+    {
+        return ['-s', '-c'];
+    }
+
+    /**
      * Idempotently adds `local/agent-context.md` to the `instructions` array of
      * `<worktree>/opencode.json`, preserving all other keys. Creates a minimal file
      * when none exists.

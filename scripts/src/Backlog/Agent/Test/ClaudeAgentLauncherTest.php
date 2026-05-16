@@ -89,7 +89,8 @@ final class ClaudeAgentLauncherTest
 
         [$bin, $args] = $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER);
 
-        $expected = ['--cwd', '/worktree', '--append-system-prompt', 'context initial'];
+        // Strict equality enforces the absence of --cwd / /worktree (claude v2.x rejects --cwd).
+        $expected = ['--append-system-prompt', 'context initial'];
         if ($bin !== 'claude' || $args !== $expected) {
             echo "FAIL testBuildLaunchCommandInitial: unexpected command\n";
             return 1;

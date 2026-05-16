@@ -86,4 +86,17 @@ interface AgentClientLauncher
      * @return list<SessionInfo>
      */
     public function listSessions(string $worktree): array;
+
+    /**
+     * Returns the CLI option flags that buildLaunchCommand() relies on for this client.
+     *
+     * Each entry is the flag spelling exactly as it appears on the command line
+     * (for example `--append-system-prompt`, `--resume`, `-C`, `-s`). Only short
+     * or long option flags are listed; subcommand names and positional arguments
+     * are not included. Used by `scripts/validate-agent-launchers.php` to detect
+     * upstream CLI removals before they break a real launch.
+     *
+     * @return list<string>
+     */
+    public function requiredCliFlags(): array;
 }
