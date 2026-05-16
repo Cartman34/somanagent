@@ -54,7 +54,7 @@ final class GeminiAgentLauncher extends AbstractAgentClientLauncher
      */
     public function requiredCliFlags(): array
     {
-        return ['-r', '--model'];
+        return ['-r', '--model', '--prompt-interactive'];
     }
 
     /**
@@ -82,6 +82,7 @@ final class GeminiAgentLauncher extends AbstractAgentClientLauncher
         ?string $resumeSessionId = null,
         bool $continueLast = false,
         ?ResolvedModel $resolvedModel = null,
+        ?string $initialPrompt = null,
     ): array {
         if ($resumeSessionId !== null) {
             return ['gemini', ['-r', $resumeSessionId]];
@@ -91,7 +92,13 @@ final class GeminiAgentLauncher extends AbstractAgentClientLauncher
             return ['gemini', ['-r', 'latest']];
         }
 
-        return ['gemini', $resolvedModel !== null ? $resolvedModel->cliArgs : []];
+        $args = $resolvedModel !== null ? $resolvedModel->cliArgs : [];
+        if ($initialPrompt !== null) {
+            $args[] = '--prompt-interactive';
+            $args[] = $initialPrompt;
+        }
+
+        return ['gemini', $args];
     }
 
     /**

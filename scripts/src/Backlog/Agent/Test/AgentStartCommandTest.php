@@ -11,11 +11,13 @@ use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncher;
 use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
 use SoManAgent\Script\Backlog\Agent\Command\AgentStartCommand;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
+use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use SoManAgent\Script\Backlog\Agent\Exception\ActiveSessionException;
 use SoManAgent\Script\Backlog\Agent\Exception\ClientNotInstalledException;
 use SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
 use SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
 use SoManAgent\Script\Backlog\Agent\Service\AgentDeveloperSelector;
+use SoManAgent\Script\Backlog\Agent\Service\AgentLaunchPromptResolver;
 use SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
 use SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
@@ -83,6 +85,7 @@ final class AgentStartCommandTest
         $failed += $this->testGeminiEffortOverridePrintsWarningWithoutEffortArg();
         $failed += $this->testReviewerModeReusesOwnedReviewingEntry();
         $failed += $this->testReviewerModeCallsReviewNextWhenTakingEntry();
+        $failed += $this->testManagerStartDoesNotSendInitialPrompt();
         $failed += $this->testReviewerModeRollsBackViaCancelWhenPreparationFails();
         $failed += $this->testReviewerStartsSuccessfullyWhenDeveloperIsActive();
         $failed += $this->testReviewerRefusedWhenAnotherReviewerIsActive();
@@ -387,6 +390,8 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             $fakeRunner,
+            null,
+            $this->buildLaunchPromptResolver(),
         );
 
         // --code=r01 avoids touching AgentCodeService::allocateForRole.
@@ -417,6 +422,10 @@ final class AgentStartCommandTest
         if (!empty($fakeRunner->calls)) {
             echo "FAIL testReviewerModeReusesOwnedReviewingEntry: review-next must not be called for an owned reviewing entry, got "
                 . json_encode($fakeRunner->calls) . "\n";
+            return 1;
+        }
+        if ($launcher->lastInitialPrompt !== null) {
+            echo "FAIL testReviewerModeReusesOwnedReviewingEntry: initial prompt must stay null for an already-owned review\n";
             return 1;
         }
 
@@ -496,6 +505,8 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             $fakeRunner,
+            null,
+            $this->buildLaunchPromptResolver(),
         );
 
         $previousCwd = getcwd();
@@ -516,8 +527,37 @@ final class AgentStartCommandTest
                 . json_encode($fakeRunner->calls[0]) . "\n";
             return 1;
         }
+        $expectedPrompt = $this->buildLaunchPromptResolver()->resolve(AgentRole::REVIEWER);
+        if ($launcher->lastInitialPrompt !== $expectedPrompt) {
+            echo "FAIL testReviewerModeCallsReviewNextWhenTakingEntry: expected reviewer initial prompt, got "
+                . var_export($launcher->lastInitialPrompt, true) . "\n";
+            return 1;
+        }
 
         echo "OK testReviewerModeCallsReviewNextWhenTakingEntry\n";
+        return 0;
+    }
+
+    private function testManagerStartDoesNotSendInitialPrompt(): int
+    {
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $cmd = $this->buildCommand($launcher);
+
+        $previousCwd = getcwd();
+        try {
+            $cmd->handle(['claude'], ['manager' => true, 'code' => 'm01']);
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        if ($launcher->lastInitialPrompt !== null) {
+            echo "FAIL testManagerStartDoesNotSendInitialPrompt: initial prompt must stay null for manager mode\n";
+            return 1;
+        }
+
+        echo "OK testManagerStartDoesNotSendInitialPrompt\n";
         return 0;
     }
 
@@ -593,6 +633,8 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             $fakeRunner,
+            null,
+            $this->buildLaunchPromptResolver(),
         );
 
         $previousCwd = getcwd();
@@ -711,6 +753,8 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             $fakeRunner,
+            null,
+            $this->buildLaunchPromptResolver(),
         );
 
         $previousCwd = getcwd();
@@ -819,6 +863,8 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             $fakeRunner,
+            null,
+            $this->buildLaunchPromptResolver(),
         );
 
         // Use --developer=d04 so the entry is explicitly targeted (bypassing autoSelect's
@@ -1098,6 +1144,8 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             $fakeRunner,
+            null,
+            $this->buildLaunchPromptResolver(),
         );
 
         $previousCwd = getcwd();
@@ -1127,6 +1175,12 @@ final class AgentStartCommandTest
         if ($workStartCall['developerCode'] !== 'd08' || $workStartCall['entryRef'] !== 'my-feature') {
             echo "FAIL testDeveloperAutoPicksFirstQueuedTask: unexpected work-start args: "
                 . json_encode($workStartCall) . "\n";
+            return 1;
+        }
+        $expectedPrompt = $this->buildLaunchPromptResolver()->resolve(AgentRole::DEVELOPER);
+        if ($launcher->lastInitialPrompt !== $expectedPrompt) {
+            echo "FAIL testDeveloperAutoPicksFirstQueuedTask: expected developer initial prompt, got "
+                . var_export($launcher->lastInitialPrompt, true) . "\n";
             return 1;
         }
 
@@ -1164,6 +1218,8 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             $fakeRunner,
+            null,
+            $this->buildLaunchPromptResolver(),
         );
 
         $threw = false;
@@ -1233,6 +1289,8 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             $fakeRunner,
+            null,
+            $this->buildLaunchPromptResolver(),
         );
 
         $previousCwd = getcwd();
@@ -1253,6 +1311,10 @@ final class AgentStartCommandTest
                 echo "FAIL testDeveloperSkipsAutoPickWhenAlreadyHasActiveEntry: work-start must not be called when entry already active\n";
                 return 1;
             }
+        }
+        if ($launcher->lastInitialPrompt !== null) {
+            echo "FAIL testDeveloperSkipsAutoPickWhenAlreadyHasActiveEntry: initial prompt must stay null for an already-active entry\n";
+            return 1;
         }
 
         echo "OK testDeveloperSkipsAutoPickWhenAlreadyHasActiveEntry\n";
@@ -1393,6 +1455,7 @@ final class AgentStartCommandTest
             new FakeProcessRunner(),
             new FakeBacklogCommandRunner(),
             $modelResolver,
+            $this->buildLaunchPromptResolver(),
         );
     }
 
@@ -1425,12 +1488,18 @@ final class AgentStartCommandTest
             new FakeProcessRunner(),
             new FakeBacklogCommandRunner(),
             $modelResolver,
+            $this->buildLaunchPromptResolver(),
         );
     }
 
     private function buildModelResolver(): AgentModelResolver
     {
         return new AgentModelResolver(dirname(__DIR__, 4) . '/resources/backlog-agent/model-mapping.yaml');
+    }
+
+    private function buildLaunchPromptResolver(): AgentLaunchPromptResolver
+    {
+        return new AgentLaunchPromptResolver(dirname(__DIR__, 4) . '/resources/backlog-agent/launch-prompts.yaml');
     }
 
     /**

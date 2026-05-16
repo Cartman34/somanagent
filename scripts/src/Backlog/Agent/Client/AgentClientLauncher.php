@@ -65,6 +65,7 @@ interface AgentClientLauncher
      * The framework chdir()s into $worktree before exec.
      *
      * @param ResolvedModel|null $resolvedModel Optional start-only model args resolved from role defaults and CLI overrides
+     * @param string|null $initialPrompt Optional start-only user prompt sent after an automatic backlog pick
      * @return array{0: string, 1: list<string>}
      */
     public function buildLaunchCommand(
@@ -74,6 +75,7 @@ interface AgentClientLauncher
         ?string $resumeSessionId = null,
         bool $continueLast = false,
         ?ResolvedModel $resolvedModel = null,
+        ?string $initialPrompt = null,
     ): array;
 
     /**

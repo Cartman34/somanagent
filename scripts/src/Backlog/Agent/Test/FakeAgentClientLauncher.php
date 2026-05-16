@@ -45,6 +45,11 @@ final class FakeAgentClientLauncher implements AgentClientLauncher
     public ?array $lastResolvedModelCliArgs = null;
 
     /**
+     * Initial prompt received by buildLaunchCommand(), used to assert auto-pick launch behavior.
+     */
+    public ?string $lastInitialPrompt = null;
+
+    /**
      * Optional exception thrown by prepareWorktree(), used to exercise rollback paths.
      */
     public ?\Throwable $prepareException = null;
@@ -132,9 +137,11 @@ final class FakeAgentClientLauncher implements AgentClientLauncher
         ?string $resumeSessionId = null,
         bool $continueLast = false,
         ?ResolvedModel $resolvedModel = null,
+        ?string $initialPrompt = null,
     ): array {
         $this->lastLaunchedWorktree = $worktree;
         $this->lastResolvedModelCliArgs = $resolvedModel?->cliArgs;
+        $this->lastInitialPrompt = $initialPrompt;
 
         return ['/bin/true', $resolvedModel !== null ? $resolvedModel->cliArgs : []];
     }

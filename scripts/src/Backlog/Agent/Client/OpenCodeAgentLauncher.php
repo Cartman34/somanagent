@@ -56,7 +56,7 @@ final class OpenCodeAgentLauncher extends AbstractAgentClientLauncher
      */
     public function requiredCliFlags(): array
     {
-        return ['-s', '-c', '--model'];
+        return ['-s', '-c', '--model', '--prompt'];
     }
 
     /**
@@ -103,6 +103,7 @@ final class OpenCodeAgentLauncher extends AbstractAgentClientLauncher
         ?string $resumeSessionId = null,
         bool $continueLast = false,
         ?ResolvedModel $resolvedModel = null,
+        ?string $initialPrompt = null,
     ): array {
         if ($resumeSessionId !== null) {
             return ['opencode', ['-s', $resumeSessionId]];
@@ -111,7 +112,13 @@ final class OpenCodeAgentLauncher extends AbstractAgentClientLauncher
             return ['opencode', ['-c']];
         }
 
-        return ['opencode', $resolvedModel !== null ? $resolvedModel->cliArgs : []];
+        $args = $resolvedModel !== null ? $resolvedModel->cliArgs : [];
+        if ($initialPrompt !== null) {
+            $args[] = '--prompt';
+            $args[] = $initialPrompt;
+        }
+
+        return ['opencode', $args];
     }
 
     /**

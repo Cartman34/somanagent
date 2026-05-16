@@ -47,6 +47,7 @@ final class GeminiAgentLauncherTest
         $failed += $this->testIsAvailableUsesProcessRunner();
         $failed += $this->testBuildEnvironmentAddsGeminiSystemMd();
         $failed += $this->testBuildLaunchCommandInitial();
+        $failed += $this->testBuildLaunchCommandInitialPrompt();
         $failed += $this->testBuildLaunchCommandContinue();
         $failed += $this->testBuildLaunchCommandResumeId();
         $failed += $this->testListSessionsFromGeminiTableOutput();
@@ -120,6 +121,29 @@ final class GeminiAgentLauncherTest
         }
 
         echo "OK testBuildLaunchCommandInitial\n";
+        return 0;
+    }
+
+    private function testBuildLaunchCommandInitialPrompt(): int
+    {
+        $launcher = new GeminiAgentLauncher($this->makeProcessRunner(true), $this->tmpDir);
+
+        [$bin, $args] = $launcher->buildLaunchCommand(
+            '/worktree',
+            '/ctx.md',
+            AgentRole::DEVELOPER,
+            null,
+            false,
+            null,
+            'initial user prompt',
+        );
+
+        if ($bin !== 'gemini' || $args !== ['--prompt-interactive', 'initial user prompt']) {
+            echo "FAIL testBuildLaunchCommandInitialPrompt: unexpected command\n";
+            return 1;
+        }
+
+        echo "OK testBuildLaunchCommandInitialPrompt\n";
         return 0;
     }
 

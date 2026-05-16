@@ -72,6 +72,7 @@ final class ClaudeAgentLauncher extends AbstractAgentClientLauncher
         ?string $resumeSessionId = null,
         bool $continueLast = false,
         ?ResolvedModel $resolvedModel = null,
+        ?string $initialPrompt = null,
     ): array {
         if (!is_readable($contextFilePath)) {
             throw new \RuntimeException(sprintf('Unable to read agent context file: %s', $contextFilePath));
@@ -95,6 +96,8 @@ final class ClaudeAgentLauncher extends AbstractAgentClientLauncher
             $args[] = $resumeSessionId;
         } elseif ($continueLast) {
             $args[] = '--continue';
+        } elseif ($initialPrompt !== null) {
+            $args[] = $initialPrompt;
         }
 
         return ['claude', $args];
