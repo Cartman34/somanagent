@@ -94,6 +94,8 @@ The launcher spawns the AI client via the active **session driver** and records 
 
 A `resume` re-attaches to a detached tmux session, but is refused while the PHP wrapper is still alive or when the direct driver still has a live client process. See `doc/development/agent-workflow.md` for the full lifecycle and `last_seen_at` semantics.
 
+`php scripts/backlog-agent.php prune` (operator command, not part of the developer workflow) batch-cleans invalid entries from `agent-sessions.json`: launches never finalised, dead processes, and orphan worktrees. Pass `--dry-run` to preview or `--force` to also drop warning entries with a still-live process. See `doc/development/agent-workflow.md` for the full ruleset.
+
 Run `php scripts/backlog-agent.php whoami` from inside the WA to confirm the session identity.
 
 ## Read Only When Needed

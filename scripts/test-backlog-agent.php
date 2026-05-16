@@ -23,6 +23,7 @@ use SoManAgent\Script\Backlog\Agent\Test\AgentStartCommandTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentStatusCommandTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentStopCommandTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentWhoamiCommandTest;
+use SoManAgent\Script\Backlog\Agent\Test\BacklogAgentPruneCommandTest;
 use SoManAgent\Script\Backlog\Agent\Test\BacklogBoardServiceReviewingTest;
 use SoManAgent\Script\Backlog\Agent\Test\BacklogAgentRunnerStrictOptionsTest;
 use SoManAgent\Script\Backlog\Agent\Test\ClaudeAgentLauncherTest;
@@ -73,6 +74,7 @@ $suites = [
     'AgentStatusCommandTest' => AgentStatusCommandTest::class,
     'AgentWhoamiCommandTest' => AgentWhoamiCommandTest::class,
     'AgentSessionsCommandTest' => AgentSessionsCommandTest::class,
+    'BacklogAgentPruneCommandTest' => BacklogAgentPruneCommandTest::class,
 ];
 
 if ($suite !== null && !isset($suites[$suite])) {

@@ -1,0 +1,15 @@
+description: 'Remove invalid or orphan entries from agent-sessions.json.'
+options:
+  - name: '--dry-run'
+    description: 'Preview removals without writing changes'
+  - name: '--force'
+    description: 'Also remove warning entries (worktree gone, process still alive). The process itself is not signalled.'
+examples:
+  - 'php scripts/backlog-agent.php prune'
+  - 'php scripts/backlog-agent.php prune --dry-run'
+  - 'php scripts/backlog-agent.php prune --force'
+notes:
+  - 'Auto-removed: (1) client_pid AND tmux_session both null (launch never finalised), (2) driver isAlive() = false AND signal-0 confirms the process is gone, (3) worktree missing on disk AND process not alive.'
+  - 'Kept with warning (driver-session mismatch): driver reports dead but signal-0 detects the process is still alive. This typically means the session was started under a different driver (e.g. direct) than the one currently active (e.g. tmux). Set BACKLOG_AGENT_SESSION_DRIVER=direct and re-run prune, or run `stop --code=<code>` to terminate cleanly.'
+  - 'Kept with warning (orphan WA): worktree gone but process still alive. Run `stop --code=<code>` first, then re-run prune; or pass --force to drop the entry without signalling the process.'
+  - 'Idempotent: running prune again after convergence is a no-op.'

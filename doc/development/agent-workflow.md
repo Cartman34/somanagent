@@ -210,6 +210,25 @@ The session driver is selected by the environment variable `BACKLOG_AGENT_SESSIO
 
 `resume --code=<code>` refuses when the PHP wrapper is still alive. When the wrapper is dead but the driver still reports an alive session, behaviour depends on the driver: `tmux` allows resume because it re-attaches to the detached named session, while `direct` refuses because the tracked client process is still running and resume would start a second client instance. Run `stop --code=<code>` to terminate a direct live session before resuming. For reviewer sessions, `resume` uses the stored developer WA path; if that path is missing but the reviewer still owns a `stage=reviewing` entry, the launcher reconstructs the developer WA and updates `agent-sessions.json` with the reconstructed path before preparing the client.
 
+`prune` batch-cleans invalid entries from `agent-sessions.json` without targeting one code. Auto-removed:
+
+| Case | Reason |
+|---|---|
+| `client_pid` AND `tmux_session` both null | launch never finalised (typical after a failed `getPanePid` lookup) |
+| Driver reports `isAlive()` = false AND signal-0 confirms process gone | definitively dead process |
+| Worktree missing on disk AND process not alive | orphan with no live counterpart |
+
+Kept with warning (unless `--force`):
+
+| Case | Reason |
+|---|---|
+| Driver reports `isAlive()` = false BUT signal-0 detects the process is still alive | driver-session mismatch: session was likely created under a different driver (e.g. `direct`) than the one currently active (e.g. `tmux`). Set `BACKLOG_AGENT_SESSION_DRIVER=direct` and re-run prune, or run `stop --code=<code>` to terminate cleanly. |
+| Worktree missing on disk BUT process still alive | orphan WA: run `stop --code=<code>` to terminate cleanly, then re-run prune, or pass `--force` to drop the entry without signalling the process |
+
+The driver-mismatch guard exists because `TmuxSessionDriver::isAlive()` always returns `false` when `tmux_session` is null, which is the normal format for a session created with `BACKLOG_AGENT_SESSION_DRIVER=direct`. Without the fallback signal-0 check, running `prune` under the default tmux driver would silently delete still-alive direct sessions.
+
+Flags: `--dry-run` previews the plan without mutating; `--force` also removes warning entries (does not signal the live process). The command is idempotent — running it again after convergence is a no-op.
+
 ### last_seen_at Semantics
 
 `last_seen_at` is **not a heartbeat**. It records the last time a `backlog-agent.php` subcommand inspected the entry and refreshed its PID / process status. `list`, `status`, `sessions`, `resume`, and `stop` all update this timestamp for the entries they touch.

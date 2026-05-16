@@ -29,6 +29,7 @@ use SoManAgent\Script\Backlog\Agent\Command\AgentStartCommand;
 use SoManAgent\Script\Backlog\Agent\Command\AgentStatusCommand;
 use SoManAgent\Script\Backlog\Agent\Command\AgentStopCommand;
 use SoManAgent\Script\Backlog\Agent\Command\AgentWhoamiCommand;
+use SoManAgent\Script\Backlog\Agent\Command\BacklogAgentPruneCommand;
 use SoManAgent\Script\Backlog\Agent\Service\AgentCliOptionValidator;
 use SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
 use SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
@@ -199,6 +200,12 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                     $this->console,
                     $this->sessionService(),
                     $this->registry(),
+                ),
+                'prune' => new BacklogAgentPruneCommand(
+                    $this->console,
+                    $this->sessionService(),
+                    $this->sessionDriver(),
+                    $this->processSignaler(),
                 ),
             ];
         }
