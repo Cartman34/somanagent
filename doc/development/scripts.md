@@ -43,7 +43,7 @@ php scripts/help.php migrate.php
 | `test-dev-env.php` | PHP | Run unit tests for the DevEnv manifest/lockfile/resolver/planner classes |
 | `test-setup.php` | PHP | Run subprocess integration tests for setup.php |
 | `test-validation.php` | PHP | Run unit tests for `scripts/src/Validation/` classes (ScriptExecBitValidator, ExecBitFixer, …) |
-| `setup.php` | PHP | Manage host-level dependencies and project setup (install subcommand) |
+| `setup.php` | PHP | Manage host-level dependencies and project setup (install, update, verify, uninstall, reset, status, dep-config) |
 | `server.php` | PHP | Manage Docker Compose services (start, stop, restart, status, health) |
 | `migrate.php` | PHP | Run Doctrine migrations |
 | `console.php` | PHP | Run a Symfony command |
@@ -226,47 +226,90 @@ php scripts/test-setup.php
 ---
 
 ### `setup.php`
-Manages host-level dependencies and project setup. Subcommand-based runner.
+Manages host-level dependencies and the project setup. Subcommand-based runner.
 
 Subcommands:
-- `install` — install or upgrade host dependencies from the lockfile (`scripts/resources/dependencies.lock`)
+- `update` — re-resolve the manifest against available sources and write the lockfile
+- `install` — install or upgrade host dependencies from the lockfile, then run project setup (composer, npm, Doctrine migrations)
+- `verify` — compare system state, lockfile, and manifest without mutating (exit `0` aligned, `1` discrepancies)
+- `uninstall` — remove installed deps according to `pre_existing` flags and `on_uninstall_pre_existing` policy
+- `reset` — drop the database and remove Docker volumes (does **not** touch host deps or client binaries)
+- `status` — show manifest, lockfile, installed versions, Docker service status, last migration (no mutation)
+- `dep-config` — read/write per-dep overrides in the lockfile (`get`/`set`/`unset`)
 
 ```bash
-php scripts/setup.php help
-php scripts/setup.php help install
-php scripts/setup.php install
+php scripts/setup.php help                           # show help (also displayed when no subcommand is passed)
+php scripts/setup.php help <subcommand>              # detail one subcommand
+
+php scripts/setup.php update                         # resolve + write lockfile
+php scripts/setup.php update --preview-only          # resolution diff + plan, no apply
+php scripts/setup.php update --dry-run               # plan + simulated commands, no apply
+php scripts/setup.php update --force                 # apply without confirmation
+
+php scripts/setup.php install                        # apply lockfile + composer/npm/migrations
 php scripts/setup.php install --preview-only
 php scripts/setup.php install --dry-run
 php scripts/setup.php install --force
+
+php scripts/setup.php verify                         # alignment check, no mutation
+php scripts/setup.php status                         # full system / lockfile / docker overview, no mutation
+
+php scripts/setup.php uninstall                      # remove non-pre-existing deps
+php scripts/setup.php uninstall --restore            # one-shot: pre-existing deps downgrade to previous_version
+php scripts/setup.php uninstall --keep               # one-shot: pre-existing deps untouched
+
+php scripts/setup.php reset                          # drop DB + remove docker volumes (confirm prompt)
+php scripts/setup.php reset --keep-volumes           # stop containers but keep volumes
+php scripts/setup.php reset --force                  # skip confirmation
+
+php scripts/setup.php dep-config get claude
+php scripts/setup.php dep-config set claude on_uninstall_pre_existing restore
+php scripts/setup.php dep-config unset claude on_uninstall_pre_existing
 ```
 
 Notes:
-- `install` reads `scripts/resources/dependencies.lock`; the file must be initialized (run `setup.php update` first — see below)
-- On this project the lockfile is **not committed** (it contains per-host paths and pre-existing state); each machine generates its own via `setup.php update`
-- `--preview-only` shows the installation plan without applying it
-- `--dry-run` shows the plan and simulated commands without applying
-- `--force` skips the confirmation prompt and applies directly
-- `--preview-only` and `--dry-run` are mutually exclusive
-- BLOCKED items (version below minimum with `on_existing_below_min: error`) cause the command to exit before the preview is shown
+- Lockfile is local: `scripts/resources/dependencies.lock` is **not committed** on this project — it stores per-host `pre_existing` state and side-effect paths. Each machine generates its own via `setup.php update`. `install` rejects an absent or sentinel lockfile (`generated_at: ~`).
+- Mutation subcommands (`update`, `install`, `uninstall`, `reset`) accept `--preview-only`, `--dry-run`, and `--force`. `--preview-only` and `--dry-run` are mutually exclusive. `--force` still prints the preview for traceability.
+- `dep-config` mutations are local and reversible (`unset`); no `--force` flag.
+- `install` runs Doctrine migrations via **host PHP CLI** (`php backend/bin/console doctrine:migrations:migrate --no-interaction`), not via `docker compose exec`. Requires the `db` container up; the `php` container is not required (compatible with `server.php start --minimal`). `DATABASE_URL` is normalised from `db:5432` to `localhost:5432` automatically.
+- `verify`: `0` if aligned, `1` for missing/outdated/orphaned/unlocked deps. Run `setup.php update` first if deps appear unlocked.
+- `uninstall` policy chain: `--restore`/`--keep` flag > lockfile override (`dep-config`) > manifest per-dep `on_uninstall_pre_existing` > manifest default > framework default (`keep`).
+- `reset` is destructive: explicit confirmation required unless `--force`. Host dependencies (apt packages, npm clients) are **not** removed by `reset` — use `uninstall` for that.
+- BLOCKED items (version below minimum with `on_existing_below_min: error`) make the command exit before the preview is shown.
 
 ---
 
 ### `server.php`
-Manages Docker Compose services: start, stop, restart, status, and health checks. Mutation commands (`start`, `stop`, `restart`) accept `--preview-only`, `--dry-run`, and `--force`.
+Manages Docker Compose services for the development environment. Subcommand-based runner.
 
-Docker Compose profiles: db and redis have no profile (always started); php, worker, nginx, node, and mercure use the `full` profile.
+Subcommands:
+- `start` — bring services up (full profile by default, `--minimal` for db + redis only)
+- `stop` — bring services down
+- `restart` — stop then start
+- `status` — `docker compose ps` for the project
+- `health` — health checks via native PHP probes (PDO / TCP socket / HTTP); no `pg_isready` or `redis-cli` required on the host
+
+Docker Compose profiles: `db` and `redis` have no profile (always started); `php`, `worker`, `nginx`, `node`, and `mercure` use the `full` profile.
 
 ```bash
-php scripts/server.php start             # start all services (full profile)
-php scripts/server.php start --minimal   # start db + redis only
-php scripts/server.php stop              # stop all services
-php scripts/server.php restart           # stop then start (full)
-php scripts/server.php status            # docker compose ps
-php scripts/server.php health            # health checks via PHP native probes, without pg_isready/redis-cli
-php scripts/server.php start --preview-only  # show plan without applying
-php scripts/server.php start --dry-run       # show plan + simulated commands without applying
+php scripts/server.php help                  # show help (also displayed when no subcommand is passed)
+
+php scripts/server.php start                 # start all services (profile full)
+php scripts/server.php start --minimal       # start db + redis only
+php scripts/server.php start --preview-only  # show plan, no apply
+php scripts/server.php start --dry-run       # plan + simulated commands, no apply
 php scripts/server.php start --force         # apply without confirmation
+
+php scripts/server.php stop                  # stop all services
+php scripts/server.php restart               # stop then start
+php scripts/server.php status                # docker compose ps
+php scripts/server.php health                # native PHP probes (db via PDO, redis via TCP RESP PING, http via file_get_contents)
 ```
+
+Notes:
+- Mutation subcommands (`start`, `stop`, `restart`) accept `--preview-only`, `--dry-run`, and `--force`. `--preview-only` and `--dry-run` are mutually exclusive.
+- `start --minimal` is the recommended mode for remote dev servers where AI agents run on the host: it keeps `db` and `redis` up while skipping the heavier `full`-profile services.
+- `health` deliberately depends only on PHP-native facilities (PDO, raw TCP socket, HTTP) so the host manifest does not need to ship `postgresql-client` or `redis-tools` for diagnostic purposes.
 
 ---
 

@@ -90,7 +90,7 @@ if (!is_file($vendorAutoload)) {
         fwrite(STDERR, "Missing scripts dependencies.\n");
         fwrite(STDERR, "Run one of:\n");
         fwrite(STDERR, "  php scripts/scripts-install.php  # install scripts dependencies only\n");
-        fwrite(STDERR, "  php scripts/setup.php            # full project setup\n");
+        fwrite(STDERR, "  php scripts/setup.php install    # full project setup\n");
         exit(1);
     }
 }

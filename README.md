@@ -70,20 +70,27 @@ You define **Workflows** — sequences of steps that route tasks to the right ag
 
 ## Quick Start
 
-**Prerequisites:** PHP 8.4+, Docker, Docker Compose.
+**Prerequisites:** Ubuntu 22.04+ / 24.04+ host, `sudo` access, a working host `php` binary, and network access to Ubuntu repositories, `docker.com`, `ppa.launchpad.net`, and the npm registry. Docker Desktop is **not** required — `setup.php` installs Docker Engine + Compose plugin directly.
 
 ```bash
 # 1. Clone and configure
 cp .env.dist .env
 # Edit .env: set CLAUDE_API_KEY, GITHUB_TOKEN, and any other required values
 
-# 2. Resolve and install host dependencies
+# 2. Resolve host dependencies and write the local lockfile
 php scripts/setup.php update
+
+# 3. Install host dependencies and run project setup (composer / npm / migrations)
 php scripts/setup.php install
 
-# 3. Verify everything is up
+# 4. Start the dev environment
+php scripts/server.php start
+
+# 5. Verify everything is up
 php scripts/health.php
 ```
+
+The lockfile (`scripts/resources/dependencies.lock`) is **local-only** — it captures per-host pre-existing state and side-effect paths, so each machine generates its own with `setup.php update`.
 
 - **Web UI**: http://localhost:5173
 - **API**: http://localhost:8080/api
@@ -91,9 +98,11 @@ php scripts/health.php
 ### Daily usage
 
 ```bash
-php scripts/server.php start # start the dev environment
-php scripts/logs.php worker  # stream worker logs
-php scripts/health.php       # check application and connector health
+php scripts/server.php start            # full dev environment
+php scripts/server.php start --minimal  # db + redis only (lightweight remote-server mode)
+php scripts/server.php health           # native PHP probes for db / redis / http
+php scripts/logs.php worker             # stream worker logs
+php scripts/health.php                  # full application and connector health
 ```
 
 ---
