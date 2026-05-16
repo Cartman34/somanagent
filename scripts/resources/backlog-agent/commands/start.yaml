@@ -42,5 +42,8 @@ notes:
   - 'Default model profile: developer=balanced+medium, reviewer=balanced+medium, manager=premium+medium.'
   - '--model bypasses tier model selection while the canonical effort still applies on clients that support effort.'
   - 'When a client does not support effort, --effort=low/high is ignored and prints a warning.'
+  - 'Developer: if the agent has no active entry, the first queued task is reserved automatically (work-start). If the agent already has an active entry, the session resumes on that entry without consuming from the todo queue.'
+  - 'Reviewer: a review entry is claimed automatically (review-next). If the reviewer already owns a reviewing entry, that entry is reused instead.'
+  - 'Manager: no auto-pick; runs directly in WP without a WA.'
   - 'Session driver is selected by BACKLOG_AGENT_SESSION_DRIVER=tmux|direct (default: tmux).'
   - 'Run php scripts/setup.php install --preview-only to verify system dependencies (e.g. tmux) before launching.'

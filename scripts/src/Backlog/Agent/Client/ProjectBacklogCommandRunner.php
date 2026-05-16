@@ -56,4 +56,30 @@ final class ProjectBacklogCommandRunner implements BacklogCommandRunner
             $this->projectRoot,
         );
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function workStart(string $developerCode, string $entryRef): void
+    {
+        $this->scriptClient->runWithEnv(
+            AppScript::BACKLOG,
+            ['SOMANAGER_ROLE' => 'developer', 'SOMANAGER_AGENT' => $developerCode],
+            'work-start ' . escapeshellarg($entryRef),
+            $this->projectRoot,
+        );
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function entryRelease(string $developerCode, string $entryRef): void
+    {
+        $this->scriptClient->runWithEnv(
+            AppScript::BACKLOG,
+            ['SOMANAGER_ROLE' => 'developer', 'SOMANAGER_AGENT' => $developerCode],
+            'entry-release ' . escapeshellarg($entryRef),
+            $this->projectRoot,
+        );
+    }
 }

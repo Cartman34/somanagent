@@ -71,6 +71,10 @@ php scripts/backlog-agent.php start <client> --developer [--code=<dXX>]
 
 Default model profile is `balanced+medium`. The operator may override it with `--tier=economy|balanced|premium`, `--effort=low|medium|high`, or `--model=<raw-name>`.
 
+**Auto-pick at start:** when the developer has no active entry, `start` automatically calls `work-start` on the first queued task and injects that entry into the generated context. If the developer already has an active entry (e.g. after a session disconnect), `start` resumes that entry without consuming anything from the todo queue.
+
+**`resume` never auto-picks:** `resume --code=<dXX>` reconnects to the existing session without touching the todo queue, regardless of its contents.
+
 Supported clients:
 
 - `claude`: supported end to end by `ClaudeAgentLauncher`.

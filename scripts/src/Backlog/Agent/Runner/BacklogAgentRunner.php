@@ -33,6 +33,7 @@ use SoManAgent\Script\Backlog\Agent\Command\BacklogAgentPruneCommand;
 use SoManAgent\Script\Backlog\Agent\Service\AgentCliOptionValidator;
 use SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
 use SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
+use SoManAgent\Script\Backlog\Agent\Service\AgentDeveloperSelector;
 use SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
 use SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
@@ -155,6 +156,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                     $this->contextBuilder($boardPath),
                     $this->worktreeService($boardPath, $worktreesRoot),
                     new AgentReviewerSelector($this->boardService(), $this->sessionService(), $worktreesRoot),
+                    new AgentDeveloperSelector($this->boardService()),
                     $this->boardService(),
                     $this->sessionDriver(),
                     $this->processSignaler(),
