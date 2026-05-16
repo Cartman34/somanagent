@@ -58,6 +58,7 @@ final class BacklogAgentPruneCommandTest
         $failed += $this->testDryRunPreservesEntries();
         $failed += $this->testHealthyHealthyEntryIsSilentlyKept();
         $failed += $this->testIdempotentAfterConvergence();
+        $failed += $this->testDriverMismatchDirectSessionAliveUnderTmuxDriver();
 
         return $failed;
     }
@@ -71,7 +72,7 @@ final class BacklogAgentPruneCommandTest
         $service = new AgentSessionService($dir);
         $driver = new FakeSessionDriver();
 
-        $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver);
+        $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver, new FakeProcessSignaler());
 
         ob_start();
         $exit = $cmd->handle([], []);
@@ -103,7 +104,7 @@ final class BacklogAgentPruneCommandTest
         // Even if the driver would have considered the session alive, the rule fires first.
         $driver->setAlive('d10', true);
 
-        $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver);
+        $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver, new FakeProcessSignaler());
 
         ob_start();
         $cmd->handle([], []);
@@ -143,7 +144,7 @@ final class BacklogAgentPruneCommandTest
         $driver->setAlive('d01', false);
         $driver->setAlive('d02', true);
 
-        $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver);
+        $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver, new FakeProcessSignaler());
 
         ob_start();
         $cmd->handle([], []);
@@ -183,7 +184,7 @@ final class BacklogAgentPruneCommandTest
         $driver = new FakeSessionDriver();
         $driver->setAlive('d03', false);
 
-        $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver);
+        $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver, new FakeProcessSignaler());
 
         ob_start();
         $cmd->handle([], []);
@@ -214,7 +215,7 @@ final class BacklogAgentPruneCommandTest
         $driver = new FakeSessionDriver();
         $driver->setAlive('d04', true);
 
-        $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver);
+        $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver, new FakeProcessSignaler());
 
         ob_start();
         $cmd->handle([], []);
@@ -254,7 +255,7 @@ final class BacklogAgentPruneCommandTest
         $driver = new FakeSessionDriver();
         $driver->setAlive('d05', true);
 
-        $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver);
+        $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver, new FakeProcessSignaler());
 
         ob_start();
         $cmd->handle([], ['force' => true]);
@@ -292,7 +293,7 @@ final class BacklogAgentPruneCommandTest
         $driver = new FakeSessionDriver();
         $driver->setAlive('d07', false);
 
-        $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver);
+        $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver, new FakeProcessSignaler());
 
         ob_start();
         $cmd->handle([], ['dry-run' => true]);
@@ -329,7 +330,7 @@ final class BacklogAgentPruneCommandTest
         $driver = new FakeSessionDriver();
         $driver->setAlive('d08', true);
 
-        $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver);
+        $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver, new FakeProcessSignaler());
 
         ob_start();
         $cmd->handle([], []);
@@ -364,7 +365,7 @@ final class BacklogAgentPruneCommandTest
         $driver = new FakeSessionDriver();
         $driver->setAlive('d10', true);
 
-        $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver);
+        $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver, new FakeProcessSignaler());
 
         ob_start();
         $cmd->handle([], []);
@@ -390,6 +391,58 @@ final class BacklogAgentPruneCommandTest
         }
 
         echo "OK testIdempotentAfterConvergence\n";
+        $this->rmdir($dir);
+
+        return 0;
+    }
+
+    /**
+     * Session created under the direct driver (tmux_session=null, client_pid set) is still alive.
+     * prune is run with the default tmux driver, which reports isAlive()=false because tmux_session
+     * is null. The conservative signal-0 fallback detects the process is alive and emits a warning
+     * instead of removing the entry.
+     */
+    private function testDriverMismatchDirectSessionAliveUnderTmuxDriver(): int
+    {
+        $dir = $this->mkSubDir('driver-mismatch');
+        $service = new AgentSessionService($dir);
+        $service->add($this->makeSession('d11', clientPid: 1234, tmuxSession: null, worktree: $dir));
+
+        // Tmux driver says dead (tmux_session is null — normal for direct sessions).
+        $driver = new FakeSessionDriver();
+        $driver->setAlive('d11', false);
+
+        // Signal-0 check confirms the client process is still alive.
+        $signaler = new FakeProcessSignaler();
+        $signaler->setAlive(1234, true);
+
+        $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver, $signaler);
+
+        ob_start();
+        $cmd->handle([], []);
+        $output = (string) ob_get_clean();
+
+        $sessions = $service->load();
+        if (!isset($sessions['d11'])) {
+            return $this->failCleanup($dir, 'testDriverMismatchDirectSessionAliveUnderTmuxDriver', 'd11 was removed but process was still alive — driver mismatch not caught');
+        }
+        if (!str_contains($output, '⚠ kept d11 (driver-session mismatch')) {
+            return $this->failCleanup($dir, 'testDriverMismatchDirectSessionAliveUnderTmuxDriver', 'output missing driver-mismatch warning for d11');
+        }
+        if (!str_contains($output, 'PID 1234')) {
+            return $this->failCleanup($dir, 'testDriverMismatchDirectSessionAliveUnderTmuxDriver', 'output missing live PID 1234 in hint');
+        }
+        if (!str_contains($output, 'BACKLOG_AGENT_SESSION_DRIVER=direct')) {
+            return $this->failCleanup($dir, 'testDriverMismatchDirectSessionAliveUnderTmuxDriver', 'hint missing BACKLOG_AGENT_SESSION_DRIVER=direct instruction');
+        }
+        if (!str_contains($output, "stop --code=d11")) {
+            return $this->failCleanup($dir, 'testDriverMismatchDirectSessionAliveUnderTmuxDriver', 'hint missing stop --code=d11 instruction');
+        }
+        if (!str_contains($output, '0 entries removed, 1 warnings')) {
+            return $this->failCleanup($dir, 'testDriverMismatchDirectSessionAliveUnderTmuxDriver', 'summary line missing or incorrect');
+        }
+
+        echo "OK testDriverMismatchDirectSessionAliveUnderTmuxDriver\n";
         $this->rmdir($dir);
 
         return 0;

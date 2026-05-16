@@ -205,6 +205,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                     $this->console,
                     $this->sessionService(),
                     $this->sessionDriver(),
+                    $this->processSignaler(),
                 ),
             ];
         }

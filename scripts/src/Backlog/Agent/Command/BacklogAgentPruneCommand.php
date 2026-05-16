@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Agent\Command;
 
+use SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
 use SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
@@ -17,10 +18,11 @@ use SoManAgent\Script\Console;
  *
  * Auto-removed entries (no flag required):
  *   1. client_pid is null AND tmux_session is null (launch was never finalised — e.g. tmux pane PID lookup failed)
- *   2. the active session driver reports isAlive() = false (process gone for direct driver, tmux session missing for tmux driver)
+ *   2. the active session driver reports isAlive() = false AND a signal-0 check on the recorded PIDs also confirms the process is gone
  *   3. the recorded worktree does not exist on disk AND the process is not alive
  *
  * Warning entries (kept unless --force):
+ *   - the active driver says dead but signal-0 confirms the process is still alive (driver-session mismatch; re-run with the correct BACKLOG_AGENT_SESSION_DRIVER)
  *   - the recorded worktree does not exist on disk BUT the process is still alive (orphan WA, killing it is the operator's call)
  *
  * --dry-run previews removals without writing changes. --force also removes warning entries; the process itself
@@ -35,20 +37,24 @@ final class BacklogAgentPruneCommand extends AbstractAgentCommand
     private Console $console;
     private AgentSessionService $sessionService;
     private SessionDriverInterface $sessionDriver;
+    private ProcessSignaler $processSignaler;
 
     /**
      * @param Console $console Output stream
      * @param AgentSessionService $sessionService Reads and mutates agent-sessions.json
-     * @param SessionDriverInterface $sessionDriver Used to check liveness of each session
+     * @param SessionDriverInterface $sessionDriver Primary liveness check for each session
+     * @param ProcessSignaler $processSignaler Fallback signal-0 check when the driver reports dead, to guard against driver-session mismatch
      */
     public function __construct(
         Console $console,
         AgentSessionService $sessionService,
         SessionDriverInterface $sessionDriver,
+        ProcessSignaler $processSignaler,
     ) {
         $this->console = $console;
         $this->sessionService = $sessionService;
         $this->sessionDriver = $sessionDriver;
+        $this->processSignaler = $processSignaler;
     }
 
     /**
@@ -129,12 +135,7 @@ final class BacklogAgentPruneCommand extends AbstractAgentCommand
             }
 
             $this->console->line(sprintf('⚠ kept %s (%s)', $code, $decision['reason']));
-            $this->console->line(sprintf(
-                "  Session orphan: code %s, process PID %d still alive, WA gone. Run 'php scripts/backlog-agent.php stop --code=%s' to terminate cleanly, then re-run prune.",
-                $code,
-                $this->describeLivePid($session),
-                $code,
-            ));
+            $this->console->line('  ' . $decision['hint']);
             $warnings++;
         }
 
@@ -147,7 +148,7 @@ final class BacklogAgentPruneCommand extends AbstractAgentCommand
     /**
      * Decides the action for one session entry.
      *
-     * @return array{action: 'remove'|'warn'|'keep', reason: string}
+     * @return array{action: 'remove'|'warn'|'keep', reason: string, hint: string}
      */
     private function decide(AgentSession $session): array
     {
@@ -155,6 +156,7 @@ final class BacklogAgentPruneCommand extends AbstractAgentCommand
             return [
                 'action' => self::ACTION_REMOVE,
                 'reason' => 'launch never finalised — null client_pid + null tmux_session',
+                'hint' => '',
             ];
         }
 
@@ -162,9 +164,27 @@ final class BacklogAgentPruneCommand extends AbstractAgentCommand
         $worktreeMissing = $session->worktree === '' || !is_dir($session->worktree);
 
         if (!$alive) {
+            // Conservative fallback: TmuxSessionDriver::isAlive() always returns false when
+            // tmux_session is null, which is the normal format for a direct-driver session.
+            // Signal-0 the recorded PIDs before removing to avoid killing a still-alive process
+            // that was simply started under a different driver.
+            if ($session->isAlive($this->processSignaler)) {
+                return [
+                    'action' => self::ACTION_WARN,
+                    'reason' => 'driver-session mismatch — process still alive',
+                    'hint' => sprintf(
+                        "Driver mismatch: code %s, process PID %d is alive but the active session driver cannot confirm it. Set BACKLOG_AGENT_SESSION_DRIVER=direct and re-run prune, or run 'php scripts/backlog-agent.php stop --code=%s' to terminate cleanly.",
+                        $session->code,
+                        $this->describeLivePid($session),
+                        $session->code,
+                    ),
+                ];
+            }
+
             return [
                 'action' => self::ACTION_REMOVE,
                 'reason' => $worktreeMissing ? 'process dead, worktree gone' : 'process dead',
+                'hint' => '',
             ];
         }
 
@@ -172,10 +192,16 @@ final class BacklogAgentPruneCommand extends AbstractAgentCommand
             return [
                 'action' => self::ACTION_WARN,
                 'reason' => 'worktree gone, process still alive',
+                'hint' => sprintf(
+                    "Session orphan: code %s, process PID %d still alive, WA gone. Run 'php scripts/backlog-agent.php stop --code=%s' to terminate cleanly, then re-run prune.",
+                    $session->code,
+                    $this->describeLivePid($session),
+                    $session->code,
+                ),
             ];
         }
 
-        return ['action' => self::ACTION_KEEP, 'reason' => ''];
+        return ['action' => self::ACTION_KEEP, 'reason' => '', 'hint' => ''];
     }
 
     /**
