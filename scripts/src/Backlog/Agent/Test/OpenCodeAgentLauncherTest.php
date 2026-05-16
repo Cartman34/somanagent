@@ -350,29 +350,7 @@ final class OpenCodeAgentLauncherTest
      */
     private function makeProcessRunner(bool $succeeds, array $outputs = []): ProcessRunner
     {
-        return new class($succeeds, $outputs) implements ProcessRunner {
-            /**
-             * @param bool $succeeds Result returned by succeeds()
-             * @param array<string, string> $outputs Command → stdout map
-             */
-            public function __construct(private bool $succeeds, private array $outputs) {}
-
-            /**
-             * Returns the configured availability result.
-             */
-            public function succeeds(string $command): bool
-            {
-                return $this->succeeds;
-            }
-
-            /**
-             * Returns the configured output for the given command, or null if not mapped.
-             */
-            public function output(string $command, string $cwd = ''): ?string
-            {
-                return $this->outputs[$command] ?? null;
-            }
-        };
+        return new FakeOpenCodeProcessRunner($succeeds, $outputs);
     }
 
     private function rmdirRecursive(string $dir): void
@@ -388,5 +366,41 @@ final class OpenCodeAgentLauncherTest
             is_dir($path) ? $this->rmdirRecursive($path) : unlink($path);
         }
         rmdir($dir);
+    }
+}
+
+/**
+ * Configurable ProcessRunner stub for OpenCodeAgentLauncher tests.
+ */
+final class FakeOpenCodeProcessRunner implements ProcessRunner
+{
+    /**
+     * @var array<string, string>
+     */
+    private array $outputs;
+
+    /**
+     * @param bool                  $succeeds Result returned by succeeds()
+     * @param array<string, string> $outputs  Command → stdout map
+     */
+    public function __construct(private bool $succeeds, array $outputs)
+    {
+        $this->outputs = $outputs;
+    }
+
+    /**
+     * Returns the configured availability result.
+     */
+    public function succeeds(string $command): bool
+    {
+        return $this->succeeds;
+    }
+
+    /**
+     * Returns the configured output for the given command, or null if not mapped.
+     */
+    public function output(string $command, string $cwd = ''): ?string
+    {
+        return $this->outputs[$command] ?? null;
     }
 }

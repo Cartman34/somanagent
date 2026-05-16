@@ -1,0 +1,106 @@
+defaults:
+  on_existing_below_min: upgrade
+  on_uninstall_pre_existing: keep
+
+host:
+  system:
+    php-cli:
+      constraint: ">=8.4"
+      installer: apt
+      package: php8.4-cli
+      sources:
+        - default
+        - "ppa:ondrej/php"
+    php-pgsql:
+      constraint: ">=8.4"
+      installer: apt
+      package: php8.4-pgsql
+      sources:
+        - default
+        - "ppa:ondrej/php"
+    php-xml:
+      constraint: ">=8.4"
+      installer: apt
+      package: php8.4-xml
+      sources:
+        - default
+        - "ppa:ondrej/php"
+    php-curl:
+      constraint: ">=8.4"
+      installer: apt
+      package: php8.4-curl
+      sources:
+        - default
+        - "ppa:ondrej/php"
+    php-mbstring:
+      constraint: ">=8.4"
+      installer: apt
+      package: php8.4-mbstring
+      sources:
+        - default
+        - "ppa:ondrej/php"
+    php-zip:
+      constraint: ">=8.4"
+      installer: apt
+      package: php8.4-zip
+      sources:
+        - default
+        - "ppa:ondrej/php"
+    php-intl:
+      constraint: ">=8.4"
+      installer: apt
+      package: php8.4-intl
+      sources:
+        - default
+        - "ppa:ondrej/php"
+    git:
+      constraint: ">=2.30"
+      installer: apt
+      package: git
+      sources:
+        - default
+    tmux:
+      constraint: ">=3.2"
+      installer: apt
+      package: tmux
+      sources:
+        - default
+  docker:
+    docker-engine:
+      constraint: ">=24"
+      installer: apt
+      package: docker-ce
+      sources:
+        - "https://download.docker.com/linux/ubuntu"
+      gpg: "0x9DC858229FC7DD38854AE2D88D81803C0EBFCD88"
+    docker-compose-plugin:
+      constraint: ">=2"
+      installer: apt
+      package: docker-compose-plugin
+      sources:
+        - "https://download.docker.com/linux/ubuntu"
+  clients:
+    claude:
+      constraint: ">=1.0"
+      installer: npm-global
+      package: "@anthropic-ai/claude-code"
+      sources:
+        - npm
+    codex:
+      constraint: ">=0.1"
+      installer: npm-global
+      package: "@openai/codex"
+      sources:
+        - npm
+    opencode:
+      constraint: ">=0.1"
+      installer: github-release
+      package: opencode
+      sources:
+        - "https://github.com/sst/opencode/releases"
+    gemini:
+      constraint: ">=0.1"
+      installer: npm-global
+      package: "@google/gemini-cli"
+      sources:
+        - npm

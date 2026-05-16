@@ -39,14 +39,16 @@ php scripts/help.php migrate.php
 | `worktree-info.php` | PHP | Display the git worktree context for the current script (linked vs main worktree, roots) |
 | `test-backlog-workflow.php` | PHP | Run reusable sequential validation campaigns for `backlog.php` on temporary backlog files |
 | `test-backlog-agent.php` | PHP | Run unit tests for backlog-agent.php classes |
+| `test-server.php` | PHP | Run tests for server.php |
+| `test-dev-env.php` | PHP | Run unit tests for the DevEnv manifest/lockfile/resolver/planner classes |
+| `test-setup.php` | PHP | Run subprocess integration tests for setup.php |
 | `test-validation.php` | PHP | Run unit tests for `scripts/src/Validation/` classes (ScriptExecBitValidator, ExecBitFixer, …) |
-| `setup.php` | PHP | Full installation (first time) |
-| `dev.php` | PHP | Start / stop the environment |
+| `setup.php` | PHP | Manage host-level dependencies and project setup (install, update, verify, uninstall, reset, status, dep-config) |
+| `server.php` | PHP | Manage Docker Compose services (start, stop, restart, status, health) |
 | `migrate.php` | PHP | Run Doctrine migrations |
 | `console.php` | PHP | Run a Symfony command |
 | `node.php` | PHP | Run reusable commands inside the Node container |
 | `db.php` | PHP | Run database commands (PostgreSQL + Doctrine reset) |
-| `install-deps.php` | PHP | Check and install required system dependencies on Ubuntu 24+ via apt |
 | `code-search.php` | PHP | Search a term across backend, frontend, scripts, doc, and YAML resource files |
 | `github.php` | PHP | GitHub CLI helper for PR creation, listing, view and merge |
 | `logs.php` | PHP | Display Docker logs |
@@ -199,23 +201,115 @@ Notes:
 
 ---
 
-### `setup.php`
-Full project installation. Run once after cloning.
+### `test-dev-env.php`
+Runs unit tests for the DevEnv manifest/lockfile/resolver/planner classes. No Docker required.
 
 ```bash
-php scripts/setup.php
-php scripts/setup.php --skip-frontend  # without npm install
+php scripts/test-dev-env.php
+php scripts/test-dev-env.php --suite=ManifestParserTest
+php scripts/test-dev-env.php --suite=InstallPlannerTest
+```
+
+Notes:
+- available suites: `VersionConstraintTest`, `ManifestParserTest`, `ManifestResolverTest`, `LockfileManagerTest`, `StateInspectorTest`, `InstallPlannerTest`
+- `--suite=<name>` runs only the named suite; omit to run all
+
+---
+
+### `test-setup.php`
+Runs subprocess integration tests for `setup.php`. Spawns the script as a child process; no Docker or actual package installation required.
+
+```bash
+php scripts/test-setup.php
 ```
 
 ---
 
-### `dev.php`
-Starts or stops the Docker environment.
+### `setup.php`
+Manages host-level dependencies and the project setup. Subcommand-based runner.
+
+Subcommands:
+- `update` — re-resolve the manifest against available sources and write the lockfile
+- `install` — install or upgrade host dependencies from the lockfile, then run project setup (composer, npm, Doctrine migrations)
+- `verify` — compare system state, lockfile, and manifest without mutating (exit `0` aligned, `1` discrepancies)
+- `uninstall` — remove installed deps according to `pre_existing` flags and `on_uninstall_pre_existing` policy
+- `reset` — drop the database and remove Docker volumes (does **not** touch host deps or client binaries)
+- `status` — show manifest, lockfile, installed versions, Docker service status, last migration (no mutation)
+- `dep-config` — read/write per-dep overrides in the lockfile (`get`/`set`/`unset`)
 
 ```bash
-php scripts/dev.php           # start
-php scripts/dev.php --stop    # stop
+php scripts/setup.php help                           # show help (also displayed when no subcommand is passed)
+php scripts/setup.php help <subcommand>              # detail one subcommand
+
+php scripts/setup.php update                         # resolve + write lockfile
+php scripts/setup.php update --preview-only          # resolution diff + plan, no apply
+php scripts/setup.php update --dry-run               # plan + simulated commands, no apply
+php scripts/setup.php update --force                 # apply without confirmation
+
+php scripts/setup.php install                        # apply lockfile + composer/npm/migrations
+php scripts/setup.php install --preview-only
+php scripts/setup.php install --dry-run
+php scripts/setup.php install --force
+
+php scripts/setup.php verify                         # alignment check, no mutation
+php scripts/setup.php status                         # full system / lockfile / docker overview, no mutation
+
+php scripts/setup.php uninstall                      # remove non-pre-existing deps
+php scripts/setup.php uninstall --restore            # one-shot: pre-existing deps downgrade to previous_version
+php scripts/setup.php uninstall --keep               # one-shot: pre-existing deps untouched
+
+php scripts/setup.php reset                          # drop DB + remove docker volumes (confirm prompt)
+php scripts/setup.php reset --keep-volumes           # stop containers but keep volumes
+php scripts/setup.php reset --force                  # skip confirmation
+
+php scripts/setup.php dep-config get claude
+php scripts/setup.php dep-config set claude on_uninstall_pre_existing restore
+php scripts/setup.php dep-config unset claude on_uninstall_pre_existing
 ```
+
+Notes:
+- Lockfile is local: `scripts/resources/dependencies.lock` is **not committed** on this project — it stores per-host `pre_existing` state and side-effect paths. Each machine generates its own via `setup.php update`. `install` rejects an absent or sentinel lockfile (`generated_at: ~`).
+- Mutation subcommands (`update`, `install`, `uninstall`, `reset`) accept `--preview-only`, `--dry-run`, and `--force`. `--preview-only` and `--dry-run` are mutually exclusive. `--force` still prints the preview for traceability.
+- `dep-config` mutations are local and reversible (`unset`); no `--force` flag.
+- `install` runs Doctrine migrations via **host PHP CLI** (`php backend/bin/console doctrine:migrations:migrate --no-interaction`), not via `docker compose exec`. Requires the `db` container up; the `php` container is not required (compatible with `server.php start --minimal`). `DATABASE_URL` is normalised from `db:5432` to `localhost:5432` automatically.
+- `verify`: `0` if aligned, `1` for missing/outdated/orphaned/unlocked deps. Run `setup.php update` first if deps appear unlocked.
+- `uninstall` policy chain: `--restore`/`--keep` flag > lockfile override (`dep-config`) > manifest per-dep `on_uninstall_pre_existing` > manifest default > framework default (`keep`).
+- `reset` is destructive: explicit confirmation required unless `--force`. Host dependencies (apt packages, npm clients) are **not** removed by `reset` — use `uninstall` for that.
+- BLOCKED items (version below minimum with `on_existing_below_min: error`) make the command exit before the preview is shown.
+
+---
+
+### `server.php`
+Manages Docker Compose services for the development environment. Subcommand-based runner.
+
+Subcommands:
+- `start` — bring services up (full profile by default, `--minimal` for db + redis only)
+- `stop` — bring services down
+- `restart` — stop then start
+- `status` — `docker compose ps` for the project
+- `health` — health checks via native PHP probes (PDO / TCP socket / HTTP); no `pg_isready` or `redis-cli` required on the host
+
+Docker Compose profiles: `db` and `redis` have no profile (always started); `php`, `worker`, `nginx`, `node`, and `mercure` use the `full` profile.
+
+```bash
+php scripts/server.php help                  # show help (also displayed when no subcommand is passed)
+
+php scripts/server.php start                 # start all services (profile full)
+php scripts/server.php start --minimal       # start db + redis only
+php scripts/server.php start --preview-only  # show plan, no apply
+php scripts/server.php start --dry-run       # plan + simulated commands, no apply
+php scripts/server.php start --force         # apply without confirmation
+
+php scripts/server.php stop                  # stop all services
+php scripts/server.php restart               # stop then start
+php scripts/server.php status                # docker compose ps
+php scripts/server.php health                # native PHP probes (db via PDO, redis via TCP RESP PING, http via file_get_contents)
+```
+
+Notes:
+- Mutation subcommands (`start`, `stop`, `restart`) accept `--preview-only`, `--dry-run`, and `--force`. `--preview-only` and `--dry-run` are mutually exclusive.
+- `start --minimal` is the recommended mode for remote dev servers where AI agents run on the host: it keeps `db` and `redis` up while skipping the heavier `full`-profile services.
+- `health` deliberately depends only on PHP-native facilities (PDO, raw TCP socket, HTTP) so the host manifest does not need to ship `postgresql-client` or `redis-tools` for diagnostic purposes.
 
 ---
 
@@ -326,28 +420,6 @@ php scripts/db.php reset --fixtures --force
 ```
 
 Use this script in priority for repeated local database inspection instead of raw `docker exec ... psql ...`.
-
----
-
-### `install-deps.php`
-Checks and installs system-level dependencies required by the project tools on Ubuntu 24+.
-The dependency manifest is declared directly in the runner — add a new entry to extend coverage.
-
-Commands:
-- `check` — verify each dependency: reports ok, missing, or version insufficient, and prints the apt commands to fix issues
-- `install` — install missing or outdated packages via apt (runs check first, skips apt when everything is satisfied)
-
-```bash
-php scripts/install-deps.php check
-php scripts/install-deps.php install
-```
-
-Notes:
-- `check` exits with code 0 when all dependencies are satisfied, code 1 when any issue is found
-- `install` runs `sudo apt-get update` then `sudo apt-get install -y <packages>` and requires sudo privileges
-- both commands target Ubuntu 24+ only (apt-based systems)
-- transitive dependencies are resolved by listing other manifest keys in the `requires` field of each entry
-- to add a new dependency, declare it in `InstallDepsRunner::MANIFEST` with `package`, `minVersion`, `checkCommand`, `versionPattern`, and `requires`
 
 ---
 

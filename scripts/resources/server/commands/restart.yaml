@@ -1,0 +1,18 @@
+description: 'Stop all services then start them again.'
+options:
+  - name: '--minimal'
+    description: 'Start only db and redis after the stop step'
+  - name: '--preview-only'
+    description: 'Show the planned operation and exit without applying. Mutually exclusive with --dry-run.'
+  - name: '--dry-run'
+    description: 'Show the planned operation and simulated commands, then exit without applying. Mutually exclusive with --preview-only.'
+  - name: '--force'
+    description: 'Apply without asking for confirmation (preview still printed)'
+examples:
+  - 'php scripts/server.php restart'
+  - 'php scripts/server.php restart --minimal'
+  - 'php scripts/server.php restart --force'
+  - 'php scripts/server.php restart --preview-only'
+notes:
+  - 'Equivalent to stop followed by start. The stop step targets all running services.'
+  - '--minimal applies to the start step only: db and redis are started after the full stop.'

@@ -1,0 +1,8 @@
+description: 'Check alignment of system state, lockfile, and manifest. No mutation.'
+examples:
+  - 'php scripts/setup.php verify'
+notes:
+  - 'Exit code 0 when everything is aligned; 1 when discrepancies are found.'
+  - 'Reports: missing deps (in lockfile but not installed), outdated deps (installed version < locked), orphaned deps (in lockfile but removed from manifest), unlocked deps (in manifest but not in lockfile).'
+  - 'Run setup.php update first if deps appear as unlocked.'
+  - 'No mutation — safe to run at any time.'

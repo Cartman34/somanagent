@@ -15,6 +15,7 @@ backend/.env.*.local
 
 # === SCRIPTS ===
 scripts/vendor/
+scripts/resources/dependencies.lock
 
 # === FRONTEND REACT ===
 frontend/node_modules/

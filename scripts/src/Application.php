@@ -31,7 +31,7 @@ use SoManAgent\Script\Exception\WslRequiredException;
  *   $c->step('Building containers');
  *   $app->runCommand('docker compose up -d --build');
  */
-final class Application
+final class Application implements ShellRunnerInterface
 {
     private static ?self $instance = null;
 

@@ -21,8 +21,7 @@ final class ClientNotInstalledException extends \RuntimeException
     public function __construct(AgentClient $client)
     {
         parent::__construct(sprintf(
-            "Client '%s' is not available.\n  Install it: php scripts/install-clients.php %s",
-            $client->value,
+            "Client '%s' is not available.\n  Install it: php scripts/setup.php install",
             $client->value,
         ));
     }

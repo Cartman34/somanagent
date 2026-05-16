@@ -75,10 +75,16 @@ It lets you assemble generic AI agent teams, assign them roles and skills, then 
 cp .env.dist .env
 # Edit .env: CLAUDE_API_KEY, GITHUB_TOKEN, etc.
 
-# 2. Full installation
-php scripts/setup.php
+# 2. Resolve host deps (write the local lockfile)
+php scripts/setup.php update
 
-# 3. Verify everything works
+# 3. Install host deps and run project setup
+php scripts/setup.php install
+
+# 4. Start the dev environment
+php scripts/server.php start
+
+# 5. Verify everything works
 php scripts/health.php
 ```
 

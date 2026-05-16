@@ -1,0 +1,8 @@
+description: 'Display manifest constraints, lockfile state, installed versions, and Docker service status. No mutation.'
+examples:
+  - 'php scripts/setup.php status'
+notes:
+  - 'Sections displayed: manifest constraints, lockfile resolved versions (with overrides), installed system versions, Docker container status, last migration.'
+  - 'No mutation — safe to run at any time.'
+  - 'Docker service status requires Docker to be available (docker compose ps). Missing Docker is reported gracefully.'
+  - 'Last migration status requires a running database connection.'

@@ -1,0 +1,20 @@
+description: 'Install host dependencies from the lockfile and run project setup steps.'
+options:
+  - name: '--preview-only'
+    description: 'Show the installation plan and exit without applying. Mutually exclusive with --dry-run.'
+  - name: '--dry-run'
+    description: 'Show the plan and simulated commands, then exit without applying. Mutually exclusive with --preview-only.'
+  - name: '--force'
+    description: 'Apply without asking for confirmation (preview still printed for traceability).'
+examples:
+  - 'php scripts/setup.php install'
+  - 'php scripts/setup.php install --preview-only'
+  - 'php scripts/setup.php install --dry-run'
+  - 'php scripts/setup.php install --force'
+notes:
+  - 'Requires an initialized lockfile (scripts/resources/dependencies.lock). Run setup.php update first to generate it — absent or sentinel lockfiles (generated_at: ~) are both rejected.'
+  - '--preview-only and --dry-run are mutually exclusive.'
+  - 'Idempotent: running install after convergence is a no-op (all deps already at target version).'
+  - 'composer install and npm install run inside their respective containers — skipped with a warning if the container is not running.'
+  - 'Doctrine migrations run via host PHP CLI (php backend/bin/console). Requires the db container to be up (error if absent); the php container is not required (compatible with server.php start --minimal).'
+  - 'The lockfile is updated after each installer group so partial progress is saved on failure.'

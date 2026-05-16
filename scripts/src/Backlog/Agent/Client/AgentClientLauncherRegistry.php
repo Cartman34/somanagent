@@ -15,7 +15,7 @@ use SoManAgent\Script\Backlog\Agent\Exception\ClientNotInstalledException;
  *
  * A client absent from the registry is treated as not installed: any lookup
  * throws ClientNotInstalledException with a remediation hint pointing to
- * php scripts/install-clients.php.
+ * php scripts/setup.php install.
  */
 final class AgentClientLauncherRegistry
 {

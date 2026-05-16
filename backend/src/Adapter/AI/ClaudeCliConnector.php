@@ -183,7 +183,7 @@ class ClaudeCliConnector extends AbstractConnector
                 name: 'runtime',
                 status: 'degraded',
                 summary: 'Binary not found.',
-                fixCommand: 'php scripts/install-clients.php claude --docker',
+                fixCommand: 'php scripts/setup.php install',
             );
         }
 

@@ -3,11 +3,12 @@
 /**
  * @author Florent HAZARD <f.hazard@sowapps.com>
  */
-// Description: Full setup of SoManAgent (first run)
-// Usage: php scripts/setup.php
-// Usage: php scripts/setup.php --skip-frontend
+// Description: Manage host-level dependencies and project setup for the development environment
+// Usage: php scripts/setup.php install
+// Usage: php scripts/setup.php install --preview-only
+// Usage: php scripts/setup.php install --dry-run
+// Usage: php scripts/setup.php install --force
 
-$GLOBALS['somanagent_scripts_allow_autoinstall'] = true;
 require_once __DIR__ . '/src/bootstrap.php';
 
 use SoManAgent\Script\Runner\SetupRunner;
