@@ -27,6 +27,9 @@ use SoManAgent\Script\Backlog\Agent\Client\ProcessRunner;
  */
 final class LauncherFlagValidator
 {
+    /**
+     * @param ProcessRunner $processRunner Runner used to invoke `<bin> --help` and capture its combined stdout/stderr
+     */
     public function __construct(private ProcessRunner $processRunner) {}
 
     /**

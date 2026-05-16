@@ -17,6 +17,9 @@ use SoManAgent\Script\Validation\ExecBitFixer;
  */
 final class ExecBitFixerTest
 {
+    /**
+     * Runs all test cases and returns the total number of failures.
+     */
     public function run(): int
     {
         $failed = 0;

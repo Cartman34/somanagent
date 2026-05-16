@@ -22,6 +22,9 @@ namespace SoManAgent\Script\Validation;
  */
 final class ScriptExecBitValidator
 {
+    /**
+     * @param IndexModeReader|null $gitIndexReader Optional reader used to consult the git index mode. When null the validator falls back to a filesystem-only check.
+     */
     public function __construct(private ?IndexModeReader $gitIndexReader = null) {}
 
     /**

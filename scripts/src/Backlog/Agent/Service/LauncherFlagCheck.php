@@ -16,6 +16,10 @@ namespace SoManAgent\Script\Backlog\Agent\Service;
  */
 final class LauncherFlagCheck
 {
+    /**
+     * @param string $flag CLI option spelling as declared by the launcher (e.g. `--resume`, `-C`)
+     * @param bool $present True when the flag was found as a delimited token in the binary `--help` output
+     */
     public function __construct(
         public readonly string $flag,
         public readonly bool $present,
