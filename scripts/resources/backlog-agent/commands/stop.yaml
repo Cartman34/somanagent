@@ -1,4 +1,4 @@
-description: 'Stop a live agent session or remove a stale session entry.'
+description: 'Stop a live agent session, remove a stale entry, or kill an orphan driver session.'
 options:
   - name: '--code=<code>'
     description: 'Agent code to stop (required)'
@@ -10,3 +10,4 @@ examples:
 notes:
   - '--code is required.'
   - 'When the PID is already dead, use --cleanup to remove the stale session entry.'
+  - 'When no registry entry exists for <code> but the session driver still reports a live session (e.g. an orphan tmux session somanagent-<code> left after the registry was already pruned), the driver session is killed directly and the command exits 0. This is the correct remedy for the "A live driver session already exists" error emitted by `start`.'

@@ -144,6 +144,28 @@ final class DirectSessionDriver implements SessionDriverInterface
     /**
      * {@inheritdoc}
      *
+     * The direct driver has no persistent session concept — always returns an empty array.
+     *
+     * @return list<string>
+     */
+    public function listLiveSessions(): array
+    {
+        return [];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * The direct driver has no persistent session concept — no-op.
+     */
+    public function kill(string $agentCode): void
+    {
+        // No persistent session to kill by code alone.
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * Checks session->clientPid first, then session->pid via ProcessSignaler.
      */
     public function isAlive(AgentSession $session): bool

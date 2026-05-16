@@ -44,6 +44,9 @@ final class TmuxSessionDriverTest
         $failed += $this->testCreateSessionAppliesMouseOption();
         $failed += $this->testCreateSessionAppliesHistoryLimit();
         $failed += $this->testCreateSessionWarnsWhenSetOptionFails();
+        $failed += $this->testListLiveSessionsFiltersPrefix();
+        $failed += $this->testListLiveSessionsReturnsEmptyWhenNoOutput();
+        $failed += $this->testKillCallsKillSession();
 
         return $failed;
     }
@@ -411,6 +414,76 @@ final class TmuxSessionDriverTest
             return 1;
         }
         echo "OK testCreateSessionWarnsWhenSetOptionFails\n";
+        return 0;
+    }
+
+    /**
+     * listLiveSessions() must return codes from somanagent-prefixed sessions only.
+     * Non-prefixed sessions in the tmux output are silently ignored.
+     */
+    private function testListLiveSessionsFiltersPrefix(): int
+    {
+        $runner = new FakeProcessRunner();
+        $runner->outputMap = [
+            "tmux list-sessions -F '#{session_name}'" => "somanagent-d11\nother-session\nsomanagent-d12\n",
+        ];
+
+        $driver = new TmuxSessionDriver($runner, Console::getInstance());
+        $codes = $driver->listLiveSessions();
+
+        if ($codes !== ['d11', 'd12']) {
+            echo "FAIL testListLiveSessionsFiltersPrefix: expected ['d11', 'd12'], got " . var_export($codes, true) . "\n";
+            return 1;
+        }
+        echo "OK testListLiveSessionsFiltersPrefix\n";
+        return 0;
+    }
+
+    /**
+     * listLiveSessions() must return [] when tmux list-sessions yields no output (no server or no sessions).
+     */
+    private function testListLiveSessionsReturnsEmptyWhenNoOutput(): int
+    {
+        $runner = new FakeProcessRunner();
+        $runner->outputMap = [
+            "tmux list-sessions -F '#{session_name}'" => null,
+        ];
+
+        $driver = new TmuxSessionDriver($runner, Console::getInstance());
+        $codes = $driver->listLiveSessions();
+
+        if ($codes !== []) {
+            echo "FAIL testListLiveSessionsReturnsEmptyWhenNoOutput: expected [], got " . var_export($codes, true) . "\n";
+            return 1;
+        }
+        echo "OK testListLiveSessionsReturnsEmptyWhenNoOutput\n";
+        return 0;
+    }
+
+    /**
+     * kill() must call tmux kill-session targeting somanagent-<code>.
+     */
+    private function testKillCallsKillSession(): int
+    {
+        $runner = new RecordingProcessRunner();
+
+        $driver = new TmuxSessionDriver($runner, Console::getInstance());
+
+        ob_start();
+        $driver->kill('d11');
+        ob_end_clean();
+
+        $killCalls = array_filter($runner->calledCommands, fn(string $c): bool => str_contains($c, 'kill-session'));
+        if ($killCalls === []) {
+            echo "FAIL testKillCallsKillSession: tmux kill-session was not called\n";
+            return 1;
+        }
+        $killCmd = reset($killCalls);
+        if (!str_contains($killCmd, 'somanagent-d11')) {
+            echo "FAIL testKillCallsKillSession: kill-session did not target 'somanagent-d11'\n";
+            return 1;
+        }
+        echo "OK testKillCallsKillSession\n";
         return 0;
     }
 

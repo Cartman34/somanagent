@@ -193,6 +193,46 @@ final class TmuxSessionDriver implements SessionDriverInterface
     }
 
     /**
+     * {@inheritdoc}
+     *
+     * Runs tmux list-sessions and returns codes extracted from somanagent-<code> session names.
+     * Sessions whose names do not carry the somanagent- prefix are silently ignored.
+     * Returns an empty array when no tmux server is running or when no managed sessions exist.
+     *
+     * @return list<string>
+     */
+    public function listLiveSessions(): array
+    {
+        $output = $this->shellRunner->output("tmux list-sessions -F '#{session_name}'");
+        if ($output === null || $output === '') {
+            return [];
+        }
+
+        $codes = [];
+        foreach (explode("\n", trim($output)) as $line) {
+            $line = trim($line);
+            if ($line === '' || !str_starts_with($line, self::SESSION_PREFIX)) {
+                continue;
+            }
+            $codes[] = substr($line, strlen(self::SESSION_PREFIX));
+        }
+
+        return $codes;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * Kills the tmux session somanagent-<code> via tmux kill-session.
+     */
+    public function kill(string $agentCode): void
+    {
+        $name = $this->sessionName($agentCode);
+        $this->console->line(sprintf("Killing orphan tmux session '%s'...", $name));
+        $this->shellRunner->succeeds(sprintf('tmux kill-session -t %s', escapeshellarg($name)));
+    }
+
+    /**
      * Returns the tmux session name for the given agent code.
      */
     private function sessionName(string $agentCode): string

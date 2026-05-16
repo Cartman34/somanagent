@@ -25,6 +25,12 @@ final class FakeSessionDriver implements SessionDriverInterface
     /** @var array<string, bool> Codes that sessionExists() should return true for */
     private array $existingByCode = [];
 
+    /** @var list<string> Codes returned by listLiveSessions() */
+    private array $liveSessionCodes = [];
+
+    /** @var list<string> Agent codes passed to kill(), in invocation order */
+    public array $killedCodes = [];
+
     /**
      * Whether the fake driver allows resume when isAlive() returns true.
      */
@@ -67,6 +73,16 @@ final class FakeSessionDriver implements SessionDriverInterface
     public function setAllowsResumeWhileAlive(bool $allows): void
     {
         $this->allowsResumeWhileAlive = $allows;
+    }
+
+    /**
+     * Sets the list of codes returned by listLiveSessions().
+     *
+     * @param list<string> $codes
+     */
+    public function setLiveSessions(array $codes): void
+    {
+        $this->liveSessionCodes = $codes;
     }
 
     /**
@@ -131,5 +147,23 @@ final class FakeSessionDriver implements SessionDriverInterface
     public function isAlive(AgentSession $session): bool
     {
         return $this->aliveByCode[$session->code] ?? false;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return list<string>
+     */
+    public function listLiveSessions(): array
+    {
+        return $this->liveSessionCodes;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function kill(string $agentCode): void
+    {
+        $this->killedCodes[] = $agentCode;
     }
 }

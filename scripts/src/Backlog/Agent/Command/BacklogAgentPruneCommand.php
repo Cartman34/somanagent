@@ -14,12 +14,20 @@ use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Console;
 
 /**
- * Removes invalid or orphan entries from local/tmp/agent-sessions.json.
+ * Removes invalid or orphan entries from local/tmp/agent-sessions.json, and kills driver-side
+ * sessions that have no corresponding registry entry.
  *
- * Auto-removed entries (no flag required):
+ * Two complementary passes are performed:
+ *
+ * Registry pass — iterates over agent-sessions.json and auto-removes entries when:
  *   1. client_pid is null AND tmux_session is null (launch was never finalised — e.g. tmux pane PID lookup failed)
  *   2. the active session driver reports isAlive() = false AND a signal-0 check on the recorded PIDs also confirms the process is gone
  *   3. the recorded worktree does not exist on disk AND the process is not alive
+ *
+ * Driver pass — calls listLiveSessions() and kills any driver-tracked session (e.g. a tmux session
+ * named somanagent-<code>) that has no matching registry entry. This handles the inverse orphan:
+ * a live tmux session left behind after the registry was already cleaned, which would otherwise
+ * block a future `start --code=<code>` with "A live driver session already exists".
  *
  * Warning entries (kept unless --force):
  *   - the active driver says dead but signal-0 confirms the process is still alive (driver-session mismatch; re-run with the correct BACKLOG_AGENT_SESSION_DRIVER)
@@ -99,7 +107,9 @@ final class BacklogAgentPruneCommand extends AbstractAgentCommand
         $sessions = $this->sessionService->load();
         ksort($sessions);
 
-        if ($sessions === []) {
+        $liveSessions = $this->sessionDriver->listLiveSessions();
+
+        if ($sessions === [] && $liveSessions === []) {
             $this->console->line('No agent sessions.');
 
             return 0;
@@ -137,6 +147,18 @@ final class BacklogAgentPruneCommand extends AbstractAgentCommand
             $this->console->line(sprintf('⚠ kept %s (%s)', $code, $decision['reason']));
             $this->console->line('  ' . $decision['hint']);
             $warnings++;
+        }
+
+        // Second pass: driver-live sessions without a corresponding registry entry.
+        foreach ($liveSessions as $code) {
+            if (isset($sessions[$code])) {
+                continue;
+            }
+            $this->console->line(sprintf('✓ removed %s (orphan driver session — no registry entry)', $code));
+            if (!$dryRun) {
+                $this->sessionDriver->kill($code);
+            }
+            $removed++;
         }
 
         $suffix = $dryRun ? ' (dry-run)' : '';

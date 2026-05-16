@@ -59,6 +59,8 @@ final class BacklogAgentPruneCommandTest
         $failed += $this->testHealthyHealthyEntryIsSilentlyKept();
         $failed += $this->testIdempotentAfterConvergence();
         $failed += $this->testDriverMismatchDirectSessionAliveUnderTmuxDriver();
+        $failed += $this->testTmuxOrphanWithEmptyRegistry();
+        $failed += $this->testRegistryOrphanAndTmuxOrphan();
 
         return $failed;
     }
@@ -443,6 +445,91 @@ final class BacklogAgentPruneCommandTest
         }
 
         echo "OK testDriverMismatchDirectSessionAliveUnderTmuxDriver\n";
+        $this->rmdir($dir);
+
+        return 0;
+    }
+
+    /**
+     * Registry is empty but the driver reports a live tmux session for d11 (orphan driver session).
+     * prune must kill d11 via the driver and report removed=1.
+     */
+    private function testTmuxOrphanWithEmptyRegistry(): int
+    {
+        $dir = $this->mkSubDir('tmux-orphan-empty-registry');
+        $service = new AgentSessionService($dir);
+
+        $driver = new FakeSessionDriver();
+        $driver->setLiveSessions(['d11']);
+
+        $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver, new FakeProcessSignaler());
+
+        ob_start();
+        $exit = $cmd->handle([], []);
+        $output = (string) ob_get_clean();
+
+        if ($exit !== 0) {
+            return $this->failCleanup($dir, 'testTmuxOrphanWithEmptyRegistry', "exit code {$exit}, expected 0");
+        }
+        if (!in_array('d11', $driver->killedCodes, true)) {
+            return $this->failCleanup($dir, 'testTmuxOrphanWithEmptyRegistry', 'kill(d11) was not called');
+        }
+        if (!str_contains($output, '✓ removed d11')) {
+            return $this->failCleanup($dir, 'testTmuxOrphanWithEmptyRegistry', 'output missing "✓ removed d11"');
+        }
+        if (!str_contains($output, 'orphan driver session')) {
+            return $this->failCleanup($dir, 'testTmuxOrphanWithEmptyRegistry', 'output missing "orphan driver session" reason');
+        }
+        if (!str_contains($output, '1 entries removed, 0 warnings')) {
+            return $this->failCleanup($dir, 'testTmuxOrphanWithEmptyRegistry', 'summary line missing or incorrect');
+        }
+
+        echo "OK testTmuxOrphanWithEmptyRegistry\n";
+        $this->rmdir($dir);
+
+        return 0;
+    }
+
+    /**
+     * One dead registry entry for d10 (process dead) + one tmux orphan d11 (no registry entry).
+     * prune must remove the registry entry for d10 and kill the orphan d11, total removed=2.
+     */
+    private function testRegistryOrphanAndTmuxOrphan(): int
+    {
+        $dir = $this->mkSubDir('registry-orphan-and-tmux-orphan');
+        $service = new AgentSessionService($dir);
+        $service->add($this->makeSession('d10', clientPid: 1010, tmuxSession: null, worktree: $dir));
+
+        $driver = new FakeSessionDriver();
+        $driver->setAlive('d10', false);
+        $driver->setLiveSessions(['d11']);
+
+        $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver, new FakeProcessSignaler());
+
+        ob_start();
+        $exit = $cmd->handle([], []);
+        $output = (string) ob_get_clean();
+
+        if ($exit !== 0) {
+            return $this->failCleanup($dir, 'testRegistryOrphanAndTmuxOrphan', "exit code {$exit}, expected 0");
+        }
+        if ($service->has('d10')) {
+            return $this->failCleanup($dir, 'testRegistryOrphanAndTmuxOrphan', 'd10 registry entry still present after prune');
+        }
+        if (!in_array('d11', $driver->killedCodes, true)) {
+            return $this->failCleanup($dir, 'testRegistryOrphanAndTmuxOrphan', 'kill(d11) was not called for tmux orphan');
+        }
+        if (!str_contains($output, '✓ removed d10')) {
+            return $this->failCleanup($dir, 'testRegistryOrphanAndTmuxOrphan', 'output missing "✓ removed d10"');
+        }
+        if (!str_contains($output, '✓ removed d11')) {
+            return $this->failCleanup($dir, 'testRegistryOrphanAndTmuxOrphan', 'output missing "✓ removed d11"');
+        }
+        if (!str_contains($output, '2 entries removed, 0 warnings')) {
+            return $this->failCleanup($dir, 'testRegistryOrphanAndTmuxOrphan', 'summary line missing or incorrect');
+        }
+
+        echo "OK testRegistryOrphanAndTmuxOrphan\n";
         $this->rmdir($dir);
 
         return 0;

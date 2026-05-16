@@ -42,6 +42,8 @@ final class DirectSessionDriverTest
         $failed += $this->testStopWarnsWhenNoPidAvailable();
         $failed += $this->testLaunchDelegatesAndAdaptsOnSpawned();
         $failed += $this->testResumeDelegatesAndAdaptsOnSpawned();
+        $failed += $this->testListLiveSessionsReturnsEmpty();
+        $failed += $this->testKillIsNoOp();
 
         return $failed;
     }
@@ -262,6 +264,32 @@ final class DirectSessionDriverTest
         }
         echo "OK testResumeDelegatesAndAdaptsOnSpawned\n";
         return 0;
+    }
+
+    private function testListLiveSessionsReturnsEmpty(): int
+    {
+        $driver = $this->makeDriver(new FakeInteractiveProcessRunner(), new FakeProcessSignaler());
+
+        if ($driver->listLiveSessions() !== []) {
+            echo "FAIL testListLiveSessionsReturnsEmpty: expected empty array for direct driver\n";
+            return 1;
+        }
+        echo "OK testListLiveSessionsReturnsEmpty\n";
+        return 0;
+    }
+
+    private function testKillIsNoOp(): int
+    {
+        $driver = $this->makeDriver(new FakeInteractiveProcessRunner(), new FakeProcessSignaler());
+
+        try {
+            $driver->kill('d01');
+            echo "OK testKillIsNoOp\n";
+            return 0;
+        } catch (\Throwable $e) {
+            echo "FAIL testKillIsNoOp: unexpected exception: " . $e->getMessage() . "\n";
+            return 1;
+        }
     }
 
     private function makeDriver(

@@ -128,7 +128,8 @@ Subcommands:
 - `start` - start a new agent client session for one role
 - `list` - list recorded agent sessions
 - `status` - show one recorded agent session
-- `stop` - stop the recorded client session
+- `stop` - stop the recorded client session; also kills an orphan driver session (e.g. a tmux session) when no registry entry exists, which is the correct remedy for the "A live driver session already exists" error from `start`
+- `prune` - remove stale registry entries AND kill driver-side sessions with no registry entry; two complementary passes ensure full symmetry between the registry and the driver
 - `whoami` - display the current agent context
 - `resume` - resume the client stored in `agent-sessions.json`
 - `sessions` - list sessions exposed by the configured client
