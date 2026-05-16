@@ -72,7 +72,7 @@ final class ProjectDepsInstallerTest
             echo "FAIL testDbDownThrowsWithClearMessage: expected RuntimeException, none thrown\n";
             return 1;
         } catch (\RuntimeException $e) {
-            if (!str_contains($e->getMessage(), 'container db non up')) {
+            if (!str_contains($e->getMessage(), 'db container is not running')) {
                 echo "FAIL testDbDownThrowsWithClearMessage: unexpected message: {$e->getMessage()}\n";
                 return 1;
             }

@@ -100,7 +100,7 @@ final class ProjectDepsInstaller
 
         if (!$this->isContainerRunning('somanagent_db')) {
             throw new \RuntimeException(
-                'container db non up — lance `php scripts/server.php start --minimal` ou `php scripts/server.php start`',
+                'db container is not running — start it with `php scripts/server.php start --minimal` or `php scripts/server.php start`',
             );
         }
 
