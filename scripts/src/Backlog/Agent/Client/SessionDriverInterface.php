@@ -106,4 +106,30 @@ interface SessionDriverInterface
      * For DirectSessionDriver: checks session->clientPid (then session->pid) via ProcessSignaler.
      */
     public function isAlive(AgentSession $session): bool;
+
+    /**
+     * Lists all agent codes currently tracked by the driver as live sessions.
+     *
+     * Returns codes only (e.g. 'd11'), not full session names.
+     * Used by prune to detect driver-side orphans — sessions alive in the driver but absent
+     * from the registry.
+     *
+     * For TmuxSessionDriver: runs tmux list-sessions and filters on the somanagent- prefix.
+     * For DirectSessionDriver: always returns [] (no persistent session concept).
+     *
+     * @return list<string>
+     */
+    public function listLiveSessions(): array;
+
+    /**
+     * Terminates the driver session for the given agent code without requiring an AgentSession entry.
+     *
+     * Used when a live driver session exists but the registry has no corresponding entry.
+     *
+     * For TmuxSessionDriver: kills the tmux session somanagent-<code> via tmux kill-session.
+     * For DirectSessionDriver: no-op (proc_open has no persistent session concept).
+     *
+     * @param string $agentCode Agent code (e.g. d01)
+     */
+    public function kill(string $agentCode): void;
 }

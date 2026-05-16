@@ -52,6 +52,8 @@ final class AgentStopCommandTest
         $failed += $this->testRefusesDeadSessionWithoutCleanup();
         $failed += $this->testCleanupRemovesStaleSession();
         $failed += $this->testUpdatesLastSeenOnObservation();
+        $failed += $this->testStopsOrphanDriverSessionWithoutRegistryEntry();
+        $failed += $this->testRefusesWhenNeitherRegistryNorDriver();
 
         return $failed;
     }
@@ -185,6 +187,76 @@ final class AgentStopCommandTest
             return 1;
         }
         echo "OK testUpdatesLastSeenOnObservation\n";
+        $this->rmdir($dir);
+        return 0;
+    }
+
+    /**
+     * No registry entry for d11, but the driver reports a live session (orphan tmux session).
+     * stop must call kill() directly and exit 0 with a dedicated message.
+     */
+    private function testStopsOrphanDriverSessionWithoutRegistryEntry(): int
+    {
+        $dir = $this->tmpDir . '/orphan-driver-' . uniqid('', true);
+        mkdir($dir, 0755, true);
+        $service = new AgentSessionService($dir);
+
+        $driver = new FakeSessionDriver();
+        $driver->setExists('d11', true);
+
+        $cmd = new AgentStopCommand(Console::getInstance(), $service, $driver);
+
+        ob_start();
+        $exit = $cmd->handle([], ['code' => 'd11']);
+        $output = (string) ob_get_clean();
+
+        if ($exit !== 0) {
+            echo "FAIL testStopsOrphanDriverSessionWithoutRegistryEntry: exit code {$exit}, expected 0\n";
+            $this->rmdir($dir);
+            return 1;
+        }
+        if (!in_array('d11', $driver->killedCodes, true)) {
+            echo "FAIL testStopsOrphanDriverSessionWithoutRegistryEntry: kill(d11) was not called\n";
+            $this->rmdir($dir);
+            return 1;
+        }
+        if (!str_contains($output, 'orphan driver session')) {
+            echo "FAIL testStopsOrphanDriverSessionWithoutRegistryEntry: output missing 'orphan driver session' message\n";
+            $this->rmdir($dir);
+            return 1;
+        }
+        echo "OK testStopsOrphanDriverSessionWithoutRegistryEntry\n";
+        $this->rmdir($dir);
+        return 0;
+    }
+
+    /**
+     * No registry entry AND the driver reports no live session → throw with a clear error.
+     */
+    private function testRefusesWhenNeitherRegistryNorDriver(): int
+    {
+        $dir = $this->tmpDir . '/neither-' . uniqid('', true);
+        mkdir($dir, 0755, true);
+        $service = new AgentSessionService($dir);
+
+        $driver = new FakeSessionDriver();
+        // sessionExists returns false by default
+
+        $cmd = new AgentStopCommand(Console::getInstance(), $service, $driver);
+
+        $threw = false;
+        try {
+            $cmd->handle([], ['code' => 'd11']);
+        } catch (\RuntimeException $e) {
+            $threw = str_contains($e->getMessage(), "No session found for code 'd11'");
+        }
+
+        if (!$threw) {
+            echo "FAIL testRefusesWhenNeitherRegistryNorDriver: expected RuntimeException mentioning 'No session found'\n";
+            $this->rmdir($dir);
+            return 1;
+        }
+        echo "OK testRefusesWhenNeitherRegistryNorDriver\n";
         $this->rmdir($dir);
         return 0;
     }

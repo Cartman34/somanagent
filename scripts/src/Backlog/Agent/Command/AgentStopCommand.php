@@ -12,10 +12,15 @@ use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Console;
 
 /**
- * Stops a live agent session or cleans up a stale entry.
+ * Stops a live agent session, cleans up a stale entry, or kills an orphan driver session.
  *
  * Usage:
  *   php scripts/backlog-agent.php stop --code=<code> [--cleanup]
+ *
+ * When no registry entry exists for <code> but the session driver still reports a live session
+ * (e.g. an orphan tmux session left after the registry was already pruned), the driver session is
+ * killed directly and the command exits 0 with a dedicated message. This makes `stop` the correct
+ * remediation for the "A live driver session already exists" error from `start`.
  */
 final class AgentStopCommand extends AbstractAgentCommand
 {
@@ -82,6 +87,13 @@ final class AgentStopCommand extends AbstractAgentCommand
 
         $session = $this->sessionService->get($code);
         if ($session === null) {
+            if ($this->sessionDriver->sessionExists($code)) {
+                $this->sessionDriver->kill($code);
+                $this->console->ok(sprintf("Killed orphan driver session for code '%s' (no registry entry).", $code));
+
+                return 0;
+            }
+
             throw new \RuntimeException(sprintf("No session found for code '%s'.", $code));
         }
 

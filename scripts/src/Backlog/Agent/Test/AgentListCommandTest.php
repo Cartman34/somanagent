@@ -353,6 +353,21 @@ final class AgentListCommandTest
             {
                 return $session->pid !== 0;
             }
+
+            /**
+             * {@inheritdoc}
+             *
+             * @return list<string>
+             */
+            public function listLiveSessions(): array
+            {
+                return [];
+            }
+
+            /**
+             * {@inheritdoc}
+             */
+            public function kill(string $agentCode): void {}
         };
     }
 
