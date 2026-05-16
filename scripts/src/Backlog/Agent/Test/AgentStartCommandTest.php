@@ -11,6 +11,7 @@ use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncher;
 use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
 use SoManAgent\Script\Backlog\Agent\Command\AgentStartCommand;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
+use SoManAgent\Script\Backlog\Agent\Exception\ActiveSessionException;
 use SoManAgent\Script\Backlog\Agent\Exception\ClientNotInstalledException;
 use SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
 use SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
@@ -78,6 +79,8 @@ final class AgentStartCommandTest
         $failed += $this->testReviewerModeReusesOwnedReviewingEntry();
         $failed += $this->testReviewerModeCallsReviewNextWhenTakingEntry();
         $failed += $this->testReviewerModeRollsBackViaCancelWhenPreparationFails();
+        $failed += $this->testReviewerStartsSuccessfullyWhenDeveloperIsActive();
+        $failed += $this->testReviewerRefusedWhenAnotherReviewerIsActive();
         $failed += $this->testDeveloperResetRefusesDirtyWorktree();
         $failed += $this->testDeveloperResetRemovesAndRecreatesCleanWorktree();
         $failed += $this->testLaunchKeepsSessionEntryWhenDriverReportsDetach();
@@ -507,6 +510,210 @@ final class AgentStartCommandTest
         return 0;
     }
 
+    private function testReviewerStartsSuccessfullyWhenDeveloperIsActive(): int
+    {
+        // Reviewer must start on a WA that already has an active developer session — no exception.
+        $dir = $this->scratchDir('reviewer-with-dev');
+        $boardPath = $dir . '/board.md';
+        $worktreesRoot = $dir . '/worktrees';
+        $devWa = $worktreesRoot . '/d04';
+        mkdir($devWa, 0755, true);
+
+        $this->writeBoard($boardPath, [
+            '- crypto-feature',
+            '  meta:',
+            '    kind: feature',
+            '    feature: crypto-feature',
+            '    branch: feat/crypto-feature',
+            '    type: feat',
+            '    stage: review',
+            '    agent: d04',
+        ]);
+
+        // Developer d04 has an active session in the target WA.
+        $this->writeSessionsJson($dir, [
+            'd04' => [
+                'client' => 'claude',
+                'role' => 'developer',
+                'pid' => 11111,
+                'worktree' => $devWa,
+                'started_at' => '2026-01-01T00:00:00+00:00',
+                'last_seen_at' => '2026-01-01T00:00:00+00:00',
+                'session_id' => null,
+            ],
+        ]);
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($dir);
+        $reviewerSelector = new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot);
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        $fakeRunner = new FakeBacklogCommandRunner();
+        $fakeRunner->onReviewNext = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
+            $board = $boardService->loadBoard($boardPath);
+            foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
+                if ($entry->getFeature() === 'crypto-feature') {
+                    $entry->setStage(BacklogBoard::STAGE_REVIEWING);
+                    $entry->setReviewer($reviewerCode);
+                    $boardService->saveBoard($board);
+                    break;
+                }
+            }
+        };
+
+        $cmd = new AgentStartCommand(
+            $dir,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($dir, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            $sessionService,
+            new AgentContextBuilder($dir, $boardPath, $boardService),
+            (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor(),
+            $reviewerSelector,
+            $boardService,
+            new FakeSessionDriver(),
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
+            $fakeRunner,
+        );
+
+        $previousCwd = getcwd();
+        $threw = false;
+        try {
+            $cmd->handle(['claude'], ['reviewer' => true, 'code' => 'r01']);
+        } catch (\Throwable $e) {
+            $threw = true;
+            echo "FAIL testReviewerStartsSuccessfullyWhenDeveloperIsActive: unexpected exception: "
+                . get_class($e) . ': ' . $e->getMessage() . "\n";
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        if ($threw) {
+            return 1;
+        }
+        if ($launcher->lastLaunchedWorktree !== $devWa) {
+            echo "FAIL testReviewerStartsSuccessfullyWhenDeveloperIsActive: launcher did not launch on '{$devWa}'\n";
+            return 1;
+        }
+
+        echo "OK testReviewerStartsSuccessfullyWhenDeveloperIsActive\n";
+        return 0;
+    }
+
+    private function testReviewerRefusedWhenAnotherReviewerIsActive(): int
+    {
+        // Another reviewer (r99) already holds the WA — r01 must be refused without --force.
+        $dir = $this->scratchDir('reviewer-conflict');
+        $boardPath = $dir . '/board.md';
+        $worktreesRoot = $dir . '/worktrees';
+        $devWa = $worktreesRoot . '/d04';
+        mkdir($devWa, 0755, true);
+
+        $this->writeBoard($boardPath, [
+            '- crypto-feature',
+            '  meta:',
+            '    kind: feature',
+            '    feature: crypto-feature',
+            '    branch: feat/crypto-feature',
+            '    type: feat',
+            '    stage: review',
+            '    agent: d04',
+        ]);
+
+        // Reviewer r99 has an active session in the target WA.
+        $this->writeSessionsJson($dir, [
+            'r99' => [
+                'client' => 'claude',
+                'role' => 'reviewer',
+                'pid' => 99999,
+                'worktree' => $devWa,
+                'started_at' => '2026-01-01T00:00:00+00:00',
+                'last_seen_at' => '2026-01-01T00:00:00+00:00',
+                'session_id' => null,
+            ],
+        ]);
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($dir);
+        $reviewerSelector = new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot);
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        $fakeRunner = new FakeBacklogCommandRunner();
+        $fakeRunner->onReviewNext = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
+            $board = $boardService->loadBoard($boardPath);
+            foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
+                if ($entry->getFeature() === 'crypto-feature') {
+                    $entry->setStage(BacklogBoard::STAGE_REVIEWING);
+                    $entry->setReviewer($reviewerCode);
+                    $boardService->saveBoard($board);
+                    break;
+                }
+            }
+        };
+        $fakeRunner->onReviewCancel = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
+            $board = $boardService->loadBoard($boardPath);
+            foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
+                if ($entry->getFeature() === 'crypto-feature') {
+                    $entry->setStage(BacklogBoard::STAGE_IN_REVIEW);
+                    $entry->setReviewer(null);
+                    $boardService->saveBoard($board);
+                    break;
+                }
+            }
+        };
+
+        $cmd = new AgentStartCommand(
+            $dir,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($dir, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            $sessionService,
+            new AgentContextBuilder($dir, $boardPath, $boardService),
+            (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor(),
+            $reviewerSelector,
+            $boardService,
+            new FakeSessionDriver(),
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
+            $fakeRunner,
+        );
+
+        // Use --developer=d04 so the entry is explicitly targeted (bypassing autoSelect's
+        // early-exit when the WA is already claimed) and the reviewer-vs-reviewer guard fires.
+        $previousCwd = getcwd();
+        $threw = false;
+        try {
+            $cmd->handle(['claude'], ['reviewer' => true, 'code' => 'r01', 'developer' => 'd04']);
+        } catch (ActiveSessionException) {
+            $threw = true;
+        } catch (\Throwable $other) {
+            echo "FAIL testReviewerRefusedWhenAnotherReviewerIsActive: expected ActiveSessionException, got "
+                . get_class($other) . ': ' . $other->getMessage() . "\n";
+            return 1;
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        if (!$threw) {
+            echo "FAIL testReviewerRefusedWhenAnotherReviewerIsActive: expected ActiveSessionException\n";
+            return 1;
+        }
+
+        echo "OK testReviewerRefusedWhenAnotherReviewerIsActive\n";
+        return 0;
+    }
+
     private function testDeveloperResetRefusesDirtyWorktree(): int
     {
         $projectRoot = $this->createGitProject('reset-dirty');
@@ -697,6 +904,18 @@ final class AgentStartCommandTest
 
         echo "OK testLaunchKeepsSessionEntryWhenDriverReportsDetach\n";
         return 0;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function writeSessionsJson(string $projectRoot, array $data): void
+    {
+        $dir = $projectRoot . '/local/tmp';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        file_put_contents($dir . '/agent-sessions.json', json_encode($data));
     }
 
     /**

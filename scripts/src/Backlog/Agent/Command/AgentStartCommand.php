@@ -130,7 +130,7 @@ final class AgentStartCommand extends AbstractAgentCommand
             ['name' => '--feature=<slug>', 'description' => 'Reviewer: target the feature entry at stage=review with this slug'],
             ['name' => '--task=<feature/task>', 'description' => 'Reviewer: target the task entry at stage=review with this reference'],
             ['name' => '--developer=<dXX>', 'description' => 'Reviewer: target the active entry assigned to this developer code'],
-            ['name' => '--force', 'description' => 'Reviewer: proceed even when another reviewer or developer session is active in the target WA'],
+            ['name' => '--force', 'description' => 'Reviewer: proceed even when another reviewer session is active in the target WA'],
         ];
     }
 
@@ -365,17 +365,6 @@ final class AgentStartCommand extends AbstractAgentCommand
         if ($existingReviewer !== null && !$force) {
             $this->rollbackReviewTransition($takenEntryRef, $takenReviewerCode);
             throw new ActiveSessionException($existingReviewer, $this->projectRoot, $this->signaler);
-        }
-
-        $developerSession = $this->reviewerSelector->findActiveDeveloperForWorktree($worktree);
-        if ($developerSession !== null && !$force) {
-            $this->rollbackReviewTransition($takenEntryRef, $takenReviewerCode);
-            throw new \RuntimeException(sprintf(
-                'Developer %s is currently active in this worktree (pid %d, started %s). Stop their session first or use --force at your own risk (FS conflicts likely).',
-                $developerSession->code,
-                $developerSession->pid,
-                $developerSession->startedAt->format(\DateTimeInterface::ATOM),
-            ));
         }
 
         return [$worktree, $takenEntryRef, $takenReviewerCode];

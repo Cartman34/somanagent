@@ -20,7 +20,7 @@ options:
   - name: '--developer=<dXX>'
     description: 'Reviewer: target the active entry assigned to this developer code'
   - name: '--force'
-    description: 'Reviewer: proceed even when another reviewer or developer session is active in the target WA'
+    description: 'Reviewer: proceed even when another reviewer session is active in the target WA'
 examples:
   - 'php scripts/backlog-agent.php start claude --developer'
   - 'php scripts/backlog-agent.php start claude --developer --code=d10'

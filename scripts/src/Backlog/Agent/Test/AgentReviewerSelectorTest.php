@@ -65,9 +65,6 @@ final class AgentReviewerSelectorTest
         $failed += $this->testFindOwnedReviewingEntryIgnoresOtherReviewer();
         $failed += $this->testFindExistingReviewerForWorktree();
         $failed += $this->testFindExistingReviewerReturnsNullWhenNone();
-        $failed += $this->testFindActiveDeveloperForWorktree();
-        $failed += $this->testFindActiveDeveloperIgnoresReviewerSessions();
-
         return $failed;
     }
 
@@ -558,70 +555,6 @@ final class AgentReviewerSelectorTest
         }
 
         echo "OK testFindExistingReviewerReturnsNullWhenNone\n";
-        return 0;
-    }
-
-    private function testFindActiveDeveloperForWorktree(): int
-    {
-        $projectRoot = $this->makeTmpSubdir('find-dev');
-        $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $targetWorktree = $worktreesRoot . '/d01';
-
-        $this->writeSessionsJson($projectRoot, [
-            'd01' => [
-                'client' => 'claude',
-                'role' => 'developer',
-                'pid' => 11111,
-                'worktree' => $targetWorktree,
-                'started_at' => '2026-01-01T00:00:00+00:00',
-                'last_seen_at' => '2026-01-01T00:00:00+00:00',
-                'session_id' => null,
-            ],
-        ]);
-
-        $selector = $this->makeSelector($projectRoot, $worktreesRoot);
-        $session = $selector->findActiveDeveloperForWorktree($targetWorktree);
-
-        if ($session === null) {
-            echo "FAIL testFindActiveDeveloperForWorktree: expected developer session, got null\n";
-            return 1;
-        }
-        if ($session->code !== 'd01') {
-            echo "FAIL testFindActiveDeveloperForWorktree: expected d01, got {$session->code}\n";
-            return 1;
-        }
-
-        echo "OK testFindActiveDeveloperForWorktree\n";
-        return 0;
-    }
-
-    private function testFindActiveDeveloperIgnoresReviewerSessions(): int
-    {
-        $projectRoot = $this->makeTmpSubdir('find-dev-ignores-reviewer');
-        $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $targetWorktree = $worktreesRoot . '/d01';
-
-        $this->writeSessionsJson($projectRoot, [
-            'r01' => [
-                'client' => 'claude',
-                'role' => 'reviewer',
-                'pid' => 99999,
-                'worktree' => $targetWorktree,
-                'started_at' => '2026-01-01T00:00:00+00:00',
-                'last_seen_at' => '2026-01-01T00:00:00+00:00',
-                'session_id' => null,
-            ],
-        ]);
-
-        $selector = $this->makeSelector($projectRoot, $worktreesRoot);
-        $session = $selector->findActiveDeveloperForWorktree($targetWorktree);
-
-        if ($session !== null) {
-            echo "FAIL testFindActiveDeveloperIgnoresReviewerSessions: expected null for reviewer-only worktree\n";
-            return 1;
-        }
-
-        echo "OK testFindActiveDeveloperIgnoresReviewerSessions\n";
         return 0;
     }
 
