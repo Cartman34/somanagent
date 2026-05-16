@@ -73,8 +73,6 @@ Default model profile is `balanced+medium`. The operator may override it with `-
 
 **Auto-pick at start:** when the developer has no active entry, `start` automatically calls `work-start` on the first queued task and injects that entry into the generated context. If the developer already has an active entry (e.g. after a session disconnect), `start` resumes that entry without consuming anything from the todo queue.
 
-When `start` auto-picks a queued task, it also sends the developer launch prompt from `scripts/resources/backlog-agent/launch-prompts.yaml` as the initial user message. This prompt only wakes the interactive client after the context has been generated; it does not run for `resume` or for a developer that already had an active entry.
-
 **`resume` never auto-picks:** `resume --code=<dXX>` reconnects to the existing session without touching the todo queue, regardless of its contents.
 
 Supported clients:
@@ -305,15 +303,14 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-cre
 
 ### `next`
 
-1. If the generated context already contains an active entry for the developer, skip directly to implementation. This is the normal path after `backlog-agent.php start --developer` auto-picked a task.
-2. If there is no active entry, `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php todo-list` and read the first entry's `<entry-ref>` (the value in brackets at the start of each line).
-3. If there is no active entry, `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php work-start <entry-ref>`. The explicit reference is required for agent-driven flows so that target selection is unambiguous and a concurrent agent cannot consume a different head between read and mutation.
-4. `WA`: implement the feature scope on the branch checked out for that task.
-5. `WA`: inspect the local diff and fix issues in scope before moving on.
-6. `WA`: run self-challenge cycles per the Responsibilities rule; fix and re-challenge until a full pass yields no findings.
-7. `WA`: run `git add .`.
-8. `WA`: run `git commit -m "[<feature-slug>] ..."` using the canonical feature identifier recorded in the backlog metadata and branch name.
-9. Report to the user a brief summary of self-challenge cycles: dimensions checked, issues found, fixes applied.
+1. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php todo-list` and read the first entry's `<entry-ref>` (the value in brackets at the start of each line).
+2. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php work-start <entry-ref>`. The explicit reference is required for agent-driven flows so that target selection is unambiguous and a concurrent agent cannot consume a different head between read and mutation.
+3. `WA`: implement the feature scope on the branch checked out for that task.
+4. `WA`: inspect the local diff and fix issues in scope before moving on.
+5. `WA`: run self-challenge cycles per the Responsibilities rule; fix and re-challenge until a full pass yields no findings.
+6. `WA`: run `git add .`.
+7. `WA`: run `git commit -m "[<feature-slug>] ..."` using the canonical feature identifier recorded in the backlog metadata and branch name.
+8. Report to the user a brief summary of self-challenge cycles: dimensions checked, issues found, fixes applied.
 
 ### `submit`
 

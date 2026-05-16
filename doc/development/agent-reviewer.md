@@ -227,15 +227,14 @@ Also check:
 
 ### `review`
 
-1. If the generated context already contains a review assigned to this reviewer, read its `Ref` from the context and skip directly to `review-check`. This is the normal path after `backlog-agent.php start --reviewer` auto-claimed a review.
-2. If there is no assigned review, run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-list`.
-3. Choose the intended `<entry-ref>` from the output.
-4. If there is no assigned review, run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-next <entry-ref>`.
-5. The entry moves to `reviewing` and the reviewer is recorded.
-6. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-check <entry-ref>`.
-7. If the mechanical review fails, stop: the command rejects the current target automatically.
-8. If the mechanical review passes, continue the technical and functional review manually.
-9. End the review by running `review-approve` or `review-reject` for that target.
+1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-list`.
+2. Choose the intended `<entry-ref>` from the output.
+3. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-next <entry-ref>`.
+4. The entry moves to `reviewing` and the reviewer is recorded.
+5. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-check <entry-ref>`.
+6. If the mechanical review fails, stop: the command rejects the current target automatically.
+7. If the mechanical review passes, continue the technical and functional review manually.
+8. End the review by running `review-approve` or `review-reject` for that target.
 
 ### `approve`
 
@@ -256,8 +255,6 @@ Also check:
 ## Launching a reviewer session
 
 Use `php scripts/backlog-agent.php start <client> --reviewer` to open a reviewer session inside the developer WA. The reviewer reuses the developer's worktree; no new git worktree is created.
-
-When `start` auto-claims a review, it also sends the reviewer launch prompt from `scripts/resources/backlog-agent/launch-prompts.yaml` as the initial user message. This prompt only wakes the interactive client after the context has been generated; it does not run for `resume` or when the reviewer already owned a `reviewing` entry.
 
 Default model profile is `balanced+medium`. The operator may override it with `--tier=economy|balanced|premium`, `--effort=low|medium|high`, or `--model=<raw-name>`.
 
