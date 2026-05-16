@@ -26,11 +26,11 @@ Format: a one-letter role prefix followed by a two-digit zero-padded number.
 
 | Prefix | Role | Example |
 |---|---|---|
-| `d` | Developer | `d04` |
-| `r` | Reviewer | `r01` |
-| `m` | Manager | `m02` |
+| `d` | Developer | `d10` |
+| `r` | Reviewer | `r10` |
+| `m` | Manager | `m10` |
 
-Used exactly as assigned, with no truncation, alias, or nickname.
+Used exactly as assigned, with no truncation, alias, or nickname. Auto-allocation starts at `10`; numbers `01-09` are reserved for explicit operator allocation via `--code=<code>`.
 
 ## Feature
 

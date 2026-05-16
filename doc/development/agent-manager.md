@@ -56,7 +56,7 @@ The following environment variables are injected into every session:
 
 | Variable | Value |
 |---|---|
-| `SOMANAGER_AGENT` | Agent code (e.g. `m01`) |
+| `SOMANAGER_AGENT` | Agent code (e.g. `m10`) |
 | `SOMANAGER_ROLE` | `manager` |
 | `SOMANAGER_CLIENT` | `claude`, `codex`, `opencode`, or `gemini` |
 | `SOMANAGER_WP` | Absolute path to the main workspace |

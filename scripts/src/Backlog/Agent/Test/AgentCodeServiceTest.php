@@ -49,8 +49,11 @@ final class AgentCodeServiceTest
         $failed += $this->testAllocateFirstCode();
         $failed += $this->testAllocateSkipsUsedWorktree();
         $failed += $this->testAllocateSkipsSessionEntry();
+        $failed += $this->testAllocateSkipsConsecutiveUsedCodes();
+        $failed += $this->testAllocateIgnoresLowExplicitCode();
         $failed += $this->testValidateFormatError();
         $failed += $this->testValidateRoleMismatch();
+        $failed += $this->testValidateAcceptsLowExplicitCode();
         $failed += $this->testValidateActiveSessionThrows();
         $failed += $this->testAllocateManagerPrefix();
 
@@ -61,8 +64,8 @@ final class AgentCodeServiceTest
     {
         $service = $this->makeService();
         $code = $service->allocateForRole(AgentRole::DEVELOPER);
-        if ($code !== 'd01') {
-            echo "FAIL testAllocateFirstCode: expected d01, got {$code}\n";
+        if ($code !== 'd10') {
+            echo "FAIL testAllocateFirstCode: expected d10, got {$code}\n";
             return 1;
         }
         echo "OK testAllocateFirstCode\n";
@@ -72,15 +75,15 @@ final class AgentCodeServiceTest
     private function testAllocateSkipsUsedWorktree(): int
     {
         $worktrees = $this->tmpDir . '/worktrees';
-        mkdir($worktrees . '/d01', 0755, true);
+        mkdir($worktrees . '/d10', 0755, true);
 
         $service = $this->makeService(worktreesRoot: $worktrees);
         $code = $service->allocateForRole(AgentRole::DEVELOPER);
 
         $this->rmdir($worktrees);
 
-        if ($code !== 'd02') {
-            echo "FAIL testAllocateSkipsUsedWorktree: expected d02, got {$code}\n";
+        if ($code !== 'd11') {
+            echo "FAIL testAllocateSkipsUsedWorktree: expected d11, got {$code}\n";
             return 1;
         }
         echo "OK testAllocateSkipsUsedWorktree\n";
@@ -92,7 +95,7 @@ final class AgentCodeServiceTest
         $sessionsDir = $this->tmpDir . '/local/tmp';
         mkdir($sessionsDir, 0755, true);
         file_put_contents($sessionsDir . '/agent-sessions.json', json_encode([
-            'd01' => [
+            'd10' => [
                 'client' => 'claude',
                 'role' => 'developer',
                 'pid' => 99999,
@@ -109,11 +112,48 @@ final class AgentCodeServiceTest
         $this->rmdir($sessionsDir);
         rmdir($this->tmpDir . '/local');
 
-        if ($code !== 'd02') {
-            echo "FAIL testAllocateSkipsSessionEntry: expected d02, got {$code}\n";
+        if ($code !== 'd11') {
+            echo "FAIL testAllocateSkipsSessionEntry: expected d11, got {$code}\n";
             return 1;
         }
         echo "OK testAllocateSkipsSessionEntry\n";
+        return 0;
+    }
+
+    private function testAllocateSkipsConsecutiveUsedCodes(): int
+    {
+        $worktrees = $this->tmpDir . '/worktrees-consec';
+        mkdir($worktrees . '/d10', 0755, true);
+        mkdir($worktrees . '/d11', 0755, true);
+
+        $service = $this->makeService(worktreesRoot: $worktrees);
+        $code = $service->allocateForRole(AgentRole::DEVELOPER);
+
+        $this->rmdir($worktrees);
+
+        if ($code !== 'd12') {
+            echo "FAIL testAllocateSkipsConsecutiveUsedCodes: expected d12, got {$code}\n";
+            return 1;
+        }
+        echo "OK testAllocateSkipsConsecutiveUsedCodes\n";
+        return 0;
+    }
+
+    private function testAllocateIgnoresLowExplicitCode(): int
+    {
+        $worktrees = $this->tmpDir . '/worktrees-low';
+        mkdir($worktrees . '/d05', 0755, true);
+
+        $service = $this->makeService(worktreesRoot: $worktrees);
+        $code = $service->allocateForRole(AgentRole::DEVELOPER);
+
+        $this->rmdir($worktrees);
+
+        if ($code !== 'd10') {
+            echo "FAIL testAllocateIgnoresLowExplicitCode: expected d10 (reserved range 01-09 is never auto-allocated), got {$code}\n";
+            return 1;
+        }
+        echo "OK testAllocateIgnoresLowExplicitCode\n";
         return 0;
     }
 
@@ -148,6 +188,19 @@ final class AgentCodeServiceTest
             }
         }
         echo "OK testValidateRoleMismatch\n";
+        return 0;
+    }
+
+    private function testValidateAcceptsLowExplicitCode(): int
+    {
+        $service = $this->makeService();
+        try {
+            $service->validate('d05', AgentRole::DEVELOPER);
+        } catch (\Throwable $e) {
+            echo "FAIL testValidateAcceptsLowExplicitCode: explicit reserved-range code d05 must remain accepted: {$e->getMessage()}\n";
+            return 1;
+        }
+        echo "OK testValidateAcceptsLowExplicitCode\n";
         return 0;
     }
 
@@ -189,8 +242,8 @@ final class AgentCodeServiceTest
     {
         $service = $this->makeService();
         $code = $service->allocateForRole(AgentRole::MANAGER);
-        if ($code !== 'm01') {
-            echo "FAIL testAllocateManagerPrefix: expected m01, got {$code}\n";
+        if ($code !== 'm10') {
+            echo "FAIL testAllocateManagerPrefix: expected m10, got {$code}\n";
             return 1;
         }
         echo "OK testAllocateManagerPrefix\n";
