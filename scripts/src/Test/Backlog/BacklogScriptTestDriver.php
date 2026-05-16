@@ -218,7 +218,7 @@ MD);
      */
     public function createTodoTask(string $text): void
     {
-        $name = 'task-create-' . substr(md5($text), 0, 8) . '.md';
+        $name = 'entry-create-' . substr(md5($text), 0, 8) . '.md';
         $lines = preg_split('/\R/', $text) ?: [$text];
         $this->createTodoTaskFromBodyFile($lines, $name);
     }
@@ -1281,7 +1281,7 @@ MD);
     {
         $path = $this->createBodyFile($name, $lines);
         $relative = $this->relativePath($path);
-        $this->runBacklog(['task-create', '--body-file=' . $relative]);
+        $this->runBacklog(['entry-create', '--body-file=' . $relative]);
 
         return $path;
     }
@@ -1340,11 +1340,11 @@ MD);
     }
 
     /**
-     * @param list<string> $arguments task-create arguments after the command name
+     * @param list<string> $arguments entry-create arguments after the command name
      */
     public function assertTaskCreateFails(string $needle, array $arguments): void
     {
-        $this->assertBacklogFails(array_merge(['task-create'], $arguments), $needle);
+        $this->assertBacklogFails(array_merge(['entry-create'], $arguments), $needle);
     }
 
     /**

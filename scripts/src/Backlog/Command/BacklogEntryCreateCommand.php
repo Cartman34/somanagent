@@ -14,14 +14,14 @@ use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 
 /**
- * Inserts a new task into the todo section.
+ * Inserts a new backlog entry into the todo section.
  *
  * The `--position=index --index=<n>` option is advisory: out-of-range values
  * clamp to the start or the end (with a warning) so a concurrent reorder of the
  * queue cannot turn the insertion into a hard failure. Display numbers are
  * never used to identify queued tasks for mutation.
  */
-final class BacklogTaskCreateCommand extends AbstractBacklogCommand
+final class BacklogEntryCreateCommand extends AbstractBacklogCommand
 {
     private const POSITION_START = 'start';
     private const POSITION_INDEX = 'index';
@@ -39,10 +39,10 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
     }
 
     /**
-     * Inserts a new queued task in the todo section.
+     * Inserts a new queued entry in the todo section.
      *
      * Requires `--body-file=<path>` (typically under `local/tmp/`). Inline positional
-     * task text is not accepted.
+     * text is not accepted.
      *
      * @param list<string> $commandArgs
      * @param array<string, bool|string|array<bool|string>> $options
@@ -54,12 +54,12 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
         $board = $this->loadBoard();
         $this->revertParentIfInReview($board, $entry->getText());
         $entries = $board->getEntries(BacklogBoard::SECTION_TODO);
-        $position = $this->resolveTaskCreatePosition($options, count($entries));
+        $position = $this->resolveEntryCreatePosition($options, count($entries));
         array_splice($entries, $position, 0, [$entry]);
         $board->setEntries(BacklogBoard::SECTION_TODO, $entries);
-        $this->saveBoard($board, BacklogCommandName::TASK_CREATE->value);
+        $this->saveBoard($board, BacklogCommandName::ENTRY_CREATE->value);
 
-        $this->presenter->displaySuccess(sprintf('Added task to the todo section at position %d', $position + 1));
+        $this->presenter->displaySuccess(sprintf('Added entry to the todo section at position %d', $position + 1));
     }
 
     /**
@@ -100,13 +100,13 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
     private function buildEntryFromInput(array $commandArgs, array $options): BoardEntry
     {
         if ($commandArgs !== [] && trim(implode(' ', $commandArgs)) !== '') {
-            throw new \RuntimeException('task-create no longer accepts inline task text. Use --body-file=<path> instead.');
+            throw new \RuntimeException('entry-create no longer accepts inline task text. Use --body-file=<path> instead.');
         }
 
         $bodyFile = $options['body-file'] ?? null;
 
         if ($bodyFile === null) {
-            throw new \RuntimeException('task-create requires --body-file=<path>.');
+            throw new \RuntimeException('entry-create requires --body-file=<path>.');
         }
         if (!is_string($bodyFile) || trim($bodyFile) === '') {
             throw new \RuntimeException('Option --body-file requires a non-empty path when provided.');
@@ -135,11 +135,11 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
     }
 
     /**
-     * Resolves the 0-based insertion index for task-create from options.
+     * Resolves the 0-based insertion index for entry-create from options.
      *
      * @param array<string, bool|string|array<bool|string>> $options
      */
-    private function resolveTaskCreatePosition(array $options, int $entryCount): int
+    private function resolveEntryCreatePosition(array $options, int $entryCount): int
     {
         $rawPosition = $options['position'] ?? self::POSITION_END;
         if (is_array($rawPosition)) {
@@ -151,7 +151,7 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
             self::POSITION_INDEX,
             self::POSITION_END,
         ], true)) {
-            throw new \RuntimeException('task-create --position must be start, index, or end.');
+            throw new \RuntimeException('entry-create --position must be start, index, or end.');
         }
 
         if ($position === self::POSITION_START) {
@@ -163,7 +163,7 @@ final class BacklogTaskCreateCommand extends AbstractBacklogCommand
         }
 
         if (!array_key_exists('index', $options)) {
-            throw new \RuntimeException('task-create with --position=index requires --index=<1-based-position>.');
+            throw new \RuntimeException('entry-create with --position=index requires --index=<1-based-position>.');
         }
         $rawIndex = $options['index'];
         if (is_array($rawIndex)) {

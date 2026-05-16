@@ -205,8 +205,8 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
 
     /**
      * Verifies scope-review integrity guards:
-     *   - task-create on a parent in review reverts it to development
-     *   - task-create on a parent in reviewing reverts it and clears meta.reviewer
+     *   - entry-create on a parent in review reverts it to development
+     *   - entry-create on a parent in reviewing reverts it and clears meta.reviewer
      *   - work-start on a child task reverts a parent in approved to development
      *   - review-approve on a feature with queued child tasks is refused
      */
@@ -224,7 +224,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->createTodoTask(sprintf('[tech][%s] Feature container for scope review guard tests', $guardFeature));
         $driver->startNextFeature($context->agentSecondary);
 
-        // Test A: task-create on parent in review reverts it to development
+        // Test A: entry-create on parent in review reverts it to development
         $driver->replaceBoardText(
             "    stage: development\n    feature: {$guardFeature}",
             "    stage: review\n    feature: {$guardFeature}",
@@ -234,7 +234,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->assertFeatureStage($guardFeature, BacklogBoard::STAGE_IN_PROGRESS);
         $driver->removeTodoTask(sprintf('%s/%s', $guardFeature, $guardTaskC));
 
-        // Test B: task-create on parent in reviewing reverts it and clears meta.reviewer
+        // Test B: entry-create on parent in reviewing reverts it and clears meta.reviewer
         $driver->replaceBoardText(
             "    stage: development\n    feature: {$guardFeature}",
             "    stage: reviewing\n    feature: {$guardFeature}",
@@ -250,7 +250,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->removeTodoTask(sprintf('%s/%s', $guardFeature, $guardTaskD));
 
         // Test C: work-start on a child task reverts parent from approved to development
-        // task-create must run while parent is in development so it does not trigger the revert;
+        // entry-create must run while parent is in development so it does not trigger the revert;
         // only work-start should see the approved stage and be responsible for the transition.
         $driver->createTodoTask(sprintf('[%s][%s] Task E for work-start revert guard', $guardFeature, $guardTaskE));
         $driver->replaceBoardText(

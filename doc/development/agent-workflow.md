@@ -105,11 +105,11 @@ Rules:
    `[type][feature-slug][task-slug] Short title`,
    `[feature-slug][type] Short title`,
    `[feature-slug][task-slug][type] Short title`.
-4. **Required at task creation:** every task must declare an explicit `[feature-slug]` scope (plus `[task-slug]` for child tasks); `task-create` rejects entries without one. Including a `[type]` prefix is also strongly recommended so the queued entry is unambiguous and `work-start` does not have to fall back on text-derived slugs.
+4. **Required at entry creation:** every entry must declare an explicit `[feature-slug]` scope (plus `[task-slug]` for child tasks); `entry-create` rejects entries without one. Including a `[type]` prefix is also strongly recommended so the queued entry is unambiguous and `work-start` does not have to fall back on text-derived slugs.
 5. Type → branch prefix mapping is 1:1: `feat → feat/<slug>`, `fix → fix/<slug>`, `tech → tech/<slug>`. Scoped child tasks use `<type>/<feature-slug>--<task-slug>`.
-6. Adding a new task type requires extending the `BacklogTaskType` enum and is therefore a deliberate change, not something `task-create` infers from text.
+6. Adding a new task type requires extending the `BacklogTaskType` enum and is therefore a deliberate change, not something `entry-create` infers from text.
 7. Keep the title short; put the breakdown on sub-task lines below the title. All subsequent lines are shifted by +2 spaces: top-level bullets land at 2 spaces in the board, standard markdown sub-bullets (2-space indent) land at 4. Write a normal markdown file — nesting hierarchy is preserved.
-8. Always create queued tasks through `task-create` with `--body-file=<path>` (typically under `local/tmp/`). Inline positional task text is not accepted.
+8. Always create queued entries through `entry-create` with `--body-file=<path>` (typically under `local/tmp/`). Inline positional text is not accepted.
 9. Manual edits to `local/backlog-board.md` are not the way to add tasks. Use `--body-file=<path>` instead.
 
 ## Work-start Validation Guarantees
@@ -120,7 +120,7 @@ Rules:
 
 ## Scope-Review Integrity Rules
 
-1. Adding a child task to a feature that is already under review invalidates that review. Both `task-create` and `work-start` enforce this: when the parent `kind=feature` is in `review`, `reviewing`, or `approved` stage and the new entry is a scoped child task (`[feature-slug][task-slug]`), the parent is automatically reverted to `development` and `meta.reviewer` is cleared. A message is printed to make the revert visible.
+1. Adding a child task to a feature that is already under review invalidates that review. Both `entry-create` and `work-start` enforce this: when the parent `kind=feature` is in `review`, `reviewing`, or `approved` stage and the new entry is a scoped child task (`[feature-slug][task-slug]`), the parent is automatically reverted to `development` and `meta.reviewer` is cleared. A message is printed to make the revert visible.
 2. Approving a feature that still has active child tasks (`kind=task` in `In progress`) or queued child tasks (`## To do`) is refused by `review-approve`. Both conditions must be resolved before the feature can be approved.
 
 ## Command Policy

@@ -34,7 +34,7 @@ use SoManAgent\Script\Backlog\Command\BacklogReviewRejectCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewReopenCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewRequestCommand;
 use SoManAgent\Script\Backlog\Command\BacklogStatusCommand;
-use SoManAgent\Script\Backlog\Command\BacklogTaskCreateCommand;
+use SoManAgent\Script\Backlog\Command\BacklogEntryCreateCommand;
 use SoManAgent\Script\Backlog\Command\BacklogTaskRemoveCommand;
 use SoManAgent\Script\Backlog\Command\BacklogTodoListCommand;
 use SoManAgent\Script\Backlog\Command\BacklogWorktreeCleanCommand;
@@ -138,7 +138,7 @@ final class BacklogCommandFactory
             BacklogCommandName::WORKTREE_LIST->value => BacklogWorktreeListCommand::class,
             BacklogCommandName::WORKTREE_CLEAN->value => BacklogWorktreeCleanCommand::class,
             BacklogCommandName::WORKTREE_RESTORE->value => BacklogWorktreeRestoreCommand::class,
-            BacklogCommandName::TASK_CREATE->value => BacklogTaskCreateCommand::class,
+            BacklogCommandName::ENTRY_CREATE->value => BacklogEntryCreateCommand::class,
             BacklogCommandName::TODO_LIST->value => BacklogTodoListCommand::class,
             BacklogCommandName::TASK_REMOVE->value => BacklogTaskRemoveCommand::class,
             BacklogCommandName::REVIEW_REQUEST->value => BacklogReviewRequestCommand::class,

@@ -12,7 +12,7 @@ namespace SoManAgent\Script\Backlog\Enum;
  *
  * Each case value is both the textual prefix (e.g. `feat` in `[feat]`) and the Git
  * branch prefix (e.g. `feat/<slug>`). Adding a type here automatically extends
- * task-create, work-start and the related documentation.
+ * entry-create, work-start and the related documentation.
  */
 enum BacklogTaskType: string
 {

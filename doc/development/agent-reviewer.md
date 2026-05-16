@@ -17,7 +17,7 @@ Read this file only when the active task requires reviewer workflow details.
 - `review-notes`
 - `feature-close`
 - `entry-merge`
-- `task-create`
+- `entry-create`
 - `todo-list`
 - `task-remove`
 - `list`
@@ -45,28 +45,28 @@ Read this file only when the active task requires reviewer workflow details.
 
 ## Command Behavior
 
-### `task-create`
+### `entry-create`
 
-1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php task-create --body-file=<path> [--position=<start|index|end>] [--index=<n>]`.
-2. By default the script appends the task to the end of the `## To do` section in `local/backlog-board.md`.
+1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --body-file=<path> [--position=<start|index|end>] [--index=<n>]`.
+2. By default the script appends the entry to the end of the `## To do` section in `local/backlog-board.md`.
 3. `--position=start` inserts at the start of `## To do`.
 4. `--position=index --index=<n>` inserts at the requested 1-based position and clamps out-of-range values to the start or the end.
-5. Keep the task title short and put the breakdown on indented sub-task lines below it. **Always include both** a type prefix (`[feat]`, `[fix]` or `[tech]`) and a `[feature-slug]` (plus `[task-slug]` for child tasks) so the queued entry is unambiguous. The type prefix may appear at any position in the leading bracket sequence.
-6. Always use `--body-file=<path>` (typically under `local/tmp/`) to pass the task body. The first non-empty line is the title; subsequent lines are each shifted by +2 spaces — top-level bullets (0 indent) land at 2 spaces in the board, standard markdown sub-bullets (2-space indent) land at 4. Write a normal markdown file and nesting is preserved. Inline positional task text is not accepted.
+5. Keep the entry title short and put the breakdown on indented sub-task lines below it. **Always include both** a type prefix (`[feat]`, `[fix]` or `[tech]`) and a `[feature-slug]` (plus `[task-slug]` for child tasks) so the queued entry is unambiguous. The type prefix may appear at any position in the leading bracket sequence.
+6. Always use `--body-file=<path>` (typically under `local/tmp/`) to pass the entry body. The first non-empty line is the title; subsequent lines are each shifted by +2 spaces — top-level bullets (0 indent) land at 2 spaces in the board, standard markdown sub-bullets (2-space indent) land at 4. Write a normal markdown file and nesting is preserved. Inline positional text is not accepted.
 7. Do not edit `local/backlog-board.md` manually.
 
 Examples:
 
 ```bash
-SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md
-SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php task-create --body-file=local/tmp/new-feature-task.md --position=index --index=2
+SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --body-file=local/tmp/new-feature-task.md
+SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --body-file=local/tmp/new-feature-task.md --position=index --index=2
 ```
 
 Rules:
 
 - Do not execute the task now.
 - Do not interrupt a developer command sequence unless the user explicitly redirects.
-- Do not edit backlog files directly when `task-create` covers the change.
+- Do not edit backlog files directly when `entry-create` covers the change.
 
 ### `todo-list`
 
@@ -222,7 +222,7 @@ Also check:
 ### `new`
 
 1. Write the task body to a file under `local/tmp/` (e.g. `local/tmp/new-task.md`). First line = title with required `[type][feature-slug]` prefix; subsequent lines = indented sub-tasks.
-2. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php task-create --body-file=local/tmp/new-task.md`.
+2. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --body-file=local/tmp/new-task.md`.
 3. Do not execute the task now.
 
 ### `review`
