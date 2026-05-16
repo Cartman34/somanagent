@@ -50,12 +50,13 @@
       "WebFetch(domain:geminicli.com)",
       "WebFetch(domain:google-gemini.github.io)",
       "Bash(rm *)",
-      "Bash(xargs -I{} php -l {})",
+      "Bash(xargs -I{} *)",
       "Bash(cat)",
       "Bash(xargs -I{} basename {})",
       "Bash(GIT_EDITOR=true git *)",
       "Bash(SOMANAGER_ROLE=* SOMANAGER_AGENT=* php *)",
-      "Bash(xargs -I {} basename {})"
+      "Bash(tmux *)",
+      "Bash(claude --version)"
     ]
   }
 }
