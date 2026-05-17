@@ -4,6 +4,8 @@ Detailed instructions for the `Reviewer / CP` role defined in `AGENTS.md`.
 
 Read this file only when the active task requires reviewer workflow details.
 
+The cross-role tooling and path rules in [`agent-workflow.md` — Tools And Paths](agent-workflow.md#tools-and-paths) apply to every action taken from this role.
+
 ## Allowed Commands
 
 - `review-check`

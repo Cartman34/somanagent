@@ -4,6 +4,13 @@ Detailed workflow reference for AI agents working on this repository.
 
 Read this file only when a task needs backlog, worktree, feature, or command behavior details beyond the summary in `AGENTS.md`.
 
+## Tools And Paths
+
+These rules apply to every agent role and every session. They override convenience: if a shortcut breaks them, do not take the shortcut.
+
+- File creation and modification go through the client's native Write or Edit tool. Shell redirections that produce or modify a file (`>`, `>>`, `tee`) are forbidden. The native tools record edits in the session diff and route through the project permissions; redirections bypass both.
+- Temporary files for a session live under `local/tmp/` of the current working directory only. `/tmp/`, `~/tmp/`, and any other absolute path outside `local/tmp/` are forbidden. Agents do not have access to `/tmp/`, and other absolute paths leak state across sessions or hosts.
+
 ## Local Source Of Truth
 
 - Backlog board: `local/backlog-board.md`
