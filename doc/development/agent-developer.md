@@ -369,8 +369,8 @@ Lorsque le launcher `start --developer` est invoqué et qu'une entrée active es
 
 Quand le stage est `approved`, le launcher invoque `entry-rebase` en mode automatique avant de décider de lancer ou non l'agent :
 
-- **Déjà à jour** : affiche "Already up to date with origin/main", exit 0 — l'agent n'est pas lancé.
-- **Rebase propre** : effectue le rebase et le push, affiche "Rebased on origin/main and pushed", exit 0 — l'agent n'est pas lancé.
+- **Déjà à jour** : affiche "Already up to date with origin/main", exit 0 — l'agent n'est pas lancé. `meta.base` est rafraîchi automatiquement.
+- **Rebase propre** : effectue le rebase et le push, affiche "Rebased on origin/main and pushed", exit 0 — l'agent n'est pas lancé. `meta.base` est rafraîchi automatiquement.
 - **Conflit** : laisse le worktree en état "rebase in progress", lance l'agent avec le prompt dédié "Le rebase de la branche est en conflit, le contexte liste les fichiers concernés ; résous les conflits puis push avec `git push --force-with-lease`".
 
 Pour résoudre manuellement un rebase en conflit sans relancer le launcher :
