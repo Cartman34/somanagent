@@ -17,4 +17,4 @@ notes:
   - 'The worktree section reports absent, clean, dirty, detached, inconsistent, orphan, or prunable.'
   - 'Task and feature next actions are printed separately so agents do not confuse task review with feature review.'
   - 'When stored reviewer notes exist for the active entry, status appends a single hint line pointing to `review-notes`. The notes themselves are never printed by `status`.'
-  - 'When at least one entry is in approved stage, a footer line is appended: "Approved entries waiting: N (run: php scripts/backlog.php user-merge)".'
+  - 'When at least one non-blocked entry is in approved stage, a footer line is appended: "Approved entries waiting: N (run: php scripts/backlog.php user-merge)". Blocked approved entries are excluded from the count.'
