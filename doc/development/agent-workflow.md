@@ -156,7 +156,7 @@ Rules:
 21. `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-merge <entry-ref>` is the recommended reviewer form for merging one explicit child task locally; `SOMANAGER_AGENT` identifies the reviewer calling the command and is never used as a developer task owner.
 22. `entry-merge <task>` is refused even when the task slug is unique, because task merges must use the full `<entry-ref>`.
 23. `SOMANAGER_ROLE=<role> SOMANAGER_AGENT=<code> php scripts/backlog.php entry-merge <entry-ref>` is the form for merging a task after an explicit user merge instruction; `<role>` is the caller role and `<code>` is the calling agent code.
-24. `entry-merge` is the sole public merge command for both tasks and features.
+24. `entry-merge` is the sole agent-facing merge command for both tasks and features. For manual user-initiated merges outside an agent session, `php scripts/backlog.php user-merge` provides an interactive alternative that lists all approved entries in board order, shows a preview (commits, diff stat, PR info), and prompts the user with y/n/d/q per entry. No SOMANAGER_ROLE or SOMANAGER_AGENT is required. Pass --dry-run for a non-interactive preview.
 25. The remote review, approval, and merge flow applies only to `kind=feature` entries and is blocked while child `kind=task` entries remain active for that feature.
 26. After a rebase, `base-update <entry-ref>` refreshes the recorded Git base without editing backlog files manually. Features update `origin/main` before using the merge base with it; local child tasks default to the merge base with their parent feature branch.
 27. Any backlog state change covered by `backlog.php` must go through `backlog.php`, never through a manual file edit.

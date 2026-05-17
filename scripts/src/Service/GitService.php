@@ -467,6 +467,38 @@ final class GitService
         throw new \RuntimeException("Remote branch did not become visible in time: {$branch}");
     }
 
+    /**
+     * Returns `git log --oneline` commits between base and head.
+     */
+    public function getLogOneline(string $base, string $head): string
+    {
+        return $this->git->logOneline($base, $head);
+    }
+
+    /**
+     * Returns `git diff --stat` between base and head.
+     */
+    public function getDiffStat(string $base, string $head): string
+    {
+        return $this->git->diffStat($base, $head);
+    }
+
+    /**
+     * Returns the full `git diff` between base and head.
+     */
+    public function getFullDiff(string $base, string $head): string
+    {
+        return $this->git->fullDiff($base, $head);
+    }
+
+    /**
+     * Returns the URL of a remote.
+     */
+    public function getRemoteUrl(string $remote = self::ORIGIN_REMOTE): string
+    {
+        return $this->git->remoteUrl($remote);
+    }
+
     private function logVerbose(string $message): void
     {
         ($this->verboseLogger)($message);

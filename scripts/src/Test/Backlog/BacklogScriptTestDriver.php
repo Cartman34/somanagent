@@ -123,6 +123,7 @@ MD);
         $this->assertOutputContains($this->runBacklog(['review-approve', '--help']), 'review-approve');
         $this->assertOutputContains($this->runBacklog(['review-reject', '--help']), 'review-reject');
         $this->assertOutputContains($this->runBacklog(['review-amend', '--help']), 'review-amend');
+        $this->assertOutputContains($this->runBacklog(['user-merge', '--help']), 'user-merge');
         // Regression: `help` and `help <command>` must be unknown commands, not silent aliases.
         $this->assertCommandIsUnknown('help');
         $this->assertBacklogFails(
@@ -1354,6 +1355,59 @@ MD);
     }
 
     /**
+     * Runs a backlog command with piped stdin for interactive testing.
+     *
+     * The global --dry-run flag is intentionally NOT added, even when context->dryRun is true:
+     * interactive tests require the command to prompt, which --dry-run suppresses.
+     * Guard with `if (!$context->dryRun)` in the campaign for tests that cause mutations.
+     *
+     * @param list<string> $arguments Backlog command arguments
+     * @param string $stdinInput Characters to pipe to stdin (e.g. "y\n", "n\n", "d\ny\n")
+     * @param array<string, string> $env Extra environment variables (e.g. BACKLOG_TEST_FORCE_INTERACTIVE=1)
+     * @return array{int, string} [exitCode, combinedOutput]
+     */
+    public function runBacklogWithPipedStdin(array $arguments, string $stdinInput, array $env = []): array
+    {
+        $command = $this->buildInteractiveBacklogCommand($arguments, $env);
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+        $process = proc_open($command, $descriptors, $pipes, $this->context->projectRoot);
+        if ($process === false) {
+            throw new \RuntimeException('Failed to launch interactive backlog process.');
+        }
+        fwrite($pipes[0], $stdinInput);
+        fclose($pipes[0]);
+        $output = (string) stream_get_contents($pipes[1]) . (string) stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $exitCode = proc_close($process);
+
+        return [$exitCode, $output];
+    }
+
+    /**
+     * Asserts that user-merge fails (exit non-zero) when given the provided stdin input.
+     *
+     * @param string $stdinInput Characters piped to stdin
+     * @param string $needle Expected substring in the failure output
+     * @param array<string, string> $env Extra environment variables
+     */
+    public function assertUserMergeWithPipedStdinFails(string $stdinInput, string $needle, array $env = []): void
+    {
+        [$exitCode, $output] = $this->runBacklogWithPipedStdin(['user-merge'], $stdinInput, $env);
+        if ($exitCode === 0) {
+            throw new \RuntimeException(sprintf(
+                "Expected user-merge to fail, but it exited 0.\n--- output ---\n%s",
+                $output,
+            ));
+        }
+        $this->assertOutputContains($output, $needle);
+    }
+
+    /**
      * Runs two backlog commands in parallel and returns their [exitCode, output] pairs.
      *
      * Both processes are launched concurrently and collected after both finish.
@@ -1465,6 +1519,43 @@ MD);
 
         if ($this->context->dryRun) {
             $parts[] = '--dry-run';
+        }
+        if ($this->context->verbose) {
+            $parts[] = '--verbose';
+        }
+
+        return implode(' ', $parts);
+    }
+
+    /**
+     * Same as buildBacklogCommand but without the global --dry-run flag.
+     *
+     * Used for interactive commands where --dry-run would suppress prompts.
+     *
+     * @param list<string> $arguments Backlog command arguments
+     * @param array<string, string> $env Environment variables
+     */
+    private function buildInteractiveBacklogCommand(array $arguments, array $env = []): string
+    {
+        $parts = [];
+        foreach ($env as $key => $value) {
+            $parts[] = sprintf('%s=%s', $key, escapeshellarg($value));
+        }
+        $parts[] = 'php scripts/backlog.php';
+        $parts[] = '--force-current-worktree';
+        foreach ($arguments as $argument) {
+            $parts[] = escapeshellarg($argument);
+        }
+        $parts[] = '--test-mode';
+        $parts[] = '--board-file';
+        $parts[] = escapeshellarg($this->relativePath($this->context->boardPath));
+        $parts[] = '--review-file';
+        $parts[] = escapeshellarg($this->relativePath($this->context->reviewPath));
+        $parts[] = '--worktree-dir';
+        $parts[] = escapeshellarg($this->relativePath($this->context->worktreesRoot));
+        if ($this->context->prBaseBranch() !== null) {
+            $parts[] = '--pr-base-branch';
+            $parts[] = escapeshellarg($this->context->prBaseBranch());
         }
         if ($this->context->verbose) {
             $parts[] = '--verbose';

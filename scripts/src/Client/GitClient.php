@@ -648,6 +648,50 @@ final class GitClient
     }
 
     /**
+     * Returns `git log --oneline` commits between base and head.
+     */
+    public function logOneline(string $base, string $head): string
+    {
+        return trim($this->captureReadonly(sprintf(
+            'git log --oneline %s..%s',
+            escapeshellarg($base),
+            escapeshellarg($head),
+        )));
+    }
+
+    /**
+     * Returns `git diff --stat` between base and head.
+     */
+    public function diffStat(string $base, string $head): string
+    {
+        return trim($this->captureReadonly(sprintf(
+            'git diff --stat %s..%s',
+            escapeshellarg($base),
+            escapeshellarg($head),
+        )));
+    }
+
+    /**
+     * Returns the full `git diff` between base and head.
+     */
+    public function fullDiff(string $base, string $head): string
+    {
+        return trim($this->captureReadonly(sprintf(
+            'git diff %s..%s',
+            escapeshellarg($base),
+            escapeshellarg($head),
+        )));
+    }
+
+    /**
+     * Returns the URL of a remote.
+     */
+    public function remoteUrl(string $remote = 'origin'): string
+    {
+        return trim($this->captureReadonly(sprintf('git remote get-url %s', escapeshellarg($remote))));
+    }
+
+    /**
      * Converts an absolute path to a path relative to the project root.
      *
      * @param string $path The path to convert

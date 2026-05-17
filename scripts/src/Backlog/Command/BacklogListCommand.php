@@ -59,5 +59,14 @@ final class BacklogListCommand extends AbstractBacklogCommand
         if (!$printed) {
             $this->presenter->displayLine('No active entry.');
         }
+
+        $approvedCount = count($this->boardService->fetchApprovedEntries($board));
+        if ($approvedCount > 0) {
+            $this->presenter->displayLine('');
+            $this->presenter->displayLine(sprintf(
+                'Approved entries waiting: %d (run: php scripts/backlog.php user-merge)',
+                $approvedCount,
+            ));
+        }
     }
 }

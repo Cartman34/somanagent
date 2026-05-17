@@ -12,6 +12,7 @@ use SoManAgent\Script\Backlog\Command\BacklogBaseUpdateCommand;
 use SoManAgent\Script\Backlog\Command\BacklogEntryAssignCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureBlockCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureCloseCommand;
+use SoManAgent\Script\Backlog\Command\BacklogUserMergeCommand;
 use SoManAgent\Script\Backlog\Command\BacklogListCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureMergeCommand;
 use SoManAgent\Script\Backlog\Command\BacklogEntryReleaseCommand;
@@ -164,6 +165,7 @@ final class BacklogCommandFactory
             BacklogCommandName::FEATURE_UNBLOCK->value => BacklogFeatureUnblockCommand::class,
             BacklogCommandName::LIST->value => BacklogListCommand::class,
             BacklogCommandName::FEATURE_CLOSE->value => BacklogFeatureCloseCommand::class,
+            BacklogCommandName::USER_MERGE->value => BacklogUserMergeCommand::class,
         ];
 
         $class = $map[$commandName] ?? null;

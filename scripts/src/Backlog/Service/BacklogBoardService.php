@@ -406,6 +406,23 @@ final class BacklogBoardService
     }
 
     /**
+     * Returns all active entries (features and tasks) in the approved stage, in board order.
+     *
+     * @return array<int, BoardEntryMatch>
+     */
+    public function fetchApprovedEntries(BacklogBoard $board): array
+    {
+        $matches = [];
+        foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $index => $entry) {
+            if ($this->getEntryStage($entry) === BacklogBoard::STAGE_APPROVED) {
+                $matches[] = new BoardEntryMatch(BacklogBoard::SECTION_ACTIVE, $index, $entry);
+            }
+        }
+
+        return $matches;
+    }
+
+    /**
      * @return array<int, BoardEntryMatch>
      */
     public function fetchFeaturesByStage(BacklogBoard $board, string $stage): array

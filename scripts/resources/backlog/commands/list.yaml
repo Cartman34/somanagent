@@ -4,3 +4,4 @@ examples:
 notes:
   - 'Each line includes the full reference (for tasks: `<feature>/<task>`), a `kind=feature` or `kind=task` indicator, and the assigned agent.'
   - 'Task entries do not have a PR; their `pr=` field is omitted.'
+  - 'When at least one entry is in approved stage, a footer line is appended: "Approved entries waiting: N (run: php scripts/backlog.php user-merge)".'

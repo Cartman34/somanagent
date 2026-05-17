@@ -59,6 +59,7 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
 
         if ($agent !== null) {
             $this->statusForAgent($board, $agent);
+            $this->displayApprovedFooter($board);
 
             return;
         }
@@ -66,11 +67,25 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
         $requestedTarget = $commandArgs[0] ?? null;
         if ($requestedTarget !== null) {
             $this->statusForFeature($board, $requestedTarget);
+            $this->displayApprovedFooter($board);
 
             return;
         }
 
         $this->statusGeneral($board);
+        $this->displayApprovedFooter($board);
+    }
+
+    private function displayApprovedFooter(BacklogBoard $board): void
+    {
+        $approvedCount = count($this->boardService->fetchApprovedEntries($board));
+        if ($approvedCount > 0) {
+            $this->presenter->displayLine('');
+            $this->presenter->displayLine(sprintf(
+                'Approved entries waiting: %d (run: php scripts/backlog.php user-merge)',
+                $approvedCount,
+            ));
+        }
     }
 
     private function statusGeneral(BacklogBoard $board): void
