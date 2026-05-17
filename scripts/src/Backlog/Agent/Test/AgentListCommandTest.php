@@ -17,6 +17,7 @@ use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Client\FilesystemClient;
 use SoManAgent\Script\Console;
 use SoManAgent\Script\TextSlugger;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Command-level tests for {@see AgentListCommand}.
@@ -146,16 +147,16 @@ final class AgentListCommandTest
         $service = new AgentSessionService($dir);
         $service->add($this->makeSession('d01', AgentRole::DEVELOPER, pid: getmypid() ?: 1));
 
-        $boardPath = $dir . '/board.md';
+        $boardPath = $dir . '/board.yaml';
         $this->writeBoard($boardPath, [
-            '- some-feature',
-            '  meta:',
-            '    kind: feature',
-            '    feature: some-feature',
-            '    branch: feat/some-feature',
-            '    type: feat',
-            '    stage: development',
-            '    agent: d01',
+            [
+                'kind' => 'feature',
+                'stage' => 'development',
+                'feature' => 'some-feature',
+                'agent' => 'd01',
+                'branch' => 'feat/some-feature',
+                'type' => 'feat',
+            ],
         ]);
 
         $output = $this->captureHandle($this->buildCommand($service, $dir, $boardPath), []);
@@ -174,17 +175,17 @@ final class AgentListCommandTest
         $service = new AgentSessionService($dir);
         $service->add($this->makeSession('r01', AgentRole::REVIEWER, pid: getmypid() ?: 1));
 
-        $boardPath = $dir . '/board.md';
+        $boardPath = $dir . '/board.yaml';
         $this->writeBoard($boardPath, [
-            '- review-feature',
-            '  meta:',
-            '    kind: feature',
-            '    feature: review-feature',
-            '    branch: feat/review-feature',
-            '    type: feat',
-            '    stage: reviewing',
-            '    agent: d02',
-            '    reviewer: r01',
+            [
+                'kind' => 'feature',
+                'stage' => 'reviewing',
+                'feature' => 'review-feature',
+                'agent' => 'd02',
+                'reviewer' => 'r01',
+                'branch' => 'feat/review-feature',
+                'type' => 'feat',
+            ],
         ]);
 
         $output = $this->captureHandle($this->buildCommand($service, $dir, $boardPath), []);
@@ -213,7 +214,7 @@ final class AgentListCommandTest
             sessionId: null,
         ));
 
-        $boardPath = $dir . '/board.md';
+        $boardPath = $dir . '/board.yaml';
         $this->writeBoard($boardPath, []);
 
         $output = $this->captureHandle($this->buildCommand($service, $dir, $boardPath), ['all' => true]);
@@ -410,16 +411,29 @@ final class AgentListCommandTest
     }
 
     /**
-     * Writes a minimal backlog board file with the given active entry lines.
+     * Writes a YAML backlog board file with the given active entries.
      *
-     * @param list<string> $activeLines
+     * @param list<array<string, mixed>> $activeEntries
      */
-    private function writeBoard(string $path, array $activeLines): void
+    private function writeBoard(string $path, array $activeEntries): void
     {
-        $content = "# Test backlog\n\n## To do\n\n## In progress\n\n"
-            . implode("\n", $activeLines)
-            . "\n\n## Suggestions\n";
-        file_put_contents($path, $content);
+        $order = ['kind', 'stage', 'feature', 'task', 'agent', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type'];
+        $active = [];
+        foreach ($activeEntries as $entry) {
+            $item = [];
+            foreach ($order as $key) {
+                if (array_key_exists($key, $entry)) {
+                    $item[$key] = $entry[$key];
+                }
+            }
+            $item['title'] = $entry['title'] ?? ($entry['feature'] ?? '');
+            $active[] = $item;
+        }
+        file_put_contents($path, Yaml::dump([
+            'version' => 1,
+            'todo' => [],
+            'active' => $active,
+        ], 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE));
     }
 
     /**

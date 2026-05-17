@@ -12,6 +12,7 @@ use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Client\FilesystemClient;
 use SoManAgent\Script\Console;
 use SoManAgent\Script\TextSlugger;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Command-level tests for {@see AgentWhoamiCommand}.
@@ -87,16 +88,16 @@ final class AgentWhoamiCommandTest
         $this->setEnv('SOMANAGER_ROLE', 'developer');
         $this->setEnv('SOMANAGER_CLIENT', 'claude');
 
-        $boardPath = $this->tmpDir . '/dev-board-' . uniqid('', true) . '.md';
+        $boardPath = $this->tmpDir . '/dev-board-' . uniqid('', true) . '.yaml';
         $this->writeBoard($boardPath, [
-            '- payments-feature',
-            '  meta:',
-            '    kind: feature',
-            '    feature: payments-feature',
-            '    branch: feat/payments-feature',
-            '    type: feat',
-            '    stage: development',
-            '    agent: d01',
+            [
+                'kind' => 'feature',
+                'stage' => 'development',
+                'feature' => 'payments-feature',
+                'agent' => 'd01',
+                'branch' => 'feat/payments-feature',
+                'type' => 'feat',
+            ],
         ]);
 
         $output = $this->captureHandle($this->buildCommand($boardPath));
@@ -120,17 +121,17 @@ final class AgentWhoamiCommandTest
         $this->setEnv('SOMANAGER_ROLE', 'reviewer');
         $this->setEnv('SOMANAGER_CLIENT', 'codex');
 
-        $boardPath = $this->tmpDir . '/rev-board-' . uniqid('', true) . '.md';
+        $boardPath = $this->tmpDir . '/rev-board-' . uniqid('', true) . '.yaml';
         $this->writeBoard($boardPath, [
-            '- crypto-feature',
-            '  meta:',
-            '    kind: feature',
-            '    feature: crypto-feature',
-            '    branch: feat/crypto-feature',
-            '    type: feat',
-            '    stage: reviewing',
-            '    agent: d04',
-            '    reviewer: r01',
+            [
+                'kind' => 'feature',
+                'stage' => 'reviewing',
+                'feature' => 'crypto-feature',
+                'agent' => 'd04',
+                'reviewer' => 'r01',
+                'branch' => 'feat/crypto-feature',
+                'type' => 'feat',
+            ],
         ]);
 
         $output = $this->captureHandle($this->buildCommand($boardPath));
@@ -153,7 +154,7 @@ final class AgentWhoamiCommandTest
         $this->setEnv('SOMANAGER_CLIENT', 'gemini');
 
         // Empty board: manager must still be identified without any active backlog entry.
-        $boardPath = $this->tmpDir . '/mgr-board-' . uniqid('', true) . '.md';
+        $boardPath = $this->tmpDir . '/mgr-board-' . uniqid('', true) . '.yaml';
         $this->writeBoard($boardPath, []);
 
         $output = $this->captureHandle($this->buildCommand($boardPath));
@@ -194,13 +195,27 @@ final class AgentWhoamiCommandTest
     }
 
     /**
-     * @param list<string> $activeLines
+     * @param list<array<string, mixed>> $activeEntries
      */
-    private function writeBoard(string $path, array $activeLines): void
+    private function writeBoard(string $path, array $activeEntries): void
     {
-        $body = $activeLines === [] ? '' : "\n" . implode("\n", $activeLines) . "\n";
-        $content = "# Test backlog\n\n## To do\n\n## In progress\n{$body}\n## Suggestions\n";
-        file_put_contents($path, $content);
+        $order = ['kind', 'stage', 'feature', 'task', 'agent', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type'];
+        $active = [];
+        foreach ($activeEntries as $entry) {
+            $item = [];
+            foreach ($order as $key) {
+                if (array_key_exists($key, $entry)) {
+                    $item[$key] = $entry[$key];
+                }
+            }
+            $item['title'] = $entry['title'] ?? ($entry['feature'] ?? '');
+            $active[] = $item;
+        }
+        file_put_contents($path, Yaml::dump([
+            'version' => 1,
+            'todo' => [],
+            'active' => $active,
+        ], 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE));
     }
 
     private function setEnv(string $name, string $value): void

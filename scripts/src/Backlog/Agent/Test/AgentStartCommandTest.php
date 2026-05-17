@@ -23,6 +23,7 @@ use SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use Symfony\Component\Yaml\Yaml;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 use SoManAgent\Script\Backlog\Service\EntryRebaseResult;
 use SoManAgent\Script\Application;
@@ -227,14 +228,14 @@ final class AgentStartCommandTest
     private function testTierOverrideIsForwardedToLauncher(): int
     {
         $projectRoot = $this->createGitProject('model-tier');
-        $this->writeBoard($projectRoot . '/local/backlog-board.md', [
-            '- tier-feature',
-            '  meta:',
-            '    kind: feature',
-            '    feature: tier-feature',
-            '    branch: feat/tier-feature',
-            '    stage: development',
-            '    agent: d11',
+        $this->writeBoard($projectRoot . '/local/backlog-board.yaml', [
+            [
+                'kind' => 'feature',
+                'stage' => 'development',
+                'feature' => 'tier-feature',
+                'agent' => 'd11',
+                'branch' => 'feat/tier-feature',
+            ],
         ]);
         $launcher = new FakeAgentClientLauncher(AgentClient::CODEX);
         $cmd = $this->buildProjectCommand($projectRoot, $launcher, $this->buildModelResolver());
@@ -263,14 +264,14 @@ final class AgentStartCommandTest
     private function testClaudeEffortOverrideIsForwardedToLauncher(): int
     {
         $projectRoot = $this->createGitProject('model-effort');
-        $this->writeBoard($projectRoot . '/local/backlog-board.md', [
-            '- effort-feature',
-            '  meta:',
-            '    kind: feature',
-            '    feature: effort-feature',
-            '    branch: feat/effort-feature',
-            '    stage: development',
-            '    agent: d12',
+        $this->writeBoard($projectRoot . '/local/backlog-board.yaml', [
+            [
+                'kind' => 'feature',
+                'stage' => 'development',
+                'feature' => 'effort-feature',
+                'agent' => 'd12',
+                'branch' => 'feat/effort-feature',
+            ],
         ]);
         $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
         $cmd = $this->buildProjectCommand($projectRoot, $launcher, $this->buildModelResolver());
@@ -299,14 +300,14 @@ final class AgentStartCommandTest
     private function testGeminiEffortOverridePrintsWarningWithoutEffortArg(): int
     {
         $projectRoot = $this->createGitProject('model-gemini-warning');
-        $this->writeBoard($projectRoot . '/local/backlog-board.md', [
-            '- gemini-feature',
-            '  meta:',
-            '    kind: feature',
-            '    feature: gemini-feature',
-            '    branch: feat/gemini-feature',
-            '    stage: development',
-            '    agent: d13',
+        $this->writeBoard($projectRoot . '/local/backlog-board.yaml', [
+            [
+                'kind' => 'feature',
+                'stage' => 'development',
+                'feature' => 'gemini-feature',
+                'agent' => 'd13',
+                'branch' => 'feat/gemini-feature',
+            ],
         ]);
         $launcher = new FakeAgentClientLauncher(AgentClient::GEMINI);
         $cmd = $this->buildProjectCommand($projectRoot, $launcher, $this->buildModelResolver());
@@ -350,22 +351,22 @@ final class AgentStartCommandTest
         // The launch is mocked; we only assert the framework calls the launcher with the
         // developer WA stored on the entry and updates sessions.json.
         $dir = $this->scratchDir('reviewer-reuse');
-        $boardPath = $dir . '/board.md';
+        $boardPath = $dir . '/board.yaml';
         $worktreesRoot = $dir . '/worktrees';
         $devWa = $worktreesRoot . '/d04';
         mkdir($worktreesRoot, 0755, true);
         mkdir($devWa, 0755, true);
 
         $this->writeBoard($boardPath, [
-            '- crypto-feature',
-            '  meta:',
-            '    kind: feature',
-            '    feature: crypto-feature',
-            '    branch: feat/crypto-feature',
-            '    type: feat',
-            '    stage: reviewing',
-            '    agent: d04',
-            '    reviewer: r01',
+            [
+                'kind' => 'feature',
+                'stage' => 'reviewing',
+                'feature' => 'crypto-feature',
+                'agent' => 'd04',
+                'reviewer' => 'r01',
+                'branch' => 'feat/crypto-feature',
+                'type' => 'feat',
+            ],
         ]);
 
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
@@ -462,20 +463,20 @@ final class AgentStartCommandTest
         // A reviewer picking up a fresh review entry must delegate the review→reviewing
         // transition to BacklogCommandRunner::reviewNext(), not mutate the board directly.
         $dir = $this->scratchDir('reviewer-takes');
-        $boardPath = $dir . '/board.md';
+        $boardPath = $dir . '/board.yaml';
         $worktreesRoot = $dir . '/worktrees';
         $devWa = $worktreesRoot . '/d04';
         mkdir($devWa, 0755, true);
 
         $this->writeBoard($boardPath, [
-            '- crypto-feature',
-            '  meta:',
-            '    kind: feature',
-            '    feature: crypto-feature',
-            '    branch: feat/crypto-feature',
-            '    type: feat',
-            '    stage: review',
-            '    agent: d04',
+            [
+                'kind' => 'feature',
+                'stage' => 'review',
+                'feature' => 'crypto-feature',
+                'agent' => 'd04',
+                'branch' => 'feat/crypto-feature',
+                'type' => 'feat',
+            ],
         ]);
 
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
@@ -576,20 +577,20 @@ final class AgentStartCommandTest
         // When launcher.prepareWorktree() fails after review-next succeeded, the command
         // must call BacklogCommandRunner::reviewCancel(), not mutate the board directly.
         $dir = $this->scratchDir('reviewer-rollback');
-        $boardPath = $dir . '/board.md';
+        $boardPath = $dir . '/board.yaml';
         $worktreesRoot = $dir . '/worktrees';
         $devWa = $worktreesRoot . '/d04';
         mkdir($devWa, 0755, true);
 
         $this->writeBoard($boardPath, [
-            '- crypto-feature',
-            '  meta:',
-            '    kind: feature',
-            '    feature: crypto-feature',
-            '    branch: feat/crypto-feature',
-            '    type: feat',
-            '    stage: review',
-            '    agent: d04',
+            [
+                'kind' => 'feature',
+                'stage' => 'review',
+                'feature' => 'crypto-feature',
+                'agent' => 'd04',
+                'branch' => 'feat/crypto-feature',
+                'type' => 'feat',
+            ],
         ]);
 
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
@@ -698,20 +699,20 @@ final class AgentStartCommandTest
     {
         // Reviewer must start on a WA that already has an active developer session — no exception.
         $dir = $this->scratchDir('reviewer-with-dev');
-        $boardPath = $dir . '/board.md';
+        $boardPath = $dir . '/board.yaml';
         $worktreesRoot = $dir . '/worktrees';
         $devWa = $worktreesRoot . '/d04';
         mkdir($devWa, 0755, true);
 
         $this->writeBoard($boardPath, [
-            '- crypto-feature',
-            '  meta:',
-            '    kind: feature',
-            '    feature: crypto-feature',
-            '    branch: feat/crypto-feature',
-            '    type: feat',
-            '    stage: review',
-            '    agent: d04',
+            [
+                'kind' => 'feature',
+                'stage' => 'review',
+                'feature' => 'crypto-feature',
+                'agent' => 'd04',
+                'branch' => 'feat/crypto-feature',
+                'type' => 'feat',
+            ],
         ]);
 
         // Developer d04 has an active session in the target WA.
@@ -797,20 +798,20 @@ final class AgentStartCommandTest
     {
         // Another reviewer (r99) already holds the WA — r01 must be refused without --force.
         $dir = $this->scratchDir('reviewer-conflict');
-        $boardPath = $dir . '/board.md';
+        $boardPath = $dir . '/board.yaml';
         $worktreesRoot = $dir . '/worktrees';
         $devWa = $worktreesRoot . '/d04';
         mkdir($devWa, 0755, true);
 
         $this->writeBoard($boardPath, [
-            '- crypto-feature',
-            '  meta:',
-            '    kind: feature',
-            '    feature: crypto-feature',
-            '    branch: feat/crypto-feature',
-            '    type: feat',
-            '    stage: review',
-            '    agent: d04',
+            [
+                'kind' => 'feature',
+                'stage' => 'review',
+                'feature' => 'crypto-feature',
+                'agent' => 'd04',
+                'branch' => 'feat/crypto-feature',
+                'type' => 'feat',
+            ],
         ]);
 
         // Reviewer r99 has an active session in the target WA.
@@ -908,7 +909,7 @@ final class AgentStartCommandTest
     {
         $projectRoot = $this->createGitProject('reset-dirty');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $worktree = $worktreesRoot . '/d05';
         if (!is_dir(dirname($boardPath))) {
             mkdir(dirname($boardPath), 0755, true);
@@ -967,16 +968,16 @@ final class AgentStartCommandTest
     {
         $projectRoot = $this->createGitProject('reset-clean');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $worktree = $worktreesRoot . '/d06';
         $this->writeBoard($boardPath, [
-            '- reset-feature',
-            '  meta:',
-            '    kind: feature',
-            '    feature: reset-feature',
-            '    branch: feat/reset-feature',
-            '    stage: development',
-            '    agent: d06',
+            [
+                'kind' => 'feature',
+                'stage' => 'development',
+                'feature' => 'reset-feature',
+                'agent' => 'd06',
+                'branch' => 'feat/reset-feature',
+            ],
         ]);
         $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' worktree add --detach ' . escapeshellarg($worktree) . ' HEAD');
 
@@ -1038,16 +1039,16 @@ final class AgentStartCommandTest
         // the sessions.json entry must be kept so stop/list/status/resume can still reach the session.
         $projectRoot = $this->createGitProject('detach-keep');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $worktree = $worktreesRoot . '/d07';
         $this->writeBoard($boardPath, [
-            '- detach-feature',
-            '  meta:',
-            '    kind: feature',
-            '    feature: detach-feature',
-            '    branch: feat/detach-feature',
-            '    stage: development',
-            '    agent: d07',
+            [
+                'kind' => 'feature',
+                'stage' => 'development',
+                'feature' => 'detach-feature',
+                'agent' => 'd07',
+                'branch' => 'feat/detach-feature',
+            ],
         ]);
         $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' worktree add --detach ' . escapeshellarg($worktree) . ' HEAD');
 
@@ -1121,14 +1122,11 @@ final class AgentStartCommandTest
         // start --developer must call work-start with the task's entry ref.
         $projectRoot = $this->createGitProject('dev-auto-pick');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
 
-        $this->writeBoard($boardPath, []);
-        file_put_contents($boardPath,
-            "# Test backlog\n\n## To do\n\n"
-            . "- [feat][my-feature] Auto-pick task\n\n"
-            . "## In progress\n\n\n## Suggestions\n"
-        );
+        $this->writeBoard($boardPath, [], [
+            ['feature' => 'my-feature', 'type' => 'feat', 'title' => 'Auto-pick task'],
+        ]);
 
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         $sessionService = new AgentSessionService($projectRoot);
@@ -1209,7 +1207,7 @@ final class AgentStartCommandTest
         $registry->register($launcher);
         $fakeRunner = new FakeBacklogCommandRunner();
 
-        $boardPath = $this->tmpDir . '/board-empty.md';
+        $boardPath = $this->tmpDir . '/board-empty.yaml';
         $this->writeBoard($boardPath, []);
 
         $cmd = new AgentStartCommand(
@@ -1259,21 +1257,19 @@ final class AgentStartCommandTest
         // When the developer already has an active entry, start must not call work-start.
         $projectRoot = $this->createGitProject('dev-skip-pick');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
 
-        file_put_contents($boardPath,
-            "# Test backlog\n\n## To do\n\n"
-            . "- [feat][queued-feature] A queued task\n\n"
-            . "## In progress\n\n"
-            . "- active-feature\n"
-            . "  meta:\n"
-            . "    kind: feature\n"
-            . "    feature: active-feature\n"
-            . "    branch: feat/active-feature\n"
-            . "    stage: development\n"
-            . "    agent: d09\n\n"
-            . "## Suggestions\n"
-        );
+        $this->writeBoard($boardPath, [
+            [
+                'kind' => 'feature',
+                'stage' => 'development',
+                'feature' => 'active-feature',
+                'agent' => 'd09',
+                'branch' => 'feat/active-feature',
+            ],
+        ], [
+            ['feature' => 'queued-feature', 'type' => 'feat', 'title' => 'A queued task'],
+        ]);
 
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         $sessionService = new AgentSessionService($projectRoot);
@@ -1339,13 +1335,11 @@ final class AgentStartCommandTest
         // must call BacklogCommandRunner::entryRelease() to roll back the taken task.
         $projectRoot = $this->createGitProject('dev-rollback');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
 
-        file_put_contents($boardPath,
-            "# Test backlog\n\n## To do\n\n"
-            . "- [feat][rollback-feature] Task to auto-pick\n\n"
-            . "## In progress\n\n\n## Suggestions\n"
-        );
+        $this->writeBoard($boardPath, [], [
+            ['feature' => 'rollback-feature', 'type' => 'feat', 'title' => 'Task to auto-pick'],
+        ]);
 
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         $sessionService = new AgentSessionService($projectRoot);
@@ -1421,17 +1415,17 @@ final class AgentStartCommandTest
         // do not inherit a stale (potentially deleted) directory.
         $projectRoot = $this->createGitProject('cwd-restore-success');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $worktree = $worktreesRoot . '/d14';
 
         $this->writeBoard($boardPath, [
-            '- cwd-feature',
-            '  meta:',
-            '    kind: feature',
-            '    feature: cwd-feature',
-            '    branch: feat/cwd-feature',
-            '    stage: development',
-            '    agent: d14',
+            [
+                'kind' => 'feature',
+                'stage' => 'development',
+                'feature' => 'cwd-feature',
+                'agent' => 'd14',
+                'branch' => 'feat/cwd-feature',
+            ],
         ]);
         $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' worktree add --detach ' . escapeshellarg($worktree) . ' HEAD');
 
@@ -1491,17 +1485,17 @@ final class AgentStartCommandTest
         // cwd — not the deleted worktree — so no "getcwd() failed" noise is emitted to the terminal.
         $projectRoot = $this->createGitProject('cwd-restore-deleted-wa');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $worktree = $worktreesRoot . '/d15';
 
         $this->writeBoard($boardPath, [
-            '- cwd-del-feature',
-            '  meta:',
-            '    kind: feature',
-            '    feature: cwd-del-feature',
-            '    branch: feat/cwd-del-feature',
-            '    stage: development',
-            '    agent: d15',
+            [
+                'kind' => 'feature',
+                'stage' => 'development',
+                'feature' => 'cwd-del-feature',
+                'agent' => 'd15',
+                'branch' => 'feat/cwd-del-feature',
+            ],
         ]);
         $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' worktree add --detach ' . escapeshellarg($worktree) . ' HEAD');
 
@@ -1877,19 +1871,19 @@ final class AgentStartCommandTest
         $codeService = new AgentCodeService(
             $this->tmpDir,
             $this->tmpDir . '/worktrees',
-            $this->tmpDir . '/board.md',
+            $this->tmpDir . '/board.yaml',
             $boardService,
             $sessionService,
             new FakeProcessSignaler(),
         );
-        $contextBuilder = new AgentContextBuilder($this->tmpDir, $this->tmpDir . '/board.md', $boardService);
+        $contextBuilder = new AgentContextBuilder($this->tmpDir, $this->tmpDir . '/board.yaml', $boardService);
         $worktreeService = (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor();
         $reviewerSelector = new AgentReviewerSelector($boardService, $sessionService, $this->tmpDir . '/worktrees');
 
         return new AgentStartCommand(
             $this->tmpDir,
             $this->tmpDir . '/worktrees',
-            $this->tmpDir . '/board.md',
+            $this->tmpDir . '/board.yaml',
             $registry,
             $codeService,
             $sessionService,
@@ -1912,7 +1906,7 @@ final class AgentStartCommandTest
         AgentClientLauncher $launcher,
         ?AgentModelResolver $modelResolver = null,
     ): AgentStartCommand {
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         $sessionService = new AgentSessionService($projectRoot);
@@ -1951,14 +1945,69 @@ final class AgentStartCommandTest
     }
 
     /**
-     * @param list<string> $activeLines
+     * Writes a YAML backlog board.
+     *
+     * @param array<int, array<string, mixed>> $activeEntries Each entry: associative array with kind/stage/feature/etc.
+     * @param array<int, array<string, mixed>> $todoEntries   Each entry: feature/task/type/title/agent
      */
-    private function writeBoard(string $path, array $activeLines): void
+    private function writeBoard(string $path, array $activeEntries, array $todoEntries = []): void
     {
-        $content = "# Test backlog\n\n## To do\n\n## In progress\n\n"
-            . implode("\n", $activeLines)
-            . "\n\n## Suggestions\n";
-        file_put_contents($path, $content);
+        $data = [
+            'version' => 1,
+            'todo' => array_map([$this, 'normalizeTodoEntry'], $todoEntries),
+            'active' => array_map([$this, 'normalizeActiveEntry'], $activeEntries),
+        ];
+        file_put_contents($path, Yaml::dump($data, 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE));
+    }
+
+    /**
+     * @param array<string, mixed> $entry
+     * @return array<string, mixed>
+     */
+    private function normalizeActiveEntry(array $entry): array
+    {
+        $order = ['kind', 'stage', 'feature', 'task', 'agent', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type'];
+        $result = [];
+        foreach ($order as $key) {
+            if (array_key_exists($key, $entry)) {
+                $result[$key] = $entry[$key];
+            }
+        }
+        $result['title'] = $entry['title'] ?? ($entry['feature'] ?? '');
+        if (array_key_exists('body', $entry)) {
+            $result['body'] = $entry['body'];
+        }
+        foreach ($entry as $key => $value) {
+            if (!array_key_exists($key, $result) && $key !== 'title' && $key !== 'body') {
+                $result[$key] = $value;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param array<string, mixed> $entry
+     * @return array<string, mixed>
+     */
+    private function normalizeTodoEntry(array $entry): array
+    {
+        $result = ['feature' => $entry['feature']];
+        if (array_key_exists('task', $entry)) {
+            $result['task'] = $entry['task'];
+        }
+        if (array_key_exists('agent', $entry)) {
+            $result['agent'] = $entry['agent'];
+        }
+        if (array_key_exists('type', $entry)) {
+            $result['type'] = $entry['type'];
+        }
+        $result['title'] = $entry['title'] ?? $entry['feature'];
+        if (array_key_exists('body', $entry)) {
+            $result['body'] = $entry['body'];
+        }
+
+        return $result;
     }
 
     private function scratchDir(string $label): string

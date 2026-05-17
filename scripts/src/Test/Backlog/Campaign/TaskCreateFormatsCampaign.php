@@ -13,12 +13,10 @@ use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
 /**
  * Task creation formats campaign.
  *
- * Covers the supported entry-create input shapes, all via --body-file=<path>:
- * single-line title with optional type prefix ([feat] / [fix] / [tech]),
- * feature/task scoped prefix, type prefix at any position in the leading bracket
- * sequence, multi-line body with sub-tasks, and bullet-leading body file.
- * Also covers rejection of inline positional text, missing --body-file,
- * duplicate type prefix, missing scope, and out-of-range --index clamping.
+ * Covers the supported entry-create input shapes via --feature / --task / --type / --body-file:
+ * plain feature, scoped feature/task with each valid type (feat / fix / tech), multi-line body,
+ * and rejection cases: missing --feature, missing --type, missing --body-file, unknown --type,
+ * --body-file path does not exist, legacy bracket prefix in title, and out-of-range --index clamping.
  */
 final class TaskCreateFormatsCampaign implements CampaignInterface
 {
@@ -29,135 +27,123 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
 
     public function run(BacklogScriptTestDriver $driver, BacklogScriptTestContext $context): void
     {
+        // Plain feature entry — each valid type prefix.
         foreach (['feat', 'fix', 'tech'] as $type) {
-            $driver->createTodoTask(sprintf('[%s][test-%s-single] Single-line %s task', $type, $type, $type));
+            $slug = sprintf('test-%s-single', $type);
+            $bodyFile = $driver->createBodyFile("entry-create-{$type}-single.md", [sprintf('Single-line %s task', $type)]);
+            $driver->runBacklog(['entry-create', "--feature={$slug}", "--type={$type}", "--body-file={$bodyFile}"]);
             $driver->assertBoardTodoBlock([
-                sprintf('- [test-%s-single] Single-line %s task', $type, $type),
-                '  meta:',
-                sprintf('    type: %s', $type),
+                "  - feature: {$slug}",
+                "    type: {$type}",
+                sprintf("    title: 'Single-line %s task'", $type),
             ]);
-            $driver->removeFirstTodoTask();
+            $driver->removeTodoTask($slug);
         }
 
-        $driver->createTodoTask('[scope-feature][scope-task] Scoped task title');
-        $driver->assertTodoContains('[scope-feature][scope-task] Scoped task title');
+        // Scoped feature/task entry with explicit type.
+        $bodyFile = $driver->createBodyFile('entry-create-scoped.md', ['Scoped task title']);
+        $driver->runBacklog(['entry-create', '--feature=scope-feature', '--task=scope-task', '--type=feat', "--body-file={$bodyFile}"]);
         $driver->assertBoardTodoBlock([
-            '- [scope-feature][scope-task] Scoped task title',
-        ]);
-        $driver->removeFirstTodoTask();
-
-        $driver->createTodoTask('[tech][backlog-entry-types] Type-leading scoped feature');
-        $driver->assertBoardTodoBlock([
-            '- [backlog-entry-types] Type-leading scoped feature',
-            '  meta:',
-            '    type: tech',
-        ]);
-        $driver->removeFirstTodoTask();
-
-        $driver->createTodoTask('[backlog-entry-types][tech] Type-trailing single feature');
-        $driver->assertBoardTodoBlock([
-            '- [backlog-entry-types] Type-trailing single feature',
-            '  meta:',
-            '    type: tech',
-        ]);
-        $driver->removeFirstTodoTask();
-
-        $driver->createTodoTask('[backlog-entry-types][child-task][tech] Type-trailing scoped child task');
-        $driver->assertBoardTodoBlock([
-            '- [backlog-entry-types][child-task] Type-trailing scoped child task',
-            '  meta:',
-            '    type: tech',
-        ]);
-        $driver->removeFirstTodoTask();
-
-        $multilineInline = "[feat][multiline-feature][multiline-task] Multiline inline task title\n  - First sub-task\n  - Second sub-task";
-        $driver->createTodoTask($multilineInline);
-        $driver->assertTodoContains('Multiline inline task title');
-        $driver->assertBoardTodoBlock([
-            '- [multiline-feature][multiline-task] Multiline inline task title',
-            '    - First sub-task',
-            '    - Second sub-task',
-            '  meta:',
+            '  - feature: scope-feature',
+            '    task: scope-task',
             '    type: feat',
+            "    title: 'Scoped task title'",
         ]);
-        $driver->removeFirstTodoTask();
+        $driver->removeTodoTask('scope-feature/scope-task');
 
-        $bodyFilePath = $driver->createTodoTaskFromBodyFile([
-            '[tech][body-file-feature][body-file-task] Body file task title',
+        // Type stored when feature has the same slug as the type keyword.
+        $bodyFile = $driver->createBodyFile('entry-create-type-leading.md', ['Type-leading scoped feature']);
+        $driver->runBacklog(['entry-create', '--feature=backlog-entry-types', '--type=tech', "--body-file={$bodyFile}"]);
+        $driver->assertBoardTodoBlock([
+            '  - feature: backlog-entry-types',
+            '    type: tech',
+            "    title: 'Type-leading scoped feature'",
+        ]);
+        $driver->removeTodoTask('backlog-entry-types');
+
+        // Scoped task with type.
+        $bodyFile = $driver->createBodyFile('entry-create-scoped-type.md', ['Type-leading scoped child task']);
+        $driver->runBacklog(['entry-create', '--feature=backlog-entry-types', '--task=child-task', '--type=tech', "--body-file={$bodyFile}"]);
+        $driver->assertBoardTodoBlock([
+            '  - feature: backlog-entry-types',
+            '    task: child-task',
+            '    type: tech',
+            "    title: 'Type-leading scoped child task'",
+        ]);
+        $driver->removeTodoTask('backlog-entry-types/child-task');
+
+        // Multi-line body via body file.
+        $multilineBodyFile = $driver->createBodyFile('entry-create-body-file.md', [
+            'Body file task title',
             '  - Sub-task one',
             '  - Sub-task two',
             '  - Sub-task three',
-        ], 'entry-create-body-file.md');
+        ]);
+        $driver->runBacklog(['entry-create', '--feature=body-file-feature', '--task=body-file-task', '--type=tech', "--body-file={$multilineBodyFile}"]);
         $driver->assertBoardTodoBlock([
-            '- [body-file-feature][body-file-task] Body file task title',
-            '    - Sub-task one',
-            '    - Sub-task two',
-            '    - Sub-task three',
-            '  meta:',
+            '  - feature: body-file-feature',
+            '    task: body-file-task',
             '    type: tech',
+            "    title: 'Body file task title'",
         ]);
-        $driver->removeFirstTodoTask();
+        $driver->assertBoardContains('- Sub-task one');
+        $driver->assertBoardContains('- Sub-task two');
+        $driver->assertBoardContains('- Sub-task three');
+        $driver->removeTodoTask('body-file-feature/body-file-task');
 
-        $driver->createTodoTaskFromBodyFile([
-            '- [feat][test-bullet-feature] Bullet leading body file task',
-            'Unindented sub-task that should be auto-indented',
-        ], 'entry-create-body-file-bullet.md');
-        $driver->assertBoardTodoBlock([
-            '- [test-bullet-feature] Bullet leading body file task',
-            '  Unindented sub-task that should be auto-indented',
-            '  meta:',
-            '    type: feat',
-        ]);
-        $driver->removeFirstTodoTask();
-
-        // Standard markdown nesting: top-level bullet (0 indent) and sub-bullet (2 spaces)
-        // must land at 2 and 4 spaces in the board respectively after the uniform +2 shift.
-        $driver->createTodoTaskFromBodyFile([
-            '[markdown-nesting-feature] Standard markdown nesting task',
-            '- Top-level item',
-            '  - Sub-level item',
-        ], 'entry-create-markdown-nesting.md');
-        $driver->assertBoardTodoBlock([
-            '- [markdown-nesting-feature] Standard markdown nesting task',
-            '  - Top-level item',
-            '    - Sub-level item',
-        ]);
-        $driver->removeFirstTodoTask();
-
-        // Rejection: duplicate type prefix via body file.
-        $dupTypeFile = $driver->createBodyFile('entry-create-dup-type.md', ['[feat][fix] Duplicate type']);
-        $driver->assertTaskCreateFails(
-            'Duplicate task type prefix',
-            ['--body-file=' . $dupTypeFile],
-        );
-
-        // Rejection: inline positional text is no longer accepted (with or without --body-file).
+        // Rejection: inline positional text is not accepted.
         $driver->assertTaskCreateFails(
             'entry-create no longer accepts inline task text',
             ['[positional-only] Should fail'],
         );
-        $driver->assertTaskCreateFails(
-            'entry-create no longer accepts inline task text',
-            ['Positional should not be allowed', '--body-file=' . $bodyFilePath],
-        );
 
-        // Rejection: no --body-file and no positional text.
+        // Rejection: no --body-file.
         $driver->assertTaskCreateFails(
             'entry-create requires --body-file=<path>',
+            ['--feature=missing-body-feature', '--type=feat'],
+        );
+
+        // Rejection: no --feature at all.
+        $driver->assertTaskCreateFails(
+            'entry-create requires --feature=<slug>',
             [],
         );
 
+        // Rejection: no --type at all.
+        $missingTypeFile = $driver->createBodyFile('entry-create-missing-type.md', ['Title without type']);
+        $driver->assertTaskCreateFails(
+            'entry-create requires --type=<feat, fix, tech>',
+            ['--feature=missing-type-feature', "--body-file={$missingTypeFile}"],
+        );
+
+        // Rejection: --body-file path does not exist.
         $driver->assertTaskCreateFails(
             '--body-file path does not exist',
-            ['--body-file=local/tests/entry-create-missing-body-file.md'],
+            ['--feature=some-feature', '--type=feat', '--body-file=/nonexistent/path/entry-create-missing-body-file.md'],
+        );
+
+        // Rejection: unknown --type value.
+        $unknownTypeFile = $driver->createBodyFile('entry-create-unknown-type.md', ['Unknown type title']);
+        $driver->assertTaskCreateFails(
+            'Unknown --type=invalid',
+            ['--feature=some-feature', '--type=invalid', "--body-file={$unknownTypeFile}"],
+        );
+
+        // Rejection: legacy bracket prefix in body file title.
+        $bracketTitleFile = $driver->createBodyFile('entry-create-bracket-title.md', ['[feat][legacy-feature] Legacy title']);
+        $driver->assertTaskCreateFails(
+            'obsolete prefix syntax, use the CLI options',
+            ['--feature=legacy-feature', '--type=feat', "--body-file={$bracketTitleFile}"],
         );
 
         // --position=index clamps out-of-range values while still inserting the task.
         $driver->createTodoTask('[clamp-low] Task to anchor the queue for clamp coverage');
-        $clampZeroFile = $driver->createBodyFile('entry-create-clamp-zero.md', ['[clamp-zero] Insert with --index=0 should clamp to start']);
+        $clampZeroFile = $driver->createBodyFile('entry-create-clamp-zero.md', ['Insert with --index=0 should clamp to start']);
         $clampLowOutput = $driver->runBacklog([
             'entry-create',
-            '--body-file=' . $clampZeroFile,
+            '--feature=clamp-zero',
+            '--type=feat',
+            "--body-file={$clampZeroFile}",
             '--position=index',
             '--index=0',
         ]);
@@ -165,47 +151,28 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
             'Warning: --index=0 is out of range',
             'inserting at position 1 instead',
         ]);
-        $driver->assertTodoContains('[clamp-zero] Insert with --index=0 should clamp to start');
-        $clampHighFile = $driver->createBodyFile('entry-create-clamp-high.md', ['[clamp-high] Insert with --index=99 should clamp to end']);
+        $driver->assertTodoContains('Insert with --index=0 should clamp to start');
+        $clampHighFile = $driver->createBodyFile('entry-create-clamp-high.md', ['Insert with --index=99 should clamp to end']);
         $clampHighOutput = $driver->runBacklog([
             'entry-create',
-            '--body-file=' . $clampHighFile,
+            '--feature=clamp-high',
+            '--type=feat',
+            "--body-file={$clampHighFile}",
             '--position=index',
             '--index=99',
         ]);
         $driver->assertOutputContainsAll($clampHighOutput, [
             'Warning: --index=99 is out of range',
         ]);
-        $driver->assertTodoContains('[clamp-high] Insert with --index=99 should clamp to end');
+        $driver->assertTodoContains('Insert with --index=99 should clamp to end');
         $driver->removeTodoTask('clamp-zero');
         $driver->removeTodoTask('clamp-low');
         $driver->removeTodoTask('clamp-high');
 
-        $missingIndexFile = $driver->createBodyFile('entry-create-missing-index.md', ['[test-missing-index] Missing index value']);
+        $missingIndexFile = $driver->createBodyFile('entry-create-missing-index.md', ['Missing index value']);
         $driver->assertTaskCreateFails(
             'entry-create with --position=index requires --index=',
-            ['--body-file=' . $missingIndexFile, '--position=index'],
-        );
-
-        // Rejection: bare title without any scope prefix.
-        $bareTitleFile = $driver->createBodyFile('entry-create-bare-title.md', ['Bare title without scope']);
-        $driver->assertTaskCreateFails(
-            'entry-create requires an explicit [feature-slug] scope',
-            ['--body-file=' . $bareTitleFile],
-        );
-
-        // Rejection: type prefix alone, no feature scope.
-        $typeOnlyFile = $driver->createBodyFile('entry-create-type-only.md', ['[tech] Type only no feature scope']);
-        $driver->assertTaskCreateFails(
-            'entry-create requires an explicit [feature-slug] scope',
-            ['--body-file=' . $typeOnlyFile],
-        );
-
-        // Rejection: bare title in --body-file mode with sub-tasks.
-        $noScopeBodyFile = $driver->createBodyFile('entry-create-no-scope-body.md', ['Bare title in body file', '  - sub-task']);
-        $driver->assertTaskCreateFails(
-            'entry-create requires an explicit [feature-slug] scope',
-            ['--body-file=' . $noScopeBodyFile],
+            ['--feature=test-missing-index', '--type=feat', "--body-file={$missingIndexFile}", '--position=index'],
         );
     }
 }

@@ -26,6 +26,7 @@ use SoManAgent\Script\Client\ProjectScriptClient;
 use SoManAgent\Script\Console;
 use SoManAgent\Script\RetryPolicy;
 use SoManAgent\Script\TextSlugger;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Unit tests for AgentResumeCommand — alive-refusal branch and missing-session branch.
@@ -250,9 +251,9 @@ final class AgentResumeCommandTest
         $worktree = $dir . '/wa';
         mkdir($worktree, 0755, true);
 
-        $boardPath = $dir . '/board.md';
+        $boardPath = $dir . '/board.yaml';
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
-        file_put_contents($boardPath, "# Test\n\n## To do\n\n## In progress\n\n## Suggestions\n");
+        $this->writeBoard($boardPath, []);
 
         $service = new AgentSessionService($dir);
         $service->add($this->makeSession('d02', wrapperPid: 12300, clientPid: 55000, worktree: $worktree));
@@ -319,19 +320,19 @@ final class AgentResumeCommandTest
     {
         $projectRoot = $this->createGitProject('reviewer-reconstruct');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $expectedWorktree = $worktreesRoot . '/d04';
         mkdir(dirname($boardPath), 0755, true);
         $this->writeBoard($boardPath, [
-            '- crypto-feature',
-            '  meta:',
-            '    kind: feature',
-            '    feature: crypto-feature',
-            '    branch: feat/crypto-feature',
-            '    type: feat',
-            '    stage: reviewing',
-            '    agent: d04',
-            '    reviewer: r01',
+            [
+                'kind' => 'feature',
+                'stage' => 'reviewing',
+                'feature' => 'crypto-feature',
+                'agent' => 'd04',
+                'reviewer' => 'r01',
+                'branch' => 'feat/crypto-feature',
+                'type' => 'feat',
+            ],
         ]);
         $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' branch feat/crypto-feature');
 
@@ -410,7 +411,7 @@ final class AgentResumeCommandTest
     ): AgentResumeCommand
     {
         $projectRoot ??= $this->tmpDir;
-        $boardPath ??= $this->tmpDir . '/board.md';
+        $boardPath ??= $this->tmpDir . '/board.yaml';
         $boardService ??= new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
 
         $contextBuilder = new AgentContextBuilder($projectRoot, $boardPath, $boardService);
@@ -455,14 +456,55 @@ final class AgentResumeCommandTest
     }
 
     /**
-     * @param list<string> $activeLines
+     * Writes a YAML backlog board.
+     *
+     * @param array<int, array<string, mixed>> $activeEntries Each entry: associative array with kind/stage/feature/etc.
+     * @param array<int, array<string, mixed>> $todoEntries
      */
-    private function writeBoard(string $path, array $activeLines): void
+    private function writeBoard(string $path, array $activeEntries, array $todoEntries = []): void
     {
-        $content = "# Test backlog\n\n## To do\n\n## In progress\n\n"
-            . implode("\n", $activeLines)
-            . "\n\n## Suggestions\n";
-        file_put_contents($path, $content);
+        $data = [
+            'version' => 1,
+            'todo' => array_map([$this, 'normalizeTodoEntry'], $todoEntries),
+            'active' => array_map([$this, 'normalizeActiveEntry'], $activeEntries),
+        ];
+        file_put_contents($path, Yaml::dump($data, 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE));
+    }
+
+    /**
+     * @param array<string, mixed> $entry
+     * @return array<string, mixed>
+     */
+    private function normalizeActiveEntry(array $entry): array
+    {
+        $order = ['kind', 'stage', 'feature', 'task', 'agent', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type'];
+        $result = [];
+        foreach ($order as $key) {
+            if (array_key_exists($key, $entry)) {
+                $result[$key] = $entry[$key];
+            }
+        }
+        $result['title'] = $entry['title'] ?? ($entry['feature'] ?? '');
+
+        return $result;
+    }
+
+    /**
+     * @param array<string, mixed> $entry
+     * @return array<string, mixed>
+     */
+    private function normalizeTodoEntry(array $entry): array
+    {
+        $result = ['feature' => $entry['feature']];
+        if (array_key_exists('task', $entry)) {
+            $result['task'] = $entry['task'];
+        }
+        if (array_key_exists('type', $entry)) {
+            $result['type'] = $entry['type'];
+        }
+        $result['title'] = $entry['title'] ?? $entry['feature'];
+
+        return $result;
     }
 
     private function createGitProject(string $label): string

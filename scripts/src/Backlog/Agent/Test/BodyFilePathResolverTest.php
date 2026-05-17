@@ -18,6 +18,7 @@ use SoManAgent\Script\Client\ProjectScriptClient;
 use SoManAgent\Script\Console;
 use SoManAgent\Script\RetryPolicy;
 use SoManAgent\Script\TextSlugger;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Unit tests for BodyFilePathResolver.
@@ -371,35 +372,29 @@ final class BodyFilePathResolverTest
     }
 
     /**
-     * Writes a minimal board with one active feature entry.
+     * Writes a minimal YAML board with one active feature entry.
      * When $agentCode is null the entry has no agent assigned.
      */
     private function writeBoardWithAgent(string $dir, ?string $agentCode): string
     {
-        $agent = $agentCode !== null ? $agentCode : 'none';
-        $lines = [
-            '# Backlog board',
-            '',
-            '## To do',
-            '',
-            '## In progress',
-            '',
-            '- [fix][my-feature] My feature',
-            '  meta:',
-            '    kind: feature',
-            '    stage: development',
-            '    feature: my-feature',
-            '    agent: ' . $agent,
-            '    branch: fix/my-feature',
-            '    base: abc123def456abc1',
-            '    pr: none',
-            '',
-            '## Suggestions',
-            '',
+        $entry = [
+            'kind' => 'feature',
+            'stage' => 'development',
+            'feature' => 'my-feature',
+            'agent' => $agentCode !== null ? $agentCode : 'none',
+            'branch' => 'fix/my-feature',
+            'base' => 'abc123def456abc1',
+            'pr' => 'none',
+            'type' => 'fix',
+            'title' => 'My feature',
         ];
 
-        $boardPath = $dir . '/board.md';
-        file_put_contents($boardPath, implode("\n", $lines));
+        $boardPath = $dir . '/board.yaml';
+        file_put_contents($boardPath, Yaml::dump([
+            'version' => 1,
+            'todo' => [],
+            'active' => [$entry],
+        ], 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE));
 
         return $boardPath;
     }

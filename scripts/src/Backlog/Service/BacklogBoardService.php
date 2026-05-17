@@ -14,6 +14,7 @@ use SoManAgent\Script\Backlog\Model\BoardEntryMatch;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
 use SoManAgent\Script\Backlog\Enum\BacklogTaskType;
+use SoManAgent\Script\Backlog\Storage\BoardYamlStorage;
 use SoManAgent\Script\Client\FilesystemClientInterface;
 use SoManAgent\Script\TextSlugger;
 
@@ -40,9 +41,6 @@ final class BacklogBoardService
     private const SINGLE_FEATURE_PREFIX_PATTERN = '/^\[([A-Za-z0-9_-]+)\](?!\[)\s*(.+)$/';
     private const TASK_CONTRIBUTION_PREFIX_PATTERN = '/^\s*-\s*\[task:([a-z0-9-]+)\]\s*(.+)$/';
 
-    private const META_BLOCK_PREFIX = '  meta:';
-    private const META_LINE_PREFIX = '    ';
-
     private TextSlugger $featureSlugger;
 
     private FilesystemClientInterface $fs;
@@ -62,58 +60,18 @@ final class BacklogBoardService
     /* --- Board Persistence Operations --- */
 
     /**
-     * Loads and parses a backlog board from a markdown file.
+     * Loads and parses a backlog board from a YAML file.
+     *
      * @return BacklogBoard
      */
     public function loadBoard(string $path): BacklogBoard
     {
-        $content = $this->fs->getFileContents($path);
-        $lines = preg_split('/\R/', $content) ?: [];
-        if ($lines === []) {
-            throw new \RuntimeException("Unable to read backlog board: {$path}");
-        }
-
-        $title = array_shift($lines);
-        $board = new BacklogBoard($path, $title);
-
-        $currentSection = null;
-        $rawSections = [];
-        $sectionOrder = [];
-
-        foreach ($lines as $line) {
-            if (preg_match('/^## (.+)$/', $line, $matches) === 1) {
-                $currentSection = $matches[1];
-                if (!in_array($currentSection, $sectionOrder, true)) {
-                    $sectionOrder[] = $currentSection;
-                }
-                $rawSections[$currentSection] ??= [];
-                continue;
-            }
-
-            if ($currentSection === null) {
-                continue;
-            }
-
-            $rawSections[$currentSection][] = $line;
-        }
-
-        foreach ($rawSections as $section => $sectionLines) {
-            $rawSections[$section] = $this->sanitizeSectionLines($sectionLines);
-        }
-
-        $board->setRawSections($rawSections);
-        $board->setSectionOrder($sectionOrder);
-
-        $this->updateManagedSectionOrder($board);
-
-        $board->setEntries(BacklogBoard::SECTION_TODO, $this->parseEntriesFromSectionLines($rawSections[BacklogBoard::SECTION_TODO] ?? []));
-        $board->setEntries(BacklogBoard::SECTION_ACTIVE, $this->parseActiveEntries($board));
-
-        return $board;
+        return (new BoardYamlStorage())->load($path);
     }
 
     /**
-     * Persists a backlog board to its markdown file.
+     * Persists a backlog board to its YAML file.
+     *
      * @param BacklogBoard $board
      */
     public function saveBoard(BacklogBoard $board): void
@@ -122,39 +80,7 @@ final class BacklogBoardService
             return;
         }
 
-        $this->normalizeBoardForSave($board);
-
-        $chunks = [$board->getTitle(), ''];
-        $rawSections = $board->getRawSections();
-
-        foreach ($board->getSectionOrder() as $section) {
-            $chunks[] = '## ' . $section;
-            $chunks[] = '';
-
-            if (in_array($section, [BacklogBoard::SECTION_TODO, BacklogBoard::SECTION_ACTIVE], true)) {
-                $entries = $board->getEntries($section);
-                if ($entries !== []) {
-                    $order = match ($section) {
-                        BacklogBoard::SECTION_TODO => ['agent', 'feature'],
-                        default => ['kind', 'stage', 'feature', 'task', 'agent', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked'],
-                    };
-
-                    foreach ($entries as $entry) {
-                        foreach ($this->formatEntryToLines($entry, $order) as $line) {
-                            $chunks[] = $line;
-                        }
-                    }
-                }
-            } else {
-                foreach ($this->sanitizeSectionLines($rawSections[$section] ?? []) as $line) {
-                    $chunks[] = $line;
-                }
-            }
-
-            $chunks[] = '';
-        }
-
-        $this->fs->writeFilePath($board->getPath(), rtrim(implode("\n", $chunks)) . "\n");
+        (new BoardYamlStorage())->save($board);
     }
 
     /* --- Review File Persistence Operations --- */
@@ -489,27 +415,26 @@ final class BacklogBoardService
     }
 
     /**
-     * Computes the stable reference identifier of a queued todo entry from its text.
+     * Computes the stable reference identifier of a queued todo entry from its fields.
      *
-     * The reference matches the eventual feature and task slugs that {@see BacklogWorkStartCommand}
-     * would assign on promotion, so it stays valid across todo reorderings and is the only
-     * trustworthy identity for mutations on queued entries.
+     * Returns `feature/task` for scoped tasks and `feature` for plain features.
+     * The reference stays valid across todo reorderings and is the only trustworthy
+     * identity for mutations on queued entries.
      */
     public function computeQueuedEntryReference(BoardEntry $entry): string
     {
-        [, $cleaned] = $this->extractTypePrefix($entry->getText());
+        $feature = $entry->getFeature();
+        $task = $entry->getTask();
 
-        $scoped = $this->extractScopedTaskMetadata($cleaned);
-        if ($scoped !== null) {
-            return $scoped['featureGroup'] . '/' . $scoped['task'];
+        if ($feature !== null && $task !== null) {
+            return $feature . '/' . $task;
         }
 
-        $single = $this->extractSingleFeaturePrefixMetadata($cleaned);
-        if ($single !== null) {
-            return $single['featureSlug'];
+        if ($feature !== null) {
+            return $feature;
         }
 
-        return $this->normalizeFeatureSlug($cleaned);
+        return $this->normalizeFeatureSlug($entry->getText());
     }
 
     /**
@@ -796,80 +721,6 @@ final class BacklogBoardService
     /* --- Board Entry Markdown Parsing & Formatting --- */
 
     /**
-     * @param array<string> $lines
-     */
-    public function parseEntryFromLines(array $lines): BoardEntry
-    {
-        if ($lines === []) {
-            throw new \RuntimeException('Backlog entry cannot be empty.');
-        }
-
-        $firstLine = array_shift($lines);
-        if (!str_starts_with($firstLine, '- ')) {
-            throw new \RuntimeException("Backlog entry must start with '- '.");
-        }
-
-        $body = substr($firstLine, 2);
-        $metadata = [];
-
-        [$metadata, $body] = $this->parseMetadataPrefix($metadata, $body);
-
-        if ($lines !== [] && preg_match('/^\s+\[([a-z0-9_-]+):([^\]]+)\]/', $lines[0]) === 1) {
-            $metadataLine = ltrim(array_shift($lines));
-            [$metadata, $metadataLine] = $this->parseMetadataPrefix($metadata, $metadataLine);
-            if (trim($metadataLine) !== '') {
-                array_unshift($lines, '  ' . $metadataLine);
-            }
-        }
-
-        [$lines, $trailingMetadata] = $this->parseTrailingMetaBlock($lines);
-        foreach ($trailingMetadata as $key => $value) {
-            $metadata[$key] = $value;
-        }
-
-        $entry = new BoardEntry(ltrim($body), $lines);
-        $this->hydrateEntryFromMetadata($entry, $metadata);
-
-        return $entry;
-    }
-
-    /**
-     * @param array<string> $metadataOrder
-     * @return array<string>
-     */
-    public function formatEntryToLines(BoardEntry $entry, array $metadataOrder = []): array
-    {
-        $metadata = $this->extractMetadataFromEntry($entry);
-        $ordered = [];
-
-        foreach ($metadataOrder as $key) {
-            if (isset($metadata[$key])) {
-                $ordered[$key] = $metadata[$key];
-            }
-        }
-
-        foreach ($metadata as $key => $value) {
-            if (!isset($ordered[$key])) {
-                $ordered[$key] = $value;
-            }
-        }
-
-        $lines = ['- ' . $entry->getText()];
-        foreach ($entry->getExtraLines() as $line) {
-            $lines[] = $line;
-        }
-
-        if ($ordered !== []) {
-            $lines[] = self::META_BLOCK_PREFIX;
-            foreach ($ordered as $key => $value) {
-                $lines[] = sprintf('%s%s: %s', self::META_LINE_PREFIX, $key, $value);
-            }
-        }
-
-        return $lines;
-    }
-
-    /**
      * @param array<string, string> $metadata
      */
     public function hydrateEntryFromMetadata(BoardEntry $entry, array $metadata): void
@@ -899,88 +750,6 @@ final class BacklogBoardService
             static fn(?string $value): bool => $value !== null
         );
         $entry->setExtraMetadata($extraMetadata);
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public function extractMetadataFromEntry(BoardEntry $entry): array
-    {
-        $metadata = $entry->getExtraMetadata();
-
-        $mappings = [
-            BoardEntry::META_AGENT => $entry->getAgent(),
-            BoardEntry::META_BASE => $entry->getBase(),
-            BoardEntry::META_BRANCH => $entry->getBranch(),
-            BoardEntry::META_FEATURE => $entry->getFeature(),
-            BoardEntry::META_FEATURE_BRANCH => $entry->getFeatureBranch(),
-            BoardEntry::META_KIND => $entry->getKind(),
-            BoardEntry::META_PR => $entry->getPr(),
-            BoardEntry::META_REVIEWER => $entry->getReviewer(),
-            BoardEntry::META_STAGE => $entry->getStage(),
-            BoardEntry::META_TASK => $entry->getTask(),
-            BoardEntry::META_TYPE => $entry->getType(),
-        ];
-
-        foreach ($mappings as $key => $value) {
-            if ($value !== null) {
-                $metadata[$key] = $value;
-            }
-        }
-
-        if ($entry->checkIsBlocked()) {
-            $metadata[BoardEntry::META_BLOCKED] = BacklogMetaValue::YES->value;
-        }
-
-        return $metadata;
-    }
-
-    /**
-     * @param array<string, string> $metadata
-     * @return array{0: array<string, string>, 1: string}
-     */
-    private function parseMetadataPrefix(array $metadata, string $text): array
-    {
-        while (preg_match('/^\[([a-z0-9_-]+):([^\]]+)\]/', $text, $matches) === 1) {
-            $metadata[$matches[1]] = $matches[2];
-            $text = substr($text, strlen($matches[0]));
-        }
-
-        return [$metadata, ltrim($text)];
-    }
-
-    /**
-     * @param array<string> $lines
-     * @return array{0: array<string>, 1: array<string, string>}
-     */
-    private function parseTrailingMetaBlock(array $lines): array
-    {
-        $metaStartIndex = array_search(self::META_BLOCK_PREFIX, $lines, true);
-        if ($metaStartIndex === false) {
-            return [$lines, []];
-        }
-
-        $metadata = [];
-        $metaStartIndex = (int) $metaStartIndex;
-        $metaLines = array_slice($lines, $metaStartIndex + 1);
-        if ($metaLines === []) {
-            return [$lines, []];
-        }
-
-        foreach ($metaLines as $line) {
-            if (!str_starts_with($line, self::META_LINE_PREFIX)) {
-                return [$lines, []];
-            }
-
-            $body = substr($line, strlen(self::META_LINE_PREFIX));
-            if (preg_match('/^([a-z0-9_-]+):\s*(.+)$/', $body, $matches) !== 1) {
-                return [$lines, []];
-            }
-
-            $metadata[$matches[1]] = $matches[2];
-        }
-
-        return [array_slice($lines, 0, $metaStartIndex), $metadata];
     }
 
     /**
@@ -1115,108 +884,6 @@ final class BacklogBoardService
         return [$type, trim($cleaned)];
     }
 
-    /**
-     * Throws when the cleaned task title (after type-prefix extraction) does not declare
-     * an explicit [feature-slug] scope.
-     */
-    private function assertHasFeatureScope(string $cleanedTitle): void
-    {
-        if (!str_starts_with($cleanedTitle, '[')) {
-            throw new \RuntimeException(
-                'entry-create requires an explicit [feature-slug] scope. ' .
-                'Use [feature-slug] Title, [feature-slug][task-slug] Title, or [type][feature-slug] Title — ' .
-                'for example: [tech][my-feature] My task title.'
-            );
-        }
-    }
-
-    /**
-     * Creates a board entry from a single-line input.
-     *
-     * The input must declare an explicit `[feature-slug]` scope after any type prefix is
-     * stripped. Bare text and type-only prefixes such as `[tech] Title` are rejected.
-     *
-     * @param string $text
-     * @return BoardEntry
-     */
-    public function createEntryFromInput(string $text): BoardEntry
-    {
-        [$type, $cleaned] = $this->extractTypePrefix($text);
-
-        if ($cleaned === '') {
-            throw new \RuntimeException('Task body cannot be empty.');
-        }
-
-        $this->assertHasFeatureScope($cleaned);
-
-        if ($type !== null) {
-            $entry = new BoardEntry($cleaned);
-            $entry->setType($type->value);
-
-            return $entry;
-        }
-
-        return $this->parseEntryFromLines(['- ' . $cleaned]);
-    }
-
-    /**
-     * Creates a board entry from a multi-line input.
-     *
-     * The first non-empty line is the task title (with an optional leading `- ` and
-     * an optional task type prefix from {@see BacklogTaskType} placed anywhere in
-     * the leading bracket sequence). An explicit `[feature-slug]` scope is required
-     * after the type prefix is stripped; bare titles and type-only prefixes are rejected.
-     * Remaining non-empty lines are each shifted by +2 spaces unconditionally; empty
-     * lines are kept as-is. Standard markdown sub-bullets (2-space indent) therefore
-     * land at 4 spaces in the board, preserving nesting hierarchy.
-     *
-     * @param array<int, string> $lines
-     */
-    public function createEntryFromInputLines(array $lines): BoardEntry
-    {
-        $cleaned = [];
-        foreach ($lines as $line) {
-            $cleaned[] = rtrim((string) $line);
-        }
-        while ($cleaned !== [] && $cleaned[0] === '') {
-            array_shift($cleaned);
-        }
-        while ($cleaned !== [] && end($cleaned) === '') {
-            array_pop($cleaned);
-        }
-        if ($cleaned === []) {
-            throw new \RuntimeException('Task body cannot be empty.');
-        }
-
-        if (count($cleaned) === 1) {
-            return $this->createEntryFromInput($cleaned[0]);
-        }
-
-        $first = $cleaned[0];
-        if (preg_match('/^-\s+(.*)$/', $first, $stripMatches) === 1) {
-            $first = $stripMatches[1];
-        }
-
-        [$type, $firstCleaned] = $this->extractTypePrefix($first);
-
-        if (trim($firstCleaned) === '') {
-            throw new \RuntimeException('Task title (first line of --body-file) cannot be empty.');
-        }
-
-        $this->assertHasFeatureScope($firstCleaned);
-
-        $extra = [];
-        foreach (array_slice($cleaned, 1) as $line) {
-            $extra[] = $line !== '' ? '  ' . $line : '';
-        }
-
-        $entry = new BoardEntry(trim($firstCleaned), $extra);
-        if ($type !== null) {
-            $entry->setType($type->value);
-        }
-
-        return $entry;
-    }
 
     /**
      * Returns the first entry in the TODO section, or null if empty.
@@ -1293,6 +960,7 @@ final class BacklogBoardService
 
     /**
      * Clears agent reservations from TODO entries, optionally filtered by feature.
+     *
      * @param BacklogBoard $board, string $agent, ?string $feature
      */
     public function clearAgentReservations(BacklogBoard $board, string $agent, ?string $feature = null): void
@@ -1309,7 +977,6 @@ final class BacklogBoardService
             }
 
             $entry->setAgent(null);
-            $entry->setFeature(null);
         }
 
         $board->setEntries(BacklogBoard::SECTION_TODO, $entries);
@@ -1596,8 +1263,7 @@ final class BacklogBoardService
     {
         $matches = [];
         foreach ($board->getEntries(BacklogBoard::SECTION_TODO) as $index => $entry) {
-            $scoped = $this->extractScopedTaskMetadata($entry->getText());
-            if ($scoped !== null && $scoped['featureGroup'] === $feature) {
+            if ($entry->getFeature() === $feature && $entry->getTask() !== null) {
                 $matches[] = new BoardEntryMatch(BacklogBoard::SECTION_TODO, $index, $entry);
             }
         }
@@ -1631,150 +1297,6 @@ final class BacklogBoardService
                 throw new \RuntimeException(sprintf('%s: Task slug %s is already used for feature %s.', $command, $task, $feature));
             }
         }
-    }
-
-    /**
-     * @param array<string> $lines
-     * @return array<BoardEntry>
-     */
-    private function parseEntriesFromSectionLines(array $lines): array
-    {
-        $entries = [];
-        $buffer = [];
-
-        foreach ($lines as $line) {
-            if ($line === '') {
-                continue;
-            }
-
-            if (str_starts_with($line, '- ')) {
-                if ($buffer !== []) {
-                    $entries[] = $this->parseEntryFromLines($buffer);
-                }
-                $buffer = [$line];
-                continue;
-            }
-
-            if ($buffer !== []) {
-                $buffer[] = $line;
-            }
-        }
-
-        if ($buffer !== []) {
-            $entries[] = $this->parseEntryFromLines($buffer);
-        }
-
-        return $entries;
-    }
-
-    /**
-     * @return array<BoardEntry>
-     */
-    private function parseActiveEntries(BacklogBoard $board): array
-    {
-        $entries = [];
-        $rawSections = $board->getRawSections();
-
-        foreach ($this->parseEntriesFromSectionLines($rawSections[BacklogBoard::SECTION_ACTIVE] ?? []) as $entry) {
-            $entry->setStage($this->getEntryStage($entry) ?? BacklogBoard::STAGE_IN_PROGRESS);
-            $entries[] = $entry;
-        }
-
-        return $entries;
-    }
-
-    /**
-     * Strips legacy rule sections, normalizes the board title, and ensures all
-     * mandatory sections appear in the saved output.
-     */
-    private function normalizeBoardForSave(BacklogBoard $board): void
-    {
-        if (in_array($board->getTitle(), BacklogBoard::LEGACY_TITLES, true)) {
-            $board->setTitle(BacklogBoard::TITLE);
-        }
-
-        $filteredOrder = array_values(array_filter(
-            $board->getSectionOrder(),
-            static fn(string $section) => !in_array($section, BacklogBoard::LEGACY_RULE_SECTIONS, true),
-        ));
-
-        if (!in_array(BacklogBoard::SECTION_SUGGESTIONS, $filteredOrder, true)) {
-            $filteredOrder[] = BacklogBoard::SECTION_SUGGESTIONS;
-        }
-
-        $board->setSectionOrder($filteredOrder);
-
-        $rawSections = $board->getRawSections();
-        foreach (BacklogBoard::LEGACY_RULE_SECTIONS as $legacySection) {
-            unset($rawSections[$legacySection]);
-        }
-        $board->setRawSections($rawSections);
-    }
-
-    private function updateManagedSectionOrder(BacklogBoard $board): void
-    {
-        $newOrder = [];
-        $activeInserted = false;
-
-        foreach ($board->getSectionOrder() as $section) {
-            $newOrder[] = $section;
-            if ($section === BacklogBoard::SECTION_ACTIVE) {
-                $activeInserted = true;
-            }
-        }
-
-        if (!$activeInserted) {
-            $todoIndex = array_search(BacklogBoard::SECTION_TODO, $newOrder, true);
-            if ($todoIndex === false) {
-                $newOrder[] = BacklogBoard::SECTION_ACTIVE;
-            } else {
-                array_splice($newOrder, $todoIndex + 1, 0, [BacklogBoard::SECTION_ACTIVE]);
-            }
-        }
-
-        $board->setSectionOrder(array_values(array_unique($newOrder)));
-        
-        $rawSections = $board->getRawSections();
-        $rawSections[BacklogBoard::SECTION_ACTIVE] ??= [];
-        $board->setRawSections($rawSections);
-    }
-
-    /**
-     * Normalizes one raw section to a single blank line boundary with no repeated empty lines.
-     *
-     * @param array<string> $lines
-     * @return array<string>
-     */
-    private function sanitizeSectionLines(array $lines): array
-    {
-        $normalized = [];
-        $previousBlank = false;
-
-        foreach ($lines as $line) {
-            $isBlank = trim($line) === '';
-            if ($isBlank) {
-                if ($previousBlank) {
-                    continue;
-                }
-                $normalized[] = '';
-                $previousBlank = true;
-
-                continue;
-            }
-
-            $normalized[] = $line;
-            $previousBlank = false;
-        }
-
-        while ($normalized !== [] && trim($normalized[0]) === '') {
-            array_shift($normalized);
-        }
-
-        while ($normalized !== [] && trim($normalized[array_key_last($normalized)]) === '') {
-            array_pop($normalized);
-        }
-
-        return $normalized;
     }
 
     /**

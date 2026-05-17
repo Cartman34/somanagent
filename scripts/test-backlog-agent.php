@@ -30,6 +30,7 @@ use SoManAgent\Script\Backlog\Agent\Test\AgentStopCommandTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentWhoamiCommandTest;
 use SoManAgent\Script\Backlog\Agent\Test\BacklogAgentPruneCommandTest;
 use SoManAgent\Script\Backlog\Agent\Test\BacklogBoardServiceReviewingTest;
+use SoManAgent\Script\Backlog\Agent\Test\BoardYamlStorageTest;
 use SoManAgent\Script\Backlog\Agent\Test\BodyFilePathResolverTest;
 use SoManAgent\Script\Backlog\Agent\Test\BacklogAgentRunnerStrictOptionsTest;
 use SoManAgent\Script\Backlog\Agent\Test\ClaudeAgentLauncherTest;
@@ -63,6 +64,7 @@ $suites = [
     'AgentDeveloperSelectorTest' => AgentDeveloperSelectorTest::class,
     'AgentReviewerSelectorTest' => AgentReviewerSelectorTest::class,
     'BacklogBoardServiceReviewingTest' => BacklogBoardServiceReviewingTest::class,
+    'BoardYamlStorageTest' => BoardYamlStorageTest::class,
     'BodyFilePathResolverTest' => BodyFilePathResolverTest::class,
     'AgentClientLauncherRegistryTest' => AgentClientLauncherRegistryTest::class,
     'AgentCliOptionValidatorTest' => AgentCliOptionValidatorTest::class,

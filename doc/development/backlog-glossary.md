@@ -1,6 +1,6 @@
 # Backlog Glossary
 
-Definitions of the terms and acronyms used by the local backlog tooling (`scripts/backlog.php`, `local/backlog-board.md`, `local/backlog-review.md`).
+Definitions of the terms and acronyms used by the local backlog tooling (`scripts/backlog.php`, `local/backlog-board.yaml`, `local/backlog-review.md`).
 
 Scope is limited to the local backlog. Application domain terms (Project, Module, Team, Skill, Workflow…) belong to [`functional/concepts.md`](../functional/concepts.md) and are intentionally excluded.
 
@@ -10,7 +10,7 @@ Scope is limited to the local backlog. Application domain terms (Project, Module
 
 The main repository checkout, typically `~/projects/somanagent`.
 
-The only workspace where backlog state lives (`local/backlog-board.md`, `local/backlog-review.md`) and where workflow commands are run.
+The only workspace where backlog state lives (`local/backlog-board.yaml`, `local/backlog-review.md`) and where workflow commands are run.
 
 ## WA — Worktree Agent
 
@@ -46,7 +46,7 @@ A Task is local-only: never pushed and never gets its own GitHub PR. It is merge
 
 ## Stage
 
-The workflow state of an active backlog entry, recorded in `meta.stage`.
+The workflow state of an active backlog entry, recorded in `stage`.
 
 | Stage | Meaning |
 |---|---|

@@ -17,10 +17,13 @@ use SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
 /**
  * Inserts a new backlog entry into the todo section.
  *
- * The `--position=index --index=<n>` option is advisory: out-of-range values
- * clamp to the start or the end (with a warning) so a concurrent reorder of the
- * queue cannot turn the insertion into a hard failure. Display numbers are
- * never used to identify queued tasks for mutation.
+ * Requires `--feature=<slug>`, `--type=feat|fix|tech`, and `--body-file=<path>`.
+ * Optional `--task=<slug>` declares a scoped child task. The body file's first
+ * non-empty line is the title and must not carry legacy bracket prefixes —
+ * those are rejected outright with a clear error pointing back to the CLI options.
+ * The `--position=index --index=<n>` option is advisory: out-of-range values clamp to
+ * the start or the end (with a warning) so a concurrent reorder cannot turn insertion
+ * into a hard failure.
  */
 final class BacklogEntryCreateCommand extends AbstractBacklogCommand
 {
@@ -46,9 +49,6 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
     /**
      * Inserts a new queued entry in the todo section.
      *
-     * Requires `--body-file=<path>` (typically under `local/tmp/`). Inline positional
-     * text is not accepted.
-     *
      * @param list<string> $commandArgs
      * @param array<string, bool|string|array<bool|string>> $options
      */
@@ -57,7 +57,7 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
         $entry = $this->buildEntryFromInput($commandArgs, $options);
 
         $board = $this->loadBoard();
-        $this->revertParentIfInReview($board, $entry->getText());
+        $this->revertParentIfInReview($board, $entry);
         $entries = $board->getEntries(BacklogBoard::SECTION_TODO);
         $position = $this->resolveEntryCreatePosition($options, count($entries));
         array_splice($entries, $position, 0, [$entry]);
@@ -71,14 +71,17 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
      * Reverts the parent feature to development when the entry is a scoped child task
      * and the parent is in a review-like stage.
      */
-    private function revertParentIfInReview(BacklogBoard $board, string $entryText): void
+    private function revertParentIfInReview(BacklogBoard $board, BoardEntry $entry): void
     {
-        $scopedMeta = $this->boardService->extractScopedTaskMetadata($entryText);
-        if ($scopedMeta === null) {
+        if ($entry->getTask() === null) {
+            return;
+        }
+        $feature = $entry->getFeature();
+        if ($feature === null) {
             return;
         }
 
-        $parentMatch = $this->boardService->findParentFeatureEntry($board, $scopedMeta['featureGroup']);
+        $parentMatch = $this->boardService->findParentFeatureEntry($board, $feature);
         if ($parentMatch === null || !$this->boardService->isFeatureInReviewLikeStage($parentMatch->getEntry())) {
             return;
         }
@@ -89,15 +92,15 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
         $this->boardService->invalidateFeatureReviewState($parentMatch->getEntry());
         $this->presenter->displayLine(sprintf(
             'Feature %s reverted to development because task %s/%s was added (was %s).',
-            $scopedMeta['featureGroup'],
-            $scopedMeta['featureGroup'],
-            $scopedMeta['task'],
+            $feature,
+            $feature,
+            $entry->getTask(),
             $previousStage,
         ));
     }
 
     /**
-     * Builds a board entry from --body-file.
+     * Builds a board entry from --feature / --task / --type / --body-file options.
      *
      * @param array<int, string> $commandArgs
      * @param array<string, bool|string|array<bool|string>> $options
@@ -108,8 +111,54 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
             throw new \RuntimeException('entry-create no longer accepts inline task text. Use --body-file=<path> instead.');
         }
 
-        $bodyFile = $options['body-file'] ?? null;
+        $featureRaw = $options['feature'] ?? null;
+        if ($featureRaw === null) {
+            throw new \RuntimeException('entry-create requires --feature=<slug>.');
+        }
+        if (!is_string($featureRaw) || trim($featureRaw) === '') {
+            throw new \RuntimeException('entry-create requires --feature=<slug>.');
+        }
+        $feature = $this->boardService->normalizeFeatureSlug(trim($featureRaw));
+        if ($feature === '') {
+            throw new \RuntimeException('entry-create requires an explicit [feature-slug] scope.');
+        }
 
+        $taskRaw = $options['task'] ?? null;
+        $task = null;
+        if ($taskRaw !== null) {
+            if (!is_string($taskRaw) || trim($taskRaw) === '') {
+                throw new \RuntimeException('Option --task requires a non-empty slug when provided.');
+            }
+            $task = $this->boardService->normalizeFeatureSlug(trim($taskRaw));
+        }
+
+        $typeRaw = $options['type'] ?? null;
+        if ($typeRaw === null) {
+            throw new \RuntimeException(sprintf(
+                'entry-create requires --type=<%s>.',
+                \SoManAgent\Script\Backlog\Enum\BacklogTaskType::tokenList(),
+            ));
+        }
+        if (!is_string($typeRaw)) {
+            throw new \RuntimeException('Option --type cannot be repeated.');
+        }
+        if (trim($typeRaw) === '') {
+            throw new \RuntimeException(sprintf(
+                'entry-create requires --type=<%s>.',
+                \SoManAgent\Script\Backlog\Enum\BacklogTaskType::tokenList(),
+            ));
+        }
+        $taskType = \SoManAgent\Script\Backlog\Enum\BacklogTaskType::tryFromToken(trim($typeRaw));
+        if ($taskType === null) {
+            throw new \RuntimeException(sprintf(
+                'Unknown --type=%s. Supported types: %s.',
+                trim($typeRaw),
+                \SoManAgent\Script\Backlog\Enum\BacklogTaskType::tokenList(),
+            ));
+        }
+        $type = $taskType->value;
+
+        $bodyFile = $options['body-file'] ?? null;
         if ($bodyFile === null) {
             throw new \RuntimeException('entry-create requires --body-file=<path>.');
         }
@@ -121,9 +170,52 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
         if ($contents === false) {
             throw new \RuntimeException(sprintf('Unable to read --body-file: %s', $bodyFile));
         }
-        $lines = preg_split('/\R/', $contents) ?: [];
+        $rawLines = preg_split('/\R/', $contents) ?: [];
+        $bodyLines = $this->parseBodyFileLines($rawLines);
 
-        return $this->boardService->createEntryFromInputLines($lines);
+        $title = array_shift($bodyLines) ?? '';
+        if (trim($title) === '') {
+            throw new \RuntimeException('Task body cannot be empty.');
+        }
+        if (preg_match('/^\s*\[/', $title) === 1) {
+            throw new \RuntimeException(
+                'Body file title carries legacy bracket prefixes ([…]) — obsolete prefix syntax, use the CLI options --feature, --task, --type instead.',
+            );
+        }
+
+        $extraLines = array_map(
+            static fn (string $l) => $l !== '' ? '  ' . $l : '',
+            $bodyLines,
+        );
+
+        $entry = new BoardEntry($title, $extraLines);
+        $entry->setFeature($feature);
+        $entry->setTask($task);
+        $entry->setType($type);
+
+        return $entry;
+    }
+
+    /**
+     * Strips leading bullet (`- `) from the first content line and trims blank edges.
+     *
+     * @param array<string> $rawLines
+     * @return array<string>
+     */
+    private function parseBodyFileLines(array $rawLines): array
+    {
+        $cleaned = array_map('rtrim', $rawLines);
+        while ($cleaned !== [] && $cleaned[0] === '') {
+            array_shift($cleaned);
+        }
+        while ($cleaned !== [] && end($cleaned) === '') {
+            array_pop($cleaned);
+        }
+        if ($cleaned !== [] && preg_match('/^-\s+(.*)$/', $cleaned[0], $m) === 1) {
+            $cleaned[0] = $m[1];
+        }
+
+        return $cleaned;
     }
 
     /**

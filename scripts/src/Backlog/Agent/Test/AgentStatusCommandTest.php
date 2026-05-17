@@ -17,6 +17,7 @@ use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Client\FilesystemClient;
 use SoManAgent\Script\Console;
 use SoManAgent\Script\TextSlugger;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Command-level tests for {@see AgentStatusCommand}.
@@ -71,16 +72,16 @@ final class AgentStatusCommandTest
         $service = new AgentSessionService($dir);
         $service->add($this->makeSession('d01', AgentRole::DEVELOPER, pid: getmypid() ?: 1));
 
-        $boardPath = $dir . '/board.md';
+        $boardPath = $dir . '/board.yaml';
         $this->writeBoard($boardPath, [
-            '- payments-feature',
-            '  meta:',
-            '    kind: feature',
-            '    feature: payments-feature',
-            '    branch: feat/payments-feature',
-            '    type: feat',
-            '    stage: development',
-            '    agent: d01',
+            [
+                'kind' => 'feature',
+                'stage' => 'development',
+                'feature' => 'payments-feature',
+                'agent' => 'd01',
+                'branch' => 'feat/payments-feature',
+                'type' => 'feat',
+            ],
         ]);
 
         $output = $this->captureHandle($this->buildCommand($service, $dir, $boardPath), ['code' => 'd01']);
@@ -145,17 +146,17 @@ final class AgentStatusCommandTest
         $service = new AgentSessionService($dir);
         $service->add($this->makeSession('r01', AgentRole::REVIEWER, pid: getmypid() ?: 1));
 
-        $boardPath = $dir . '/board.md';
+        $boardPath = $dir . '/board.yaml';
         $this->writeBoard($boardPath, [
-            '- crypto-feature',
-            '  meta:',
-            '    kind: feature',
-            '    feature: crypto-feature',
-            '    branch: feat/crypto-feature',
-            '    type: feat',
-            '    stage: reviewing',
-            '    agent: d04',
-            '    reviewer: r01',
+            [
+                'kind' => 'feature',
+                'stage' => 'reviewing',
+                'feature' => 'crypto-feature',
+                'agent' => 'd04',
+                'reviewer' => 'r01',
+                'branch' => 'feat/crypto-feature',
+                'type' => 'feat',
+            ],
         ]);
 
         $output = $this->captureHandle($this->buildCommand($service, $dir, $boardPath), ['code' => 'r01']);
@@ -184,7 +185,7 @@ final class AgentStatusCommandTest
             sessionId: null,
         ));
 
-        $boardPath = $dir . '/board.md';
+        $boardPath = $dir . '/board.yaml';
         $this->writeBoard($boardPath, []);
 
         $output = $this->captureHandle($this->buildCommand($service, $dir, $boardPath), ['code' => 'm01']);
@@ -386,14 +387,27 @@ final class AgentStatusCommandTest
     }
 
     /**
-     * @param list<string> $activeLines
+     * @param list<array<string, mixed>> $activeEntries
      */
-    private function writeBoard(string $path, array $activeLines): void
+    private function writeBoard(string $path, array $activeEntries): void
     {
-        $content = "# Test backlog\n\n## To do\n\n## In progress\n\n"
-            . implode("\n", $activeLines)
-            . "\n\n## Suggestions\n";
-        file_put_contents($path, $content);
+        $order = ['kind', 'stage', 'feature', 'task', 'agent', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type'];
+        $active = [];
+        foreach ($activeEntries as $entry) {
+            $item = [];
+            foreach ($order as $key) {
+                if (array_key_exists($key, $entry)) {
+                    $item[$key] = $entry[$key];
+                }
+            }
+            $item['title'] = $entry['title'] ?? ($entry['feature'] ?? '');
+            $active[] = $item;
+        }
+        file_put_contents($path, Yaml::dump([
+            'version' => 1,
+            'todo' => [],
+            'active' => $active,
+        ], 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE));
     }
 
     private function scratch(string $label): string

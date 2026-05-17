@@ -27,7 +27,7 @@ Before running the scenarios:
    - no uncommitted user work in `WP`
    - no accidental worktrees to preserve under `.agent-worktrees/`
 4. Back up the local-only workflow files if needed:
-   - `local/backlog-board.md`
+   - `local/backlog-board.yaml`
    - `local/backlog-review.md`
 5. Use a dedicated local test agent code set, for example:
    - `d01`
@@ -47,7 +47,7 @@ During validation:
    - observed output
    - expected output
    - resulting state drift
-4. Do not manually fix `local/backlog-board.md` or `local/backlog-review.md` in the middle of the run unless the test itself is about manual recovery.
+4. Do not manually fix `local/backlog-board.yaml` or `local/backlog-review.md` in the middle of the run unless the test itself is about manual recovery.
 
 ## Test Naming Rules
 
@@ -174,7 +174,7 @@ Validate `work-start <entry-ref>` consumes the named queued entry instead of the
 
 - step 3 fails with `No queued task found for reference: unknown-slug` and leaves the board untouched
 - step 4 consumes the `ws-target` entry and creates the active feature `ws-target`
-- after step 4, the head entry `ws-head` is still queued in `## To do`
+- after step 4, the head entry `ws-head` is still queued in `todo:`
 - automated workflows must always pass an explicit target; relying on the head is reserved for interactive usage
 
 ## Scenario 4 - Start Feature With Explicit Slug And Entry Rename
@@ -266,7 +266,7 @@ Validate entry assignment and unassignment permissions.
 - assignment accepts an entry already assigned to the same target agent
 - assignment refuses an entry already assigned to a different real agent
 - assignment accepts an entry with missing `agent` metadata or legacy `agent: none`
-- assignment updates `meta.agent`
+- assignment updates `agent`
 - target worktree is prepared for the assigned agent
 - unassignment removes the assignment cleanly on an explicitly referenced feature or task even when `--agent` is a manager caller code, and still works on the caller agent's single active entry when no reference is provided
 

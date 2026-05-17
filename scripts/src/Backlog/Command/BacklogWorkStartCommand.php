@@ -82,12 +82,11 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
             $allowStart = false;
             if ($explicitReference === null && count($activeEntries) === 1) {
                 $nextTask = $this->boardService->fetchNextTodoTask($board);
-                $scopedTask = $nextTask !== null
-                    ? $this->boardService->extractScopedTaskMetadata($nextTask->getEntry()->getText())
-                    : null;
-                $allowStart = $scopedTask !== null
+                $nextEntry = $nextTask?->getEntry();
+                $allowStart = $nextEntry !== null
+                    && $nextEntry->getTask() !== null
                     && $this->boardService->checkIsFeatureEntry($activeEntries[0]->getEntry())
-                    && $activeEntries[0]->getEntry()->getFeature() === $scopedTask['featureGroup'];
+                    && $activeEntries[0]->getEntry()->getFeature() === $nextEntry->getFeature();
             }
 
             if (!$allowStart) {
@@ -110,7 +109,6 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
         }
 
         $first = $target->getEntry();
-        $first->setFeature(null);
         $first->setAgent(null);
 
         $plan = $this->buildPlan($board, $first, $agent, $branchTypeOverride);
@@ -154,8 +152,9 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
     /**
      * Builds the read-only plan describing the queued task interpretation.
      *
-     * Validates the type override and feature and task slug shape; rejects conflicts
-     * (existing feature, duplicate task slug) without performing any mutation.
+     * Entry fields (feature, task, type) are populated by entry-create and loaded from
+     * YAML — no text parsing is needed here. Validates the type override and feature/task
+     * slugs; rejects conflicts without performing any mutation.
      */
     private function buildPlan(
         BacklogBoard $board,
@@ -163,27 +162,24 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
         string $agent,
         string $branchTypeOverride
     ): WorkStartPlan {
-        $scopedTask = $this->boardService->extractScopedTaskMetadata($first->getText());
-        if ($scopedTask !== null) {
-            return $this->buildScopedTaskPlan($board, $first, $scopedTask, $agent, $branchTypeOverride);
+        if ($first->getTask() !== null) {
+            return $this->buildScopedTaskPlan($board, $first, $agent, $branchTypeOverride);
         }
 
-        $singleFeature = $this->boardService->extractSingleFeaturePrefixMetadata($first->getText());
-
-        return $this->buildPlainFeaturePlan($board, $first, $agent, $branchTypeOverride, $singleFeature);
+        return $this->buildPlainFeaturePlan($board, $first, $agent, $branchTypeOverride);
     }
 
-    /**
-     * @param array{featureGroup: string, task: string, text: string} $scopedTask
-     */
     private function buildScopedTaskPlan(
         BacklogBoard $board,
         BoardEntry $first,
-        array $scopedTask,
         string $agent,
         string $branchTypeOverride
     ): WorkStartPlan {
-        $parent = $this->boardService->findParentFeatureEntry($board, $scopedTask['featureGroup']);
+        $featureSlug = (string) $first->getFeature();
+        $taskSlug = (string) $first->getTask();
+        $entryText = $first->getText();
+
+        $parent = $this->boardService->findParentFeatureEntry($board, $featureSlug);
 
         $type = $this->boardService->resolveTaskTypeOrDefault(
             $first,
@@ -192,30 +188,30 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
         );
 
         if ($parent === null) {
-            $featureBranch = $type->branchPrefix() . '/' . $scopedTask['featureGroup'];
+            $featureBranch = $type->branchPrefix() . '/' . $featureSlug;
             $needsCreation = true;
         } else {
-            $featureBranch = $parent->getEntry()->getBranch() ?: ($type->branchPrefix() . '/' . $scopedTask['featureGroup']);
+            $featureBranch = $parent->getEntry()->getBranch() ?: ($type->branchPrefix() . '/' . $featureSlug);
             $needsCreation = false;
-            foreach ($this->boardService->findTaskEntriesByFeature($board, $scopedTask['featureGroup']) as $match) {
-                if ($match->getEntry()->getTask() === $scopedTask['task']) {
+            foreach ($this->boardService->findTaskEntriesByFeature($board, $featureSlug) as $match) {
+                if ($match->getEntry()->getTask() === $taskSlug) {
                     throw new \RuntimeException(sprintf(
                         '%s: Task slug %s is already used for feature %s.',
                         BacklogCommandName::WORK_START->value,
-                        $scopedTask['task'],
-                        $scopedTask['featureGroup'],
+                        $taskSlug,
+                        $featureSlug,
                     ));
                 }
             }
         }
-        $taskBranch = $type->branchPrefix() . '/' . $scopedTask['featureGroup'] . '--' . $scopedTask['task'];
+        $taskBranch = $type->branchPrefix() . '/' . $featureSlug . '--' . $taskSlug;
 
         return new WorkStartPlan(
             kind: WorkStartPlan::KIND_TASK,
             type: $type,
-            featureSlug: $scopedTask['featureGroup'],
-            taskSlug: $scopedTask['task'],
-            entryText: $scopedTask['text'],
+            featureSlug: $featureSlug,
+            taskSlug: $taskSlug,
+            entryText: $entryText,
             featureBranch: $featureBranch,
             taskBranch: $taskBranch,
             featureContainerNeedsCreation: $needsCreation,
@@ -223,21 +219,17 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
         );
     }
 
-    /**
-     * @param array{featureSlug: string, text: string}|null $singleFeature
-     */
     private function buildPlainFeaturePlan(
         BacklogBoard $board,
         BoardEntry $first,
         string $agent,
-        string $branchTypeOverride,
-        ?array $singleFeature
+        string $branchTypeOverride
     ): WorkStartPlan {
         $type = $this->boardService->resolveTaskTypeOrDefault($first, null, $branchTypeOverride);
 
-        if ($singleFeature !== null) {
-            $feature = $singleFeature['featureSlug'];
-            $entryText = $singleFeature['text'];
+        if ($first->getFeature() !== null) {
+            $feature = $first->getFeature();
+            $entryText = $first->getText();
         } else {
             $feature = $this->boardService->normalizeFeatureSlug($first->getText());
             $entryText = $first->getText();

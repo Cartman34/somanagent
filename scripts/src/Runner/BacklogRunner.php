@@ -12,6 +12,7 @@ use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Service\BacklogCliOptionValidator;
 use SoManAgent\Script\Backlog\Service\BacklogMutationLock;
+use SoManAgent\Script\Backlog\Storage\BoardYamlStorage;
 use SoManAgent\Script\Service\CommandHelpService;
 
 /**
@@ -21,12 +22,11 @@ final class BacklogRunner extends AbstractScriptRunner
 {
     public const NAME = 'backlog';
 
-    private const DEFAULT_BOARD_PATH = 'local/backlog-board.md';
+    private const DEFAULT_BOARD_PATH = 'local/backlog-board.yaml';
     private const DEFAULT_REVIEW_FILE_PATH = 'local/backlog-review.md';
     private const DEFAULT_WORKTREES_DIR = '.agent-worktrees';
     private const LEGACY_WORKTREES_DIR = '.worktrees';
 
-    private const INITIAL_BOARD_CONTENT = "# Backlog board\n\n## To do\n\n## In progress\n\n## Suggestions\n";
     private const INITIAL_REVIEW_CONTENT = "# Backlog review\n\n## Usage rules\n\n## Current review\n\nNo review in progress.\n";
 
     private ?string $boardPath = null;
@@ -233,7 +233,7 @@ final class BacklogRunner extends AbstractScriptRunner
             if ($this->verbose) {
                 $this->console->line("Creating backlog board file: {$this->boardPath()}");
             }
-            if (file_put_contents($this->boardPath(), self::INITIAL_BOARD_CONTENT) === false) {
+            if (file_put_contents($this->boardPath(), BoardYamlStorage::initialContent()) === false) {
                 throw new \RuntimeException("Failed to create backlog board file: {$this->boardPath()}");
             }
         }
