@@ -14,7 +14,7 @@ namespace SoManAgent\Script\Runner;
  */
 final class NodeRunner extends AbstractScriptRunner
 {
-    public const NAME = 'node';
+    private const NAME = 'node';
 
     protected function getName(): string
     {

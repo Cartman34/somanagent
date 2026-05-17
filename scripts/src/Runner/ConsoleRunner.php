@@ -14,7 +14,7 @@ namespace SoManAgent\Script\Runner;
  */
 final class ConsoleRunner extends AbstractScriptRunner
 {
-    public const NAME = 'console';
+    private const NAME = 'console';
 
     protected function getName(): string
     {

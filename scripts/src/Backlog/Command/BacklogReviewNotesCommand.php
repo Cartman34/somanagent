@@ -30,7 +30,7 @@ final class BacklogReviewNotesCommand extends AbstractBacklogCommand
 
     public const BLOCK_FENCE_OPEN = '```review-notes';
 
-    public const BLOCK_FENCE_CLOSE = '```';
+    private const BLOCK_FENCE_CLOSE = '```';
 
     public const BLOCK_END_MARKER = 'REVIEW_NOTES_READ_ONLY_END';
 

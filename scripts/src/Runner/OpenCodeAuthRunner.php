@@ -16,7 +16,7 @@ use SoManAgent\Script\OpenCodeAuthManager;
  */
 final class OpenCodeAuthRunner extends AbstractScriptRunner
 {
-    public const NAME = 'opencode-auth';
+    private const NAME = 'opencode-auth';
 
     protected function getName(): string
     {

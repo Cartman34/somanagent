@@ -17,9 +17,9 @@ namespace SoManAgent\Script\Backlog\Service;
  */
 final class EntryRebaseResult
 {
-    public const STATUS_UP_TO_DATE = 'up_to_date';
-    public const STATUS_REBASED = 'rebased';
-    public const STATUS_CONFLICT = 'conflict';
+    private const STATUS_UP_TO_DATE = 'up_to_date';
+    private const STATUS_REBASED = 'rebased';
+    private const STATUS_CONFLICT = 'conflict';
 
     private string $status;
 

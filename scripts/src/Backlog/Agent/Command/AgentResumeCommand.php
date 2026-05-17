@@ -73,30 +73,11 @@ final class AgentResumeCommand extends AbstractAgentCommand
     /**
      * {@inheritdoc}
      */
-    public function getDescription(): string
-    {
-        return 'Re-launch the CLI for an interrupted session, reconnecting to the previous CLI conversation';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function getOptions(): array
     {
         return [
             ['name' => '--code=<code>', 'description' => 'Agent code of the interrupted session (required). Client and role are derived from the sessions.json entry.'],
             ['name' => '--session=<id>', 'description' => 'Resume a specific CLI session ID belonging to the code\'s WA. Omit to continue the last session.'],
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getUsageExamples(): array
-    {
-        return [
-            'php scripts/backlog-agent.php resume --code=d04',
-            'php scripts/backlog-agent.php resume --code=d04 --session=abc-uuid',
         ];
     }
 

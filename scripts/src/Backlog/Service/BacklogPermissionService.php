@@ -15,7 +15,7 @@ use SoManAgent\Script\Backlog\Model\BoardEntry;
  */
 final class BacklogPermissionService
 {
-    public const ROLE_MANAGER = 'manager';
+    private const ROLE_MANAGER = 'manager';
     public const ROLE_DEVELOPER = 'developer';
 
     private const ENV_ACTIVE_ROLE = 'SOMANAGER_ROLE';

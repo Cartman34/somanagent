@@ -46,30 +46,11 @@ final class AgentStopCommand extends AbstractAgentCommand
     /**
      * {@inheritdoc}
      */
-    public function getDescription(): string
-    {
-        return 'Stop a live agent session or remove a stale session entry';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function getOptions(): array
     {
         return [
             ['name' => '--code=<code>', 'description' => 'Agent code to stop (required)'],
             ['name' => '--cleanup', 'description' => 'Remove the session entry even if the PID is dead'],
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getUsageExamples(): array
-    {
-        return [
-            'php scripts/backlog-agent.php stop --code=d04',
-            'php scripts/backlog-agent.php stop --code=d04 --cleanup',
         ];
     }
 

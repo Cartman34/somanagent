@@ -36,17 +36,13 @@ final class FakeSessionDriver implements SessionDriverInterface
      */
     private bool $allowsResumeWhileAlive = false;
 
-    public bool $dependencyCheckPasses = true;
+    private bool $dependencyCheckPasses = true;
 
-    public int $nextExitCode = 0;
-    public int $nextClientPid = 12345;
-    public ?string $nextTmuxSession = null;
+    private int $nextExitCode = 0;
+    private int $nextClientPid = 12345;
 
     /** @var array{agentCode: string, bin: string, args: list<string>, cwd: string}|null */
     public ?array $lastLaunchCall = null;
-
-    /** @var array{agentCode: string, bin: string, args: list<string>, cwd: string}|null */
-    public ?array $lastResumeCall = null;
 
     /** @var AgentSession|null */
     public ?AgentSession $lastStoppedSession = null;
@@ -126,7 +122,7 @@ final class FakeSessionDriver implements SessionDriverInterface
     public function launch(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
     {
         $this->lastLaunchCall = ['agentCode' => $agentCode, 'bin' => $bin, 'args' => $args, 'cwd' => $cwd];
-        $onSpawned($this->nextClientPid, $this->nextTmuxSession);
+        $onSpawned($this->nextClientPid, null);
         if ($this->onLaunchHook !== null) {
             ($this->onLaunchHook)();
         }
@@ -139,8 +135,7 @@ final class FakeSessionDriver implements SessionDriverInterface
      */
     public function resume(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
     {
-        $this->lastResumeCall = ['agentCode' => $agentCode, 'bin' => $bin, 'args' => $args, 'cwd' => $cwd];
-        $onSpawned($this->nextClientPid, $this->nextTmuxSession);
+        $onSpawned($this->nextClientPid, null);
 
         return $this->nextExitCode;
     }

@@ -12,7 +12,7 @@ namespace SoManAgent\Script\Runner;
  */
 final class DbSchemaRunner extends AbstractScriptRunner
 {
-    public const NAME = 'db-schema';
+    private const NAME = 'db-schema';
 
     protected function getName(): string
     {

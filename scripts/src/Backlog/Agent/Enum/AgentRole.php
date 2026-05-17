@@ -28,11 +28,5 @@ enum AgentRole: string
         };
     }
 
-    /**
-     * Returns the human-readable label for the role.
-     */
-    public function label(): string
-    {
-        return $this->value;
-    }
+
 }

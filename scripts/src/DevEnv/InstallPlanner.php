@@ -90,29 +90,28 @@ final class InstallPlanner
         ?string $currentVersion,
     ): PlannedDep {
         if ($currentVersion === null) {
-            return new PlannedDep($entry, $dep, PlannedDep::ACTION_INSTALL, null);
+            return new PlannedDep($entry, PlannedDep::ACTION_INSTALL, null);
         }
 
         $normalCurrent = $this->vc->normalize($currentVersion);
         $normalTarget = $this->vc->normalize($entry->version);
 
         if (version_compare($normalCurrent, $normalTarget, '>=')) {
-            return new PlannedDep($entry, $dep, PlannedDep::ACTION_SKIP, $currentVersion);
+            return new PlannedDep($entry, PlannedDep::ACTION_SKIP, $currentVersion);
         }
 
         // Current version is strictly older than target → upgrade needed
         if ($dep === null) {
             // No manifest dep to read policy from — default to upgrade
-            return new PlannedDep($entry, $dep, PlannedDep::ACTION_UPGRADE, $currentVersion);
+            return new PlannedDep($entry, PlannedDep::ACTION_UPGRADE, $currentVersion);
         }
 
         $policy = $manifest->resolveOnExistingBelowMin($dep);
 
         return match ($policy) {
-            'upgrade' => new PlannedDep($entry, $dep, PlannedDep::ACTION_UPGRADE, $currentVersion),
+            'upgrade' => new PlannedDep($entry, PlannedDep::ACTION_UPGRADE, $currentVersion),
             'error' => new PlannedDep(
                 $entry,
-                $dep,
                 PlannedDep::ACTION_BLOCKED,
                 $currentVersion,
                 sprintf(
@@ -122,8 +121,8 @@ final class InstallPlanner
                     $entry->version,
                 ),
             ),
-            'confirm' => new PlannedDep($entry, $dep, PlannedDep::ACTION_CONFIRM, $currentVersion),
-            default => new PlannedDep($entry, $dep, PlannedDep::ACTION_UPGRADE, $currentVersion),
+            'confirm' => new PlannedDep($entry, PlannedDep::ACTION_CONFIRM, $currentVersion),
+            default => new PlannedDep($entry, PlannedDep::ACTION_UPGRADE, $currentVersion),
         };
     }
 }

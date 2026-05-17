@@ -12,7 +12,7 @@ namespace SoManAgent\Script\Runner;
  */
 final class FrontendMapRunner extends AbstractScriptRunner
 {
-    public const NAME = 'frontend-map';
+    private const NAME = 'frontend-map';
 
     protected function getName(): string
     {

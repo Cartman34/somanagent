@@ -16,7 +16,7 @@ use SoManAgent\Script\ClaudeAuthManager;
  */
 final class ClaudeAuthRunner extends AbstractScriptRunner
 {
-    public const NAME = 'claude-auth';
+    private const NAME = 'claude-auth';
 
     protected function getName(): string
     {

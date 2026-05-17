@@ -61,12 +61,7 @@ final class BoardYamlStorage
 
         $data = Yaml::parse($content) ?: [];
 
-        $board = new BacklogBoard($path, BacklogBoard::TITLE);
-        $board->setSectionOrder([
-            BacklogBoard::SECTION_TODO,
-            BacklogBoard::SECTION_ACTIVE,
-            BacklogBoard::SECTION_SUGGESTIONS,
-        ]);
+        $board = new BacklogBoard($path);
 
         $board->setEntries(BacklogBoard::SECTION_TODO, $this->loadTodoEntries($data['todo'] ?? []));
         $board->setEntries(BacklogBoard::SECTION_ACTIVE, $this->loadActiveEntries($data['active'] ?? []));

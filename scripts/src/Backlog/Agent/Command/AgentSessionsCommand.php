@@ -43,28 +43,10 @@ final class AgentSessionsCommand extends AbstractAgentCommand
     /**
      * {@inheritdoc}
      */
-    public function getDescription(): string
-    {
-        return 'List past CLI sessions for the worktree bound to an agent code';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function getOptions(): array
     {
         return [
             ['name' => '--code=<code>', 'description' => 'Agent code whose session history to list (required)'],
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getUsageExamples(): array
-    {
-        return [
-            'php scripts/backlog-agent.php sessions --code=d04',
         ];
     }
 

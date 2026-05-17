@@ -56,29 +56,10 @@ final class AgentStatusCommand extends AbstractAgentCommand
     /**
      * {@inheritdoc}
      */
-    public function getDescription(): string
-    {
-        return 'Show session details for one agent or a summary of all sessions';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function getOptions(): array
     {
         return [
             ['name' => '--code=<code>', 'description' => 'Show full details for this agent code'],
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getUsageExamples(): array
-    {
-        return [
-            'php scripts/backlog-agent.php status',
-            'php scripts/backlog-agent.php status --code=d04',
         ];
     }
 

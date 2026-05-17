@@ -35,6 +35,7 @@ final class SetupRunnerTest
 
     /**
      * Runs all tests and returns the number of failures.
+     * @api
      */
     public function run(): int
     {

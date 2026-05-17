@@ -23,6 +23,7 @@ final class ServerRunnerTest
 
     /**
      * Runs all test cases and returns the total number of failures.
+     * @api
      */
     public function run(): int
     {
@@ -347,7 +348,7 @@ final class FakeHealthProbe implements HealthProbeInterface
      *
      * @var array<string, HealthCheckResult>
      */
-    public array $httpResults = [];
+    private array $httpResults = [];
 
     private function __construct()
     {

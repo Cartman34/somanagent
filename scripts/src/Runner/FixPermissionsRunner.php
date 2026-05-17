@@ -30,7 +30,7 @@ use SoManAgent\Script\Validation\ScriptExecBitValidator;
  */
 final class FixPermissionsRunner extends AbstractScriptRunner
 {
-    public const NAME = 'fix-permissions';
+    private const NAME = 'fix-permissions';
 
     protected function getName(): string
     {

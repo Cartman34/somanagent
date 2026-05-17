@@ -14,7 +14,7 @@ namespace SoManAgent\Script\Runner;
  */
 final class HelpRunner extends AbstractScriptRunner
 {
-    public const NAME = 'help';
+    private const NAME = 'help';
 
     protected function getName(): string
     {

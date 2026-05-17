@@ -52,14 +52,6 @@ final class StateInspector
     }
 
     /**
-     * Returns true when the dependency is installed at any version.
-     */
-    public function isInstalled(Dependency $dep): bool
-    {
-        return $this->getInstalledVersion($dep) !== null;
-    }
-
-    /**
      * Clears the internal version cache.
      *
      * Call this after installation to allow re-detection of updated versions.

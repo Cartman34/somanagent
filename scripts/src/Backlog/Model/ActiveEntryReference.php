@@ -16,13 +16,10 @@ final class ActiveEntryReference
 
     private string $agent;
 
-    private ?string $branch;
-
-    public function __construct(string $feature, string $agent, ?string $branch = null)
+    public function __construct(string $feature, string $agent)
     {
         $this->feature = $feature;
         $this->agent = $agent;
-        $this->branch = $branch;
     }
 
     public function getFeature(): string
@@ -33,10 +30,5 @@ final class ActiveEntryReference
     public function getAgent(): string
     {
         return $this->agent;
-    }
-
-    public function getBranch(): ?string
-    {
-        return $this->branch;
     }
 }

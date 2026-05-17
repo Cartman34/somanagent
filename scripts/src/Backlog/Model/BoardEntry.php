@@ -148,17 +148,6 @@ final class BoardEntry
     }
 
     /**
-     * @param array<string> $lines
-     * @return void
-     */
-    public function appendExtraLines(array $lines): void
-    {
-        foreach ($lines as $line) {
-            $this->extraLines[] = $line;
-        }
-    }
-
-    /**
      * @return ?string
      */
     public function getAgent(): ?string
@@ -380,15 +369,4 @@ final class BoardEntry
         $this->extraMetadata = $extraMetadata;
     }
 
-    /**
-     * @deprecated Use BacklogBoardService::sanitizeString
-     * @param ?string $value
-     * @return ?string
-     */
-    public static function parseEmptyString(?string $value): ?string
-    {
-        $value = trim((string) $value);
-
-        return $value === '' ? null : $value;
-    }
 }

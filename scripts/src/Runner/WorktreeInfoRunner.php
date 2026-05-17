@@ -14,7 +14,7 @@ use SoManAgent\Script\WorktreeScriptProxy;
  */
 final class WorktreeInfoRunner extends AbstractScriptRunner
 {
-    public const NAME = 'worktree-info';
+    private const NAME = 'worktree-info';
 
     protected function getName(): string
     {

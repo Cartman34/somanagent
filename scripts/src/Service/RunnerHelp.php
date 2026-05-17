@@ -18,7 +18,6 @@ final class RunnerHelp
      * @param list<string>           $commandNames
      */
     public function __construct(
-        public readonly string $name,
         public readonly string $description,
         public readonly array $options,
         public readonly array $examples,

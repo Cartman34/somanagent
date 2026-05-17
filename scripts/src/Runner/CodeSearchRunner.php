@@ -12,7 +12,7 @@ namespace SoManAgent\Script\Runner;
  */
 final class CodeSearchRunner extends AbstractScriptRunner
 {
-    public const NAME = 'code-search';
+    private const NAME = 'code-search';
 
     protected function getName(): string
     {

@@ -24,7 +24,7 @@ final class PhpUnitRunner extends AbstractScriptRunner
         ],
     ];
 
-    public const NAME = 'phpunit';
+    private const NAME = 'phpunit';
 
     protected function getName(): string
     {

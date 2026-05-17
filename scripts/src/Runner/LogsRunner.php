@@ -14,7 +14,7 @@ namespace SoManAgent\Script\Runner;
  */
 final class LogsRunner extends AbstractScriptRunner
 {
-    public const NAME = 'logs';
+    private const NAME = 'logs';
 
     protected function getName(): string
     {

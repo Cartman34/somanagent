@@ -26,7 +26,7 @@ use SoManAgent\Script\Test\Backlog\Campaign\WorkStartTypePrefixCampaign;
  */
 final class TestBacklogWorkflowRunner extends AbstractScriptRunner
 {
-    public const NAME = 'test-backlog-workflow';
+    private const NAME = 'test-backlog-workflow';
 
     protected function getName(): string
     {
@@ -101,7 +101,6 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
             reviewPath: $this->projectRoot . '/local/tests/test-backlog-workflow-review.md',
             tmpDir: $this->projectRoot . '/local/tests',
             worktreesRoot: $worktreesRoot,
-            allowRemote: $allowRemote,
             allowIntegration: $allowIntegration,
             keepArtifacts: $keepArtifacts,
             dryRun: $this->dryRun,

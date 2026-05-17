@@ -24,7 +24,7 @@ use SoManAgent\Script\Backlog\Agent\Service\LauncherFlagValidator;
  */
 final class ValidateAgentLaunchersRunner extends AbstractScriptRunner
 {
-    public const NAME = 'validate-agent-launchers';
+    private const NAME = 'validate-agent-launchers';
 
     protected function getName(): string
     {

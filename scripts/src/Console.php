@@ -49,18 +49,6 @@ final class Console
         echo $text . $this->eol;
     }
 
-    /** Horizontal rule: ══════════════ */
-    public function hr(int $width = 50, string $char = '═'): void
-    {
-        $this->line(str_repeat($char, $width));
-    }
-
-    /** Thin horizontal rule: ────────── */
-    public function separator(int $width = 50): void
-    {
-        $this->hr($width, '─');
-    }
-
     // ── Semantic helpers (used by scripts) ────────────────────────────────────
 
     /** ▶ Step heading */

@@ -84,6 +84,7 @@ final class WorktreeScriptProxy
      * Always strips --force-current-worktree from $argv so downstream runners never see the proxy flag,
      * which would otherwise be consumed as the value of an option by argument parsers.
      *
+     * @api Called from top-level scripts (e.g. scripts/backlog-agent.php) outside the PHPStan analysis path.
      * @param array<string> $argv Mutated in place: --force-current-worktree is removed and indices reindexed.
      */
     public static function run(array &$argv): void

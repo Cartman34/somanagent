@@ -50,13 +50,6 @@ final class FakeBacklogCommandRunner implements BacklogCommandRunner
     public $onWorkStart = null;
 
     /**
-     * Optional callback invoked during entryRelease(). Receives (developerCode, entryRef).
-     *
-     * @var (callable(string, string): void)|null
-     */
-    public $onEntryRelease = null;
-
-    /**
      * {@inheritdoc}
      */
     public function reviewNext(string $reviewerCode, string $entryRef): void
@@ -95,8 +88,5 @@ final class FakeBacklogCommandRunner implements BacklogCommandRunner
     public function entryRelease(string $developerCode, string $entryRef): void
     {
         $this->calls[] = ['method' => 'entryRelease', 'developerCode' => $developerCode, 'entryRef' => $entryRef];
-        if ($this->onEntryRelease !== null) {
-            ($this->onEntryRelease)($developerCode, $entryRef);
-        }
     }
 }

@@ -15,10 +15,7 @@ final class Environment
 {
     // ── OS detection ──────────────────────────────────────────────────────────
 
-    /**
-     * Returns true when the current operating system is Windows.
-     */
-    public static function isWindows(): bool
+    private static function isWindows(): bool
     {
         return PHP_OS_FAMILY === 'Windows';
     }
@@ -73,26 +70,6 @@ final class Environment
     }
 
     // ── Filesystem ────────────────────────────────────────────────────────────
-
-    /**
-     * Returns true when running inside WSL but the current working directory
-     * is on the Windows NTFS filesystem (/mnt/c/…, /mnt/d/…, etc.).
-     *
-     * This matters because Docker bind mounts from /mnt/* go through the 9P
-     * filesystem protocol over the Hyper-V virtio channel, which is 5-20x
-     * slower than WSL's native ext4 filesystem. Moving the project to ~/…
-     * eliminates the overhead and brings Docker I/O to native Linux speed.
-     */
-    public static function isOnWindowsFilesystem(): bool
-    {
-        if (!self::isWsl()) {
-            return false;
-        }
-
-        $cwd = getcwd();
-        // /mnt/c/, /mnt/d/, etc. are Windows NTFS drives mounted in WSL
-        return $cwd !== false && (bool) preg_match('#^/mnt/[a-z]/#', $cwd);
-    }
 
     // ── WSL availability ──────────────────────────────────────────────────────
 

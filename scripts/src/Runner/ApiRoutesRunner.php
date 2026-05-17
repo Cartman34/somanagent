@@ -14,7 +14,7 @@ use SoManAgent\Script\Api\ControllerRouteCatalog;
  */
 final class ApiRoutesRunner extends AbstractScriptRunner
 {
-    public const NAME = 'api-routes';
+    private const NAME = 'api-routes';
 
     protected function getName(): string
     {

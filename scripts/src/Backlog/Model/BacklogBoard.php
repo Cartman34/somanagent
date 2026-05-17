@@ -12,16 +12,8 @@ namespace SoManAgent\Script\Backlog\Model;
  */
 final class BacklogBoard
 {
-    public const TITLE = '# Backlog board';
     public const SECTION_TODO = 'To do';
     public const SECTION_ACTIVE = 'In progress';
-    public const SECTION_SUGGESTIONS = 'Suggestions';
-
-    /** @var list<string> */
-    public const LEGACY_TITLES = ['# Tableau du backlog'];
-
-    /** @var list<string> */
-    public const LEGACY_RULE_SECTIONS = ["R\u{00E8}gles d'usage", 'Usage rules'];
 
     public const STAGE_IN_PROGRESS = 'development';
     public const STAGE_IN_REVIEW = 'review';
@@ -31,25 +23,15 @@ final class BacklogBoard
 
     private string $path;
 
-    private string $title;
-
-    /** @var array<int, string> */
-    private array $sectionOrder = [];
-
-    /** @var array<string, array<string>> */
-    private array $rawSections = [];
-
     /** @var array<string, array<BoardEntry>> */
     private array $taskSections = [];
 
     /**
      * @param string $path
-     * @param string $title
      */
-    public function __construct(string $path, string $title)
+    public function __construct(string $path)
     {
         $this->path = $path;
-        $this->title = $title;
     }
 
     /**
@@ -58,57 +40,6 @@ final class BacklogBoard
     public function getPath(): string
     {
         return $this->path;
-    }
-
-    /**
-     * @return string
-     */
-    public function getTitle(): string
-    {
-        return $this->title;
-    }
-
-    /**
-     * @param string $title
-     * @return void
-     */
-    public function setTitle(string $title): void
-    {
-        $this->title = $title;
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    public function getSectionOrder(): array
-    {
-        return $this->sectionOrder;
-    }
-
-    /**
-     * @param array<int, string> $sectionOrder
-     * @return void
-     */
-    public function setSectionOrder(array $sectionOrder): void
-    {
-        $this->sectionOrder = $sectionOrder;
-    }
-
-    /**
-     * @return array<string, array<string>>
-     */
-    public function getRawSections(): array
-    {
-        return $this->rawSections;
-    }
-
-    /**
-     * @param array<string, array<string>> $rawSections
-     * @return void
-     */
-    public function setRawSections(array $rawSections): void
-    {
-        $this->rawSections = $rawSections;
     }
 
     /**

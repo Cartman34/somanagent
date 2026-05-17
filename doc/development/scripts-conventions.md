@@ -113,6 +113,34 @@ One-shot data or format migrations are not permanent tooling. They exist for a b
 - Migration scripts are not listed in [`scripts.md`](scripts.md) — that file documents permanent tooling. `migrations.md` is the sole user-facing surface for migrations.
 - `php scripts/migrations-audit.php` reports migrations whose retirement condition is met but whose file is still present.
 
+## Dead Code Detection
+
+PHPStan runs the `tomasvotruba/unused-public` extension on every analysis pass (both `--scope=scripts` and the full default run). It reports public methods, properties, and constants that have no caller or reader anywhere in the analysed paths.
+
+**Rule:** introducing or leaving dead public elements is a blocker in review and will fail the PHPStan pipeline.
+
+**How to fix a finding:**
+
+- Remove the element if it is genuinely unused.
+- Make it `private` or `protected` if visibility was incorrectly widened.
+- Annotate with `@api` if the element is intentionally public but called from outside the PHPStan analysis path (e.g. top-level scripts, reflection, or external callers). Add a brief reason in the docblock comment.
+
+**Example `@api` usage:**
+
+```php
+/**
+ * @api Called from top-level scripts (e.g. scripts/phpstan.php) outside the PHPStan analysis path.
+ */
+public function handle(array $argv): int { ... }
+```
+
+**Fixtures:** `scripts/src/Validation/Test/Fixture/` contains two reference fixtures excluded from the regular pipeline:
+
+- `DeadPublicMethodFixture.php` — triggers `public.method.unused`; run with `php scripts/vendor/bin/phpstan analyse --configuration config/phpstan-fixture.neon scripts/src/Validation/Test/Fixture/DeadPublicMethodFixture.php` to see the expected error.
+- `ApiAnnotatedFixture.php` — demonstrates that `@api` suppresses the error; same command with this file should report `[OK] No errors`.
+
+**Backend baseline:** `config/phpstan-baseline.neon` captures pre-existing dead code in `backend/src/` that was present before the extension was introduced. New backend dead code is still caught. Cleaning the baseline entries is a separate follow-up task.
+
 ## Review Expectations
 
 A script change is not done until it also respects:

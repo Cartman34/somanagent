@@ -179,6 +179,7 @@ abstract class AbstractScriptRunner
     /**
      * Bootstrap the application, change to project directory, and dispatch.
      *
+     * @api Called from top-level scripts (e.g. scripts/phpstan.php) outside the PHPStan analysis path.
      * @param array<string> $argv   Raw $argv from the calling script
      */
     final public function handle(array $argv): void
