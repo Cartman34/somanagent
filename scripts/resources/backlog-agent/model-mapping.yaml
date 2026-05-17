@@ -22,9 +22,9 @@ clients:
         medium: ['--model', 'gpt-5.4-mini', '--config', 'model_reasoning_effort="medium"']
         high: ['--model', 'gpt-5.4-mini', '--config', 'model_reasoning_effort="high"']
       balanced:
-        low: ['--model', 'gpt-5.4', '--config', 'model_reasoning_effort="low"']
-        medium: ['--model', 'gpt-5.4', '--config', 'model_reasoning_effort="medium"']
-        high: ['--model', 'gpt-5.4', '--config', 'model_reasoning_effort="high"']
+        low: ['--model', 'gpt-5.5', '--config', 'model_reasoning_effort="low"']
+        medium: ['--model', 'gpt-5.5', '--config', 'model_reasoning_effort="medium"']
+        high: ['--model', 'gpt-5.5', '--config', 'model_reasoning_effort="high"']
       premium:
         low: ['--model', 'gpt-5.5', '--config', 'model_reasoning_effort="low"']
         medium: ['--model', 'gpt-5.5', '--config', 'model_reasoning_effort="medium"']
