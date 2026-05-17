@@ -89,6 +89,7 @@ Rules:
 3. For a task entry, `<entry-ref>` is `<feature-slug>/<task-slug>`.
 4. A bare `<task-slug>` is not a stable `<entry-ref>` and must not be used in documented workflows.
 5. When a command can omit `<entry-ref>`, it falls back to the caller agent's single active entry as documented by that command.
+6. `<entry-ref>` is always the bare slug shape described above. Branch names produced from an entry (such as `tech/<feature-slug>` or `feat/<feature-slug>`) are never accepted as `<entry-ref>`. `Branch:` fields shown by commands like `review-next` or `status` are informational; do not copy them into subsequent backlog commands. Use the entry slug printed elsewhere in the same output.
 
 ## Assignment Permission Rules
 
