@@ -375,8 +375,10 @@ final class AgentStartCommand extends AbstractAgentCommand
                 $match = $this->reviewerSelector->selectByFeature($board, $featureOpt, $reviewerCode);
             } elseif ($taskOpt !== null) {
                 $match = $this->reviewerSelector->selectByTask($board, $taskOpt, $reviewerCode);
-            } else {
+            } elseif ($developerOpt !== null) {
                 $match = $this->reviewerSelector->selectByDeveloper($board, $developerOpt, $reviewerCode);
+            } else {
+                throw new \LogicException('Unexpected state: no explicit targeting option is set.');
             }
 
             $entry = $match->getEntry();
