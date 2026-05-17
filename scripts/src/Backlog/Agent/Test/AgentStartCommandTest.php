@@ -24,6 +24,7 @@ use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
+use SoManAgent\Script\Backlog\Service\EntryRebaseResult;
 use SoManAgent\Script\Application;
 use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Client\FilesystemClient;
@@ -98,6 +99,11 @@ final class AgentStartCommandTest
         $failed += $this->testDeveloperRollsBackViaEntryReleaseWhenPreparationFails();
         $failed += $this->testHandleRestoresCwdOnSuccess();
         $failed += $this->testHandleRestoresCwdWhenWorktreeDeletedDuringLaunch();
+        $failed += $this->testDeveloperStageReviewRefuses();
+        $failed += $this->testDeveloperStageReviewingRefuses();
+        $failed += $this->testDeveloperStageApprovedUpToDateSkipsAgent();
+        $failed += $this->testDeveloperStageApprovedConflictLaunchesAgentWithConflictPrompt();
+        $failed += $this->testReviewerStageApprovedRefusesViaResolver();
 
         return $failed;
     }
@@ -426,8 +432,10 @@ final class AgentStartCommandTest
                 . json_encode($fakeRunner->calls) . "\n";
             return 1;
         }
-        if ($launcher->lastInitialPrompt !== null) {
-            echo "FAIL testReviewerModeReusesOwnedReviewingEntry: initial prompt must stay null for an already-owned review\n";
+        $expectedReviewerResumePrompt = $this->buildLaunchPromptResolver()->resolveStageDecision(AgentRole::REVIEWER, BacklogBoard::STAGE_REVIEWING)->getPrompt();
+        if ($launcher->lastInitialPrompt !== $expectedReviewerResumePrompt) {
+            echo "FAIL testReviewerModeReusesOwnedReviewingEntry: expected reviewer_resume prompt, got "
+                . var_export($launcher->lastInitialPrompt, true) . "\n";
             return 1;
         }
 
@@ -1314,8 +1322,10 @@ final class AgentStartCommandTest
                 return 1;
             }
         }
-        if ($launcher->lastInitialPrompt !== null) {
-            echo "FAIL testDeveloperSkipsAutoPickWhenAlreadyHasActiveEntry: initial prompt must stay null for an already-active entry\n";
+        $expectedResumePrompt = $this->buildLaunchPromptResolver()->resolveStageDecision(AgentRole::DEVELOPER, BacklogBoard::STAGE_IN_PROGRESS)->getPrompt();
+        if ($launcher->lastInitialPrompt !== $expectedResumePrompt) {
+            echo "FAIL testDeveloperSkipsAutoPickWhenAlreadyHasActiveEntry: expected developer_resume prompt, got "
+                . var_export($launcher->lastInitialPrompt, true) . "\n";
             return 1;
         }
 
@@ -1560,6 +1570,296 @@ final class AgentStartCommandTest
             mkdir($dir, 0755, true);
         }
         file_put_contents($dir . '/agent-sessions.json', json_encode($data));
+    }
+
+    private function testDeveloperStageReviewRefuses(): int
+    {
+        // Developer with entry at stage=review must get exit code 1 with a refusal message.
+        $projectRoot = $this->createGitProject('dev-stage-review');
+        $boardPath = $projectRoot . '/local/backlog-board.md';
+
+        file_put_contents($boardPath,
+            "# T\n\n## To do\n\n## In progress\n\n"
+            . "- review-feature\n"
+            . "  meta:\n"
+            . "    kind: feature\n"
+            . "    feature: review-feature\n"
+            . "    branch: feat/review-feature\n"
+            . "    stage: review\n"
+            . "    agent: d20\n\n"
+            . "## Suggestions\n"
+        );
+
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $cmd = $this->buildProjectCommand($projectRoot, $launcher);
+
+        $previousCwd = getcwd();
+        $exitCode = null;
+        try {
+            chdir($projectRoot);
+            ob_start();
+            $exitCode = $cmd->handle(['claude'], ['developer' => true, 'code' => 'd20']);
+            ob_end_clean();
+        } catch (\Throwable $e) {
+            ob_end_clean();
+            echo "FAIL testDeveloperStageReviewRefuses: unexpected exception: " . get_class($e) . ': ' . $e->getMessage() . "\n";
+            return 1;
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        if ($exitCode !== 1) {
+            echo "FAIL testDeveloperStageReviewRefuses: expected exit code 1, got {$exitCode}\n";
+            return 1;
+        }
+        if ($launcher->lastLaunchedWorktree !== null) {
+            echo "FAIL testDeveloperStageReviewRefuses: launcher must not be called on refusal\n";
+            return 1;
+        }
+
+        echo "OK testDeveloperStageReviewRefuses\n";
+        return 0;
+    }
+
+    private function testDeveloperStageReviewingRefuses(): int
+    {
+        // Developer with entry at stage=reviewing must get exit code 1 with a refusal message.
+        $projectRoot = $this->createGitProject('dev-stage-reviewing');
+        $boardPath = $projectRoot . '/local/backlog-board.md';
+
+        file_put_contents($boardPath,
+            "# T\n\n## To do\n\n## In progress\n\n"
+            . "- reviewing-feature\n"
+            . "  meta:\n"
+            . "    kind: feature\n"
+            . "    feature: reviewing-feature\n"
+            . "    branch: feat/reviewing-feature\n"
+            . "    stage: reviewing\n"
+            . "    agent: d21\n\n"
+            . "## Suggestions\n"
+        );
+
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $cmd = $this->buildProjectCommand($projectRoot, $launcher);
+
+        $previousCwd = getcwd();
+        $exitCode = null;
+        try {
+            chdir($projectRoot);
+            ob_start();
+            $exitCode = $cmd->handle(['claude'], ['developer' => true, 'code' => 'd21']);
+            ob_end_clean();
+        } catch (\Throwable $e) {
+            ob_end_clean();
+            echo "FAIL testDeveloperStageReviewingRefuses: unexpected exception: " . get_class($e) . ': ' . $e->getMessage() . "\n";
+            return 1;
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        if ($exitCode !== 1) {
+            echo "FAIL testDeveloperStageReviewingRefuses: expected exit code 1, got {$exitCode}\n";
+            return 1;
+        }
+        if ($launcher->lastLaunchedWorktree !== null) {
+            echo "FAIL testDeveloperStageReviewingRefuses: launcher must not be called on refusal\n";
+            return 1;
+        }
+
+        echo "OK testDeveloperStageReviewingRefuses\n";
+        return 0;
+    }
+
+    private function testDeveloperStageApprovedUpToDateSkipsAgent(): int
+    {
+        // Developer with entry at stage=approved and rebase service reporting up-to-date
+        // must exit 0 without launching the agent.
+        $projectRoot = $this->createGitProject('dev-approved-up-to-date');
+        $worktreesRoot = $projectRoot . '/.agent-worktrees';
+        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $worktree = $worktreesRoot . '/d22';
+
+        file_put_contents($boardPath,
+            "# T\n\n## To do\n\n## In progress\n\n"
+            . "- approved-feature\n"
+            . "  meta:\n"
+            . "    kind: feature\n"
+            . "    feature: approved-feature\n"
+            . "    branch: feat/approved-feature\n"
+            . "    stage: approved\n"
+            . "    agent: d22\n\n"
+            . "## Suggestions\n"
+        );
+        $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' worktree add --detach ' . escapeshellarg($worktree) . ' HEAD');
+
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($projectRoot);
+        $fakeRebase = new FakeEntryRebaseService(EntryRebaseResult::upToDate('origin/main'));
+
+        $cmd = new AgentStartCommand(
+            $projectRoot,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            $sessionService,
+            new AgentContextBuilder($projectRoot, $boardPath, $boardService),
+            $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
+            new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot),
+            new AgentDeveloperSelector($boardService),
+            $boardService,
+            new FakeSessionDriver(),
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
+            new FakeBacklogCommandRunner(),
+            null,
+            $this->buildLaunchPromptResolver(),
+            $fakeRebase,
+        );
+
+        $previousCwd = getcwd();
+        $exitCode = null;
+        try {
+            chdir($projectRoot);
+            ob_start();
+            $exitCode = $cmd->handle(['claude'], ['developer' => true, 'code' => 'd22']);
+            ob_end_clean();
+        } catch (\Throwable $e) {
+            ob_end_clean();
+            echo "FAIL testDeveloperStageApprovedUpToDateSkipsAgent: unexpected exception: " . get_class($e) . ': ' . $e->getMessage() . "\n";
+            return 1;
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        if ($exitCode !== 0) {
+            echo "FAIL testDeveloperStageApprovedUpToDateSkipsAgent: expected exit code 0, got {$exitCode}\n";
+            return 1;
+        }
+        if ($launcher->lastLaunchedWorktree !== null) {
+            echo "FAIL testDeveloperStageApprovedUpToDateSkipsAgent: agent must not be launched when rebase is not needed\n";
+            return 1;
+        }
+        if ($fakeRebase->lastCall === null) {
+            echo "FAIL testDeveloperStageApprovedUpToDateSkipsAgent: rebase service was not called\n";
+            return 1;
+        }
+
+        echo "OK testDeveloperStageApprovedUpToDateSkipsAgent\n";
+        return 0;
+    }
+
+    private function testDeveloperStageApprovedConflictLaunchesAgentWithConflictPrompt(): int
+    {
+        // Developer with entry at stage=approved and a rebase conflict must launch the agent
+        // with the conflict-resolution prompt.
+        $projectRoot = $this->createGitProject('dev-approved-conflict');
+        $worktreesRoot = $projectRoot . '/.agent-worktrees';
+        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $worktree = $worktreesRoot . '/d23';
+
+        file_put_contents($boardPath,
+            "# T\n\n## To do\n\n## In progress\n\n"
+            . "- conflict-feature\n"
+            . "  meta:\n"
+            . "    kind: feature\n"
+            . "    feature: conflict-feature\n"
+            . "    branch: feat/conflict-feature\n"
+            . "    stage: approved\n"
+            . "    agent: d23\n\n"
+            . "## Suggestions\n"
+        );
+        $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' worktree add --detach ' . escapeshellarg($worktree) . ' HEAD');
+
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($projectRoot);
+        $fakeRebase = new FakeEntryRebaseService(EntryRebaseResult::conflict('origin/main', ['src/Conflicted.php']));
+
+        $cmd = new AgentStartCommand(
+            $projectRoot,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            $sessionService,
+            new AgentContextBuilder($projectRoot, $boardPath, $boardService),
+            $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
+            new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot),
+            new AgentDeveloperSelector($boardService),
+            $boardService,
+            new FakeSessionDriver(),
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
+            new FakeBacklogCommandRunner(),
+            null,
+            $this->buildLaunchPromptResolver(),
+            $fakeRebase,
+        );
+
+        $previousCwd = getcwd();
+        try {
+            chdir($projectRoot);
+            $cmd->handle(['claude'], ['developer' => true, 'code' => 'd23']);
+        } catch (\Throwable $e) {
+            echo "FAIL testDeveloperStageApprovedConflictLaunchesAgentWithConflictPrompt: unexpected exception: "
+                . get_class($e) . ': ' . $e->getMessage() . "\n";
+            return 1;
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        if ($launcher->lastLaunchedWorktree === null) {
+            echo "FAIL testDeveloperStageApprovedConflictLaunchesAgentWithConflictPrompt: agent must be launched on rebase conflict\n";
+            return 1;
+        }
+
+        $expectedConflictPrompt = $this->buildLaunchPromptResolver()->resolveConflictPrompt();
+        if ($launcher->lastInitialPrompt !== $expectedConflictPrompt) {
+            echo "FAIL testDeveloperStageApprovedConflictLaunchesAgentWithConflictPrompt: expected conflict prompt, got "
+                . var_export($launcher->lastInitialPrompt, true) . "\n";
+            return 1;
+        }
+
+        echo "OK testDeveloperStageApprovedConflictLaunchesAgentWithConflictPrompt\n";
+        return 0;
+    }
+
+    private function testReviewerStageApprovedRefusesViaResolver(): int
+    {
+        // The resolver must return a refusal for reviewer + stage=approved.
+        // This validates the stage mapping independently of the full command flow.
+        $resolver = $this->buildLaunchPromptResolver();
+        $decision = $resolver->resolveStageDecision(AgentRole::REVIEWER, BacklogBoard::STAGE_APPROVED);
+
+        if (!$decision->isRefusal()) {
+            echo "FAIL testReviewerStageApprovedRefusesViaResolver: expected refusal for reviewer+approved, got prompt or launcher_handled\n";
+            return 1;
+        }
+
+        if (!str_contains(mb_strtolower($decision->getMessage()), 'user-merge')) {
+            echo "FAIL testReviewerStageApprovedRefusesViaResolver: refusal message does not mention user-merge. Got: "
+                . $decision->getMessage() . "\n";
+            return 1;
+        }
+
+        echo "OK testReviewerStageApprovedRefusesViaResolver\n";
+        return 0;
     }
 
     /**

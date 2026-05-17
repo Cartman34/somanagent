@@ -20,8 +20,11 @@ use SoManAgent\Script\Backlog\Agent\Test\AgentDeveloperSelectorTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentReviewerSelectorTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentSessionServiceTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentSessionsCommandTest;
+use SoManAgent\Script\Backlog\Agent\Test\AgentLaunchPromptResolverTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentStartCommandManagerTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentStartCommandTest;
+use SoManAgent\Script\Backlog\Agent\Test\EntryRebaseCommandTest;
+use SoManAgent\Script\Backlog\Agent\Test\EntryRebaseServiceTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentStatusCommandTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentStopCommandTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentWhoamiCommandTest;
@@ -77,7 +80,10 @@ $suites = [
     'TmuxSessionDriverTest' => TmuxSessionDriverTest::class,
     'AgentStopCommandTest' => AgentStopCommandTest::class,
     'AgentResumeCommandTest' => AgentResumeCommandTest::class,
+    'AgentLaunchPromptResolverTest' => AgentLaunchPromptResolverTest::class,
     'AgentStartCommandTest' => AgentStartCommandTest::class,
+    'EntryRebaseServiceTest' => EntryRebaseServiceTest::class,
+    'EntryRebaseCommandTest' => EntryRebaseCommandTest::class,
     'AgentListCommandTest' => AgentListCommandTest::class,
     'AgentStatusCommandTest' => AgentStatusCommandTest::class,
     'AgentWhoamiCommandTest' => AgentWhoamiCommandTest::class,

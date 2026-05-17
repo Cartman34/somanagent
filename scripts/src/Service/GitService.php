@@ -183,6 +183,29 @@ final class GitService
     }
 
     /**
+     * Attempts a rebase without aborting on conflict.
+     *
+     * Returns an empty array when the rebase succeeds.
+     * Returns a non-empty list of conflicting file paths when the rebase stops
+     * on a conflict, leaving the worktree in "rebase in progress" state so the
+     * caller (agent or operator) can resolve the conflicts and continue the rebase.
+     *
+     * @param string $worktree Worktree path to rebase in
+     * @param string $onto Target ref to rebase onto
+     * @return list<string> Empty on success; conflict file list on conflict
+     */
+    public function tryRebaseInPath(string $worktree, string $onto): array
+    {
+        try {
+            $this->git->rebaseInPath($worktree, $onto);
+
+            return [];
+        } catch (\RuntimeException) {
+            return $this->git->getUnmergedFilesInPath($worktree);
+        }
+    }
+
+    /**
      * Check if a branch has no development commits compared to base.
      *
      * @param string $base Base branch

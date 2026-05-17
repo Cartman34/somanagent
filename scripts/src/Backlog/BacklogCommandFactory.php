@@ -12,6 +12,7 @@ use SoManAgent\Script\Backlog\Command\BacklogBaseUpdateCommand;
 use SoManAgent\Script\Backlog\Command\BacklogEntryAssignCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureBlockCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureCloseCommand;
+use SoManAgent\Script\Backlog\Command\BacklogEntryRebaseCommand;
 use SoManAgent\Script\Backlog\Command\BacklogUserMergeCommand;
 use SoManAgent\Script\Backlog\Command\BacklogListCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureMergeCommand;
@@ -55,6 +56,7 @@ use SoManAgent\Script\Client\GitClient;
 use SoManAgent\Script\Client\GitHubClient;
 use SoManAgent\Script\Client\ProjectScriptClient;
 use SoManAgent\Script\Console;
+use SoManAgent\Script\Backlog\Service\EntryRebaseService;
 use SoManAgent\Script\Service\GitService;
 use SoManAgent\Script\Service\PullRequestService;
 use SoManAgent\Script\TextSlugger;
@@ -94,6 +96,7 @@ final class BacklogCommandFactory
     private ?BacklogFeatureMergeCommand $featureMergeCommand = null;
     private ?BacklogFeatureTaskMergeCommand $featureTaskMergeCommand = null;
     private ?BodyFilePathResolver $bodyFilePathResolver = null;
+    private ?EntryRebaseService $entryRebaseService = null;
 
     /**
      * Constructor.
@@ -168,6 +171,7 @@ final class BacklogCommandFactory
             BacklogCommandName::LIST->value => BacklogListCommand::class,
             BacklogCommandName::FEATURE_CLOSE->value => BacklogFeatureCloseCommand::class,
             BacklogCommandName::USER_MERGE->value => BacklogUserMergeCommand::class,
+            BacklogCommandName::ENTRY_REBASE->value => BacklogEntryRebaseCommand::class,
         ];
 
         $class = $map[$commandName] ?? null;
@@ -214,6 +218,7 @@ final class BacklogCommandFactory
                 BodyFilePathResolver::class => $this->getBodyFilePathResolver(),
                 BacklogFeatureMergeCommand::class => $this->getFeatureMergeCommand(),
                 BacklogFeatureTaskMergeCommand::class => $this->getFeatureTaskMergeCommand(),
+                EntryRebaseService::class => $this->getEntryRebaseService(),
                 self::class => $this,
                 default => throw new \RuntimeException('Unable to inject ' . $type->getName()),
             };
@@ -443,6 +448,23 @@ final class BacklogCommandFactory
         }
 
         return $this->bodyFilePathResolver;
+    }
+
+    /**
+     * Get the entry rebase service.
+     *
+     * @return EntryRebaseService
+     */
+    public function getEntryRebaseService(): EntryRebaseService
+    {
+        if ($this->entryRebaseService === null) {
+            $this->entryRebaseService = new EntryRebaseService(
+                $this->getBoardService(),
+                $this->getGitService(),
+            );
+        }
+
+        return $this->entryRebaseService;
     }
 
     /**
