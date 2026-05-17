@@ -14,8 +14,8 @@ use SoManAgent\Script\Backlog\Model\BacklogBoard;
 /**
  * Generates <WA>/local/agent-context.md for every agent session start and resume.
  *
- * The file is hidden from git status of the WA via .git/info/exclude
- * (managed by BacklogWorktreeService::ensureWorktreeRuntimeIgnores).
+ * The file lives under `local/`, which is gitignored at the project level
+ * (root `.gitignore` `local/*`), so it never appears in `git status`.
  *
  * Section order (spec §6):
  *   1. Title
@@ -59,8 +59,6 @@ final class AgentContextBuilder
 
         $content = $this->render($worktree, $code, $role);
         file_put_contents($contextFilePath, $content);
-
-        $this->ensureContextExcluded($worktree);
 
         return $contextFilePath;
     }
@@ -391,22 +389,5 @@ final class AgentContextBuilder
         }
 
         return null;
-    }
-
-    private function ensureContextExcluded(string $worktree): void
-    {
-        $excludeFile = $worktree . '/.git/info/exclude';
-        $excludeDir = dirname($excludeFile);
-
-        if (!is_dir($excludeDir)) {
-            return;
-        }
-
-        $pattern = 'local/agent-context.md';
-        $existing = is_file($excludeFile) ? (string) file_get_contents($excludeFile) : '';
-
-        if (!str_contains($existing, $pattern)) {
-            file_put_contents($excludeFile, $existing . (str_ends_with($existing, "\n") || $existing === '' ? '' : "\n") . $pattern . "\n");
-        }
     }
 }

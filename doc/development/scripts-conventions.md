@@ -83,6 +83,7 @@ Expected author syntax:
 - Treat mounted directories carefully.
 - Do not replace or delete the root of a bind-mounted directory when preserving the mount point matters; clear contents instead.
 - Prefer dedicated methods for directory creation, cleanup, copy, and hashing rather than duplicating filesystem logic inline.
+- Project code never reads or writes anywhere under `.git/`. That directory is git's internal state, subject to git's own locking and conventions; any project write concurrent with a git operation on a shared `.git/` (worktrees) risks lock errors. File exclusions go through a versioned `.gitignore` at the repository root or a `.gitignore` placed in the relevant subdirectory — never through `.git/info/exclude` or any other file under `.git/`. Helpers like `git rev-parse --git-path` or `git update-index --assume-unchanged` exist only to coordinate with git internals and have no place in project tooling.
 
 ## Local Working Directories
 
