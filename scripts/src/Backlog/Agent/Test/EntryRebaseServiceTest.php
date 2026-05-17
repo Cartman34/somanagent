@@ -48,12 +48,18 @@ final class EntryRebaseServiceTest
         $this->originalCwd = (string) getcwd();
     }
 
+    /**
+     * Restores the original working directory and removes the temporary directory.
+     */
     public function __destruct()
     {
         chdir($this->originalCwd);
         $this->rmdir($this->tmpDir);
     }
 
+    /**
+     * Runs all test cases and returns the cumulative failure count.
+     */
     public function run(): int
     {
         $failed = 0;

@@ -26,6 +26,9 @@ final class AgentLaunchPromptResolverTest
      */
     private array $table;
 
+    /**
+     * Initialises the prompt path and the test table.
+     */
     public function __construct()
     {
         $this->promptPath = dirname(__DIR__, 4) . '/resources/backlog-agent/launch-prompts.yaml';
