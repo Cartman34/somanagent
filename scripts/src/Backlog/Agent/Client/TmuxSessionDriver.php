@@ -111,7 +111,7 @@ final class TmuxSessionDriver implements SessionDriverInterface
         $wrapperPath = $this->writeWrapperScript($bin, $args, $env);
 
         try {
-            $this->createSession($name, $wrapperPath, $cwd);
+            $this->createSession($name, $agentCode, $wrapperPath, $cwd);
             $panePid = $this->getPanePid($name);
             $onSpawned($panePid, $name);
 
@@ -143,7 +143,7 @@ final class TmuxSessionDriver implements SessionDriverInterface
         $wrapperPath = $this->writeWrapperScript($bin, $args, $env);
 
         try {
-            $this->createSession($name, $wrapperPath, $cwd);
+            $this->createSession($name, $agentCode, $wrapperPath, $cwd);
             $panePid = $this->getPanePid($name);
             $onSpawned($panePid, $name);
 
@@ -269,13 +269,13 @@ final class TmuxSessionDriver implements SessionDriverInterface
     /**
      * Creates a detached tmux session running the wrapper script in the given working directory.
      *
-     * After the session is created, mouse mode and an extended scrollback buffer are applied via
-     * set-option. The AI client runs in alt-screen mode, which bypasses the host terminal scrollback;
-     * mouse mode enables wheel-scroll in the pane via tmux copy mode. Both options are ergonomic
-     * improvements; if either set-option call fails, a warning is emitted and the session continues
-     * without that option.
+     * After the session is created, mouse mode, an extended scrollback buffer, and the Sowapps
+     * status-line branding are applied via session-targeted tmux options. The AI client runs in
+     * alt-screen mode, which bypasses the host terminal scrollback; mouse mode enables wheel-scroll
+     * in the pane via tmux copy mode. These options are ergonomic improvements; if any set call
+     * fails, a warning is emitted and the session continues without that option.
      */
-    private function createSession(string $name, string $wrapperPath, string $cwd): void
+    private function createSession(string $name, string $agentCode, string $wrapperPath, string $cwd): void
     {
         $command = sprintf(
             'tmux new-session -d -s %s -c %s %s',
@@ -293,6 +293,45 @@ final class TmuxSessionDriver implements SessionDriverInterface
         }
         if (!$this->shellRunner->succeeds(sprintf('tmux set-option -t %s history-limit 50000', escapeshellarg($name)))) {
             $this->console->warn(sprintf("tmux set-option history-limit failed for session '%s'; scrollback history uses the tmux default.", $name));
+        }
+
+        $this->applySowappsStatusLine($name, $agentCode);
+    }
+
+    /**
+     * Applies the one-line Sowapps tmux status-line branding to this session only.
+     */
+    private function applySowappsStatusLine(string $name, string $agentCode): void
+    {
+        $options = [
+            'status' => 'on',
+            'status-style' => 'bg=colour202,fg=colour231',
+            'status-left-length' => '20',
+            'status-right-length' => '50',
+            'status-left' => '#[fg=colour202,bg=colour231] SOWAPPS #[default] ',
+            'status-right' => sprintf('#[fg=colour202,bg=colour231] %s #[default] %%Y-%%m-%%d %%H:%%M:%%S ', $agentCode),
+            'window-status-format' => ' #W ',
+            'window-status-current-format' => ' #W ',
+            'window-status-style' => 'bg=colour202,fg=colour231',
+            'window-status-current-style' => 'bg=terminal,fg=colour231,bold',
+            'window-status-separator' => '',
+        ];
+
+        foreach ($options as $option => $value) {
+            $command = sprintf(
+                'tmux set -t %s %s %s',
+                escapeshellarg($name),
+                $option,
+                escapeshellarg($value),
+            );
+
+            if (!$this->shellRunner->succeeds($command)) {
+                $this->console->warn(sprintf(
+                    "tmux set %s failed for session '%s'; Sowapps status-line branding may be incomplete.",
+                    $option,
+                    $name,
+                ));
+            }
         }
     }
 

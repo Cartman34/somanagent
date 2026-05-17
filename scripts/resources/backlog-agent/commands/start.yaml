@@ -50,5 +50,6 @@ notes:
   - 'After a developer auto-pick or reviewer auto-claim, the role launch prompt from scripts/resources/backlog-agent/launch-prompts.yaml is sent as the initial user message. The prompt depends on the active stage — see launch-prompts.yaml for the full mapping.'
   - 'Manager: no auto-pick; runs directly in WP without a WA.'
   - 'Session driver is selected by BACKLOG_AGENT_SESSION_DRIVER=tmux|direct (default: tmux).'
+  - 'With the tmux driver, agent sessions use the Sowapps status-line and show the agent code on the right.'
   - 'Run php scripts/setup.php install --preview-only to verify system dependencies (e.g. tmux) before launching.'
   - 'Each client receives permission flags at launch so agents can operate without interactive approval prompts: claude gets --permission-mode acceptEdits, codex gets --ask-for-approval never, gemini gets --approval-mode auto_edit --skip-trust, opencode gets --dangerously-skip-permissions. These flags are CLI-scoped and do not modify any global user config.'
