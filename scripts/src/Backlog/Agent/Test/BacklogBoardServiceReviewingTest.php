@@ -111,7 +111,7 @@ final class BacklogBoardServiceReviewingTest
     private function testTaskNotFoundSuggestsEntryReferenceForKnownBranch(): int
     {
         $service = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
-        $board = new BacklogBoard('/tmp/board.md', '# Test backlog');
+        $board = new BacklogBoard('/tmp/board.md');
         $entry = $this->taskEntry('reference-feature', 'child-task', 'review', 'r01');
         $entry->setBranch('tech/reference-feature--child-task');
         $board->setEntries(BacklogBoard::SECTION_ACTIVE, [$entry]);
