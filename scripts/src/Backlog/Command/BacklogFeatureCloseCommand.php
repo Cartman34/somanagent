@@ -83,6 +83,7 @@ final class BacklogFeatureCloseCommand extends AbstractBacklogCommand
 
         $cleaned = $this->worktreeService->cleanupAbandonedManagedWorktrees($board);
 
+        $this->presenter->displayLine('Entry-ref: ' . $feature);
         $this->presenter->displaySuccess(sprintf('Closed feature %s', $feature));
         if ($cleaned > 0) {
             $this->presenter->displayLine(sprintf('Cleaned %d abandoned managed worktree%s.', $cleaned, $cleaned > 1 ? 's' : ''));

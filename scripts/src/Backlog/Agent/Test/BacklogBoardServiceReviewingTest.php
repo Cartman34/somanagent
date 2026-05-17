@@ -27,6 +27,9 @@ final class BacklogBoardServiceReviewingTest
 
         $failed += $this->testFindReviewingEntryByReviewerReturnsMatchingEntry();
         $failed += $this->testFindReviewingEntryByReviewerIgnoresReviewStageAndOtherReviewer();
+        $failed += $this->testEntryReferenceUsesFeatureSlugForFeatures();
+        $failed += $this->testEntryReferenceUsesFullReferenceForTasks();
+        $failed += $this->testTaskNotFoundSuggestsEntryReferenceForKnownBranch();
 
         return $failed;
     }
@@ -72,11 +75,80 @@ final class BacklogBoardServiceReviewingTest
         return 0;
     }
 
+    private function testEntryReferenceUsesFeatureSlugForFeatures(): int
+    {
+        $service = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $entry = $this->entry('reference-feature', 'review', 'r01');
+        $entry->setBranch('tech/reference-feature');
+
+        $reference = $service->getEntryReference($entry);
+        if ($reference !== 'reference-feature') {
+            echo "FAIL testEntryReferenceUsesFeatureSlugForFeatures: expected reference-feature, got {$reference}\n";
+            return 1;
+        }
+
+        echo "OK testEntryReferenceUsesFeatureSlugForFeatures\n";
+        return 0;
+    }
+
+    private function testEntryReferenceUsesFullReferenceForTasks(): int
+    {
+        $service = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $entry = $this->taskEntry('reference-feature', 'child-task', 'review', 'r01');
+        $entry->setBranch('tech/reference-feature--child-task');
+
+        $reference = $service->getEntryReference($entry);
+        if ($reference !== 'reference-feature/child-task') {
+            echo "FAIL testEntryReferenceUsesFullReferenceForTasks: expected reference-feature/child-task, got {$reference}\n";
+            return 1;
+        }
+
+        echo "OK testEntryReferenceUsesFullReferenceForTasks\n";
+        return 0;
+    }
+
+    private function testTaskNotFoundSuggestsEntryReferenceForKnownBranch(): int
+    {
+        $service = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $board = new BacklogBoard('/tmp/board.md', '# Test backlog');
+        $entry = $this->taskEntry('reference-feature', 'child-task', 'review', 'r01');
+        $entry->setBranch('tech/reference-feature--child-task');
+        $board->setEntries(BacklogBoard::SECTION_ACTIVE, [$entry]);
+
+        try {
+            $service->resolveTaskByReference($board, 'tech/reference-feature--child-task', 'review-check');
+        } catch (\RuntimeException $exception) {
+            if (str_contains($exception->getMessage(), 'Did you mean reference-feature/child-task?')) {
+                echo "OK testTaskNotFoundSuggestsEntryReferenceForKnownBranch\n";
+                return 0;
+            }
+
+            echo "FAIL testTaskNotFoundSuggestsEntryReferenceForKnownBranch: unexpected message {$exception->getMessage()}\n";
+            return 1;
+        }
+
+        echo "FAIL testTaskNotFoundSuggestsEntryReferenceForKnownBranch: expected RuntimeException\n";
+        return 1;
+    }
+
     private function entry(string $feature, string $stage, ?string $reviewer): BoardEntry
     {
         $entry = new BoardEntry($feature);
         $entry->setKind(BacklogBoardService::ENTRY_KIND_FEATURE);
         $entry->setFeature($feature);
+        $entry->setStage($stage);
+        $entry->setAgent('d01');
+        $entry->setReviewer($reviewer);
+
+        return $entry;
+    }
+
+    private function taskEntry(string $feature, string $task, string $stage, ?string $reviewer): BoardEntry
+    {
+        $entry = new BoardEntry($task);
+        $entry->setKind(BacklogBoardService::ENTRY_KIND_TASK);
+        $entry->setFeature($feature);
+        $entry->setTask($task);
         $entry->setStage($stage);
         $entry->setAgent('d01');
         $entry->setReviewer($reviewer);

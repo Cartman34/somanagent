@@ -10,4 +10,5 @@ notes:
   - 'Use <entry-ref> for both feature and child task entries.'
   - 'Short task references (bare task slug without the parent feature) are refused; use <entry-ref>.'
   - 'The entry must be in the review or reviewing stage.'
+  - 'Before mechanical results, the command prints `Entry-ref:` and `Branch:`; copy `Entry-ref:` for follow-up commands.'
   - 'On mechanical review failure, the entry is automatically rejected with generated review notes.'

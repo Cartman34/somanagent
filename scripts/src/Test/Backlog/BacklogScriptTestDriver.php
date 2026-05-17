@@ -843,6 +843,7 @@ MD);
     public function mergeTask(string $reference): void
     {
         $output = $this->runBacklog(['entry-merge', $reference], ['SOMANAGER_AGENT' => 'test-reviewer']);
+        $this->assertOutputContains($output, 'Entry-ref: ' . $reference);
         $this->assertOutputContains($output, 'Resolved type: task');
         $this->assertOutputContains($output, 'Equivalent command: feature-task-merge ' . $reference);
     }
@@ -1054,6 +1055,7 @@ MD);
         }
 
         $output = $this->runBacklog($arguments, ['SOMANAGER_AGENT' => 'test-reviewer']);
+        $this->assertOutputContains($output, 'Entry-ref: ' . $feature);
         $this->assertOutputContains($output, 'Resolved type: feature');
         $this->assertOutputContains($output, 'Equivalent command: feature-merge ' . $feature);
         $this->context->markPullRequestMerged();

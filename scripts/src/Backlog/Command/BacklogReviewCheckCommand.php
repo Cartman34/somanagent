@@ -125,6 +125,10 @@ final class BacklogReviewCheckCommand extends AbstractBacklogCommand
      */
     private function runMechanicalCheck(BacklogBoard $board, BoardEntry $entry, string $reviewKey, string $label): void
     {
+        $this->presenter->displayLine('[Review check]');
+        $this->presenter->displayLine('Entry-ref: ' . $this->boardService->getEntryReference($entry));
+        $this->presenter->displayLine('Branch: ' . ($entry->getBranch() ?? '-'));
+
         $reviewWorktree = $this->worktreeService->prepareFeatureAgentWorktree($entry);
         $savedResult = $this->worktreeService->loadReviewResult($reviewWorktree);
 

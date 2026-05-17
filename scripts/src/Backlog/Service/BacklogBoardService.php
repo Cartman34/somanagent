@@ -269,6 +269,37 @@ final class BacklogBoardService
     }
 
     /**
+     * Returns the stable <entry-ref> for a feature or task entry.
+     */
+    public function getEntryReference(BoardEntry $entry): string
+    {
+        if ($this->checkIsTaskEntry($entry)) {
+            return $this->getTaskReviewKey($entry);
+        }
+
+        return $entry->getFeature() ?? '-';
+    }
+
+    /**
+     * Finds the stable <entry-ref> for an active entry by its stored branch name.
+     */
+    public function findEntryReferenceByBranch(BacklogBoard $board, string $branch): ?string
+    {
+        $trimmed = trim($branch);
+        if ($trimmed === '') {
+            return null;
+        }
+
+        foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
+            if ($entry->getBranch() === $trimmed) {
+                return $this->getEntryReference($entry);
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Finds a parent feature entry in the active section.
      * @param BacklogBoard $board, string $feature
      * @return ?BoardEntryMatch
@@ -312,13 +343,13 @@ final class BacklogBoardService
                 }
             }
 
-            throw new \RuntimeException(sprintf('Task not found: %s/%s', $feature, $task));
+            throw new \RuntimeException($this->taskNotFoundMessage($board, $normalizedReference, sprintf('%s/%s', $feature, $task)));
         }
 
         $task = $this->normalizeFeatureSlug($normalizedReference);
         $matches = $this->findTaskEntriesByTaskSlug($board, $task);
         if ($matches === []) {
-            throw new \RuntimeException(sprintf('Task not found: %s', $task));
+            throw new \RuntimeException($this->taskNotFoundMessage($board, $normalizedReference, $task));
         }
         if (count($matches) > 1) {
             throw new \RuntimeException(sprintf(
@@ -329,6 +360,17 @@ final class BacklogBoardService
         }
 
         return $matches[0];
+    }
+
+    private function taskNotFoundMessage(BacklogBoard $board, string $providedReference, string $normalizedReference): string
+    {
+        $message = sprintf('Task not found: %s', $normalizedReference);
+        $suggestion = $this->findEntryReferenceByBranch($board, $providedReference);
+        if ($suggestion !== null) {
+            $message .= sprintf('. Did you mean %s?', $suggestion);
+        }
+
+        return $message;
     }
 
     /**

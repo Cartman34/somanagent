@@ -27,7 +27,9 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
     public function run(BacklogScriptTestDriver $driver, BacklogScriptTestContext $context): void
     {
         $driver->createTodoTask(sprintf('[fix][%s] %s', $context->fixFeature, $context->fixFeature));
-        $driver->startNextFeature($context->agentPrimary);
+        $startOutput = $driver->startNextFeature($context->agentPrimary);
+        $driver->assertContains($startOutput, 'Entry-ref: ' . $context->fixFeature);
+        $driver->assertContains($startOutput, 'Branch: fix/' . $context->fixFeature);
         $driver->trackFeatureBranch($context->fixFeature);
         $driver->commitFeatureChange($context->agentPrimary, $context->fixFeature, 'test-feature-review-lifecycle.txt');
         $driver->createRemoteTestBaseBranch();
@@ -57,6 +59,12 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $reviewNextOutput = $driver->reviewNext($context->agentSecondary, $context->fixFeature);
         if (!str_contains($reviewNextOutput, $context->fixFeature)) {
             throw new \RuntimeException('Expected review-next to return the active feature review.');
+        }
+        if (!str_contains($reviewNextOutput, 'Entry-ref: ' . $context->fixFeature)) {
+            throw new \RuntimeException('Expected review-next output to show Entry-ref: ' . $context->fixFeature);
+        }
+        if (!str_contains($reviewNextOutput, 'Branch: fix/' . $context->fixFeature)) {
+            throw new \RuntimeException('Expected review-next output to keep Branch: fix/' . $context->fixFeature);
         }
         if (!str_contains($reviewNextOutput, 'Stage: Reviewing')) {
             throw new \RuntimeException('Expected review-next output to show Stage: Reviewing.');
@@ -93,7 +101,9 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $driver->assertCommandIsUnknown('feature-review-check');
         $driver->assertCommandIsUnknown('feature-review-reject');
         $driver->assertCommandIsUnknown('feature-review-approve');
-        $driver->reviewCheck($context->agentSecondary, $context->fixFeature);
+        $reviewCheckOutput = $driver->reviewCheck($context->agentSecondary, $context->fixFeature);
+        $driver->assertContains($reviewCheckOutput, 'Entry-ref: ' . $context->fixFeature);
+        $driver->assertContains($reviewCheckOutput, 'Branch: fix/' . $context->fixFeature);
         $driver->assertReviewRejectFails($context->agentSecondary, $context->fixFeature, $invalidRejectBody, 'Review body items must be plain findings');
         $driver->rejectReviewViaUnifiedCommand($context->agentSecondary, $context->fixFeature, $rejectBody);
         $driver->assertReviewContains($context->fixFeature);

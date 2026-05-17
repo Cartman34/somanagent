@@ -117,6 +117,7 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
             $reviewer,
             'feature',
             $feature,
+            $feature,
             'main',
             $equivalentCommand,
         );
@@ -141,6 +142,7 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
         $this->displayResolvedMerge(
             $reviewer,
             'task',
+            $target,
             $target,
             $parentFeature,
             'feature-task-merge' . ' ' . $target,
@@ -185,10 +187,12 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
         string $reviewer,
         string $type,
         string $target,
+        string $entryReference,
         string $mergeTarget,
         string $equivalentCommand
     ): void {
         $this->presenter->displayLine('[Entry merge]');
+        $this->presenter->displayLine('Entry-ref: ' . $entryReference);
         $this->presenter->displayLine('Reviewer: ' . $reviewer);
         $this->presenter->displayLine('Resolved type: ' . $type);
         $this->presenter->displayLine('Target: ' . $target);
