@@ -9,7 +9,7 @@ Each migration is added here when its file is introduced, kept while it is activ
 
 | Date introduced | Slug | Purpose | Remove after | Status |
 |---|---|---|---|---|
-| — | — | — | — | — |
+| 2026-05-17 | backlog-yaml | Convert `local/backlog-board.md` (markdown + pseudo-YAML meta) to the new structured `local/backlog-board.yaml` format. Source `.md` is preserved; operator removes it manually once satisfied. | All known WAs have been regenerated against the YAML board and no operator needs to migrate a leftover `.md` board anymore. | active |
 
 ## Retired migrations
 

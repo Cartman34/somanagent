@@ -1,4 +1,4 @@
-description: 'Append one new backlog entry from --feature and --body-file at the end of the todo section'
+description: 'Append one new backlog entry from --feature, --type, and --body-file at the end of the todo section'
 options:
   -
     name: '--feature'
@@ -8,7 +8,7 @@ options:
     description: 'Task slug for scoped child tasks (optional; omit for plain feature entries)'
   -
     name: '--type'
-    description: 'Branch type: feat, fix, or tech (optional; stored as entry metadata)'
+    description: 'Branch type: feat, fix, or tech (required; stored as entry metadata and used by work-start to choose the branch prefix)'
   -
     name: '--body-file'
     description: 'Path to a file whose first non-empty line is the entry title; subsequent lines become body (required; typically under local/tmp/)'
@@ -19,15 +19,15 @@ options:
     name: '--index'
     description: '1-based insert position used with --position=index'
 examples:
-  - 'php scripts/backlog.php entry-create --feature=my-feature --body-file=local/tmp/new-task.md'
-  - 'php scripts/backlog.php entry-create --feature=my-feature --task=my-task --type=feat --body-file=local/tmp/new-task.md'
-  - 'php scripts/backlog.php entry-create --feature=my-feature --body-file=local/tmp/new-task.md --position=start'
-  - 'php scripts/backlog.php entry-create --feature=my-feature --body-file=local/tmp/new-task.md --position=index --index=2'
+  - 'php scripts/backlog.php entry-create --feature=my-feature --type=feat --body-file=local/tmp/new-task.md'
+  - 'php scripts/backlog.php entry-create --feature=my-feature --task=my-task --type=tech --body-file=local/tmp/new-task.md'
+  - 'php scripts/backlog.php entry-create --feature=my-feature --type=fix --body-file=local/tmp/new-task.md --position=start'
+  - 'php scripts/backlog.php entry-create --feature=my-feature --type=feat --body-file=local/tmp/new-task.md --position=index --index=2'
 notes:
-  - 'Required: --feature=<slug> declares the feature slug for the entry. --body-file=<path> is mandatory; it must contain the entry title on its first non-empty line.'
+  - 'Required: --feature=<slug>, --type=<feat|fix|tech>, and --body-file=<path>. Missing any required option is rejected with a clear error.'
   - 'Scoped child tasks require --task=<slug> in addition to --feature=<slug>. The feature and task slugs determine the entry reference used by task-remove, work-start, and other commands.'
-  - 'If the new entry is a scoped child task and the parent feature is in review, reviewing, or approved stage, the parent is automatically reverted to development and meta.reviewer is cleared. A message is printed to signal the revert.'
-  - 'The --type=<value> option stores the branch type (feat / fix / tech) as entry metadata. It is used by work-start to choose the branch prefix. Omitting it lets work-start apply its default (feat).'
+  - 'If the new entry is a scoped child task and the parent feature is in review, reviewing, or approved stage, the parent is automatically reverted to development and reviewer is cleared. A message is printed to signal the revert.'
   - 'Body file format: first non-empty line is the entry title; subsequent lines are sub-task bullets or body text. An optional leading "- " on the first line is accepted and stripped. Remaining non-empty lines each receive a +2 space shift in the board body.'
+  - 'Legacy bracket prefixes ([type][feature-slug][task-slug]) in the title are rejected: the command exits with a message pointing back to the CLI options. There is no auto-extraction or tolerance.'
   - 'Body markdown: bullet lists (nested, any depth) and inline formatting only (bold, italic, inline code). Long content goes to local/specs/<feature>-spec.md, referenced from a bullet.'
   - '`--index` values are advisory: out-of-range values clamp to start or end and emit a warning; passing `--position=index` without `--index` is rejected.'

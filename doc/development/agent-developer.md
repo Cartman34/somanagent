@@ -115,21 +115,21 @@ Run `php scripts/backlog-agent.php whoami` from inside the WA to confirm the ses
 
 ### `entry-create`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --feature=<slug> [--task=<slug>] [--type=feat|fix|tech] --body-file=<path> [--position=<start|index|end>] [--index=<n>]`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --feature=<slug> --type=<feat|fix|tech> --body-file=<path> [--task=<slug>] [--position=<start|index|end>] [--index=<n>]`.
 2. By default the script appends the entry to the end of `todo:`.
 3. `--position=start` inserts at the start of `todo:`.
 4. `--position=index --index=<n>` inserts at the requested 1-based position and clamps out-of-range values to the start or the end.
-5. **Required:** `--feature=<slug>` declares the feature slug; `--body-file=<path>` provides the title (first non-empty line) and body (subsequent lines). Inline positional text is rejected. **Scoped child tasks** also require `--task=<slug>`. Including `--type=<feat|fix|tech>` is strongly recommended so `work-start` does not have to fall back on the default branch type.
-6. Always use `--body-file=<path>` to pass the entry body. Write the file under your cwd's `local/tmp/` (the WP `local/tmp/` when working from WP). For `entry-create` the path is resolved against cwd only; no worktree lookup is performed. Keep test execution outputs under `local/tests/`, not `local/tmp/`. The body file is a normal markdown file: first non-empty line = title, subsequent lines become body bullets, preserving nesting hierarchy. **Body markdown is restricted**: bullet lists (nested, any depth) and inline formatting only (bold, italic, inline code). No headers, code blocks, tables, blockquotes, hr, or paragraphs outside bullets — anything else is squashed into bullets and detail is lost. Long content → `local/specs/<feature>-spec.md`, referenced from a bullet.
+5. **Required:** `--feature=<slug>` declares the feature slug; `--type=<feat|fix|tech>` declares the branch type (no default — every entry must carry an explicit type); `--body-file=<path>` provides the title (first non-empty line) and body (subsequent lines). Inline positional text is rejected. **Scoped child tasks** also require `--task=<slug>`.
+6. Always use `--body-file=<path>` to pass the entry body. Write the file under your cwd's `local/tmp/` (the WP `local/tmp/` when working from WP). For `entry-create` the path is resolved against cwd only; no worktree lookup is performed. Keep test execution outputs under `local/tests/`, not `local/tmp/`. The body file is a normal markdown file: first non-empty line = title, subsequent lines become body bullets, preserving nesting hierarchy. **Legacy bracket prefixes in the title (`[type][feature-slug][task-slug]`) are rejected outright** — the command exits with a clear error pointing back to the CLI options. There is no auto-extraction or tolerance. **Body markdown is restricted**: bullet lists (nested, any depth) and inline formatting only (bold, italic, inline code). No headers, code blocks, tables, blockquotes, hr, or paragraphs outside bullets — anything else is squashed into bullets and detail is lost. Long content → `local/specs/<feature>-spec.md`, referenced from a bullet.
 7. Do not edit `local/backlog-board.yaml` manually.
 8. The `--task=<slug>` option determines the semantic: omitted creates a seed feature entry; provided creates a scoped child task. If the new entry is a scoped child task and the parent feature is in `review`, `reviewing`, or `approved` stage, `entry-create` automatically reverts the parent to `development` and clears `reviewer`. A message is printed; no manual follow-up is needed.
 
 Examples:
 
 ```bash
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --feature=my-feature --body-file=local/tmp/new-feature-task.md
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --feature=my-feature --type=feat --body-file=local/tmp/new-feature-task.md
 SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --feature=my-feature --task=my-task --type=tech --body-file=local/tmp/new-task.md
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --feature=my-feature --body-file=local/tmp/new-feature-task.md --position=index --index=2
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --feature=my-feature --type=feat --body-file=local/tmp/new-feature-task.md --position=index --index=2
 ```
 
 ### `todo-list`

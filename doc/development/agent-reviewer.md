@@ -49,18 +49,18 @@ The cross-role tooling and path rules in [`agent-workflow.md` — Tools And Path
 
 ### `entry-create`
 
-1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --feature=<slug> [--task=<slug>] [--type=feat|fix|tech] --body-file=<path> [--position=<start|index|end>] [--index=<n>]`.
+1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --feature=<slug> --type=<feat|fix|tech> --body-file=<path> [--task=<slug>] [--position=<start|index|end>] [--index=<n>]`.
 2. By default the script appends the entry to the end of the `todo:` section in `local/backlog-board.yaml`.
 3. `--position=start` inserts at the start of `todo:`.
 4. `--position=index --index=<n>` inserts at the requested 1-based position and clamps out-of-range values to the start or the end.
-5. **Required:** `--feature=<slug>` declares the feature slug; `--body-file=<path>` provides the title (first non-empty line) and body. Inline positional text is rejected. **Scoped child tasks** also require `--task=<slug>`. Including `--type=<feat|fix|tech>` is strongly recommended so the queued entry is unambiguous.
-6. The body file is a normal markdown file (typically under `local/tmp/`). First non-empty line = title; subsequent lines become body bullets, preserving nesting hierarchy. Inline positional text is not accepted. Keep test execution outputs under `local/tests/`, not `local/tmp/`.
+5. **Required:** `--feature=<slug>` declares the feature slug; `--type=<feat|fix|tech>` declares the branch type (no default); `--body-file=<path>` provides the title (first non-empty line) and body. Inline positional text is rejected. **Scoped child tasks** also require `--task=<slug>`.
+6. The body file is a normal markdown file (typically under `local/tmp/`). First non-empty line = title; subsequent lines become body bullets, preserving nesting hierarchy. **Legacy bracket prefixes in the title (`[type][feature-slug][task-slug]`) are rejected outright** — the command exits with a message pointing back to the CLI options. Keep test execution outputs under `local/tests/`, not `local/tmp/`.
 7. Do not edit `local/backlog-board.yaml` manually.
 
 Examples:
 
 ```bash
-SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --feature=my-feature --body-file=local/tmp/new-feature-task.md
+SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --feature=my-feature --type=feat --body-file=local/tmp/new-feature-task.md
 SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --feature=my-feature --task=my-task --type=tech --body-file=local/tmp/new-task.md
 ```
 
@@ -225,7 +225,7 @@ Also check:
 ### `new`
 
 1. Write the task body to a file under `local/tmp/` (e.g. `local/tmp/new-task.md`). First non-empty line = title; subsequent lines = indented sub-tasks.
-2. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --feature=<slug> [--task=<slug>] [--type=feat|fix|tech] --body-file=local/tmp/new-task.md`.
+2. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --feature=<slug> --type=<feat|fix|tech> --body-file=local/tmp/new-task.md [--task=<slug>]`.
 3. Do not execute the task now.
 
 ### `review`

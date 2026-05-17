@@ -238,6 +238,10 @@ MD);
             }
         }
 
+        // --type is now mandatory on the CLI; default test fixtures to 'feat' when the legacy
+        // bracket prefix didn't carry an explicit type. Production callers must pass --type=<…>.
+        $type ??= 'feat';
+
         $bodyLines = array_slice($lines, 1);
         $name = 'entry-create-' . substr(md5($text), 0, 8) . '.md';
         $this->createTodoTaskFromBodyFile($feature, $titleLine, $bodyLines, $task, $type, $name);
@@ -1272,7 +1276,8 @@ MD);
      * @param string $titleLine Entry title (first line of body file)
      * @param list<string> $bodyLines Additional body/sub-task lines
      * @param string|null $task Task slug for scoped child tasks
-     * @param string|null $type Branch type: feat, fix, or tech
+     * @param string|null $type Branch type: feat, fix, or tech. When null, defaults to 'feat' since
+     *                          --type is now mandatory on the CLI.
      * @param string $name File name for the temporary body file
      */
     public function createTodoTaskFromBodyFile(
@@ -1287,12 +1292,9 @@ MD);
         $path = $this->createBodyFile($name, $allLines);
         $relative = $this->relativePath($path);
 
-        $args = ['entry-create', '--feature=' . $feature, '--body-file=' . $relative];
+        $args = ['entry-create', '--feature=' . $feature, '--type=' . ($type ?? 'feat'), '--body-file=' . $relative];
         if ($task !== null) {
             $args[] = '--task=' . $task;
-        }
-        if ($type !== null) {
-            $args[] = '--type=' . $type;
         }
         $this->runBacklog($args);
 
@@ -1311,10 +1313,24 @@ MD);
      */
     public function renameTodoEntry(string $oldFeature, string $newFeature, string $oldTitle, string $newTitle): void
     {
-        $this->replaceBoardText(
-            "feature: {$oldFeature}\n    title: " . \Symfony\Component\Yaml\Yaml::dump($oldTitle),
-            "feature: {$newFeature}\n    title: " . \Symfony\Component\Yaml\Yaml::dump($newTitle),
-        );
+        $oldDump = \Symfony\Component\Yaml\Yaml::dump($oldTitle);
+        $newDump = \Symfony\Component\Yaml\Yaml::dump($newTitle);
+        $contents = (string) file_get_contents($this->context->boardPath);
+        // Match `feature: <old>\n    <intermediate lines like type:/task:/agent:>\n    title: <old>` (non-greedy)
+        // so the rename works regardless of which optional fields sit between feature and title.
+        $pattern = '/feature: ' . preg_quote($oldFeature, '/')
+            . '((?:\n    [^\n]+)*?)\n    title: ' . preg_quote($oldDump, '/') . '/';
+        $replacement = 'feature: ' . $newFeature . '$1' . "\n    title: " . $newDump;
+        $replaced = preg_replace($pattern, $replacement, $contents, 1, $count);
+        if (!is_string($replaced) || $count === 0) {
+            throw new \RuntimeException(sprintf(
+                "Expected backlog board to contain a todo entry feature=%s title=%s.\n--- actual board ---\n%s",
+                $oldFeature,
+                $oldTitle,
+                $contents,
+            ));
+        }
+        $this->writeFile($this->context->boardPath, $replaced);
     }
 
     /**

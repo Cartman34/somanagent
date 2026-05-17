@@ -109,14 +109,14 @@ Every entry carries one of three types: `feat`, `fix`, or `tech`. The rule and t
 
 ## Queued Task Format
 
-1. A queued task is one entry under `todo:` in the YAML board. It carries the keys `feature` (required), optional `task` (for scoped child tasks), optional `type` among `feat`, `fix`, `tech`, `title` (required), and optional `body` (multi-line body lines).
-2. `entry-create` is the only way to add a queued entry. It requires `--feature=<slug>` and `--body-file=<path>`; the first non-empty line of the body file is the title, the remaining lines become the body. Optional `--task=<slug>` declares a scoped child task and optional `--type=<feat|fix|tech>` records the branch type.
-3. **Required at entry creation:** every entry must declare an explicit `--feature=<slug>` (plus `--task=<slug>` for child tasks); `entry-create` rejects calls without `--feature` or `--body-file`. Providing `--type=<feat|fix|tech>` is strongly recommended so `work-start` does not have to fall back on the default `feat` prefix.
+1. A queued task is one entry under `todo:` in the YAML board. It carries the keys `feature` (required), `type` among `feat`/`fix`/`tech` (required), optional `task` (for scoped child tasks), `title` (required), and optional `body` (multi-line body lines).
+2. `entry-create` is the only way to add a queued entry. It requires `--feature=<slug>`, `--type=<feat|fix|tech>`, and `--body-file=<path>`; the first non-empty line of the body file is the title, the remaining lines become the body. Optional `--task=<slug>` declares a scoped child task.
+3. **Required at entry creation:** every entry must declare an explicit `--feature=<slug>`, `--type=<feat|fix|tech>` (no default), and `--body-file=<path>`; `entry-create` rejects calls missing any of these. Scoped child tasks additionally require `--task=<slug>`. Body file titles must not carry legacy bracket prefixes (`[type][feature-slug][task-slug]`) — those are rejected outright with a clear error pointing to the CLI options.
 4. Type → branch prefix mapping is 1:1: `feat → feat/<slug>`, `fix → fix/<slug>`, `tech → tech/<slug>`. Scoped child tasks use `<type>/<feature-slug>--<task-slug>`.
 5. Adding a new task type requires extending the `BacklogTaskType` enum and is therefore a deliberate change, not something `entry-create` infers from text.
 6. Keep the title short; put the breakdown in the body file (one bullet per line). The body file is parsed as markdown; nesting hierarchy is preserved.
 7. Always create queued entries through `entry-create` with `--body-file=<path>` (typically under `local/tmp/`). Inline positional text is not accepted.
-8. Manual edits to `local/backlog-board.yaml` are not the way to add tasks. Use `entry-create --feature=<slug> --body-file=<path>` instead.
+8. Manual edits to `local/backlog-board.yaml` are not the way to add tasks. Use `entry-create --feature=<slug> --type=<feat|fix|tech> --body-file=<path>` instead.
 
 ## Work-start Validation Guarantees
 

@@ -37,10 +37,11 @@ final class BoardFormatNormalizationCampaign implements CampaignInterface
 
         // Scenario 2 — plain feature entry round-trips with expected YAML shape.
         $bodyFile = $driver->createBodyFile('norm-plain.md', ['Plain feature title']);
-        $driver->runBacklog(['entry-create', '--feature=norm-plain', "--body-file={$bodyFile}"]);
+        $driver->runBacklog(['entry-create', '--feature=norm-plain', '--type=feat', "--body-file={$bodyFile}"]);
         $driver->assertBoardContains('version: 1');
         $driver->assertBoardTodoBlock([
             '  - feature: norm-plain',
+            '    type: feat',
             "    title: 'Plain feature title'",
         ]);
         $driver->assertBoardLacksText('## To do');
@@ -67,10 +68,11 @@ final class BoardFormatNormalizationCampaign implements CampaignInterface
             '  - Sub-item alpha',
             '  - Sub-item beta',
         ]);
-        $driver->runBacklog(['entry-create', '--feature=norm-body', '--task=norm-body-task', "--body-file={$bodyFile}"]);
+        $driver->runBacklog(['entry-create', '--feature=norm-body', '--task=norm-body-task', '--type=tech', "--body-file={$bodyFile}"]);
         $driver->assertBoardTodoBlock([
             '  - feature: norm-body',
             '    task: norm-body-task',
+            '    type: tech',
             "    title: 'Body round-trip title'",
         ]);
         $driver->assertBoardContains('- Sub-item alpha');
@@ -82,9 +84,9 @@ final class BoardFormatNormalizationCampaign implements CampaignInterface
         $fileA = $driver->createBodyFile('norm-order-a.md', ['Order entry A']);
         $fileB = $driver->createBodyFile('norm-order-b.md', ['Order entry B']);
         $fileC = $driver->createBodyFile('norm-order-c.md', ['Order entry C']);
-        $driver->runBacklog(['entry-create', '--feature=norm-order-a', "--body-file={$fileA}"]);
-        $driver->runBacklog(['entry-create', '--feature=norm-order-b', "--body-file={$fileB}"]);
-        $driver->runBacklog(['entry-create', '--feature=norm-order-c', "--body-file={$fileC}"]);
+        $driver->runBacklog(['entry-create', '--feature=norm-order-a', '--type=feat', "--body-file={$fileA}"]);
+        $driver->runBacklog(['entry-create', '--feature=norm-order-b', '--type=feat', "--body-file={$fileB}"]);
+        $driver->runBacklog(['entry-create', '--feature=norm-order-c', '--type=feat', "--body-file={$fileC}"]);
         $boardText = $driver->getBoardText();
         $posA = strpos($boardText, 'feature: norm-order-a');
         $posB = strpos($boardText, 'feature: norm-order-b');

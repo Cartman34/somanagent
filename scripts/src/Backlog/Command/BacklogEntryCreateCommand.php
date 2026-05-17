@@ -17,8 +17,10 @@ use SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
 /**
  * Inserts a new backlog entry into the todo section.
  *
- * Requires `--feature=<slug>` and `--body-file=<path>`. Optional `--task=<slug>` for
- * scoped child tasks and `--type=feat|fix|tech` for branch-type metadata.
+ * Requires `--feature=<slug>`, `--type=feat|fix|tech`, and `--body-file=<path>`.
+ * Optional `--task=<slug>` declares a scoped child task. The body file's first
+ * non-empty line is the title and must not carry legacy bracket prefixes —
+ * those are rejected outright with a clear error pointing back to the CLI options.
  * The `--position=index --index=<n>` option is advisory: out-of-range values clamp to
  * the start or the end (with a warning) so a concurrent reorder cannot turn insertion
  * into a hard failure.
@@ -111,7 +113,7 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
 
         $featureRaw = $options['feature'] ?? null;
         if ($featureRaw === null) {
-            throw new \RuntimeException('entry-create requires --body-file=<path>.');
+            throw new \RuntimeException('entry-create requires --feature=<slug>.');
         }
         if (!is_string($featureRaw) || trim($featureRaw) === '') {
             throw new \RuntimeException('entry-create requires --feature=<slug>.');
@@ -131,21 +133,30 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
         }
 
         $typeRaw = $options['type'] ?? null;
-        $type = null;
-        if ($typeRaw !== null) {
-            if (!is_string($typeRaw)) {
-                throw new \RuntimeException('Option --type cannot be repeated.');
-            }
-            $taskType = \SoManAgent\Script\Backlog\Enum\BacklogTaskType::tryFromToken(trim($typeRaw));
-            if ($taskType === null) {
-                throw new \RuntimeException(sprintf(
-                    'Unknown --type=%s. Supported types: %s.',
-                    trim($typeRaw),
-                    \SoManAgent\Script\Backlog\Enum\BacklogTaskType::tokenList(),
-                ));
-            }
-            $type = $taskType->value;
+        if ($typeRaw === null) {
+            throw new \RuntimeException(sprintf(
+                'entry-create requires --type=<%s>.',
+                \SoManAgent\Script\Backlog\Enum\BacklogTaskType::tokenList(),
+            ));
         }
+        if (!is_string($typeRaw)) {
+            throw new \RuntimeException('Option --type cannot be repeated.');
+        }
+        if (trim($typeRaw) === '') {
+            throw new \RuntimeException(sprintf(
+                'entry-create requires --type=<%s>.',
+                \SoManAgent\Script\Backlog\Enum\BacklogTaskType::tokenList(),
+            ));
+        }
+        $taskType = \SoManAgent\Script\Backlog\Enum\BacklogTaskType::tryFromToken(trim($typeRaw));
+        if ($taskType === null) {
+            throw new \RuntimeException(sprintf(
+                'Unknown --type=%s. Supported types: %s.',
+                trim($typeRaw),
+                \SoManAgent\Script\Backlog\Enum\BacklogTaskType::tokenList(),
+            ));
+        }
+        $type = $taskType->value;
 
         $bodyFile = $options['body-file'] ?? null;
         if ($bodyFile === null) {
@@ -165,6 +176,11 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
         $title = array_shift($bodyLines) ?? '';
         if (trim($title) === '') {
             throw new \RuntimeException('Task body cannot be empty.');
+        }
+        if (preg_match('/^\s*\[/', $title) === 1) {
+            throw new \RuntimeException(
+                'Body file title carries legacy bracket prefixes ([…]) — préfixes obsolètes, utiliser les options CLI --feature, --task, --type à la place.',
+            );
         }
 
         $extraLines = array_map(

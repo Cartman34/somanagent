@@ -14,9 +14,9 @@ use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
  * Task creation formats campaign.
  *
  * Covers the supported entry-create input shapes via --feature / --task / --type / --body-file:
- * plain feature, scoped feature/task, optional type (feat / fix / tech), multi-line body,
- * and rejection cases: missing --feature, missing --body-file, unknown --type, --body-file
- * path does not exist, bare body with no title, and out-of-range --index clamping.
+ * plain feature, scoped feature/task with each valid type (feat / fix / tech), multi-line body,
+ * and rejection cases: missing --feature, missing --type, missing --body-file, unknown --type,
+ * --body-file path does not exist, legacy bracket prefix in title, and out-of-range --index clamping.
  */
 final class TaskCreateFormatsCampaign implements CampaignInterface
 {
@@ -40,12 +40,13 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
             $driver->removeTodoTask($slug);
         }
 
-        // Scoped feature/task entry — no type.
+        // Scoped feature/task entry with explicit type.
         $bodyFile = $driver->createBodyFile('entry-create-scoped.md', ['Scoped task title']);
-        $driver->runBacklog(['entry-create', '--feature=scope-feature', '--task=scope-task', "--body-file={$bodyFile}"]);
+        $driver->runBacklog(['entry-create', '--feature=scope-feature', '--task=scope-task', '--type=feat', "--body-file={$bodyFile}"]);
         $driver->assertBoardTodoBlock([
             '  - feature: scope-feature',
             '    task: scope-task',
+            '    type: feat',
             "    title: 'Scoped task title'",
         ]);
         $driver->removeTodoTask('scope-feature/scope-task');
@@ -99,19 +100,26 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
         // Rejection: no --body-file.
         $driver->assertTaskCreateFails(
             'entry-create requires --body-file=<path>',
-            ['--feature=missing-body-feature'],
+            ['--feature=missing-body-feature', '--type=feat'],
         );
 
         // Rejection: no --feature at all.
         $driver->assertTaskCreateFails(
-            'entry-create requires --body-file=<path>',
+            'entry-create requires --feature=<slug>',
             [],
+        );
+
+        // Rejection: no --type at all.
+        $missingTypeFile = $driver->createBodyFile('entry-create-missing-type.md', ['Title without type']);
+        $driver->assertTaskCreateFails(
+            'entry-create requires --type=<feat, fix, tech>',
+            ['--feature=missing-type-feature', "--body-file={$missingTypeFile}"],
         );
 
         // Rejection: --body-file path does not exist.
         $driver->assertTaskCreateFails(
             '--body-file path does not exist',
-            ['--feature=some-feature', '--body-file=/nonexistent/path/entry-create-missing-body-file.md'],
+            ['--feature=some-feature', '--type=feat', '--body-file=/nonexistent/path/entry-create-missing-body-file.md'],
         );
 
         // Rejection: unknown --type value.
@@ -121,12 +129,20 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
             ['--feature=some-feature', '--type=invalid', "--body-file={$unknownTypeFile}"],
         );
 
+        // Rejection: legacy bracket prefix in body file title.
+        $bracketTitleFile = $driver->createBodyFile('entry-create-bracket-title.md', ['[feat][legacy-feature] Legacy title']);
+        $driver->assertTaskCreateFails(
+            'préfixes obsolètes, utiliser les options CLI',
+            ['--feature=legacy-feature', '--type=feat', "--body-file={$bracketTitleFile}"],
+        );
+
         // --position=index clamps out-of-range values while still inserting the task.
         $driver->createTodoTask('[clamp-low] Task to anchor the queue for clamp coverage');
         $clampZeroFile = $driver->createBodyFile('entry-create-clamp-zero.md', ['Insert with --index=0 should clamp to start']);
         $clampLowOutput = $driver->runBacklog([
             'entry-create',
             '--feature=clamp-zero',
+            '--type=feat',
             "--body-file={$clampZeroFile}",
             '--position=index',
             '--index=0',
@@ -140,6 +156,7 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
         $clampHighOutput = $driver->runBacklog([
             'entry-create',
             '--feature=clamp-high',
+            '--type=feat',
             "--body-file={$clampHighFile}",
             '--position=index',
             '--index=99',
@@ -155,7 +172,7 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
         $missingIndexFile = $driver->createBodyFile('entry-create-missing-index.md', ['Missing index value']);
         $driver->assertTaskCreateFails(
             'entry-create with --position=index requires --index=',
-            ['--feature=test-missing-index', "--body-file={$missingIndexFile}", '--position=index'],
+            ['--feature=test-missing-index', '--type=feat', "--body-file={$missingIndexFile}", '--position=index'],
         );
     }
 }
