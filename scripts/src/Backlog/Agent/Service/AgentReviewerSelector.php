@@ -7,9 +7,12 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Agent\Service;
 
+use SoManAgent\Script\Backlog\Agent\Client\BacklogCommandRunner;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException;
 use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Model\BoardEntryMatch;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 
@@ -193,6 +196,48 @@ final class AgentReviewerSelector
     }
 
     /**
+     * Auto-picks and claims the first available review-stage entry by looping the active list.
+     *
+     * Applies the same worktree-session filter as {@see autoSelect} (skips entries whose
+     * developer WA is already targeted by a running reviewer session). For each remaining
+     * candidate, attempts review-next via the runner. An {@see EntryNotReservableException}
+     * (entry claimed between read and mutation by a concurrent launch) is silently skipped.
+     * Any other exception propagates immediately. Returns null when the list is exhausted.
+     *
+     * The returned {@see BoardEntryMatch} reflects the entry state before review-next; the
+     * caller is responsible for reloading the board to get the updated stage.
+     *
+     * @throws \RuntimeException on an unexpected failure (not a contention case)
+     */
+    public function pick(BacklogBoard $board, string $reviewerCode, BacklogCommandRunner $runner): ?BoardEntryMatch
+    {
+        foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $index => $entry) {
+            if ($this->boardService->getNormalizedStage($entry->getStage()) !== BacklogBoard::STAGE_IN_REVIEW) {
+                continue;
+            }
+            $devCode = $entry->getAgent() ?? '';
+            if ($devCode === '') {
+                continue;
+            }
+            $worktree = $this->devCodeToWorktree($devCode);
+            if ($this->findExistingReviewerForWorktree($worktree) !== null) {
+                continue;
+            }
+
+            $entryRef = $this->buildEntryRef($entry);
+            try {
+                $runner->reviewNext($reviewerCode, $entryRef);
+
+                return new BoardEntryMatch(BacklogBoard::SECTION_ACTIVE, $index, $entry);
+            } catch (EntryNotReservableException) {
+                continue;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Returns the reviewer session already using the given worktree path, or null.
      */
     public function findExistingReviewerForWorktree(string $worktree): ?AgentSession
@@ -212,5 +257,19 @@ final class AgentReviewerSelector
     public function devCodeToWorktree(string $devCode): string
     {
         return $this->worktreesRoot . '/' . $devCode;
+    }
+
+    /**
+     * Builds the stable entry reference used by review-next commands.
+     *
+     * Tasks use the "feature/task" format; features use the feature slug.
+     */
+    private function buildEntryRef(BoardEntry $entry): string
+    {
+        if ($this->boardService->checkIsTaskEntry($entry)) {
+            return $this->boardService->getTaskReviewKey($entry);
+        }
+
+        return $entry->getFeature() ?? '';
     }
 }

@@ -340,6 +340,10 @@ final class AgentStartCommand extends AbstractAgentCommand
      * code so that rollbackReviewTransition() can release it via review-cancel on failure.
      * Both are null when an already-reviewing entry is reused (no rollback needed).
      *
+     * For auto-select (no explicit target flag), the full list of review-stage entries is tried
+     * in order via {@see AgentReviewerSelector::pick()} so that a concurrent reviewer claiming
+     * the head entry does not abort this launch — it simply moves to the next candidate.
+     *
      * @param array<string, string|bool|array<bool|string>> $options
      * @return array{0: string, 1: string|null, 2: string|null}
      */
@@ -365,16 +369,14 @@ final class AgentStartCommand extends AbstractAgentCommand
             $worktree = $this->reviewerSelector->devCodeToWorktree($devCode);
             $takenEntryRef = null;
             $takenReviewerCode = null;
-        } else {
-            // Step 2+: select an entry to take
+        } elseif ($featureOpt !== null || $taskOpt !== null || $developerOpt !== null) {
+            // Step 2a: explicit targeting — select and claim once, no retry
             if ($featureOpt !== null) {
                 $match = $this->reviewerSelector->selectByFeature($board, $featureOpt, $reviewerCode);
             } elseif ($taskOpt !== null) {
                 $match = $this->reviewerSelector->selectByTask($board, $taskOpt, $reviewerCode);
-            } elseif ($developerOpt !== null) {
-                $match = $this->reviewerSelector->selectByDeveloper($board, $developerOpt, $reviewerCode);
             } else {
-                $match = $this->reviewerSelector->autoSelect($board);
+                $match = $this->reviewerSelector->selectByDeveloper($board, $developerOpt, $reviewerCode);
             }
 
             $entry = $match->getEntry();
@@ -406,6 +408,34 @@ final class AgentStartCommand extends AbstractAgentCommand
             } else {
                 $takenEntryRef = null;
                 $takenReviewerCode = null;
+            }
+        } else {
+            // Step 2b: auto-select — iterate all candidates with retry on contention
+            $match = $this->reviewerSelector->pick($board, $reviewerCode, $this->backlogCommandRunner);
+            if ($match === null) {
+                throw new \RuntimeException(
+                    'No review available. All review-stage entries are already being reviewed or no entry is ready for review.',
+                );
+            }
+
+            $entry = $match->getEntry();
+            $devCode = $entry->getAgent() ?? '';
+
+            if ($devCode === '') {
+                throw new \RuntimeException(
+                    'Cannot determine developer agent code for the selected entry. The entry may be unassigned.',
+                );
+            }
+
+            $worktree = $this->reviewerSelector->devCodeToWorktree($devCode);
+            $takenEntryRef = $this->buildEntryRef($entry);
+            $takenReviewerCode = $reviewerCode;
+
+            // Reload board so subsequent steps use the entry at its updated stage.
+            $board = $this->boardService->loadBoard($this->boardPath);
+            $reloadedMatch = $this->reviewerSelector->findOwnedReviewingEntry($board, $reviewerCode);
+            if ($reloadedMatch !== null) {
+                $entry = $reloadedMatch->getEntry();
             }
         }
 
@@ -453,13 +483,18 @@ final class AgentStartCommand extends AbstractAgentCommand
     }
 
     /**
-     * Prepares the developer session: auto-picks the first queued task when the developer
+     * Prepares the developer session: auto-picks the first available queued task when the developer
      * has no active entry, or resumes silently when one is already in progress.
      *
+     * Iterates the full todo list via {@see AgentDeveloperSelector::pick()} so that a concurrent
+     * agent claiming the head entry does not abort this launch — it simply moves to the next
+     * candidate. Throws when the todo list is entirely exhausted (no entry could be reserved).
+     *
      * Returns [$entryRef, $developerCode] when a task was taken (for rollback on failure),
-     * or [null, null] when resuming an existing entry (no rollback needed).
+     * or [null, null] when the developer already has an active entry (resume case — no task taken).
      *
      * @return array{0: string|null, 1: string|null}
+     * @throws \RuntimeException when the todo queue is empty or all entries are unavailable
      */
     private function prepareDeveloperMode(string $developerCode): array
     {
@@ -469,8 +504,10 @@ final class AgentStartCommand extends AbstractAgentCommand
             return [null, null];
         }
 
-        $entryRef = $this->developerSelector->selectFirstQueued($board, $developerCode);
-        $this->backlogCommandRunner->workStart($developerCode, $entryRef);
+        $entryRef = $this->developerSelector->pick($board, $developerCode, $this->backlogCommandRunner);
+        if ($entryRef === null) {
+            throw new \RuntimeException(sprintf('No queued task available for %s.', $developerCode));
+        }
 
         return [$entryRef, $developerCode];
     }

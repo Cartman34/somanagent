@@ -278,13 +278,13 @@ This reuse takes priority over all targeting flags (`--feature`, `--task`, `--de
 
 ### Auto-selection
 
-Without any targeting flag (and no owned reviewing entry), the launcher selects the first entry at `meta.stage=review` whose developer WA is not already claimed by another reviewer session:
+Without any targeting flag (and no owned reviewing entry), the launcher iterates all entries at `meta.stage=review` (skipping those whose developer WA is already claimed by another reviewer session) and attempts `review-next` on each in order:
 
 ```
 php scripts/backlog-agent.php start claude --reviewer
 ```
 
-If all review-stage entries are already being reviewed, the command errors. Pass `--feature`, `--task`, or `--developer` to target an explicit entry, or `--force` to override.
+If an entry was concurrently claimed by another reviewer between the read and the mutation, the launcher silently moves to the next candidate — the retry is bounded by the list length and never blocks. If all review-stage entries are claimed or unavailable, the command errors. Pass `--feature`, `--task`, or `--developer` to target an explicit entry, or `--force` to override.
 
 ### Targeting a specific entry
 
