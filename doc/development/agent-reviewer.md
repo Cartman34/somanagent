@@ -38,30 +38,30 @@ The cross-role tooling and path rules in [`agent-workflow.md` — Tools And Path
 - implement product changes unless the user explicitly changes role
 - commit code changes
 - create a new feature branch for a review flow
-- edit `local/backlog-board.md` or `local/backlog-review.md` manually when a `backlog.php` command exists for the change
+- edit `local/backlog-board.yaml` or `local/backlog-review.md` manually when a `backlog.php` command exists for the change
 
 ## Read Only When Needed
 
 - `local/backlog-review.md` for `review`, `approve`, and follow-up state
-- `local/backlog-board.md` for `new`
+- `local/backlog-board.yaml` for `new`
 
 ## Command Behavior
 
 ### `entry-create`
 
-1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --body-file=<path> [--position=<start|index|end>] [--index=<n>]`.
-2. By default the script appends the entry to the end of the `## To do` section in `local/backlog-board.md`.
-3. `--position=start` inserts at the start of `## To do`.
+1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --feature=<slug> [--task=<slug>] [--type=feat|fix|tech] --body-file=<path> [--position=<start|index|end>] [--index=<n>]`.
+2. By default the script appends the entry to the end of the `todo:` section in `local/backlog-board.yaml`.
+3. `--position=start` inserts at the start of `todo:`.
 4. `--position=index --index=<n>` inserts at the requested 1-based position and clamps out-of-range values to the start or the end.
-5. Keep the entry title short and put the breakdown on indented sub-task lines below it. **Always include both** a type prefix (`[feat]`, `[fix]` or `[tech]`) and a `[feature-slug]` (plus `[task-slug]` for child tasks) so the queued entry is unambiguous. The type prefix may appear at any position in the leading bracket sequence.
-6. Always use `--body-file=<path>` (typically under `local/tmp/`) to pass the entry body. Keep test execution outputs under `local/tests/`, not `local/tmp/`. The first non-empty line is the title; subsequent lines are each shifted by +2 spaces — top-level bullets (0 indent) land at 2 spaces in the board, standard markdown sub-bullets (2-space indent) land at 4. Write a normal markdown file and nesting is preserved. Inline positional text is not accepted.
-7. Do not edit `local/backlog-board.md` manually.
+5. **Required:** `--feature=<slug>` declares the feature slug; `--body-file=<path>` provides the title (first non-empty line) and body. Inline positional text is rejected. **Scoped child tasks** also require `--task=<slug>`. Including `--type=<feat|fix|tech>` is strongly recommended so the queued entry is unambiguous.
+6. The body file is a normal markdown file (typically under `local/tmp/`). First non-empty line = title; subsequent lines become body bullets, preserving nesting hierarchy. Inline positional text is not accepted. Keep test execution outputs under `local/tests/`, not `local/tmp/`.
+7. Do not edit `local/backlog-board.yaml` manually.
 
 Examples:
 
 ```bash
-SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --body-file=local/tmp/new-feature-task.md
-SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --body-file=local/tmp/new-feature-task.md --position=index --index=2
+SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --feature=my-feature --body-file=local/tmp/new-feature-task.md
+SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --feature=my-feature --task=my-task --type=tech --body-file=local/tmp/new-task.md
 ```
 
 Rules:
@@ -84,14 +84,14 @@ Rules:
 ### `review-list`
 
 1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-list`.
-2. The script prints entries waiting in `meta.stage=review`, one per line shaped `- <ref> kind=<feature|task> agent=<x> ...`, where `<ref>` is the stable reference usable by `review-next`.
-3. Entries already in `meta.stage=reviewing` are excluded because they are claimed by another reviewer.
+2. The script prints entries waiting in `stage=review`, one per line shaped `- <ref> kind=<feature|task> agent=<x> ...`, where `<ref>` is the stable reference usable by `review-next`.
+3. Entries already in `stage=reviewing` are excluded because they are claimed by another reviewer.
 
 ### `review-next`
 
 1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-next [<entry-ref>]`.
-2. Without a target, the script selects the first entry with `meta.stage=review`, transitions it to `meta.stage=reviewing`, records the reviewer in `meta.reviewer`, and displays the entry.
-3. With an explicit `<entry-ref>` reference (the same shape printed by `review-list`), the script claims that exact entry. It refuses with a clear error when the entry is already in `meta.stage=reviewing` (claimed by another reviewer) or no longer in `meta.stage=review`.
+2. Without a target, the script selects the first entry with `stage=review`, transitions it to `stage=reviewing`, records the reviewer in `reviewer`, and displays the entry.
+3. With an explicit `<entry-ref>` reference (the same shape printed by `review-list`), the script claims that exact entry. It refuses with a clear error when the entry is already in `stage=reviewing` (claimed by another reviewer) or no longer in `stage=review`.
 4. Automated workflows must always pass an explicit target; the implicit head form is reserved for interactive usage.
 5. The command refuses if the reviewer already has an entry in `reviewing`. Run `review-cancel` first to release it.
 6. Use `Kind` and `Ref`/`Feature` in the output to choose the matching review check command.
@@ -100,7 +100,7 @@ Rules:
 
 1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-cancel <entry-ref>`.
 2. The reference is mandatory: review-cancel never auto-resolves the entry from the agent code, so the mutation cannot silently retarget another claim.
-3. Moves the entry from `reviewing` back to `review` and clears `meta.reviewer` after verifying the entry's stored reviewer matches the caller context.
+3. Moves the entry from `reviewing` back to `review` and clears `reviewer` after verifying the entry's stored reviewer matches the caller context.
 4. A manager using `SOMANAGER_ROLE=manager SOMANAGER_AGENT=<manager> php scripts/backlog.php ...` may force-cancel any stuck reviewing entry with the same explicit reference contract.
 
 ### `review-reopen`
@@ -108,10 +108,10 @@ Rules:
 1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-reopen <entry-ref>`.
 2. The entry must be in `approved` stage; any other stage is refused. An explicit `<entry-ref>` is always required — no auto-resolution.
 3. Clears any existing review notes for the entry from `local/backlog-review.md`.
-4. Reviewer behavior: transitions the entry from `approved` to `reviewing` and sets `meta.reviewer` to the calling reviewer code.
-5. Non-exclusive: a different reviewer may use `review-reopen` to claim an approved entry even if another reviewer was previously recorded in `meta.reviewer`.
+4. Reviewer behavior: transitions the entry from `approved` to `reviewing` and sets `reviewer` to the calling reviewer code.
+5. Non-exclusive: a different reviewer may use `review-reopen` to claim an approved entry even if another reviewer was previously recorded in `reviewer`.
 6. Use `review-reopen` when an approved entry must go through another review cycle — for example when a post-approval finding requires re-evaluation before `entry-merge` is called.
-7. A manager calling with `SOMANAGER_ROLE=manager` instead transitions the entry from `approved` to `review` and clears `meta.reviewer`, putting the entry back in the open queue.
+7. A manager calling with `SOMANAGER_ROLE=manager` instead transitions the entry from `approved` to `review` and clears `reviewer`, putting the entry back in the open queue.
 
 ### `review-notes`
 
@@ -189,7 +189,7 @@ Also check:
 3. Pass `--body-file` for a feature entry. Do not pass `--body-file` for a child task entry.
 4. Short task references are refused; use `<entry-ref>`.
 5. `--body-file` is required for feature approvals and rejected for task approvals.
-6. For feature approvals: refused if the feature has any active child task branches (`kind=task` in `In progress`) or any queued child tasks (`## To do`). Both blocks must be cleared before approving the feature.
+6. For feature approvals: refused if the feature has any active child task branches (`kind=task` in `active:`) or any queued child tasks (in `todo:`). Both blocks must be cleared before approving the feature.
 
 ### `feature-close`
 
@@ -224,8 +224,8 @@ Also check:
 
 ### `new`
 
-1. Write the task body to a file under `local/tmp/` (e.g. `local/tmp/new-task.md`). First line = title with required `[type][feature-slug]` prefix; subsequent lines = indented sub-tasks.
-2. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --body-file=local/tmp/new-task.md`.
+1. Write the task body to a file under `local/tmp/` (e.g. `local/tmp/new-task.md`). First non-empty line = title; subsequent lines = indented sub-tasks.
+2. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --feature=<slug> [--task=<slug>] [--type=feat|fix|tech] --body-file=local/tmp/new-task.md`.
 3. Do not execute the task now.
 
 ### `review`
@@ -265,23 +265,23 @@ Default model profile is `balanced+medium`. The operator may override it with `-
 
 When a reviewer starts on a new entry (not a reuse), the launcher:
 
-1. Sets `meta.stage=reviewing` and `meta.reviewer=<rXX>` in the board.
+1. Sets `stage=reviewing` and `reviewer=<rXX>` in the board.
 2. Saves the board immediately.
 3. Stores the developer WA path as `worktree` in `sessions.json`.
 
-If any subsequent preparation step fails (WA missing and unreconstructable, reviewer-vs-reviewer conflict), the launcher rolls the board back to `stage=review` and clears `meta.reviewer` before erroring.
+If any subsequent preparation step fails (WA missing and unreconstructable, reviewer-vs-reviewer conflict), the launcher rolls the board back to `stage=review` and clears `reviewer` before erroring.
 
 Once the interactive client process starts, no automatic rollback occurs; the entry remains at `stage=reviewing` until the manager or a backlog command changes it. The launcher also records the client PID (and tmux session name when applicable) in `local/tmp/agent-sessions.json`. The active session driver determines how `stop` and `resume` work: the default tmux driver is SSH-resilient (the client keeps running after a disconnect; `resume` re-attaches to the detached session; `stop` kills the tmux session), while the direct driver (`BACKLOG_AGENT_SESSION_DRIVER=direct`) uses SIGTERM/SIGKILL and refuses resume while the tracked client process is alive. See `doc/development/agent-workflow.md` for the full lifecycle.
 
 ### Owned reviewing entry reuse
 
-If the reviewer already has an entry at `stage=reviewing` with `meta.reviewer=<rXX>` in the board (from a prior interrupted session), the launcher reuses that entry without a new transition. The existing `stage=reviewing` and `meta.reviewer` are preserved.
+If the reviewer already has an entry at `stage=reviewing` with `reviewer=<rXX>` in the board (from a prior interrupted session), the launcher reuses that entry without a new transition. The existing `stage=reviewing` and `reviewer` are preserved.
 
 This reuse takes priority over all targeting flags (`--feature`, `--task`, `--developer`).
 
 ### Auto-selection
 
-Without any targeting flag (and no owned reviewing entry), the launcher iterates all entries at `meta.stage=review` (skipping those whose developer WA is already claimed by another reviewer session) and attempts `review-next` on each in order:
+Without any targeting flag (and no owned reviewing entry), the launcher iterates all entries at `stage=review` (skipping those whose developer WA is already claimed by another reviewer session) and attempts `review-next` on each in order:
 
 ```
 php scripts/backlog-agent.php start claude --reviewer

@@ -41,9 +41,11 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
         $driver->createTodoTask('[ambiguous-plain-ref] First plain instance');
         $driver->createTodoTask('[ambiguous-plain-ref] Second plain instance with same feature slug');
         $driver->assertTaskRemoveFails('ambiguous-plain-ref', 'Ambiguous queued reference ambiguous-plain-ref');
-        $driver->replaceBoardText(
-            '- [ambiguous-plain-ref] Second plain instance with same feature slug',
-            '- [ambiguous-plain-ref-2] Second plain instance with renamed feature slug',
+        $driver->renameTodoEntry(
+            'ambiguous-plain-ref',
+            'ambiguous-plain-ref-2',
+            'Second plain instance with same feature slug',
+            'Second plain instance with renamed feature slug',
         );
         $driver->removeTodoTask('ambiguous-plain-ref');
         $driver->removeTodoTask('ambiguous-plain-ref-2');

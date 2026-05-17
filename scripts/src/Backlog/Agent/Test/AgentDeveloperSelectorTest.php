@@ -13,6 +13,7 @@ use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Client\FilesystemClient;
 use SoManAgent\Script\TextSlugger;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Unit tests for AgentDeveloperSelector — active entry detection and first-queued selection.
@@ -77,13 +78,13 @@ final class AgentDeveloperSelectorTest
     private function testFindOwnedActiveEntryReturnsMatchWhenAssigned(): int
     {
         $board = $this->makeBoard([], [
-            '- my-feature',
-            '  meta:',
-            '    kind: feature',
-            '    feature: my-feature',
-            '    branch: feat/my-feature',
-            '    stage: development',
-            '    agent: d05',
+            [
+                'kind' => 'feature',
+                'stage' => 'development',
+                'feature' => 'my-feature',
+                'agent' => 'd05',
+                'branch' => 'feat/my-feature',
+            ],
         ]);
         $selector = $this->makeSelector();
 
@@ -104,13 +105,13 @@ final class AgentDeveloperSelectorTest
     private function testFindOwnedActiveEntryIgnoresOtherAgent(): int
     {
         $board = $this->makeBoard([], [
-            '- other-feature',
-            '  meta:',
-            '    kind: feature',
-            '    feature: other-feature',
-            '    branch: feat/other-feature',
-            '    stage: development',
-            '    agent: d03',
+            [
+                'kind' => 'feature',
+                'stage' => 'development',
+                'feature' => 'other-feature',
+                'agent' => 'd03',
+                'branch' => 'feat/other-feature',
+            ],
         ]);
         $selector = $this->makeSelector();
 
@@ -127,8 +128,8 @@ final class AgentDeveloperSelectorTest
     private function testSelectFirstQueuedReturnsRefOfFirstEntry(): int
     {
         $board = $this->makeBoard([
-            '- [feat][alpha-feature] First queued task',
-            '- [feat][beta-feature] Second queued task',
+            ['feature' => 'alpha-feature', 'type' => 'feat', 'title' => 'First queued task'],
+            ['feature' => 'beta-feature', 'type' => 'feat', 'title' => 'Second queued task'],
         ], []);
         $selector = $this->makeSelector();
 
@@ -165,7 +166,7 @@ final class AgentDeveloperSelectorTest
     private function testSelectFirstQueuedReturnsFeatureSlugRef(): int
     {
         $board = $this->makeBoard([
-            '- [feat][my-feature] Plain feature task',
+            ['feature' => 'my-feature', 'type' => 'feat', 'title' => 'Plain feature task'],
         ], []);
         $selector = $this->makeSelector();
 
@@ -182,7 +183,7 @@ final class AgentDeveloperSelectorTest
     private function testSelectFirstQueuedReturnsTaskRef(): int
     {
         $board = $this->makeBoard([
-            '- [tech][parent-feature][child-task] Scoped child task',
+            ['feature' => 'parent-feature', 'task' => 'child-task', 'type' => 'tech', 'title' => 'Scoped child task'],
         ], []);
         $selector = $this->makeSelector();
 
@@ -199,8 +200,8 @@ final class AgentDeveloperSelectorTest
     private function testPickSkipsNotReservableAndReturnsSecond(): int
     {
         $board = $this->makeBoard([
-            '- [feat][alpha-feature] First entry',
-            '- [feat][beta-feature] Second entry',
+            ['feature' => 'alpha-feature', 'type' => 'feat', 'title' => 'First entry'],
+            ['feature' => 'beta-feature', 'type' => 'feat', 'title' => 'Second entry'],
         ], []);
         $selector = $this->makeSelector();
 
@@ -236,8 +237,8 @@ final class AgentDeveloperSelectorTest
     private function testPickReturnsNullWhenAllNotReservable(): int
     {
         $board = $this->makeBoard([
-            '- [feat][alpha-feature] First entry',
-            '- [feat][beta-feature] Second entry',
+            ['feature' => 'alpha-feature', 'type' => 'feat', 'title' => 'First entry'],
+            ['feature' => 'beta-feature', 'type' => 'feat', 'title' => 'Second entry'],
         ], []);
         $selector = $this->makeSelector();
 
@@ -269,8 +270,8 @@ final class AgentDeveloperSelectorTest
     private function testPickPropagatesUnexpectedException(): int
     {
         $board = $this->makeBoard([
-            '- [feat][alpha-feature] First entry',
-            '- [feat][beta-feature] Second entry',
+            ['feature' => 'alpha-feature', 'type' => 'feat', 'title' => 'First entry'],
+            ['feature' => 'beta-feature', 'type' => 'feat', 'title' => 'Second entry'],
         ], []);
         $selector = $this->makeSelector();
 
@@ -308,18 +309,46 @@ final class AgentDeveloperSelectorTest
     }
 
     /**
-     * @param list<string> $todoLines
-     * @param list<string> $activeLines
+     * Builds a BacklogBoard from structured YAML fixtures.
+     *
+     * @param list<array<string, mixed>> $todoEntries
+     * @param list<array<string, mixed>> $activeEntries
      */
-    private function makeBoard(array $todoLines, array $activeLines): BacklogBoard
+    private function makeBoard(array $todoEntries, array $activeEntries): BacklogBoard
     {
-        $boardPath = $this->tmpDir . '/board-' . uniqid('', true) . '.md';
-        $content = "# Test backlog\n\n## To do\n\n"
-            . implode("\n", $todoLines)
-            . "\n\n## In progress\n\n"
-            . implode("\n", $activeLines)
-            . "\n\n## Suggestions\n";
-        file_put_contents($boardPath, $content);
+        $boardPath = $this->tmpDir . '/board-' . uniqid('', true) . '.yaml';
+
+        $order = ['kind', 'stage', 'feature', 'task', 'agent', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type'];
+        $todo = array_map(static function (array $e): array {
+            $item = ['feature' => $e['feature']];
+            if (array_key_exists('task', $e)) {
+                $item['task'] = $e['task'];
+            }
+            if (array_key_exists('type', $e)) {
+                $item['type'] = $e['type'];
+            }
+            $item['title'] = $e['title'] ?? $e['feature'];
+
+            return $item;
+        }, $todoEntries);
+
+        $active = array_map(static function (array $e) use ($order): array {
+            $item = [];
+            foreach ($order as $key) {
+                if (array_key_exists($key, $e)) {
+                    $item[$key] = $e[$key];
+                }
+            }
+            $item['title'] = $e['title'] ?? ($e['feature'] ?? '');
+
+            return $item;
+        }, $activeEntries);
+
+        file_put_contents($boardPath, Yaml::dump([
+            'version' => 1,
+            'todo' => $todo,
+            'active' => $active,
+        ], 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE | Yaml::DUMP_COMPACT_NESTED_MAPPING));
 
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         return $boardService->loadBoard($boardPath);

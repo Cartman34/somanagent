@@ -15,6 +15,7 @@ use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Client\FilesystemClient;
 use SoManAgent\Script\TextSlugger;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Unit tests for AgentReviewerSelector — auto-selection, owned reviewing entry, and conflict detection.
@@ -75,7 +76,7 @@ final class AgentReviewerSelectorTest
     private function testAutoSelectPicksFirstReviewEntry(): int
     {
         $projectRoot = $this->makeTmpSubdir('auto-pick');
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $this->writeBoard($boardPath, $this->boardWithFeatureAtReview('my-feature', 'd01'));
 
         $selector = $this->makeSelector($projectRoot);
@@ -105,7 +106,7 @@ final class AgentReviewerSelectorTest
     {
         $projectRoot = $this->makeTmpSubdir('auto-skip');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
 
         $this->writeBoard($boardPath, $this->boardWithEntries([
             $this->featureEntryAtReview('feat-a', 'd01'),
@@ -148,7 +149,7 @@ final class AgentReviewerSelectorTest
     {
         $projectRoot = $this->makeTmpSubdir('auto-all-claimed');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $this->writeBoard($boardPath, $this->boardWithFeatureAtReview('feat-x', 'd01'));
 
         $this->writeSessionsJson($projectRoot, [
@@ -184,7 +185,7 @@ final class AgentReviewerSelectorTest
     private function testAutoSelectReturnsMatchDirectly(): int
     {
         $projectRoot = $this->makeTmpSubdir('auto-match-type');
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $this->writeBoard($boardPath, $this->boardWithFeatureAtReview('feat-z', 'd03'));
 
         $selector = $this->makeSelector($projectRoot);
@@ -204,7 +205,7 @@ final class AgentReviewerSelectorTest
     private function testSelectByFeatureFound(): int
     {
         $projectRoot = $this->makeTmpSubdir('by-feature-found');
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $this->writeBoard($boardPath, $this->boardWithFeatureAtReview('target-feature', 'd03'));
 
         $selector = $this->makeSelector($projectRoot);
@@ -229,7 +230,7 @@ final class AgentReviewerSelectorTest
     private function testSelectByFeatureNotFoundWhenWrongStage(): int
     {
         $projectRoot = $this->makeTmpSubdir('by-feature-wrong-stage');
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         // Entry is at development, not review
         $this->writeBoard($boardPath, $this->boardWithFeatureAtDevelopment('dev-feature', 'd01'));
 
@@ -254,7 +255,7 @@ final class AgentReviewerSelectorTest
     private function testSelectByFeatureReviewingForSameReviewer(): int
     {
         $projectRoot = $this->makeTmpSubdir('by-feature-reviewing-same');
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $this->writeBoard($boardPath, $this->boardWithFeatureAtReviewing('my-feat', 'd01', 'r01'));
 
         $selector = $this->makeSelector($projectRoot);
@@ -279,7 +280,7 @@ final class AgentReviewerSelectorTest
     private function testSelectByFeatureReviewingForOtherReviewerThrows(): int
     {
         $projectRoot = $this->makeTmpSubdir('by-feature-reviewing-other');
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $this->writeBoard($boardPath, $this->boardWithFeatureAtReviewing('my-feat', 'd01', 'r99'));
 
         $selector = $this->makeSelector($projectRoot);
@@ -303,7 +304,7 @@ final class AgentReviewerSelectorTest
     private function testSelectByTaskFound(): int
     {
         $projectRoot = $this->makeTmpSubdir('by-task-found');
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $this->writeBoard($boardPath, $this->boardWithTaskAtReview('parent-feat', 'child-task', 'd02'));
 
         $selector = $this->makeSelector($projectRoot);
@@ -328,7 +329,7 @@ final class AgentReviewerSelectorTest
     private function testSelectByTaskInvalidRef(): int
     {
         $projectRoot = $this->makeTmpSubdir('by-task-bad-ref');
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $this->writeBoard($boardPath, $this->boardWithFeatureAtReview('any', 'd01'));
 
         $selector = $this->makeSelector($projectRoot);
@@ -352,7 +353,7 @@ final class AgentReviewerSelectorTest
     private function testSelectByTaskReviewingForOtherReviewerThrows(): int
     {
         $projectRoot = $this->makeTmpSubdir('by-task-reviewing-other');
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $this->writeBoard($boardPath, $this->boardWithTaskAtReviewing('feat-a', 'task-b', 'd01', 'r99'));
 
         $selector = $this->makeSelector($projectRoot);
@@ -376,7 +377,7 @@ final class AgentReviewerSelectorTest
     private function testSelectByDeveloperFound(): int
     {
         $projectRoot = $this->makeTmpSubdir('by-dev-found');
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $this->writeBoard($boardPath, $this->boardWithFeatureAtReview('some-feature', 'd05'));
 
         $selector = $this->makeSelector($projectRoot);
@@ -401,7 +402,7 @@ final class AgentReviewerSelectorTest
     private function testSelectByDeveloperNotFound(): int
     {
         $projectRoot = $this->makeTmpSubdir('by-dev-not-found');
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $this->writeBoard($boardPath, $this->boardWithFeatureAtReview('some-feature', 'd01'));
 
         $selector = $this->makeSelector($projectRoot);
@@ -425,7 +426,7 @@ final class AgentReviewerSelectorTest
     private function testSelectByDeveloperReviewingForOtherReviewerThrows(): int
     {
         $projectRoot = $this->makeTmpSubdir('by-dev-reviewing-other');
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $this->writeBoard($boardPath, $this->boardWithFeatureAtReviewing('feat-c', 'd03', 'r99'));
 
         $selector = $this->makeSelector($projectRoot);
@@ -449,7 +450,7 @@ final class AgentReviewerSelectorTest
     private function testFindOwnedReviewingEntryFound(): int
     {
         $projectRoot = $this->makeTmpSubdir('owned-reviewing-found');
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $this->writeBoard($boardPath, $this->boardWithFeatureAtReviewing('my-feat', 'd01', 'r01'));
 
         $selector = $this->makeSelector($projectRoot);
@@ -473,7 +474,7 @@ final class AgentReviewerSelectorTest
     private function testFindOwnedReviewingEntryReturnsNullWhenNone(): int
     {
         $projectRoot = $this->makeTmpSubdir('owned-reviewing-none');
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $this->writeBoard($boardPath, $this->boardWithFeatureAtReview('my-feat', 'd01'));
 
         $selector = $this->makeSelector($projectRoot);
@@ -493,7 +494,7 @@ final class AgentReviewerSelectorTest
     private function testFindOwnedReviewingEntryIgnoresOtherReviewer(): int
     {
         $projectRoot = $this->makeTmpSubdir('owned-reviewing-other');
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         // Board has an entry at reviewing for r99, not r01
         $this->writeBoard($boardPath, $this->boardWithFeatureAtReviewing('my-feat', 'd01', 'r99'));
 
@@ -565,7 +566,7 @@ final class AgentReviewerSelectorTest
     private function testPickSkipsNotReservableAndReturnsSecond(): int
     {
         $projectRoot = $this->makeTmpSubdir('pick-skip-first');
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $this->writeBoard($boardPath, $this->boardWithEntries([
             $this->featureEntryAtReview('feat-a', 'd01'),
             $this->featureEntryAtReview('feat-b', 'd02'),
@@ -615,7 +616,7 @@ final class AgentReviewerSelectorTest
     private function testPickReturnsNullWhenAllNotReservable(): int
     {
         $projectRoot = $this->makeTmpSubdir('pick-all-not-reservable');
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $this->writeBoard($boardPath, $this->boardWithEntries([
             $this->featureEntryAtReview('feat-a', 'd01'),
             $this->featureEntryAtReview('feat-b', 'd02'),
@@ -653,7 +654,7 @@ final class AgentReviewerSelectorTest
     private function testPickPropagatesUnexpectedException(): int
     {
         $projectRoot = $this->makeTmpSubdir('pick-unexpected-exception');
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         $this->writeBoard($boardPath, $this->boardWithEntries([
             $this->featureEntryAtReview('feat-a', 'd01'),
             $this->featureEntryAtReview('feat-b', 'd02'),
@@ -703,7 +704,7 @@ final class AgentReviewerSelectorTest
     private function loadBoard(string $projectRoot): BacklogBoard
     {
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
-        return $boardService->loadBoard($projectRoot . '/local/backlog-board.md');
+        return $boardService->loadBoard($projectRoot . '/local/backlog-board.yaml');
     }
 
     private function makeTmpSubdir(string $name): string
@@ -731,13 +732,30 @@ final class AgentReviewerSelectorTest
     }
 
     /**
-     * @param list<string> $entries
+     * Assembles a YAML board from a list of structured active entries.
+     *
+     * @param list<array<string, mixed>> $entries
      */
     private function boardWithEntries(array $entries): string
     {
-        return "# Tableau du backlog\n\n## To do\n\n## In progress\n\n" .
-            implode('', $entries) .
-            "## Suggestions\n\n";
+        $order = ['kind', 'stage', 'feature', 'task', 'agent', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type'];
+        $active = [];
+        foreach ($entries as $entry) {
+            $item = [];
+            foreach ($order as $key) {
+                if (array_key_exists($key, $entry)) {
+                    $item[$key] = $entry[$key];
+                }
+            }
+            $item['title'] = $entry['title'] ?? ($entry['feature'] ?? '');
+            $active[] = $item;
+        }
+
+        return Yaml::dump([
+            'version' => 1,
+            'todo' => [],
+            'active' => $active,
+        ], 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE | Yaml::DUMP_COMPACT_NESTED_MAPPING);
     }
 
     private function boardWithFeatureAtReview(string $feature, string $agent): string
@@ -745,17 +763,21 @@ final class AgentReviewerSelectorTest
         return $this->boardWithEntries([$this->featureEntryAtReview($feature, $agent)]);
     }
 
-    private function featureEntryAtReview(string $feature, string $agent): string
+    /**
+     * @return array<string, mixed>
+     */
+    private function featureEntryAtReview(string $feature, string $agent): array
     {
-        return "- Feature {$feature}\n" .
-            "  meta:\n" .
-            "    kind: feature\n" .
-            "    stage: review\n" .
-            "    feature: {$feature}\n" .
-            "    agent: {$agent}\n" .
-            "    branch: feat/{$feature}\n" .
-            "    base: abc123def456\n" .
-            "    pr: none\n\n";
+        return [
+            'kind' => 'feature',
+            'stage' => 'review',
+            'feature' => $feature,
+            'agent' => $agent,
+            'branch' => 'feat/' . $feature,
+            'base' => 'abc123def456',
+            'pr' => 'none',
+            'title' => 'Feature ' . $feature,
+        ];
     }
 
     private function boardWithFeatureAtReviewing(string $feature, string $agent, string $reviewer): string
@@ -763,67 +785,74 @@ final class AgentReviewerSelectorTest
         return $this->boardWithEntries([$this->featureEntryAtReviewing($feature, $agent, $reviewer)]);
     }
 
-    private function featureEntryAtReviewing(string $feature, string $agent, string $reviewer): string
+    /**
+     * @return array<string, mixed>
+     */
+    private function featureEntryAtReviewing(string $feature, string $agent, string $reviewer): array
     {
-        return "- Feature {$feature}\n" .
-            "  meta:\n" .
-            "    kind: feature\n" .
-            "    stage: reviewing\n" .
-            "    feature: {$feature}\n" .
-            "    agent: {$agent}\n" .
-            "    reviewer: {$reviewer}\n" .
-            "    branch: feat/{$feature}\n" .
-            "    base: abc123def456\n" .
-            "    pr: none\n\n";
+        return [
+            'kind' => 'feature',
+            'stage' => 'reviewing',
+            'feature' => $feature,
+            'agent' => $agent,
+            'reviewer' => $reviewer,
+            'branch' => 'feat/' . $feature,
+            'base' => 'abc123def456',
+            'pr' => 'none',
+            'title' => 'Feature ' . $feature,
+        ];
     }
 
     private function boardWithFeatureAtDevelopment(string $feature, string $agent): string
     {
         return $this->boardWithEntries([
-            "- Feature {$feature}\n" .
-            "  meta:\n" .
-            "    kind: feature\n" .
-            "    stage: development\n" .
-            "    feature: {$feature}\n" .
-            "    agent: {$agent}\n" .
-            "    branch: feat/{$feature}\n" .
-            "    base: abc123def456\n" .
-            "    pr: none\n\n",
+            [
+                'kind' => 'feature',
+                'stage' => 'development',
+                'feature' => $feature,
+                'agent' => $agent,
+                'branch' => 'feat/' . $feature,
+                'base' => 'abc123def456',
+                'pr' => 'none',
+                'title' => 'Feature ' . $feature,
+            ],
         ]);
     }
 
     private function boardWithTaskAtReview(string $feature, string $task, string $agent): string
     {
         return $this->boardWithEntries([
-            "- Task {$task}\n" .
-            "  meta:\n" .
-            "    kind: task\n" .
-            "    stage: review\n" .
-            "    feature: {$feature}\n" .
-            "    task: {$task}\n" .
-            "    agent: {$agent}\n" .
-            "    feature-branch: feat/{$feature}\n" .
-            "    branch: feat/{$feature}--{$task}\n" .
-            "    base: abc123def456\n" .
-            "    pr: none\n\n",
+            [
+                'kind' => 'task',
+                'stage' => 'review',
+                'feature' => $feature,
+                'task' => $task,
+                'agent' => $agent,
+                'feature-branch' => 'feat/' . $feature,
+                'branch' => 'feat/' . $feature . '--' . $task,
+                'base' => 'abc123def456',
+                'pr' => 'none',
+                'title' => 'Task ' . $task,
+            ],
         ]);
     }
 
     private function boardWithTaskAtReviewing(string $feature, string $task, string $agent, string $reviewer): string
     {
         return $this->boardWithEntries([
-            "- Task {$task}\n" .
-            "  meta:\n" .
-            "    kind: task\n" .
-            "    stage: reviewing\n" .
-            "    feature: {$feature}\n" .
-            "    task: {$task}\n" .
-            "    agent: {$agent}\n" .
-            "    reviewer: {$reviewer}\n" .
-            "    feature-branch: feat/{$feature}\n" .
-            "    branch: feat/{$feature}--{$task}\n" .
-            "    base: abc123def456\n" .
-            "    pr: none\n\n",
+            [
+                'kind' => 'task',
+                'stage' => 'reviewing',
+                'feature' => $feature,
+                'task' => $task,
+                'agent' => $agent,
+                'reviewer' => $reviewer,
+                'feature-branch' => 'feat/' . $feature,
+                'branch' => 'feat/' . $feature . '--' . $task,
+                'base' => 'abc123def456',
+                'pr' => 'none',
+                'title' => 'Task ' . $task,
+            ],
         ]);
     }
 

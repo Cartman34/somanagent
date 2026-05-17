@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Test\Backlog;
 
+use SoManAgent\Script\Backlog\Storage\BoardYamlStorage;
 use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Client\FilesystemClient;
 use SoManAgent\Script\Console;
@@ -52,21 +53,7 @@ final class BacklogScriptTestDriver
      */
     public function resetArtifacts(): void
     {
-        $this->writeFile($this->context->boardPath, <<<MD
-# Backlog board
-
-## Usage rules
-
-- Temporary test file for scripts/test-backlog-workflow.php.
-- Do not use this file as a production backlog.
-
-## To do
-
-## In progress
-
-## Suggestions
-
-MD);
+        $this->writeFile($this->context->boardPath, BoardYamlStorage::initialContent());
 
         $this->writeFile($this->context->reviewPath, <<<MD
 # Current review
@@ -213,15 +200,47 @@ MD);
     }
 
     /**
-     * Creates a queued task from inline text by writing it to a temporary body file.
+     * Creates a queued task from inline bracket-prefix text by parsing it and calling the new CLI.
+     *
+     * Supports the legacy `[type][feature][task] title` bracket syntax internally; the CLI itself
+     * receives structured --feature / --task / --type / --body-file options.
      *
      * @param string $text Task text (single-line or multi-line with embedded newlines)
      */
     public function createTodoTask(string $text): void
     {
-        $name = 'entry-create-' . substr(md5($text), 0, 8) . '.md';
+        $service = $this->boardService();
         $lines = preg_split('/\R/', $text) ?: [$text];
-        $this->createTodoTaskFromBodyFile($lines, $name);
+        $firstLine = rtrim($lines[0]);
+
+        if (preg_match('/^-\s+(.*)$/', $firstLine, $m) === 1) {
+            $firstLine = $m[1];
+        }
+
+        [$taskType, $cleaned] = $service->extractTypePrefix($firstLine);
+        $type = $taskType?->value;
+
+        $scoped = $service->extractScopedTaskMetadata($cleaned);
+        if ($scoped !== null) {
+            $feature = $scoped['featureGroup'];
+            $task = $scoped['task'];
+            $titleLine = $scoped['text'];
+        } else {
+            $single = $service->extractSingleFeaturePrefixMetadata($cleaned);
+            if ($single !== null) {
+                $feature = $single['featureSlug'];
+                $task = null;
+                $titleLine = $single['text'];
+            } else {
+                $feature = $service->normalizeFeatureSlug($cleaned);
+                $task = null;
+                $titleLine = $cleaned;
+            }
+        }
+
+        $bodyLines = array_slice($lines, 1);
+        $name = 'entry-create-' . substr(md5($text), 0, 8) . '.md';
+        $this->createTodoTaskFromBodyFile($feature, $titleLine, $bodyLines, $task, $type, $name);
     }
 
     /**
@@ -982,6 +1001,17 @@ MD);
     }
 
     /**
+     * Returns the raw contents of the backlog board file.
+     *
+     * Used by ordering assertions that need to compare substring positions
+     * across multiple entries within the YAML output.
+     */
+    public function getBoardText(): string
+    {
+        return (string) file_get_contents($this->context->boardPath);
+    }
+
+    /**
      * @param string $agent Agent requesting the review
      */
     public function requestFeatureReview(string $agent): void
@@ -1234,18 +1264,57 @@ MD);
     }
 
     /**
-     * Creates a queued task using --body-file=<path>.
+     * Creates a queued task using the structured entry-create CLI options.
      *
-     * @param list<string> $lines Lines to write to the temporary body file
-     * @param string $name File name for the generated test body file
+     * The body file receives the title on the first line followed by any body lines.
+     *
+     * @param string $feature Feature slug
+     * @param string $titleLine Entry title (first line of body file)
+     * @param array<string> $bodyLines Additional body/sub-task lines
+     * @param string|null $task Task slug for scoped child tasks
+     * @param string|null $type Branch type: feat, fix, or tech
+     * @param string $name File name for the temporary body file
      */
-    public function createTodoTaskFromBodyFile(array $lines, string $name): string
-    {
-        $path = $this->createBodyFile($name, $lines);
+    public function createTodoTaskFromBodyFile(
+        string $feature,
+        string $titleLine,
+        array $bodyLines,
+        ?string $task,
+        ?string $type,
+        string $name,
+    ): string {
+        $allLines = array_merge([$titleLine], $bodyLines);
+        $path = $this->createBodyFile($name, $allLines);
         $relative = $this->relativePath($path);
-        $this->runBacklog(['entry-create', '--body-file=' . $relative]);
+
+        $args = ['entry-create', '--feature=' . $feature, '--body-file=' . $relative];
+        if ($task !== null) {
+            $args[] = '--task=' . $task;
+        }
+        if ($type !== null) {
+            $args[] = '--type=' . $type;
+        }
+        $this->runBacklog($args);
 
         return $path;
+    }
+
+    /**
+     * Renames a todo entry by replacing its feature slug (and optionally its title) in the YAML board.
+     *
+     * Uses replaceBoardText so the exact YAML substring must be unique in the file.
+     *
+     * @param string $oldFeature  Current feature slug in the board
+     * @param string $newFeature  Replacement feature slug
+     * @param string $oldTitle    Current title (used to disambiguate when multiple entries share the same feature slug)
+     * @param string $newTitle    Replacement title
+     */
+    public function renameTodoEntry(string $oldFeature, string $newFeature, string $oldTitle, string $newTitle): void
+    {
+        $this->replaceBoardText(
+            "feature: {$oldFeature}\n    title: " . \Symfony\Component\Yaml\Yaml::dump($oldTitle),
+            "feature: {$newFeature}\n    title: " . \Symfony\Component\Yaml\Yaml::dump($newTitle),
+        );
     }
 
     /**

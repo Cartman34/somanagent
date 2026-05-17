@@ -97,7 +97,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
 
         $context = new BacklogScriptTestContext(
             projectRoot: $this->projectRoot,
-            boardPath: $this->projectRoot . '/local/tests/test-backlog-workflow-board.md',
+            boardPath: $this->projectRoot . '/local/tests/test-backlog-workflow-board.yaml',
             reviewPath: $this->projectRoot . '/local/tests/test-backlog-workflow-review.md',
             tmpDir: $this->projectRoot . '/local/tests',
             worktreesRoot: $worktreesRoot,

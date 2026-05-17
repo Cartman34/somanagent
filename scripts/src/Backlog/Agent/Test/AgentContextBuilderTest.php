@@ -12,6 +12,7 @@ use SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Client\FilesystemClient;
 use SoManAgent\Script\TextSlugger;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Unit tests for AgentContextBuilder.
@@ -183,7 +184,7 @@ final class AgentContextBuilderTest
     {
         $projectRoot = $this->tmpDir . '/proj-reviewer-noentry-' . uniqid('', true);
         mkdir($projectRoot . '/local', 0755, true);
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         file_put_contents($boardPath, $this->boardWithFeatureAtReview('some-feature', 'd01'));
 
         $worktree = $projectRoot . '/wt';
@@ -209,7 +210,7 @@ final class AgentContextBuilderTest
     {
         $projectRoot = $this->tmpDir . '/proj-reviewer-entry-' . uniqid('', true);
         mkdir($projectRoot . '/local', 0755, true);
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         file_put_contents($boardPath, $this->boardWithFeatureAtReviewing('my-feature', 'd04', 'r01'));
 
         $worktree = $projectRoot . '/wt';
@@ -284,7 +285,7 @@ final class AgentContextBuilderTest
         mkdir($projectRoot . '/local', 0755, true);
         mkdir($projectRoot . '/doc/development', 0755, true);
 
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         file_put_contents($boardPath, $this->boardWithFeatureAtDevelopment('my-feature', 'd01'));
 
         // Minimal role doc with two keywords so we can assert `next` is removed but `submit` kept.
@@ -331,7 +332,7 @@ final class AgentContextBuilderTest
         mkdir($projectRoot . '/local', 0755, true);
         mkdir($projectRoot . '/doc/development', 0755, true);
 
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog-board.yaml';
         file_put_contents($boardPath, $this->boardWithFeatureAtReviewing('my-feature', 'd04', 'r01'));
 
         // Minimal role doc with two keywords so we can assert `review` is removed but `approve` kept.
@@ -382,48 +383,76 @@ final class AgentContextBuilderTest
 
     private function boardWithFeatureAtDevelopment(string $feature, string $agent): string
     {
-        return "# Tableau du backlog\n\n## To do\n\n## In progress\n\n" .
-            "- Feature {$feature}\n" .
-            "  meta:\n" .
-            "    kind: feature\n" .
-            "    stage: development\n" .
-            "    feature: {$feature}\n" .
-            "    agent: {$agent}\n" .
-            "    branch: feat/{$feature}\n" .
-            "    base: abc123def456\n" .
-            "    pr: none\n\n" .
-            "## Suggestions\n\n";
+        return $this->boardYaml([
+            [
+                'kind' => 'feature',
+                'stage' => 'development',
+                'feature' => $feature,
+                'agent' => $agent,
+                'branch' => 'feat/' . $feature,
+                'base' => 'abc123def456',
+                'pr' => 'none',
+                'title' => 'Feature ' . $feature,
+            ],
+        ]);
     }
 
     private function boardWithFeatureAtReview(string $feature, string $agent): string
     {
-        return "# Tableau du backlog\n\n## To do\n\n## In progress\n\n" .
-            "- Feature {$feature}\n" .
-            "  meta:\n" .
-            "    kind: feature\n" .
-            "    stage: review\n" .
-            "    feature: {$feature}\n" .
-            "    agent: {$agent}\n" .
-            "    branch: feat/{$feature}\n" .
-            "    base: abc123def456\n" .
-            "    pr: none\n\n" .
-            "## Suggestions\n\n";
+        return $this->boardYaml([
+            [
+                'kind' => 'feature',
+                'stage' => 'review',
+                'feature' => $feature,
+                'agent' => $agent,
+                'branch' => 'feat/' . $feature,
+                'base' => 'abc123def456',
+                'pr' => 'none',
+                'title' => 'Feature ' . $feature,
+            ],
+        ]);
     }
 
     private function boardWithFeatureAtReviewing(string $feature, string $agent, string $reviewer): string
     {
-        return "# Tableau du backlog\n\n## To do\n\n## In progress\n\n" .
-            "- Feature {$feature}\n" .
-            "  meta:\n" .
-            "    kind: feature\n" .
-            "    stage: reviewing\n" .
-            "    feature: {$feature}\n" .
-            "    agent: {$agent}\n" .
-            "    reviewer: {$reviewer}\n" .
-            "    branch: feat/{$feature}\n" .
-            "    base: abc123def456\n" .
-            "    pr: none\n\n" .
-            "## Suggestions\n\n";
+        return $this->boardYaml([
+            [
+                'kind' => 'feature',
+                'stage' => 'reviewing',
+                'feature' => $feature,
+                'agent' => $agent,
+                'reviewer' => $reviewer,
+                'branch' => 'feat/' . $feature,
+                'base' => 'abc123def456',
+                'pr' => 'none',
+                'title' => 'Feature ' . $feature,
+            ],
+        ]);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $activeEntries
+     */
+    private function boardYaml(array $activeEntries): string
+    {
+        $order = ['kind', 'stage', 'feature', 'task', 'agent', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type'];
+        $active = [];
+        foreach ($activeEntries as $entry) {
+            $item = [];
+            foreach ($order as $key) {
+                if (array_key_exists($key, $entry)) {
+                    $item[$key] = $entry[$key];
+                }
+            }
+            $item['title'] = $entry['title'] ?? ($entry['feature'] ?? '');
+            $active[] = $item;
+        }
+
+        return Yaml::dump([
+            'version' => 1,
+            'todo' => [],
+            'active' => $active,
+        ], 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE | Yaml::DUMP_COMPACT_NESTED_MAPPING);
     }
 
     private function rmdir(string $dir): void

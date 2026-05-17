@@ -306,7 +306,7 @@ final class MigrateGenerateService
      */
     private function detectActiveEntryRef(string $agentCode): ?string
     {
-        $boardPath = $this->boardRoot . '/local/backlog-board.md';
+        $boardPath = $this->boardRoot . '/local/backlog-board.yaml';
         if (!is_file($boardPath)) {
             return null;
         }

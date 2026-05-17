@@ -37,7 +37,7 @@ The cross-role tooling and path rules in [`agent-workflow.md` — Tools And Path
 - commit on the feature branch with the feature slug prefix
 - self-challenge the implementation iteratively during initial development **and** rework — multiple cycles (after each meaningful chunk, before each commit, before `submit`), each cycle covering in one pass: code, tests, PHPDoc, help YAML, user docs, conventions, spec alignment, security. Fix every issue found and re-challenge; a single final pass leaves bugs for the reviewer. Report a brief summary of cycles to the user when applicable
 - update docs when required by the code change
-- keep `local/backlog-board.md` in sync with the current stage of the feature through `backlog.php`
+- keep `local/backlog-board.yaml` in sync with the current stage of the feature through `backlog.php`
 - rely on the prepared `WA` runtime state: `backend/vendor` and `frontend/node_modules` are copied from `WP` when the `WA` is created or when they are missing, while root `.env` and `backend/.env.local` are refreshed by the workflow
 
 ## Workspace Rules
@@ -61,7 +61,7 @@ The cross-role tooling and path rules in [`agent-workflow.md` — Tools And Path
 - merge a task or feature without an explicit user instruction
 - use raw git or GitHub commands when `backlog.php` provides the workflow step
 - start a second visible backlog entry for the same feature
-- edit `local/backlog-board.md` or `local/backlog-review.md` manually
+- edit `local/backlog-board.yaml` or `local/backlog-review.md` manually
 - introduce or leave dead code in the branch — methods, functions, properties, classes, or imports without any caller or reader anywhere in the codebase. This includes lingering remnants of an earlier refactor that the current change is supposed to clean up. The reviewer treats dead code as a blocker.
 
 ## Session Environment
@@ -109,26 +109,27 @@ Run `php scripts/backlog-agent.php whoami` from inside the WA to confirm the ses
 
 ## Read Only When Needed
 
-- `local/backlog-board.md` for feature state
+- `local/backlog-board.yaml` for feature state
 
 ## Command Behavior
 
 ### `entry-create`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --body-file=<path> [--position=<start|index|end>] [--index=<n>]`.
-2. By default the script appends the entry to the end of `## To do`.
-3. `--position=start` inserts at the start of `## To do`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --feature=<slug> [--task=<slug>] [--type=feat|fix|tech] --body-file=<path> [--position=<start|index|end>] [--index=<n>]`.
+2. By default the script appends the entry to the end of `todo:`.
+3. `--position=start` inserts at the start of `todo:`.
 4. `--position=index --index=<n>` inserts at the requested 1-based position and clamps out-of-range values to the start or the end.
-5. Keep the entry title short and put the breakdown on indented sub-task lines below it. **A `[feature-slug]` scope is required** (plus `[task-slug]` for child tasks); `entry-create` rejects entries without one. Including a `[type]` prefix (`[feat]`, `[fix]` or `[tech]`) is strongly recommended so the queued entry is unambiguous. The type prefix may appear at any position in the leading bracket sequence.
-6. Always use `--body-file=<path>` to pass the entry body. Write the file under your cwd's `local/tmp/` (the WP `local/tmp/` when working from WP). For `entry-create` the path is resolved against cwd only; no worktree lookup is performed. Keep test execution outputs under `local/tests/`, not `local/tmp/`. The first non-empty line is the title; subsequent lines are each shifted by +2 spaces — top-level bullets (0 indent) land at 2 spaces in the board, standard markdown sub-bullets (2-space indent) land at 4, preserving nesting hierarchy. Write a normal markdown file and the hierarchy is preserved. Inline positional text is not accepted. **Body markdown is restricted**: bullet lists (nested, any depth) and inline formatting only (bold, italic, inline code). No headers, code blocks, tables, blockquotes, hr, or paragraphs outside bullets — anything else is squashed into bullets and detail is lost. Long content → `local/specs/<feature>-spec.md`, referenced from a bullet.
-7. Do not edit `local/backlog-board.md` manually.
-8. The body prefix determines the semantic: `[feat-slug]` alone creates a seed feature entry; `[feat-slug][task-slug]` creates a scoped child task. If the new entry is a scoped child task and the parent feature is in `review`, `reviewing`, or `approved` stage, `entry-create` automatically reverts the parent to `development` and clears `meta.reviewer`. A message is printed; no manual follow-up is needed.
+5. **Required:** `--feature=<slug>` declares the feature slug; `--body-file=<path>` provides the title (first non-empty line) and body (subsequent lines). Inline positional text is rejected. **Scoped child tasks** also require `--task=<slug>`. Including `--type=<feat|fix|tech>` is strongly recommended so `work-start` does not have to fall back on the default branch type.
+6. Always use `--body-file=<path>` to pass the entry body. Write the file under your cwd's `local/tmp/` (the WP `local/tmp/` when working from WP). For `entry-create` the path is resolved against cwd only; no worktree lookup is performed. Keep test execution outputs under `local/tests/`, not `local/tmp/`. The body file is a normal markdown file: first non-empty line = title, subsequent lines become body bullets, preserving nesting hierarchy. **Body markdown is restricted**: bullet lists (nested, any depth) and inline formatting only (bold, italic, inline code). No headers, code blocks, tables, blockquotes, hr, or paragraphs outside bullets — anything else is squashed into bullets and detail is lost. Long content → `local/specs/<feature>-spec.md`, referenced from a bullet.
+7. Do not edit `local/backlog-board.yaml` manually.
+8. The `--task=<slug>` option determines the semantic: omitted creates a seed feature entry; provided creates a scoped child task. If the new entry is a scoped child task and the parent feature is in `review`, `reviewing`, or `approved` stage, `entry-create` automatically reverts the parent to `development` and clears `reviewer`. A message is printed; no manual follow-up is needed.
 
 Examples:
 
 ```bash
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --body-file=local/tmp/new-feature-task.md
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --body-file=local/tmp/new-feature-task.md --position=index --index=2
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --feature=my-feature --body-file=local/tmp/new-feature-task.md
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --feature=my-feature --task=my-task --type=tech --body-file=local/tmp/new-task.md
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --feature=my-feature --body-file=local/tmp/new-feature-task.md --position=index --index=2
 ```
 
 ### `todo-list`
@@ -171,7 +172,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php rework [<entry-ref>]`.
 2. Without an explicit reference, the script resolves the single reworkable entry (task or feature) assigned to the agent. An entry is reworkable when its stage is `rejected` or `approved`.
 3. With an `<entry-ref>`, the script targets that entry. A plain task slug is not a stable entry reference.
-4. The script requires the entry stage to be `rejected` or `approved`, moves it back to `meta.stage=development`, and reopens the entry branch in the agent `WA`. Stored review notes from `local/backlog-review.md` are displayed when the entry came from a rejection.
+4. The script requires the entry stage to be `rejected` or `approved`, moves it back to `stage=development`, and reopens the entry branch in the agent `WA`. Stored review notes from `local/backlog-review.md` are displayed when the entry came from a rejection.
 5. The review notes stay in `local/backlog-review.md` until the next `review-request` clears them.
 6. When recovering from a merge conflict on an approved entry, `rework` keeps the existing GitHub PR untouched; resubmit through `review-request` once the conflict is fixed.
 7. An entry can also transition from `approved` back to `reviewing` (reviewer path) or back to `review` (manager path) via `review-reopen`. In that case the entry is not yet reworkable; wait for the reviewer to reject or approve again before `rework` becomes available.
@@ -179,7 +180,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 ### `base-update`
 
 1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php base-update <entry-ref>`.
-2. Use this command after a rebase or after resolving a merge conflict to refresh the `meta.base` SHA recorded in the backlog without editing the file manually.
+2. Use this command after a rebase or after resolving a merge conflict to refresh the `base` SHA recorded in the backlog without editing the file manually.
 3. Pass the stable `<entry-ref>` for the entry. Never pass a bare task slug.
 4. Without `--base`, the automatic base is resolved as follows:
    - For a `kind=feature`: the command fetches `origin/main` first, then records the merge base between `origin/main` and the feature branch.
@@ -194,7 +195,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 4. Automated workflows must always pass an explicit target; the implicit head form is reserved for interactive usage.
 5. The script reads the branch type from the queued task prefix `[feat]`, `[fix]` or `[tech]` (case-insensitive). The type prefix is recognized at any position in the leading bracket sequence. `--branch-type` overrides the queued prefix and rejects any value not in the canonical type list.
 6. The script validates the queued entry fully (type, feature and task slugs, conflicts) before any worktree, branch or backlog mutation. A refusal leaves no leftover worktree or backlog state behind.
-7. After validation the script takes the target task from `## To do`, updates local `main` when possible, creates the branch in the agent worktree, moves the entry to `## In progress`, sets `meta.stage=development`, and authorizes development.
+7. After validation the script takes the target task from `todo:`, updates local `main` when possible, creates the branch in the agent worktree, moves the entry to `active:`, sets `stage=development`, and authorizes development.
 8. Branch prefix follows the type 1:1: `feat → feat/<slug>`, `fix → fix/<slug>`, `tech → tech/<slug>` for plain features and `<type>/<feature-slug>--<task-slug>` for scoped tasks.
 9. Behaviour depends on the queued task prefix (after the optional `[feat]`/`[fix]`/`[tech]` type prefix):
    - **`[feature-slug][task-slug] text`** — creates or reuses the parent `kind=feature` entry for `<feature-slug>` without agent assignment, and creates the child `kind=task` entry assigned to the agent on branch `<type>/<feature-slug>--<task-slug>`. The `kind=feature` container stays unassigned until a developer explicitly takes integration ownership with `entry-assign`.
@@ -203,12 +204,12 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 10. With `--dry-run`, the script prints the resolved interpretation (kind, type, feature, task, planned branches) and performs no Git, worktree or backlog mutation. Read-only Git operations (fetch, `origin/main` resolution) remain enabled.
 11. The command output includes the started task when applicable, the parent feature summary and details, and the assigned worktree path and branch.
 12. `work-start` is local-only: it does not push and it does not create a PR.
-13. When starting a scoped child task (`[feature-slug][task-slug]`) whose existing parent feature is in `review`, `reviewing`, or `approved` stage, `work-start` automatically reverts the parent to `development` and clears `meta.reviewer`. A message is printed; no manual follow-up is needed.
+13. When starting a scoped child task (`[feature-slug][task-slug]`) whose existing parent feature is in `review`, `reviewing`, or `approved` stage, `work-start` automatically reverts the parent to `development` and clears `reviewer`. A message is printed; no manual follow-up is needed.
 
 ### `entry-release`
 
 1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-release [<entry-ref>]`.
-2. The script returns the active feature or task to the start of `## To do` only when the branch is still clean and has no commit ahead of its recorded `base`. Works on a task or feature.
+2. The script returns the active feature or task to the start of `todo:` only when the branch is still clean and has no commit ahead of its recorded `base`. Works on a task or feature.
 3. A parent `kind=feature` cannot be released while child `kind=task` entries are still active for that feature.
 4. The script then removes the managed worktree and deletes the untouched local branch.
 
@@ -218,7 +219,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 2. The script targets the explicit `<entry-ref>`.
 3. The script merges the child branch into the parent feature branch locally from the parent feature worktree or from a temporary merge worktree.
 4. The current task review stage does not gate this merge. `development`, `review`, `rejected`, and `approved` are all mergeable when the user explicitly asks for `merge`.
-5. The child task entry is removed from `## In progress` after the local merge. The child task worktree is removed when that agent no longer owns any active task.
+5. The child task entry is removed from `active:` after the local merge. The child task worktree is removed when that agent no longer owns any active task.
 6. The parent `kind=feature` entry remains, keeps the merged task content in its aggregated lines, and is moved back to `development` so the remote review flow must be requested again on the parent branch. The parent's agent assignment is never modified by a task merge — use `entry-assign` to take integration ownership of the feature after all tasks are merged.
 
 ### `entry-assign`
@@ -290,14 +291,14 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 2. The script resolves the agent's single active entry automatically: if `kind=task`, submits the task for review; if `kind=feature`, submits the feature for review.
 3. For `kind=feature`, requires all child `kind=task` entries to have been merged locally first, and requires the agent to be assigned to the feature via `entry-assign`.
 4. Before running the mechanical review, the script rebases the entry branch automatically: a `kind=feature` is rebased on `origin/main` (with `origin/main` refreshed first), a `kind=task` is rebased on its local parent feature branch.
-5. After a successful rebase, `meta.base` is refreshed automatically to the new base commit. Manual `base-update` is not required after `review-request` succeeds.
+5. After a successful rebase, `base` is refreshed automatically to the new base commit. Manual `base-update` is not required after `review-request` succeeds.
 6. If the rebase fails (typically a conflict), the rebase is aborted, the command stops with a recovery hint, the entry stays in `development`, and the mechanical review is not run. The worktree is left clean by the abort. Update the branch manually in the worktree (rebase or merge onto the target and resolve the conflicts), then rerun `review-request`.
 
 ## Rules
 
 - An agent can have at most one active entry (`kind=task` or `kind=feature`) at a time. `work-start` and `entry-assign` enforce this at the script level and will refuse with the current active entry details and the required next step.
 - Do not edit local backlog files directly.
-- A plain feature is considered done for Developer only when it is committed, mechanically valid, and passed to `meta.stage=review`.
+- A plain feature is considered done for Developer only when it is committed, mechanically valid, and passed to `stage=review`.
 - A `kind=task` entry may be submitted for review with `review-request`, but it is considered done for Developer only when it is committed, mechanically valid, and merged locally into its parent feature branch with `entry-merge`.
 - For `entry-assign` and `entry-unassign`, `SOMANAGER_ROLE` must be `developer` and `SOMANAGER_AGENT` must match `--agent`.
 - User workflow keywords are procedural orders. For `next`, `submit`, `rework`, and `cleanup`, execute the documented command sequence exactly as written, even if memory suggests the feature state is inconsistent or unchanged.
@@ -341,9 +342,9 @@ This keyword applies only when the active entry is in `development` stage. Refus
 
 1. `WA`: run the rebase against the entry's parent branch. There is one standard procedure — never invent a different one.
    - For a `kind=feature`: `git fetch origin main` then `git rebase origin/main`.
-   - For a `kind=task`: `git fetch origin <parent-feature-branch>` then `git rebase <parent-feature-branch>` (the parent branch name comes from the entry's `meta.feature` mapped through the project branch convention).
+   - For a `kind=task`: `git fetch origin <parent-feature-branch>` then `git rebase <parent-feature-branch>` (the parent branch name comes from the entry's `feature` mapped through the project branch convention).
 2. If the rebase reports conflicts: resolve them file by file in the `WA`, then `git add <file>` and `git rebase --continue`. Repeat until the rebase finishes. Never `git rebase --abort` unless the user explicitly asks for it.
-3. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php base-update <entry-ref>` to refresh `meta.base`.
+3. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php base-update <entry-ref>` to refresh `base`.
 4. Stop. Do not run `submit` unless the user explicitly asks for it.
 
 ### `cleanup`

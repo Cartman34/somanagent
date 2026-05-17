@@ -61,7 +61,7 @@ use SoManAgent\Script\TextSlugger;
  */
 final class BacklogAgentRunner extends AbstractScriptRunner
 {
-    private const DEFAULT_BOARD_PATH = 'local/backlog-board.md';
+    private const DEFAULT_BOARD_PATH = 'local/backlog-board.yaml';
     private const DEFAULT_WORKTREES_DIR = '.agent-worktrees';
 
     /** @var array<string, AbstractAgentCommand>|null */

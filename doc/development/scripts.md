@@ -206,7 +206,7 @@ php scripts/test-backlog-workflow.php --keep-artifacts
 ```
 
 Notes:
-- the script never uses `local/backlog-board.md` or `local/backlog-review.md` directly
+- the script never uses `local/backlog-board.yaml` or `local/backlog-review.md` directly
 - it passes `--test-mode`, `--board-file`, and `--review-file` to `backlog.php` with campaign files under `local/tests/`
 - it passes `--worktree-dir` to `backlog.php` with isolated test worktrees under `local/tests/test-worktrees/`
 - `feature-review-lifecycle` is skipped unless `--allow-remote` is enabled

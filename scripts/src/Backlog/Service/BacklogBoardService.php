@@ -14,6 +14,7 @@ use SoManAgent\Script\Backlog\Model\BoardEntryMatch;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
 use SoManAgent\Script\Backlog\Enum\BacklogTaskType;
+use SoManAgent\Script\Backlog\Storage\BoardYamlStorage;
 use SoManAgent\Script\Client\FilesystemClientInterface;
 use SoManAgent\Script\TextSlugger;
 
@@ -62,58 +63,18 @@ final class BacklogBoardService
     /* --- Board Persistence Operations --- */
 
     /**
-     * Loads and parses a backlog board from a markdown file.
+     * Loads and parses a backlog board from a YAML file.
+     *
      * @return BacklogBoard
      */
     public function loadBoard(string $path): BacklogBoard
     {
-        $content = $this->fs->getFileContents($path);
-        $lines = preg_split('/\R/', $content) ?: [];
-        if ($lines === []) {
-            throw new \RuntimeException("Unable to read backlog board: {$path}");
-        }
-
-        $title = array_shift($lines);
-        $board = new BacklogBoard($path, $title);
-
-        $currentSection = null;
-        $rawSections = [];
-        $sectionOrder = [];
-
-        foreach ($lines as $line) {
-            if (preg_match('/^## (.+)$/', $line, $matches) === 1) {
-                $currentSection = $matches[1];
-                if (!in_array($currentSection, $sectionOrder, true)) {
-                    $sectionOrder[] = $currentSection;
-                }
-                $rawSections[$currentSection] ??= [];
-                continue;
-            }
-
-            if ($currentSection === null) {
-                continue;
-            }
-
-            $rawSections[$currentSection][] = $line;
-        }
-
-        foreach ($rawSections as $section => $sectionLines) {
-            $rawSections[$section] = $this->sanitizeSectionLines($sectionLines);
-        }
-
-        $board->setRawSections($rawSections);
-        $board->setSectionOrder($sectionOrder);
-
-        $this->updateManagedSectionOrder($board);
-
-        $board->setEntries(BacklogBoard::SECTION_TODO, $this->parseEntriesFromSectionLines($rawSections[BacklogBoard::SECTION_TODO] ?? []));
-        $board->setEntries(BacklogBoard::SECTION_ACTIVE, $this->parseActiveEntries($board));
-
-        return $board;
+        return (new BoardYamlStorage())->load($path);
     }
 
     /**
-     * Persists a backlog board to its markdown file.
+     * Persists a backlog board to its YAML file.
+     *
      * @param BacklogBoard $board
      */
     public function saveBoard(BacklogBoard $board): void
@@ -122,39 +83,7 @@ final class BacklogBoardService
             return;
         }
 
-        $this->normalizeBoardForSave($board);
-
-        $chunks = [$board->getTitle(), ''];
-        $rawSections = $board->getRawSections();
-
-        foreach ($board->getSectionOrder() as $section) {
-            $chunks[] = '## ' . $section;
-            $chunks[] = '';
-
-            if (in_array($section, [BacklogBoard::SECTION_TODO, BacklogBoard::SECTION_ACTIVE], true)) {
-                $entries = $board->getEntries($section);
-                if ($entries !== []) {
-                    $order = match ($section) {
-                        BacklogBoard::SECTION_TODO => ['agent', 'feature'],
-                        default => ['kind', 'stage', 'feature', 'task', 'agent', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked'],
-                    };
-
-                    foreach ($entries as $entry) {
-                        foreach ($this->formatEntryToLines($entry, $order) as $line) {
-                            $chunks[] = $line;
-                        }
-                    }
-                }
-            } else {
-                foreach ($this->sanitizeSectionLines($rawSections[$section] ?? []) as $line) {
-                    $chunks[] = $line;
-                }
-            }
-
-            $chunks[] = '';
-        }
-
-        $this->fs->writeFilePath($board->getPath(), rtrim(implode("\n", $chunks)) . "\n");
+        (new BoardYamlStorage())->save($board);
     }
 
     /* --- Review File Persistence Operations --- */
@@ -489,27 +418,26 @@ final class BacklogBoardService
     }
 
     /**
-     * Computes the stable reference identifier of a queued todo entry from its text.
+     * Computes the stable reference identifier of a queued todo entry from its fields.
      *
-     * The reference matches the eventual feature and task slugs that {@see BacklogWorkStartCommand}
-     * would assign on promotion, so it stays valid across todo reorderings and is the only
-     * trustworthy identity for mutations on queued entries.
+     * Returns `feature/task` for scoped tasks and `feature` for plain features.
+     * The reference stays valid across todo reorderings and is the only trustworthy
+     * identity for mutations on queued entries.
      */
     public function computeQueuedEntryReference(BoardEntry $entry): string
     {
-        [, $cleaned] = $this->extractTypePrefix($entry->getText());
+        $feature = $entry->getFeature();
+        $task = $entry->getTask();
 
-        $scoped = $this->extractScopedTaskMetadata($cleaned);
-        if ($scoped !== null) {
-            return $scoped['featureGroup'] . '/' . $scoped['task'];
+        if ($feature !== null && $task !== null) {
+            return $feature . '/' . $task;
         }
 
-        $single = $this->extractSingleFeaturePrefixMetadata($cleaned);
-        if ($single !== null) {
-            return $single['featureSlug'];
+        if ($feature !== null) {
+            return $feature;
         }
 
-        return $this->normalizeFeatureSlug($cleaned);
+        return $this->normalizeFeatureSlug($entry->getText());
     }
 
     /**
@@ -1293,6 +1221,7 @@ final class BacklogBoardService
 
     /**
      * Clears agent reservations from TODO entries, optionally filtered by feature.
+     *
      * @param BacklogBoard $board, string $agent, ?string $feature
      */
     public function clearAgentReservations(BacklogBoard $board, string $agent, ?string $feature = null): void
@@ -1309,7 +1238,6 @@ final class BacklogBoardService
             }
 
             $entry->setAgent(null);
-            $entry->setFeature(null);
         }
 
         $board->setEntries(BacklogBoard::SECTION_TODO, $entries);
@@ -1596,8 +1524,7 @@ final class BacklogBoardService
     {
         $matches = [];
         foreach ($board->getEntries(BacklogBoard::SECTION_TODO) as $index => $entry) {
-            $scoped = $this->extractScopedTaskMetadata($entry->getText());
-            if ($scoped !== null && $scoped['featureGroup'] === $feature) {
+            if ($entry->getFeature() === $feature && $entry->getTask() !== null) {
                 $matches[] = new BoardEntryMatch(BacklogBoard::SECTION_TODO, $index, $entry);
             }
         }
