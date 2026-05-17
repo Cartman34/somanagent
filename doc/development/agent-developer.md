@@ -62,6 +62,7 @@ The cross-role tooling and path rules in [`agent-workflow.md` — Tools And Path
 - use raw git or GitHub commands when `backlog.php` provides the workflow step
 - start a second visible backlog entry for the same feature
 - edit `local/backlog-board.md` or `local/backlog-review.md` manually
+- introduce or leave dead code in the branch — methods, functions, properties, classes, or imports without any caller or reader anywhere in the codebase. This includes lingering remnants of an earlier refactor that the current change is supposed to clean up. The reviewer treats dead code as a blocker.
 
 ## Session Environment
 
