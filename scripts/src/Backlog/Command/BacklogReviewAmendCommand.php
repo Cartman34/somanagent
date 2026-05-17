@@ -13,6 +13,7 @@ use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use SoManAgent\Script\Backlog\Service\BacklogReviewBodyFormatter;
+use SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
 
 /**
  * Reviewer command that replaces rejection notes on a rejected entry without changing its stage.
@@ -24,22 +25,27 @@ final class BacklogReviewAmendCommand extends AbstractBacklogCommand
 {
     private BacklogReviewBodyFormatter $reviewBodyFormatter;
 
+    private BodyFilePathResolver $bodyFilePathResolver;
+
     /**
      * @param BacklogPresenter $presenter
      * @param bool $dryRun
      * @param string $projectRoot
      * @param BacklogBoardService $boardService
      * @param BacklogReviewBodyFormatter $reviewBodyFormatter
+     * @param BodyFilePathResolver $bodyFilePathResolver
      */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
         BacklogBoardService $boardService,
-        BacklogReviewBodyFormatter $reviewBodyFormatter
+        BacklogReviewBodyFormatter $reviewBodyFormatter,
+        BodyFilePathResolver $bodyFilePathResolver
     ) {
         parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
         $this->reviewBodyFormatter = $reviewBodyFormatter;
+        $this->bodyFilePathResolver = $bodyFilePathResolver;
     }
 
     /**
@@ -74,7 +80,7 @@ final class BacklogReviewAmendCommand extends AbstractBacklogCommand
             $this->assertStageIsRejected($entry);
 
             $reviewKey = $this->boardService->getTaskReviewKey($entry);
-            $review->setReview($reviewKey, $this->reviewBodyFormatter->fromFile($bodyFile));
+            $review->setReview($reviewKey, $this->reviewBodyFormatter->fromFile($this->bodyFilePathResolver->resolveForEntry($bodyFile, $reference)));
             $this->saveReviewFile($review, BacklogCommandName::REVIEW_AMEND->value);
 
             $this->presenter->displaySuccess(sprintf('Amended review notes for task %s', $reviewKey));
@@ -97,7 +103,7 @@ final class BacklogReviewAmendCommand extends AbstractBacklogCommand
         $entry = $match->getEntry();
         $this->assertStageIsRejected($entry);
 
-        $review->setReview($slug, $this->reviewBodyFormatter->fromFile($bodyFile));
+        $review->setReview($slug, $this->reviewBodyFormatter->fromFile($this->bodyFilePathResolver->resolveForEntry($bodyFile, $slug)));
         $this->saveReviewFile($review, BacklogCommandName::REVIEW_AMEND->value);
 
         $this->presenter->displaySuccess(sprintf('Amended review notes for feature %s', $slug));

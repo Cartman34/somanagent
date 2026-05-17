@@ -12,6 +12,7 @@ use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
 
 /**
  * Inserts a new backlog entry into the todo section.
@@ -27,15 +28,19 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
     private const POSITION_INDEX = 'index';
     private const POSITION_END = 'end';
 
+    private BodyFilePathResolver $bodyFilePathResolver;
+
     /**
      * @param BacklogPresenter $presenter
      * @param bool $dryRun
      * @param string $projectRoot
      * @param BacklogBoardService $boardService
+     * @param BodyFilePathResolver $bodyFilePathResolver
      */
-    public function __construct(BacklogPresenter $presenter, bool $dryRun, string $projectRoot, BacklogBoardService $boardService)
+    public function __construct(BacklogPresenter $presenter, bool $dryRun, string $projectRoot, BacklogBoardService $boardService, BodyFilePathResolver $bodyFilePathResolver)
     {
         parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
+        $this->bodyFilePathResolver = $bodyFilePathResolver;
     }
 
     /**
@@ -111,7 +116,7 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
         if (!is_string($bodyFile) || trim($bodyFile) === '') {
             throw new \RuntimeException('Option --body-file requires a non-empty path when provided.');
         }
-        $resolvedPath = $this->resolveBodyFilePath($bodyFile);
+        $resolvedPath = $this->bodyFilePathResolver->resolve($bodyFile);
         $contents = file_get_contents($resolvedPath);
         if ($contents === false) {
             throw new \RuntimeException(sprintf('Unable to read --body-file: %s', $bodyFile));
@@ -119,19 +124,6 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
         $lines = preg_split('/\R/', $contents) ?: [];
 
         return $this->boardService->createEntryFromInputLines($lines);
-    }
-
-    /**
-     * Resolves a --body-file path against the project root and asserts the file exists.
-     */
-    private function resolveBodyFilePath(string $bodyFile): string
-    {
-        $candidate = str_starts_with($bodyFile, '/') ? $bodyFile : $this->projectRoot . '/' . $bodyFile;
-        if (!is_file($candidate)) {
-            throw new \RuntimeException(sprintf('--body-file path does not exist: %s', $bodyFile));
-        }
-
-        return $candidate;
     }
 
     /**

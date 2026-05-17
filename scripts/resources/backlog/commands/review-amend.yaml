@@ -11,6 +11,7 @@ examples:
   - 'SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=r01 php scripts/backlog.php review-amend delete-question-reply --body-file local/tmp/review.md'
   - 'SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=r01 php scripts/backlog.php review-amend onboarding/task-copy-review --body-file local/tmp/review.md'
 notes:
+  - 'Relative --body-file paths resolve first against the developer WA (from entry meta.agent), then cwd. Absolute paths are used as-is.'
   - 'Restricted to the reviewer role (SOMANAGER_ROLE=reviewer).'
   - 'The entry must be in rejected stage; amending is not available in any other stage.'
   - 'No check is made against which reviewer originally rejected the entry; any reviewer may amend.'

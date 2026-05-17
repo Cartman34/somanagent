@@ -11,6 +11,7 @@ use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
+use SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
 use SoManAgent\Script\Service\GitService;
 use SoManAgent\Script\Service\PullRequestService;
 
@@ -25,6 +26,8 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
 
     private PullRequestService $pullRequestService;
 
+    private BodyFilePathResolver $bodyFilePathResolver;
+
     /**
      * @param BacklogPresenter $presenter
      * @param bool $dryRun
@@ -33,6 +36,7 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
      * @param BacklogWorktreeService $worktreeService
      * @param GitService $gitService
      * @param PullRequestService $pullRequestService
+     * @param BodyFilePathResolver $bodyFilePathResolver
      */
     public function __construct(
         BacklogPresenter $presenter,
@@ -41,12 +45,14 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         BacklogBoardService $boardService,
         BacklogWorktreeService $worktreeService,
         GitService $gitService,
-        PullRequestService $pullRequestService
+        PullRequestService $pullRequestService,
+        BodyFilePathResolver $bodyFilePathResolver
     ) {
         parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
         $this->worktreeService = $worktreeService;
         $this->gitService = $gitService;
         $this->pullRequestService = $pullRequestService;
+        $this->bodyFilePathResolver = $bodyFilePathResolver;
     }
 
     /**
@@ -110,7 +116,7 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         if ($bodyFile !== null) {
             $tag = $this->pullRequestService->getPrTypeFromChanges($entry->getBase() ?? '', $branch);
             $title = $this->pullRequestService->buildPrTitle($tag, $entry->getText());
-            $this->pullRequestService->createOrUpdatePr($branch, $title, $bodyFile);
+            $this->pullRequestService->createOrUpdatePr($branch, $title, $this->bodyFilePathResolver->resolveForEntry($bodyFile, $feature));
         }
         $this->pullRequestService->mergePr($prNumber);
         $this->gitService->syncMainBranchAfterMerge();

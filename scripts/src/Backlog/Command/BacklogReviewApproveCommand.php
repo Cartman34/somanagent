@@ -12,6 +12,7 @@ use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
 use SoManAgent\Script\Service\GitService;
 use SoManAgent\Script\Service\PullRequestService;
 
@@ -25,7 +26,10 @@ use SoManAgent\Script\Service\PullRequestService;
 final class BacklogReviewApproveCommand extends AbstractBacklogCommand
 {
     private GitService $gitService;
+
     private PullRequestService $pullRequestService;
+
+    private BodyFilePathResolver $bodyFilePathResolver;
 
     /**
      * @param BacklogPresenter $presenter
@@ -34,6 +38,7 @@ final class BacklogReviewApproveCommand extends AbstractBacklogCommand
      * @param BacklogBoardService $boardService
      * @param GitService $gitService
      * @param PullRequestService $pullRequestService
+     * @param BodyFilePathResolver $bodyFilePathResolver
      */
     public function __construct(
         BacklogPresenter $presenter,
@@ -41,11 +46,13 @@ final class BacklogReviewApproveCommand extends AbstractBacklogCommand
         string $projectRoot,
         BacklogBoardService $boardService,
         GitService $gitService,
-        PullRequestService $pullRequestService
+        PullRequestService $pullRequestService,
+        BodyFilePathResolver $bodyFilePathResolver
     ) {
         parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
         $this->gitService = $gitService;
         $this->pullRequestService = $pullRequestService;
+        $this->bodyFilePathResolver = $bodyFilePathResolver;
     }
 
     /**
@@ -116,7 +123,7 @@ final class BacklogReviewApproveCommand extends AbstractBacklogCommand
         $tag = $this->pullRequestService->getPrTypeFromChanges($entry->getBase() ?? '', $branch);
         $title = $this->pullRequestService->buildPrTitle($tag, $entry->getText(), $entry->checkIsBlocked());
         $this->gitService->pushBranchSafely($branch);
-        $this->pullRequestService->createOrUpdatePr($branch, $title, $bodyFile);
+        $this->pullRequestService->createOrUpdatePr($branch, $title, $this->bodyFilePathResolver->resolveForEntry($bodyFile, $slug));
         $prNumber = $this->pullRequestService->findPrNumberByBranch($branch);
         if ($prNumber === null && !$this->dryRun) {
             throw new \RuntimeException("No open PR found for branch {$branch} after approval update.");

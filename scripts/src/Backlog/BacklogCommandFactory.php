@@ -47,6 +47,7 @@ use SoManAgent\Script\Backlog\Service\BacklogPermissionService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use SoManAgent\Script\Backlog\Service\BacklogReviewBodyFormatter;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
+use SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
 use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Client\FilesystemClient;
 use SoManAgent\Script\Client\FilesystemClientInterface;
@@ -92,6 +93,7 @@ final class BacklogCommandFactory
     private ?RetryPolicy $retryPolicy = null;
     private ?BacklogFeatureMergeCommand $featureMergeCommand = null;
     private ?BacklogFeatureTaskMergeCommand $featureTaskMergeCommand = null;
+    private ?BodyFilePathResolver $bodyFilePathResolver = null;
 
     /**
      * Constructor.
@@ -199,6 +201,7 @@ final class BacklogCommandFactory
                 },
                 'string' => match ($parameter->getName()) {
                     'projectRoot' => $this->projectRoot,
+                    'boardPath' => $this->boardPath,
                     default => throw new \RuntimeException('Unable to inject string parameter: ' . $parameter->getName()),
                 },
                 BacklogBoardService::class => $this->getBoardService(),
@@ -208,6 +211,7 @@ final class BacklogCommandFactory
                 PullRequestService::class => $this->getPullRequestService(),
                 BacklogReviewBodyFormatter::class => $this->getReviewBodyFormatter(),
                 FilesystemClientInterface::class => $this->getFilesystemClient(),
+                BodyFilePathResolver::class => $this->getBodyFilePathResolver(),
                 BacklogFeatureMergeCommand::class => $this->getFeatureMergeCommand(),
                 BacklogFeatureTaskMergeCommand::class => $this->getFeatureTaskMergeCommand(),
                 self::class => $this,
@@ -423,6 +427,25 @@ final class BacklogCommandFactory
     }
 
     /**
+     * Get the body file path resolver.
+     *
+     * @return BodyFilePathResolver
+     */
+    public function getBodyFilePathResolver(): BodyFilePathResolver
+    {
+        if ($this->bodyFilePathResolver === null) {
+            $this->bodyFilePathResolver = new BodyFilePathResolver(
+                $this->getBoardService(),
+                $this->getWorktreeService(),
+                $this->console,
+                $this->boardPath,
+            );
+        }
+
+        return $this->bodyFilePathResolver;
+    }
+
+    /**
      * Get the feature merge command (internal implementation, not public).
      *
      * @return BacklogFeatureMergeCommand
@@ -438,6 +461,7 @@ final class BacklogCommandFactory
                 $this->getWorktreeService(),
                 $this->getGitService(),
                 $this->getPullRequestService(),
+                $this->getBodyFilePathResolver(),
             );
             $this->featureMergeCommand->setBoardPath($this->boardPath);
             $this->featureMergeCommand->setReviewFilePath($this->reviewFilePath);
