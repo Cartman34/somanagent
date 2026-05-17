@@ -284,9 +284,9 @@ final class EntryRebaseCommandTest
         try {
             ob_start();
             $cmd->handle(['conflict-feature'], []);
-            $output = ob_get_clean() ?? '';
+            $output = ob_get_clean() ?: '';
         } catch (\RuntimeException $e) {
-            $output = ob_get_clean() ?? '';
+            $output = ob_get_clean() ?: '';
             $threw = str_contains($e->getMessage(), 'Resolve conflicts') || str_contains($e->getMessage(), 'conflict');
         }
 

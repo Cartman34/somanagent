@@ -146,7 +146,7 @@ final class AgentLaunchPromptResolver
         if ($prompt === null) {
             return null;
         }
-        if (!is_string($prompt) || trim($prompt) === '') {
+        if (trim($prompt) === '') {
             throw new \RuntimeException(sprintf("Launch prompt for key '%s' must be a non-empty string.", $key));
         }
 

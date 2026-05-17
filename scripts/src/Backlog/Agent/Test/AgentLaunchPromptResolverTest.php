@@ -22,7 +22,7 @@ final class AgentLaunchPromptResolverTest
     private string $promptPath;
 
     /**
-     * @var array<string, array{role: AgentRole, stage: string|null, expectType: string, expectContains: string}>
+     * @var array<string, array{AgentRole, string|null, string, string}>
      */
     private array $table;
 

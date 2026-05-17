@@ -111,6 +111,7 @@ final class EntryRebaseResult
             self::STATUS_UP_TO_DATE => sprintf('Already up to date with %s', $this->targetBranch),
             self::STATUS_REBASED => sprintf('Rebased on %s and pushed', $this->targetBranch),
             self::STATUS_CONFLICT => sprintf('Resolve conflicts then push manually (target: %s)', $this->targetBranch),
+            default => throw new \LogicException(sprintf("Unknown rebase status: %s", $this->status)),
         };
     }
 
