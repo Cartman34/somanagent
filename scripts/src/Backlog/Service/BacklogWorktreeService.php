@@ -20,6 +20,7 @@ use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Client\FilesystemClientInterface;
 use SoManAgent\Script\Client\GitClient;
 use SoManAgent\Script\Client\ProjectScriptClient;
+use SoManAgent\Script\LocalWorkingDirectories;
 
 /**
  * Handles managed backlog worktrees and local git orchestration.
@@ -531,6 +532,9 @@ final class BacklogWorktreeService
 
     private function ensureWorktreeRuntimeState(string $worktree, bool $created): void
     {
+        if (!$this->dryRun) {
+            LocalWorkingDirectories::ensure($worktree, $this->fs);
+        }
         $this->ensureWorktreeRuntimeIgnores($worktree);
         foreach ($this->fetchCopiedWorktreePaths() as $relativePath => $sourcePath) {
             if (!$this->fs->checkPathExists($sourcePath)) {

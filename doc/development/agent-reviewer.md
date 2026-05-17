@@ -52,7 +52,7 @@ Read this file only when the active task requires reviewer workflow details.
 3. `--position=start` inserts at the start of `## To do`.
 4. `--position=index --index=<n>` inserts at the requested 1-based position and clamps out-of-range values to the start or the end.
 5. Keep the entry title short and put the breakdown on indented sub-task lines below it. **Always include both** a type prefix (`[feat]`, `[fix]` or `[tech]`) and a `[feature-slug]` (plus `[task-slug]` for child tasks) so the queued entry is unambiguous. The type prefix may appear at any position in the leading bracket sequence.
-6. Always use `--body-file=<path>` (typically under `local/tmp/`) to pass the entry body. The first non-empty line is the title; subsequent lines are each shifted by +2 spaces — top-level bullets (0 indent) land at 2 spaces in the board, standard markdown sub-bullets (2-space indent) land at 4. Write a normal markdown file and nesting is preserved. Inline positional text is not accepted.
+6. Always use `--body-file=<path>` (typically under `local/tmp/`) to pass the entry body. Keep test execution outputs under `local/tests/`, not `local/tmp/`. The first non-empty line is the title; subsequent lines are each shifted by +2 spaces — top-level bullets (0 indent) land at 2 spaces in the board, standard markdown sub-bullets (2-space indent) land at 4. Write a normal markdown file and nesting is preserved. Inline positional text is not accepted.
 7. Do not edit `local/backlog-board.md` manually.
 
 Examples:

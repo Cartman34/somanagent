@@ -1,3 +1,7 @@
 *
 !.gitignore
 !.gitkeep
+!tmp/
+!tmp/.gitkeep
+!tests/
+!tests/.gitkeep

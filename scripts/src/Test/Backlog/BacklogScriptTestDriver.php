@@ -1237,7 +1237,7 @@ MD);
      * Creates a queued task using --body-file=<path>.
      *
      * @param list<string> $lines Lines to write to the temporary body file
-     * @param string $name File name for the body file (kept under local/tmp/)
+     * @param string $name File name for the generated test body file
      */
     public function createTodoTaskFromBodyFile(array $lines, string $name): string
     {

@@ -84,6 +84,13 @@ Expected author syntax:
 - Do not replace or delete the root of a bind-mounted directory when preserving the mount point matters; clear contents instead.
 - Prefer dedicated methods for directory creation, cleanup, copy, and hashing rather than duplicating filesystem logic inline.
 
+## Local Working Directories
+
+- `local/tmp/` is reserved for short-lived session files: backlog or review body files, drafts, disposable fixtures, and one-shot debug notes. Its contents may be cleaned between sessions.
+- `local/tests/` is reserved for outputs produced by test execution: PHPUnit reports, TestDox/JUnit/log HTML files, coverage outputs, error dumps, output snapshots, and stdout/stderr captures from test campaigns.
+- Test inputs must live in source-controlled test resources such as `tests/`, `scripts/src/.../Test/`, or a nearby `resources/` directory, not under `local/`.
+- Bootstrap and worktree preparation must keep both `local/tmp/` and `local/tests/` present with tracked `.gitkeep` files; directory contents remain gitignored.
+
 ## Test Fixtures
 
 - Prefer using an existing project resource file in tests when the test validates the current production contract.

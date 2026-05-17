@@ -149,7 +149,7 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
 
         $driver->assertTaskCreateFails(
             '--body-file path does not exist',
-            ['--body-file=local/tmp/entry-create-missing-body-file.md'],
+            ['--body-file=local/tests/entry-create-missing-body-file.md'],
         );
 
         // --position=index clamps out-of-range values while still inserting the task.

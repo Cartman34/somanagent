@@ -38,6 +38,7 @@ use SoManAgent\Script\Backlog\Agent\Test\OpenCodeAgentLauncherTest;
 use SoManAgent\Script\Backlog\Agent\Test\SystemInteractiveProcessRunnerTest;
 use SoManAgent\Script\Backlog\Agent\Test\TmuxSessionDriverTest;
 use SoManAgent\Script\Backlog\Agent\Test\WorktreeScriptProxyTest;
+use SoManAgent\Script\Backlog\Test\BacklogWorktreeServiceTest;
 use SoManAgent\Script\Console;
 
 $console = Console::getInstance();
@@ -64,6 +65,7 @@ $suites = [
     'AgentCliOptionValidatorTest' => AgentCliOptionValidatorTest::class,
     'AgentModelResolverTest' => AgentModelResolverTest::class,
     'BacklogAgentRunnerStrictOptionsTest' => BacklogAgentRunnerStrictOptionsTest::class,
+    'BacklogWorktreeServiceTest' => BacklogWorktreeServiceTest::class,
     'WorktreeScriptProxyTest' => WorktreeScriptProxyTest::class,
     'ClaudeAgentLauncherTest' => ClaudeAgentLauncherTest::class,
     'CodexAgentLauncherTest' => CodexAgentLauncherTest::class,

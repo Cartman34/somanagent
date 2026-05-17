@@ -157,7 +157,7 @@ final class UserMergeCampaign implements CampaignInterface
 
         $driver->createTodoTask(sprintf('[%s][%s] Test user-merge task merge', $featureD, $taskD));
         $driver->startNextFeature($context->agentSecondary);
-        $driver->commitFeatureChange($context->agentSecondary, $featureD, 'local/tmp/test-um-merge-artifact.txt');
+        $driver->commitFeatureChange($context->agentSecondary, $featureD, 'local/tests/test-um-merge-artifact.txt');
         $driver->requestTaskReview($context->agentSecondary);
         $driver->reviewNext(self::REVIEWER, $taskDRef);
         $driver->approveTaskViaUnifiedCommand(self::REVIEWER, $taskDRef);
