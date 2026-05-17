@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Agent\Test;
 
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException;
 use SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
@@ -65,6 +66,9 @@ final class AgentReviewerSelectorTest
         $failed += $this->testFindOwnedReviewingEntryIgnoresOtherReviewer();
         $failed += $this->testFindExistingReviewerForWorktree();
         $failed += $this->testFindExistingReviewerReturnsNullWhenNone();
+        $failed += $this->testPickSkipsNotReservableAndReturnsSecond();
+        $failed += $this->testPickReturnsNullWhenAllNotReservable();
+        $failed += $this->testPickPropagatesUnexpectedException();
         return $failed;
     }
 
@@ -555,6 +559,133 @@ final class AgentReviewerSelectorTest
         }
 
         echo "OK testFindExistingReviewerReturnsNullWhenNone\n";
+        return 0;
+    }
+
+    private function testPickSkipsNotReservableAndReturnsSecond(): int
+    {
+        $projectRoot = $this->makeTmpSubdir('pick-skip-first');
+        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $this->writeBoard($boardPath, $this->boardWithEntries([
+            $this->featureEntryAtReview('feat-a', 'd01'),
+            $this->featureEntryAtReview('feat-b', 'd02'),
+        ]));
+
+        $selector = $this->makeSelector($projectRoot);
+        $board = $this->loadBoard($projectRoot);
+
+        $callCount = 0;
+        $runner = new FakeBacklogCommandRunner();
+        $runner->onReviewNext = static function (string $reviewerCode, string $ref) use (&$callCount): void {
+            $callCount++;
+            if ($callCount === 1) {
+                throw new EntryNotReservableException($ref, 'Entry "feat-a" is already in reviewing by r99.');
+            }
+        };
+
+        try {
+            $match = $selector->pick($board, 'r01', $runner);
+        } catch (\RuntimeException $e) {
+            echo "FAIL testPickSkipsNotReservableAndReturnsSecond: unexpected exception: {$e->getMessage()}\n";
+            return 1;
+        }
+
+        if ($match === null) {
+            echo "FAIL testPickSkipsNotReservableAndReturnsSecond: expected match, got null\n";
+            return 1;
+        }
+        if ($match->getEntry()->getFeature() !== 'feat-b') {
+            echo "FAIL testPickSkipsNotReservableAndReturnsSecond: expected feat-b, got {$match->getEntry()->getFeature()}\n";
+            return 1;
+        }
+        if ($callCount !== 2) {
+            echo "FAIL testPickSkipsNotReservableAndReturnsSecond: expected 2 reviewNext calls, got {$callCount}\n";
+            return 1;
+        }
+        $refs = array_column(array_filter($runner->calls, static fn ($c) => $c['method'] === 'reviewNext'), 'entryRef');
+        if ($refs !== ['feat-a', 'feat-b']) {
+            echo "FAIL testPickSkipsNotReservableAndReturnsSecond: wrong call order: " . implode(', ', $refs) . "\n";
+            return 1;
+        }
+
+        echo "OK testPickSkipsNotReservableAndReturnsSecond\n";
+        return 0;
+    }
+
+    private function testPickReturnsNullWhenAllNotReservable(): int
+    {
+        $projectRoot = $this->makeTmpSubdir('pick-all-not-reservable');
+        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $this->writeBoard($boardPath, $this->boardWithEntries([
+            $this->featureEntryAtReview('feat-a', 'd01'),
+            $this->featureEntryAtReview('feat-b', 'd02'),
+        ]));
+
+        $selector = $this->makeSelector($projectRoot);
+        $board = $this->loadBoard($projectRoot);
+
+        $runner = new FakeBacklogCommandRunner();
+        $runner->onReviewNext = static function (string $reviewerCode, string $ref): void {
+            throw new EntryNotReservableException($ref, 'Entry "' . $ref . '" is not in review.');
+        };
+
+        $threw = false;
+        $match = null;
+        try {
+            $match = $selector->pick($board, 'r01', $runner);
+        } catch (\Throwable $e) {
+            $threw = true;
+        }
+
+        if ($threw) {
+            echo "FAIL testPickReturnsNullWhenAllNotReservable: expected null return, got exception\n";
+            return 1;
+        }
+        if ($match !== null) {
+            echo "FAIL testPickReturnsNullWhenAllNotReservable: expected null, got a match\n";
+            return 1;
+        }
+
+        echo "OK testPickReturnsNullWhenAllNotReservable\n";
+        return 0;
+    }
+
+    private function testPickPropagatesUnexpectedException(): int
+    {
+        $projectRoot = $this->makeTmpSubdir('pick-unexpected-exception');
+        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $this->writeBoard($boardPath, $this->boardWithEntries([
+            $this->featureEntryAtReview('feat-a', 'd01'),
+            $this->featureEntryAtReview('feat-b', 'd02'),
+        ]));
+
+        $selector = $this->makeSelector($projectRoot);
+        $board = $this->loadBoard($projectRoot);
+
+        $runner = new FakeBacklogCommandRunner();
+        $runner->onReviewNext = static function (): void {
+            throw new \RuntimeException('Backlog registry corrupted');
+        };
+
+        $caughtMessage = null;
+        $callCount = 0;
+        try {
+            $selector->pick($board, 'r01', $runner);
+        } catch (\RuntimeException $e) {
+            $caughtMessage = $e->getMessage();
+            $callCount = count($runner->calls);
+        }
+
+        if ($caughtMessage !== 'Backlog registry corrupted') {
+            echo "FAIL testPickPropagatesUnexpectedException: expected propagation, got: " . ($caughtMessage ?? 'null') . "\n";
+            return 1;
+        }
+        if ($callCount !== 1) {
+            echo "FAIL testPickPropagatesUnexpectedException: expected 1 call before propagation, got {$callCount}\n";
+            return 1;
+        }
+
+        echo "OK testPickPropagatesUnexpectedException\n";
         return 0;
     }
 

@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Agent\Test;
 
+use SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException;
 use SoManAgent\Script\Backlog\Agent\Service\AgentDeveloperSelector;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
@@ -51,6 +52,9 @@ final class AgentDeveloperSelectorTest
         $failed += $this->testSelectFirstQueuedThrowsWhenTodoEmpty();
         $failed += $this->testSelectFirstQueuedReturnsFeatureSlugRef();
         $failed += $this->testSelectFirstQueuedReturnsTaskRef();
+        $failed += $this->testPickSkipsNotReservableAndReturnsSecond();
+        $failed += $this->testPickReturnsNullWhenAllNotReservable();
+        $failed += $this->testPickPropagatesUnexpectedException();
 
         return $failed;
     }
@@ -189,6 +193,111 @@ final class AgentDeveloperSelectorTest
             return 1;
         }
         echo "OK testSelectFirstQueuedReturnsTaskRef\n";
+        return 0;
+    }
+
+    private function testPickSkipsNotReservableAndReturnsSecond(): int
+    {
+        $board = $this->makeBoard([
+            '- [feat][alpha-feature] First entry',
+            '- [feat][beta-feature] Second entry',
+        ], []);
+        $selector = $this->makeSelector();
+
+        $callCount = 0;
+        $runner = new FakeBacklogCommandRunner();
+        $runner->onWorkStart = static function (string $devCode, string $ref) use (&$callCount): void {
+            $callCount++;
+            if ($callCount === 1) {
+                throw new EntryNotReservableException($ref, 'No queued task found for reference: alpha-feature');
+            }
+        };
+
+        $ref = $selector->pick($board, 'd05', $runner);
+
+        if ($ref !== 'beta-feature') {
+            echo "FAIL testPickSkipsNotReservableAndReturnsSecond: expected 'beta-feature', got '{$ref}'\n";
+            return 1;
+        }
+        if ($callCount !== 2) {
+            echo "FAIL testPickSkipsNotReservableAndReturnsSecond: expected 2 workStart calls, got {$callCount}\n";
+            return 1;
+        }
+        $refs = array_column(array_filter($runner->calls, static fn ($c) => $c['method'] === 'workStart'), 'entryRef');
+        if ($refs !== ['alpha-feature', 'beta-feature']) {
+            echo "FAIL testPickSkipsNotReservableAndReturnsSecond: wrong call order: " . implode(', ', $refs) . "\n";
+            return 1;
+        }
+
+        echo "OK testPickSkipsNotReservableAndReturnsSecond\n";
+        return 0;
+    }
+
+    private function testPickReturnsNullWhenAllNotReservable(): int
+    {
+        $board = $this->makeBoard([
+            '- [feat][alpha-feature] First entry',
+            '- [feat][beta-feature] Second entry',
+        ], []);
+        $selector = $this->makeSelector();
+
+        $runner = new FakeBacklogCommandRunner();
+        $runner->onWorkStart = static function (string $devCode, string $ref): void {
+            throw new EntryNotReservableException($ref, 'No queued task found for reference: ' . $ref);
+        };
+
+        $threw = false;
+        try {
+            $ref = $selector->pick($board, 'd05', $runner);
+        } catch (\Throwable $e) {
+            $threw = true;
+        }
+
+        if ($threw) {
+            echo "FAIL testPickReturnsNullWhenAllNotReservable: expected null return, got exception\n";
+            return 1;
+        }
+        if ($ref !== null) {
+            echo "FAIL testPickReturnsNullWhenAllNotReservable: expected null, got '{$ref}'\n";
+            return 1;
+        }
+
+        echo "OK testPickReturnsNullWhenAllNotReservable\n";
+        return 0;
+    }
+
+    private function testPickPropagatesUnexpectedException(): int
+    {
+        $board = $this->makeBoard([
+            '- [feat][alpha-feature] First entry',
+            '- [feat][beta-feature] Second entry',
+        ], []);
+        $selector = $this->makeSelector();
+
+        $runner = new FakeBacklogCommandRunner();
+        $runner->onWorkStart = static function (): void {
+            throw new \RuntimeException('Filesystem permission denied');
+        };
+
+        $callCount = 0;
+        $caughtMessage = null;
+        try {
+            $selector->pick($board, 'd05', $runner);
+        } catch (\RuntimeException $e) {
+            $caughtMessage = $e->getMessage();
+            $callCount = count($runner->calls);
+        }
+
+        if ($caughtMessage !== 'Filesystem permission denied') {
+            echo "FAIL testPickPropagatesUnexpectedException: expected propagation, got: " . ($caughtMessage ?? 'null') . "\n";
+            return 1;
+        }
+        if ($callCount !== 1) {
+            echo "FAIL testPickPropagatesUnexpectedException: expected 1 call before propagation, got {$callCount}\n";
+            return 1;
+        }
+
+        echo "OK testPickPropagatesUnexpectedException\n";
         return 0;
     }
 

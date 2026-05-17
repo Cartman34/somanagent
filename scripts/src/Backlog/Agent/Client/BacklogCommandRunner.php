@@ -22,7 +22,9 @@ interface BacklogCommandRunner
      * Equivalent to:
      *   SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewerCode> php scripts/backlog.php review-next <entryRef>
      *
-     * @throws \RuntimeException when the entry cannot be claimed (already taken, not found, wrong stage, etc.)
+     * @throws \SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException when the entry is already
+     *         claimed, transitioned, or not found — expected under concurrent reviewer launches
+     * @throws \RuntimeException on any other failure (filesystem, registry, unexpected exit code)
      */
     public function reviewNext(string $reviewerCode, string $entryRef): void;
 
@@ -42,7 +44,9 @@ interface BacklogCommandRunner
      * Equivalent to:
      *   SOMANAGER_ROLE=developer SOMANAGER_AGENT=<developerCode> php scripts/backlog.php work-start <entryRef>
      *
-     * @throws \RuntimeException when work-start fails
+     * @throws \SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException when the entry is no longer
+     *         in the todo queue — expected under concurrent developer launches
+     * @throws \RuntimeException on any other failure (filesystem, registry, unexpected exit code)
      */
     public function workStart(string $developerCode, string $entryRef): void;
 

@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Agent\Client;
 
+use SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException;
 use SoManAgent\Script\Client\AppScript;
 use SoManAgent\Script\Client\ProjectScriptClient;
 
@@ -36,12 +37,28 @@ final class ProjectBacklogCommandRunner implements BacklogCommandRunner
      */
     public function reviewNext(string $reviewerCode, string $entryRef): void
     {
-        $this->scriptClient->runWithEnv(
+        [$code, $output] = $this->scriptClient->captureWithExitCodeWithEnv(
             AppScript::BACKLOG,
             ['SOMANAGER_ROLE' => 'reviewer', 'SOMANAGER_AGENT' => $reviewerCode],
             'review-next ' . escapeshellarg($entryRef),
             $this->projectRoot,
         );
+
+        if ($code !== 0) {
+            if (
+                str_contains($output, 'is already in') ||
+                str_contains($output, 'is not in') ||
+                str_contains($output, 'No active entry matches reference')
+            ) {
+                throw new EntryNotReservableException($entryRef, $output);
+            }
+
+            throw new \RuntimeException(sprintf("review-next failed (exit %d): %s", $code, $output));
+        }
+
+        if ($output !== '') {
+            echo $output . "\n";
+        }
     }
 
     /**
@@ -62,12 +79,24 @@ final class ProjectBacklogCommandRunner implements BacklogCommandRunner
      */
     public function workStart(string $developerCode, string $entryRef): void
     {
-        $this->scriptClient->runWithEnv(
+        [$code, $output] = $this->scriptClient->captureWithExitCodeWithEnv(
             AppScript::BACKLOG,
             ['SOMANAGER_ROLE' => 'developer', 'SOMANAGER_AGENT' => $developerCode],
             'work-start ' . escapeshellarg($entryRef),
             $this->projectRoot,
         );
+
+        if ($code !== 0) {
+            if (str_contains($output, 'No queued task found for reference:')) {
+                throw new EntryNotReservableException($entryRef, $output);
+            }
+
+            throw new \RuntimeException(sprintf("work-start failed (exit %d): %s", $code, $output));
+        }
+
+        if ($output !== '') {
+            echo $output . "\n";
+        }
     }
 
     /**

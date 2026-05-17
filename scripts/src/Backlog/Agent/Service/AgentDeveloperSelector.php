@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Agent\Service;
 
+use SoManAgent\Script\Backlog\Agent\Client\BacklogCommandRunner;
+use SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntryMatch;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
@@ -59,5 +61,30 @@ final class AgentDeveloperSelector
         }
 
         return $this->boardService->computeQueuedEntryReference($first);
+    }
+
+    /**
+     * Auto-picks and reserves the first available queued task by looping the todo list.
+     *
+     * For each candidate, attempts work-start via the runner. An {@see EntryNotReservableException}
+     * (entry claimed between read and mutation by a concurrent launch) is silently skipped.
+     * Any other exception propagates immediately. Returns null when the list is exhausted.
+     *
+     * @throws \RuntimeException on an unexpected failure (not a contention case)
+     */
+    public function pick(BacklogBoard $board, string $developerCode, BacklogCommandRunner $runner): ?string
+    {
+        foreach ($board->getEntries(BacklogBoard::SECTION_TODO) as $entry) {
+            $ref = $this->boardService->computeQueuedEntryReference($entry);
+            try {
+                $runner->workStart($developerCode, $ref);
+
+                return $ref;
+            } catch (EntryNotReservableException) {
+                continue;
+            }
+        }
+
+        return null;
     }
 }

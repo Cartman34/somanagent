@@ -71,7 +71,7 @@ php scripts/backlog-agent.php start <client> --developer [--code=<dXX>]
 
 Default model profile is `balanced+medium`. The operator may override it with `--tier=economy|balanced|premium`, `--effort=low|medium|high`, or `--model=<raw-name>`.
 
-**Auto-pick at start:** when the developer has no active entry, `start` automatically calls `work-start` on the first queued task and injects that entry into the generated context. If the developer already has an active entry (e.g. after a session disconnect), `start` resumes that entry without consuming anything from the todo queue.
+**Auto-pick at start:** when the developer has no active entry, `start` automatically calls `work-start` on the first queued task and injects that entry into the generated context. If the entry was concurrently claimed by another agent between the read and the mutation, `start` silently moves to the next candidate in the todo list — the retry is bounded by the list length and never blocks. If the developer already has an active entry (e.g. after a session disconnect), `start` resumes that entry without consuming anything from the todo queue.
 
 **`resume` never auto-picks:** `resume --code=<dXX>` reconnects to the existing session without touching the todo queue, regardless of its contents.
 

@@ -53,6 +53,18 @@ final class ProjectScriptClient
     }
 
     /**
+     * Executes a known project script with an environment variable prefix and returns
+     * the exit code and captured output without throwing on failure.
+     *
+     * @param array<string, string> $env
+     * @return array{0: int, 1: string}
+     */
+    public function captureWithExitCodeWithEnv(AppScript $script, array $env, string $arguments = '', ?string $projectRoot = null): array
+    {
+        return $this->console->captureWithExitCode($this->commandWithEnv($script, $env, $arguments, $projectRoot));
+    }
+
+    /**
      * Executes a known project script with an environment variable prefix and throws on failure.
      *
      * @param array<string, string> $env
