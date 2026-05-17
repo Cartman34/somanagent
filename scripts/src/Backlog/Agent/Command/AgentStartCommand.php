@@ -177,6 +177,7 @@ final class AgentStartCommand extends AbstractAgentCommand
      */
     public function handle(array $args, array $options): int
     {
+        $originalCwd = getcwd();
         $clientValue = array_shift($args) ?? '';
         if ($clientValue === '') {
             throw new \RuntimeException('Missing required argument: <client>. One of: claude, codex, opencode, gemini.');
@@ -292,19 +293,29 @@ final class AgentStartCommand extends AbstractAgentCommand
         chdir($worktree);
 
         $sessionSvc = $this->sessionService;
-        $exitCode = $this->sessionDriver->launch(
-            $code,
-            $bin,
-            $binArgs,
-            $worktree,
-            $env,
-            static function (int $clientPid, ?string $tmuxSession) use ($sessionSvc, $code): void {
-                $sessionSvc->updateClientPid($code, $clientPid > 0 ? $clientPid : null);
-                if ($tmuxSession !== null) {
-                    $sessionSvc->updateTmuxSession($code, $tmuxSession);
-                }
-            },
-        );
+        try {
+            $exitCode = $this->sessionDriver->launch(
+                $code,
+                $bin,
+                $binArgs,
+                $worktree,
+                $env,
+                static function (int $clientPid, ?string $tmuxSession) use ($sessionSvc, $code): void {
+                    $sessionSvc->updateClientPid($code, $clientPid > 0 ? $clientPid : null);
+                    if ($tmuxSession !== null) {
+                        $sessionSvc->updateTmuxSession($code, $tmuxSession);
+                    }
+                },
+            );
+        } finally {
+            // Restore the original working directory after the session ends.
+            // The worktree may have been removed during the session (e.g. by a concurrent
+            // worktree-clean); any subprocess spawned after this point (isAlive, captureCurrentSessionId)
+            // inherits PHP's cwd — a deleted directory triggers "getcwd() failed" on the terminal.
+            if ($originalCwd !== false) {
+                chdir($originalCwd);
+            }
+        }
 
         $capturedId = $launcher->captureCurrentSessionId($worktree);
         if ($capturedId !== null) {

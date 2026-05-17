@@ -52,6 +52,15 @@ final class FakeSessionDriver implements SessionDriverInterface
     public ?AgentSession $lastStoppedSession = null;
 
     /**
+     * Optional callback invoked at the start of launch(), before returning.
+     * Used by tests to simulate side effects that happen during a real session
+     * (e.g. worktree directory deletion by a concurrent worktree-clean).
+     *
+     * @var (\Closure(): void)|null
+     */
+    public ?\Closure $onLaunchHook = null;
+
+    /**
      * Controls whether isAlive() returns true for the given agent code.
      */
     public function setAlive(string $code, bool $alive): void
@@ -118,6 +127,9 @@ final class FakeSessionDriver implements SessionDriverInterface
     {
         $this->lastLaunchCall = ['agentCode' => $agentCode, 'bin' => $bin, 'args' => $args, 'cwd' => $cwd];
         $onSpawned($this->nextClientPid, $this->nextTmuxSession);
+        if ($this->onLaunchHook !== null) {
+            ($this->onLaunchHook)();
+        }
 
         return $this->nextExitCode;
     }
