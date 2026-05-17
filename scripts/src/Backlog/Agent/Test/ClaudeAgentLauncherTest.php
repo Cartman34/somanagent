@@ -50,6 +50,7 @@ final class ClaudeAgentLauncherTest
         $failed += $this->testBuildLaunchCommandFailsWhenContextIsMissing();
         $failed += $this->testBuildLaunchCommandContinue();
         $failed += $this->testBuildLaunchCommandResumeId();
+        $failed += $this->testBuildLaunchCommandIncludesPermissionFlags();
         $failed += $this->testCaptureCurrentSessionId();
         $failed += $this->testListSessionsParsesClaudeJsonl();
 
@@ -90,8 +91,8 @@ final class ClaudeAgentLauncherTest
 
         [$bin, $args] = $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER);
 
-        // Strict equality enforces the absence of --cwd / /worktree (claude v2.x rejects --cwd).
-        $expected = ['--append-system-prompt', 'context initial'];
+        // Strict equality enforces both the presence of permission flags and the absence of --cwd.
+        $expected = ['--append-system-prompt', 'context initial', '--permission-mode', 'acceptEdits'];
         if ($bin !== 'claude' || $args !== $expected) {
             echo "FAIL testBuildLaunchCommandInitial: unexpected command\n";
             return 1;
@@ -116,7 +117,7 @@ final class ClaudeAgentLauncherTest
             'initial user prompt',
         );
 
-        $expected = ['--append-system-prompt', 'context initial', 'initial user prompt'];
+        $expected = ['--append-system-prompt', 'context initial', '--permission-mode', 'acceptEdits', 'initial user prompt'];
         if ($bin !== 'claude' || $args !== $expected) {
             echo "FAIL testBuildLaunchCommandInitialPrompt: unexpected command\n";
             return 1;
@@ -181,6 +182,26 @@ final class ClaudeAgentLauncherTest
         }
 
         echo "OK testBuildLaunchCommandResumeId\n";
+        return 0;
+    }
+
+    private function testBuildLaunchCommandIncludesPermissionFlags(): int
+    {
+        $context = $this->writeContext('perm context');
+        $launcher = new ClaudeAgentLauncher($this->makeProcessRunner(true), $this->tmpDir);
+
+        foreach ([
+            'initial' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER),
+            'continue' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, null, true),
+            'resume' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, 'session-x'),
+        ] as $mode => [, $args]) {
+            if (!in_array('--permission-mode', $args, true) || !in_array('acceptEdits', $args, true)) {
+                echo "FAIL testBuildLaunchCommandIncludesPermissionFlags ($mode): --permission-mode acceptEdits missing\n";
+                return 1;
+            }
+        }
+
+        echo "OK testBuildLaunchCommandIncludesPermissionFlags\n";
         return 0;
     }
 

@@ -54,6 +54,7 @@ final class OpenCodeAgentLauncherTest
         $failed += $this->testBuildLaunchCommandInitialPrompt();
         $failed += $this->testBuildLaunchCommandContinue();
         $failed += $this->testBuildLaunchCommandResumeId();
+        $failed += $this->testBuildLaunchCommandIncludesPermissionFlags();
         $failed += $this->testCaptureCurrentSessionIdParsesFirstRow();
         $failed += $this->testCaptureCurrentSessionIdReturnsNullWhenEmpty();
         $failed += $this->testListSessionsReturnsEmptyOnNullOutput();
@@ -213,7 +214,7 @@ final class OpenCodeAgentLauncherTest
         $launcher = new OpenCodeAgentLauncher($this->makeProcessRunner(true));
         [$bin, $args] = $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER);
 
-        if ($bin !== 'opencode' || $args !== []) {
+        if ($bin !== 'opencode' || $args !== ['--dangerously-skip-permissions']) {
             echo "FAIL testBuildLaunchCommandInitial: unexpected command\n";
 
             return 1;
@@ -237,7 +238,7 @@ final class OpenCodeAgentLauncherTest
             'initial user prompt',
         );
 
-        if ($bin !== 'opencode' || $args !== ['--prompt', 'initial user prompt']) {
+        if ($bin !== 'opencode' || $args !== ['--dangerously-skip-permissions', '--prompt', 'initial user prompt']) {
             echo "FAIL testBuildLaunchCommandInitialPrompt: unexpected command\n";
 
             return 1;
@@ -253,8 +254,8 @@ final class OpenCodeAgentLauncherTest
         $launcher = new OpenCodeAgentLauncher($this->makeProcessRunner(true));
         [$bin, $args] = $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, null, true);
 
-        if ($bin !== 'opencode' || $args !== ['-c']) {
-            echo "FAIL testBuildLaunchCommandContinue: expected [opencode, [-c]]\n";
+        if ($bin !== 'opencode' || $args !== ['--dangerously-skip-permissions', '-c']) {
+            echo "FAIL testBuildLaunchCommandContinue: expected permission flag + [-c]\n";
 
             return 1;
         }
@@ -269,13 +270,34 @@ final class OpenCodeAgentLauncherTest
         $launcher = new OpenCodeAgentLauncher($this->makeProcessRunner(true));
         [$bin, $args] = $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, 'session-abc');
 
-        if ($bin !== 'opencode' || $args !== ['-s', 'session-abc']) {
-            echo "FAIL testBuildLaunchCommandResumeId: expected [opencode, [-s, session-abc]]\n";
+        if ($bin !== 'opencode' || $args !== ['--dangerously-skip-permissions', '-s', 'session-abc']) {
+            echo "FAIL testBuildLaunchCommandResumeId: expected permission flag + [-s, session-abc]\n";
 
             return 1;
         }
 
         echo "OK testBuildLaunchCommandResumeId\n";
+
+        return 0;
+    }
+
+    private function testBuildLaunchCommandIncludesPermissionFlags(): int
+    {
+        $launcher = new OpenCodeAgentLauncher($this->makeProcessRunner(true));
+
+        foreach ([
+            'initial' => $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER),
+            'continue' => $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, null, true),
+            'resume' => $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, 'session-x'),
+        ] as $mode => [, $args]) {
+            if (!in_array('--dangerously-skip-permissions', $args, true)) {
+                echo "FAIL testBuildLaunchCommandIncludesPermissionFlags ($mode): --dangerously-skip-permissions missing\n";
+
+                return 1;
+            }
+        }
+
+        echo "OK testBuildLaunchCommandIncludesPermissionFlags\n";
 
         return 0;
     }

@@ -50,6 +50,7 @@ final class GeminiAgentLauncherTest
         $failed += $this->testBuildLaunchCommandInitialPrompt();
         $failed += $this->testBuildLaunchCommandContinue();
         $failed += $this->testBuildLaunchCommandResumeId();
+        $failed += $this->testBuildLaunchCommandIncludesPermissionFlags();
         $failed += $this->testListSessionsFromGeminiTableOutput();
         $failed += $this->testListSessionsFromJsonOutput();
         $failed += $this->testListSessionsFallsBackToDirectory();
@@ -115,7 +116,7 @@ final class GeminiAgentLauncherTest
 
         [$bin, $args] = $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER);
 
-        if ($bin !== 'gemini' || $args !== []) {
+        if ($bin !== 'gemini' || $args !== ['--approval-mode', 'auto_edit', '--skip-trust']) {
             echo "FAIL testBuildLaunchCommandInitial: unexpected command\n";
             return 1;
         }
@@ -138,7 +139,7 @@ final class GeminiAgentLauncherTest
             'initial user prompt',
         );
 
-        if ($bin !== 'gemini' || $args !== ['--prompt-interactive', 'initial user prompt']) {
+        if ($bin !== 'gemini' || $args !== ['--approval-mode', 'auto_edit', '--skip-trust', '--prompt-interactive', 'initial user prompt']) {
             echo "FAIL testBuildLaunchCommandInitialPrompt: unexpected command\n";
             return 1;
         }
@@ -153,8 +154,8 @@ final class GeminiAgentLauncherTest
 
         [$bin, $args] = $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, null, true);
 
-        if ($bin !== 'gemini' || $args !== ['-r', 'latest']) {
-            echo "FAIL testBuildLaunchCommandContinue: expected ['-r', 'latest']\n";
+        if ($bin !== 'gemini' || $args !== ['--approval-mode', 'auto_edit', '--skip-trust', '-r', 'latest']) {
+            echo "FAIL testBuildLaunchCommandContinue: expected permission flags + ['-r', 'latest']\n";
             return 1;
         }
 
@@ -168,12 +169,31 @@ final class GeminiAgentLauncherTest
 
         [$bin, $args] = $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, 'session-abc');
 
-        if ($bin !== 'gemini' || $args !== ['-r', 'session-abc']) {
-            echo "FAIL testBuildLaunchCommandResumeId: expected ['-r', 'session-abc']\n";
+        if ($bin !== 'gemini' || $args !== ['--approval-mode', 'auto_edit', '--skip-trust', '-r', 'session-abc']) {
+            echo "FAIL testBuildLaunchCommandResumeId: expected permission flags + ['-r', 'session-abc']\n";
             return 1;
         }
 
         echo "OK testBuildLaunchCommandResumeId\n";
+        return 0;
+    }
+
+    private function testBuildLaunchCommandIncludesPermissionFlags(): int
+    {
+        $launcher = new GeminiAgentLauncher($this->makeProcessRunner(true), $this->tmpDir);
+
+        foreach ([
+            'initial' => $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER),
+            'continue' => $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, null, true),
+            'resume' => $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, 'session-x'),
+        ] as $mode => [, $args]) {
+            if (!in_array('--approval-mode', $args, true) || !in_array('auto_edit', $args, true) || !in_array('--skip-trust', $args, true)) {
+                echo "FAIL testBuildLaunchCommandIncludesPermissionFlags ($mode): --approval-mode auto_edit --skip-trust missing\n";
+                return 1;
+            }
+        }
+
+        echo "OK testBuildLaunchCommandIncludesPermissionFlags\n";
         return 0;
     }
 

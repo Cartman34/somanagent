@@ -53,6 +53,7 @@ final class CodexAgentLauncherTest
         $failed += $this->testBuildLaunchCommandFailsWhenContextIsMissing();
         $failed += $this->testBuildLaunchCommandContinue();
         $failed += $this->testBuildLaunchCommandResumeId();
+        $failed += $this->testBuildLaunchCommandIncludesApprovalFlags();
         $failed += $this->testCaptureCurrentSessionId();
         $failed += $this->testListSessionsParsesCodexRollouts();
         $failed += $this->testListSessionsSkipsCompressedRolloutWithoutZstd();
@@ -94,7 +95,7 @@ final class CodexAgentLauncherTest
 
         [$bin, $args] = $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER);
 
-        $expected = ['-C', '/worktree', "context initial\n\n--- Begin session ---"];
+        $expected = ['-C', '/worktree', '--ask-for-approval', 'never', "context initial\n\n--- Begin session ---"];
         if ($bin !== 'codex' || $args !== $expected) {
             echo "FAIL testBuildLaunchCommandInitial: unexpected command\n";
             return 1;
@@ -119,7 +120,7 @@ final class CodexAgentLauncherTest
             'initial user prompt',
         );
 
-        $expected = ['-C', '/worktree', "context initial\n\n--- Begin session ---\n\ninitial user prompt"];
+        $expected = ['-C', '/worktree', '--ask-for-approval', 'never', "context initial\n\n--- Begin session ---\n\ninitial user prompt"];
         if ($bin !== 'codex' || $args !== $expected) {
             echo "FAIL testBuildLaunchCommandInitialPrompt: unexpected command\n";
             return 1;
@@ -149,7 +150,7 @@ final class CodexAgentLauncherTest
 
         [$bin, $args] = $launcher->buildLaunchCommand('/worktree', $this->tmpDir . '/missing-context.md', AgentRole::DEVELOPER, null, true);
 
-        if ($bin !== 'codex' || $args !== ['-C', '/worktree', 'resume', '--last']) {
+        if ($bin !== 'codex' || $args !== ['-C', '/worktree', '--ask-for-approval', 'never', 'resume', '--last']) {
             echo "FAIL testBuildLaunchCommandContinue: unexpected continue command\n";
             return 1;
         }
@@ -164,12 +165,32 @@ final class CodexAgentLauncherTest
 
         [$bin, $args] = $launcher->buildLaunchCommand('/worktree', $this->tmpDir . '/missing-context.md', AgentRole::DEVELOPER, 'session-123');
 
-        if ($bin !== 'codex' || $args !== ['-C', '/worktree', 'resume', 'session-123']) {
+        if ($bin !== 'codex' || $args !== ['-C', '/worktree', '--ask-for-approval', 'never', 'resume', 'session-123']) {
             echo "FAIL testBuildLaunchCommandResumeId: unexpected resume command\n";
             return 1;
         }
 
         echo "OK testBuildLaunchCommandResumeId\n";
+        return 0;
+    }
+
+    private function testBuildLaunchCommandIncludesApprovalFlags(): int
+    {
+        $context = $this->writeContext('perm context');
+        $launcher = new CodexAgentLauncher($this->makeProcessRunner(true), $this->tmpDir);
+
+        foreach ([
+            'initial' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER),
+            'continue' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, null, true),
+            'resume' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, 'session-x'),
+        ] as $mode => [, $args]) {
+            if (!in_array('--ask-for-approval', $args, true) || !in_array('never', $args, true)) {
+                echo "FAIL testBuildLaunchCommandIncludesApprovalFlags ($mode): --ask-for-approval never missing\n";
+                return 1;
+            }
+        }
+
+        echo "OK testBuildLaunchCommandIncludesApprovalFlags\n";
         return 0;
     }
 

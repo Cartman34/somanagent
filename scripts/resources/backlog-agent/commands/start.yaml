@@ -48,3 +48,4 @@ notes:
   - 'Manager: no auto-pick; runs directly in WP without a WA.'
   - 'Session driver is selected by BACKLOG_AGENT_SESSION_DRIVER=tmux|direct (default: tmux).'
   - 'Run php scripts/setup.php install --preview-only to verify system dependencies (e.g. tmux) before launching.'
+  - 'Each client receives permission flags at launch so agents can operate without interactive approval prompts: claude gets --permission-mode acceptEdits, codex gets --ask-for-approval never, gemini gets --approval-mode auto_edit --skip-trust, opencode gets --dangerously-skip-permissions. These flags are CLI-scoped and do not modify any global user config.'
