@@ -9,7 +9,7 @@ namespace SoManAgent\Script\Backlog;
 
 use SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
 use SoManAgent\Script\Backlog\Command\BacklogBaseUpdateCommand;
-use SoManAgent\Script\Backlog\Command\BacklogFeatureAssignCommand;
+use SoManAgent\Script\Backlog\Command\BacklogEntryAssignCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureBlockCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureCloseCommand;
 use SoManAgent\Script\Backlog\Command\BacklogListCommand;
@@ -157,7 +157,8 @@ final class BacklogCommandFactory
             BacklogCommandName::REVIEW_NOTES->value => BacklogReviewNotesCommand::class,
             BacklogCommandName::WORK_START->value => BacklogWorkStartCommand::class,
             BacklogCommandName::ENTRY_RELEASE->value => BacklogEntryReleaseCommand::class,
-            BacklogCommandName::FEATURE_ASSIGN->value => BacklogFeatureAssignCommand::class,
+            BacklogCommandName::FEATURE_TASK_MERGE->value => BacklogFeatureTaskMergeCommand::class,
+            BacklogCommandName::ENTRY_ASSIGN->value => BacklogEntryAssignCommand::class,
             BacklogCommandName::ENTRY_UNASSIGN->value => BacklogEntryUnassignCommand::class,
             BacklogCommandName::FEATURE_BLOCK->value => BacklogFeatureBlockCommand::class,
             BacklogCommandName::FEATURE_UNBLOCK->value => BacklogFeatureUnblockCommand::class,

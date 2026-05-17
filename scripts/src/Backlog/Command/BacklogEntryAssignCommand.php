@@ -20,7 +20,7 @@ use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 /**
  * Command for assigning an active backlog entry to an agent.
  */
-final class BacklogFeatureAssignCommand extends AbstractBacklogCommand
+final class BacklogEntryAssignCommand extends AbstractBacklogCommand
 {
     private BacklogWorktreeService $worktreeService;
 
@@ -59,7 +59,7 @@ final class BacklogFeatureAssignCommand extends AbstractBacklogCommand
             throw new RuntimeException('Option --agent is required.');
         }
         if (!isset($commandArgs[0])) {
-            throw new RuntimeException('feature-assign requires <entry-ref>.');
+            throw new RuntimeException('entry-assign requires <entry-ref>.');
         }
         $reference = $commandArgs[0];
         $board = $this->loadBoard();
@@ -84,7 +84,7 @@ final class BacklogFeatureAssignCommand extends AbstractBacklogCommand
 
         $cleaned = $this->worktreeService->cleanupAbandonedManagedWorktrees($board);
         $entry->setAgent($agent);
-        $this->saveBoard($board, BacklogCommandName::FEATURE_ASSIGN->value);
+        $this->saveBoard($board, BacklogCommandName::ENTRY_ASSIGN->value);
 
         $worktree = $this->worktreeService->prepareAgentWorktree($agent);
         $this->worktreeService->checkoutBranchInWorktree($worktree, $entry->getBranch() ?? '', false);
@@ -109,7 +109,7 @@ final class BacklogFeatureAssignCommand extends AbstractBacklogCommand
     private function resolveByReference(BacklogBoard $board, string $reference): BoardEntry
     {
         if (str_contains($reference, '/')) {
-            return $this->boardService->resolveTaskByReference($board, $reference, BacklogCommandName::FEATURE_ASSIGN->value)->getEntry();
+            return $this->boardService->resolveTaskByReference($board, $reference, BacklogCommandName::ENTRY_ASSIGN->value)->getEntry();
         }
 
         $slug = $this->boardService->normalizeFeatureSlug($reference);
@@ -130,7 +130,7 @@ final class BacklogFeatureAssignCommand extends AbstractBacklogCommand
         if ($taskMatches !== []) {
             if (count($taskMatches) > 1) {
                 throw new RuntimeException(sprintf(
-                    'feature-assign requires a full <entry-ref> because task slug %s is not unique.',
+                    'entry-assign requires a full <entry-ref> because task slug %s is not unique.',
                     $slug,
                 ));
             }

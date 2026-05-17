@@ -96,23 +96,23 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
 
         $driver->createTodoTask(sprintf('[%s] %s', $context->assignFeature, $context->assignFeature));
         $driver->startNextFeature($context->agentPrimary);
-        $driver->assignFeatureAsManager($context->assignFeature, $context->agentPrimary);
+        $driver->assignEntryAsManager($context->assignFeature, $context->agentPrimary);
         $driver->assertStatusContains($context->agentPrimary, $context->assignFeature, true);
-        $driver->assertAssignFeatureFails(
+        $driver->assertAssignEntryFails(
             $context->assignFeature,
             $context->agentSecondary,
             ['SOMANAGER_ROLE' => 'manager'],
             sprintf('Entry %s is already assigned to %s.', $context->assignFeature, $context->agentPrimary),
         );
         $driver->unassignEntryAsManager($context->assignFeature, self::MANAGER_AGENT);
-        $driver->assignFeatureAsManager($context->assignFeature, $context->agentSecondary);
+        $driver->assignEntryAsManager($context->assignFeature, $context->agentSecondary);
         $driver->assertStatusContains($context->agentSecondary, $context->assignFeature, true);
 
         $driver->unassignEntryAsManager($context->assignFeature, self::MANAGER_AGENT);
-        $driver->assignFeatureAsManager($context->assignFeature, $context->agentSecondary);
+        $driver->assignEntryAsManager($context->assignFeature, $context->agentSecondary);
 
         $driver->unassignEntryAsManager(null, $context->agentSecondary);
-        $driver->assignFeatureAsManager($context->assignFeature, $context->agentSecondary);
+        $driver->assignEntryAsManager($context->assignFeature, $context->agentSecondary);
 
         $driver->assertUnassignEntryFails(
             $context->assignFeature,

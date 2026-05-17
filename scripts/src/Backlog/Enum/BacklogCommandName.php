@@ -33,7 +33,8 @@ enum BacklogCommandName: string
     case ENTRY_SET_META = 'entry-set-meta';
     case WORK_START = 'work-start';
     case ENTRY_RELEASE = 'entry-release';
-    case FEATURE_ASSIGN = 'feature-assign';
+    case FEATURE_TASK_MERGE = 'feature-task-merge';
+    case ENTRY_ASSIGN = 'entry-assign';
     case ENTRY_UNASSIGN = 'entry-unassign';
     case FEATURE_BLOCK = 'feature-block';
     case FEATURE_UNBLOCK = 'feature-unblock';
