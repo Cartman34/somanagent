@@ -1562,40 +1562,6 @@ final class BacklogBoardService
 
     /**
      * @param array<string> $lines
-     * @return array<BoardEntry>
-     */
-    private function parseEntriesFromSectionLines(array $lines): array
-    {
-        $entries = [];
-        $buffer = [];
-
-        foreach ($lines as $line) {
-            if ($line === '') {
-                continue;
-            }
-
-            if (str_starts_with($line, '- ')) {
-                if ($buffer !== []) {
-                    $entries[] = $this->parseEntryFromLines($buffer);
-                }
-                $buffer = [$line];
-                continue;
-            }
-
-            if ($buffer !== []) {
-                $buffer[] = $line;
-            }
-        }
-
-        if ($buffer !== []) {
-            $entries[] = $this->parseEntryFromLines($buffer);
-        }
-
-        return $entries;
-    }
-
-    /**
-     * @param array<string> $lines
      * @return array<string>
      */
     private function sanitizeReviewLines(array $lines): array
