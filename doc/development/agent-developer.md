@@ -339,8 +339,10 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 
 This keyword applies only when the active entry is in `development` stage. Refuse and report if the entry is in any other stage.
 
-1. For a `kind=feature`: fetch `origin/main` first, then rebase the feature branch on `origin/main` in the `WA`. For a `kind=task`: rebase the task branch on its local parent feature branch in the `WA`.
-2. Resolve any conflicts manually in the `WA`, then complete the rebase.
+1. `WA`: run the rebase against the entry's parent branch. There is one standard procedure — never invent a different one.
+   - For a `kind=feature`: `git fetch origin main` then `git rebase origin/main`.
+   - For a `kind=task`: `git fetch origin <parent-feature-branch>` then `git rebase <parent-feature-branch>` (the parent branch name comes from the entry's `meta.feature` mapped through the project branch convention).
+2. If the rebase reports conflicts: resolve them file by file in the `WA`, then `git add <file>` and `git rebase --continue`. Repeat until the rebase finishes. Never `git rebase --abort` unless the user explicitly asks for it.
 3. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php base-update <entry-ref>` to refresh `meta.base`.
 4. Stop. Do not run `submit` unless the user explicitly asks for it.
 
