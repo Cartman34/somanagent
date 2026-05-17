@@ -1657,7 +1657,7 @@ final class AgentStartCommandTest
             'todo' => array_map([$this, 'normalizeTodoEntry'], $todoEntries),
             'active' => array_map([$this, 'normalizeActiveEntry'], $activeEntries),
         ];
-        file_put_contents($path, Yaml::dump($data, 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE | Yaml::DUMP_COMPACT_NESTED_MAPPING));
+        file_put_contents($path, Yaml::dump($data, 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE));
     }
 
     /**

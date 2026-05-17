@@ -348,7 +348,7 @@ final class AgentDeveloperSelectorTest
             'version' => 1,
             'todo' => $todo,
             'active' => $active,
-        ], 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE | Yaml::DUMP_COMPACT_NESTED_MAPPING));
+        ], 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE));
 
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         return $boardService->loadBoard($boardPath);

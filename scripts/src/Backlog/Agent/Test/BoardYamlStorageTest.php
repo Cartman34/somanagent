@@ -24,12 +24,18 @@ final class BoardYamlStorageTest
 {
     private string $tmpDir;
 
+    /**
+     * Creates a temporary directory for board fixtures.
+     */
     public function __construct()
     {
         $this->tmpDir = sys_get_temp_dir() . '/board-yaml-storage-test-' . uniqid('', true);
         mkdir($this->tmpDir, 0755, true);
     }
 
+    /**
+     * Removes the temporary directory on cleanup.
+     */
     public function __destruct()
     {
         foreach (glob($this->tmpDir . '/*') ?: [] as $entry) {
@@ -38,6 +44,9 @@ final class BoardYamlStorageTest
         @rmdir($this->tmpDir);
     }
 
+    /**
+     * Runs all test cases and returns the total number of failures.
+     */
     public function run(): int
     {
         $failed = 0;

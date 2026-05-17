@@ -1270,7 +1270,7 @@ MD);
      *
      * @param string $feature Feature slug
      * @param string $titleLine Entry title (first line of body file)
-     * @param array<string> $bodyLines Additional body/sub-task lines
+     * @param list<string> $bodyLines Additional body/sub-task lines
      * @param string|null $task Task slug for scoped child tasks
      * @param string|null $type Branch type: feat, fix, or tech
      * @param string $name File name for the temporary body file

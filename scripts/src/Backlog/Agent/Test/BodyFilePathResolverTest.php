@@ -394,7 +394,7 @@ final class BodyFilePathResolverTest
             'version' => 1,
             'todo' => [],
             'active' => [$entry],
-        ], 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE | Yaml::DUMP_COMPACT_NESTED_MAPPING));
+        ], 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE));
 
         return $boardPath;
     }

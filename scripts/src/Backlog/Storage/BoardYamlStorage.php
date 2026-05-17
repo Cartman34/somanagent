@@ -44,11 +44,6 @@ final class BoardYamlStorage
 {
     private const VERSION = 1;
 
-    private const ACTIVE_FIELD_ORDER = [
-        'kind', 'stage', 'feature', 'task', 'agent', 'reviewer',
-        'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type',
-    ];
-
     private const KNOWN_ACTIVE_FIELDS = [
         'kind', 'stage', 'feature', 'task', 'agent', 'reviewer',
         'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type', 'title', 'body',
@@ -90,7 +85,9 @@ final class BoardYamlStorage
             'active' => $this->dumpActiveEntries($board->getEntries(BacklogBoard::SECTION_ACTIVE)),
         ];
 
-        $yaml = Yaml::dump($data, 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE | Yaml::DUMP_COMPACT_NESTED_MAPPING);
+        $yaml = self::compactNestedListMappings(
+            Yaml::dump($data, 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE),
+        );
         if (file_put_contents($board->getPath(), $yaml) === false) {
             throw new \RuntimeException("Unable to write backlog board: {$board->getPath()}");
         }
@@ -101,11 +98,23 @@ final class BoardYamlStorage
      */
     public static function initialContent(): string
     {
-        return Yaml::dump([
+        return self::compactNestedListMappings(Yaml::dump([
             'version' => self::VERSION,
             'todo' => [],
             'active' => [],
-        ], 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE | Yaml::DUMP_COMPACT_NESTED_MAPPING);
+        ], 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE));
+    }
+
+    /**
+     * Collapses Symfony YAML's two-line list-of-mapping shape (`-\n    key: val`) into the
+     * canonical one-line form (`- key: val`).
+     *
+     * Equivalent to passing Yaml::DUMP_COMPACT_NESTED_MAPPING but applied as a textual
+     * post-process so the dump call stays within the bitmask set known to PHPStan stubs.
+     */
+    private static function compactNestedListMappings(string $yaml): string
+    {
+        return (string) preg_replace('/^(\s*)-\n\1  (\S)/m', '$1- $2', $yaml);
     }
 
     /**

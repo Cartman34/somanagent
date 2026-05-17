@@ -27,7 +27,6 @@ final class BacklogRunner extends AbstractScriptRunner
     private const DEFAULT_WORKTREES_DIR = '.agent-worktrees';
     private const LEGACY_WORKTREES_DIR = '.worktrees';
 
-    private const INITIAL_BOARD_CONTENT = '';
     private const INITIAL_REVIEW_CONTENT = "# Backlog review\n\n## Usage rules\n\n## Current review\n\nNo review in progress.\n";
 
     private ?string $boardPath = null;
