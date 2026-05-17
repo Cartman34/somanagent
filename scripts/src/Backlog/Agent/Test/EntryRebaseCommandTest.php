@@ -295,6 +295,11 @@ final class EntryRebaseCommandTest
             return 1;
         }
 
+        if (str_contains($output, '[OK]')) {
+            echo "FAIL testConflictPrintsFilesAndThrows: output must not contain [OK] on conflict, got: {$output}\n";
+            return 1;
+        }
+
         echo "OK testConflictPrintsFilesAndThrows\n";
         return 0;
     }

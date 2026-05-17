@@ -99,8 +99,6 @@ final class BacklogEntryRebaseCommand extends AbstractBacklogCommand
 
         $result = $this->entryRebaseService->rebase($entry, $worktree, $board);
 
-        $this->presenter->displaySuccess($result->getMessage());
-
         if ($result->isConflict()) {
             $files = $result->getConflictFiles();
             if ($files !== []) {
@@ -111,5 +109,7 @@ final class BacklogEntryRebaseCommand extends AbstractBacklogCommand
             }
             throw new \RuntimeException($result->getMessage());
         }
+
+        $this->presenter->displaySuccess($result->getMessage());
     }
 }
