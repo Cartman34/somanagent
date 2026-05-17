@@ -90,6 +90,22 @@ Expected author syntax:
 - If a test needs example variants that should not change with production config, put them in an explicit `resources/` or `fixtures/` directory next to the relevant test suite.
 - Avoid large inline fixture strings in test methods when a named fixture file makes the intent clearer, even if that means keeping several fixture versions.
 
+## Throwaway Migration Scripts
+
+One-shot data or format migrations are not permanent tooling. They exist for a bounded time and must be retired once they have done their job.
+
+- Migration scripts live under `scripts/migrations/`, never in the top-level `scripts/` tree where permanent tooling resides.
+- Each file is named `YYYY-MM-DD-<slug>.php` using its introduction date; the chronological order is read directly from the filename.
+- The header docblock must declare:
+  - `Purpose:` one short sentence describing what the migration does
+  - `Introduced:` the date the migration was added
+  - `Remove after:` an explicit condition or date for retirement (e.g. "after all WAs have been regenerated" or "after 2026-08-01")
+- Migration scripts must be idempotent: running them twice produces the same result, including on an already-migrated dataset (no-op on the second run).
+- The active registry lives in [`migrations.md`](migrations.md). Every migration is listed there with its slug, introduction date, expected removal trigger, and current status (active / applied / retired).
+- Once retired, the file is deleted and its registry entry is marked `retired` with the actual removal date; entries are kept in the registry as historical record.
+- Migration scripts are not listed in [`scripts.md`](scripts.md) — that file documents permanent tooling. `migrations.md` is the sole user-facing surface for migrations.
+- `php scripts/migrations-audit.php` reports migrations whose retirement condition is met but whose file is still present.
+
 ## Review Expectations
 
 A script change is not done until it also respects:
