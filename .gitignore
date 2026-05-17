@@ -49,6 +49,7 @@ desktop.ini
 
 # === Agents ===
 .claude/worktrees/
+.claude/settings.local.json
 .worktrees/
 .agent-worktrees/
 .codex
