@@ -82,13 +82,9 @@ final class AgentLaunchPromptResolver
             BacklogBoard::STAGE_IN_PROGRESS => LaunchDecision::prompt($this->requirePrompt('developer_resume')),
             BacklogBoard::STAGE_REJECTED => LaunchDecision::prompt($this->requirePrompt('developer_rework')),
             BacklogBoard::STAGE_APPROVED => LaunchDecision::launcherHandled(),
-            BacklogBoard::STAGE_IN_REVIEW => LaunchDecision::refuse(
-                'Tâche soumise pour review, en attente d\'un reviewer — rien à faire côté developer pour l\'instant.'
-            ),
-            BacklogBoard::STAGE_REVIEWING => LaunchDecision::refuse(
-                'Review en cours, attends le retour du reviewer.'
-            ),
-            default => LaunchDecision::refuse('Tâche déjà mergée, aucune action attendue.'),
+            BacklogBoard::STAGE_IN_REVIEW => LaunchDecision::refuse($this->requireRefusal('developer_review')),
+            BacklogBoard::STAGE_REVIEWING => LaunchDecision::refuse($this->requireRefusal('developer_reviewing')),
+            default => LaunchDecision::refuse($this->requireRefusal('developer_done')),
         };
     }
 
@@ -100,17 +96,11 @@ final class AgentLaunchPromptResolver
         return match ($stage) {
             BacklogBoard::STAGE_IN_REVIEW => LaunchDecision::prompt($this->requirePrompt('reviewer')),
             BacklogBoard::STAGE_REVIEWING => LaunchDecision::prompt($this->requirePrompt('reviewer_resume')),
-            null => LaunchDecision::refuse('Rien à reviewer dans le todo.'),
-            BacklogBoard::STAGE_IN_PROGRESS => LaunchDecision::refuse(
-                'Tâche pas encore soumise, attends que le dev passe en review.'
-            ),
-            BacklogBoard::STAGE_REJECTED => LaunchDecision::refuse(
-                'Review déjà rejetée, le dev doit retravailler.'
-            ),
-            BacklogBoard::STAGE_APPROVED => LaunchDecision::refuse(
-                'Tâche approuvée, le merge est manuel via `user-merge` — pas le rôle du reviewer.'
-            ),
-            default => LaunchDecision::refuse('Tâche mergée.'),
+            null => LaunchDecision::refuse($this->requireRefusal('reviewer_todo')),
+            BacklogBoard::STAGE_IN_PROGRESS => LaunchDecision::refuse($this->requireRefusal('reviewer_development')),
+            BacklogBoard::STAGE_REJECTED => LaunchDecision::refuse($this->requireRefusal('reviewer_rejected')),
+            BacklogBoard::STAGE_APPROVED => LaunchDecision::refuse($this->requireRefusal('reviewer_approved')),
+            default => LaunchDecision::refuse($this->requireRefusal('reviewer_done')),
         };
     }
 
@@ -164,5 +154,28 @@ final class AgentLaunchPromptResolver
         }
 
         return $prompt;
+    }
+
+    /**
+     * Returns the refusal message for the given key and throws when absent or empty.
+     */
+    private function requireRefusal(string $key): string
+    {
+        $data = Yaml::parseFile($this->promptPath);
+        if (!is_array($data)) {
+            throw new \RuntimeException(sprintf('Launch prompt file must contain a YAML object: %s', $this->promptPath));
+        }
+
+        $refusals = $data['refusals'] ?? null;
+        if (!is_array($refusals)) {
+            throw new \RuntimeException('Launch prompt file must define a refusals object.');
+        }
+
+        $message = $refusals[$key] ?? null;
+        if (!is_string($message) || trim($message) === '') {
+            throw new \RuntimeException(sprintf("Launch refusal message for key '%s' must be a non-empty string.", $key));
+        }
+
+        return $message;
     }
 }

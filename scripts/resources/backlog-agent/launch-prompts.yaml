@@ -5,3 +5,13 @@ prompts:
   developer_conflict: "Le rebase de la branche est en conflit, le contexte liste les fichiers concernés ; résous les conflits puis push avec `git push --force-with-lease`."
   reviewer: "Démarre la review définie dans le contexte, elle t'est déjà assignée."
   reviewer_resume: "Reprends la review en cours, le contexte rappelle l'état."
+
+refusals:
+  developer_review: "Tâche soumise pour review, en attente d'un reviewer — rien à faire côté developer pour l'instant."
+  developer_reviewing: "Review en cours, attends le retour du reviewer."
+  developer_done: "Tâche déjà mergée, aucune action attendue."
+  reviewer_todo: "Rien à reviewer dans le todo."
+  reviewer_development: "Tâche pas encore soumise, attends que le dev passe en review."
+  reviewer_rejected: "Review déjà rejetée, le dev doit retravailler."
+  reviewer_approved: "Tâche approuvée, le merge est manuel via `user-merge` — pas le rôle du reviewer."
+  reviewer_done: "Tâche mergée."
