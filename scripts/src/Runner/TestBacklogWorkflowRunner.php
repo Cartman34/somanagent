@@ -18,6 +18,7 @@ use SoManAgent\Script\Test\Backlog\Campaign\MutationLockCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\ScopedTaskLifecycleCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\TaskCreateFormatsCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\TodoAndPlainFeatureLifecycleCampaign;
+use SoManAgent\Script\Test\Backlog\Campaign\UserMergeCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\WorkStartTypePrefixCampaign;
 
 /**
@@ -44,7 +45,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
     {
         return array_merge(
             [
-                ['name' => '--campaign', 'description' => 'Campaign to run: help, board-format-normalization, todo-and-plain-feature-lifecycle, scoped-task-lifecycle, entry-create-formats, work-start-type-prefix, feature-review-lifecycle, mutation-lock, or all'],
+                ['name' => '--campaign', 'description' => 'Campaign to run: help, board-format-normalization, todo-and-plain-feature-lifecycle, scoped-task-lifecycle, entry-create-formats, work-start-type-prefix, feature-review-lifecycle, mutation-lock, user-merge, or all'],
                 ['name' => '--allow-remote', 'description' => 'Allow campaigns that push branches or create/merge GitHub PRs'],
                 ['name' => '--allow-integration', 'description' => 'Allow steps that require Docker/app containers to be running (e.g. migrate --generate)'],
                 ['name' => '--keep-artifacts', 'description' => 'Keep temporary backlog/review files under local/tmp/ after execution'],
@@ -166,6 +167,8 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
                 $this->console->warn('Skipping feature-review-lifecycle because --allow-remote is not enabled.');
             }
 
+            $resolved[] = $campaigns['user-merge'];
+
             return $resolved;
         }
 
@@ -199,6 +202,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
                 'scoped-task-lifecycle' => new ScopedTaskLifecycleCampaign(),
                 'mutation-lock' => new MutationLockCampaign(),
                 'feature-review-lifecycle' => new FeatureReviewLifecycleCampaign(),
+                'user-merge' => new UserMergeCampaign(),
             ];
         }
 

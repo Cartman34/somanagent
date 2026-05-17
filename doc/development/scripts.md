@@ -118,6 +118,7 @@ Notes:
 - branch prefix matches the type 1:1 (`feat → feat/<slug>`, `fix → fix/<slug>`, `tech → tech/<slug>`); `--branch-type=<feat|fix|tech>` overrides the queued prefix and rejects unknown values
 - `work-start` validates the queued entry fully (type, slugs, conflicts) before any worktree, branch or backlog mutation; a refusal leaves no leftover state. With `--dry-run` it prints the resolved interpretation and performs no Git, worktree or backlog mutation (Git fetch / `origin/main` reads remain enabled)
 - child task review stays local; only the parent feature uses the remote PR flow
+- `user-merge` lists all approved entries in board order, shows a preview (commits, diff stat, PR info), and prompts the user interactively (y/n/d/q); no SOMANAGER_ROLE or SOMANAGER_AGENT required; use `--dry-run` for a non-interactive preview
 
 ---
 

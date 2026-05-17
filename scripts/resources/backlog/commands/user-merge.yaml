@@ -1,0 +1,20 @@
+description: 'Interactively merge all approved backlog entries'
+options:
+  -
+    name: '--dry-run'
+    description: 'Preview all approved entries without prompting or merging'
+examples:
+  - 'php scripts/backlog.php user-merge'
+  - 'php scripts/backlog.php user-merge --dry-run'
+notes:
+  - 'No SOMANAGER_ROLE or SOMANAGER_AGENT required. This is a manual user action, not an agent command.'
+  - 'Lists every non-blocked entry in approved stage in board order and shows a preview: title, body, branches, PR number and URL (if any), git log --oneline, and diff stat. Blocked approved entries are excluded from the count and the interactive loop.'
+  - 'Interactive keys: y=merge now and continue, n=skip (entry stays approved), d=show full diff then re-prompt, q=quit immediately.'
+  - 'Requires an interactive terminal. When stdin is not a TTY, the command refuses and exits non-zero unless --dry-run is passed.'
+  - 'On merge failure (conflict, hook, push error), the command prints the error and stops immediately with a non-zero exit code. Already-merged entries in the session remain merged. Rerunning user-merge resumes from the first unmerged approved entry.'
+  - 'When zero entries are in approved stage, prints "No approved entries waiting." and exits 0.'
+exit_codes:
+  - code: 0
+    description: 'All queued entries processed (merged or skipped), or zero entries, or user pressed q'
+  - code: 1
+    description: 'Merge failure, or stdin is not a TTY without --dry-run'
