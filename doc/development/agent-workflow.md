@@ -82,6 +82,10 @@ Rules:
 2. It must be used exactly as assigned, without truncation, normalization, inference, or nickname conversion.
 3. Example: if the assigned code is `d03`, use `d03` everywhere, not `03`.
 
+## Entry Type Classification
+
+Every entry carries one of three types: `feat`, `fix`, or `tech`. The rule and the disambiguation examples live in [`backlog-glossary.md` — Types](backlog-glossary.md#types). Before creating an entry, read that section if there is any doubt about which type applies. Common trap: a backlog command or agent tooling improvement is always `tech`, even when it repairs a defect or adds a capability — those changes are not user-facing.
+
 ## Entry Reference Rules
 
 1. `<entry-ref>` is the stable reference for one backlog entry.

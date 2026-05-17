@@ -67,3 +67,5 @@ The nature of work captured in a backlog entry, taking one of three values.
 | `tech` | Purely technical change with no user-facing dimension (typically under `scripts/`). |
 
 When the work spans several types, classification priority is `feat > fix > tech`: a user-facing feature stays `feat` and a user-facing bug stays `fix`, even when the work also has technical aspects. The reverse is also true: a bug fix with no user-facing dimension (for example a fix in `scripts/`) stays `tech`, it does not become `fix`.
+
+Test for "user-facing": would a non-developer using the deployed product notice the change? If no, the entry is `tech`, regardless of whether it adds a capability ("feature-ish") or repairs a defect ("fix-ish"). Examples that are always `tech`: agent tooling improvements (backlog command outputs, agent context generation, launcher behavior), CI/PHPStan/validation pipeline changes, dev infrastructure, refactors of internal services, doc updates without behavior change.
