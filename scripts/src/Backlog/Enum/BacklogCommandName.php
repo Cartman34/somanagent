@@ -44,6 +44,7 @@ enum BacklogCommandName: string
     case WORKTREE_RESTORE = 'worktree-restore';
     case FEATURE_CLOSE = 'feature-close';
     case USER_MERGE = 'user-merge';
+    case ENTRY_REBASE = 'entry-rebase';
 
     /**
      * Returns true when this command mutates board, review, worktree, or associated state.

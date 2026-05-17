@@ -1,3 +1,7 @@
 prompts:
   developer: "Démarre le développement de ta tâche définie dans le contexte, elle t'est déjà assignée."
+  developer_resume: "Reprends le développement de ta tâche en cours, le contexte rappelle l'objectif."
+  developer_rework: "Ta review a été rejetée, applique la procédure `rework` pour traiter les findings et repasser en development."
+  developer_conflict: "Le rebase de la branche est en conflit, le contexte liste les fichiers concernés ; résous les conflits puis push avec `git push --force-with-lease`."
   reviewer: "Démarre la review définie dans le contexte, elle t'est déjà assignée."
+  reviewer_resume: "Reprends la review en cours, le contexte rappelle l'état."

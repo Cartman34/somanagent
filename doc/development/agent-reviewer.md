@@ -339,3 +339,19 @@ php scripts/backlog-agent.php sessions --code=<rXX>
 ```
 
 Uses the same `worktree` from `sessions.json` — the developer WA — to query the client's session history.
+
+## Réouverture d'un WA selon le stage
+
+Lorsque le launcher `start --reviewer` est invoqué, l'action déclenchée dépend du stage courant de l'entrée ciblée.
+
+| Stage | Action du launcher |
+|---|---|
+| `todo` (section To do, pas de stage) | **Refus** — "Rien à reviewer dans le todo" |
+| `development` | **Refus** — "Tâche pas encore soumise, attends que le dev passe en review" |
+| `review` | Auto-pick : soumet `review-next`, lance l'agent avec le prompt "Démarre la review définie dans le contexte…" |
+| `reviewing` (entrée déjà possédée par ce reviewer) | Reprise : lance l'agent avec le prompt "Reprends la review en cours, le contexte rappelle l'état" |
+| `rejected` | **Refus** — "Review déjà rejetée, le dev doit retravailler" |
+| `approved` | **Refus** — "Tâche approuvée, le merge est manuel via `user-merge` — pas le rôle du reviewer" |
+| section `done` ou stage inconnu | **Refus** — "Tâche mergée" |
+
+Le reviewer ne prend jamais en charge une entrée à stage `approved` : le merge est délégué au manager via `user-merge`.

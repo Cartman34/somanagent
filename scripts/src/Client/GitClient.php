@@ -482,6 +482,22 @@ final class GitClient
     }
 
     /**
+     * Lists files with unresolved merge conflicts in the given worktree.
+     *
+     * Safe to call while a rebase or merge is in progress.
+     *
+     * @param string $path Worktree path
+     * @return list<string>
+     */
+    public function getUnmergedFilesInPath(string $path): array
+    {
+        $command = $this->inPath($path, 'diff --name-only --diff-filter=U');
+        $output = trim($this->captureReadonly($command));
+
+        return $output !== '' ? array_values(array_filter(explode("\n", $output))) : [];
+    }
+
+    /**
      * Merges a branch into the current branch in a repository path.
      *
      * @param string $path Repository path

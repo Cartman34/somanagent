@@ -350,3 +350,39 @@ This keyword applies only when the active entry is in `development` stage. Refus
 
 1. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-clean`.
 2. `WP`: use `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-list` only when you need a cleanup diagnostic outside the standard workflow.
+
+## Réouverture d'un WA selon le stage
+
+Lorsque le launcher `start --developer` est invoqué et qu'une entrée active est déjà assignée à cet agent, l'action déclenchée dépend du stage courant de cette entrée.
+
+| Stage | Action du launcher |
+|---|---|
+| `todo` (section To do, pas de stage) | Auto-pick : soumet `work-start`, lance l'agent avec le prompt "Démarre le développement…" |
+| `development` | Reprise : lance l'agent avec le prompt "Reprends le développement de ta tâche en cours…" |
+| `review` | **Refus** — "Tâche soumise pour review, en attente d'un reviewer — rien à faire côté developer pour l'instant" |
+| `reviewing` | **Refus** — "Review en cours, attends le retour du reviewer" |
+| `rejected` | Reprise rework : lance l'agent avec le prompt qui renvoie à la procédure `rework` (applique les findings et repasse en development) |
+| `approved` | Géré par le launcher avant tout démarrage d'agent — voir ci-dessous |
+| section `done` ou stage inconnu | **Refus** — "Tâche déjà mergée, aucune action attendue" |
+
+### Stage `approved` — rebase automatique
+
+Quand le stage est `approved`, le launcher invoque `entry-rebase` en mode automatique avant de décider de lancer ou non l'agent :
+
+- **Déjà à jour** : affiche "Already up to date with origin/main", exit 0 — l'agent n'est pas lancé.
+- **Rebase propre** : effectue le rebase et le push, affiche "Rebased on origin/main and pushed", exit 0 — l'agent n'est pas lancé.
+- **Conflit** : laisse le worktree en état "rebase in progress", lance l'agent avec le prompt dédié "Le rebase de la branche est en conflit, le contexte liste les fichiers concernés ; résous les conflits puis push avec `git push --force-with-lease`".
+
+Pour résoudre manuellement un rebase en conflit sans relancer le launcher :
+1. `WA`: résoudre les conflits dans les fichiers listés.
+2. `WA`: `git rebase --continue` (ou `git rebase --abort` pour annuler).
+3. `WA`: `git push --force-with-lease`.
+4. `WP`: `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php base-update <entry-ref>` pour rafraîchir `meta.base`.
+
+Pour vérifier ou déclencher le rebase manuellement depuis la ligne de commande :
+```
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-rebase <slug>
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-rebase <slug> --dry-run
+```
+
+La commande `entry-rebase` est l'outil de référence pour toute opération de rebase sur une entrée backlog : elle enchaîne fetch, rebase et push en un seul appel cohérent. Préférer cette commande aux commandes git directes.
