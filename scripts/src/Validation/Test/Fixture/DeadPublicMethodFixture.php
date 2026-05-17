@@ -17,6 +17,9 @@ namespace SoManAgent\Script\Validation\Test\Fixture;
  */
 final class DeadPublicMethodFixture
 {
+    /**
+     * @return void
+     */
     public function unusedMethod(): void
     {
     }

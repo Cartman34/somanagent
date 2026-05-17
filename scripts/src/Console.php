@@ -33,6 +33,9 @@ final class Console
         $this->eol = (Environment::isWsl() && !$this->isTty()) ? "\r\n" : "\n";
     }
 
+    /**
+     * @return self
+     */
     public static function getInstance(): self
     {
         if (self::$instance === null) {
