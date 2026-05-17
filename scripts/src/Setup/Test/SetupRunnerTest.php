@@ -44,6 +44,7 @@ final class SetupRunnerTest
         $failed += $this->testHelpDisplay();
         $failed += $this->testInstallCommandHelp();
         $failed += $this->testInstallPreviewOnlyWithEmptyLockfile();
+        $failed += $this->testInstallCreatesLocalWorkingDirectories();
         $failed += $this->testInstallDryRunWithEmptyLockfile();
         $failed += $this->testMutualExclusionFlags();
         $failed += $this->testUnknownSubcommandError();
@@ -188,6 +189,39 @@ final class SetupRunnerTest
         return 0;
     }
 
+    private function testInstallCreatesLocalWorkingDirectories(): int
+    {
+        $tmpDir = $this->setUpTempProjectWithInitializedLockfile();
+
+        try {
+            [, $exit] = $this->run_(
+                ['install', '--preview-only'],
+                ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
+            );
+
+            if ($exit !== 0) {
+                echo "FAIL testInstallCreatesLocalWorkingDirectories: expected exit 0, got {$exit}\n";
+                return 1;
+            }
+
+            foreach (['local/tmp', 'local/tests'] as $relativePath) {
+                if (!is_dir($tmpDir . '/' . $relativePath)) {
+                    echo "FAIL testInstallCreatesLocalWorkingDirectories: missing directory {$relativePath}\n";
+                    return 1;
+                }
+                if (!is_file($tmpDir . '/' . $relativePath . '/.gitkeep')) {
+                    echo "FAIL testInstallCreatesLocalWorkingDirectories: missing keep file {$relativePath}/.gitkeep\n";
+                    return 1;
+                }
+            }
+        } finally {
+            $this->removeTempProject($tmpDir);
+        }
+
+        echo "OK testInstallCreatesLocalWorkingDirectories\n";
+        return 0;
+    }
+
     private function testMutualExclusionFlags(): int
     {
         [$output, $exit] = $this->run_(['install', '--preview-only', '--dry-run']);
@@ -226,7 +260,7 @@ final class SetupRunnerTest
 
     private function testMissingLockfileError(): int
     {
-        $tmpDir = sys_get_temp_dir() . '/setup_test_no_lock_' . uniqid();
+        $tmpDir = $this->testOutputRoot() . '/setup_test_no_lock_' . uniqid();
         mkdir($tmpDir, 0o755, true);
 
         try {
@@ -245,6 +279,7 @@ final class SetupRunnerTest
                 return 1;
             }
         } finally {
+            $this->removeLocalWorkingDirectories($tmpDir);
             @rmdir($tmpDir);
         }
 
@@ -254,7 +289,7 @@ final class SetupRunnerTest
 
     private function testSentinelLockfileError(): int
     {
-        $tmpDir = sys_get_temp_dir() . '/setup_test_sentinel_' . uniqid();
+        $tmpDir = $this->testOutputRoot() . '/setup_test_sentinel_' . uniqid();
         $resourcesDir = $tmpDir . '/scripts/resources';
         mkdir($resourcesDir, 0o755, true);
 
@@ -278,6 +313,7 @@ final class SetupRunnerTest
                 return 1;
             }
         } finally {
+            $this->removeLocalWorkingDirectories($tmpDir);
             @unlink($resourcesDir . '/dependencies.lock');
             @unlink($resourcesDir . '/dependencies.yaml');
             @rmdir($resourcesDir);
@@ -890,7 +926,7 @@ final class SetupRunnerTest
      */
     private function setUpTempProjectWithInitializedLockfile(): string
     {
-        $tmpDir = sys_get_temp_dir() . '/setup_test_init_' . uniqid();
+        $tmpDir = $this->testOutputRoot() . '/setup_test_init_' . uniqid();
         $resourcesDir = $tmpDir . '/scripts/resources';
         mkdir($resourcesDir, 0o755, true);
 
@@ -914,7 +950,7 @@ final class SetupRunnerTest
      */
     private function setUpTempProject(?array $manifestDeps): string
     {
-        $tmpDir = sys_get_temp_dir() . '/setup_test_' . uniqid();
+        $tmpDir = $this->testOutputRoot() . '/setup_test_' . uniqid();
         $resourcesDir = $tmpDir . '/scripts/resources';
         mkdir($resourcesDir, 0o755, true);
 
@@ -940,7 +976,7 @@ final class SetupRunnerTest
      */
     private function setUpTempProjectWithLockfileEntry(): string
     {
-        $tmpDir = sys_get_temp_dir() . '/setup_test_depconf_' . uniqid();
+        $tmpDir = $this->testOutputRoot() . '/setup_test_depconf_' . uniqid();
         $resourcesDir = $tmpDir . '/scripts/resources';
         mkdir($resourcesDir, 0o755, true);
 
@@ -958,12 +994,32 @@ final class SetupRunnerTest
      */
     private function removeTempProject(string $tmpDir): void
     {
+        $this->removeLocalWorkingDirectories($tmpDir);
         $resourcesDir = $tmpDir . '/scripts/resources';
         @unlink($resourcesDir . '/dependencies.yaml');
         @unlink($resourcesDir . '/dependencies.lock');
         @rmdir($resourcesDir);
         @rmdir($tmpDir . '/scripts');
         @rmdir($tmpDir);
+    }
+
+    private function removeLocalWorkingDirectories(string $tmpDir): void
+    {
+        @unlink($tmpDir . '/local/tmp/.gitkeep');
+        @unlink($tmpDir . '/local/tests/.gitkeep');
+        @rmdir($tmpDir . '/local/tmp');
+        @rmdir($tmpDir . '/local/tests');
+        @rmdir($tmpDir . '/local');
+    }
+
+    private function testOutputRoot(): string
+    {
+        $path = $this->projectRoot . '/local/tests/setup-runner';
+        if (!is_dir($path) && !mkdir($path, 0o755, true) && !is_dir($path)) {
+            throw new \RuntimeException("Unable to create setup test output directory: {$path}");
+        }
+
+        return $path;
     }
 
     /**

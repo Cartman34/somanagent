@@ -195,7 +195,7 @@ php scripts/worktree-info.php
 ---
 
 ### `test-backlog-workflow.php`
-Runs reusable sequential validation campaigns for `php scripts/backlog.php` against temporary backlog and review files under `local/tmp/`.
+Runs reusable sequential validation campaigns for `php scripts/backlog.php` against test campaign artifacts under `local/tests/`.
 
 ```bash
 php scripts/test-backlog-workflow.php
@@ -207,12 +207,12 @@ php scripts/test-backlog-workflow.php --keep-artifacts
 
 Notes:
 - the script never uses `local/backlog-board.md` or `local/backlog-review.md` directly
-- it passes `--test-mode`, `--board-file`, and `--review-file` to `backlog.php` with temporary files under `local/tmp/`
-- it passes `--worktree-dir` to `backlog.php` with isolated test worktrees under `local/test-worktrees/`
+- it passes `--test-mode`, `--board-file`, and `--review-file` to `backlog.php` with campaign files under `local/tests/`
+- it passes `--worktree-dir` to `backlog.php` with isolated test worktrees under `local/tests/test-worktrees/`
 - `feature-review-lifecycle` is skipped unless `--allow-remote` is enabled
 - the remote campaign creates a temporary PR base branch instead of targeting `main`
 - cleanup always runs in best effort and only acts on resources recorded by the test context
-- use `--keep-artifacts` to inspect temporary backlog and review files after the run
+- use `--keep-artifacts` to inspect test campaign artifacts after the run
 - detailed reusable campaign intent is documented in `doc/development/script-backlog-test-scenarios.md`
 
 ---

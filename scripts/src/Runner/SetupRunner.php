@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Runner;
 
+use SoManAgent\Script\Client\FilesystemClient;
 use SoManAgent\Script\DevEnv\InstallPlan;
 use SoManAgent\Script\DevEnv\InstallPlanner;
 use SoManAgent\Script\DevEnv\Installer\ClientsInstaller;
@@ -29,6 +30,7 @@ use SoManAgent\Script\DevEnv\SystemHttpFetcher;
 use SoManAgent\Script\DevEnv\SystemSourceQuerier;
 use SoManAgent\Script\DevEnv\UninstallPlan;
 use SoManAgent\Script\DevEnv\VersionConstraint;
+use SoManAgent\Script\LocalWorkingDirectories;
 
 /**
  * Setup orchestrator for the SoManAgent development environment.
@@ -112,6 +114,10 @@ final class SetupRunner extends AbstractScriptRunner
             $this->printYamlCommandHelp($subcommand);
 
             return 0;
+        }
+
+        if (!isset($options['dry-run'])) {
+            LocalWorkingDirectories::ensure($this->resolveRoot(), new FilesystemClient());
         }
 
         return match ($subcommand) {

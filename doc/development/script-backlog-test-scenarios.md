@@ -65,7 +65,7 @@ Recommended names in this document:
   - `[test-scoped-feature][test-child-a] Implement test child task A`
   - `[test-scoped-feature][test-child-b] Implement test child task B`
 
-Temporary review files must also use `test-` names under `local/tmp/`.
+Temporary review files must also use `test-` names under `local/tests/`.
 
 Each scenario below must create its own `test-*` backlog input immediately before the command that consumes it.
 
@@ -99,14 +99,14 @@ Validate queued task insertion, ordering, listing, and removal, including the st
 ### Steps
 
 1. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php todo-list`
-2. Write `[scenario-todo-end] Test inserted at end` to `local/tmp/test-scenario-todo-end.md`, then:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tmp/test-scenario-todo-end.md`
-3. Write `[scenario-todo-start] Test inserted at start` to `local/tmp/test-scenario-todo-start.md`, then:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tmp/test-scenario-todo-start.md --position=start`
-4. Write `[scenario-todo-index] Test inserted at index` to `local/tmp/test-scenario-todo-index.md`, then:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tmp/test-scenario-todo-index.md --position=index --index=2`
-5. Write `[scenario-feature][scenario-task] Stable ref task` to `local/tmp/test-scenario-feature-task.md`, then:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tmp/test-scenario-feature-task.md`
+2. Write `[scenario-todo-end] Test inserted at end` to `local/tests/test-scenario-todo-end.md`, then:
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tests/test-scenario-todo-end.md`
+3. Write `[scenario-todo-start] Test inserted at start` to `local/tests/test-scenario-todo-start.md`, then:
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tests/test-scenario-todo-start.md --position=start`
+4. Write `[scenario-todo-index] Test inserted at index` to `local/tests/test-scenario-todo-index.md`, then:
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tests/test-scenario-todo-index.md --position=index --index=2`
+5. Write `[scenario-feature][scenario-task] Stable ref task` to `local/tests/test-scenario-feature-task.md`, then:
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tests/test-scenario-feature-task.md`
 6. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php todo-list`
 7. Remove one inserted task by its stable reference shown in todo-list:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php task-remove scenario-todo-index`
@@ -129,8 +129,8 @@ Validate `work-start` on a plain queued task.
 
 ### Steps
 
-1. Create the plain test task — write `[feat][test-plain-feature-alpha] test-plain-feature-alpha` to `local/tmp/test-plain-feature-alpha.md`, then:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tmp/test-plain-feature-alpha.md`
+1. Create the plain test task — write `[feat][test-plain-feature-alpha] test-plain-feature-alpha` to `local/tests/test-plain-feature-alpha.md`, then:
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tests/test-plain-feature-alpha.md`
 2. Confirm next plain task with:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php todo-list`
 3. Start it:
@@ -158,9 +158,9 @@ Validate `work-start <entry-ref>` consumes the named queued entry instead of the
 
 ### Steps
 
-1. Create two prefixed queued tasks — write each body to `local/tmp/`, then:
-   - Write `[ws-head] Head entry that should stay queued` to `local/tmp/test-ws-head.md`, then: `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tmp/test-ws-head.md`
-   - Write `[ws-target] Explicit target entry` to `local/tmp/test-ws-target.md`, then: `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tmp/test-ws-target.md`
+1. Create two prefixed queued tasks — write each body to `local/tests/`, then:
+   - Write `[ws-head] Head entry that should stay queued` to `local/tests/test-ws-head.md`, then: `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tests/test-ws-head.md`
+   - Write `[ws-target] Explicit target entry` to `local/tests/test-ws-target.md`, then: `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tests/test-ws-target.md`
 2. Confirm both entries appear in `todo-list` with their stable reference.
 3. Try a target that does not match any queued entry:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php work-start unknown-slug`
@@ -185,8 +185,8 @@ Validate the single-prefix `[feature-slug] text` mode of `work-start` and the `e
 
 ### Steps
 
-1. Create a single-prefix task — write `[feat][test-single-prefix] Single prefix feature description` to `local/tmp/test-single-prefix.md`, then:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tmp/test-single-prefix.md`
+1. Create a single-prefix task — write `[feat][test-single-prefix] Single prefix feature description` to `local/tests/test-single-prefix.md`, then:
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tests/test-single-prefix.md`
 2. Start it:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php work-start`
 3. Rename the active feature entry:
@@ -195,8 +195,8 @@ Validate the single-prefix `[feature-slug] text` mode of `work-start` and the `e
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php status test-single-prefix`
 5. Release the feature:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-release test-single-prefix`
-6. Create a scoped task to test entry-rename on a `kind=task` — write `[feat][test-scoped-feature][rename-task] Original task text` to `local/tmp/test-scoped-rename-task.md`, then:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tmp/test-scoped-rename-task.md`
+6. Create a scoped task to test entry-rename on a `kind=task` — write `[feat][test-scoped-feature][rename-task] Original task text` to `local/tests/test-scoped-rename-task.md`, then:
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tests/test-scoped-rename-task.md`
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php work-start`
 7. Rename the active task entry:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-rename "Renamed task text"`
@@ -240,8 +240,8 @@ Validate entry assignment and unassignment permissions.
 
 ### Steps
 
-1. Create the assignment test task — write `[feat][test-assign-feature] test-assign-feature` to `local/tmp/test-assign-feature.md`, then:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tmp/test-assign-feature.md`
+1. Create the assignment test task — write `[feat][test-assign-feature] test-assign-feature` to `local/tests/test-assign-feature.md`, then:
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tests/test-assign-feature.md`
 2. Start it:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php work-start`
 3. Refresh the same assignment:
@@ -284,8 +284,8 @@ Validate `work-start` on scoped queued tasks.
 
 ### Steps
 
-1. Create the first scoped child task — write `[feat][test-scoped-feature][test-child-a] Implement test child task A` to `local/tmp/test-child-a.md`, then:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tmp/test-child-a.md`
+1. Create the first scoped child task — write `[feat][test-scoped-feature][test-child-a] Implement test child task A` to `local/tests/test-child-a.md`, then:
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tests/test-child-a.md`
 2. Confirm next queued entry is the scoped task:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php todo-list`
 3. Start it:
@@ -320,8 +320,8 @@ Validate local child task review commands (reject, rework, approve). Demonstrate
 3. Run the mechanical check:
    - `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=r01 php scripts/backlog.php review-check test-scoped-feature/test-child-a`
 4. Reject it:
-   - create a local review body under `local/tmp/`
-   - `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=r01 php scripts/backlog.php review-reject test-scoped-feature/test-child-a --body-file local/tmp/test-task-review-reject.md`
+   - create a local review body under `local/tests/`
+   - `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=r01 php scripts/backlog.php review-reject test-scoped-feature/test-child-a --body-file local/tests/test-task-review-reject.md`
 5. Inspect the stored review notes through the protected, read-only block (without mutating state):
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php review-notes test-scoped-feature/test-child-a`
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php review-notes --agent d01`
@@ -381,8 +381,8 @@ Validate that after merging task A, `work-start` picks up the next queued scoped
 
 ### Steps
 
-1. Create the second scoped child task — write `[feat][test-scoped-feature][test-child-b] Implement test child task B` to `local/tmp/test-child-b.md`, then:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tmp/test-child-b.md`
+1. Create the second scoped child task — write `[feat][test-scoped-feature][test-child-b] Implement test child task B` to `local/tests/test-child-b.md`, then:
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tests/test-child-b.md`
 2. Confirm the agent has no active entry (parent feature has `agent=none` after task A merge):
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php status --agent d01`
 3. Pick up task B (`work-start` allows this since d01 has no active entry):
@@ -420,7 +420,7 @@ Validate remote feature review transitions once all child tasks are merged.
 4. Run mechanical check:
    - `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=r01 php scripts/backlog.php review-check test-scoped-feature`
 5. Reject:
-   - `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=r01 php scripts/backlog.php review-reject test-scoped-feature --body-file local/tmp/test-feature-review-reject.md`
+   - `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=r01 php scripts/backlog.php review-reject test-scoped-feature --body-file local/tests/test-feature-review-reject.md`
 5.a Inspect the stored feature review notes through the protected, read-only block:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php review-notes test-scoped-feature`
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php review-notes --agent d01`
@@ -466,8 +466,8 @@ Validate final feature closure and merge behavior.
 
 ### Steps
 
-1. Create a dedicated closable fix feature — write `[fix][test-fix-feature-beta] test-fix-feature-beta` to `local/tmp/test-fix-feature-beta.md`, then:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tmp/test-fix-feature-beta.md`
+1. Create a dedicated closable fix feature — write `[fix][test-fix-feature-beta] test-fix-feature-beta` to `local/tests/test-fix-feature-beta.md`, then:
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tests/test-fix-feature-beta.md`
 2. Start it:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d02 php scripts/backlog.php work-start`
 3. Close the unmerged feature when the workflow requires closing:
@@ -571,7 +571,7 @@ An active entry `my-feature` exists in the In progress section (e.g. from Scenar
 After validation:
 
 1. Restore the original local backlog files if they were backed up.
-2. Remove temporary files created under `local/tmp/`.
+2. Remove test campaign files created under `local/tests/`.
 3. Inspect `.agent-worktrees/` and clean any leftover managed worktrees.
 4. Confirm final local state with:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php list`

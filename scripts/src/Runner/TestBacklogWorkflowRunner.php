@@ -48,7 +48,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
                 ['name' => '--campaign', 'description' => 'Campaign to run: help, board-format-normalization, todo-and-plain-feature-lifecycle, scoped-task-lifecycle, entry-create-formats, work-start-type-prefix, feature-review-lifecycle, mutation-lock, user-merge, or all'],
                 ['name' => '--allow-remote', 'description' => 'Allow campaigns that push branches or create/merge GitHub PRs'],
                 ['name' => '--allow-integration', 'description' => 'Allow steps that require Docker/app containers to be running (e.g. migrate --generate)'],
-                ['name' => '--keep-artifacts', 'description' => 'Keep temporary backlog/review files under local/tmp/ after execution'],
+                ['name' => '--keep-artifacts', 'description' => 'Keep test campaign artifacts under local/tests/ after execution'],
             ],
             $this->getExecutionModeOptions(),
         );
@@ -86,7 +86,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
         $keepArtifacts = isset($options['keep-artifacts']);
         $runToken = sprintf('%s-%04d', date('YmdHis'), random_int(1000, 9999));
 
-        $testWorktreesParent = $this->projectRoot . '/local/test-worktrees';
+        $testWorktreesParent = $this->projectRoot . '/local/tests/test-worktrees';
         $this->sweepStaleTestWorktrees($testWorktreesParent);
         $this->assertNoStaleTestWorktrees($testWorktreesParent);
 
@@ -97,9 +97,9 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
 
         $context = new BacklogScriptTestContext(
             projectRoot: $this->projectRoot,
-            boardPath: $this->projectRoot . '/local/tmp/test-backlog-workflow-board.md',
-            reviewPath: $this->projectRoot . '/local/tmp/test-backlog-workflow-review.md',
-            tmpDir: $this->projectRoot . '/local/tmp',
+            boardPath: $this->projectRoot . '/local/tests/test-backlog-workflow-board.md',
+            reviewPath: $this->projectRoot . '/local/tests/test-backlog-workflow-review.md',
+            tmpDir: $this->projectRoot . '/local/tests',
             worktreesRoot: $worktreesRoot,
             allowRemote: $allowRemote,
             allowIntegration: $allowIntegration,
