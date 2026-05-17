@@ -99,7 +99,7 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $driver->assertReviewContains($context->fixFeature);
         $this->assertReviewNotesForFeature($driver, $context, '1. Reject feature review for workflow coverage.');
 
-        // review-amend: replace notes on a rejected feature
+        // review-amend: replace notes on a rejected feature (absolute body-file path in WP local/tmp)
         $amendedBody = $driver->createBodyFile('test-feature-review-amend.md', ['1. Amended finding for workflow coverage.']);
         $driver->reviewAmend($context->agentSecondary, $context->fixFeature, $amendedBody);
         $driver->assertReviewContains('Amended finding for workflow coverage.');
@@ -107,6 +107,15 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $this->assertReviewNotesForFeature($driver, $context, '1. Amended finding for workflow coverage.');
         // stage must still be rejected after amend
         $driver->assertStatusContains($context->fixFeature, 'Stage: Rejected');
+
+        // review-amend with WA body file: resolver derives WA from entry meta.agent and finds the file
+        $waLocalTmp = $driver->managedWorktreePath($context->agentPrimary) . '/local/tmp';
+        @mkdir($waLocalTmp, 0777, true);
+        $waBodyRelPath = 'local/tmp/test-feature-review-amend-wa.md';
+        file_put_contents($waLocalTmp . '/test-feature-review-amend-wa.md', "1. Amended from WA body file.\n");
+        $driver->reviewAmend($context->agentSecondary, $context->fixFeature, $waBodyRelPath);
+        $driver->assertReviewContains('Amended from WA body file.');
+        $driver->assertReviewMissing('Amended finding for workflow coverage.');
 
         // review-amend: wrong role is refused
         $driver->assertReviewAmendFails($context->agentSecondary, $context->fixFeature, $amendedBody, 'review-amend is restricted to the reviewer role', ['SOMANAGER_ROLE' => 'developer']);

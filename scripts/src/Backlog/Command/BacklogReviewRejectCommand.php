@@ -13,6 +13,7 @@ use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use SoManAgent\Script\Backlog\Service\BacklogReviewBodyFormatter;
+use SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
 
 /**
  * Reviewer command that rejects a feature or task review and records reviewer blockers.
@@ -24,22 +25,27 @@ final class BacklogReviewRejectCommand extends AbstractBacklogCommand
 {
     private BacklogReviewBodyFormatter $reviewBodyFormatter;
 
+    private BodyFilePathResolver $bodyFilePathResolver;
+
     /**
      * @param BacklogPresenter $presenter
      * @param bool $dryRun
      * @param string $projectRoot
      * @param BacklogBoardService $boardService
      * @param BacklogReviewBodyFormatter $reviewBodyFormatter
+     * @param BodyFilePathResolver $bodyFilePathResolver
      */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
         string $projectRoot,
         BacklogBoardService $boardService,
-        BacklogReviewBodyFormatter $reviewBodyFormatter
+        BacklogReviewBodyFormatter $reviewBodyFormatter,
+        BodyFilePathResolver $bodyFilePathResolver
     ) {
         parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
         $this->reviewBodyFormatter = $reviewBodyFormatter;
+        $this->bodyFilePathResolver = $bodyFilePathResolver;
     }
 
     /**
@@ -71,7 +77,7 @@ final class BacklogReviewRejectCommand extends AbstractBacklogCommand
             $reviewKey = $this->boardService->getTaskReviewKey($entry);
             $entry->setStage(BacklogBoard::STAGE_REJECTED);
             $entry->setReviewer(null);
-            $review->setReview($reviewKey, $this->reviewBodyFormatter->fromFile($bodyFile));
+            $review->setReview($reviewKey, $this->reviewBodyFormatter->fromFile($this->bodyFilePathResolver->resolveForEntry($bodyFile, $reference)));
             $this->saveBoard($board, BacklogCommandName::REVIEW_REJECT->value);
             $this->saveReviewFile($review, BacklogCommandName::REVIEW_REJECT->value);
 
@@ -101,7 +107,7 @@ final class BacklogReviewRejectCommand extends AbstractBacklogCommand
 
         $entry->setStage(BacklogBoard::STAGE_REJECTED);
         $entry->setReviewer(null);
-        $review->setReview($slug, $this->reviewBodyFormatter->fromFile($bodyFile));
+        $review->setReview($slug, $this->reviewBodyFormatter->fromFile($this->bodyFilePathResolver->resolveForEntry($bodyFile, $slug)));
         $this->saveBoard($board, BacklogCommandName::REVIEW_REJECT->value);
         $this->saveReviewFile($review, BacklogCommandName::REVIEW_REJECT->value);
 
