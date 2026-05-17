@@ -161,6 +161,14 @@ Notes:
 - `codex` uses `--model` and `--config model_reasoning_effort="<level>"`; Codex config documents `model_reasoning_effort`
 - `opencode` uses `--model provider/model`; the project mapping uses models listed by the local OpenCode provider cache
 - `gemini` uses `--model`; `--effort=low/high` prints a warning and is ignored because Gemini CLI has no effort flag
+- every client receives permission flags at launch so agents can operate in their WA without interactive approval prompts; these flags are CLI-scoped and do not modify any global user config file (`~/.claude.json`, `~/.codex/config.toml`, etc.)
+
+| Client | Permission flag(s) injected | Rationale |
+|---|---|---|
+| `claude` | `--permission-mode acceptEdits` | Approves edits/writes without full bypass; relies on `.claude/settings.local.json` for Bash whitelist |
+| `codex` | `--ask-for-approval never` | Removes prompts; safe because `sandbox_mode=workspace-write` in the user's `~/.codex/config.toml` constrains filesystem writes |
+| `gemini` | `--approval-mode auto_edit --skip-trust` | Mirrors Claude's acceptEdits; `--skip-trust` suppresses the session-level trust dialog only |
+| `opencode` | `--dangerously-skip-permissions` | Only available auto-approval flag in OpenCode CLI; impact limited because opencode is used infrequently via backlog-agent |
 - `BACKLOG_AGENT_SESSION_DRIVER=tmux|direct` selects the session driver
 - `tmux` is the default driver and keeps the live client session recoverable after terminal or SSH disconnects; mouse mode and a 50 000-line scrollback buffer are applied automatically so the mouse wheel can scroll the pane history
 - `direct` is a degraded driver that keeps the previous interactive process behavior, without live terminal recovery

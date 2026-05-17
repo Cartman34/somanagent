@@ -21,6 +21,13 @@ final class CodexAgentLauncher extends AbstractAgentClientLauncher
     private const SESSION_PROMPT_SUFFIX = "\n\n--- Begin session ---";
 
     /**
+     * Approval flags injected at every launch to suppress interactive prompts within the WA session.
+     * Combined with sandbox_mode=workspace-write from the user's ~/.codex/config.toml, this keeps
+     * filesystem writes safe while removing the approval dialog.
+     */
+    private const APPROVAL_FLAGS = ['--ask-for-approval', 'never'];
+
+    /**
      * Runner used to check whether the Codex and zstd binaries are available locally.
      */
     private ProcessRunner $processRunner;
@@ -72,7 +79,7 @@ final class CodexAgentLauncher extends AbstractAgentClientLauncher
      */
     public function requiredCliFlags(): array
     {
-        return ['-C', '--last', '--model', '--config'];
+        return ['-C', '--last', '--model', '--config', '--ask-for-approval'];
     }
 
     /**
@@ -87,7 +94,7 @@ final class CodexAgentLauncher extends AbstractAgentClientLauncher
         ?ResolvedModel $resolvedModel = null,
         ?string $initialPrompt = null,
     ): array {
-        $args = ['-C', $worktree];
+        $args = ['-C', $worktree, ...self::APPROVAL_FLAGS];
 
         if ($resumeSessionId !== null) {
             $args[] = 'resume';

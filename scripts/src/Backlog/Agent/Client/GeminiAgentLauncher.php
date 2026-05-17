@@ -20,6 +20,13 @@ use SoManAgent\Script\Backlog\Agent\Model\SessionInfo;
  */
 final class GeminiAgentLauncher extends AbstractAgentClientLauncher
 {
+    /**
+     * Permission flags injected at every launch to skip interactive approval prompts for the WA session.
+     * auto_edit mirrors Claude's acceptEdits (approves edits without full bypass); --skip-trust suppresses
+     * the one-time trust dialog for the current session only.
+     */
+    private const PERMISSION_FLAGS = ['--approval-mode', 'auto_edit', '--skip-trust'];
+
     private ProcessRunner $processRunner;
     private ?string $homeDir;
 
@@ -54,7 +61,7 @@ final class GeminiAgentLauncher extends AbstractAgentClientLauncher
      */
     public function requiredCliFlags(): array
     {
-        return ['-r', '--model', '--prompt-interactive'];
+        return ['-r', '--model', '--prompt-interactive', '--approval-mode', '--skip-trust'];
     }
 
     /**
@@ -85,14 +92,14 @@ final class GeminiAgentLauncher extends AbstractAgentClientLauncher
         ?string $initialPrompt = null,
     ): array {
         if ($resumeSessionId !== null) {
-            return ['gemini', ['-r', $resumeSessionId]];
+            return ['gemini', array_merge(self::PERMISSION_FLAGS, ['-r', $resumeSessionId])];
         }
 
         if ($continueLast) {
-            return ['gemini', ['-r', 'latest']];
+            return ['gemini', array_merge(self::PERMISSION_FLAGS, ['-r', 'latest'])];
         }
 
-        $args = $resolvedModel !== null ? $resolvedModel->cliArgs : [];
+        $args = array_merge(self::PERMISSION_FLAGS, $resolvedModel !== null ? $resolvedModel->cliArgs : []);
         if ($initialPrompt !== null) {
             $args[] = '--prompt-interactive';
             $args[] = $initialPrompt;

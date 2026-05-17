@@ -25,6 +25,12 @@ final class OpenCodeAgentLauncher extends AbstractAgentClientLauncher
     private const OPENCODE_JSON = 'opencode.json';
     private const SESSION_LIST_MAX = 50;
 
+    /**
+     * Permission flags injected at every launch to skip interactive approval prompts within the WA session.
+     * OpenCode exposes no intermediate mode; this is the only available auto-approval flag.
+     */
+    private const PERMISSION_FLAGS = ['--dangerously-skip-permissions'];
+
     private ProcessRunner $processRunner;
 
     /**
@@ -56,7 +62,7 @@ final class OpenCodeAgentLauncher extends AbstractAgentClientLauncher
      */
     public function requiredCliFlags(): array
     {
-        return ['-s', '-c', '--model', '--prompt'];
+        return ['-s', '-c', '--model', '--prompt', '--dangerously-skip-permissions'];
     }
 
     /**
@@ -106,13 +112,13 @@ final class OpenCodeAgentLauncher extends AbstractAgentClientLauncher
         ?string $initialPrompt = null,
     ): array {
         if ($resumeSessionId !== null) {
-            return ['opencode', ['-s', $resumeSessionId]];
+            return ['opencode', array_merge(self::PERMISSION_FLAGS, ['-s', $resumeSessionId])];
         }
         if ($continueLast) {
-            return ['opencode', ['-c']];
+            return ['opencode', array_merge(self::PERMISSION_FLAGS, ['-c'])];
         }
 
-        $args = $resolvedModel !== null ? $resolvedModel->cliArgs : [];
+        $args = array_merge(self::PERMISSION_FLAGS, $resolvedModel !== null ? $resolvedModel->cliArgs : []);
         if ($initialPrompt !== null) {
             $args[] = '--prompt';
             $args[] = $initialPrompt;

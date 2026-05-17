@@ -19,6 +19,12 @@ final class ClaudeAgentLauncher extends AbstractAgentClientLauncher
 {
     private const FIRST_PROMPT_LENGTH = 80;
 
+    /**
+     * Permission flags injected at every launch to skip interactive approval prompts within the WA session.
+     * Scoped to the CLI session; does not modify ~/.claude.json or any global config.
+     */
+    private const PERMISSION_FLAGS = ['--permission-mode', 'acceptEdits'];
+
     private ProcessRunner $processRunner;
     private ?string $homeDir;
 
@@ -53,7 +59,7 @@ final class ClaudeAgentLauncher extends AbstractAgentClientLauncher
      */
     public function requiredCliFlags(): array
     {
-        return ['--append-system-prompt', '--resume', '--continue', '--model', '--effort'];
+        return ['--append-system-prompt', '--resume', '--continue', '--model', '--effort', '--permission-mode'];
     }
 
     /**
@@ -85,6 +91,7 @@ final class ClaudeAgentLauncher extends AbstractAgentClientLauncher
         $args = [
             '--append-system-prompt',
             $context,
+            ...self::PERMISSION_FLAGS,
         ];
 
         if ($resolvedModel !== null) {
