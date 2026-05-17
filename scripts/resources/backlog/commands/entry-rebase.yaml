@@ -11,6 +11,7 @@ examples:
   - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=d10 php scripts/backlog.php entry-rebase my-feature --dry-run'
 notes:
   - 'Target branch resolution: task → parent feature branch; root feature → origin/main (fetched first).'
+  - 'The command prints `Entry-ref:` and `Branch:` before rebase details; copy `Entry-ref:` for later backlog commands.'
   - 'Already up to date: prints "Already up to date with <target>" and exits 0 — no rebase or push performed.'
   - 'Clean rebase: rebases the branch onto the target, pushes with --force-with-lease (features only — tasks are local-only), and exits 0.'
   - 'On both up-to-date and clean-rebase outcomes, meta.base is refreshed in the backlog board automatically. Manual base-update is not required.'

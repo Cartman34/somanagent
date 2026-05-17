@@ -71,6 +71,7 @@ final class BacklogPresenter
     public function displayEntryStatus(BoardEntry $entry): void
     {
         $stage = $this->boardService->getFeatureStage($entry);
+        $this->console->line('Entry-ref: ' . $this->boardService->getEntryReference($entry));
         $this->console->line('Kind: ' . $this->boardService->getEntryKind($entry));
         $this->console->line('Agent: ' . ($entry->getAgent() ?? BacklogMetaValue::NONE->value));
         if ($this->boardService->checkIsTaskEntry($entry)) {

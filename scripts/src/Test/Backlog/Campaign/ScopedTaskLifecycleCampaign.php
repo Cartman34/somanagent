@@ -34,9 +34,13 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->createTodoTask(sprintf('[%s][%s] Implement test child task A', $context->scopedFeature, $context->childA));
         $startOutput = $driver->startNextFeature($context->agentPrimary);
         $driver->assertFeatureStartOutputContains($startOutput, '[Task]');
+        $driver->assertFeatureStartOutputContains($startOutput, 'Entry-ref: ' . $taskARef);
         $driver->assertFeatureStartOutputContains($startOutput, 'Task: ' . $context->childA);
+        $driver->assertFeatureStartOutputContains($startOutput, 'Branch: feat/' . $context->scopedFeature . '--' . $context->childA);
         $driver->assertFeatureStartOutputContains($startOutput, '[Feature]');
+        $driver->assertFeatureStartOutputContains($startOutput, 'Entry-ref: ' . $context->scopedFeature);
         $driver->assertFeatureStartOutputContains($startOutput, 'Feature: ' . $context->scopedFeature);
+        $driver->assertFeatureStartOutputContains($startOutput, 'Branch: feat/' . $context->scopedFeature);
         $driver->assertFeatureStartOutputContains($startOutput, '[Worktree]');
         $driver->assertFeatureStartOutputContains($startOutput, $context->agentPrimary);
         $driver->assertActiveFeatureExists($context->scopedFeature);
@@ -59,15 +63,19 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->assertReworkFails($context->agentPrimary, $taskARef, 'rework only accepts');
         $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_IN_REVIEW);
 
-        if (!str_contains($driver->reviewNext($context->agentSecondary), $taskARef)) {
+        $reviewNextOutput = $driver->reviewNext($context->agentSecondary);
+        if (!str_contains($reviewNextOutput, $taskARef)) {
             throw new \RuntimeException('Expected review-next to return the active task review.');
         }
+        $driver->assertContains($reviewNextOutput, 'Entry-ref: ' . $taskARef);
         $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_REVIEWING);
         // legacy command names must fall through to the standard unknown-command error
         $driver->assertCommandIsUnknown('task-review-check');
         $driver->assertCommandIsUnknown('task-review-reject');
         $driver->assertCommandIsUnknown('task-review-approve');
-        $driver->reviewCheck($context->agentSecondary, $taskARef);
+        $reviewCheckOutput = $driver->reviewCheck($context->agentSecondary, $taskARef);
+        $driver->assertContains($reviewCheckOutput, 'Entry-ref: ' . $taskARef);
+        $driver->assertContains($reviewCheckOutput, 'Branch: feat/' . $context->scopedFeature . '--' . $context->childA);
         $driver->assertReviewRejectFails($context->agentSecondary, $taskARef, $invalidRejectBody, 'Review body items must be plain findings');
         $driver->rejectReviewViaUnifiedCommand($context->agentSecondary, $taskARef, $rejectBody);
         $driver->assertReviewContains($taskARef);
@@ -108,7 +116,9 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
 
         // status <entry-ref> must resolve the task entry directly.
         $driver->assertStatusContains($taskARef, 'Kind: task');
+        $driver->assertStatusContains($taskARef, 'Entry-ref: ' . $taskARef);
         $driver->assertStatusContains($taskARef, 'Ref: ' . $taskARef);
+        $driver->assertStatusContains($taskARef, 'Branch: feat/' . $context->scopedFeature . '--' . $context->childA);
         // list must show kind=task and full <entry-ref> for task entries.
         $featureListOutput = $driver->runBacklog(['list']);
         $driver->assertContains($featureListOutput, $taskARef . ' kind=task');

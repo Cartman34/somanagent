@@ -74,6 +74,7 @@ final class BacklogEntryRebaseCommand extends AbstractBacklogCommand
             : $this->boardService->resolveFeature($board, $this->boardService->normalizeFeatureSlug($slug));
 
         $entry = $match->getEntry();
+        $entryReference = $this->boardService->getEntryReference($entry);
 
         $agent = $entry->getAgent();
         if ($agent === null || $agent === '') {
@@ -92,8 +93,12 @@ final class BacklogEntryRebaseCommand extends AbstractBacklogCommand
             ));
         }
 
+        $this->presenter->displayLine('[Entry rebase]');
+        $this->presenter->displayLine('Entry-ref: ' . $entryReference);
+        $this->presenter->displayLine('Branch: ' . ($entry->getBranch() ?? '-'));
+
         if ($dryRun) {
-            $this->presenter->displayLine(sprintf('[dry-run] Would rebase entry "%s" (branch: %s) in worktree %s.', $slug, $entry->getBranch() ?? '(none)', $worktree));
+            $this->presenter->displayLine(sprintf('[dry-run] Would rebase entry "%s" in worktree %s.', $entryReference, $worktree));
             return;
         }
 

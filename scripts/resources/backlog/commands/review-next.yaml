@@ -13,4 +13,4 @@ notes:
   - 'Automated workflows must always pass an explicit target; relying on the implicit head of the list is reserved for interactive usage.'
   - 'Refuses when the reviewer already has an entry in the reviewing stage; run review-cancel first to release it.'
   - 'Entries already in the reviewing stage are skipped and not available to other reviewers.'
-  - 'The output includes Kind, Feature, Task or Ref when relevant, Branch, Base, Stage, Reviewer, PR, Summary, Next, and Blocker.'
+  - 'The output includes Entry-ref, Kind, Feature, Task or Ref when relevant, Branch, Base, Stage, Reviewer, PR, Summary, Next, and Blocker. Copy `Entry-ref:` for later commands; `Branch:` is informational.'

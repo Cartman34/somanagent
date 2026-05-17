@@ -75,8 +75,8 @@ final class EntryRebaseCommandTest
     private function testMissingSlugThrows(): int
     {
         $dir = $this->scratchDir('missing-slug');
-        $board = $dir . '/board.md';
-        file_put_contents($board, "# T\n\n## To do\n\n## In progress\n\n## Suggestions\n");
+        $board = $dir . '/board.yaml';
+        $this->writeEmptyBoard($board);
 
         $fake = new FakeEntryRebaseService(EntryRebaseResult::upToDate('origin/main'));
         $cmd = $this->buildCommand($dir, $board, $fake);
@@ -100,17 +100,8 @@ final class EntryRebaseCommandTest
     private function testNoAgentAssignedThrows(): int
     {
         $dir = $this->scratchDir('no-agent');
-        $board = $dir . '/board.md';
-        file_put_contents($board,
-            "# T\n\n## To do\n\n## In progress\n\n"
-            . "- no-agent-feature\n"
-            . "  meta:\n"
-            . "    kind: feature\n"
-            . "    feature: no-agent-feature\n"
-            . "    branch: feat/no-agent-feature\n"
-            . "    stage: approved\n\n"
-            . "## Suggestions\n"
-        );
+        $board = $dir . '/board.yaml';
+        $this->writeFeatureBoard($board, 'no-agent-feature', 'feat/no-agent-feature', 'approved', null);
 
         $fake = new FakeEntryRebaseService(EntryRebaseResult::upToDate('origin/main'));
         $cmd = $this->buildCommand($dir, $board, $fake);
@@ -138,18 +129,8 @@ final class EntryRebaseCommandTest
     {
         $dir = $this->scratchDir('no-worktree');
         $worktreesRoot = $dir . '/worktrees';
-        $board = $dir . '/board.md';
-        file_put_contents($board,
-            "# T\n\n## To do\n\n## In progress\n\n"
-            . "- my-feature\n"
-            . "  meta:\n"
-            . "    kind: feature\n"
-            . "    feature: my-feature\n"
-            . "    branch: feat/my-feature\n"
-            . "    stage: approved\n"
-            . "    agent: d10\n\n"
-            . "## Suggestions\n"
-        );
+        $board = $dir . '/board.yaml';
+        $this->writeFeatureBoard($board, 'my-feature', 'feat/my-feature', 'approved', 'd10');
 
         $fake = new FakeEntryRebaseService(EntryRebaseResult::upToDate('origin/main'));
         $cmd = $this->buildCommand($dir, $board, $fake, $worktreesRoot);
@@ -178,27 +159,18 @@ final class EntryRebaseCommandTest
         $dir = $this->scratchDir('up-to-date');
         $worktreesRoot = $dir . '/worktrees';
         mkdir($worktreesRoot . '/d10', 0755, true);
-        $board = $dir . '/board.md';
-        file_put_contents($board,
-            "# T\n\n## To do\n\n## In progress\n\n"
-            . "- up-feature\n"
-            . "  meta:\n"
-            . "    kind: feature\n"
-            . "    feature: up-feature\n"
-            . "    branch: feat/up-feature\n"
-            . "    stage: approved\n"
-            . "    agent: d10\n\n"
-            . "## Suggestions\n"
-        );
+        $board = $dir . '/board.yaml';
+        $this->writeFeatureBoard($board, 'up-feature', 'feat/up-feature', 'approved', 'd10');
 
         $fake = new FakeEntryRebaseService(EntryRebaseResult::upToDate('origin/main'));
         $cmd = $this->buildCommand($dir, $board, $fake, $worktreesRoot);
 
         $threw = false;
+        $output = '';
         try {
             ob_start();
             $cmd->handle(['up-feature'], []);
-            ob_get_clean();
+            $output = ob_get_clean();
         } catch (\RuntimeException $e) {
             ob_get_clean();
             $threw = true;
@@ -214,6 +186,11 @@ final class EntryRebaseCommandTest
             return 1;
         }
 
+        if (!str_contains((string) $output, 'Entry-ref: up-feature') || !str_contains((string) $output, 'Branch: feat/up-feature')) {
+            echo "FAIL testUpToDatePrintsMessageAndDoesNotThrow: expected Entry-ref and Branch in output, got: {$output}\n";
+            return 1;
+        }
+
         echo "OK testUpToDatePrintsMessageAndDoesNotThrow\n";
         return 0;
     }
@@ -223,18 +200,8 @@ final class EntryRebaseCommandTest
         $dir = $this->scratchDir('rebased');
         $worktreesRoot = $dir . '/worktrees';
         mkdir($worktreesRoot . '/d10', 0755, true);
-        $board = $dir . '/board.md';
-        file_put_contents($board,
-            "# T\n\n## To do\n\n## In progress\n\n"
-            . "- rebased-feature\n"
-            . "  meta:\n"
-            . "    kind: feature\n"
-            . "    feature: rebased-feature\n"
-            . "    branch: feat/rebased-feature\n"
-            . "    stage: approved\n"
-            . "    agent: d10\n\n"
-            . "## Suggestions\n"
-        );
+        $board = $dir . '/board.yaml';
+        $this->writeFeatureBoard($board, 'rebased-feature', 'feat/rebased-feature', 'approved', 'd10');
 
         $fake = new FakeEntryRebaseService(EntryRebaseResult::rebased('origin/main'));
         $cmd = $this->buildCommand($dir, $board, $fake, $worktreesRoot);
@@ -263,18 +230,8 @@ final class EntryRebaseCommandTest
         $dir = $this->scratchDir('conflict');
         $worktreesRoot = $dir . '/worktrees';
         mkdir($worktreesRoot . '/d10', 0755, true);
-        $board = $dir . '/board.md';
-        file_put_contents($board,
-            "# T\n\n## To do\n\n## In progress\n\n"
-            . "- conflict-feature\n"
-            . "  meta:\n"
-            . "    kind: feature\n"
-            . "    feature: conflict-feature\n"
-            . "    branch: feat/conflict-feature\n"
-            . "    stage: approved\n"
-            . "    agent: d10\n\n"
-            . "## Suggestions\n"
-        );
+        $board = $dir . '/board.yaml';
+        $this->writeFeatureBoard($board, 'conflict-feature', 'feat/conflict-feature', 'approved', 'd10');
 
         $fake = new FakeEntryRebaseService(EntryRebaseResult::conflict('origin/main', ['src/Foo.php', 'src/Bar.php']));
         $cmd = $this->buildCommand($dir, $board, $fake, $worktreesRoot);
@@ -309,18 +266,8 @@ final class EntryRebaseCommandTest
         $dir = $this->scratchDir('dry-run');
         $worktreesRoot = $dir . '/worktrees';
         mkdir($worktreesRoot . '/d10', 0755, true);
-        $board = $dir . '/board.md';
-        file_put_contents($board,
-            "# T\n\n## To do\n\n## In progress\n\n"
-            . "- dry-feature\n"
-            . "  meta:\n"
-            . "    kind: feature\n"
-            . "    feature: dry-feature\n"
-            . "    branch: feat/dry-feature\n"
-            . "    stage: approved\n"
-            . "    agent: d10\n\n"
-            . "## Suggestions\n"
-        );
+        $board = $dir . '/board.yaml';
+        $this->writeFeatureBoard($board, 'dry-feature', 'feat/dry-feature', 'approved', 'd10');
 
         $fake = new FakeEntryRebaseService(EntryRebaseResult::upToDate('origin/main'));
         $cmd = $this->buildCommand($dir, $board, $fake, $worktreesRoot);
@@ -336,6 +283,11 @@ final class EntryRebaseCommandTest
 
         if (!str_contains((string) $output, 'dry-run')) {
             echo "FAIL testDryRunDoesNotCallService: expected [dry-run] in output, got: {$output}\n";
+            return 1;
+        }
+
+        if (!str_contains((string) $output, 'Entry-ref: dry-feature') || !str_contains((string) $output, 'Branch: feat/dry-feature')) {
+            echo "FAIL testDryRunDoesNotCallService: expected Entry-ref and Branch in output, got: {$output}\n";
             return 1;
         }
 
@@ -378,6 +330,29 @@ final class EntryRebaseCommandTest
         mkdir($path, 0755, true);
 
         return $path;
+    }
+
+    private function writeEmptyBoard(string $path): void
+    {
+        file_put_contents($path, "version: 1\ntodo: []\nactive: []\n");
+    }
+
+    private function writeFeatureBoard(string $path, string $feature, string $branch, string $stage, ?string $agent): void
+    {
+        $agentLine = $agent !== null ? "  agent: {$agent}\n" : '';
+        file_put_contents($path, <<<YAML
+version: 1
+todo: []
+active:
+- kind: feature
+  stage: {$stage}
+  feature: {$feature}
+{$agentLine}  branch: {$branch}
+  base: base-sha
+  pr: none
+  title: {$feature}
+
+YAML);
     }
 
     private function rmdir(string $dir): void

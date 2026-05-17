@@ -367,6 +367,7 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
     private function displayDryRunPlan(WorkStartPlan $plan): void
     {
         $this->presenter->displayLine('[Dry-run]');
+        $this->presenter->displayLine('Entry-ref:      ' . $this->entryReferenceFromPlan($plan));
         $this->presenter->displayLine('Kind:           ' . $plan->kind);
         $this->presenter->displayLine('Type:           ' . $plan->type->value);
         $this->presenter->displayLine('Feature:        ' . $plan->featureSlug);
@@ -383,6 +384,15 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
         }
         $this->presenter->displayLine('Agent:          ' . $plan->agent);
         $this->presenter->displayLine('No mutation performed (--dry-run).');
+    }
+
+    private function entryReferenceFromPlan(WorkStartPlan $plan): string
+    {
+        if ($plan->taskSlug !== null) {
+            return $plan->featureSlug . '/' . $plan->taskSlug;
+        }
+
+        return $plan->featureSlug;
     }
 
     private function displayStartedStatus(

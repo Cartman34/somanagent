@@ -14,6 +14,7 @@ examples:
 notes:
   - 'With `--agent`, prints the active task separately from the parent feature.'
   - 'With `<entry-ref>`, resolves and displays the entry directly.'
+  - 'Active entry blocks include `Entry-ref: <slug>` as the authoritative identifier to copy into later backlog commands; `Branch:` is informational.'
   - 'The worktree section reports absent, clean, dirty, detached, inconsistent, orphan, or prunable.'
   - 'Task and feature next actions are printed separately so agents do not confuse task review with feature review.'
   - 'When stored reviewer notes exist for the active entry, status appends a single hint line pointing to `review-notes`. The notes themselves are never printed by `status`.'
