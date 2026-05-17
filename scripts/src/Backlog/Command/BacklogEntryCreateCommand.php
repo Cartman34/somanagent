@@ -179,7 +179,7 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
         }
         if (preg_match('/^\s*\[/', $title) === 1) {
             throw new \RuntimeException(
-                'Body file title carries legacy bracket prefixes ([…]) — préfixes obsolètes, utiliser les options CLI --feature, --task, --type à la place.',
+                'Body file title carries legacy bracket prefixes ([…]) — obsolete prefix syntax, use the CLI options --feature, --task, --type instead.',
             );
         }
 

@@ -132,7 +132,7 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
         // Rejection: legacy bracket prefix in body file title.
         $bracketTitleFile = $driver->createBodyFile('entry-create-bracket-title.md', ['[feat][legacy-feature] Legacy title']);
         $driver->assertTaskCreateFails(
-            'préfixes obsolètes, utiliser les options CLI',
+            'obsolete prefix syntax, use the CLI options',
             ['--feature=legacy-feature', '--type=feat', "--body-file={$bracketTitleFile}"],
         );
 
