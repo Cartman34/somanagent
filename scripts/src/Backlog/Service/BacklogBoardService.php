@@ -414,7 +414,7 @@ final class BacklogBoardService
     {
         $matches = [];
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $index => $entry) {
-            if ($this->getEntryStage($entry) === BacklogBoard::STAGE_APPROVED && !$entry->getBlocked()) {
+            if ($this->getEntryStage($entry) === BacklogBoard::STAGE_APPROVED && !$entry->checkIsBlocked()) {
                 $matches[] = new BoardEntryMatch(BacklogBoard::SECTION_ACTIVE, $index, $entry);
             }
         }
