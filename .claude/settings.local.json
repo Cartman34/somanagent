@@ -57,7 +57,9 @@
       "Bash(SOMANAGER_ROLE=* SOMANAGER_AGENT=* php *)",
       "Bash(tmux *)",
       "Bash(claude --version)",
-      "Bash(echo \"exit=$?\")"
+      "Bash(echo \"exit=$?\")",
+      "Bash(bash *)",
+      "Bash(opencode run *)"
     ]
   }
 }
