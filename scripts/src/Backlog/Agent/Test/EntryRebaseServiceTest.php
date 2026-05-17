@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Agent\Test;
 
 use SoManAgent\Script\Application;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\EntryRebaseService;
@@ -68,6 +69,7 @@ final class EntryRebaseServiceTest
         $failed += $this->testCleanRebase();
         $failed += $this->testConflict();
         $failed += $this->testTaskUsesFeatureBranch();
+        $failed += $this->testBaseIsRefreshedAfterRebase();
 
         return $failed;
     }
@@ -290,7 +292,88 @@ final class EntryRebaseServiceTest
         return 0;
     }
 
+    private function testBaseIsRefreshedAfterRebase(): int
+    {
+        // When a BacklogBoard is passed, meta.base must be updated to the current merge-base
+        // on both up_to_date and rebased outcomes.
+        $root = $this->scratchDir('base-refresh');
+        $worktree = $root . '/worktrees/base-refresh';
+        $this->initRepoWithOrigin($root);
+        $this->commit($root, 'file.txt', 'initial', 'init');
+        $this->runShell("git -C {$root} push origin main");
+
+        $this->runShell("git -C {$root} checkout -b feat/base-refresh");
+        $this->commit($root, 'feat.txt', 'feat content', 'feat commit');
+        $this->runShell("git -C {$root} push origin feat/base-refresh");
+        $this->runShell("git -C {$root} checkout main");
+
+        $this->commit($root, 'main2.txt', 'main2 content', 'main commit 2');
+        $this->runShell("git -C {$root} push origin main");
+        $this->runShell("git -C {$root} fetch origin");
+
+        mkdir(dirname($worktree), 0755, true);
+        $this->runShell("git -C {$root} worktree add {$worktree} feat/base-refresh");
+
+        $boardPath = $root . '/board.md';
+        file_put_contents($boardPath,
+            "# Board\n\n## To do\n\n## In progress\n\n"
+            . "- base-refresh\n"
+            . "  meta:\n"
+            . "    kind: feature\n"
+            . "    feature: base-refresh\n"
+            . "    branch: feat/base-refresh\n"
+            . "    stage: approved\n\n"
+            . "## Suggestions\n"
+        );
+
+        $previousCwd = getcwd();
+        chdir($root);
+        try {
+            [$service, $boardService] = $this->buildServiceWithBoardService($root);
+            $board = $boardService->loadBoard($boardPath);
+            $entries = $board->getEntries(BacklogBoard::SECTION_ACTIVE);
+            $entry = $entries[0] ?? null;
+            if ($entry === null) {
+                echo "FAIL testBaseIsRefreshedAfterRebase: no entry found in board\n";
+                return 1;
+            }
+
+            $result = $service->rebase($entry, $worktree, $board);
+        } finally {
+            chdir($previousCwd !== false ? $previousCwd : $this->originalCwd);
+        }
+
+        if ($result->isConflict()) {
+            echo "FAIL testBaseIsRefreshedAfterRebase: unexpected conflict\n";
+            return 1;
+        }
+
+        if ($entry->getBase() === null || $entry->getBase() === '') {
+            echo "FAIL testBaseIsRefreshedAfterRebase: meta.base was not refreshed\n";
+            return 1;
+        }
+
+        $expectedBase = trim((string) shell_exec("git -C {$root} merge-base origin/main feat/base-refresh"));
+        if ($entry->getBase() !== $expectedBase) {
+            echo "FAIL testBaseIsRefreshedAfterRebase: meta.base mismatch. Got: {$entry->getBase()}, expected: {$expectedBase}\n";
+            return 1;
+        }
+
+        echo "OK testBaseIsRefreshedAfterRebase\n";
+        return 0;
+    }
+
     private function buildService(string $projectRoot): EntryRebaseService
+    {
+        [$service] = $this->buildServiceWithBoardService($projectRoot);
+
+        return $service;
+    }
+
+    /**
+     * @return array{EntryRebaseService, BacklogBoardService}
+     */
+    private function buildServiceWithBoardService(string $projectRoot): array
     {
         $app = Application::getInstance();
         $consoleClient = new ConsoleClient($projectRoot, false, $app, static function (string $m): void {});
@@ -298,7 +381,7 @@ final class EntryRebaseServiceTest
         $gitService = new GitService(false, Console::getInstance(), $git, static function (string $m): void {});
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
 
-        return new EntryRebaseService($boardService, $gitService);
+        return [new EntryRebaseService($boardService, $gitService), $boardService];
     }
 
     private function initRepo(string $root): void

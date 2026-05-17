@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Agent\Test;
 
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Service\EntryRebaseResult;
 use SoManAgent\Script\Backlog\Service\EntryRebaseService;
@@ -39,9 +40,10 @@ final class FakeEntryRebaseService extends EntryRebaseService
     /**
      * @param BoardEntry $entry
      * @param string $worktree
+     * @param BacklogBoard|null $board
      * @return EntryRebaseResult
      */
-    public function rebase(BoardEntry $entry, string $worktree): EntryRebaseResult
+    public function rebase(BoardEntry $entry, string $worktree, ?BacklogBoard $board = null): EntryRebaseResult
     {
         $this->lastCall = ['entry' => $entry, 'worktree' => $worktree];
 

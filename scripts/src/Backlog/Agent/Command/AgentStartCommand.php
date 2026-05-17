@@ -283,7 +283,7 @@ final class AgentStartCommand extends AbstractAgentCommand
                     if ($decision->isLauncherHandled()) {
                         // Approved entry: attempt rebase before launching the agent
                         if ($this->entryRebaseService !== null) {
-                            $rebaseResult = $this->entryRebaseService->rebase($activeMatch->getEntry(), $worktree);
+                            $rebaseResult = $this->entryRebaseService->rebase($activeMatch->getEntry(), $worktree, $resumeBoard);
                             if (!$rebaseResult->isConflict()) {
                                 echo $rebaseResult->getMessage() . "\n";
                                 return 0;

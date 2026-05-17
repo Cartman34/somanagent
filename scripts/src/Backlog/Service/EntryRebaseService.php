@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Service;
 
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Service\GitService;
 
@@ -44,16 +45,22 @@ class EntryRebaseService
      * - Feature branches are pushed with --force-with-lease after a successful rebase.
      * - Task branches are local-only and are never pushed.
      *
+     * Base refresh:
+     * - When $board is provided, meta.base is refreshed to the current merge-base on both
+     *   UP_TO_DATE and REBASED outcomes so downstream operations (review-check, PR scoping)
+     *   see a current base SHA. No board write happens on conflict.
+     *
      * On conflict the rebase is left in progress so the agent or operator can resolve the
      * conflicts and continue. Callers must not call {@see EntryRebaseResult::isConflict()} and
      * then expect the worktree to be clean — it will remain in a "rebase in progress" state.
      *
      * @param BoardEntry $entry The active board entry to rebase
      * @param string $worktree Absolute path to the worktree where the branch is checked out
+     * @param BacklogBoard|null $board When provided, meta.base is refreshed on the board on success
      * @return EntryRebaseResult
      * @throws \RuntimeException When mandatory metadata is missing from the entry
      */
-    public function rebase(BoardEntry $entry, string $worktree): EntryRebaseResult
+    public function rebase(BoardEntry $entry, string $worktree, ?BacklogBoard $board = null): EntryRebaseResult
     {
         $sourceBranch = $entry->getBranch();
         if ($sourceBranch === null || $sourceBranch === '') {
@@ -72,19 +79,27 @@ class EntryRebaseService
             $targetBranch = GitService::ORIGIN_REMOTE . '/' . GitService::MAIN_BRANCH;
         }
 
-        if ($this->gitService->checkIsAncestor($targetBranch, $sourceBranch)) {
-            return EntryRebaseResult::upToDate($targetBranch);
+        $isUpToDate = $this->gitService->checkIsAncestor($targetBranch, $sourceBranch);
+
+        if (!$isUpToDate) {
+            $conflictFiles = $this->gitService->tryRebaseInPath($worktree, $targetBranch);
+            if ($conflictFiles !== []) {
+                return EntryRebaseResult::conflict($targetBranch, $conflictFiles);
+            }
+
+            if (!$isTask) {
+                $this->gitService->pushBranchSafely($sourceBranch, GitService::ORIGIN_REMOTE, $worktree);
+            }
         }
 
-        $conflictFiles = $this->gitService->tryRebaseInPath($worktree, $targetBranch);
-        if ($conflictFiles !== []) {
-            return EntryRebaseResult::conflict($targetBranch, $conflictFiles);
+        if ($board !== null) {
+            $newBase = $this->gitService->getMergeBase($targetBranch, $sourceBranch);
+            $entry->setBase($newBase);
+            $this->boardService->saveBoard($board);
         }
 
-        if (!$isTask) {
-            $this->gitService->pushBranchSafely($sourceBranch, GitService::ORIGIN_REMOTE, $worktree);
-        }
-
-        return EntryRebaseResult::rebased($targetBranch);
+        return $isUpToDate
+            ? EntryRebaseResult::upToDate($targetBranch)
+            : EntryRebaseResult::rebased($targetBranch);
     }
 }

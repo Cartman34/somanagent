@@ -97,7 +97,7 @@ final class BacklogEntryRebaseCommand extends AbstractBacklogCommand
             return;
         }
 
-        $result = $this->entryRebaseService->rebase($entry, $worktree);
+        $result = $this->entryRebaseService->rebase($entry, $worktree, $board);
 
         $this->presenter->displaySuccess($result->getMessage());
 
