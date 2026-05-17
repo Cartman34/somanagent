@@ -571,6 +571,7 @@ final class BacklogWorktreeService
 
         $this->syncWorktreeRootEnv($worktree);
         $this->writeBackendWorktreeEnvLocal($worktree);
+        $this->installPreCommitHook($worktree);
     }
 
     /**
@@ -823,6 +824,45 @@ final class BacklogWorktreeService
         }
 
         return $worktrees;
+    }
+
+    private function installPreCommitHook(string $worktree): void
+    {
+        $hookSource = $this->projectRoot . '/scripts/resources/worktree-hooks/pre-commit';
+        if (!$this->fs->isFile($hookSource)) {
+            return;
+        }
+
+        // Linked worktrees have a .git FILE pointing to the common gitdir; standalone repos have a .git DIR.
+        // Hooks are served from the common hooks dir for linked worktrees, and from .git/hooks/ for standalone.
+        $gitEntry = $worktree . '/.git';
+        if (is_file($gitEntry)) {
+            $hooksDir = $this->projectRoot . '/.git/hooks';
+        } elseif (is_dir($gitEntry)) {
+            $hooksDir = $gitEntry . '/hooks';
+        } else {
+            return;
+        }
+
+        $hookPath = $hooksDir . '/pre-commit';
+
+        if (!$this->fs->isDirectory($hooksDir)) {
+            if ($this->dryRun) {
+                $this->logVerbose('[dry-run] Would create hooks directory: ' . $this->git->toRelativeProjectPath($hooksDir));
+
+                return;
+            }
+            $this->fs->makeDirectory($hooksDir);
+        }
+
+        if ($this->dryRun) {
+            $this->logVerbose('[dry-run] Would install pre-commit hook: ' . $this->git->toRelativeProjectPath($hookPath));
+
+            return;
+        }
+
+        $this->fs->copyPath($hookSource, $hookPath);
+        chmod($hookPath, 0o755);
     }
 
     private function checkIsManagedAgentWorktree(string $path): bool

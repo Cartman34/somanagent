@@ -270,6 +270,10 @@ An agent running in a session started by `backlog-agent.php` must:
 - never access `$SOMANAGER_WP` directly to read or write source files
 - never run scripts that require the WP runtime (containers, database, GitHub API) unless explicitly allowed for the role
 
+### Pre-commit Hook
+
+Every managed worktree receives a `pre-commit` git hook when `BacklogWorktreeService::prepareAgentWorktree` runs. The hook calls `php scripts/backlog.php commit-gate` (proxied to WP automatically) to check the stage of the active backlog entry before every commit. It blocks the commit and prints a descriptive message if the entry stage is not `development`. If the stage cannot be determined (no active entry, board unreachable), the hook fails safe and also blocks the commit. The hook only activates when `SOMANAGER_AGENT` is set and the working tree path matches the agent's managed WA; it is a no-op for any other context (e.g. commits made in WP without an agent session).
+
 ### Context File
 
 `<WA>/local/agent-context.md` is generated fresh on every `start` and `resume`. It is hidden from `git status` by the root `.gitignore` `local/*` pattern. Do not commit or push it.

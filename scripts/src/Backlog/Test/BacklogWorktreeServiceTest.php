@@ -41,6 +41,8 @@ final class BacklogWorktreeServiceTest
         $failed += $this->testPrepareAgentWorktreeCreatesLocalWorkingDirectories();
         $failed += $this->testPrepareAgentWorktreeLocalWorkingDirectoriesAreIdempotent();
         $failed += $this->testPrepareAgentWorktreeDoesNotWriteUnderGitInternals();
+        $failed += $this->testPrepareAgentWorktreeInstallsPreCommitHook();
+        $failed += $this->testPrepareAgentWorktreePreCommitHookIsIdempotent();
 
         return $failed;
     }
@@ -145,6 +147,63 @@ final class BacklogWorktreeServiceTest
         }
 
         echo "OK testPrepareAgentWorktreeLocalWorkingDirectoriesAreIdempotent\n";
+        return 0;
+    }
+
+    private function testPrepareAgentWorktreeInstallsPreCommitHook(): int
+    {
+        $agent = 'test-d10-hook-' . $this->uniqueToken();
+        $worktreesRoot = $this->projectRoot . '/local/tests/worktree-service';
+        $worktree = $worktreesRoot . '/' . $agent;
+
+        try {
+            $this->createExistingAgentRepository($worktree);
+            $service = $this->createService($worktreesRoot);
+            $service->prepareAgentWorktree($agent);
+
+            $hookPath = $worktree . '/.git/hooks/pre-commit';
+            if (!is_file($hookPath)) {
+                echo "FAIL testPrepareAgentWorktreeInstallsPreCommitHook: pre-commit hook not found at {$hookPath}\n";
+                return 1;
+            }
+            if (!is_executable($hookPath)) {
+                echo "FAIL testPrepareAgentWorktreeInstallsPreCommitHook: pre-commit hook is not executable\n";
+                return 1;
+            }
+        } finally {
+            $this->cleanupWorktree($worktree);
+        }
+
+        echo "OK testPrepareAgentWorktreeInstallsPreCommitHook\n";
+        return 0;
+    }
+
+    private function testPrepareAgentWorktreePreCommitHookIsIdempotent(): int
+    {
+        $agent = 'test-d10-hook-idem-' . $this->uniqueToken();
+        $worktreesRoot = $this->projectRoot . '/local/tests/worktree-service';
+        $worktree = $worktreesRoot . '/' . $agent;
+
+        try {
+            $this->createExistingAgentRepository($worktree);
+            $service = $this->createService($worktreesRoot);
+            $service->prepareAgentWorktree($agent);
+            $service->prepareAgentWorktree($agent);
+
+            $hookPath = $worktree . '/.git/hooks/pre-commit';
+            if (!is_file($hookPath)) {
+                echo "FAIL testPrepareAgentWorktreePreCommitHookIsIdempotent: pre-commit hook not found after second prepare\n";
+                return 1;
+            }
+            if (!is_executable($hookPath)) {
+                echo "FAIL testPrepareAgentWorktreePreCommitHookIsIdempotent: pre-commit hook is not executable after second prepare\n";
+                return 1;
+            }
+        } finally {
+            $this->cleanupWorktree($worktree);
+        }
+
+        echo "OK testPrepareAgentWorktreePreCommitHookIsIdempotent\n";
         return 0;
     }
 
