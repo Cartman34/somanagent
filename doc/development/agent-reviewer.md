@@ -96,11 +96,13 @@ Rules:
 ### `review-next`
 
 1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-next [<entry-ref>]`.
-2. Without a target, the script selects the first entry with `stage=review`, transitions it to `stage=reviewing`, records the reviewer in `reviewer`, and displays the entry.
-3. With an explicit `<entry-ref>` reference (the same shape printed by `review-list`), the script claims that exact entry. It refuses with a clear error when the entry is already in `stage=reviewing` (claimed by another reviewer) or no longer in `stage=review`.
-4. Automated workflows must always pass an explicit target; the implicit head form is reserved for interactive usage.
-5. The command refuses if the reviewer already has an entry in `reviewing`. Run `review-cancel` first to release it.
-6. Use `Kind` and `Ref`/`Feature` in the output to choose the matching review check command.
+2. Without a target from an active `backlog-agent` reviewer session, the script first uses the session's recorded developer WA and selects the first entry with `stage=review` whose developer agent maps to that same WA. It transitions that entry to `stage=reviewing`, records the reviewer in `reviewer`, and displays the entry.
+3. If the current reviewer session WA has no matching entry in `stage=review`, the script refuses explicitly instead of silently falling back to another developer WA. Use an explicit `<entry-ref>` from the matching reviewer session, or stop this session and start/resume a reviewer session for the intended developer WA.
+4. Without a target outside a `backlog-agent` reviewer session (manual CLI usage), the script keeps the historical behavior: it selects the first entry with `stage=review`.
+5. With an explicit `<entry-ref>` reference (the same shape printed by `review-list`), the script claims that exact entry. It refuses with a clear error when the entry is already in `stage=reviewing` (claimed by another reviewer) or no longer in `stage=review`.
+6. Automated workflows must always pass an explicit target; the implicit form is reserved for interactive usage inside the active reviewer context.
+7. The command refuses if the reviewer already has an entry in `reviewing`. Run `review-cancel` first to release it.
+8. Use `Kind` and `Ref`/`Feature` in the output to choose the matching review check command.
 
 ### `review-cancel`
 

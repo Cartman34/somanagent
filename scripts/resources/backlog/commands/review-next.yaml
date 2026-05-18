@@ -2,13 +2,14 @@ description: 'Claim a task or feature waiting in review and move it to the revie
 arguments:
   -
     name: '[<entry-ref>]'
-    description: 'Optional stable reference exposed by `review-list`. When omitted, review-next claims the first entry waiting in review implicitly.'
+    description: 'Optional stable reference exposed by `review-list`. When omitted, review-next claims implicitly: from a backlog-agent reviewer session, the first review entry for the current developer WA; outside such a session, the first entry waiting in review.'
 examples:
   - 'SOMANAGER_AGENT=cp-01 php scripts/backlog.php review-next'
   - 'SOMANAGER_AGENT=cp-01 php scripts/backlog.php review-next my-feature'
   - 'SOMANAGER_AGENT=cp-01 php scripts/backlog.php review-next my-feature/my-task'
 notes:
-  - 'Without a target, selects the first active backlog entry in the review stage, transitions it to reviewing, and records the reviewer.'
+  - 'Without a target from a backlog-agent reviewer session, selects the first review-stage entry whose developer WA matches the session worktree. If none exists for that WA, refuses instead of falling back to another developer WA.'
+  - 'Without a target outside a backlog-agent reviewer session, keeps the manual CLI behavior: selects the first active backlog entry in the review stage.'
   - 'With an explicit target, claims the named entry only if it is still in the review stage. Refuses with a clear error when the entry is already in reviewing (claimed by another reviewer) or no longer in review.'
   - 'Automated workflows must always pass an explicit target; relying on the implicit head of the list is reserved for interactive usage.'
   - 'Refuses when the reviewer already has an entry in the reviewing stage; run review-cancel first to release it.'
