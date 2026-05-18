@@ -46,6 +46,10 @@ final class BacklogScriptTestDriver
     public function resetArtifacts(): void
     {
         $this->writeFile($this->context->boardPath, BoardYamlStorage::initialContent());
+        $this->removePath($this->context->migrationsDir);
+        if (is_file($this->context->migrationMarkerPath) && !unlink($this->context->migrationMarkerPath)) {
+            throw new \RuntimeException('Unable to remove test migration marker.');
+        }
 
         $this->writeFile($this->context->reviewPath, <<<MD
 # Current review
@@ -84,6 +88,10 @@ MD);
         }
         if (is_file($this->context->reviewPath)) {
             unlink($this->context->reviewPath);
+        }
+        $this->removePath($this->context->migrationsDir);
+        if (is_file($this->context->migrationMarkerPath)) {
+            unlink($this->context->migrationMarkerPath);
         }
     }
 
@@ -1546,7 +1554,7 @@ MD);
      * @param string $needle Expected substring of the failure output
      * @param array<string, string> $env Optional environment variables
      */
-    private function assertBacklogFails(array $arguments, string $needle, array $env = []): void
+    public function assertBacklogFails(array $arguments, string $needle, array $env = []): void
     {
         $command = $this->buildBacklogCommand($arguments, $env);
         [$code, $output] = $this->consoleClient->captureWithExitCode($command);
@@ -1583,6 +1591,10 @@ MD);
         $parts[] = escapeshellarg($this->relativePath($this->context->reviewPath));
         $parts[] = '--worktree-dir';
         $parts[] = escapeshellarg($this->relativePath($this->context->worktreesRoot));
+        $parts[] = '--migrations-dir';
+        $parts[] = escapeshellarg($this->relativePath($this->context->migrationsDir));
+        $parts[] = '--migration-marker-file';
+        $parts[] = escapeshellarg($this->relativePath($this->context->migrationMarkerPath));
         if ($this->context->prBaseBranch() !== null) {
             $parts[] = '--pr-base-branch';
             $parts[] = escapeshellarg($this->context->prBaseBranch());
@@ -1624,6 +1636,10 @@ MD);
         $parts[] = escapeshellarg($this->relativePath($this->context->reviewPath));
         $parts[] = '--worktree-dir';
         $parts[] = escapeshellarg($this->relativePath($this->context->worktreesRoot));
+        $parts[] = '--migrations-dir';
+        $parts[] = escapeshellarg($this->relativePath($this->context->migrationsDir));
+        $parts[] = '--migration-marker-file';
+        $parts[] = escapeshellarg($this->relativePath($this->context->migrationMarkerPath));
         if ($this->context->prBaseBranch() !== null) {
             $parts[] = '--pr-base-branch';
             $parts[] = escapeshellarg($this->context->prBaseBranch());
@@ -1664,8 +1680,39 @@ MD);
 
     private function writeFile(string $path, string $contents): void
     {
+        $dir = dirname($path);
+        if (!is_dir($dir) && !mkdir($dir, 0777, true) && !is_dir($dir)) {
+            throw new \RuntimeException("Unable to create test artifact directory: {$dir}");
+        }
         if (file_put_contents($path, $contents) === false) {
             throw new \RuntimeException("Unable to write test artifact: {$path}");
+        }
+    }
+
+    private function removePath(string $path): void
+    {
+        if (!is_dir($path)) {
+            if (is_file($path) && !unlink($path)) {
+                throw new \RuntimeException("Unable to remove test artifact: {$path}");
+            }
+
+            return;
+        }
+
+        $items = scandir($path);
+        if ($items === false) {
+            throw new \RuntimeException("Unable to list test artifact directory: {$path}");
+        }
+
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+            $this->removePath($path . '/' . $item);
+        }
+
+        if (!rmdir($path)) {
+            throw new \RuntimeException("Unable to remove test artifact directory: {$path}");
         }
     }
 

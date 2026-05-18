@@ -15,6 +15,7 @@ use SoManAgent\Script\Test\Backlog\Campaign\CampaignInterface;
 use SoManAgent\Script\Test\Backlog\Campaign\FeatureReviewLifecycleCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\HelpCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\MutationLockCampaign;
+use SoManAgent\Script\Test\Backlog\Campaign\PendingMigrationCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\ScopedTaskLifecycleCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\TaskCreateFormatsCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\TodoAndPlainFeatureLifecycleCampaign;
@@ -45,7 +46,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
     {
         return array_merge(
             [
-                ['name' => '--campaign', 'description' => 'Campaign to run: help, board-format-normalization, todo-and-plain-feature-lifecycle, scoped-task-lifecycle, entry-create-formats, work-start-type-prefix, feature-review-lifecycle, mutation-lock, user-merge, or all'],
+                ['name' => '--campaign', 'description' => 'Campaign to run: help, board-format-normalization, todo-and-plain-feature-lifecycle, scoped-task-lifecycle, entry-create-formats, work-start-type-prefix, feature-review-lifecycle, mutation-lock, pending-migration, user-merge, or all'],
                 ['name' => '--allow-remote', 'description' => 'Allow campaigns that push branches or create/merge GitHub PRs'],
                 ['name' => '--allow-integration', 'description' => 'Allow steps that require Docker/app containers to be running (e.g. migrate --generate)'],
                 ['name' => '--keep-artifacts', 'description' => 'Keep test campaign artifacts under local/tests/ after execution'],
@@ -99,6 +100,8 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
             projectRoot: $this->projectRoot,
             boardPath: $this->projectRoot . '/local/tests/test-backlog-workflow-board.yaml',
             reviewPath: $this->projectRoot . '/local/tests/test-backlog-workflow-review.md',
+            migrationsDir: $this->projectRoot . '/local/tests/test-backlog-workflow-migrations',
+            migrationMarkerPath: $this->projectRoot . '/local/tests/test-backlog-workflow-migrations.applied',
             tmpDir: $this->projectRoot . '/local/tests',
             worktreesRoot: $worktreesRoot,
             allowIntegration: $allowIntegration,
@@ -160,6 +163,8 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
                 $this->console->warn('Skipping mutation-lock because --dry-run is set.');
             }
 
+            $resolved[] = $campaigns['pending-migration'];
+
             if ($allowRemote) {
                 $resolved[] = $campaigns['feature-review-lifecycle'];
             } else {
@@ -200,6 +205,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
                 'todo-and-plain-feature-lifecycle' => new TodoAndPlainFeatureLifecycleCampaign(),
                 'scoped-task-lifecycle' => new ScopedTaskLifecycleCampaign(),
                 'mutation-lock' => new MutationLockCampaign(),
+                'pending-migration' => new PendingMigrationCampaign(),
                 'feature-review-lifecycle' => new FeatureReviewLifecycleCampaign(),
                 'user-merge' => new UserMergeCampaign(),
             ];

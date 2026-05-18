@@ -29,6 +29,8 @@ final class BacklogScriptTestContext
         public readonly string $projectRoot,
         public readonly string $boardPath,
         public readonly string $reviewPath,
+        public readonly string $migrationsDir,
+        public readonly string $migrationMarkerPath,
         public readonly string $tmpDir,
         public readonly string $worktreesRoot,
         public readonly bool $allowIntegration,

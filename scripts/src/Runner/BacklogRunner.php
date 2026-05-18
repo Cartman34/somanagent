@@ -11,6 +11,7 @@ use SoManAgent\Script\Backlog\BacklogCommandFactory;
 use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Service\BacklogCliOptionValidator;
+use SoManAgent\Script\Backlog\Service\BacklogMigrationGuard;
 use SoManAgent\Script\Backlog\Service\BacklogMutationLock;
 use SoManAgent\Script\Backlog\Storage\BoardYamlStorage;
 use SoManAgent\Script\Service\CommandHelpService;
@@ -32,6 +33,8 @@ final class BacklogRunner extends AbstractScriptRunner
     private ?string $boardPath = null;
     private ?string $reviewFilePath = null;
     private ?string $worktreesRoot = null;
+    private ?string $migrationsDir = null;
+    private ?string $migrationMarkerPath = null;
 
     private const DEFAULT_LOCK_PATH = 'local/backlog/backlog.lock';
     private const LOCK_TIMEOUT_SECONDS = 30;
@@ -85,6 +88,13 @@ final class BacklogRunner extends AbstractScriptRunner
         }
 
         try {
+            $pendingMigrations = $this->migrationGuard()->pendingMigrations();
+            if ($pendingMigrations !== []) {
+                $this->console->line($this->migrationGuard()->formatAlert($pendingMigrations));
+
+                return 1;
+            }
+
             $this->initializeLocalFiles();
 
             return $this->handleCommand($command, $commandArgs, $options);
@@ -157,6 +167,22 @@ final class BacklogRunner extends AbstractScriptRunner
                 throw new \RuntimeException(sprintf('Option --%s cannot be repeated.', BacklogCliOption::WORKTREE_DIR->value));
             }
             $this->worktreesRoot = $this->validateTestFileOverride((string) $worktreeDir, BacklogCliOption::WORKTREE_DIR->value);
+        }
+
+        if (isset($options[BacklogCliOption::MIGRATIONS_DIR->value])) {
+            $migrationsDir = $options[BacklogCliOption::MIGRATIONS_DIR->value];
+            if (is_array($migrationsDir)) {
+                throw new \RuntimeException(sprintf('Option --%s cannot be repeated.', BacklogCliOption::MIGRATIONS_DIR->value));
+            }
+            $this->migrationsDir = $this->validateTestFileOverride((string) $migrationsDir, BacklogCliOption::MIGRATIONS_DIR->value);
+        }
+
+        if (isset($options[BacklogCliOption::MIGRATION_MARKER_FILE->value])) {
+            $markerFile = $options[BacklogCliOption::MIGRATION_MARKER_FILE->value];
+            if (is_array($markerFile)) {
+                throw new \RuntimeException(sprintf('Option --%s cannot be repeated.', BacklogCliOption::MIGRATION_MARKER_FILE->value));
+            }
+            $this->migrationMarkerPath = $this->validateTestFileOverride((string) $markerFile, BacklogCliOption::MIGRATION_MARKER_FILE->value);
         }
     }
 
@@ -265,6 +291,14 @@ final class BacklogRunner extends AbstractScriptRunner
     private function reviewFilePath(): string
     {
         return $this->reviewFilePath ?? ($this->projectRoot . '/' . self::DEFAULT_REVIEW_FILE_PATH);
+    }
+
+    private function migrationGuard(): BacklogMigrationGuard
+    {
+        return new BacklogMigrationGuard(
+            $this->migrationsDir ?? ($this->projectRoot . '/' . BacklogMigrationGuard::DEFAULT_MIGRATIONS_DIR),
+            $this->migrationMarkerPath ?? ($this->projectRoot . '/' . BacklogMigrationGuard::DEFAULT_MARKER_PATH),
+        );
     }
 
     private function resolvedWorktreesRoot(): string

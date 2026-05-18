@@ -5,6 +5,10 @@
 
 Each migration is added here when its file is introduced, kept while it is active or applied, and moved to the retired section once its file has been deleted from the repository.
 
+`scripts/backlog.php` blocks every backlog command while a script under `scripts/migrations/` is not listed in `local/backlog/migrations.applied`. The error is a read-only system block for agents to report to the user, not an instruction for agents to run.
+
+Each migration script is responsible for appending its own filename to `local/backlog/migrations.applied` after successful execution. The backlog bootstrap never marks a migration as applied; it only seeds the marker for migrations that predate this convention and then checks for pending entries.
+
 ## Active migrations
 
 | Date introduced | Slug | Purpose | Remove after | Status |

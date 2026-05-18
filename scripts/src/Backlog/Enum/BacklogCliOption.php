@@ -31,6 +31,8 @@ enum BacklogCliOption: string
     case HELP = 'help';
     case INDEX = 'index';
     case MANAGER = 'manager';
+    case MIGRATION_MARKER_FILE = 'migration-marker-file';
+    case MIGRATIONS_DIR = 'migrations-dir';
     case NO_VERBOSE = 'no-verbose';
     case POSITION = 'position';
     case PR_BASE_BRANCH = 'pr-base-branch';
@@ -63,6 +65,8 @@ enum BacklogCliOption: string
             self::BOARD_FILE->value,
             self::REVIEW_FILE->value,
             self::WORKTREE_DIR->value,
+            self::MIGRATIONS_DIR->value,
+            self::MIGRATION_MARKER_FILE->value,
             self::PR_BASE_BRANCH->value,
         ];
     }
