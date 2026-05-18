@@ -26,6 +26,7 @@ The cross-role tooling and path rules in [`agent-workflow.md` — Tools And Path
 - `feature-unblock`
 - `list`
 - `base-update`
+- `entry-rebase`
 - `worktree-list`
 - `worktree-clean`
 - `worktree-restore`
