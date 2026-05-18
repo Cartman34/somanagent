@@ -17,8 +17,8 @@ use SoManAgent\Script\Backlog\Agent\Model\SessionInfo;
  *
  * Each concrete implementation covers one CLI tool (Claude, Codex, OpenCode, Gemini)
  * and handles the specifics of context injection, resume, and session discovery for
- * that tool. The framework in AgentStartCommand / AgentResumeCommand calls these
- * hooks in a fixed order defined by §7.0.1 of the backlog-agent spec.
+ * that tool. The framework in AgentStartCommand calls these hooks in a fixed order
+ * defined by §7.0.1 of the backlog-agent spec.
  */
 interface AgentClientLauncher
 {

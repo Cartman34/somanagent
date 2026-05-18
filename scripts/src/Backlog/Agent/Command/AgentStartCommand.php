@@ -36,7 +36,7 @@ use SoManAgent\Script\Backlog\Service\EntryRebaseService;
  *
  * When a sessions.json entry already exists for the requested code, start dispatches
  * automatically based on the observed liveness of that session:
- *   - Live session (driver isAlive + WA present) → re-attach (equivalent to the old resume)
+ *   - Live session (driver isAlive + WA present) → re-attach
  *   - Ghost session (driver dead or WA absent)   → silent cleanup, then create a new session
  *
  * Pass --force-new to drop a live session and force a fresh start.
@@ -372,7 +372,7 @@ final class AgentStartCommand extends AbstractAgentCommand
     }
 
     /**
-     * Re-attaches to an existing live session (equivalent to the old resume command).
+     * Re-attaches to an existing live session.
      *
      * Refuses if the PHP wrapper is still alive or the direct driver has a live client
      * process (which would start a second client instance). Reconstructs the reviewer WA

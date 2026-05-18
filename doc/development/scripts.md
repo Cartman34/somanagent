@@ -133,7 +133,6 @@ Subcommands:
 - `stop` - stop the recorded client session; also kills an orphan driver session (e.g. a tmux session) when no registry entry exists, which is the correct remedy for the "A live driver session already exists" error from `start`
 - `prune` - remove stale registry entries AND kill driver-side sessions with no registry entry; two complementary passes ensure full symmetry between the registry and the driver
 - `whoami` - display the current agent context
-- `resume` - resume the client stored in `agent-sessions.json`
 - `sessions` - list sessions exposed by the configured client
 
 ```bash
@@ -147,7 +146,6 @@ php scripts/backlog-agent.php start opencode --manager --code=m01
 php scripts/backlog-agent.php list
 php scripts/backlog-agent.php status --code=d04
 php scripts/backlog-agent.php stop --code=d04
-php scripts/backlog-agent.php resume --code=d04
 php scripts/backlog-agent.php whoami
 php scripts/backlog-agent.php sessions --code=d04
 ```
@@ -156,7 +154,7 @@ Notes:
 - `start` accepts `--tier=economy|balanced|premium`, `--effort=low|medium|high`, and `--model=<raw-name>`
 - default profile is `developer=balanced+medium`, `reviewer=balanced+medium`, `manager=premium+medium`
 - `--model` bypasses tier model selection and is mutually exclusive with `--tier`; canonical effort still applies on clients that support effort
-- after a developer auto-pick or reviewer auto-claim, `start` sends the role prompt from `scripts/resources/backlog-agent/launch-prompts.yaml` as the initial user message; manager, `resume`, reuse, and no-auto-pick paths send no launch prompt
+- after a developer auto-pick or reviewer auto-claim, `start` sends the role prompt from `scripts/resources/backlog-agent/launch-prompts.yaml` as the initial user message; manager, reuse, and no-auto-pick paths send no launch prompt
 - when the generated context contains an active entry (developer) or a reviewing entry (reviewer), the `next`/`review` keyword is omitted from the User Keywords section and an inline `## Workflow` section is injected with the role-specific steps to follow; `doc/development/agent-developer.md` and `doc/development/agent-reviewer.md` are intentionally left unchanged so the keywords remain documented for non-backlog-agent sessions
 - `claude` uses `--model` and `--effort`; Claude Code documents aliases such as `haiku`, `sonnet`, and `opus`
 - `codex` uses `--model` and `--config model_reasoning_effort="<level>"`; Codex config documents `model_reasoning_effort`
@@ -173,7 +171,7 @@ Notes:
 - `BACKLOG_AGENT_SESSION_DRIVER=tmux|direct` selects the session driver
 - `tmux` is the default driver and keeps the live client session recoverable after terminal or SSH disconnects; mouse mode and a 50 000-line scrollback buffer are applied automatically so the mouse wheel can scroll the pane history
 - `direct` is a degraded driver that keeps the previous interactive process behavior, without live terminal recovery
-- `resume` reads the client from `agent-sessions.json`; it does not accept a positional client argument
+
 
 Client option references:
 
