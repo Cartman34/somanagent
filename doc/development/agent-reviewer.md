@@ -35,7 +35,10 @@ The cross-role tooling and path rules in [`agent-workflow.md` — Tools And Path
 
 ## Workspace Rules
 
-- All reviewer steps run from your `WA`, which is the developer's `WA` you joined.
+- Everything you do happens inside your `WA` (the developer's `WA` you joined). The `WP` is off-limits — you have no read or write access to it from your session, even when a relative path looks like it might resolve there.
+- All relative paths printed by commands or shown in docs (e.g. `local/X`, `scripts/X`, `backend/X`) resolve against your `WA`, never against the `WP`. Treat any relative path as `WA`-relative.
+- If you encounter an inconsistency — an expected file is missing, a printed path does not match what you can see, a behavior contradicts the documented contract — **stop and report it to the user**. Do not guess, do not reconstruct a path from intuition, do not extrapolate to a different location. Surface the discrepancy and wait for instruction.
+- All reviewer steps run from your `WA`.
 - `WA`: read the code under review, inspect files, and run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php ...` — the proxy relays backlog state to `WP` automatically.
 - Never edit or commit code in the `WA` (see Do Not).
 

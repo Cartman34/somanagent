@@ -42,6 +42,9 @@ The cross-role tooling and path rules in [`agent-workflow.md` — Tools And Path
 
 ## Workspace Rules
 
+- Everything you do happens inside your `WA`. The `WP` is off-limits — you have no read or write access to it from your session, even when a relative path looks like it might resolve there.
+- All relative paths printed by commands or shown in docs (e.g. `local/X`, `scripts/X`, `backend/X`) resolve against your `WA`, never against the `WP`. Treat any relative path as `WA`-relative.
+- If you encounter an inconsistency — an expected file is missing, a printed path does not match what you can see, a behavior contradicts the documented contract — **stop and report it to the user**. Do not guess, do not reconstruct a path from intuition, do not extrapolate to a different location. Surface the discrepancy and wait for instruction.
 - All developer steps run from your `WA`.
 - `WA`: edit code, inspect files, run local git on the active branch, commit, and run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php ...` — the proxy relays backlog state to `WP` automatically.
 - Every developer backlog command must be prefixed exactly as `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php ...`.
