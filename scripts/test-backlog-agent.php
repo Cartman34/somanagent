@@ -33,6 +33,7 @@ use SoManAgent\Script\Backlog\Agent\Test\BacklogBoardServiceReviewingTest;
 use SoManAgent\Script\Backlog\Agent\Test\BoardYamlStorageTest;
 use SoManAgent\Script\Backlog\Agent\Test\BodyFilePathResolverTest;
 use SoManAgent\Script\Backlog\Agent\Test\BacklogAgentRunnerStrictOptionsTest;
+use SoManAgent\Script\Backlog\Agent\Test\BacklogAgentRunnerWiringTest;
 use SoManAgent\Script\Backlog\Agent\Test\ClaudeAgentLauncherTest;
 use SoManAgent\Script\Backlog\Agent\Test\CodexAgentLauncherTest;
 use SoManAgent\Script\Backlog\Agent\Test\DirectSessionDriverTest;
@@ -73,6 +74,7 @@ $suites = [
     'AgentCliOptionValidatorTest' => static fn(): int => (new AgentCliOptionValidatorTest())->run(),
     'AgentModelResolverTest' => static fn(): int => (new AgentModelResolverTest())->run(),
     'BacklogAgentRunnerStrictOptionsTest' => static fn(): int => (new BacklogAgentRunnerStrictOptionsTest())->run(),
+    'BacklogAgentRunnerWiringTest' => static fn(): int => (new BacklogAgentRunnerWiringTest())->run(),
     'BacklogWorktreeServiceTest' => static fn(): int => (new BacklogWorktreeServiceTest())->run(),
     'BacklogCommitGateCommandTest' => static fn(): int => (new BacklogCommitGateCommandTest())->run(),
     'BacklogPreCommitHookTest' => static fn(): int => (new BacklogPreCommitHookTest())->run(),

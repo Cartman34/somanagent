@@ -57,7 +57,7 @@ final class AgentStartCommand extends AbstractAgentCommand
     private BacklogCommandRunner $backlogCommandRunner;
     private ?AgentModelResolver $modelResolver;
     private AgentLaunchPromptResolver $launchPromptResolver;
-    private ?EntryRebaseService $entryRebaseService;
+    private EntryRebaseService $entryRebaseService;
 
     /**
      * @param string $projectRoot
@@ -75,9 +75,9 @@ final class AgentStartCommand extends AbstractAgentCommand
      * @param ProcessSignaler $signaler Used for ActiveSessionException liveness check
      * @param ProcessRunner $shellRunner Used to check for local changes in the worktree
      * @param BacklogCommandRunner $backlogCommandRunner Used to delegate review-next, review-cancel, work-start, and entry-release under the backlog lock
+     * @param EntryRebaseService $entryRebaseService Handles approved-entry rebase before developer session launch; use NullEntryRebaseService in tests that do not exercise the approved path
      * @param AgentModelResolver|null $modelResolver Resolves role/client model tier and effort into CLI args
      * @param AgentLaunchPromptResolver|null $launchPromptResolver Resolves role-specific initial prompts for auto-picked entries; defaults to the bundled scripts resource
-     * @param EntryRebaseService|null $entryRebaseService Handles approved-entry rebase before developer session launch; injected for testing
      */
     public function __construct(
         string $projectRoot,
@@ -95,9 +95,9 @@ final class AgentStartCommand extends AbstractAgentCommand
         ProcessSignaler $signaler,
         ProcessRunner $shellRunner,
         BacklogCommandRunner $backlogCommandRunner,
+        EntryRebaseService $entryRebaseService,
         ?AgentModelResolver $modelResolver = null,
         ?AgentLaunchPromptResolver $launchPromptResolver = null,
-        ?EntryRebaseService $entryRebaseService = null,
     ) {
         $this->projectRoot = $projectRoot;
         $this->worktreesRoot = $worktreesRoot;
@@ -114,11 +114,11 @@ final class AgentStartCommand extends AbstractAgentCommand
         $this->signaler = $signaler;
         $this->shellRunner = $shellRunner;
         $this->backlogCommandRunner = $backlogCommandRunner;
+        $this->entryRebaseService = $entryRebaseService;
         $this->modelResolver = $modelResolver;
         $this->launchPromptResolver = $launchPromptResolver ?? new AgentLaunchPromptResolver(
             dirname(__DIR__, 4) . '/resources/backlog-agent/launch-prompts.yaml',
         );
-        $this->entryRebaseService = $entryRebaseService;
     }
 
     /**
@@ -247,16 +247,13 @@ final class AgentStartCommand extends AbstractAgentCommand
 
                     if ($decision->isLauncherHandled()) {
                         // Approved entry: attempt rebase before launching the agent
-                        if ($this->entryRebaseService !== null) {
-                            $rebaseResult = $this->entryRebaseService->rebase($activeMatch->getEntry(), $worktree, $resumeBoard);
-                            if (!$rebaseResult->isConflict()) {
-                                echo $rebaseResult->getMessage() . "\n";
-                                return 0;
-                            }
-                            // Conflict: launch the agent with a dedicated conflict prompt
-                            $initialPrompt = $this->launchPromptResolver->resolveConflictPrompt();
+                        $rebaseResult = $this->entryRebaseService->rebase($activeMatch->getEntry(), $worktree, $resumeBoard);
+                        if (!$rebaseResult->isConflict()) {
+                            echo $rebaseResult->getMessage() . "\n";
+                            return 0;
                         }
-                        // When no EntryRebaseService is injected (test double), fall through to a silent launch
+                        // Conflict: launch the agent with a dedicated conflict prompt
+                        $initialPrompt = $this->launchPromptResolver->resolveConflictPrompt();
                     } else {
                         $initialPrompt = $decision->getPrompt();
                     }
