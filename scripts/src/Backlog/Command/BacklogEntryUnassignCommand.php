@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Command;
 
 use RuntimeException;
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
@@ -53,7 +54,7 @@ final class BacklogEntryUnassignCommand extends AbstractBacklogCommand
     public function handle(array $commandArgs, array $options): void
     {
         $actorRole = $this->permissionService->requireWorkflowRole();
-        $callerAgent = $options['agent'] ?? null;
+        $callerAgent = $options[BacklogCliOption::AGENT->value] ?? null;
         if (!is_string($callerAgent)) {
             throw new RuntimeException('Option --agent is required.');
         }

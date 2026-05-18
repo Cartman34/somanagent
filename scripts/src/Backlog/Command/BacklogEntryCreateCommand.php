@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
@@ -111,7 +112,7 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
             throw new \RuntimeException('entry-create no longer accepts inline task text. Use --body-file=<path> instead.');
         }
 
-        $featureRaw = $options['feature'] ?? null;
+        $featureRaw = $options[BacklogCliOption::FEATURE->value] ?? null;
         if ($featureRaw === null) {
             throw new \RuntimeException('entry-create requires --feature=<slug>.');
         }
@@ -123,7 +124,7 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
             throw new \RuntimeException('entry-create requires an explicit [feature-slug] scope.');
         }
 
-        $taskRaw = $options['task'] ?? null;
+        $taskRaw = $options[BacklogCliOption::TASK->value] ?? null;
         $task = null;
         if ($taskRaw !== null) {
             if (!is_string($taskRaw) || trim($taskRaw) === '') {
@@ -132,7 +133,7 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
             $task = $this->boardService->normalizeFeatureSlug(trim($taskRaw));
         }
 
-        $typeRaw = $options['type'] ?? null;
+        $typeRaw = $options[BacklogCliOption::TYPE->value] ?? null;
         if ($typeRaw === null) {
             throw new \RuntimeException(sprintf(
                 'entry-create requires --type=<%s>.',
@@ -158,7 +159,7 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
         }
         $type = $taskType->value;
 
-        $bodyFile = $options['body-file'] ?? null;
+        $bodyFile = $options[BacklogCliOption::BODY_FILE->value] ?? null;
         if ($bodyFile === null) {
             throw new \RuntimeException('entry-create requires --body-file=<path>.');
         }
@@ -225,7 +226,7 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
      */
     private function resolveEntryCreatePosition(array $options, int $entryCount): int
     {
-        $rawPosition = $options['position'] ?? self::POSITION_END;
+        $rawPosition = $options[BacklogCliOption::POSITION->value] ?? self::POSITION_END;
         if (is_array($rawPosition)) {
             throw new \RuntimeException('Option --position cannot be repeated.');
         }
@@ -246,10 +247,10 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
             return $entryCount;
         }
 
-        if (!array_key_exists('index', $options)) {
+        if (!array_key_exists(BacklogCliOption::INDEX->value, $options)) {
             throw new \RuntimeException('entry-create with --position=index requires --index=<1-based-position>.');
         }
-        $rawIndex = $options['index'];
+        $rawIndex = $options[BacklogCliOption::INDEX->value];
         if (is_array($rawIndex)) {
             throw new \RuntimeException('Option --index cannot be repeated.');
         }

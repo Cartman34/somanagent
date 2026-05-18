@@ -38,6 +38,7 @@ use SoManAgent\Script\Backlog\Agent\Service\AgentLaunchPromptResolver;
 use SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
 use SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 use SoManAgent\Script\Client\ConsoleClient;
@@ -129,7 +130,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
 
         $this->optionValidator()->assertCommandOptionsAccepted($subcommand, $cmd->getOptions(), $options);
 
-        if (isset($options['help'])) {
+        if (isset($options[BacklogCliOption::HELP->value])) {
             $this->printYamlCommandHelp($subcommand);
 
             return 0;

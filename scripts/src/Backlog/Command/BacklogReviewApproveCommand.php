@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
@@ -72,7 +73,7 @@ final class BacklogReviewApproveCommand extends AbstractBacklogCommand
         $review = $this->loadReviewFile();
 
         if (str_contains($reference, '/')) {
-            if (array_key_exists('body-file', $options)) {
+            if (array_key_exists(BacklogCliOption::BODY_FILE->value, $options)) {
                 throw new \RuntimeException('review-approve does not accept --body-file for task approvals.');
             }
 
@@ -92,7 +93,7 @@ final class BacklogReviewApproveCommand extends AbstractBacklogCommand
             return;
         }
 
-        $bodyFile = $options['body-file'] ?? null;
+        $bodyFile = $options[BacklogCliOption::BODY_FILE->value] ?? null;
         if (!is_string($bodyFile) || $bodyFile === '') {
             throw new \RuntimeException('review-approve requires --body-file=<path> for feature approvals.');
         }

@@ -10,6 +10,7 @@ namespace SoManAgent\Script\Backlog\Agent\Command;
 use SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Console;
@@ -69,8 +70,8 @@ final class AgentListCommand extends AbstractAgentCommand
      */
     public function handle(array $args, array $options): int
     {
-        $filterRunning = isset($options['running']);
-        $showAll = isset($options['all']);
+        $filterRunning = isset($options[BacklogCliOption::RUNNING->value]);
+        $showAll = isset($options[BacklogCliOption::ALL->value]);
 
         $sessions = $this->sessionService->load();
 

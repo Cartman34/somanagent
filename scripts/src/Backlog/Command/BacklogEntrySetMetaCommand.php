@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Enum\BacklogEntryMetaKey;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
@@ -33,7 +34,7 @@ final class BacklogEntrySetMetaCommand extends AbstractBacklogCommand
      *
      * @var list<string>
      */
-    private const ALLOWED_KEYS = ['database', 'dependency-update'];
+    private const ALLOWED_KEYS = [BacklogEntryMetaKey::DATABASE->value, BacklogEntryMetaKey::DEPENDENCY_UPDATE->value];
 
     /**
      * Valid scope values for the dependency-update key.
@@ -89,7 +90,7 @@ final class BacklogEntrySetMetaCommand extends AbstractBacklogCommand
             ));
         }
 
-        if ($key === 'dependency-update' && $value !== '') {
+        if ($key === BacklogEntryMetaKey::DEPENDENCY_UPDATE->value && $value !== '') {
             $this->validateDependencyUpdateValue($value);
         }
 

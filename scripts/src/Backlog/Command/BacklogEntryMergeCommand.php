@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntryMatch;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
@@ -105,12 +107,12 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
 
         $arguments = [$feature];
         $delegatedOptions = [];
-        if (array_key_exists('body-file', $options)) {
-            $delegatedOptions['body-file'] = $options['body-file'];
+        if (array_key_exists(BacklogCliOption::BODY_FILE->value, $options)) {
+            $delegatedOptions[BacklogCliOption::BODY_FILE->value] = $options[BacklogCliOption::BODY_FILE->value];
         }
-        $equivalentCommand = 'feature-merge' . ' ' . $feature;
-        if (isset($delegatedOptions['body-file']) && is_string($delegatedOptions['body-file'])) {
-            $equivalentCommand .= ' --body-file ' . $delegatedOptions['body-file'];
+        $equivalentCommand = BacklogCommandName::FEATURE_MERGE->value . ' ' . $feature;
+        if (isset($delegatedOptions[BacklogCliOption::BODY_FILE->value]) && is_string($delegatedOptions[BacklogCliOption::BODY_FILE->value])) {
+            $equivalentCommand .= ' --body-file ' . $delegatedOptions[BacklogCliOption::BODY_FILE->value];
         }
 
         $this->displayResolvedMerge(
@@ -130,7 +132,7 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
      */
     private function handleTaskMerge(BacklogBoard $board, string $reference, string $reviewer, array $options): void
     {
-        if (array_key_exists('body-file', $options)) {
+        if (array_key_exists(BacklogCliOption::BODY_FILE->value, $options)) {
             throw new \RuntimeException('entry-merge accepts --body-file only for feature merges.');
         }
 
@@ -145,7 +147,7 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
             $target,
             $target,
             $parentFeature,
-            'feature-task-merge' . ' ' . $target,
+            BacklogCommandName::FEATURE_TASK_MERGE->value . ' ' . $target,
         );
 
         $this->featureTaskMergeCommand->performMerge([$target], []);

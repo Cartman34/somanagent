@@ -43,6 +43,7 @@ enum BacklogCommandName: string
     case WORKTREE_CLEAN = 'worktree-clean';
     case WORKTREE_RESTORE = 'worktree-restore';
     case FEATURE_CLOSE = 'feature-close';
+    case FEATURE_MERGE = 'feature-merge';
     case USER_MERGE = 'user-merge';
     case ENTRY_REBASE = 'entry-rebase';
     case COMMIT_GATE = 'commit-gate';

@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
@@ -65,12 +67,12 @@ final class BacklogEntryRebaseCommand extends AbstractBacklogCommand
             throw new \RuntimeException('entry-rebase requires <slug>. Example: php scripts/backlog.php entry-rebase my-feature');
         }
 
-        $dryRun = isset($options['dry-run']);
+        $dryRun = isset($options[BacklogCliOption::DRY_RUN->value]);
 
         $board = $this->loadBoard();
 
         $match = str_contains($slug, '/')
-            ? $this->boardService->resolveTaskByReference($board, $slug, 'entry-rebase')
+            ? $this->boardService->resolveTaskByReference($board, $slug, BacklogCommandName::ENTRY_REBASE->value)
             : $this->boardService->resolveFeature($board, $this->boardService->normalizeFeatureSlug($slug));
 
         $entry = $match->getEntry();

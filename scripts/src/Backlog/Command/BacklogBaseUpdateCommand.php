@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
@@ -65,7 +66,7 @@ final class BacklogBaseUpdateCommand extends AbstractBacklogCommand
             throw new \RuntimeException(sprintf('Cannot update base: branch ref does not exist: %s.', $branch));
         }
 
-        $requestedBase = $options['base'] ?? null;
+        $requestedBase = $options[BacklogCliOption::BASE->value] ?? null;
         if ($requestedBase !== null && !is_string($requestedBase)) {
             throw new \RuntimeException('Option --base must be a string.');
         }

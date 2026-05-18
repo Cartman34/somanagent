@@ -7,6 +7,9 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Enum\BacklogEntryMetaKey;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
@@ -65,18 +68,18 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
     {
         $board = $this->loadBoard();
         $review = $this->loadReviewFile();
-        $agentOption = $options['agent'] ?? null;
+        $agentOption = $options[BacklogCliOption::AGENT->value] ?? null;
         $agent = is_string($agentOption) ? $this->boardService->sanitizeString($agentOption) : null;
         if ($agent !== null) {
             $match = isset($commandArgs[0])
-                ? $this->boardService->resolveTaskByReference($board, $commandArgs[0], 'feature-task-merge')
+                ? $this->boardService->resolveTaskByReference($board, $commandArgs[0], BacklogCommandName::FEATURE_TASK_MERGE->value)
                 : $this->boardService->resolveSingleTaskForAgent($board, $agent);
         } else {
             if ($this->boardService->sanitizeString($commandArgs[0] ?? null) === null) {
                 throw new \RuntimeException('feature-task-merge requires a full <entry-ref> when used without --agent.');
             }
 
-            $match = $this->boardService->resolveTaskByReference($board, $commandArgs[0], 'feature-task-merge');
+            $match = $this->boardService->resolveTaskByReference($board, $commandArgs[0], BacklogCommandName::FEATURE_TASK_MERGE->value);
         }
         $entry = $match->getEntry();
         $this->boardService->checkIsTaskEntry($entry) || throw new \RuntimeException('feature-task-merge only applies to kind=task entries.');
@@ -111,8 +114,8 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
         $this->boardService->removeActiveEntryAt($board, $match->getIndex());
         $this->invalidateFeatureReviewState($parent->getEntry());
         $review->clearReview($this->boardService->getTaskReviewKey($entry));
-        $this->saveBoard($board, 'feature-task-merge');
-        $this->saveReviewFile($review, 'feature-task-merge');
+        $this->saveBoard($board, BacklogCommandName::FEATURE_TASK_MERGE->value);
+        $this->saveReviewFile($review, BacklogCommandName::FEATURE_TASK_MERGE->value);
 
         if ($mergeContext['temporary']) {
             $this->worktreeService->removeTemporaryMergeWorktree($mergeContext['path']);
@@ -138,16 +141,16 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
     private function propagateDependencyUpdate(BoardEntry $taskEntry, BoardEntry $featureEntry): void
     {
         $taskMeta = $taskEntry->getExtraMetadata();
-        $taskScopes = $taskMeta['dependency-update'] ?? '';
+        $taskScopes = $taskMeta[BacklogEntryMetaKey::DEPENDENCY_UPDATE->value] ?? '';
         if ($taskScopes === '') {
             return;
         }
 
         $featureMeta = $featureEntry->getExtraMetadata();
-        $featureScopes = $featureMeta['dependency-update'] ?? '';
+        $featureScopes = $featureMeta[BacklogEntryMetaKey::DEPENDENCY_UPDATE->value] ?? '';
 
         $merged = $this->mergeScopesCsv($featureScopes, $taskScopes);
-        $featureMeta['dependency-update'] = $merged;
+        $featureMeta[BacklogEntryMetaKey::DEPENDENCY_UPDATE->value] = $merged;
         $featureEntry->setExtraMetadata($featureMeta);
     }
 
