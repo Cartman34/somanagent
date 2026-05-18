@@ -29,6 +29,16 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
 {
     private const NAME = 'test-backlog-workflow';
 
+    private const CAMPAIGN_BOARD_FORMAT_NORMALIZATION = self::CAMPAIGN_BOARD_FORMAT_NORMALIZATION;
+    private const CAMPAIGN_ENTRY_CREATE_FORMATS = self::CAMPAIGN_ENTRY_CREATE_FORMATS;
+    private const CAMPAIGN_WORK_START_TYPE_PREFIX = self::CAMPAIGN_WORK_START_TYPE_PREFIX;
+    private const CAMPAIGN_TODO_AND_PLAIN_FEATURE_LIFECYCLE = self::CAMPAIGN_TODO_AND_PLAIN_FEATURE_LIFECYCLE;
+    private const CAMPAIGN_SCOPED_TASK_LIFECYCLE = self::CAMPAIGN_SCOPED_TASK_LIFECYCLE;
+    private const CAMPAIGN_MUTATION_LOCK = self::CAMPAIGN_MUTATION_LOCK;
+    private const CAMPAIGN_PENDING_MIGRATION = self::CAMPAIGN_PENDING_MIGRATION;
+    private const CAMPAIGN_FEATURE_REVIEW_LIFECYCLE = self::CAMPAIGN_FEATURE_REVIEW_LIFECYCLE;
+    private const CAMPAIGN_USER_MERGE = self::CAMPAIGN_USER_MERGE;
+
     protected function getName(): string
     {
         return self::NAME;
@@ -150,28 +160,28 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
         if ($requestedCampaign === 'all') {
             $resolved = [
                 $campaigns['help'],
-                $campaigns['board-format-normalization'],
-                $campaigns['entry-create-formats'],
-                $campaigns['work-start-type-prefix'],
-                $campaigns['todo-and-plain-feature-lifecycle'],
-                $campaigns['scoped-task-lifecycle'],
+                $campaigns[self::CAMPAIGN_BOARD_FORMAT_NORMALIZATION],
+                $campaigns[self::CAMPAIGN_ENTRY_CREATE_FORMATS],
+                $campaigns[self::CAMPAIGN_WORK_START_TYPE_PREFIX],
+                $campaigns[self::CAMPAIGN_TODO_AND_PLAIN_FEATURE_LIFECYCLE],
+                $campaigns[self::CAMPAIGN_SCOPED_TASK_LIFECYCLE],
             ];
 
             if (!$this->dryRun) {
-                $resolved[] = $campaigns['mutation-lock'];
+                $resolved[] = $campaigns[self::CAMPAIGN_MUTATION_LOCK];
             } else {
                 $this->console->warn('Skipping mutation-lock because --dry-run is set.');
             }
 
-            $resolved[] = $campaigns['pending-migration'];
+            $resolved[] = $campaigns[self::CAMPAIGN_PENDING_MIGRATION];
 
             if ($allowRemote) {
-                $resolved[] = $campaigns['feature-review-lifecycle'];
+                $resolved[] = $campaigns[self::CAMPAIGN_FEATURE_REVIEW_LIFECYCLE];
             } else {
                 $this->console->warn('Skipping feature-review-lifecycle because --allow-remote is not enabled.');
             }
 
-            $resolved[] = $campaigns['user-merge'];
+            $resolved[] = $campaigns[self::CAMPAIGN_USER_MERGE];
 
             return $resolved;
         }
@@ -180,11 +190,11 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
             throw new \RuntimeException("Unknown campaign: {$requestedCampaign}");
         }
 
-        if ($requestedCampaign === 'feature-review-lifecycle' && !$allowRemote) {
+        if ($requestedCampaign === self::CAMPAIGN_FEATURE_REVIEW_LIFECYCLE && !$allowRemote) {
             throw new \RuntimeException('feature-review-lifecycle requires --allow-remote.');
         }
 
-        if ($requestedCampaign === 'mutation-lock' && $this->dryRun) {
+        if ($requestedCampaign === self::CAMPAIGN_MUTATION_LOCK && $this->dryRun) {
             throw new \RuntimeException('mutation-lock campaign cannot run in dry-run mode: the lock is skipped when --dry-run is set.');
         }
 
@@ -199,15 +209,15 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
         if ($this->campaigns === null) {
             $this->campaigns = [
                 'help' => new HelpCampaign(),
-                'board-format-normalization' => new BoardFormatNormalizationCampaign(),
-                'entry-create-formats' => new TaskCreateFormatsCampaign(),
-                'work-start-type-prefix' => new WorkStartTypePrefixCampaign(),
-                'todo-and-plain-feature-lifecycle' => new TodoAndPlainFeatureLifecycleCampaign(),
-                'scoped-task-lifecycle' => new ScopedTaskLifecycleCampaign(),
-                'mutation-lock' => new MutationLockCampaign(),
-                'pending-migration' => new PendingMigrationCampaign(),
-                'feature-review-lifecycle' => new FeatureReviewLifecycleCampaign(),
-                'user-merge' => new UserMergeCampaign(),
+                self::CAMPAIGN_BOARD_FORMAT_NORMALIZATION => new BoardFormatNormalizationCampaign(),
+                self::CAMPAIGN_ENTRY_CREATE_FORMATS => new TaskCreateFormatsCampaign(),
+                self::CAMPAIGN_WORK_START_TYPE_PREFIX => new WorkStartTypePrefixCampaign(),
+                self::CAMPAIGN_TODO_AND_PLAIN_FEATURE_LIFECYCLE => new TodoAndPlainFeatureLifecycleCampaign(),
+                self::CAMPAIGN_SCOPED_TASK_LIFECYCLE => new ScopedTaskLifecycleCampaign(),
+                self::CAMPAIGN_MUTATION_LOCK => new MutationLockCampaign(),
+                self::CAMPAIGN_PENDING_MIGRATION => new PendingMigrationCampaign(),
+                self::CAMPAIGN_FEATURE_REVIEW_LIFECYCLE => new FeatureReviewLifecycleCampaign(),
+                self::CAMPAIGN_USER_MERGE => new UserMergeCampaign(),
             ];
         }
 

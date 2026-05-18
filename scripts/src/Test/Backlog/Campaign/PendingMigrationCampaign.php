@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Test\Backlog\Campaign;
 
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
 
@@ -33,10 +34,10 @@ final class PendingMigrationCampaign implements CampaignInterface
         $this->writeMigration($context, self::PENDING_MIGRATION);
         $driver->assertBacklogFails(['list'], 'Migration pending - operator action required');
         $driver->assertBacklogFails(['status'], self::PENDING_MIGRATION);
-        $driver->assertBacklogFails(['todo-list'], 'MIGRATION_ALERT_END');
+        $driver->assertBacklogFails([BacklogCommandName::TODO_LIST->value], 'MIGRATION_ALERT_END');
 
         $this->markApplied($context, self::PENDING_MIGRATION);
-        $driver->runBacklog(['todo-list']);
+        $driver->runBacklog([BacklogCommandName::TODO_LIST->value]);
     }
 
     private function writeMigration(BacklogScriptTestContext $context, string $name): void

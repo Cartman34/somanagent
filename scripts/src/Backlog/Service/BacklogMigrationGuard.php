@@ -23,6 +23,10 @@ final class BacklogMigrationGuard
         '2026-05-18-backlog-dir.php',
     ];
 
+    /**
+     * @param string $migrationsDir Absolute path to the migrations directory
+     * @param string $markerPath    Absolute path to the applied-migrations marker file
+     */
     public function __construct(
         private string $migrationsDir,
         private string $markerPath,
@@ -70,7 +74,7 @@ final class BacklogMigrationGuard
         }
 
         $lines[] = '';
-        $lines[] = 'À remonter à l\'utilisateur ; ne pas exécuter cette commande depuis une session agent.';
+        $lines[] = 'Report to the user; do not run this command from an agent session.';
         $lines[] = self::ALERT_END_MARKER;
 
         return implode("\n", $lines);
@@ -93,7 +97,7 @@ final class BacklogMigrationGuard
         $names = array_map(static fn(string $path): string => basename($path), $files);
         sort($names);
 
-        return array_values($names);
+        return $names;
     }
 
     /**
