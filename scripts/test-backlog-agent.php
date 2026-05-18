@@ -58,45 +58,45 @@ foreach (array_slice($argv, 1) as $arg) {
     }
 }
 
-/** @var array<string, class-string> */
+/** @var array<string, callable(): int> */
 $suites = [
-    'AgentCodeServiceTest' => AgentCodeServiceTest::class,
-    'AgentSessionServiceTest' => AgentSessionServiceTest::class,
-    'AgentStartCommandManagerTest' => AgentStartCommandManagerTest::class,
-    'AgentContextBuilderTest' => AgentContextBuilderTest::class,
-    'AgentDeveloperSelectorTest' => AgentDeveloperSelectorTest::class,
-    'AgentReviewerSelectorTest' => AgentReviewerSelectorTest::class,
-    'BacklogBoardServiceReviewingTest' => BacklogBoardServiceReviewingTest::class,
-    'BoardYamlStorageTest' => BoardYamlStorageTest::class,
-    'BodyFilePathResolverTest' => BodyFilePathResolverTest::class,
-    'AgentClientLauncherRegistryTest' => AgentClientLauncherRegistryTest::class,
-    'AgentCliOptionValidatorTest' => AgentCliOptionValidatorTest::class,
-    'AgentModelResolverTest' => AgentModelResolverTest::class,
-    'BacklogAgentRunnerStrictOptionsTest' => BacklogAgentRunnerStrictOptionsTest::class,
-    'BacklogWorktreeServiceTest' => BacklogWorktreeServiceTest::class,
-    'BacklogCommitGateCommandTest' => BacklogCommitGateCommandTest::class,
-    'BacklogPreCommitHookTest' => BacklogPreCommitHookTest::class,
-    'BacklogReviewNextCommandTest' => BacklogReviewNextCommandTest::class,
-    'WorktreeScriptProxyTest' => WorktreeScriptProxyTest::class,
-    'ClaudeAgentLauncherTest' => ClaudeAgentLauncherTest::class,
-    'CodexAgentLauncherTest' => CodexAgentLauncherTest::class,
-    'DirectSessionDriverTest' => DirectSessionDriverTest::class,
-    'GeminiAgentLauncherTest' => GeminiAgentLauncherTest::class,
-    'LauncherFlagValidatorTest' => LauncherFlagValidatorTest::class,
-    'OpenCodeAgentLauncherTest' => OpenCodeAgentLauncherTest::class,
-    'SystemInteractiveProcessRunnerTest' => SystemInteractiveProcessRunnerTest::class,
-    'TmuxSessionDriverTest' => TmuxSessionDriverTest::class,
-    'AgentStopCommandTest' => AgentStopCommandTest::class,
-    'AgentResumeCommandTest' => AgentResumeCommandTest::class,
-    'AgentLaunchPromptResolverTest' => AgentLaunchPromptResolverTest::class,
-    'AgentStartCommandTest' => AgentStartCommandTest::class,
-    'EntryRebaseServiceTest' => EntryRebaseServiceTest::class,
-    'EntryRebaseCommandTest' => EntryRebaseCommandTest::class,
-    'AgentListCommandTest' => AgentListCommandTest::class,
-    'AgentStatusCommandTest' => AgentStatusCommandTest::class,
-    'AgentWhoamiCommandTest' => AgentWhoamiCommandTest::class,
-    'AgentSessionsCommandTest' => AgentSessionsCommandTest::class,
-    'BacklogAgentPruneCommandTest' => BacklogAgentPruneCommandTest::class,
+    'AgentCodeServiceTest' => static fn(): int => (new AgentCodeServiceTest())->run(),
+    'AgentSessionServiceTest' => static fn(): int => (new AgentSessionServiceTest())->run(),
+    'AgentStartCommandManagerTest' => static fn(): int => (new AgentStartCommandManagerTest())->run(),
+    'AgentContextBuilderTest' => static fn(): int => (new AgentContextBuilderTest())->run(),
+    'AgentDeveloperSelectorTest' => static fn(): int => (new AgentDeveloperSelectorTest())->run(),
+    'AgentReviewerSelectorTest' => static fn(): int => (new AgentReviewerSelectorTest())->run(),
+    'BacklogBoardServiceReviewingTest' => static fn(): int => (new BacklogBoardServiceReviewingTest())->run(),
+    'BoardYamlStorageTest' => static fn(): int => (new BoardYamlStorageTest())->run(),
+    'BodyFilePathResolverTest' => static fn(): int => (new BodyFilePathResolverTest())->run(),
+    'AgentClientLauncherRegistryTest' => static fn(): int => (new AgentClientLauncherRegistryTest())->run(),
+    'AgentCliOptionValidatorTest' => static fn(): int => (new AgentCliOptionValidatorTest())->run(),
+    'AgentModelResolverTest' => static fn(): int => (new AgentModelResolverTest())->run(),
+    'BacklogAgentRunnerStrictOptionsTest' => static fn(): int => (new BacklogAgentRunnerStrictOptionsTest())->run(),
+    'BacklogWorktreeServiceTest' => static fn(): int => (new BacklogWorktreeServiceTest())->run(),
+    'BacklogCommitGateCommandTest' => static fn(): int => (new BacklogCommitGateCommandTest())->run(),
+    'BacklogPreCommitHookTest' => static fn(): int => (new BacklogPreCommitHookTest())->run(),
+    'BacklogReviewNextCommandTest' => static fn(): int => (new BacklogReviewNextCommandTest())->run(),
+    'WorktreeScriptProxyTest' => static fn(): int => (new WorktreeScriptProxyTest())->run(),
+    'ClaudeAgentLauncherTest' => static fn(): int => (new ClaudeAgentLauncherTest())->run(),
+    'CodexAgentLauncherTest' => static fn(): int => (new CodexAgentLauncherTest())->run(),
+    'DirectSessionDriverTest' => static fn(): int => (new DirectSessionDriverTest())->run(),
+    'GeminiAgentLauncherTest' => static fn(): int => (new GeminiAgentLauncherTest())->run(),
+    'LauncherFlagValidatorTest' => static fn(): int => (new LauncherFlagValidatorTest())->run(),
+    'OpenCodeAgentLauncherTest' => static fn(): int => (new OpenCodeAgentLauncherTest())->run(),
+    'SystemInteractiveProcessRunnerTest' => static fn(): int => (new SystemInteractiveProcessRunnerTest())->run(),
+    'TmuxSessionDriverTest' => static fn(): int => (new TmuxSessionDriverTest())->run(),
+    'AgentStopCommandTest' => static fn(): int => (new AgentStopCommandTest())->run(),
+    'AgentResumeCommandTest' => static fn(): int => (new AgentResumeCommandTest())->run(),
+    'AgentLaunchPromptResolverTest' => static fn(): int => (new AgentLaunchPromptResolverTest())->run(),
+    'AgentStartCommandTest' => static fn(): int => (new AgentStartCommandTest())->run(),
+    'EntryRebaseServiceTest' => static fn(): int => (new EntryRebaseServiceTest())->run(),
+    'EntryRebaseCommandTest' => static fn(): int => (new EntryRebaseCommandTest())->run(),
+    'AgentListCommandTest' => static fn(): int => (new AgentListCommandTest())->run(),
+    'AgentStatusCommandTest' => static fn(): int => (new AgentStatusCommandTest())->run(),
+    'AgentWhoamiCommandTest' => static fn(): int => (new AgentWhoamiCommandTest())->run(),
+    'AgentSessionsCommandTest' => static fn(): int => (new AgentSessionsCommandTest())->run(),
+    'BacklogAgentPruneCommandTest' => static fn(): int => (new BacklogAgentPruneCommandTest())->run(),
 ];
 
 if ($suite !== null && !isset($suites[$suite])) {
@@ -107,10 +107,9 @@ $toRun = $suite !== null ? [$suite => $suites[$suite]] : $suites;
 
 $totalFailed = 0;
 
-foreach ($toRun as $name => $class) {
+foreach ($toRun as $name => $runner) {
     $console->line("▶ {$name}...");
-    $test = new $class();
-    $failed = $test->run();
+    $failed = $runner();
     $totalFailed += $failed;
     if ($failed === 0) {
         $console->ok("All tests passed.");

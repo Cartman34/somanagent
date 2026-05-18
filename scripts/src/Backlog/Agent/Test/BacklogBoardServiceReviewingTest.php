@@ -20,7 +20,6 @@ final class BacklogBoardServiceReviewingTest
 {
     /**
      * Runs all test cases and returns the total number of failures.
-     * @api
      */
     public function run(): int
     {

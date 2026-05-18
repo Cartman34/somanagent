@@ -33,7 +33,6 @@ final class BacklogWorktreeServiceTest
 
     /**
      * Runs all worktree service tests and returns the number of failures.
-     * @api
      */
     public function run(): int
     {

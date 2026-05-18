@@ -29,8 +29,6 @@ final class BacklogPreCommitHookTest
 
     /**
      * Runs all hook tests and returns the number of failures.
-     *
-     * @api
      */
     public function run(): int
     {

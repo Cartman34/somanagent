@@ -122,6 +122,12 @@ One-shot data or format migrations are not permanent tooling. They exist for a b
 - Migration scripts are not listed in [`scripts.md`](scripts.md) — that file documents permanent tooling. `migrations.md` is the sole user-facing surface for migrations.
 - `php scripts/migrations-audit.php` reports migrations whose retirement condition is met but whose file is still present.
 
+## No Dynamic Class Dispatch
+
+Do not resolve or instantiate classes from string variables (`new $class()`, `$class::method()`, variable-driven `call_user_func`). PHPStan cannot trace these calls, which turns every method only reachable via dynamic dispatch into a false-positive dead-code finding.
+
+Use a static dispatch map instead: a `callable(): int` (or equivalent) closure per entry, so every instantiation and method call is visible to the analyser. `scripts/test-backlog-agent.php` was refactored to follow this rule (feature `test-runner-static-dispatch`).
+
 ## Dead Code Detection
 
 PHPStan runs the `tomasvotruba/unused-public` extension on every analysis pass (both `--scope=scripts` and the full default run). It reports public methods, properties, and constants that have no caller or reader anywhere in the analysed paths.
