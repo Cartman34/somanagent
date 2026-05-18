@@ -116,9 +116,9 @@ final class PhpstanRunner extends AbstractScriptRunner
      */
     private function analyse(array $paths): int
     {
-        // --debug forces single-threaded mode, required on WSL2 where parallel worker IPC fails
+        // --no-progress: suppress per-file progress output so only errors are surfaced.
         $commandArgs = array_merge(
-            ['analyse', '--configuration', 'config/phpstan.neon', '--debug'],
+            ['analyse', '--configuration', 'config/phpstan.neon', '--no-progress'],
             $paths
         );
 
