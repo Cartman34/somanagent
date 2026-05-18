@@ -9,6 +9,7 @@ namespace SoManAgent\Script\Backlog\Agent\Command;
 
 use SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Console;
 
 /**
@@ -64,7 +65,7 @@ final class AgentStopCommand extends AbstractAgentCommand
             throw new \RuntimeException('--code=<code> is required.');
         }
 
-        $cleanup = isset($options['cleanup']);
+        $cleanup = isset($options[BacklogCliOption::CLEANUP->value]);
 
         $session = $this->sessionService->get($code);
         if ($session === null) {

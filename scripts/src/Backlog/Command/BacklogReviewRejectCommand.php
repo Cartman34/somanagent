@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
@@ -61,7 +62,7 @@ final class BacklogReviewRejectCommand extends AbstractBacklogCommand
             throw new \RuntimeException('review-reject requires <entry-ref>.');
         }
 
-        $bodyFile = $options['body-file'] ?? null;
+        $bodyFile = $options[BacklogCliOption::BODY_FILE->value] ?? null;
         if (!is_string($bodyFile) || $bodyFile === '') {
             throw new \RuntimeException('review-reject requires --body-file=<path>.');
         }

@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Service;
 
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Console;
 
 /**
@@ -153,7 +154,7 @@ final class BodyFilePathResolver
         try {
             $board = $this->boardService->loadBoard($this->boardPath);
             if (str_contains($entryRef, '/')) {
-                $match = $this->boardService->resolveTaskByReference($board, $entryRef, 'body-file');
+                $match = $this->boardService->resolveTaskByReference($board, $entryRef, BacklogCliOption::BODY_FILE->value);
             } else {
                 $slug = $this->boardService->normalizeFeatureSlug($entryRef);
                 $match = $this->boardService->findParentFeatureEntry($board, $slug);

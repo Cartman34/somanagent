@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
@@ -60,7 +61,7 @@ final class BacklogReviewNotesCommand extends AbstractBacklogCommand
      */
     public function handle(array $commandArgs, array $options): void
     {
-        $agent = $options['agent'] ?? null;
+        $agent = $options[BacklogCliOption::AGENT->value] ?? null;
         if ($agent !== null && !is_string($agent)) {
             throw new RuntimeException('Option --agent must be a string.');
         }

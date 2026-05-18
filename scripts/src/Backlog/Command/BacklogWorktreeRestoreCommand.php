@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
@@ -44,7 +45,7 @@ final class BacklogWorktreeRestoreCommand extends AbstractBacklogCommand
     public function handle(array $commandArgs, array $options): void
     {
         $board = $this->loadBoard();
-        $agent = $this->boardService->sanitizeString((string) ($options['agent'] ?? ''));
+        $agent = $this->boardService->sanitizeString((string) ($options[BacklogCliOption::AGENT->value] ?? ''));
         if ($agent === null) {
             throw new \RuntimeException('worktree-restore requires --agent=<code>.');
         }
@@ -63,7 +64,7 @@ final class BacklogWorktreeRestoreCommand extends AbstractBacklogCommand
             throw new \RuntimeException("Agent {$agent} has an active entry but no branch metadata.");
         }
 
-        if (isset($options['force'])) {
+        if (isset($options[BacklogCliOption::FORCE->value])) {
             $this->worktreeService->removeAgentWorktreeForRestore($agent);
         }
 

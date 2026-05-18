@@ -7,6 +7,9 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Enum\BacklogEntryMetaKey;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
@@ -77,20 +80,20 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         $board = $this->loadBoard();
         $review = $this->loadReviewFile();
         $bodyFile = null;
-        if (array_key_exists('body-file', $options)) {
-            $bodyFileOption = $options['body-file'];
+        if (array_key_exists(BacklogCliOption::BODY_FILE->value, $options)) {
+            $bodyFileOption = $options[BacklogCliOption::BODY_FILE->value];
             if (!is_string($bodyFileOption) || trim($bodyFileOption) === '') {
                 throw new \RuntimeException('Option --body-file requires a non-empty path when provided.');
             }
             $bodyFile = $bodyFileOption;
         }
 
-        $feature = $this->resolveFeatureReferenceArgument($board, $commandArgs, 'feature-merge');
+        $feature = $this->resolveFeatureReferenceArgument($board, $commandArgs, BacklogCommandName::FEATURE_MERGE->value);
 
         $match = $this->boardService->resolveFeature($board, $feature);
         $entry = $match->getEntry();
         $this->boardService->checkIsFeatureEntry($entry) || throw new \RuntimeException('feature-merge only applies to kind=feature entries.');
-        $this->boardService->assertNoActiveTasksForFeature($board, $feature, 'feature-merge');
+        $this->boardService->assertNoActiveTasksForFeature($board, $feature, BacklogCommandName::FEATURE_MERGE->value);
 
         if ($this->boardService->getFeatureStage($entry) !== BacklogBoard::STAGE_APPROVED) {
             throw new \RuntimeException(sprintf(
@@ -121,12 +124,12 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         $this->pullRequestService->mergePr($prNumber);
         $this->gitService->syncMainBranchAfterMerge();
 
-        $dependencyUpdate = $entry->getExtraMetadata()['dependency-update'] ?? '';
+        $dependencyUpdate = $entry->getExtraMetadata()[BacklogEntryMetaKey::DEPENDENCY_UPDATE->value] ?? '';
 
         $this->boardService->deleteFeature($board, $feature);
         $review->clearReview($feature);
-        $this->saveBoard($board, 'feature-merge');
-        $this->saveReviewFile($review, 'feature-merge');
+        $this->saveBoard($board, BacklogCommandName::FEATURE_MERGE->value);
+        $this->saveReviewFile($review, BacklogCommandName::FEATURE_MERGE->value);
 
         $cleaned = $this->worktreeService->cleanupManagedWorktreesForBranch($branch, $board);
         $this->gitService->deleteRemoteBranch($branch);

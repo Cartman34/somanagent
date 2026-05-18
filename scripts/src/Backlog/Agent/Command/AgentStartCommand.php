@@ -23,6 +23,7 @@ use SoManAgent\Script\Backlog\Agent\Service\AgentLaunchPromptResolver;
 use SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
 use SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
@@ -161,7 +162,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         }
 
         $role = $this->resolveRole($options);
-        $reset = isset($options['reset']);
+        $reset = isset($options[BacklogCliOption::RESET->value]);
         $tierOverride = $this->getSingleOption($options, 'tier');
         $effortOverride = $this->getSingleOption($options, 'effort');
         $modelOverride = $this->getSingleOption($options, 'model');
@@ -349,7 +350,7 @@ final class AgentStartCommand extends AbstractAgentCommand
      */
     private function prepareReviewerMode(array $options, string $reviewerCode): array
     {
-        $force = isset($options['force']);
+        $force = isset($options[BacklogCliOption::FORCE->value]);
         $featureOpt = $this->getSingleOption($options, 'feature');
         $taskOpt = $this->getSingleOption($options, 'task');
         $developerOpt = $this->getSingleOption($options, 'developer');
@@ -560,9 +561,9 @@ final class AgentStartCommand extends AbstractAgentCommand
      */
     private function resolveRole(array $options): AgentRole
     {
-        $isDeveloper = ($options['developer'] ?? null) === true;
-        $isReviewer = isset($options['reviewer']);
-        $isManager = isset($options['manager']);
+        $isDeveloper = ($options[BacklogCliOption::DEVELOPER->value] ?? null) === true;
+        $isReviewer = isset($options[BacklogCliOption::REVIEWER->value]);
+        $isManager = isset($options[BacklogCliOption::MANAGER->value]);
 
         $count = (int) $isDeveloper + (int) $isReviewer + (int) $isManager;
         if ($count === 0) {

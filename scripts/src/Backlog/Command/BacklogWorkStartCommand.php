@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
 use SoManAgent\Script\Backlog\Enum\BacklogTaskType;
@@ -68,7 +69,7 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
     public function handle(array $commandArgs, array $options): void
     {
         $agent = $this->requireCallerAgent();
-        $branchTypeOverride = is_string($options['branch-type'] ?? null) ? $options['branch-type'] : '';
+        $branchTypeOverride = is_string($options[BacklogCliOption::BRANCH_TYPE->value] ?? null) ? $options[BacklogCliOption::BRANCH_TYPE->value] : '';
         $explicitReference = $commandArgs[0] ?? null;
 
         $board = $this->loadBoard();

@@ -109,11 +109,17 @@ final class ReviewRunner extends AbstractScriptRunner
         $phpstanExitCode = $this->printPhpstanValidation($phpFiles);
         echo "\n";
 
+        $reusedLiterals = $this->collectReusedStringLiterals($phpFiles);
+        echo "=== Reused domain string literals (missing enum/constant) ===\n";
+        $this->printList($reusedLiterals);
+        echo "\n";
+
         $hasBlockers = $frenchHits !== [] || $missingPhpdoc !== [] || $missingJsdoc !== []
             || $validateExitCode !== 0
             || $translationExitCode !== 0
             || $backendTestsExitCode !== 0
-            || $phpstanExitCode !== 0;
+            || $phpstanExitCode !== 0
+            || $reusedLiterals !== [];
 
         return $hasBlockers ? 1 : 0;
     }
@@ -493,6 +499,59 @@ final class ReviewRunner extends AbstractScriptRunner
         exec($command . ' 2>&1', $lines, $code);
 
         return [$code, $lines];
+    }
+
+    /**
+     * Detects kebab-case PHP string literals repeated 2+ times in the same file.
+     *
+     * A kebab-case literal appearing multiple times in a single file is a signal that a
+     * BacklogCommandName or BacklogCliOption constant is missing. False positives are
+     * acceptable: the output points the developer toward the right enum.
+     *
+     * Skips enum/constant definition files so the source-of-truth itself is never flagged.
+     *
+     * @param string[] $phpFiles
+     * @return string[]
+     */
+    private function collectReusedStringLiterals(array $phpFiles): array
+    {
+        $hits = [];
+
+        foreach ($phpFiles as $path) {
+            if ($this->isStringLiteralExemptPath($path)) {
+                continue;
+            }
+
+            $lines = $this->readLines($path);
+            $counts = [];
+
+            foreach ($lines as $lineNum => $lineContent) {
+                preg_match_all('/(?<![A-Za-z_>])["\']([a-z][a-z0-9]*(?:-[a-z0-9]+)+)["\']/', $lineContent, $matches);
+                foreach ($matches[1] as $literal) {
+                    $counts[$literal][] = $lineNum + 1;
+                }
+            }
+
+            foreach ($counts as $literal => $lineNums) {
+                if (count($lineNums) >= 2) {
+                    $hits[] = sprintf(
+                        '%s  literal \'%s\' repeated %dx (lines %s) — use BacklogCommandName or BacklogCliOption',
+                        $path,
+                        $literal,
+                        count($lineNums),
+                        implode(', ', array_unique($lineNums)),
+                    );
+                }
+            }
+        }
+
+        return $hits;
+    }
+
+    private function isStringLiteralExemptPath(string $path): bool
+    {
+        return str_ends_with($path, 'Enum/BacklogCommandName.php')
+            || str_ends_with($path, 'Enum/BacklogCliOption.php');
     }
 
     /**

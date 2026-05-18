@@ -11,6 +11,7 @@ use SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
 use SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Console;
 
 /**
@@ -81,8 +82,8 @@ final class BacklogAgentPruneCommand extends AbstractAgentCommand
      */
     public function handle(array $args, array $options): int
     {
-        $dryRun = isset($options['dry-run']);
-        $force = isset($options['force']);
+        $dryRun = isset($options[BacklogCliOption::DRY_RUN->value]);
+        $force = isset($options[BacklogCliOption::FORCE->value]);
 
         $sessions = $this->sessionService->load();
         ksort($sessions);

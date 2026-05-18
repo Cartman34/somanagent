@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
@@ -52,7 +53,7 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
     public function handle(array $commandArgs, array $options): void
     {
         $board = $this->loadBoard();
-        $agent = $options['agent'] ?? null;
+        $agent = $options[BacklogCliOption::AGENT->value] ?? null;
         if (!is_string($agent) && $agent !== null) {
             throw new \RuntimeException('Option --agent must be a string.');
         }

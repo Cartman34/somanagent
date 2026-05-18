@@ -17,15 +17,29 @@ namespace SoManAgent\Script\Backlog\Enum;
 enum BacklogCliOption: string
 {
     case AGENT = 'agent';
+    case ALL = 'all';
+    case BASE = 'base';
     case BOARD_FILE = 'board-file';
     case BODY_FILE = 'body-file';
     case BRANCH_TYPE = 'branch-type';
+    case CLEANUP = 'cleanup';
+    case DEVELOPER = 'developer';
     case DRY_RUN = 'dry-run';
+    case FEATURE = 'feature';
+    case FORCE = 'force';
     case HELP = 'help';
+    case INDEX = 'index';
+    case MANAGER = 'manager';
     case NO_VERBOSE = 'no-verbose';
+    case POSITION = 'position';
     case PR_BASE_BRANCH = 'pr-base-branch';
+    case RESET = 'reset';
     case REVIEW_FILE = 'review-file';
+    case REVIEWER = 'reviewer';
+    case RUNNING = 'running';
+    case TASK = 'task';
     case TEST_MODE = 'test-mode';
+    case TYPE = 'type';
     case VERBOSE = 'verbose';
     case WORKTREE_DIR = 'worktree-dir';
 
