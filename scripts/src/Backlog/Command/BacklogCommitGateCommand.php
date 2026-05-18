@@ -63,7 +63,7 @@ final class BacklogCommitGateCommand extends AbstractBacklogCommand
             ));
         }
 
-        $stage = $entry->getStage() ?? BacklogBoard::STAGE_IN_PROGRESS;
+        $stage = $entry->getStage();
 
         if ($stage === BacklogBoard::STAGE_IN_PROGRESS) {
             return;

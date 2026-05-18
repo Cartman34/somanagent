@@ -49,6 +49,7 @@ final class BacklogCommitGateCommandTest
         $failed += $this->testBlocksRejectedStage();
         $failed += $this->testBlocksApprovedStage();
         $failed += $this->testBlocksWhenNoActiveEntry();
+        $failed += $this->testBlocksNullStage();
 
         return $failed;
     }
@@ -104,6 +105,32 @@ final class BacklogCommitGateCommandTest
         }
 
         echo "OK testBlocksWhenNoActiveEntry\n";
+        return 0;
+    }
+
+    private function testBlocksNullStage(): int
+    {
+        $path = $this->boardPath('null-stage');
+        if (!is_dir($this->testBoardDir)) {
+            mkdir($this->testBoardDir, 0o755, true);
+        }
+        // Entry exists but stage key is absent — getStage() returns null
+        $yaml = "version: 1\ntodo: []\nactive:\n  - kind: feature\n    feature: test-feature\n    agent: d99\n    branch: tech/test-feature\n    base: abc123\n    pr: none\n    type: tech\n    title: Test feature\n";
+        file_put_contents($path, $yaml);
+
+        $command = $this->createCommand($path, 'd99');
+        try {
+            $command->handle([], []);
+            echo "FAIL testBlocksNullStage: expected RuntimeException, none thrown\n";
+            return 1;
+        } catch (\RuntimeException $e) {
+            if (!str_contains($e->getMessage(), '❌ Commit blocked')) {
+                echo "FAIL testBlocksNullStage: expected '❌ Commit blocked' in message, got: {$e->getMessage()}\n";
+                return 1;
+            }
+        }
+
+        echo "OK testBlocksNullStage\n";
         return 0;
     }
 
