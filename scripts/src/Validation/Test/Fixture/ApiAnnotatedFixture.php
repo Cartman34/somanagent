@@ -11,7 +11,7 @@ namespace SoManAgent\Script\Validation\Test\Fixture;
  * Fixture: public method annotated with @api — no unused-public error.
  *
  * PHPStan does NOT report `public.method.unused` on intentionalApi() because of @api.
- * Run: php scripts/vendor/bin/phpstan analyse --configuration config/phpstan.neon scripts/src/Validation/Test/Fixture/ApiAnnotatedFixture.php
+ * Run: php scripts/vendor/bin/phpstan analyse --configuration config/phpstan-fixture.neon scripts/src/Validation/Test/Fixture/ApiAnnotatedFixture.php
  *
  * Expected: [OK] No errors
  */

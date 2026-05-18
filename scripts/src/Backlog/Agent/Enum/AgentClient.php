@@ -16,6 +16,4 @@ enum AgentClient: string
     case CODEX = 'codex';
     case OPENCODE = 'opencode';
     case GEMINI = 'gemini';
-
-
 }

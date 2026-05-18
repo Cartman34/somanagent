@@ -27,6 +27,4 @@ enum AgentRole: string
             self::MANAGER => 'm',
         };
     }
-
-
 }
