@@ -55,7 +55,7 @@ final class BacklogWorktreeServiceTest
         $agent = 'test-d10-review-pass-' . $this->uniqueToken();
         $worktreesRoot = $this->projectRoot . '/local/tests/worktree-service';
         $worktree = $worktreesRoot . '/' . $agent;
-        $fullReport = "FULL-REPORT-START\n" . str_repeat('x', 4096) . "\nFULL-REPORT-END\n";
+        $fullReport = "FULL-REPORT-START\n" . str_repeat('x', 4096) . "\nFULL-REPORT-END";
 
         try {
             $this->createReviewScriptFixture($worktree, $fullReport, 0);
@@ -98,7 +98,7 @@ final class BacklogWorktreeServiceTest
         $agent = 'test-d10-review-fail-' . $this->uniqueToken();
         $worktreesRoot = $this->projectRoot . '/local/tests/worktree-service';
         $worktree = $worktreesRoot . '/' . $agent;
-        $fullReport = "FAIL-REPORT-START\n" . str_repeat('y', 4096) . "\nFAIL-REPORT-END\n";
+        $fullReport = "FAIL-REPORT-START\n" . str_repeat('y', 4096) . "\nFAIL-REPORT-END";
 
         try {
             $this->createReviewScriptFixture($worktree, $fullReport, 7);
