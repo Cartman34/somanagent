@@ -61,7 +61,7 @@ use SoManAgent\Script\TextSlugger;
  */
 final class BacklogAgentRunner extends AbstractScriptRunner
 {
-    private const DEFAULT_BOARD_PATH = 'local/backlog-board.yaml';
+    private const DEFAULT_BOARD_PATH = 'local/backlog/backlog-board.yaml';
     private const DEFAULT_WORKTREES_DIR = '.agent-worktrees';
 
     /** @var array<string, AbstractAgentCommand>|null */
@@ -252,10 +252,10 @@ final class BacklogAgentRunner extends AbstractScriptRunner
     {
         if ($this->registry === null) {
             $this->registry = new AgentClientLauncherRegistry();
-            $this->registry->register(new ClaudeAgentLauncher());
-            $this->registry->register(new CodexAgentLauncher());
-            $this->registry->register(new OpenCodeAgentLauncher());
-            $this->registry->register(new GeminiAgentLauncher());
+            $this->registry->register(new ClaudeAgentLauncher(null, null, $this->projectRoot));
+            $this->registry->register(new CodexAgentLauncher(null, null, null, $this->projectRoot));
+            $this->registry->register(new OpenCodeAgentLauncher(null, $this->projectRoot));
+            $this->registry->register(new GeminiAgentLauncher(null, null, $this->projectRoot));
         }
 
         return $this->registry;

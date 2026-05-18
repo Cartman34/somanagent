@@ -51,6 +51,8 @@ final class OpenCodeAgentLauncherTest
         $failed += $this->testPrepareWorktreeIsIdempotent();
         $failed += $this->testPrepareWorktreeNormalizesNonArrayInstructions();
         $failed += $this->testPrepareWorktreePreservesOtherKeys();
+        $failed += $this->testPrepareWorktreeAddsBacklogPermission();
+        $failed += $this->testPrepareWorktreeIsBacklogPermissionIdempotent();
         $failed += $this->testBuildLaunchCommandInitial();
         $failed += $this->testBuildLaunchCommandInitialPrompt();
         $failed += $this->testBuildLaunchCommandContinue();
@@ -206,6 +208,47 @@ final class OpenCodeAgentLauncherTest
         }
 
         echo "OK testPrepareWorktreePreservesOtherKeys\n";
+
+        return 0;
+    }
+
+    private function testPrepareWorktreeAddsBacklogPermission(): int
+    {
+        $worktree = $this->makeWorktree('backlog-perm');
+        $launcher = new OpenCodeAgentLauncher($this->makeProcessRunner(true), '/wp-root');
+        $launcher->prepareWorktree($worktree, $worktree . '/local/agent-context.md');
+
+        $data = json_decode((string) file_get_contents($worktree . '/opencode.json'), true);
+        $pattern = '/wp-root/local/backlog/**';
+        $permission = $data['permission']['external_directory'][$pattern] ?? null;
+        if ($permission !== 'allow') {
+            echo "FAIL testPrepareWorktreeAddsBacklogPermission: expected allow permission for {$pattern}\n";
+
+            return 1;
+        }
+
+        echo "OK testPrepareWorktreeAddsBacklogPermission\n";
+
+        return 0;
+    }
+
+    private function testPrepareWorktreeIsBacklogPermissionIdempotent(): int
+    {
+        $worktree = $this->makeWorktree('backlog-perm-idempotent');
+        $launcher = new OpenCodeAgentLauncher($this->makeProcessRunner(true), '/wp-root');
+        $launcher->prepareWorktree($worktree, $worktree . '/local/agent-context.md');
+        $launcher->prepareWorktree($worktree, $worktree . '/local/agent-context.md');
+
+        $data = json_decode((string) file_get_contents($worktree . '/opencode.json'), true);
+        $externalDirectory = $data['permission']['external_directory'] ?? [];
+        $count = count(array_filter(array_keys($externalDirectory), static fn(int|string $k): bool => str_contains((string) $k, 'local/backlog')));
+        if ($count !== 1) {
+            echo "FAIL testPrepareWorktreeIsBacklogPermissionIdempotent: backlog permission duplicated (count={$count})\n";
+
+            return 1;
+        }
+
+        echo "OK testPrepareWorktreeIsBacklogPermissionIdempotent\n";
 
         return 0;
     }

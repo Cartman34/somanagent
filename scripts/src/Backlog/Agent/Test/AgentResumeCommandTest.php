@@ -321,7 +321,7 @@ final class AgentResumeCommandTest
     {
         $projectRoot = $this->createGitProject('reviewer-reconstruct');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.yaml';
+        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
         $expectedWorktree = $worktreesRoot . '/d04';
         mkdir(dirname($boardPath), 0755, true);
         $this->writeBoard($boardPath, [

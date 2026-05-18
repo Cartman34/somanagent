@@ -255,7 +255,7 @@ final class AgentCodeServiceTest
     {
         $projectRoot = $projectRoot ?? $this->tmpDir;
         $worktreesRoot = $worktreesRoot ?? ($this->tmpDir . '/worktrees-empty');
-        $boardPath = $projectRoot . '/local/backlog-board.yaml';
+        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
 
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         $sessionService = new AgentSessionService($projectRoot);

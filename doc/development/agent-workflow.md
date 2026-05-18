@@ -13,8 +13,8 @@ These rules apply to every agent role and every session. They override convenien
 
 ## Local Source Of Truth
 
-- Backlog board: `local/backlog-board.yaml`
-- Review state: `local/backlog-review.md`
+- Backlog board: `local/backlog/backlog-board.yaml`
+- Review state: `local/backlog/backlog-review.md`
 
 Rules:
 
@@ -195,7 +195,7 @@ The `dependency-update` extra-metadata key on a backlog entry declares which ins
 32. An agent can have at most one active entry at a time, either `kind=task` or `kind=feature`. `work-start` and `entry-assign` are enforced at the script level and refuse when the agent already has any active entry, with one exception: `work-start` allows starting a scoped child task when the agent's only active entry is the parent feature container for that task. The refusal message includes the current active entry and the required next step to unblock.
 33. PR merges use a standard merge by default. Squash merge is available on explicit user request only.
 34. `backlog.php` rejects unknown CLI options. Each command accepts the options declared in its `scripts/resources/backlog/commands/<command>.yaml` plus the global options `--dry-run`, `--verbose`, `--no-verbose`, `--help`, `--test-mode`, `--board-file`, `--review-file`, `--worktree-dir` and `--pr-base-branch`. Both the `--option=value` and `--option value` forms are validated. A typo such as `--as=<code>` instead of `--agent=<code>` produces an `Unknown option(s)` error instead of being silently ignored.
-35. Mutating `backlog.php` commands are serialised by a global WP-level advisory file lock (`local/tmp/backlog.lock`). The lock is acquired before the command runs and released immediately after. If the lock is already held by another concurrent invocation, the command waits up to 30 seconds and prints a waiting message once the first retry fires; it exits with an error if the lock cannot be acquired within that window. Read-only commands (`status`, `list`, `todo-list`, `worktree-list`, `review-notes`, `review-check`) and `--dry-run` invocations skip the lock entirely. In test mode the lock file is isolated per board file.
+35. Mutating `backlog.php` commands are serialised by a global WP-level advisory file lock (`local/backlog/backlog.lock`). The lock is acquired before the command runs and released immediately after. If the lock is already held by another concurrent invocation, the command waits up to 30 seconds and prints a waiting message once the first retry fires; it exits with an error if the lock cannot be acquired within that window. Read-only commands (`status`, `list`, `todo-list`, `worktree-list`, `review-notes`, `review-check`) and `--dry-run` invocations skip the lock entirely. In test mode the lock file is isolated per board file.
 
 ## Main Branch Sync
 

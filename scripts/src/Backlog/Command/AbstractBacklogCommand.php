@@ -67,7 +67,7 @@ abstract class AbstractBacklogCommand
 
     protected function loadBoard(?string $boardFile = null): BacklogBoard
     {
-        return $this->boardService->loadBoard($boardFile ?? $this->boardPath ?? ($this->projectRoot . '/local/backlog-board.yaml'));
+        return $this->boardService->loadBoard($boardFile ?? $this->boardPath ?? ($this->projectRoot . '/local/backlog/backlog-board.yaml'));
     }
 
     protected function saveBoard(BacklogBoard $board, string $reason): void
@@ -83,7 +83,7 @@ abstract class AbstractBacklogCommand
 
     protected function loadReviewFile(?string $reviewFile = null): BacklogReviewFile
     {
-        return $this->boardService->loadReviewFile($reviewFile ?? $this->reviewFilePath ?? ($this->projectRoot . '/local/backlog-review.md'));
+        return $this->boardService->loadReviewFile($reviewFile ?? $this->reviewFilePath ?? ($this->projectRoot . '/local/backlog/backlog-review.md'));
     }
 
     protected function saveReviewFile(BacklogReviewFile $review, string $reason): void
