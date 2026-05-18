@@ -34,11 +34,18 @@ final class OpenCodeAgentLauncher extends AbstractAgentClientLauncher
     private ProcessRunner $processRunner;
 
     /**
-     * @param ProcessRunner|null $processRunner Runner used for binary checks and session listing
+     * Absolute project root (WP path) used to whitelist `local/backlog/` in the opencode.json permission config.
      */
-    public function __construct(?ProcessRunner $processRunner = null)
+    private ?string $projectRoot;
+
+    /**
+     * @param ProcessRunner|null $processRunner Runner used for binary checks and session listing
+     * @param string|null $projectRoot Project root; when set, adds `local/backlog/**` allow permission to opencode.json
+     */
+    public function __construct(?ProcessRunner $processRunner = null, ?string $projectRoot = null)
     {
         $this->processRunner = $processRunner ?? new ShellProcessRunner();
+        $this->projectRoot = $projectRoot;
     }
 
     /**
@@ -95,6 +102,21 @@ final class OpenCodeAgentLauncher extends AbstractAgentClientLauncher
         }
 
         $data['instructions'] = array_values($instructions);
+
+        if ($this->projectRoot !== null) {
+            $backlogPattern = $this->projectRoot . '/local/backlog/**';
+            $permission = $data['permission'] ?? [];
+            if (!is_array($permission)) {
+                $permission = [];
+            }
+            $externalDirectory = $permission['external_directory'] ?? [];
+            if (!is_array($externalDirectory)) {
+                $externalDirectory = [];
+            }
+            $externalDirectory[$backlogPattern] = 'allow';
+            $permission['external_directory'] = $externalDirectory;
+            $data['permission'] = $permission;
+        }
 
         file_put_contents($configPath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
     }

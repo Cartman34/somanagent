@@ -22,8 +22,8 @@ final class BacklogRunner extends AbstractScriptRunner
 {
     private const NAME = 'backlog';
 
-    private const DEFAULT_BOARD_PATH = 'local/backlog-board.yaml';
-    private const DEFAULT_REVIEW_FILE_PATH = 'local/backlog-review.md';
+    private const DEFAULT_BOARD_PATH = 'local/backlog/backlog-board.yaml';
+    private const DEFAULT_REVIEW_FILE_PATH = 'local/backlog/backlog-review.md';
     private const DEFAULT_WORKTREES_DIR = '.agent-worktrees';
     private const LEGACY_WORKTREES_DIR = '.worktrees';
 
@@ -33,7 +33,7 @@ final class BacklogRunner extends AbstractScriptRunner
     private ?string $reviewFilePath = null;
     private ?string $worktreesRoot = null;
 
-    private const DEFAULT_LOCK_PATH = 'local/tmp/backlog.lock';
+    private const DEFAULT_LOCK_PATH = 'local/backlog/backlog.lock';
     private const LOCK_TIMEOUT_SECONDS = 30;
 
     private ?BacklogCommandFactory $commandFactory = null;

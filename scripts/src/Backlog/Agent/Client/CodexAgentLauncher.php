@@ -45,17 +45,24 @@ final class CodexAgentLauncher extends AbstractAgentClientLauncher
     private $warningWriter;
 
     /**
+     * Absolute project root (WP path) used to whitelist `local/backlog/` in the Codex sandbox.
+     */
+    private ?string $projectRoot;
+
+    /**
      * @param ProcessRunner|null $processRunner Runner used to check local binary availability
      * @param string|null $homeDir Home directory containing the .codex/sessions rollout store
      * @param callable(string): void|null $warningWriter Warning output hook for skipped compressed rollouts
+     * @param string|null $projectRoot Project root; when set, adds `local/backlog/` to the Codex sandbox whitelist
      */
-    public function __construct(?ProcessRunner $processRunner = null, ?string $homeDir = null, ?callable $warningWriter = null)
+    public function __construct(?ProcessRunner $processRunner = null, ?string $homeDir = null, ?callable $warningWriter = null, ?string $projectRoot = null)
     {
         $this->processRunner = $processRunner ?? new ShellProcessRunner();
         $this->homeDir = $homeDir;
         $this->warningWriter = $warningWriter ?? static function (string $message): void {
             fwrite(STDERR, $message);
         };
+        $this->projectRoot = $projectRoot;
     }
 
     /**
@@ -79,7 +86,7 @@ final class CodexAgentLauncher extends AbstractAgentClientLauncher
      */
     public function requiredCliFlags(): array
     {
-        return ['-C', '--last', '--model', '--config', '--ask-for-approval'];
+        return ['-C', '--last', '--model', '--config', '--ask-for-approval', '--add-dir'];
     }
 
     /**
@@ -95,6 +102,11 @@ final class CodexAgentLauncher extends AbstractAgentClientLauncher
         ?string $initialPrompt = null,
     ): array {
         $args = ['-C', $worktree, ...self::APPROVAL_FLAGS];
+
+        if ($this->projectRoot !== null) {
+            $args[] = '--add-dir';
+            $args[] = $this->projectRoot . '/local/backlog';
+        }
 
         if ($resumeSessionId !== null) {
             $args[] = 'resume';

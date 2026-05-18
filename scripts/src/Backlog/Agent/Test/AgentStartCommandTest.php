@@ -229,7 +229,7 @@ final class AgentStartCommandTest
     private function testTierOverrideIsForwardedToLauncher(): int
     {
         $projectRoot = $this->createGitProject('model-tier');
-        $this->writeBoard($projectRoot . '/local/backlog-board.yaml', [
+        $this->writeBoard($projectRoot . '/local/backlog/backlog-board.yaml', [
             [
                 'kind' => 'feature',
                 'stage' => 'development',
@@ -265,7 +265,7 @@ final class AgentStartCommandTest
     private function testClaudeEffortOverrideIsForwardedToLauncher(): int
     {
         $projectRoot = $this->createGitProject('model-effort');
-        $this->writeBoard($projectRoot . '/local/backlog-board.yaml', [
+        $this->writeBoard($projectRoot . '/local/backlog/backlog-board.yaml', [
             [
                 'kind' => 'feature',
                 'stage' => 'development',
@@ -301,7 +301,7 @@ final class AgentStartCommandTest
     private function testGeminiEffortOverridePrintsWarningWithoutEffortArg(): int
     {
         $projectRoot = $this->createGitProject('model-gemini-warning');
-        $this->writeBoard($projectRoot . '/local/backlog-board.yaml', [
+        $this->writeBoard($projectRoot . '/local/backlog/backlog-board.yaml', [
             [
                 'kind' => 'feature',
                 'stage' => 'development',
@@ -910,7 +910,7 @@ final class AgentStartCommandTest
     {
         $projectRoot = $this->createGitProject('reset-dirty');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.yaml';
+        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
         $worktree = $worktreesRoot . '/d05';
         if (!is_dir(dirname($boardPath))) {
             mkdir(dirname($boardPath), 0755, true);
@@ -969,7 +969,7 @@ final class AgentStartCommandTest
     {
         $projectRoot = $this->createGitProject('reset-clean');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.yaml';
+        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
         $worktree = $worktreesRoot . '/d06';
         $this->writeBoard($boardPath, [
             [
@@ -1040,7 +1040,7 @@ final class AgentStartCommandTest
         // the sessions.json entry must be kept so stop/list/status/resume can still reach the session.
         $projectRoot = $this->createGitProject('detach-keep');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.yaml';
+        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
         $worktree = $worktreesRoot . '/d07';
         $this->writeBoard($boardPath, [
             [
@@ -1123,7 +1123,7 @@ final class AgentStartCommandTest
         // start --developer must call work-start with the task's entry ref.
         $projectRoot = $this->createGitProject('dev-auto-pick');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.yaml';
+        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
 
         $this->writeBoard($boardPath, [], [
             ['feature' => 'my-feature', 'type' => 'feat', 'title' => 'Auto-pick task'],
@@ -1258,7 +1258,7 @@ final class AgentStartCommandTest
         // When the developer already has an active entry, start must not call work-start.
         $projectRoot = $this->createGitProject('dev-skip-pick');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.yaml';
+        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
 
         $this->writeBoard($boardPath, [
             [
@@ -1336,7 +1336,7 @@ final class AgentStartCommandTest
         // must call BacklogCommandRunner::entryRelease() to roll back the taken task.
         $projectRoot = $this->createGitProject('dev-rollback');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.yaml';
+        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
 
         $this->writeBoard($boardPath, [], [
             ['feature' => 'rollback-feature', 'type' => 'feat', 'title' => 'Task to auto-pick'],
@@ -1416,7 +1416,7 @@ final class AgentStartCommandTest
         // do not inherit a stale (potentially deleted) directory.
         $projectRoot = $this->createGitProject('cwd-restore-success');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.yaml';
+        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
         $worktree = $worktreesRoot . '/d14';
 
         $this->writeBoard($boardPath, [
@@ -1486,7 +1486,7 @@ final class AgentStartCommandTest
         // cwd — not the deleted worktree — so no "getcwd() failed" noise is emitted to the terminal.
         $projectRoot = $this->createGitProject('cwd-restore-deleted-wa');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.yaml';
+        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
         $worktree = $worktreesRoot . '/d15';
 
         $this->writeBoard($boardPath, [
@@ -1907,7 +1907,7 @@ final class AgentStartCommandTest
         AgentClientLauncher $launcher,
         ?AgentModelResolver $modelResolver = null,
     ): AgentStartCommand {
-        $boardPath = $projectRoot . '/local/backlog-board.yaml';
+        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         $sessionService = new AgentSessionService($projectRoot);
@@ -2021,7 +2021,7 @@ final class AgentStartCommandTest
     private function createGitProject(string $label): string
     {
         $projectRoot = $this->scratchDir($label);
-        mkdir($projectRoot . '/local', 0755, true);
+        mkdir($projectRoot . '/local/backlog', 0755, true);
         mkdir($projectRoot . '/scripts/vendor', 0755, true);
         mkdir($projectRoot . '/backend/vendor', 0755, true);
         mkdir($projectRoot . '/frontend/node_modules', 0755, true);

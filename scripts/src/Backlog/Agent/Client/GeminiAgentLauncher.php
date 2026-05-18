@@ -31,13 +31,20 @@ final class GeminiAgentLauncher extends AbstractAgentClientLauncher
     private ?string $homeDir;
 
     /**
+     * Absolute project root (WP path) used to whitelist `local/backlog/` via `--include-directories`.
+     */
+    private ?string $projectRoot;
+
+    /**
      * @param ProcessRunner|null $processRunner Runner used to check availability and list sessions
      * @param string|null $homeDir Home directory containing the .gemini session store
+     * @param string|null $projectRoot Project root; when set, adds `local/backlog/` to the Gemini sandbox via `--include-directories`
      */
-    public function __construct(?ProcessRunner $processRunner = null, ?string $homeDir = null)
+    public function __construct(?ProcessRunner $processRunner = null, ?string $homeDir = null, ?string $projectRoot = null)
     {
         $this->processRunner = $processRunner ?? new ShellProcessRunner();
         $this->homeDir = $homeDir;
+        $this->projectRoot = $projectRoot;
     }
 
     /**
@@ -61,7 +68,7 @@ final class GeminiAgentLauncher extends AbstractAgentClientLauncher
      */
     public function requiredCliFlags(): array
     {
-        return ['-r', '--model', '--prompt-interactive', '--approval-mode', '--skip-trust'];
+        return ['-r', '--model', '--prompt-interactive', '--approval-mode', '--skip-trust', '--include-directories'];
     }
 
     /**
@@ -91,15 +98,19 @@ final class GeminiAgentLauncher extends AbstractAgentClientLauncher
         ?ResolvedModel $resolvedModel = null,
         ?string $initialPrompt = null,
     ): array {
+        $backlogDirFlags = $this->projectRoot !== null
+            ? ['--include-directories', $this->projectRoot . '/local/backlog']
+            : [];
+
         if ($resumeSessionId !== null) {
-            return ['gemini', array_merge(self::PERMISSION_FLAGS, ['-r', $resumeSessionId])];
+            return ['gemini', array_merge(self::PERMISSION_FLAGS, $backlogDirFlags, ['-r', $resumeSessionId])];
         }
 
         if ($continueLast) {
-            return ['gemini', array_merge(self::PERMISSION_FLAGS, ['-r', 'latest'])];
+            return ['gemini', array_merge(self::PERMISSION_FLAGS, $backlogDirFlags, ['-r', 'latest'])];
         }
 
-        $args = array_merge(self::PERMISSION_FLAGS, $resolvedModel !== null ? $resolvedModel->cliArgs : []);
+        $args = array_merge(self::PERMISSION_FLAGS, $backlogDirFlags, $resolvedModel !== null ? $resolvedModel->cliArgs : []);
         if ($initialPrompt !== null) {
             $args[] = '--prompt-interactive';
             $args[] = $initialPrompt;

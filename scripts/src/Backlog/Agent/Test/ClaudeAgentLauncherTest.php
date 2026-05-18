@@ -52,6 +52,7 @@ final class ClaudeAgentLauncherTest
         $failed += $this->testBuildLaunchCommandContinue();
         $failed += $this->testBuildLaunchCommandResumeId();
         $failed += $this->testBuildLaunchCommandIncludesPermissionFlags();
+        $failed += $this->testBuildLaunchCommandIncludesBacklogDir();
         $failed += $this->testCaptureCurrentSessionId();
         $failed += $this->testListSessionsParsesClaudeJsonl();
 
@@ -203,6 +204,27 @@ final class ClaudeAgentLauncherTest
         }
 
         echo "OK testBuildLaunchCommandIncludesPermissionFlags\n";
+        return 0;
+    }
+
+    private function testBuildLaunchCommandIncludesBacklogDir(): int
+    {
+        $context = $this->writeContext('context backlog-dir');
+        $launcher = new ClaudeAgentLauncher($this->makeProcessRunner(true), $this->tmpDir, '/wp-root');
+
+        foreach ([
+            'initial' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER),
+            'continue' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, null, true),
+            'resume' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, 'session-x'),
+        ] as $mode => [, $args]) {
+            $idx = array_search('--add-dir', $args, true);
+            if ($idx === false || ($args[$idx + 1] ?? null) !== '/wp-root/local/backlog') {
+                echo "FAIL testBuildLaunchCommandIncludesBacklogDir ({$mode}): --add-dir /wp-root/local/backlog missing\n";
+                return 1;
+            }
+        }
+
+        echo "OK testBuildLaunchCommandIncludesBacklogDir\n";
         return 0;
     }
 

@@ -52,6 +52,7 @@ final class GeminiAgentLauncherTest
         $failed += $this->testBuildLaunchCommandContinue();
         $failed += $this->testBuildLaunchCommandResumeId();
         $failed += $this->testBuildLaunchCommandIncludesPermissionFlags();
+        $failed += $this->testBuildLaunchCommandIncludesBacklogDir();
         $failed += $this->testListSessionsFromGeminiTableOutput();
         $failed += $this->testListSessionsFromJsonOutput();
         $failed += $this->testListSessionsFallsBackToDirectory();
@@ -195,6 +196,26 @@ final class GeminiAgentLauncherTest
         }
 
         echo "OK testBuildLaunchCommandIncludesPermissionFlags\n";
+        return 0;
+    }
+
+    private function testBuildLaunchCommandIncludesBacklogDir(): int
+    {
+        $launcher = new GeminiAgentLauncher($this->makeProcessRunner(true), $this->tmpDir, '/wp-root');
+
+        foreach ([
+            'initial' => $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER),
+            'continue' => $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, null, true),
+            'resume' => $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, 'session-x'),
+        ] as $mode => [, $args]) {
+            $idx = array_search('--include-directories', $args, true);
+            if ($idx === false || ($args[$idx + 1] ?? null) !== '/wp-root/local/backlog') {
+                echo "FAIL testBuildLaunchCommandIncludesBacklogDir ({$mode}): --include-directories /wp-root/local/backlog missing\n";
+                return 1;
+            }
+        }
+
+        echo "OK testBuildLaunchCommandIncludesBacklogDir\n";
         return 0;
     }
 

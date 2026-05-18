@@ -52,7 +52,7 @@ final class BacklogReviewNotesCommand extends AbstractBacklogCommand
     }
 
     /**
-     * Resolves the target entry, loads its stored reviewer notes from local/backlog-review.md,
+     * Resolves the target entry, loads its stored reviewer notes from local/backlog/backlog-review.md,
      * and prints them inside the documented protected, read-only block. Never mutates backlog state.
      *
      * @param list<string> $commandArgs Optional positional reference: <entry-ref>

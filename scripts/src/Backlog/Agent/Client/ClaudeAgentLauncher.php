@@ -29,13 +29,20 @@ final class ClaudeAgentLauncher extends AbstractAgentClientLauncher
     private ?string $homeDir;
 
     /**
+     * Absolute project root (WP path) used to whitelist `local/backlog/` via `--add-dir`.
+     */
+    private ?string $projectRoot;
+
+    /**
      * @param ProcessRunner|null $processRunner Runner used to check the local Claude binary availability
      * @param string|null $homeDir Home directory containing the .claude/projects session store
+     * @param string|null $projectRoot Project root; when set, adds `local/backlog/` to the Claude sandbox via `--add-dir`
      */
-    public function __construct(?ProcessRunner $processRunner = null, ?string $homeDir = null)
+    public function __construct(?ProcessRunner $processRunner = null, ?string $homeDir = null, ?string $projectRoot = null)
     {
         $this->processRunner = $processRunner ?? new ShellProcessRunner();
         $this->homeDir = $homeDir;
+        $this->projectRoot = $projectRoot;
     }
 
     /**
@@ -59,7 +66,7 @@ final class ClaudeAgentLauncher extends AbstractAgentClientLauncher
      */
     public function requiredCliFlags(): array
     {
-        return ['--append-system-prompt', '--resume', '--continue', '--model', '--effort', '--permission-mode'];
+        return ['--append-system-prompt', '--resume', '--continue', '--model', '--effort', '--permission-mode', '--add-dir'];
     }
 
     /**
@@ -93,6 +100,11 @@ final class ClaudeAgentLauncher extends AbstractAgentClientLauncher
             $context,
             ...self::PERMISSION_FLAGS,
         ];
+
+        if ($this->projectRoot !== null) {
+            $args[] = '--add-dir';
+            $args[] = $this->projectRoot . '/local/backlog';
+        }
 
         if ($resolvedModel !== null) {
             $args = array_merge($args, $resolvedModel->cliArgs);
