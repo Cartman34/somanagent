@@ -22,26 +22,22 @@ use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 final class AgentCodeService
 {
     private string $worktreesRoot;
-    private string $projectRoot;
     private BacklogBoardService $boardService;
     private AgentSessionService $sessionService;
     private string $boardPath;
 
     /**
-     * @param string $projectRoot Absolute path to the main workspace
      * @param string $worktreesRoot Absolute path to the worktrees directory
      * @param string $boardPath Absolute path to the backlog board file
      * @param BacklogBoardService $boardService
      * @param AgentSessionService $sessionService
      */
     public function __construct(
-        string $projectRoot,
         string $worktreesRoot,
         string $boardPath,
         BacklogBoardService $boardService,
         AgentSessionService $sessionService,
     ) {
-        $this->projectRoot = $projectRoot;
         $this->worktreesRoot = $worktreesRoot;
         $this->boardPath = $boardPath;
         $this->boardService = $boardService;

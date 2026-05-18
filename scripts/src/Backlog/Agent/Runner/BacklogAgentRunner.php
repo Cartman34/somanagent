@@ -269,7 +269,6 @@ final class BacklogAgentRunner extends AbstractScriptRunner
     {
         if ($this->codeService === null) {
             $this->codeService = new AgentCodeService(
-                $this->projectRoot,
                 $worktreesRoot,
                 $boardPath,
                 $this->boardService(),
