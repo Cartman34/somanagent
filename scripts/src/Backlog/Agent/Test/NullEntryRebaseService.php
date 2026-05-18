@@ -22,9 +22,11 @@ use SoManAgent\Script\Backlog\Service\EntryRebaseService;
  */
 final class NullEntryRebaseService extends EntryRebaseService
 {
+    /**
+     * Skips parent construction — no real services are needed in this test double.
+     */
     public function __construct()
     {
-        // parent __construct skipped intentionally — no real services needed
     }
 
     /**
