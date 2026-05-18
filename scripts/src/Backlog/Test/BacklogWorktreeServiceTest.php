@@ -82,6 +82,13 @@ final class BacklogWorktreeServiceTest
                 echo "FAIL testPrepareAgentWorktreeDoesNotWriteUnderGitInternals: .git/info/exclude mtime changed\n";
                 return 1;
             }
+
+            // Pre-commit hook must NOT be placed in .git/hooks/ (shared dir, read-only in sandboxed environments).
+            $legacyHookPath = $worktree . '/.git/hooks/pre-commit';
+            if (is_file($legacyHookPath)) {
+                echo "FAIL testPrepareAgentWorktreeDoesNotWriteUnderGitInternals: pre-commit hook was written to .git/hooks/ (shared gitdir)\n";
+                return 1;
+            }
         } finally {
             $this->cleanupWorktree($worktree);
         }
@@ -162,13 +169,21 @@ final class BacklogWorktreeServiceTest
             $service = $this->createService($worktreesRoot);
             $service->prepareAgentWorktree($agent);
 
-            $hookPath = $worktree . '/.git/hooks/pre-commit';
+            // Hook must be placed in .githooks/ inside the WA, never in .git/hooks/.
+            $hookPath = $worktree . '/.githooks/pre-commit';
             if (!is_file($hookPath)) {
                 echo "FAIL testPrepareAgentWorktreeInstallsPreCommitHook: pre-commit hook not found at {$hookPath}\n";
                 return 1;
             }
             if (!is_executable($hookPath)) {
                 echo "FAIL testPrepareAgentWorktreeInstallsPreCommitHook: pre-commit hook is not executable\n";
+                return 1;
+            }
+
+            // git must be configured to look in .githooks/ for this WA.
+            $hooksPath = $this->captureGitConfig($worktree, 'core.hooksPath');
+            if ($hooksPath !== '.githooks') {
+                echo "FAIL testPrepareAgentWorktreeInstallsPreCommitHook: core.hooksPath is '{$hooksPath}', expected '.githooks'\n";
                 return 1;
             }
         } finally {
@@ -191,13 +206,19 @@ final class BacklogWorktreeServiceTest
             $service->prepareAgentWorktree($agent);
             $service->prepareAgentWorktree($agent);
 
-            $hookPath = $worktree . '/.git/hooks/pre-commit';
+            $hookPath = $worktree . '/.githooks/pre-commit';
             if (!is_file($hookPath)) {
                 echo "FAIL testPrepareAgentWorktreePreCommitHookIsIdempotent: pre-commit hook not found after second prepare\n";
                 return 1;
             }
             if (!is_executable($hookPath)) {
                 echo "FAIL testPrepareAgentWorktreePreCommitHookIsIdempotent: pre-commit hook is not executable after second prepare\n";
+                return 1;
+            }
+
+            $hooksPath = $this->captureGitConfig($worktree, 'core.hooksPath');
+            if ($hooksPath !== '.githooks') {
+                echo "FAIL testPrepareAgentWorktreePreCommitHookIsIdempotent: core.hooksPath is '{$hooksPath}' after second prepare, expected '.githooks'\n";
                 return 1;
             }
         } finally {
@@ -269,6 +290,7 @@ final class BacklogWorktreeServiceTest
             'frontend/node_modules/',
             'local/*',
             '!local/.gitignore',
+            '.githooks/',
             '',
         ]));
         file_put_contents($localDir . '/.gitignore', "*\n!.gitignore\n");
@@ -289,6 +311,19 @@ final class BacklogWorktreeServiceTest
             'git -C %s commit -m init',
             escapeshellarg($this->relativePath($worktree)),
         ));
+    }
+
+    private function captureGitConfig(string $worktree, string $key): string
+    {
+        $output = [];
+        $code = 0;
+        exec(sprintf(
+            'git -C %s config --get %s 2>&1',
+            escapeshellarg($this->relativePath($worktree)),
+            escapeshellarg($key),
+        ), $output, $code);
+
+        return trim(implode("\n", $output));
     }
 
     private function runCommand(string $command): void

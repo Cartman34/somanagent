@@ -273,6 +273,8 @@ An agent running in a session started by `backlog-agent.php` must:
 
 Every managed worktree receives a `pre-commit` git hook when `BacklogWorktreeService::prepareAgentWorktree` runs. The hook calls `php scripts/backlog.php commit-gate` (proxied to WP automatically) to check the stage of the active backlog entry before every commit. It blocks the commit and prints a descriptive message if the entry stage is not `development`. If the stage cannot be determined (no active entry, board unreachable), the hook fails safe and also blocks the commit. The hook only activates when `SOMANAGER_AGENT` is set and the working tree path matches the agent's managed WA; it is a no-op for any other context (e.g. commits made in WP without an agent session).
 
+The hook file is placed under `<WA>/.githooks/pre-commit` (inside the worktree directory, not in `.git/hooks/`). The WA-local git config entry `core.hooksPath = .githooks` tells git to look there instead of the shared `.git/hooks/` directory. This keeps the hook isolated to the specific WA and avoids any write to the shared `.git/` directory, which is read-only in sandboxed agent environments (e.g. Codex). The hook source lives at `scripts/resources/worktree-hooks/pre-commit` and is copied on each `prepareAgentWorktree` call (idempotent).
+
 ### Context File
 
 `<WA>/local/agent-context.md` is generated fresh on every `start` and `resume`. It is hidden from `git status` by the root `.gitignore` `local/*` pattern. Do not commit or push it.

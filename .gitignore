@@ -53,6 +53,7 @@ desktop.ini
 .worktrees/
 .agent-worktrees/
 .codex
+.githooks/
 
 # === Global ===
 !.gitkeep
