@@ -51,6 +51,10 @@ use SoManAgent\Script\TextSlugger;
  */
 final class AgentStartCommandTest
 {
+    private const FEATURE_CRYPTO = 'crypto-feature';
+    private const FEATURE_MY = 'my-feature';
+    private const FEATURE_ROLLBACK = 'rollback-feature';
+
     private string $tmpDir;
 
     /**
@@ -366,10 +370,10 @@ final class AgentStartCommandTest
             [
                 'kind' => 'feature',
                 'stage' => 'reviewing',
-                'feature' => 'crypto-feature',
+                'feature' => self::FEATURE_CRYPTO,
                 'agent' => 'd04',
                 'reviewer' => 'r01',
-                'branch' => 'feat/crypto-feature',
+                'branch' => 'feat/' . self::FEATURE_CRYPTO,
                 'type' => 'feat',
             ],
         ]);
@@ -450,7 +454,7 @@ final class AgentStartCommandTest
         $reloaded = $boardService->loadBoard($boardPath);
         $stillReviewing = false;
         foreach ($reloaded->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-            if ($entry->getFeature() === 'crypto-feature' && $entry->getStage() === 'reviewing') {
+            if ($entry->getFeature() === self::FEATURE_CRYPTO && $entry->getStage() === 'reviewing') {
                 $stillReviewing = true;
                 break;
             }
@@ -478,9 +482,9 @@ final class AgentStartCommandTest
             [
                 'kind' => 'feature',
                 'stage' => 'review',
-                'feature' => 'crypto-feature',
+                'feature' => self::FEATURE_CRYPTO,
                 'agent' => 'd04',
-                'branch' => 'feat/crypto-feature',
+                'branch' => 'feat/' . self::FEATURE_CRYPTO,
                 'type' => 'feat',
             ],
         ]);
@@ -497,7 +501,7 @@ final class AgentStartCommandTest
         $fakeRunner->onReviewNext = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
             $board = $boardService->loadBoard($boardPath);
             foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-                if ($entry->getFeature() === 'crypto-feature') {
+                if ($entry->getFeature() === self::FEATURE_CRYPTO) {
                     $entry->setStage(BacklogBoard::STAGE_REVIEWING);
                     $entry->setReviewer($reviewerCode);
                     $boardService->saveBoard($board);
@@ -540,7 +544,7 @@ final class AgentStartCommandTest
             echo "FAIL testReviewerModeCallsReviewNextWhenTakingEntry: review-next was not called\n";
             return 1;
         }
-        if ($fakeRunner->calls[0]['reviewerCode'] !== 'r01' || $fakeRunner->calls[0]['entryRef'] !== 'crypto-feature') {
+        if ($fakeRunner->calls[0]['reviewerCode'] !== 'r01' || $fakeRunner->calls[0]['entryRef'] !== self::FEATURE_CRYPTO) {
             echo "FAIL testReviewerModeCallsReviewNextWhenTakingEntry: unexpected args: "
                 . json_encode($fakeRunner->calls[0]) . "\n";
             return 1;
@@ -593,9 +597,9 @@ final class AgentStartCommandTest
             [
                 'kind' => 'feature',
                 'stage' => 'review',
-                'feature' => 'crypto-feature',
+                'feature' => self::FEATURE_CRYPTO,
                 'agent' => 'd04',
-                'branch' => 'feat/crypto-feature',
+                'branch' => 'feat/' . self::FEATURE_CRYPTO,
                 'type' => 'feat',
             ],
         ]);
@@ -614,7 +618,7 @@ final class AgentStartCommandTest
         $fakeRunner->onReviewNext = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
             $board = $boardService->loadBoard($boardPath);
             foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-                if ($entry->getFeature() === 'crypto-feature') {
+                if ($entry->getFeature() === self::FEATURE_CRYPTO) {
                     $entry->setStage(BacklogBoard::STAGE_REVIEWING);
                     $entry->setReviewer($reviewerCode);
                     $boardService->saveBoard($board);
@@ -626,7 +630,7 @@ final class AgentStartCommandTest
         $fakeRunner->onReviewCancel = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
             $board = $boardService->loadBoard($boardPath);
             foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-                if ($entry->getFeature() === 'crypto-feature') {
+                if ($entry->getFeature() === self::FEATURE_CRYPTO) {
                     $entry->setStage(BacklogBoard::STAGE_IN_REVIEW);
                     $entry->setReviewer(null);
                     $boardService->saveBoard($board);
@@ -685,7 +689,7 @@ final class AgentStartCommandTest
             echo "FAIL testReviewerModeRollsBackViaCancelWhenPreparationFails: review-cancel was not called\n";
             return 1;
         }
-        if ($cancelCall['reviewerCode'] !== 'r01' || $cancelCall['entryRef'] !== 'crypto-feature') {
+        if ($cancelCall['reviewerCode'] !== 'r01' || $cancelCall['entryRef'] !== self::FEATURE_CRYPTO) {
             echo "FAIL testReviewerModeRollsBackViaCancelWhenPreparationFails: unexpected cancel args: "
                 . json_encode($cancelCall) . "\n";
             return 1;
@@ -716,9 +720,9 @@ final class AgentStartCommandTest
             [
                 'kind' => 'feature',
                 'stage' => 'review',
-                'feature' => 'crypto-feature',
+                'feature' => self::FEATURE_CRYPTO,
                 'agent' => 'd04',
-                'branch' => 'feat/crypto-feature',
+                'branch' => 'feat/' . self::FEATURE_CRYPTO,
                 'type' => 'feat',
             ],
         ]);
@@ -747,7 +751,7 @@ final class AgentStartCommandTest
         $fakeRunner->onReviewNext = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
             $board = $boardService->loadBoard($boardPath);
             foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-                if ($entry->getFeature() === 'crypto-feature') {
+                if ($entry->getFeature() === self::FEATURE_CRYPTO) {
                     $entry->setStage(BacklogBoard::STAGE_REVIEWING);
                     $entry->setReviewer($reviewerCode);
                     $boardService->saveBoard($board);
@@ -816,9 +820,9 @@ final class AgentStartCommandTest
             [
                 'kind' => 'feature',
                 'stage' => 'review',
-                'feature' => 'crypto-feature',
+                'feature' => self::FEATURE_CRYPTO,
                 'agent' => 'd04',
-                'branch' => 'feat/crypto-feature',
+                'branch' => 'feat/' . self::FEATURE_CRYPTO,
                 'type' => 'feat',
             ],
         ]);
@@ -847,7 +851,7 @@ final class AgentStartCommandTest
         $fakeRunner->onReviewNext = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
             $board = $boardService->loadBoard($boardPath);
             foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-                if ($entry->getFeature() === 'crypto-feature') {
+                if ($entry->getFeature() === self::FEATURE_CRYPTO) {
                     $entry->setStage(BacklogBoard::STAGE_REVIEWING);
                     $entry->setReviewer($reviewerCode);
                     $boardService->saveBoard($board);
@@ -858,7 +862,7 @@ final class AgentStartCommandTest
         $fakeRunner->onReviewCancel = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
             $board = $boardService->loadBoard($boardPath);
             foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-                if ($entry->getFeature() === 'crypto-feature') {
+                if ($entry->getFeature() === self::FEATURE_CRYPTO) {
                     $entry->setStage(BacklogBoard::STAGE_IN_REVIEW);
                     $entry->setReviewer(null);
                     $boardService->saveBoard($board);
@@ -1138,7 +1142,7 @@ final class AgentStartCommandTest
         $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
 
         $this->writeBoard($boardPath, [], [
-            ['feature' => 'my-feature', 'type' => 'feat', 'title' => 'Auto-pick task'],
+            ['feature' => self::FEATURE_MY, 'type' => 'feat', 'title' => 'Auto-pick task'],
         ]);
 
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
@@ -1194,7 +1198,7 @@ final class AgentStartCommandTest
             echo "FAIL testDeveloperAutoPicksFirstQueuedTask: work-start was not called\n";
             return 1;
         }
-        if ($workStartCall['developerCode'] !== 'd08' || $workStartCall['entryRef'] !== 'my-feature') {
+        if ($workStartCall['developerCode'] !== 'd08' || $workStartCall['entryRef'] !== self::FEATURE_MY) {
             echo "FAIL testDeveloperAutoPicksFirstQueuedTask: unexpected work-start args: "
                 . json_encode($workStartCall) . "\n";
             return 1;
@@ -1354,7 +1358,7 @@ final class AgentStartCommandTest
         $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
 
         $this->writeBoard($boardPath, [], [
-            ['feature' => 'rollback-feature', 'type' => 'feat', 'title' => 'Task to auto-pick'],
+            ['feature' => self::FEATURE_ROLLBACK, 'type' => 'feat', 'title' => 'Task to auto-pick'],
         ]);
 
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
@@ -1415,7 +1419,7 @@ final class AgentStartCommandTest
             echo "FAIL testDeveloperRollsBackViaEntryReleaseWhenPreparationFails: entry-release was not called\n";
             return 1;
         }
-        if ($releaseCall['developerCode'] !== 'd10' || $releaseCall['entryRef'] !== 'rollback-feature') {
+        if ($releaseCall['developerCode'] !== 'd10' || $releaseCall['entryRef'] !== self::FEATURE_ROLLBACK) {
             echo "FAIL testDeveloperRollsBackViaEntryReleaseWhenPreparationFails: unexpected entry-release args: "
                 . json_encode($releaseCall) . "\n";
             return 1;
@@ -2149,6 +2153,7 @@ final class AgentStartCommandTest
             $signaler,
             new FakeProcessRunner(),
             new FakeBacklogCommandRunner(),
+            new NullEntryRebaseService(),
         );
 
         $previousCwd = getcwd();
@@ -2236,6 +2241,7 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             new FakeBacklogCommandRunner(),
+            new NullEntryRebaseService(),
         );
 
         $previousCwd = getcwd();
@@ -2333,6 +2339,7 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             new FakeBacklogCommandRunner(),
+            new NullEntryRebaseService(),
         );
 
         $previousCwd = getcwd();
@@ -2425,6 +2432,7 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             new FakeBacklogCommandRunner(),
+            new NullEntryRebaseService(),
         );
 
         $previousCwd = getcwd();
