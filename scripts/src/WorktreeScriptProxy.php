@@ -48,6 +48,13 @@ final class WorktreeScriptProxy
         }
 
         $dir = dirname($scriptPath);
+
+        // git sets GIT_DIR to the per-worktree directory when running hooks.
+        // This causes `git -C <subdir> rev-parse --show-toplevel` to return <subdir>
+        // instead of the worktree root, breaking relative-path detection. Clear it so
+        // git auto-discovers the repository from the filesystem.
+        putenv('GIT_DIR');
+
         $git = self::buildGitClient();
 
         $gitDir = $git->revParseInPath($dir, '--git-dir');
