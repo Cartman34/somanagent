@@ -1570,19 +1570,15 @@ final class AgentStartCommandTest
     {
         // Developer with entry at stage=review must get exit code 1 with a refusal message.
         $projectRoot = $this->createGitProject('dev-stage-review');
-        $boardPath = $projectRoot . '/local/backlog-board.md';
-
-        file_put_contents($boardPath,
-            "# T\n\n## To do\n\n## In progress\n\n"
-            . "- review-feature\n"
-            . "  meta:\n"
-            . "    kind: feature\n"
-            . "    feature: review-feature\n"
-            . "    branch: feat/review-feature\n"
-            . "    stage: review\n"
-            . "    agent: d20\n\n"
-            . "## Suggestions\n"
-        );
+        $this->writeBoard($projectRoot . '/local/backlog/backlog-board.yaml', [
+            [
+                'kind' => 'feature',
+                'stage' => 'review',
+                'feature' => 'review-feature',
+                'agent' => 'd20',
+                'branch' => 'feat/review-feature',
+            ],
+        ]);
 
         $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
         $cmd = $this->buildProjectCommand($projectRoot, $launcher);
@@ -1621,19 +1617,15 @@ final class AgentStartCommandTest
     {
         // Developer with entry at stage=reviewing must get exit code 1 with a refusal message.
         $projectRoot = $this->createGitProject('dev-stage-reviewing');
-        $boardPath = $projectRoot . '/local/backlog-board.md';
-
-        file_put_contents($boardPath,
-            "# T\n\n## To do\n\n## In progress\n\n"
-            . "- reviewing-feature\n"
-            . "  meta:\n"
-            . "    kind: feature\n"
-            . "    feature: reviewing-feature\n"
-            . "    branch: feat/reviewing-feature\n"
-            . "    stage: reviewing\n"
-            . "    agent: d21\n\n"
-            . "## Suggestions\n"
-        );
+        $this->writeBoard($projectRoot . '/local/backlog/backlog-board.yaml', [
+            [
+                'kind' => 'feature',
+                'stage' => 'reviewing',
+                'feature' => 'reviewing-feature',
+                'agent' => 'd21',
+                'branch' => 'feat/reviewing-feature',
+            ],
+        ]);
 
         $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
         $cmd = $this->buildProjectCommand($projectRoot, $launcher);
@@ -1674,20 +1666,18 @@ final class AgentStartCommandTest
         // must exit 0 without launching the agent.
         $projectRoot = $this->createGitProject('dev-approved-up-to-date');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
         $worktree = $worktreesRoot . '/d22';
 
-        file_put_contents($boardPath,
-            "# T\n\n## To do\n\n## In progress\n\n"
-            . "- approved-feature\n"
-            . "  meta:\n"
-            . "    kind: feature\n"
-            . "    feature: approved-feature\n"
-            . "    branch: feat/approved-feature\n"
-            . "    stage: approved\n"
-            . "    agent: d22\n\n"
-            . "## Suggestions\n"
-        );
+        $this->writeBoard($boardPath, [
+            [
+                'kind' => 'feature',
+                'stage' => 'approved',
+                'feature' => 'approved-feature',
+                'agent' => 'd22',
+                'branch' => 'feat/approved-feature',
+            ],
+        ]);
         $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' worktree add --detach ' . escapeshellarg($worktree) . ' HEAD');
 
         $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
@@ -1759,20 +1749,18 @@ final class AgentStartCommandTest
         // with the conflict-resolution prompt.
         $projectRoot = $this->createGitProject('dev-approved-conflict');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog-board.md';
+        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
         $worktree = $worktreesRoot . '/d23';
 
-        file_put_contents($boardPath,
-            "# T\n\n## To do\n\n## In progress\n\n"
-            . "- conflict-feature\n"
-            . "  meta:\n"
-            . "    kind: feature\n"
-            . "    feature: conflict-feature\n"
-            . "    branch: feat/conflict-feature\n"
-            . "    stage: approved\n"
-            . "    agent: d23\n\n"
-            . "## Suggestions\n"
-        );
+        $this->writeBoard($boardPath, [
+            [
+                'kind' => 'feature',
+                'stage' => 'approved',
+                'feature' => 'conflict-feature',
+                'agent' => 'd23',
+                'branch' => 'feat/conflict-feature',
+            ],
+        ]);
         $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' worktree add --detach ' . escapeshellarg($worktree) . ' HEAD');
 
         $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);

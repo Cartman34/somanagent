@@ -314,16 +314,16 @@ final class EntryRebaseServiceTest
         mkdir(dirname($worktree), 0755, true);
         $this->runShell("git -C {$root} worktree add {$worktree} feat/base-refresh");
 
-        $boardPath = $root . '/board.md';
+        $boardPath = $root . '/board.yaml';
         file_put_contents($boardPath,
-            "# Board\n\n## To do\n\n## In progress\n\n"
-            . "- base-refresh\n"
-            . "  meta:\n"
-            . "    kind: feature\n"
+            "version: 1\n"
+            . "todo: []\n"
+            . "active:\n"
+            . "  - kind: feature\n"
+            . "    stage: approved\n"
             . "    feature: base-refresh\n"
             . "    branch: feat/base-refresh\n"
-            . "    stage: approved\n\n"
-            . "## Suggestions\n"
+            . "    title: base-refresh\n"
         );
 
         $previousCwd = getcwd();
