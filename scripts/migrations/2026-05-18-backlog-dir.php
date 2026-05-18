@@ -26,6 +26,8 @@ declare(strict_types=1);
 $projectRoot = dirname(__DIR__, 2);
 
 $backlogDir = $projectRoot . '/local/backlog';
+$markerPath = $backlogDir . '/migrations.applied';
+$migrationName = basename(__FILE__);
 $oldBoard = $projectRoot . '/local/backlog-board.yaml';
 $newBoard = $backlogDir . '/backlog-board.yaml';
 $oldReview = $projectRoot . '/local/backlog-review.md';
@@ -59,5 +61,20 @@ $moveFile = static function (string $src, string $dst): void {
 
 $moveFile($oldBoard, $newBoard);
 $moveFile($oldReview, $newReview);
+
+$applied = is_file($markerPath) ? file($markerPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
+if ($applied === false) {
+    fwrite(STDERR, "ERROR: failed to read {$markerPath}\n");
+    exit(1);
+}
+if (!in_array($migrationName, $applied, true)) {
+    $applied[] = $migrationName;
+    sort($applied);
+    if (file_put_contents($markerPath, implode("\n", $applied) . "\n") === false) {
+        fwrite(STDERR, "ERROR: failed to update {$markerPath}\n");
+        exit(1);
+    }
+    echo "Marked applied: {$migrationName}\n";
+}
 
 echo "Done.\n";

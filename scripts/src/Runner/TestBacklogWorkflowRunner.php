@@ -15,6 +15,7 @@ use SoManAgent\Script\Test\Backlog\Campaign\CampaignInterface;
 use SoManAgent\Script\Test\Backlog\Campaign\FeatureReviewLifecycleCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\HelpCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\MutationLockCampaign;
+use SoManAgent\Script\Test\Backlog\Campaign\PendingMigrationCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\ScopedTaskLifecycleCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\TaskCreateFormatsCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\TodoAndPlainFeatureLifecycleCampaign;
@@ -27,6 +28,16 @@ use SoManAgent\Script\Test\Backlog\Campaign\WorkStartTypePrefixCampaign;
 final class TestBacklogWorkflowRunner extends AbstractScriptRunner
 {
     private const NAME = 'test-backlog-workflow';
+
+    private const CAMPAIGN_BOARD_FORMAT_NORMALIZATION = 'board-format-normalization';
+    private const CAMPAIGN_ENTRY_CREATE_FORMATS = 'entry-create-formats';
+    private const CAMPAIGN_WORK_START_TYPE_PREFIX = 'work-start-type-prefix';
+    private const CAMPAIGN_TODO_AND_PLAIN_FEATURE_LIFECYCLE = 'todo-and-plain-feature-lifecycle';
+    private const CAMPAIGN_SCOPED_TASK_LIFECYCLE = 'scoped-task-lifecycle';
+    private const CAMPAIGN_MUTATION_LOCK = 'mutation-lock';
+    private const CAMPAIGN_PENDING_MIGRATION = 'pending-migration';
+    private const CAMPAIGN_FEATURE_REVIEW_LIFECYCLE = 'feature-review-lifecycle';
+    private const CAMPAIGN_USER_MERGE = 'user-merge';
 
     protected function getName(): string
     {
@@ -45,7 +56,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
     {
         return array_merge(
             [
-                ['name' => '--campaign', 'description' => 'Campaign to run: help, board-format-normalization, todo-and-plain-feature-lifecycle, scoped-task-lifecycle, entry-create-formats, work-start-type-prefix, feature-review-lifecycle, mutation-lock, user-merge, or all'],
+                ['name' => '--campaign', 'description' => 'Campaign to run: help, board-format-normalization, todo-and-plain-feature-lifecycle, scoped-task-lifecycle, entry-create-formats, work-start-type-prefix, feature-review-lifecycle, mutation-lock, pending-migration, user-merge, or all'],
                 ['name' => '--allow-remote', 'description' => 'Allow campaigns that push branches or create/merge GitHub PRs'],
                 ['name' => '--allow-integration', 'description' => 'Allow steps that require Docker/app containers to be running (e.g. migrate --generate)'],
                 ['name' => '--keep-artifacts', 'description' => 'Keep test campaign artifacts under local/tests/ after execution'],
@@ -99,6 +110,8 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
             projectRoot: $this->projectRoot,
             boardPath: $this->projectRoot . '/local/tests/test-backlog-workflow-board.yaml',
             reviewPath: $this->projectRoot . '/local/tests/test-backlog-workflow-review.md',
+            migrationsDir: $this->projectRoot . '/local/tests/test-backlog-workflow-migrations',
+            migrationMarkerPath: $this->projectRoot . '/local/tests/test-backlog-workflow-migrations.applied',
             tmpDir: $this->projectRoot . '/local/tests',
             worktreesRoot: $worktreesRoot,
             allowIntegration: $allowIntegration,
@@ -147,26 +160,28 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
         if ($requestedCampaign === 'all') {
             $resolved = [
                 $campaigns['help'],
-                $campaigns['board-format-normalization'],
-                $campaigns['entry-create-formats'],
-                $campaigns['work-start-type-prefix'],
-                $campaigns['todo-and-plain-feature-lifecycle'],
-                $campaigns['scoped-task-lifecycle'],
+                $campaigns[self::CAMPAIGN_BOARD_FORMAT_NORMALIZATION],
+                $campaigns[self::CAMPAIGN_ENTRY_CREATE_FORMATS],
+                $campaigns[self::CAMPAIGN_WORK_START_TYPE_PREFIX],
+                $campaigns[self::CAMPAIGN_TODO_AND_PLAIN_FEATURE_LIFECYCLE],
+                $campaigns[self::CAMPAIGN_SCOPED_TASK_LIFECYCLE],
             ];
 
             if (!$this->dryRun) {
-                $resolved[] = $campaigns['mutation-lock'];
+                $resolved[] = $campaigns[self::CAMPAIGN_MUTATION_LOCK];
             } else {
                 $this->console->warn('Skipping mutation-lock because --dry-run is set.');
             }
 
+            $resolved[] = $campaigns[self::CAMPAIGN_PENDING_MIGRATION];
+
             if ($allowRemote) {
-                $resolved[] = $campaigns['feature-review-lifecycle'];
+                $resolved[] = $campaigns[self::CAMPAIGN_FEATURE_REVIEW_LIFECYCLE];
             } else {
                 $this->console->warn('Skipping feature-review-lifecycle because --allow-remote is not enabled.');
             }
 
-            $resolved[] = $campaigns['user-merge'];
+            $resolved[] = $campaigns[self::CAMPAIGN_USER_MERGE];
 
             return $resolved;
         }
@@ -175,11 +190,11 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
             throw new \RuntimeException("Unknown campaign: {$requestedCampaign}");
         }
 
-        if ($requestedCampaign === 'feature-review-lifecycle' && !$allowRemote) {
+        if ($requestedCampaign === self::CAMPAIGN_FEATURE_REVIEW_LIFECYCLE && !$allowRemote) {
             throw new \RuntimeException('feature-review-lifecycle requires --allow-remote.');
         }
 
-        if ($requestedCampaign === 'mutation-lock' && $this->dryRun) {
+        if ($requestedCampaign === self::CAMPAIGN_MUTATION_LOCK && $this->dryRun) {
             throw new \RuntimeException('mutation-lock campaign cannot run in dry-run mode: the lock is skipped when --dry-run is set.');
         }
 
@@ -194,14 +209,15 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
         if ($this->campaigns === null) {
             $this->campaigns = [
                 'help' => new HelpCampaign(),
-                'board-format-normalization' => new BoardFormatNormalizationCampaign(),
-                'entry-create-formats' => new TaskCreateFormatsCampaign(),
-                'work-start-type-prefix' => new WorkStartTypePrefixCampaign(),
-                'todo-and-plain-feature-lifecycle' => new TodoAndPlainFeatureLifecycleCampaign(),
-                'scoped-task-lifecycle' => new ScopedTaskLifecycleCampaign(),
-                'mutation-lock' => new MutationLockCampaign(),
-                'feature-review-lifecycle' => new FeatureReviewLifecycleCampaign(),
-                'user-merge' => new UserMergeCampaign(),
+                self::CAMPAIGN_BOARD_FORMAT_NORMALIZATION => new BoardFormatNormalizationCampaign(),
+                self::CAMPAIGN_ENTRY_CREATE_FORMATS => new TaskCreateFormatsCampaign(),
+                self::CAMPAIGN_WORK_START_TYPE_PREFIX => new WorkStartTypePrefixCampaign(),
+                self::CAMPAIGN_TODO_AND_PLAIN_FEATURE_LIFECYCLE => new TodoAndPlainFeatureLifecycleCampaign(),
+                self::CAMPAIGN_SCOPED_TASK_LIFECYCLE => new ScopedTaskLifecycleCampaign(),
+                self::CAMPAIGN_MUTATION_LOCK => new MutationLockCampaign(),
+                self::CAMPAIGN_PENDING_MIGRATION => new PendingMigrationCampaign(),
+                self::CAMPAIGN_FEATURE_REVIEW_LIFECYCLE => new FeatureReviewLifecycleCampaign(),
+                self::CAMPAIGN_USER_MERGE => new UserMergeCampaign(),
             ];
         }
 

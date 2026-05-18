@@ -43,8 +43,33 @@ if ($projectRoot === false) {
 
 $markdownPath = $projectRoot . '/local/backlog-board.md';
 $yamlPath = $projectRoot . '/local/backlog-board.yaml';
+$markerPath = $projectRoot . '/local/backlog/migrations.applied';
+$migrationName = basename(__FILE__);
+
+function markBacklogYamlMigrationApplied(string $markerPath, string $migrationName): void {
+    $markerDir = dirname($markerPath);
+    if (!is_dir($markerDir) && !mkdir($markerDir, 0755, true) && !is_dir($markerDir)) {
+        fwrite(STDERR, "[2026-05-17-backlog-yaml] Unable to create migration marker directory: {$markerDir}\n");
+        exit(1);
+    }
+    $applied = is_file($markerPath) ? file($markerPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
+    if ($applied === false) {
+        fwrite(STDERR, "[2026-05-17-backlog-yaml] Unable to read migration marker: {$markerPath}\n");
+        exit(1);
+    }
+    if (!in_array($migrationName, $applied, true)) {
+        $applied[] = $migrationName;
+        sort($applied);
+        if (file_put_contents($markerPath, implode("\n", $applied) . "\n") === false) {
+            fwrite(STDERR, "[2026-05-17-backlog-yaml] Unable to update migration marker: {$markerPath}\n");
+            exit(1);
+        }
+        fwrite(STDOUT, "[2026-05-17-backlog-yaml] Marked applied: {$migrationName}\n");
+    }
+}
 
 if (is_file($yamlPath)) {
+    markBacklogYamlMigrationApplied($markerPath, $migrationName);
     fwrite(STDOUT, "[2026-05-17-backlog-yaml] {$yamlPath} already exists — no-op (idempotent).\n");
     exit(0);
 }
@@ -260,4 +285,5 @@ if ($parsed['missingType'] !== []) {
 
 (new BoardYamlStorage())->save($parsed['board']);
 fwrite(STDOUT, "[2026-05-17-backlog-yaml] Wrote {$yamlPath}. Source {$markdownPath} left in place — remove it manually when satisfied.\n");
+markBacklogYamlMigrationApplied($markerPath, $migrationName);
 exit(0);
