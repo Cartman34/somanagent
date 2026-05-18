@@ -42,11 +42,9 @@ The cross-role tooling and path rules in [`agent-workflow.md` — Tools And Path
 
 ## Workspace Rules
 
-- `WA`: edit code, inspect files, run local git on the active branch, and commit.
-- `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php ...` and read local workflow state when needed.
+- All developer steps run from your `WA`.
+- `WA`: edit code, inspect files, run local git on the active branch, commit, and run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php ...` — the proxy relays backlog state to `WP` automatically.
 - Every developer backlog command must be prefixed exactly as `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php ...`.
-- When one step is prefixed with `WP:`, the working directory must be `WP`.
-- When one step is prefixed with `WA:`, the working directory must be the active agent `WA`.
 - Forbidden for `Developer`: `php scripts/console.php`, `php scripts/node.php`, `php scripts/db.php`, `php scripts/server.php`, `php scripts/health.php`, `php scripts/github.php`, and any script that talks to containers, runtime, database, network, or GitHub.
 - Exception: `php scripts/migrate.php` (and `--generate`) is allowed to apply and generate Doctrine migrations. Run it from the `WA`. See [Commands](commands.md#create-a-new-migration) for details.
 - `php scripts/migrate.php --generate` runs entirely locally (no Docker, no `psql`): it uses PHP/PDO and `php bin/console` to manage and query the temporary database on `localhost:5432`. Any local execution error (PHP cannot connect to the database, or Doctrine failure) must be escalated immediately to the user. Report: the PHP DSN attempted, the working directory, the exact error output, and the action expected (e.g. start the Docker PostgreSQL service). Do not mask the blocker, retry silently, or let it be discovered by the reviewer.
@@ -308,49 +306,49 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 
 ### `next`
 
-1. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php todo-list` and read the first entry's `<entry-ref>` (the value in brackets at the start of each line).
-2. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php work-start <entry-ref>`. The explicit reference is required for agent-driven flows so that target selection is unambiguous and a concurrent agent cannot consume a different head between read and mutation.
-3. `WA`: implement the feature scope on the branch checked out for that task.
-4. `WA`: inspect the local diff and fix issues in scope before moving on.
-5. `WA`: run self-challenge cycles per the Responsibilities rule; fix and re-challenge until a full pass yields no findings.
-6. `WA`: run `git add .`.
-7. `WA`: run `git commit -m "[<feature-slug>] ..."` using the canonical feature identifier recorded in the backlog metadata and branch name.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php todo-list` and read the first entry's `<entry-ref>` (the value in brackets at the start of each line).
+2. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php work-start <entry-ref>`. The explicit reference is required for agent-driven flows so that target selection is unambiguous and a concurrent agent cannot consume a different head between read and mutation.
+3. Implement the feature scope on the branch checked out for that task.
+4. Inspect the local diff and fix issues in scope before moving on.
+5. Run self-challenge cycles per the Responsibilities rule; fix and re-challenge until a full pass yields no findings.
+6. Run `git add .`.
+7. Run `git commit -m "[<feature-slug>] ..."` using the canonical feature identifier recorded in the backlog metadata and branch name.
 8. Report to the user a brief summary of self-challenge cycles: dimensions checked, issues found, fixes applied.
 
 ### `submit`
 
-1. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php review-request`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php review-request`.
 2. For `kind=feature`, this keyword still applies only after all child `kind=task` entries have already been merged locally, and after `entry-assign` has been run to take integration ownership.
 
 ### `merge`
 
-1. `WP`: if the active entry is `kind=task`, run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-merge <entry-ref>`.
+1. If the active entry is `kind=task`, run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-merge <entry-ref>`.
 2. This keyword merges the local task only on explicit user instruction; it is not implied by `submit`.
 
 ### `rework`
 
 1. Use this keyword in two scenarios: (a) after a reviewer rejection, and (b) after a merge conflict aborted `entry-merge` on an approved entry.
 2. For scenario (a), the review feedback is given with the `rework` instruction. The `rework` command output prints the stored review notes directly; do not run `status` or read `local/backlog-review.md` before proceeding.
-3. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php rework [<entry-ref>]`.
-4. `WA`: resume development on the same branch. Address the review feedback for scenario (a), or resolve the conflict for scenario (b).
-5. `WA`: run self-challenge cycles per the Responsibilities rule (same cadence as in `next`); fix and re-challenge until a full pass yields no findings, then report a brief summary to the user.
+3. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php rework [<entry-ref>]`.
+4. Resume development on the same branch. Address the review feedback for scenario (a), or resolve the conflict for scenario (b).
+5. Run self-challenge cycles per the Responsibilities rule (same cadence as in `next`); fix and re-challenge until a full pass yields no findings, then report a brief summary to the user.
 6. Stop here. Do not run `submit` unless the user explicitly asks for it.
 
 ### `rebase`
 
 This keyword applies only when the active entry is in `development` stage. Refuse and report if the entry is in any other stage.
 
-1. `WA`: run the rebase against the entry's parent branch. There is one standard procedure — never invent a different one.
+1. Run the rebase against the entry's parent branch. There is one standard procedure — never invent a different one.
    - For a `kind=feature`: `git fetch origin main` then `git rebase origin/main`.
    - For a `kind=task`: `git fetch origin <parent-feature-branch>` then `git rebase <parent-feature-branch>` (the parent branch name comes from the entry's `feature` mapped through the project branch convention).
 2. If the rebase reports conflicts: resolve them file by file in the `WA`, then `git add <file>` and `git rebase --continue`. Repeat until the rebase finishes. Never `git rebase --abort` unless the user explicitly asks for it.
-3. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php base-update <entry-ref>` to refresh `base`.
+3. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php base-update <entry-ref>` to refresh `base`.
 4. Stop. Do not run `submit` unless the user explicitly asks for it.
 
 ### `cleanup`
 
-1. `WP`: run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-clean`.
-2. `WP`: use `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-list` only when you need a cleanup diagnostic outside the standard workflow.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-clean`.
+2. Use `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-list` only when you need a cleanup diagnostic outside the standard workflow.
 
 ## Réouverture d'un WA selon le stage
 
@@ -375,10 +373,10 @@ Quand le stage est `approved`, le launcher invoque `entry-rebase` en mode automa
 - **Conflit** : laisse le worktree en état "rebase in progress", lance l'agent avec le prompt dédié "Le rebase de la branche est en conflit, le contexte liste les fichiers concernés ; résous les conflits puis push avec `git push --force-with-lease`".
 
 Pour résoudre manuellement un rebase en conflit sans relancer le launcher :
-1. `WA`: résoudre les conflits dans les fichiers listés.
-2. `WA`: `git rebase --continue` (ou `git rebase --abort` pour annuler).
-3. `WA`: `git push --force-with-lease`.
-4. `WP`: `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php base-update <entry-ref>` pour rafraîchir `meta.base`.
+1. Résoudre les conflits dans les fichiers listés.
+2. `git rebase --continue` (ou `git rebase --abort` pour annuler).
+3. `git push --force-with-lease`.
+4. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php base-update <entry-ref>` pour rafraîchir `meta.base`.
 
 Pour vérifier ou déclencher le rebase manuellement depuis la ligne de commande :
 ```

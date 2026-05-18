@@ -31,7 +31,13 @@ The cross-role tooling and path rules in [`agent-workflow.md` — Tools And Path
 - validate completed work
 - manage backlog additions
 - handle PR updates, push, and merge workflow on existing feature branches
-- run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php ...` from `WP` only; backlog commands are not allowed from `WA`
+- run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php ...` from your reviewer `WA` (the developer's `WA` you joined); the proxy relays backlog state to `WP` automatically
+
+## Workspace Rules
+
+- All reviewer steps run from your `WA`, which is the developer's `WA` you joined.
+- `WA`: read the code under review, inspect files, and run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php ...` — the proxy relays backlog state to `WP` automatically.
+- Never edit or commit code in the `WA` (see Do Not).
 
 ## Do Not
 
