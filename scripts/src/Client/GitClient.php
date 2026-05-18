@@ -320,21 +320,6 @@ final class GitClient
     }
 
     /**
-     * @param list<string> $files
-     */
-    public function updateIndexAssumeUnchanged(string $path, array $files): void
-    {
-        if ($files === []) {
-            return;
-        }
-
-        $this->run($this->inPath(
-            $path,
-            'update-index --assume-unchanged -- ' . implode(' ', array_map('escapeshellarg', $files))
-        ));
-    }
-
-    /**
      * Gets the commit hash (HEAD) of a local branch.
      *
      * @param string $branch Branch name
@@ -620,29 +605,6 @@ final class GitClient
     public function advanceLocalBranch(string $branch, string $to): void
     {
         $this->run(sprintf('git branch -f %s %s', escapeshellarg($branch), escapeshellarg($to)));
-    }
-
-    /**
-     * Gets the Git internal path for a subpath in a repository.
-     *
-     * @param string $path Repository path
-     * @param string $subPath Subpath to resolve (e.g., "hooks", "info")
-     * @return string The resolved git path
-     */
-    public function getGitPath(string $path, string $subPath): string
-    {
-        return trim($this->captureReadonly($this->inPath($path, sprintf('rev-parse --git-path %s', escapeshellarg($subPath)))));
-    }
-
-    /**
-     * @return list<string>
-     */
-    public function getTrackedFiles(string $path, string $dir): array
-    {
-        return array_values(array_filter(explode("\n", trim($this->captureReadonly($this->inPath(
-            $path,
-            sprintf('ls-files %s', escapeshellarg($dir))
-        ))))));
     }
 
     /**

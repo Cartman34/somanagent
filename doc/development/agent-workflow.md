@@ -272,7 +272,7 @@ An agent running in a session started by `backlog-agent.php` must:
 
 ### Context File
 
-`<WA>/local/agent-context.md` is generated fresh on every `start` and `resume`. It is hidden from `git status` via `.git/info/exclude` of the WA. Do not commit or push it.
+`<WA>/local/agent-context.md` is generated fresh on every `start` and `resume`. It is hidden from `git status` by the root `.gitignore` `local/*` pattern. Do not commit or push it.
 
 ### Strict CLI Options
 

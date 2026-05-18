@@ -49,7 +49,7 @@ final class AgentContextBuilderTest
         $failed += $this->testContainsTitleSection();
         $failed += $this->testContainsWorkingDirectory();
         $failed += $this->testContainsNoActiveTaskWhenBoardAbsent();
-        $failed += $this->testContextExcludeAdded();
+        $failed += $this->testGitInternalsNotTouched();
         $failed += $this->testReviewerContextShowsNoReviewWhenBoardAbsent();
         $failed += $this->testReviewerContextShowsNoReviewWhenNoReviewingEntry();
         $failed += $this->testReviewerContextShowsCurrentReview();
@@ -64,7 +64,6 @@ final class AgentContextBuilderTest
     private function testFileIsCreated(): int
     {
         $worktree = $this->tmpDir . '/wt-create-' . uniqid('', true);
-        mkdir($worktree . '/.git/info', 0755, true);
         $builder = $this->makeBuilder();
 
         $path = $builder->build($worktree, 'd01', AgentRole::DEVELOPER);
@@ -82,7 +81,6 @@ final class AgentContextBuilderTest
     private function testContainsTitleSection(): int
     {
         $worktree = $this->tmpDir . '/wt-title-' . uniqid('', true);
-        mkdir($worktree . '/.git/info', 0755, true);
         $builder = $this->makeBuilder();
 
         $path = $builder->build($worktree, 'd42', AgentRole::MANAGER);
@@ -101,7 +99,6 @@ final class AgentContextBuilderTest
     private function testContainsWorkingDirectory(): int
     {
         $worktree = $this->tmpDir . '/wt-wd-' . uniqid('', true);
-        mkdir($worktree . '/.git/info', 0755, true);
         $builder = $this->makeBuilder();
 
         $path = $builder->build($worktree, 'd01', AgentRole::DEVELOPER);
@@ -120,7 +117,6 @@ final class AgentContextBuilderTest
     private function testContainsNoActiveTaskWhenBoardAbsent(): int
     {
         $worktree = $this->tmpDir . '/wt-notask-' . uniqid('', true);
-        mkdir($worktree . '/.git/info', 0755, true);
         $builder = $this->makeBuilder();
 
         $path = $builder->build($worktree, 'd01', AgentRole::DEVELOPER);
@@ -136,27 +132,33 @@ final class AgentContextBuilderTest
         return 0;
     }
 
-    private function testContextExcludeAdded(): int
+    private function testGitInternalsNotTouched(): int
     {
-        $worktree = $this->tmpDir . '/wt-exclude-' . uniqid('', true);
+        $worktree = $this->tmpDir . '/wt-no-git-write-' . uniqid('', true);
         mkdir($worktree . '/.git/info', 0755, true);
-        $builder = $this->makeBuilder();
+        // Pre-existing exclude with sentinel content the builder must not modify.
+        $excludeFile = $worktree . '/.git/info/exclude';
+        $sentinel = "# sentinel kept\n";
+        file_put_contents($excludeFile, $sentinel);
+        $excludeMtime = filemtime($excludeFile);
+        clearstatcache();
 
+        $builder = $this->makeBuilder();
         $builder->build($worktree, 'd01', AgentRole::DEVELOPER);
 
-        $excludeFile = $worktree . '/.git/info/exclude';
-        if (!is_file($excludeFile)) {
-            echo "FAIL testContextExcludeAdded: exclude file not created\n";
+        clearstatcache();
+        $actual = (string) file_get_contents($excludeFile);
+        if ($actual !== $sentinel) {
+            echo "FAIL testGitInternalsNotTouched: .git/info/exclude was modified\n";
             $this->rmdir($worktree);
             return 1;
         }
-        $exclude = (string) file_get_contents($excludeFile);
-        if (!str_contains($exclude, 'local/agent-context.md')) {
-            echo "FAIL testContextExcludeAdded: pattern not in exclude file\n";
+        if (filemtime($excludeFile) !== $excludeMtime) {
+            echo "FAIL testGitInternalsNotTouched: .git/info/exclude mtime changed\n";
             $this->rmdir($worktree);
             return 1;
         }
-        echo "OK testContextExcludeAdded\n";
+        echo "OK testGitInternalsNotTouched\n";
         $this->rmdir($worktree);
         return 0;
     }
@@ -164,7 +166,6 @@ final class AgentContextBuilderTest
     private function testReviewerContextShowsNoReviewWhenBoardAbsent(): int
     {
         $worktree = $this->tmpDir . '/wt-reviewer-noboard-' . uniqid('', true);
-        mkdir($worktree . '/.git/info', 0755, true);
         $builder = $this->makeBuilder();
 
         $path = $builder->build($worktree, 'r01', AgentRole::REVIEWER);
@@ -188,7 +189,6 @@ final class AgentContextBuilderTest
         file_put_contents($boardPath, $this->boardWithFeatureAtReview('some-feature', 'd01'));
 
         $worktree = $projectRoot . '/wt';
-        mkdir($worktree . '/.git/info', 0755, true);
 
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         $builder = new AgentContextBuilder($projectRoot, $boardPath, $boardService);
@@ -214,7 +214,6 @@ final class AgentContextBuilderTest
         file_put_contents($boardPath, $this->boardWithFeatureAtReviewing('my-feature', 'd04', 'r01'));
 
         $worktree = $projectRoot . '/wt';
-        mkdir($worktree . '/.git/info', 0755, true);
 
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         $builder = new AgentContextBuilder($projectRoot, $boardPath, $boardService);
@@ -244,7 +243,6 @@ final class AgentContextBuilderTest
     private function testManagerContextShowsSessionInWP(): int
     {
         $worktree = $this->tmpDir . '/wt-manager-wp-' . uniqid('', true);
-        mkdir($worktree . '/.git/info', 0755, true);
         $builder = $this->makeBuilder();
 
         $path = $builder->build($worktree, 'm01', AgentRole::MANAGER);
@@ -263,7 +261,6 @@ final class AgentContextBuilderTest
     private function testManagerContextWorkingDirectoryRule(): int
     {
         $worktree = $this->tmpDir . '/wt-manager-rule-' . uniqid('', true);
-        mkdir($worktree . '/.git/info', 0755, true);
         $builder = $this->makeBuilder();
 
         $path = $builder->build($worktree, 'm01', AgentRole::MANAGER);
@@ -295,7 +292,6 @@ final class AgentContextBuilderTest
         );
 
         $worktree = $projectRoot . '/wt';
-        mkdir($worktree . '/.git/info', 0755, true);
 
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         $builder = new AgentContextBuilder($projectRoot, $boardPath, $boardService);
@@ -342,7 +338,6 @@ final class AgentContextBuilderTest
         );
 
         $worktree = $projectRoot . '/wt';
-        mkdir($worktree . '/.git/info', 0755, true);
 
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         $builder = new AgentContextBuilder($projectRoot, $boardPath, $boardService);

@@ -103,7 +103,6 @@ final class BacklogWorktreeService
             }
         }
 
-        $this->ensureWorktreeRuntimeIgnores($path);
         if ($this->git->hasLocalChanges($path)) {
             throw new \RuntimeException("Agent worktree is dirty: {$path}");
         }
@@ -166,7 +165,6 @@ final class BacklogWorktreeService
         }
 
         $this->git->addWorktree($path, $featureBranch);
-        $this->ensureWorktreeRuntimeState($path, true);
 
         return ['path' => $path, 'temporary' => true];
     }
@@ -535,7 +533,6 @@ final class BacklogWorktreeService
         if (!$this->dryRun) {
             LocalWorkingDirectories::ensure($worktree, $this->fs);
         }
-        $this->ensureWorktreeRuntimeIgnores($worktree);
         foreach ($this->fetchCopiedWorktreePaths() as $relativePath => $sourcePath) {
             if (!$this->fs->checkPathExists($sourcePath)) {
                 throw new \RuntimeException("Missing dependency source in WP: {$sourcePath}");
@@ -574,59 +571,6 @@ final class BacklogWorktreeService
 
         $this->syncWorktreeRootEnv($worktree);
         $this->writeBackendWorktreeEnvLocal($worktree);
-    }
-
-    private function ensureWorktreeRuntimeIgnores(string $worktree): void
-    {
-        if ($this->dryRun) {
-            $this->logVerbose('[dry-run] Would update worktree git exclude for runtime dependency paths.');
-            return;
-        }
-
-        $excludePath = $this->git->getGitPath($worktree, 'info/exclude');
-        if ($excludePath === '') {
-            return;
-        }
-        if (!str_starts_with($excludePath, '/')) {
-            $excludePath = $worktree . '/' . $excludePath;
-        }
-
-        $parent = preg_replace('/\/[^\/]+$/', '', $excludePath);
-        if ($parent === null) {
-            throw new \RuntimeException("Unable to resolve parent directory for {$excludePath}");
-        }
-        if (!$this->fs->isDirectory($parent)) {
-            $this->fs->makeDirectory($parent);
-        }
-
-        $contents = $this->fs->isFile($excludePath) ? $this->fs->getFileContents($excludePath) : '';
-        $lines = preg_split('/\R/', $contents) ?: [];
-
-        foreach (array_keys($this->fetchCopiedWorktreePaths()) as $relativePath) {
-            $pattern = '/' . trim($relativePath, '/') . '/';
-            if (in_array($pattern, $lines, true)) {
-                $this->hideTrackedRuntimePathChanges($worktree, $relativePath);
-
-                continue;
-            }
-            $contents = rtrim($contents) . "\n" . $pattern . "\n";
-            $lines[] = $pattern;
-            $this->hideTrackedRuntimePathChanges($worktree, $relativePath);
-        }
-
-        $this->fs->writeFilePath($excludePath, ltrim($contents));
-    }
-
-    private function hideTrackedRuntimePathChanges(string $worktree, string $relativePath): void
-    {
-        $tracked = $this->git->getTrackedFiles($worktree, $relativePath);
-        if ($tracked === []) {
-            return;
-        }
-
-        foreach (array_chunk($tracked, 50) as $chunk) {
-            $this->git->updateIndexAssumeUnchanged($worktree, $chunk);
-        }
     }
 
     /**

@@ -40,8 +40,51 @@ final class BacklogWorktreeServiceTest
 
         $failed += $this->testPrepareAgentWorktreeCreatesLocalWorkingDirectories();
         $failed += $this->testPrepareAgentWorktreeLocalWorkingDirectoriesAreIdempotent();
+        $failed += $this->testPrepareAgentWorktreeDoesNotWriteUnderGitInternals();
 
         return $failed;
+    }
+
+    private function testPrepareAgentWorktreeDoesNotWriteUnderGitInternals(): int
+    {
+        $agent = 'test-d10-no-git-write-' . $this->uniqueToken();
+        $worktreesRoot = $this->projectRoot . '/local/tests/worktree-service';
+        $worktree = $worktreesRoot . '/' . $agent;
+
+        try {
+            $this->createExistingAgentRepository($worktree);
+            $service = $this->createService($worktreesRoot);
+
+            // Sentinel pre-existing exclude file the service must not modify or delete.
+            $infoDir = $worktree . '/.git/info';
+            if (!is_dir($infoDir) && !mkdir($infoDir, 0o755, true) && !is_dir($infoDir)) {
+                echo "FAIL testPrepareAgentWorktreeDoesNotWriteUnderGitInternals: unable to prepare {$infoDir}\n";
+                return 1;
+            }
+            $excludeFile = $infoDir . '/exclude';
+            $sentinel = "# sentinel kept\n";
+            file_put_contents($excludeFile, $sentinel);
+            clearstatcache(true, $excludeFile);
+            $excludeMtime = filemtime($excludeFile);
+
+            $service->prepareAgentWorktree($agent);
+
+            clearstatcache(true, $excludeFile);
+            $actual = (string) file_get_contents($excludeFile);
+            if ($actual !== $sentinel) {
+                echo "FAIL testPrepareAgentWorktreeDoesNotWriteUnderGitInternals: .git/info/exclude content was modified\n";
+                return 1;
+            }
+            if (filemtime($excludeFile) !== $excludeMtime) {
+                echo "FAIL testPrepareAgentWorktreeDoesNotWriteUnderGitInternals: .git/info/exclude mtime changed\n";
+                return 1;
+            }
+        } finally {
+            $this->cleanupWorktree($worktree);
+        }
+
+        echo "OK testPrepareAgentWorktreeDoesNotWriteUnderGitInternals\n";
+        return 0;
     }
 
     private function testPrepareAgentWorktreeCreatesLocalWorkingDirectories(): int
