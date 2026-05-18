@@ -121,6 +121,8 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         $this->pullRequestService->mergePr($prNumber);
         $this->gitService->syncMainBranchAfterMerge();
 
+        $dependencyUpdate = $entry->getExtraMetadata()['dependency-update'] ?? '';
+
         $this->boardService->deleteFeature($board, $feature);
         $review->clearReview($feature);
         $this->saveBoard($board, 'feature-merge');
@@ -133,6 +135,13 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         $this->presenter->displaySuccess(sprintf('Merged feature %s', $feature));
         if ($cleaned > 0) {
             $this->presenter->displayLine(sprintf('Cleaned %d abandoned managed worktree%s.', $cleaned, $cleaned > 1 ? 's' : ''));
+        }
+
+        if ($dependencyUpdate !== '') {
+            $warnings = $this->worktreeService->installProjectDependencies($dependencyUpdate);
+            foreach ($warnings as $warning) {
+                $this->presenter->displayLine('⚠ ' . $warning);
+            }
         }
     }
 

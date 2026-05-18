@@ -20,6 +20,10 @@ use SoManAgent\Script\Backlog\Service\BacklogPresenter;
  * Only the allowed extra-metadata keys listed in ALLOWED_KEYS may be written.
  * Pass an empty value to clear the key.
  *
+ * Supported keys:
+ *   - database: temporary database name used during migration generation
+ *   - dependency-update: CSV list of install scopes (composer-app, composer-script, npm-frontend)
+ *
  * @see BoardEntry::getExtraMetadata()
  */
 final class BacklogEntrySetMetaCommand extends AbstractBacklogCommand
@@ -29,7 +33,14 @@ final class BacklogEntrySetMetaCommand extends AbstractBacklogCommand
      *
      * @var list<string>
      */
-    private const ALLOWED_KEYS = ['database'];
+    private const ALLOWED_KEYS = ['database', 'dependency-update'];
+
+    /**
+     * Valid scope values for the dependency-update key.
+     *
+     * @var list<string>
+     */
+    private const DEPENDENCY_UPDATE_SCOPES = ['composer-app', 'composer-script', 'npm-frontend'];
 
     /**
      * @param BacklogPresenter $presenter
@@ -78,6 +89,10 @@ final class BacklogEntrySetMetaCommand extends AbstractBacklogCommand
             ));
         }
 
+        if ($key === 'dependency-update' && $value !== '') {
+            $this->validateDependencyUpdateValue($value);
+        }
+
         $board = $this->loadBoard();
         $entry = $this->resolveActiveEntry($board, $entryRef);
 
@@ -101,6 +116,24 @@ final class BacklogEntrySetMetaCommand extends AbstractBacklogCommand
             $key,
             $action,
         ));
+    }
+
+    /**
+     * Validates the CSV list of scopes for the dependency-update key.
+     *
+     * Throws when any token is not in the allowed scope list.
+     */
+    private function validateDependencyUpdateValue(string $value): void
+    {
+        $scopes = array_map('trim', explode(',', $value));
+        $invalid = array_diff($scopes, self::DEPENDENCY_UPDATE_SCOPES);
+        if ($invalid !== []) {
+            throw new \RuntimeException(sprintf(
+                'dependency-update contains unknown scope(s): %s. Allowed: %s.',
+                implode(', ', $invalid),
+                implode(', ', self::DEPENDENCY_UPDATE_SCOPES),
+            ));
+        }
     }
 
     /**
