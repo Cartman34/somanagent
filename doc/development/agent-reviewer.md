@@ -286,7 +286,7 @@ When a reviewer starts on a new entry (not a reuse), the launcher:
 
 If any subsequent preparation step fails (WA missing and unreconstructable, reviewer-vs-reviewer conflict), the launcher rolls the board back to `stage=review` and clears `reviewer` before erroring.
 
-Once the interactive client process starts, no automatic rollback occurs; the entry remains at `stage=reviewing` until the manager or a backlog command changes it. The launcher also records the client PID (and tmux session name when applicable) in `local/tmp/agent-sessions.json`. The active session driver determines how `stop` and `resume` work: the default tmux driver is SSH-resilient (the client keeps running after a disconnect; `resume` re-attaches to the detached session; `stop` kills the tmux session), while the direct driver (`BACKLOG_AGENT_SESSION_DRIVER=direct`) uses SIGTERM/SIGKILL and refuses resume while the tracked client process is alive. See `doc/development/agent-workflow.md` for the full lifecycle.
+Once the interactive client process starts, no automatic rollback occurs; the entry remains at `stage=reviewing` until the manager or a backlog command changes it. The launcher also records the client PID (and tmux session name when applicable) in `local/tmp/agent-sessions.json`. The active session driver determines how `stop` and re-attach work: the default tmux driver is SSH-resilient (the client keeps running after a disconnect; `start --code=<rXX>` re-attaches to the detached session; `stop` kills the tmux session), while the direct driver (`BACKLOG_AGENT_SESSION_DRIVER=direct`) uses SIGTERM/SIGKILL and refuses re-attach while the tracked client process is alive. See `doc/development/agent-workflow.md` for the full lifecycle.
 
 **Auto-stop on entry-merge:** when `entry-merge` completes successfully for a feature, both the developer session and the reviewer session are stopped automatically. The session that ran the command receives a deferred self-stop (~3 s delay); the other session is stopped synchronously. Any stop error is printed in the merge output but does not affect the merge result.
 
@@ -341,13 +341,12 @@ php scripts/backlog-agent.php start claude --reviewer --developer=d10 --force
 ### Resuming an interrupted reviewer session
 
 ```
-php scripts/backlog-agent.php resume --code=<rXX>
-php scripts/backlog-agent.php resume --code=<rXX> --session=<id>
+php scripts/backlog-agent.php start claude --reviewer --code=<rXX>
 ```
 
-The `resume` command reads the `worktree` stored in `sessions.json` rather than computing a worktree path from the reviewer code. This ensures reviewer sessions correctly resume inside the shared developer WA.
+`start --code=<rXX>` reads the `worktree` stored in `sessions.json` rather than computing a worktree path from the reviewer code. This ensures reviewer sessions correctly re-attach inside the shared developer WA.
 
-If the stored developer WA no longer exists, the launcher attempts to reconstruct it via `prepareFeatureAgentWorktree` using the board's `stage=reviewing` entry owned by this reviewer. When reconstruction returns a different path than the one stored in `sessions.json`, `resume` persists the reconstructed developer WA path before preparing the client. If reconstruction fails (no board, no entry, or git error), the command errors with an explicit message naming the missing path and reason.
+If the stored developer WA no longer exists, the launcher attempts to reconstruct it via `prepareFeatureAgentWorktree` using the board's `stage=reviewing` entry owned by this reviewer. When reconstruction returns a different path than the one stored in `sessions.json`, `start` persists the reconstructed developer WA path before preparing the client. If reconstruction fails (no board, no entry, or git error), the command errors with an explicit message naming the missing path and reason.
 
 ### Listing past CLI sessions
 

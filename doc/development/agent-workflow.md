@@ -212,10 +212,10 @@ Sessions for developer, reviewer, and manager agents are launched by the operato
 
 - prepares the `WA` (via `BacklogWorktreeService::prepareAgentWorktree` for developer/manager; reviewer reuses the developer WA)
 - **auto-picks an entry** for developer and reviewer roles on `start` (symmetric behaviour):
-  - **developer**: if no active entry, the first queued task is reserved via `work-start`; if an active entry already exists, resumes silently. If the todo queue is empty and no entry is active, the launch is refused.
+  - **developer**: if no active entry, the first queued task is reserved via `work-start`; if an active entry already exists, resumes silently. If the todo queue is empty and no entry is active, the launch is refused. When `--code=<dXX>` is given and a session entry exists, `start` inspects liveness: live → re-attach; ghost → cleanup + create; `--force-new` → drop + create.
   - **reviewer**: if no owned reviewing entry, the launcher claims a review-stage entry via `review-next <entry-ref>` after resolving the intended target; if the reviewer already owns a reviewing entry, that entry is reused.
   - **manager**: no auto-pick; runs in WP directly.
-  - `resume` **never** auto-picks for any role: it reconnects to the existing session without touching the backlog queue.
+  - `start --code=<code>` **never** auto-picks when re-attaching: it reconnects to the existing session without touching the backlog queue.
 - generates `<WA>/local/agent-context.md` with the current task (or current review for reviewer), allowed commands, backlog vocabulary, and identification instructions
 - injects the env vars below into the CLI process
 - spawns the AI client via the active **session driver** and records its real PID (and tmux session name when applicable) in `local/tmp/agent-sessions.json` so `stop` can terminate the actual client, not only the PHP wrapper
@@ -243,7 +243,7 @@ The session driver is selected by the environment variable `BACKLOG_AGENT_SESSIO
 
 **Auto-stop on entry-merge:** `entry-merge` triggers `stop` automatically for every session involved in the merged entry at the end of a successful merge. For feature merges this covers both the developer session (`meta.agent`) and the reviewer session (`meta.reviewer`); for task merges only the developer session is stopped. The session that executed the `entry-merge` command receives a deferred self-stop (~3 s delay via a detached subprocess) to avoid killing the process before it finishes printing output; errors from the deferred stop are written to `local/backlog/backlog.log`. All other sessions are stopped synchronously; any stop error is printed in the merge output but does not roll back the merge.
 
-`resume --code=<code>` refuses when the PHP wrapper is still alive. When the wrapper is dead but the driver still reports an alive session, behaviour depends on the driver: `tmux` allows resume because it re-attaches to the detached named session, while `direct` refuses because the tracked client process is still running and resume would start a second client instance. Run `stop --code=<code>` to terminate a direct live session before resuming. For reviewer sessions, `resume` uses the stored developer WA path; if that path is missing but the reviewer still owns a `stage=reviewing` entry, the launcher reconstructs the developer WA and updates `agent-sessions.json` with the reconstructed path before preparing the client.
+`start --code=<code>` automatically re-attaches when the session is live (driver alive + WA present). Re-attach is refused when the PHP wrapper is still alive. When the wrapper is dead but the driver still reports an alive session, behaviour depends on the driver: `tmux` allows re-attach because it reconnects to the detached named session, while `direct` refuses because the tracked client process is still running and re-attach would start a second client instance. Run `stop --code=<code>` to terminate a direct live session before restarting. For reviewer sessions, `start --code=<rXX>` uses the stored developer WA path; if that path is missing but the reviewer still owns a `stage=reviewing` entry, the launcher reconstructs the developer WA and updates `agent-sessions.json` with the reconstructed path before preparing the client. Ghost sessions (driver dead or WA absent) are cleaned up automatically and a fresh session is created. Pass `--force-new` to drop a live session and force a fresh start.
 
 `prune` batch-cleans invalid entries from `agent-sessions.json` without targeting one code. Auto-removed:
 
@@ -266,7 +266,7 @@ Flags: `--dry-run` previews the plan without mutating; `--force` also removes wa
 
 ### last_seen_at Semantics
 
-`last_seen_at` is **not a heartbeat**. It records the last time a `backlog-agent.php` subcommand inspected the entry and refreshed its PID / process status. `list`, `status`, `sessions`, `resume`, and `stop` all update this timestamp for the entries they touch.
+`last_seen_at` is **not a heartbeat**. It records the last time a `backlog-agent.php` subcommand inspected the entry and refreshed its PID / process status. `list`, `status`, `sessions`, `start` (re-attach path), and `stop` all update this timestamp for the entries they touch.
 
 ### Reviewer session context
 
@@ -301,7 +301,7 @@ The hook file is placed under `<WA>/.githooks/pre-commit` (inside the worktree d
 
 ### Context File
 
-`<WA>/local/agent-context.md` is generated fresh on every `start` and `resume`. It is hidden from `git status` by the root `.gitignore` `local/*` pattern. Do not commit or push it.
+`<WA>/local/agent-context.md` is generated fresh on every `start` (new session or re-attach). It is hidden from `git status` by the root `.gitignore` `local/*` pattern. Do not commit or push it.
 
 ### Strict CLI Options
 

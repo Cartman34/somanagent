@@ -44,6 +44,9 @@ final class FakeSessionDriver implements SessionDriverInterface
     /** @var array{agentCode: string, bin: string, args: list<string>, cwd: string}|null */
     public ?array $lastLaunchCall = null;
 
+    /** @var array{agentCode: string, bin: string, args: list<string>, cwd: string}|null */
+    public ?array $lastResumeCall = null;
+
     /** @var AgentSession|null */
     public ?AgentSession $lastStoppedSession = null;
 
@@ -135,6 +138,7 @@ final class FakeSessionDriver implements SessionDriverInterface
      */
     public function resume(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
     {
+        $this->lastResumeCall = ['agentCode' => $agentCode, 'bin' => $bin, 'args' => $args, 'cwd' => $cwd];
         $onSpawned($this->nextClientPid, null);
 
         return $this->nextExitCode;
@@ -172,5 +176,7 @@ final class FakeSessionDriver implements SessionDriverInterface
     public function kill(string $agentCode): void
     {
         $this->killedCodes[] = $agentCode;
+        $this->existingByCode[$agentCode] = false;
+        $this->aliveByCode[$agentCode] = false;
     }
 }
