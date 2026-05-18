@@ -24,6 +24,7 @@ use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use Symfony\Component\Yaml\Yaml;
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 use SoManAgent\Script\Backlog\Service\EntryRebaseResult;
 use SoManAgent\Script\Backlog\Service\EntryRebaseService;
@@ -217,7 +218,7 @@ final class AgentStartCommandTest
 
         $threw = false;
         try {
-            $cmd->handle(['claude'], ['reviewer' => true, 'force-new' => true]);
+            $cmd->handle(['claude'], ['reviewer' => true, BacklogCliOption::FORCE_NEW->value => true]);
         } catch (\RuntimeException $e) {
             $threw = str_contains($e->getMessage(), '--force-new is only allowed with --developer');
         }
@@ -2459,7 +2460,7 @@ final class AgentStartCommandTest
         try {
             chdir($projectRoot);
             ob_start();
-            $cmd->handle(['claude'], ['developer' => true, 'code' => 'd33', 'force-new' => true]);
+            $cmd->handle(['claude'], ['developer' => true, 'code' => 'd33', BacklogCliOption::FORCE_NEW->value => true]);
             $output = (string) ob_get_clean();
         } catch (\Throwable $e) {
             ob_end_clean();
