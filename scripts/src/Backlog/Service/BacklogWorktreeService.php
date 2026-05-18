@@ -491,6 +491,57 @@ final class BacklogWorktreeService
     }
 
     /**
+     * Runs composer install or npm ci in WP for the declared dependency-update scopes.
+     *
+     * Returns a list of warning messages for any scope that failed. Never throws: on install
+     * failure the feature merge is already done and the operator must intervene manually.
+     *
+     * @param string $dependencyUpdateCsv CSV list of scopes (e.g. "composer-app,npm-frontend")
+     * @return list<string> Warning messages for failed installs
+     */
+    public function installProjectDependencies(string $dependencyUpdateCsv): array
+    {
+        $scopes = array_filter(array_map('trim', explode(',', $dependencyUpdateCsv)));
+        $warnings = [];
+
+        foreach ($scopes as $scope) {
+            [$cmd, $dir] = match ($scope) {
+                'composer-app' => ['composer install --no-interaction', 'backend'],
+                'composer-script' => ['composer install --no-interaction', 'scripts'],
+                'npm-frontend' => ['npm ci', 'frontend'],
+                default => [null, null],
+            };
+
+            if ($cmd === null) {
+                $warnings[] = sprintf('Unknown dependency-update scope "%s" — skipped.', $scope);
+                continue;
+            }
+
+            $fullDir = $this->projectRoot . '/' . $dir;
+            $shell = sprintf('cd %s && %s', escapeshellarg($fullDir), $cmd);
+
+            $this->logVerbose(($this->dryRun ? '[dry-run] Would run: ' : 'Run: ') . $shell);
+            if ($this->dryRun) {
+                continue;
+            }
+
+            [$code, $output] = $this->captureCommand($shell);
+            if ($code !== 0) {
+                $warnings[] = sprintf(
+                    'Install failed for scope "%s" in %s (exit %d). Run manually: %s',
+                    $scope,
+                    $dir,
+                    $code,
+                    $cmd,
+                );
+                $this->logVerbose('Install output: ' . $output);
+            }
+        }
+
+        return $warnings;
+    }
+
+    /**
      * @param string $worktree The worktree path
      * @param string|null $base The base branch for review
      * @return void
@@ -598,6 +649,7 @@ final class BacklogWorktreeService
         $this->syncWorktreeRootEnv($worktree);
         $this->writeBackendWorktreeEnvLocal($worktree);
         $this->installPreCommitHook($worktree);
+        $this->alignComposerVendorIfNeeded($worktree);
     }
 
     /**
@@ -850,6 +902,66 @@ final class BacklogWorktreeService
         }
 
         return $worktrees;
+    }
+
+    /**
+     * Runs composer install in the WA for any composer.lock that differs from WP.
+     *
+     * When a task branch brings a new composer.lock (added dependency), vendor was copied
+     * from WP and is misaligned with the WA lock. This check re-runs composer install so
+     * vendor matches the lock in the WA, regardless of meta.dependency-update.
+     */
+    private function alignComposerVendorIfNeeded(string $worktree): void
+    {
+        foreach ($this->fetchComposerDirs() as $dir) {
+            $waLock = $worktree . '/' . $dir . '/composer.lock';
+            $wpLock = $this->projectRoot . '/' . $dir . '/composer.lock';
+
+            if (!$this->fs->isFile($waLock) || !$this->fs->isFile($wpLock)) {
+                continue;
+            }
+
+            if (md5_file($waLock) === md5_file($wpLock)) {
+                continue;
+            }
+
+            $this->logVerbose(sprintf(
+                'WA %s/composer.lock differs from WP; running composer install.',
+                $dir,
+            ));
+
+            if ($this->dryRun) {
+                $this->logVerbose(sprintf('[dry-run] Would run: composer install --no-interaction in %s/%s', $this->git->toRelativeProjectPath($worktree), $dir));
+                continue;
+            }
+
+            $shell = sprintf('cd %s && composer install --no-interaction', escapeshellarg($worktree . '/' . $dir));
+            $this->console->run($shell);
+        }
+    }
+
+    /**
+     * Returns the relative directories that carry a composer.lock in this project.
+     *
+     * @return list<string>
+     */
+    private function fetchComposerDirs(): array
+    {
+        return ['backend', 'scripts'];
+    }
+
+    /**
+     * Captures a shell command output and exit code without throwing.
+     *
+     * @return array{0: int, 1: string}
+     */
+    private function captureCommand(string $shell): array
+    {
+        $output = [];
+        $code = 0;
+        exec($shell . ' 2>&1', $output, $code);
+
+        return [$code, implode("\n", $output)];
     }
 
     private function installPreCommitHook(string $worktree): void

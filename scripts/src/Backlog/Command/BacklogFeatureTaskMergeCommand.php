@@ -107,6 +107,7 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
             throw $exception;
         }
 
+        $this->propagateDependencyUpdate($entry, $parent->getEntry());
         $this->boardService->removeActiveEntryAt($board, $match->getIndex());
         $this->invalidateFeatureReviewState($parent->getEntry());
         $review->clearReview($this->boardService->getTaskReviewKey($entry));
@@ -129,5 +130,36 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
         if ($this->boardService->getFeatureStage($featureEntry) !== BacklogBoard::STAGE_IN_PROGRESS) {
             $featureEntry->setStage(BacklogBoard::STAGE_IN_PROGRESS);
         }
+    }
+
+    /**
+     * Merges the task dependency-update scopes into the parent feature (union, no duplicates).
+     */
+    private function propagateDependencyUpdate(BoardEntry $taskEntry, BoardEntry $featureEntry): void
+    {
+        $taskMeta = $taskEntry->getExtraMetadata();
+        $taskScopes = $taskMeta['dependency-update'] ?? '';
+        if ($taskScopes === '') {
+            return;
+        }
+
+        $featureMeta = $featureEntry->getExtraMetadata();
+        $featureScopes = $featureMeta['dependency-update'] ?? '';
+
+        $merged = $this->mergeScopesCsv($featureScopes, $taskScopes);
+        $featureMeta['dependency-update'] = $merged;
+        $featureEntry->setExtraMetadata($featureMeta);
+    }
+
+    /**
+     * Returns a deduplicated CSV union of two scope CSV strings.
+     */
+    private function mergeScopesCsv(string $a, string $b): string
+    {
+        $scopesA = $a !== '' ? array_map('trim', explode(',', $a)) : [];
+        $scopesB = $b !== '' ? array_map('trim', explode(',', $b)) : [];
+        $merged = array_values(array_unique(array_merge($scopesA, $scopesB)));
+
+        return implode(',', $merged);
     }
 }

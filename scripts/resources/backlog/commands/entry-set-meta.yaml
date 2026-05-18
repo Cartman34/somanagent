@@ -8,9 +8,14 @@ arguments:
     description: 'Metadata assignment in key=value form. Pass an empty value (key=) to clear the key.'
 notes:
   - 'The entry-ref must identify an entry currently in the In progress section.'
-  - 'Only the key "database" is accepted. Other keys are rejected.'
-  - 'Pass an empty value (database=) to remove the key from the entry metadata.'
+  - 'Allowed keys: "database", "dependency-update".'
+  - 'Pass an empty value (key=) to remove the key from the entry metadata.'
+  - 'Key "dependency-update": CSV list of install scopes to run in WP after the feature is merged to main. Allowed scopes: composer-app (backend/ composer install), composer-script (scripts/ composer install), npm-frontend (frontend/ npm ci). Example: dependency-update=composer-app,npm-frontend'
+  - 'When a task with dependency-update is merged into its parent feature, the scopes are unioned into the parent feature metadata automatically.'
 examples:
   - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=agent-01 php scripts/backlog.php entry-set-meta my-feature database=agent_01_migrate_gen'
   - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=agent-01 php scripts/backlog.php entry-set-meta my-feature database='
   - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=agent-01 php scripts/backlog.php entry-set-meta my-feature/my-task database=agent_01_migrate_gen'
+  - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=agent-01 php scripts/backlog.php entry-set-meta my-feature dependency-update=composer-app'
+  - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=agent-01 php scripts/backlog.php entry-set-meta my-feature/my-task dependency-update=composer-app,npm-frontend'
+  - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=agent-01 php scripts/backlog.php entry-set-meta my-feature dependency-update='

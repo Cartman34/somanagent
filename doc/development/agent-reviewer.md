@@ -162,6 +162,7 @@ Block on:
 - Missing PHPDoc on public PHP methods or JSDoc/TSDoc on exported TS/React code
 - Obvious functional bug
 - Dead code: methods, functions, properties, classes, or imports declared in the branch (or kept by it) that have no caller or reader anywhere in the codebase. Treat lingering remnants of an earlier refactor the same way as freshly-added dead code. Dead public elements in `scripts/src/` are caught automatically by the PHPStan `unused-public` extension (the mechanical review runs `php scripts/phpstan.php`) — a reviewer does not need to grep manually for these; manual scan remains necessary for imports and for non-public elements.
+- `backend/composer.json`, `scripts/composer.json`, or `frontend/package.json` modified without a matching `meta.dependency-update` on the entry covering the relevant scope(s). Use `php scripts/backlog.php status <entry-ref>` to inspect `meta.dependency-update`; a missing or empty value when a manifest was touched is a blocker.
 
 Also check:
 

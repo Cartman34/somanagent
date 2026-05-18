@@ -154,9 +154,15 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-set-meta <entry-ref> <key>=<value>`.
 2. `<entry-ref>` is required and must identify an active (in-progress) entry: a feature slug or a `feature/task` composite reference.
 3. Sets the named extra-metadata key on the targeted entry. Pass an empty value (`<key>=`) to clear the key.
-4. Only the key `database` is accepted. Any other key is rejected.
+4. Allowed keys: `database`, `dependency-update`. Any other key is rejected.
 5. The command fails when no active entry matches the provided entry-ref.
 6. Used internally by `php scripts/migrate.php --generate` to record and clear the temporary database name on the active entry during the migration generation flow.
+7. **`dependency-update`**: CSV list of install scopes to declare when adding a dependency to the project. Allowed scopes: `composer-app` (runs `composer install --no-interaction` in `backend/` in WP after merge), `composer-script` (runs `composer install --no-interaction` in `scripts/`), `npm-frontend` (runs `npm ci` in `frontend/`). Set this key on the entry whenever `backend/composer.json`, `scripts/composer.json`, or `frontend/package.json` is modified. When a task entry is merged into its parent feature, the scopes are unioned automatically. When the feature is merged into `main`, the declared installs are run in WP.
+
+**Developer responsibility when adding a dependency:**
+- Run `composer install` (or `npm install`) in the WA during development — this is part of the commit.
+- Declare the scope with `entry-set-meta <entry-ref> dependency-update=<scopes>` in the same commit or before `review-request`.
+- Example: `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-set-meta my-feature dependency-update=composer-app`
 
 ### `review-notes`
 

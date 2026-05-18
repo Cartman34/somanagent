@@ -128,6 +128,28 @@ Every entry carries one of three types: `feat`, `fix`, or `tech`. The rule and t
 1. Adding a child task to a feature that is already under review invalidates that review. Both `entry-create` and `work-start` enforce this: when the parent `kind=feature` is in `review`, `reviewing`, or `approved` stage and the new entry is a scoped child task (declared via `--feature=<slug> --task=<task-slug>`), the parent is automatically reverted to `development` and `reviewer` is cleared. A message is printed to make the revert visible.
 2. Approving a feature that still has active child tasks (`kind=task` in `active:`) or queued child tasks (in `todo:`) is refused by `review-approve`. Both conditions must be resolved before the feature can be approved.
 
+## Dependency Update Tracking
+
+The `dependency-update` extra-metadata key on a backlog entry declares which install scopes must be re-run in WP after the feature is merged to `main`.
+
+**Allowed scopes** (CSV, e.g. `composer-app,npm-frontend`):
+
+| Scope | Command run in WP |
+|---|---|
+| `composer-app` | `composer install --no-interaction` in `backend/` |
+| `composer-script` | `composer install --no-interaction` in `scripts/` |
+| `npm-frontend` | `npm ci` in `frontend/` |
+
+**Developer contract:** whenever `backend/composer.json`, `scripts/composer.json`, or `frontend/package.json` is added or modified, the developer:
+1. Runs `composer install` (or `npm install`) in their WA as part of the same commit.
+2. Declares the scope(s) with `entry-set-meta <entry-ref> dependency-update=<scopes>` before `review-request`.
+
+**Propagation task→feature:** when a task with `dependency-update` is merged into its parent feature via `entry-merge`, the scopes are unioned into the parent feature's `meta.dependency-update` automatically. No developer action is required.
+
+**WP install on feature→main merge:** after `entry-merge` (or `user-merge`) merges a feature to `main`, the workflow reads the cumulated `meta.dependency-update` from the feature and runs the corresponding installs in WP. If an install fails, the merge is preserved and a warning is printed. The operator must run the failing install manually.
+
+**WA vendor alignment:** `BacklogWorktreeService::prepareAgentWorktree` compares the hash of each `composer.lock` in the WA against the one in WP. If they differ, `composer install --no-interaction` is run in the WA automatically. This covers the case where a rebased or freshly-created WA inherits a newer `composer.lock` that vendor was not installed from. This check is independent of `meta.dependency-update`.
+
 ## Command Policy
 
 1. Use `SOMANAGER_ROLE=<role> SOMANAGER_AGENT=<code> php scripts/backlog.php ...` for the full local workflow.

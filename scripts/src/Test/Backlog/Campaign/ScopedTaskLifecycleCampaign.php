@@ -159,6 +159,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $this->assertParentAssignmentPreservedOnTaskMerge($driver, $context);
         $this->assertEntryUnassignForTaskAndAmbiguity($driver, $context);
         $this->assertReviewNotesAmbiguityAndMissingReference($driver, $context);
+        $this->assertDependencyUpdatePropagation($driver, $context);
     }
 
     /**
@@ -420,6 +421,73 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         // Cleanup so the next campaign starts from a clean board.
         $driver->releaseEntry($context->agentSecondary, $ambSlug);
         $driver->removeFirstTodoTask();
+    }
+
+    /**
+     * Verifies dependency-update propagation from task to feature on entry-merge.
+     *
+     * Covers:
+     *   - valid scope set on a task is unioned into parent on merge
+     *   - two tasks with different scopes accumulate into a union on the feature
+     *   - invalid scope value is rejected by entry-set-meta
+     *   - unknown key is rejected by entry-set-meta
+     */
+    private function assertDependencyUpdatePropagation(
+        BacklogScriptTestDriver $driver,
+        BacklogScriptTestContext $context,
+    ): void {
+        $feature = 'test-dep-update-feature';
+        $taskDep1 = 'test-dep-task-1';
+        $taskDep2 = 'test-dep-task-2';
+        $taskDep1Ref = $feature . '/' . $taskDep1;
+        $taskDep2Ref = $feature . '/' . $taskDep2;
+
+        // Validation: unknown key must be rejected
+        // Use an existing active entry to test the key validation
+        $driver->assertSetEntryMetaFails(
+            $context->agentPrimary,
+            $context->scopedFeature,
+            'unknown-key=some-value',
+            'entry-set-meta does not support key "unknown-key"',
+        );
+
+        // Validation: invalid scope in dependency-update must be rejected
+        $driver->createTodoTask(sprintf('[%s][%s] Task 1 for dependency-update propagation', $feature, $taskDep1));
+        $driver->startNextFeature($context->agentPrimary);
+
+        $driver->assertSetEntryMetaFails(
+            $context->agentPrimary,
+            $taskDep1Ref,
+            'dependency-update=composer-app,bad-scope',
+            'dependency-update contains unknown scope(s): bad-scope',
+        );
+
+        // Set composer-app on task 1 and merge it into the feature
+        $driver->setEntryMeta($context->agentPrimary, $taskDep1Ref, 'dependency-update=composer-app');
+        $driver->assertBoardContains('dependency-update: composer-app');
+
+        $driver->requestTaskReview($context->agentPrimary);
+        $driver->approveTaskViaUnifiedCommand($context->agentSecondary, $taskDep1Ref);
+        $driver->mergeTask($taskDep1Ref);
+
+        // After task merge the parent feature must carry the propagated scope
+        $driver->assertBoardContains('dependency-update: composer-app');
+
+        // Start a second task with a different scope; merging should produce the union
+        $driver->createTodoTask(sprintf('[%s][%s] Task 2 for dependency-update propagation', $feature, $taskDep2));
+        $driver->startNextFeature($context->agentPrimary);
+
+        $driver->setEntryMeta($context->agentPrimary, $taskDep2Ref, 'dependency-update=npm-frontend');
+        $driver->requestTaskReview($context->agentPrimary);
+        $driver->approveTaskViaUnifiedCommand($context->agentSecondary, $taskDep2Ref);
+        $driver->mergeTask($taskDep2Ref);
+
+        // Union: feature must now carry both scopes
+        $driver->assertBoardContains('dependency-update: composer-app,npm-frontend');
+
+        // Cleanup
+        $driver->closeFeature($feature);
+        $driver->assertActiveFeatureMissing($feature);
     }
 
     /**
