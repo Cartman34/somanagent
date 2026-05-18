@@ -833,36 +833,26 @@ final class BacklogWorktreeService
             return;
         }
 
-        // Linked worktrees have a .git FILE pointing to the common gitdir; standalone repos have a .git DIR.
-        // Hooks are served from the common hooks dir for linked worktrees, and from .git/hooks/ for standalone.
-        $gitEntry = $worktree . '/.git';
-        if (is_file($gitEntry)) {
-            $hooksDir = $this->projectRoot . '/.git/hooks';
-        } elseif (is_dir($gitEntry)) {
-            $hooksDir = $gitEntry . '/hooks';
-        } else {
-            return;
-        }
-
+        // Hooks live in <WA>/.githooks/ (never in .git/hooks/ which is shared between worktrees and
+        // read-only in sandboxed agent environments). The per-WA git config points core.hooksPath there,
+        // isolating the hook to this worktree only.
+        $hooksDir = $worktree . '/.githooks';
         $hookPath = $hooksDir . '/pre-commit';
-
-        if (!$this->fs->isDirectory($hooksDir)) {
-            if ($this->dryRun) {
-                $this->logVerbose('[dry-run] Would create hooks directory: ' . $this->git->toRelativeProjectPath($hooksDir));
-
-                return;
-            }
-            $this->fs->makeDirectory($hooksDir);
-        }
 
         if ($this->dryRun) {
             $this->logVerbose('[dry-run] Would install pre-commit hook: ' . $this->git->toRelativeProjectPath($hookPath));
+            $this->git->run($this->git->inPath($worktree, 'config core.hooksPath .githooks'));
 
             return;
+        }
+
+        if (!$this->fs->isDirectory($hooksDir)) {
+            $this->fs->makeDirectory($hooksDir);
         }
 
         $this->fs->copyPath($hookSource, $hookPath);
         chmod($hookPath, 0o755);
+        $this->git->run($this->git->inPath($worktree, 'config core.hooksPath .githooks'));
     }
 
     private function checkIsManagedAgentWorktree(string $path): bool

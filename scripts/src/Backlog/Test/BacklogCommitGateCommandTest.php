@@ -38,6 +38,7 @@ final class BacklogCommitGateCommandTest
 
     /**
      * Runs all tests and returns the number of failures.
+     * @api
      */
     public function run(): int
     {
