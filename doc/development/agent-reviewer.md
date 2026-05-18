@@ -288,6 +288,8 @@ If any subsequent preparation step fails (WA missing and unreconstructable, revi
 
 Once the interactive client process starts, no automatic rollback occurs; the entry remains at `stage=reviewing` until the manager or a backlog command changes it. The launcher also records the client PID (and tmux session name when applicable) in `local/tmp/agent-sessions.json`. The active session driver determines how `stop` and `resume` work: the default tmux driver is SSH-resilient (the client keeps running after a disconnect; `resume` re-attaches to the detached session; `stop` kills the tmux session), while the direct driver (`BACKLOG_AGENT_SESSION_DRIVER=direct`) uses SIGTERM/SIGKILL and refuses resume while the tracked client process is alive. See `doc/development/agent-workflow.md` for the full lifecycle.
 
+**Auto-stop on entry-merge:** when `entry-merge` completes successfully for a feature, both the developer session and the reviewer session are stopped automatically. The session that ran the command receives a deferred self-stop (~3 s delay); the other session is stopped synchronously. Any stop error is printed in the merge output but does not affect the merge result.
+
 ### Owned reviewing entry reuse
 
 If the reviewer already has an entry at `stage=reviewing` with `reviewer=<rXX>` in the board (from a prior interrupted session), the launcher reuses that entry without a new transition. The existing `stage=reviewing` and `reviewer` are preserved.
