@@ -44,6 +44,9 @@ final class TmuxSessionDriverTest
         $failed += $this->testGetPanePidThrowsWhenOutputIsTmuxDefault();
         $failed += $this->testCreateSessionAppliesMouseOption();
         $failed += $this->testCreateSessionAppliesHistoryLimit();
+        $failed += $this->testCreateSessionAppliesSowappsStatusLineInOrder();
+        $failed += $this->testCreateSessionDoesNotUseGlobalTmuxOptions();
+        $failed += $this->testCreateSessionWarnsWhenBrandingOptionFails();
         $failed += $this->testCreateSessionWarnsWhenSetOptionFails();
         $failed += $this->testListLiveSessionsFiltersPrefix();
         $failed += $this->testListLiveSessionsReturnsEmptyWhenNoOutput();
@@ -342,7 +345,7 @@ final class TmuxSessionDriverTest
         $driver = new TmuxSessionDriver($runner, Console::getInstance());
         $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'createSession');
         $reflection->setAccessible(true);
-        $reflection->invoke($driver, 'somanagent-d03', '/tmp/fake.sh', '/tmp/wa');
+        $reflection->invoke($driver, 'somanagent-d03', 'd03', '/tmp/fake.sh', '/tmp/wa');
 
         $mouseCalls = array_filter(
             $runner->succeedsCalls,
@@ -366,7 +369,7 @@ final class TmuxSessionDriverTest
         $driver = new TmuxSessionDriver($runner, Console::getInstance());
         $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'createSession');
         $reflection->setAccessible(true);
-        $reflection->invoke($driver, 'somanagent-d03', '/tmp/fake.sh', '/tmp/wa');
+        $reflection->invoke($driver, 'somanagent-d03', 'd03', '/tmp/fake.sh', '/tmp/wa');
 
         $histCalls = array_filter(
             $runner->succeedsCalls,
@@ -377,6 +380,117 @@ final class TmuxSessionDriverTest
             return 1;
         }
         echo "OK testCreateSessionAppliesHistoryLimit\n";
+        return 0;
+    }
+
+    /**
+     * The Sowapps status-line branding must be applied after the existing tmux ergonomics in the
+     * exact session-local order specified by the launcher contract.
+     */
+    private function testCreateSessionAppliesSowappsStatusLineInOrder(): int
+    {
+        $runner = new FakeProcessRunner();
+        $driver = new TmuxSessionDriver($runner, Console::getInstance());
+        $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'createSession');
+        $reflection->setAccessible(true);
+        $reflection->invoke($driver, 'somanagent-d03', 'd03', '/tmp/fake.sh', '/tmp/wa');
+
+        $expectedBranding = [
+            "tmux set -t 'somanagent-d03' status 'on'",
+            "tmux set -t 'somanagent-d03' status-style 'bg=colour202,fg=colour231'",
+            "tmux set -t 'somanagent-d03' status-left-length '20'",
+            "tmux set -t 'somanagent-d03' status-right-length '50'",
+            "tmux set -t 'somanagent-d03' status-left '#[fg=colour202,bg=colour231] SOWAPPS #[default] '",
+            "tmux set -t 'somanagent-d03' status-right '#[fg=colour202,bg=colour231] d03 #[default] %Y-%m-%d %H:%M:%S '",
+            "tmux set -t 'somanagent-d03' window-status-format ' #W '",
+            "tmux set -t 'somanagent-d03' window-status-current-format ' #W '",
+            "tmux set -t 'somanagent-d03' window-status-style 'bg=colour202,fg=colour231'",
+            "tmux set -t 'somanagent-d03' window-status-current-style 'bg=terminal,fg=colour231,bold'",
+            "tmux set -t 'somanagent-d03' window-status-separator ''",
+        ];
+        $expectedAll = [
+            "tmux new-session -d -s 'somanagent-d03' -c '/tmp/wa' '/tmp/fake.sh'",
+            "tmux set-option -t 'somanagent-d03' mouse on",
+            "tmux set-option -t 'somanagent-d03' history-limit 50000",
+            ...$expectedBranding,
+        ];
+        $brandingCalls = array_values(array_filter(
+            $runner->succeedsCalls,
+            static fn(string $c): bool => str_starts_with($c, 'tmux set -t '),
+        ));
+
+        if ($brandingCalls !== $expectedBranding) {
+            echo "FAIL testCreateSessionAppliesSowappsStatusLineInOrder: expected branding calls "
+                . var_export($expectedBranding, true) . ', got ' . var_export($brandingCalls, true) . "\n";
+            return 1;
+        }
+        if ($runner->succeedsCalls !== $expectedAll) {
+            echo "FAIL testCreateSessionAppliesSowappsStatusLineInOrder: expected complete call order "
+                . var_export($expectedAll, true) . ', got ' . var_export($runner->succeedsCalls, true) . "\n";
+            return 1;
+        }
+        echo "OK testCreateSessionAppliesSowappsStatusLineInOrder\n";
+        return 0;
+    }
+
+    /**
+     * All tmux customisation for agent sessions must target the session; no global `-g` writes.
+     */
+    private function testCreateSessionDoesNotUseGlobalTmuxOptions(): int
+    {
+        $runner = new FakeProcessRunner();
+        $driver = new TmuxSessionDriver($runner, Console::getInstance());
+        $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'createSession');
+        $reflection->setAccessible(true);
+        $reflection->invoke($driver, 'somanagent-d03', 'd03', '/tmp/fake.sh', '/tmp/wa');
+
+        foreach ($runner->succeedsCalls as $command) {
+            if (str_contains($command, ' -g')) {
+                echo "FAIL testCreateSessionDoesNotUseGlobalTmuxOptions: found global tmux option call: {$command}\n";
+                return 1;
+            }
+        }
+        echo "OK testCreateSessionDoesNotUseGlobalTmuxOptions\n";
+        return 0;
+    }
+
+    /**
+     * A tmux version that rejects one branding option must not prevent the session from starting.
+     */
+    private function testCreateSessionWarnsWhenBrandingOptionFails(): int
+    {
+        $runner = new FakeProcessRunner();
+        // new-session, mouse, history-limit succeed; one branding option fails; remaining options continue.
+        $runner->succeedsQueue = [true, true, true, true, true, true, true, true, false];
+
+        $driver = new TmuxSessionDriver($runner, Console::getInstance());
+        $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'createSession');
+        $reflection->setAccessible(true);
+
+        ob_start();
+        try {
+            $reflection->invoke($driver, 'somanagent-d03', 'd03', '/tmp/fake.sh', '/tmp/wa');
+        } catch (\Throwable $e) {
+            ob_end_clean();
+            $inner = $e instanceof \ReflectionException ? $e->getPrevious() : $e;
+            echo "FAIL testCreateSessionWarnsWhenBrandingOptionFails: unexpected exception: " . ($inner?->getMessage() ?? $e->getMessage()) . "\n";
+            return 1;
+        }
+        $output = ob_get_clean();
+
+        if (!str_contains((string) $output, 'Sowapps status-line branding')) {
+            echo "FAIL testCreateSessionWarnsWhenBrandingOptionFails: expected branding warning, got: " . var_export($output, true) . "\n";
+            return 1;
+        }
+        $brandingCalls = array_filter(
+            $runner->succeedsCalls,
+            static fn(string $c): bool => str_starts_with($c, 'tmux set -t '),
+        );
+        if (count($brandingCalls) !== 11) {
+            echo "FAIL testCreateSessionWarnsWhenBrandingOptionFails: expected all 11 branding commands, got " . count($brandingCalls) . "\n";
+            return 1;
+        }
+        echo "OK testCreateSessionWarnsWhenBrandingOptionFails\n";
         return 0;
     }
 
@@ -397,7 +511,7 @@ final class TmuxSessionDriverTest
 
         ob_start();
         try {
-            $reflection->invoke($driver, 'somanagent-d03', '/tmp/fake.sh', '/tmp/wa');
+            $reflection->invoke($driver, 'somanagent-d03', 'd03', '/tmp/fake.sh', '/tmp/wa');
         } catch (\Throwable $e) {
             ob_end_clean();
             $inner = $e instanceof \ReflectionException ? $e->getPrevious() : $e;

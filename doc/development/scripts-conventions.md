@@ -70,6 +70,14 @@ Expected author syntax:
 - Make destructive actions explicit and guarded by confirmation, unless a force flag is intentionally provided.
 - Print enough context for diagnosis, but do not hide important side effects such as container recreation or data loss.
 
+## Agent Tmux Branding
+
+- `TmuxSessionDriver` applies the Sowapps one-line tmux status-line when it creates an agent session.
+- The canonical Sowapps XTerm 256 palette for tmux agent sessions is orange `colour202` and white `colour231`.
+- All tmux status-line options must be written with `-t <session>` only. Do not use `-g`; agent branding is isolated to `somanagent-<code>` sessions and must not modify the operator's other tmux sessions.
+- The active tmux window tab uses `bg=terminal`, not a hardcoded black such as `#000000` or `colour16`.
+- The status line displays the agent code at the right so the session identity remains visible while the client is running.
+
 ## Error Handling
 
 - Fail with actionable messages.
