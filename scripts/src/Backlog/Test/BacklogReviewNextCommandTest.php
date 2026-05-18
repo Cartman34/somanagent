@@ -26,12 +26,18 @@ final class BacklogReviewNextCommandTest
 {
     private string $tmpDir;
 
+    /**
+     * Creates a unique temporary directory for this test run.
+     */
     public function __construct()
     {
         $this->tmpDir = sys_get_temp_dir() . '/backlog-review-next-command-test-' . uniqid('', true);
         mkdir($this->tmpDir, 0755, true);
     }
 
+    /**
+     * Removes the temporary directory created for this test run.
+     */
     public function __destruct()
     {
         $this->rmdir($this->tmpDir);
