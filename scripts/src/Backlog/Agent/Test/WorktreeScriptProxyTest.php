@@ -20,6 +20,7 @@ final class WorktreeScriptProxyTest
 {
     /**
      * Runs all test cases and returns the total number of failures.
+     *
      * @api
      */
     public function run(): int
@@ -29,6 +30,7 @@ final class WorktreeScriptProxyTest
         $failed += $this->testMissingScriptErrorNamesScriptAndMainPath();
         $failed += $this->testMissingScriptErrorFormatStable();
         $failed += $this->testMissingScriptErrorIsSharedAcrossScripts();
+        $failed += $this->testDetectClearsGitDirBeforeGitCommands();
 
         return $failed;
     }
@@ -65,6 +67,58 @@ final class WorktreeScriptProxyTest
             return 1;
         }
         echo "OK testMissingScriptErrorFormatStable\n";
+        return 0;
+    }
+
+    /**
+     * Regression: git sets GIT_DIR when running hooks; detect() must clear it before calling git so
+     * that `git -C <subdir> rev-parse --show-toplevel` returns the worktree root, not <subdir>.
+     *
+     * The test is only meaningful inside a linked worktree (agent WA). It is skipped otherwise.
+     */
+    private function testDetectClearsGitDirBeforeGitCommands(): int
+    {
+        $output = [];
+        $code = 0;
+        exec('git rev-parse --git-dir 2>/dev/null', $output, $code);
+        $gitDir = $code === 0 ? trim(implode('', $output)) : '';
+
+        $commonOutput = [];
+        exec('git rev-parse --git-common-dir 2>/dev/null', $commonOutput);
+        $gitCommonDir = trim(implode('', $commonOutput));
+
+        if ($gitDir === '' || $gitDir === $gitCommonDir) {
+            echo "SKIP testDetectClearsGitDirBeforeGitCommands: not running inside a linked worktree\n";
+            return 0;
+        }
+
+        $savedGitDir = getenv('GIT_DIR');
+        putenv('GIT_DIR=' . $gitDir);
+
+        try {
+            $instance = WorktreeScriptProxy::detect('scripts/backlog.php');
+
+            if (!$instance->isLinkedWorktree()) {
+                echo "FAIL testDetectClearsGitDirBeforeGitCommands: expected linked worktree detection\n";
+                return 1;
+            }
+
+            if ($instance->getRelativePath() !== 'scripts/backlog.php') {
+                echo "FAIL testDetectClearsGitDirBeforeGitCommands: expected relativePath=scripts/backlog.php, got {$instance->getRelativePath()}\n";
+                return 1;
+            }
+        } catch (\RuntimeException $e) {
+            echo "FAIL testDetectClearsGitDirBeforeGitCommands: unexpected exception: {$e->getMessage()}\n";
+            return 1;
+        } finally {
+            if ($savedGitDir === false) {
+                putenv('GIT_DIR');
+            } else {
+                putenv('GIT_DIR=' . $savedGitDir);
+            }
+        }
+
+        echo "OK testDetectClearsGitDirBeforeGitCommands\n";
         return 0;
     }
 
