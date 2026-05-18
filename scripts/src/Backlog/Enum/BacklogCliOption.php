@@ -27,6 +27,7 @@ enum BacklogCliOption: string
     case DRY_RUN = 'dry-run';
     case FEATURE = 'feature';
     case FORCE = 'force';
+    case FORCE_NEW = 'force-new';
     case HELP = 'help';
     case INDEX = 'index';
     case MANAGER = 'manager';

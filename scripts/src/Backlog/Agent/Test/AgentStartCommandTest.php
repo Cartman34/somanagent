@@ -24,6 +24,7 @@ use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use Symfony\Component\Yaml\Yaml;
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 use SoManAgent\Script\Backlog\Service\EntryRebaseResult;
 use SoManAgent\Script\Backlog\Service\EntryRebaseService;
@@ -51,6 +52,10 @@ use SoManAgent\Script\TextSlugger;
  */
 final class AgentStartCommandTest
 {
+    private const FEATURE_CRYPTO = 'crypto-feature';
+    private const FEATURE_MY = 'my-feature';
+    private const FEATURE_ROLLBACK = 'rollback-feature';
+
     private string $tmpDir;
 
     /**
@@ -82,6 +87,7 @@ final class AgentStartCommandTest
         $failed += $this->testRequiresExactlyOneRoleFlag();
         $failed += $this->testRejectsMultipleRoleFlags();
         $failed += $this->testRejectsResetWithReviewer();
+        $failed += $this->testRejectsForceNewWithReviewer();
         $failed += $this->testRaisesClientNotInstalledWhenLauncherUnavailable();
         $failed += $this->testTierOverrideIsForwardedToLauncher();
         $failed += $this->testClaudeEffortOverrideIsForwardedToLauncher();
@@ -106,6 +112,10 @@ final class AgentStartCommandTest
         $failed += $this->testDeveloperStageApprovedUpToDateSkipsAgent();
         $failed += $this->testDeveloperStageApprovedConflictLaunchesAgentWithConflictPrompt();
         $failed += $this->testReviewerStageApprovedRefusesViaResolver();
+        $failed += $this->testStartAttachesWhenSessionIsLive();
+        $failed += $this->testStartCleansGhostSessionWhenDriverDead();
+        $failed += $this->testStartCleansGhostSessionWhenWorktreeAbsent();
+        $failed += $this->testForceNewDropsLiveSessionAndCreatesNew();
 
         return $failed;
     }
@@ -199,6 +209,24 @@ final class AgentStartCommandTest
             return 1;
         }
         echo "OK testRejectsResetWithReviewer\n";
+        return 0;
+    }
+
+    private function testRejectsForceNewWithReviewer(): int
+    {
+        $cmd = $this->buildCommand(new FakeAgentClientLauncher(AgentClient::CLAUDE));
+
+        $threw = false;
+        try {
+            $cmd->handle(['claude'], ['reviewer' => true, BacklogCliOption::FORCE_NEW->value => true]);
+        } catch (\RuntimeException $e) {
+            $threw = str_contains($e->getMessage(), '--force-new is only allowed with --developer');
+        }
+        if (!$threw) {
+            echo "FAIL testRejectsForceNewWithReviewer: expected --force-new/--reviewer rejection\n";
+            return 1;
+        }
+        echo "OK testRejectsForceNewWithReviewer\n";
         return 0;
     }
 
@@ -362,10 +390,10 @@ final class AgentStartCommandTest
             [
                 'kind' => 'feature',
                 'stage' => 'reviewing',
-                'feature' => 'crypto-feature',
+                'feature' => self::FEATURE_CRYPTO,
                 'agent' => 'd04',
                 'reviewer' => 'r01',
-                'branch' => 'feat/crypto-feature',
+                'branch' => 'feat/' . self::FEATURE_CRYPTO,
                 'type' => 'feat',
             ],
         ]);
@@ -378,7 +406,7 @@ final class AgentStartCommandTest
         $registry = new AgentClientLauncherRegistry();
         $registry->register($launcher);
 
-        $codeService = new AgentCodeService($dir, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler());
+        $codeService = new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService);
         $contextBuilder = new AgentContextBuilder($dir, $boardPath, $boardService);
         $worktreeService = (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor();
         $driver = new FakeSessionDriver();
@@ -446,7 +474,7 @@ final class AgentStartCommandTest
         $reloaded = $boardService->loadBoard($boardPath);
         $stillReviewing = false;
         foreach ($reloaded->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-            if ($entry->getFeature() === 'crypto-feature' && $entry->getStage() === 'reviewing') {
+            if ($entry->getFeature() === self::FEATURE_CRYPTO && $entry->getStage() === 'reviewing') {
                 $stillReviewing = true;
                 break;
             }
@@ -474,9 +502,9 @@ final class AgentStartCommandTest
             [
                 'kind' => 'feature',
                 'stage' => 'review',
-                'feature' => 'crypto-feature',
+                'feature' => self::FEATURE_CRYPTO,
                 'agent' => 'd04',
-                'branch' => 'feat/crypto-feature',
+                'branch' => 'feat/' . self::FEATURE_CRYPTO,
                 'type' => 'feat',
             ],
         ]);
@@ -493,7 +521,7 @@ final class AgentStartCommandTest
         $fakeRunner->onReviewNext = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
             $board = $boardService->loadBoard($boardPath);
             foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-                if ($entry->getFeature() === 'crypto-feature') {
+                if ($entry->getFeature() === self::FEATURE_CRYPTO) {
                     $entry->setStage(BacklogBoard::STAGE_REVIEWING);
                     $entry->setReviewer($reviewerCode);
                     $boardService->saveBoard($board);
@@ -507,7 +535,7 @@ final class AgentStartCommandTest
             $worktreesRoot,
             $boardPath,
             $registry,
-            new AgentCodeService($dir, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
             $sessionService,
             new AgentContextBuilder($dir, $boardPath, $boardService),
             (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor(),
@@ -536,7 +564,7 @@ final class AgentStartCommandTest
             echo "FAIL testReviewerModeCallsReviewNextWhenTakingEntry: review-next was not called\n";
             return 1;
         }
-        if ($fakeRunner->calls[0]['reviewerCode'] !== 'r01' || $fakeRunner->calls[0]['entryRef'] !== 'crypto-feature') {
+        if ($fakeRunner->calls[0]['reviewerCode'] !== 'r01' || $fakeRunner->calls[0]['entryRef'] !== self::FEATURE_CRYPTO) {
             echo "FAIL testReviewerModeCallsReviewNextWhenTakingEntry: unexpected args: "
                 . json_encode($fakeRunner->calls[0]) . "\n";
             return 1;
@@ -589,9 +617,9 @@ final class AgentStartCommandTest
             [
                 'kind' => 'feature',
                 'stage' => 'review',
-                'feature' => 'crypto-feature',
+                'feature' => self::FEATURE_CRYPTO,
                 'agent' => 'd04',
-                'branch' => 'feat/crypto-feature',
+                'branch' => 'feat/' . self::FEATURE_CRYPTO,
                 'type' => 'feat',
             ],
         ]);
@@ -610,7 +638,7 @@ final class AgentStartCommandTest
         $fakeRunner->onReviewNext = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
             $board = $boardService->loadBoard($boardPath);
             foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-                if ($entry->getFeature() === 'crypto-feature') {
+                if ($entry->getFeature() === self::FEATURE_CRYPTO) {
                     $entry->setStage(BacklogBoard::STAGE_REVIEWING);
                     $entry->setReviewer($reviewerCode);
                     $boardService->saveBoard($board);
@@ -622,7 +650,7 @@ final class AgentStartCommandTest
         $fakeRunner->onReviewCancel = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
             $board = $boardService->loadBoard($boardPath);
             foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-                if ($entry->getFeature() === 'crypto-feature') {
+                if ($entry->getFeature() === self::FEATURE_CRYPTO) {
                     $entry->setStage(BacklogBoard::STAGE_IN_REVIEW);
                     $entry->setReviewer(null);
                     $boardService->saveBoard($board);
@@ -636,7 +664,7 @@ final class AgentStartCommandTest
             $worktreesRoot,
             $boardPath,
             $registry,
-            new AgentCodeService($dir, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
             $sessionService,
             new AgentContextBuilder($dir, $boardPath, $boardService),
             (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor(),
@@ -681,7 +709,7 @@ final class AgentStartCommandTest
             echo "FAIL testReviewerModeRollsBackViaCancelWhenPreparationFails: review-cancel was not called\n";
             return 1;
         }
-        if ($cancelCall['reviewerCode'] !== 'r01' || $cancelCall['entryRef'] !== 'crypto-feature') {
+        if ($cancelCall['reviewerCode'] !== 'r01' || $cancelCall['entryRef'] !== self::FEATURE_CRYPTO) {
             echo "FAIL testReviewerModeRollsBackViaCancelWhenPreparationFails: unexpected cancel args: "
                 . json_encode($cancelCall) . "\n";
             return 1;
@@ -712,9 +740,9 @@ final class AgentStartCommandTest
             [
                 'kind' => 'feature',
                 'stage' => 'review',
-                'feature' => 'crypto-feature',
+                'feature' => self::FEATURE_CRYPTO,
                 'agent' => 'd04',
-                'branch' => 'feat/crypto-feature',
+                'branch' => 'feat/' . self::FEATURE_CRYPTO,
                 'type' => 'feat',
             ],
         ]);
@@ -743,7 +771,7 @@ final class AgentStartCommandTest
         $fakeRunner->onReviewNext = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
             $board = $boardService->loadBoard($boardPath);
             foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-                if ($entry->getFeature() === 'crypto-feature') {
+                if ($entry->getFeature() === self::FEATURE_CRYPTO) {
                     $entry->setStage(BacklogBoard::STAGE_REVIEWING);
                     $entry->setReviewer($reviewerCode);
                     $boardService->saveBoard($board);
@@ -757,7 +785,7 @@ final class AgentStartCommandTest
             $worktreesRoot,
             $boardPath,
             $registry,
-            new AgentCodeService($dir, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
             $sessionService,
             new AgentContextBuilder($dir, $boardPath, $boardService),
             (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor(),
@@ -812,9 +840,9 @@ final class AgentStartCommandTest
             [
                 'kind' => 'feature',
                 'stage' => 'review',
-                'feature' => 'crypto-feature',
+                'feature' => self::FEATURE_CRYPTO,
                 'agent' => 'd04',
-                'branch' => 'feat/crypto-feature',
+                'branch' => 'feat/' . self::FEATURE_CRYPTO,
                 'type' => 'feat',
             ],
         ]);
@@ -843,7 +871,7 @@ final class AgentStartCommandTest
         $fakeRunner->onReviewNext = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
             $board = $boardService->loadBoard($boardPath);
             foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-                if ($entry->getFeature() === 'crypto-feature') {
+                if ($entry->getFeature() === self::FEATURE_CRYPTO) {
                     $entry->setStage(BacklogBoard::STAGE_REVIEWING);
                     $entry->setReviewer($reviewerCode);
                     $boardService->saveBoard($board);
@@ -854,7 +882,7 @@ final class AgentStartCommandTest
         $fakeRunner->onReviewCancel = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
             $board = $boardService->loadBoard($boardPath);
             foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-                if ($entry->getFeature() === 'crypto-feature') {
+                if ($entry->getFeature() === self::FEATURE_CRYPTO) {
                     $entry->setStage(BacklogBoard::STAGE_IN_REVIEW);
                     $entry->setReviewer(null);
                     $boardService->saveBoard($board);
@@ -868,7 +896,7 @@ final class AgentStartCommandTest
             $worktreesRoot,
             $boardPath,
             $registry,
-            new AgentCodeService($dir, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
             $sessionService,
             new AgentContextBuilder($dir, $boardPath, $boardService),
             (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor(),
@@ -937,7 +965,7 @@ final class AgentStartCommandTest
             $worktreesRoot,
             $boardPath,
             $registry,
-            new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
             $sessionService,
             new AgentContextBuilder($projectRoot, $boardPath, $boardService),
             $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
@@ -1000,7 +1028,7 @@ final class AgentStartCommandTest
             $worktreesRoot,
             $boardPath,
             $registry,
-            new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
             $sessionService,
             new AgentContextBuilder($projectRoot, $boardPath, $boardService),
             $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
@@ -1075,7 +1103,7 @@ final class AgentStartCommandTest
             $worktreesRoot,
             $boardPath,
             $registry,
-            new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
             $sessionService,
             new AgentContextBuilder($projectRoot, $boardPath, $boardService),
             $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
@@ -1134,7 +1162,7 @@ final class AgentStartCommandTest
         $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
 
         $this->writeBoard($boardPath, [], [
-            ['feature' => 'my-feature', 'type' => 'feat', 'title' => 'Auto-pick task'],
+            ['feature' => self::FEATURE_MY, 'type' => 'feat', 'title' => 'Auto-pick task'],
         ]);
 
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
@@ -1150,7 +1178,7 @@ final class AgentStartCommandTest
             $worktreesRoot,
             $boardPath,
             $registry,
-            new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
             $sessionService,
             new AgentContextBuilder($projectRoot, $boardPath, $boardService),
             $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
@@ -1190,7 +1218,7 @@ final class AgentStartCommandTest
             echo "FAIL testDeveloperAutoPicksFirstQueuedTask: work-start was not called\n";
             return 1;
         }
-        if ($workStartCall['developerCode'] !== 'd08' || $workStartCall['entryRef'] !== 'my-feature') {
+        if ($workStartCall['developerCode'] !== 'd08' || $workStartCall['entryRef'] !== self::FEATURE_MY) {
             echo "FAIL testDeveloperAutoPicksFirstQueuedTask: unexpected work-start args: "
                 . json_encode($workStartCall) . "\n";
             return 1;
@@ -1225,7 +1253,7 @@ final class AgentStartCommandTest
             $this->tmpDir . '/worktrees',
             $boardPath,
             $registry,
-            new AgentCodeService($this->tmpDir, $this->tmpDir . '/worktrees', $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            new AgentCodeService($this->tmpDir . '/worktrees', $boardPath, $boardService, $sessionService),
             $sessionService,
             new AgentContextBuilder($this->tmpDir, $boardPath, $boardService),
             (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor(),
@@ -1295,7 +1323,7 @@ final class AgentStartCommandTest
             $worktreesRoot,
             $boardPath,
             $registry,
-            new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
             $sessionService,
             new AgentContextBuilder($projectRoot, $boardPath, $boardService),
             $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
@@ -1350,7 +1378,7 @@ final class AgentStartCommandTest
         $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
 
         $this->writeBoard($boardPath, [], [
-            ['feature' => 'rollback-feature', 'type' => 'feat', 'title' => 'Task to auto-pick'],
+            ['feature' => self::FEATURE_ROLLBACK, 'type' => 'feat', 'title' => 'Task to auto-pick'],
         ]);
 
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
@@ -1368,7 +1396,7 @@ final class AgentStartCommandTest
             $worktreesRoot,
             $boardPath,
             $registry,
-            new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
             $sessionService,
             new AgentContextBuilder($projectRoot, $boardPath, $boardService),
             $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
@@ -1411,7 +1439,7 @@ final class AgentStartCommandTest
             echo "FAIL testDeveloperRollsBackViaEntryReleaseWhenPreparationFails: entry-release was not called\n";
             return 1;
         }
-        if ($releaseCall['developerCode'] !== 'd10' || $releaseCall['entryRef'] !== 'rollback-feature') {
+        if ($releaseCall['developerCode'] !== 'd10' || $releaseCall['entryRef'] !== self::FEATURE_ROLLBACK) {
             echo "FAIL testDeveloperRollsBackViaEntryReleaseWhenPreparationFails: unexpected entry-release args: "
                 . json_encode($releaseCall) . "\n";
             return 1;
@@ -1453,7 +1481,7 @@ final class AgentStartCommandTest
             $worktreesRoot,
             $boardPath,
             $registry,
-            new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
             $sessionService,
             new AgentContextBuilder($projectRoot, $boardPath, $boardService),
             $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
@@ -1530,7 +1558,7 @@ final class AgentStartCommandTest
             $worktreesRoot,
             $boardPath,
             $registry,
-            new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
             $sessionService,
             new AgentContextBuilder($projectRoot, $boardPath, $boardService),
             $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
@@ -1711,7 +1739,7 @@ final class AgentStartCommandTest
             $worktreesRoot,
             $boardPath,
             $registry,
-            new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
             $sessionService,
             new AgentContextBuilder($projectRoot, $boardPath, $boardService),
             $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
@@ -1795,7 +1823,7 @@ final class AgentStartCommandTest
             $worktreesRoot,
             $boardPath,
             $registry,
-            new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
             $sessionService,
             new AgentContextBuilder($projectRoot, $boardPath, $boardService),
             $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
@@ -1876,12 +1904,10 @@ final class AgentStartCommandTest
         $registry = new AgentClientLauncherRegistry();
         $registry->register($launcher);
         $codeService = new AgentCodeService(
-            $this->tmpDir,
             $this->tmpDir . '/worktrees',
             $this->tmpDir . '/board.yaml',
             $boardService,
             $sessionService,
-            new FakeProcessSignaler(),
         );
         $contextBuilder = new AgentContextBuilder($this->tmpDir, $this->tmpDir . '/board.yaml', $boardService);
         $worktreeService = (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor();
@@ -1926,7 +1952,7 @@ final class AgentStartCommandTest
             $worktreesRoot,
             $boardPath,
             $registry,
-            new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler()),
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
             $sessionService,
             new AgentContextBuilder($projectRoot, $boardPath, $boardService),
             $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
@@ -2081,6 +2107,393 @@ final class AgentStartCommandTest
                 implode("\n", $output),
             ));
         }
+    }
+
+    private function testStartAttachesWhenSessionIsLive(): int
+    {
+        // When sessions.json has a live entry (driver isAlive=true + WA present),
+        // start must call driver->resume() rather than driver->launch().
+        $projectRoot = $this->createGitProject('attach-live');
+        $worktreesRoot = $projectRoot . '/.agent-worktrees';
+        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
+        $worktree = $worktreesRoot . '/d30';
+
+        $this->writeBoard($boardPath, [
+            [
+                'kind' => 'feature',
+                'stage' => 'development',
+                'feature' => 'live-feature',
+                'agent' => 'd30',
+                'branch' => 'feat/live-feature',
+            ],
+        ]);
+        $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' worktree add --detach ' . escapeshellarg($worktree) . ' HEAD');
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($projectRoot);
+
+        // Register an existing session entry that looks live.
+        $this->writeSessionsJson($projectRoot, [
+            'd30' => [
+                'client' => 'claude',
+                'role' => 'developer',
+                'pid' => 55500,
+                'worktree' => $worktree,
+                'started_at' => '2026-01-01T00:00:00+00:00',
+                'last_seen_at' => '2026-01-01T00:00:00+00:00',
+                'session_id' => null,
+            ],
+        ]);
+
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        $driver = new FakeSessionDriver();
+        // Driver reports the session as alive (tmux session alive, wrapper PID dead → re-attach allowed).
+        $driver->setAlive('d30', true);
+        $driver->setAllowsResumeWhileAlive(true);
+
+        $signaler = new FakeProcessSignaler();
+        // Wrapper PID 55500 is dead → guard allows re-attach.
+
+        $cmd = new AgentStartCommand(
+            $projectRoot,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
+            $sessionService,
+            new AgentContextBuilder($projectRoot, $boardPath, $boardService),
+            $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
+            new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot),
+            new AgentDeveloperSelector($boardService),
+            $boardService,
+            $driver,
+            $signaler,
+            new FakeProcessRunner(),
+            new FakeBacklogCommandRunner(),
+            new NullEntryRebaseService(),
+        );
+
+        $previousCwd = getcwd();
+        try {
+            chdir($projectRoot);
+            $cmd->handle(['claude'], ['developer' => true, 'code' => 'd30']);
+        } catch (\Throwable $e) {
+            echo "FAIL testStartAttachesWhenSessionIsLive: unexpected " . get_class($e) . ': ' . $e->getMessage() . "\n";
+            return 1;
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        if ($driver->lastResumeCall === null) {
+            echo "FAIL testStartAttachesWhenSessionIsLive: expected driver->resume() to be called, got launch()\n";
+            return 1;
+        }
+
+        if ($driver->lastLaunchCall !== null) {
+            echo "FAIL testStartAttachesWhenSessionIsLive: driver->launch() must not be called on re-attach\n";
+            return 1;
+        }
+
+        echo "OK testStartAttachesWhenSessionIsLive\n";
+        return 0;
+    }
+
+    private function testStartCleansGhostSessionWhenDriverDead(): int
+    {
+        // When sessions.json has an entry but driver.isAlive()=false (ghost), start must
+        // print a cleanup message, remove the entry, and create a fresh session.
+        $projectRoot = $this->createGitProject('ghost-driver-dead');
+        $worktreesRoot = $projectRoot . '/.agent-worktrees';
+        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
+        $worktree = $worktreesRoot . '/d31';
+
+        $this->writeBoard($boardPath, [
+            [
+                'kind' => 'feature',
+                'stage' => 'development',
+                'feature' => 'ghost-feature',
+                'agent' => 'd31',
+                'branch' => 'feat/ghost-feature',
+            ],
+        ]);
+        $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' worktree add --detach ' . escapeshellarg($worktree) . ' HEAD');
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($projectRoot);
+
+        $this->writeSessionsJson($projectRoot, [
+            'd31' => [
+                'client' => 'claude',
+                'role' => 'developer',
+                'pid' => 99901,
+                'worktree' => $worktree,
+                'started_at' => '2026-01-01T00:00:00+00:00',
+                'last_seen_at' => '2026-01-01T00:00:00+00:00',
+                'session_id' => null,
+            ],
+        ]);
+
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        $driver = new FakeSessionDriver();
+        // isAlive=false (default) → ghost session
+
+        $cmd = new AgentStartCommand(
+            $projectRoot,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
+            $sessionService,
+            new AgentContextBuilder($projectRoot, $boardPath, $boardService),
+            $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
+            new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot),
+            new AgentDeveloperSelector($boardService),
+            $boardService,
+            $driver,
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
+            new FakeBacklogCommandRunner(),
+            new NullEntryRebaseService(),
+        );
+
+        $previousCwd = getcwd();
+        $output = '';
+        try {
+            chdir($projectRoot);
+            ob_start();
+            $cmd->handle(['claude'], ['developer' => true, 'code' => 'd31']);
+            $output = (string) ob_get_clean();
+        } catch (\Throwable $e) {
+            ob_end_clean();
+            echo "FAIL testStartCleansGhostSessionWhenDriverDead: unexpected " . get_class($e) . ': ' . $e->getMessage() . "\n";
+            return 1;
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        if (!str_contains($output, 'Stale session for d31')) {
+            echo "FAIL testStartCleansGhostSessionWhenDriverDead: expected cleanup message, got: {$output}\n";
+            return 1;
+        }
+
+        if ($driver->lastLaunchCall === null) {
+            echo "FAIL testStartCleansGhostSessionWhenDriverDead: expected driver->launch() after cleanup\n";
+            return 1;
+        }
+
+        if ($driver->lastResumeCall !== null) {
+            echo "FAIL testStartCleansGhostSessionWhenDriverDead: driver->resume() must not be called for ghost\n";
+            return 1;
+        }
+
+        echo "OK testStartCleansGhostSessionWhenDriverDead\n";
+        return 0;
+    }
+
+    private function testStartCleansGhostSessionWhenWorktreeAbsent(): int
+    {
+        // When sessions.json has an entry with driver.isAlive()=true but the stored worktree
+        // directory is missing, start must treat it as a ghost: cleanup + create a new session.
+        $projectRoot = $this->createGitProject('ghost-wa-absent');
+        $worktreesRoot = $projectRoot . '/.agent-worktrees';
+        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
+        $missingWorktree = $worktreesRoot . '/d32';
+
+        $this->writeBoard($boardPath, [
+            [
+                'kind' => 'feature',
+                'stage' => 'development',
+                'feature' => 'wa-absent-feature',
+                'agent' => 'd32',
+                'branch' => 'feat/wa-absent-feature',
+            ],
+        ]);
+        // Note: we do NOT create the worktree directory — it is intentionally absent.
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($projectRoot);
+
+        $this->writeSessionsJson($projectRoot, [
+            'd32' => [
+                'client' => 'claude',
+                'role' => 'developer',
+                'pid' => 88802,
+                'worktree' => $missingWorktree,
+                'started_at' => '2026-01-01T00:00:00+00:00',
+                'last_seen_at' => '2026-01-01T00:00:00+00:00',
+                'session_id' => null,
+            ],
+        ]);
+
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        $driver = new FakeSessionDriver();
+        // Driver reports alive, but worktree does not exist → ghost (isLive = false)
+        $driver->setAlive('d32', true);
+
+        $cmd = new AgentStartCommand(
+            $projectRoot,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
+            $sessionService,
+            new AgentContextBuilder($projectRoot, $boardPath, $boardService),
+            $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
+            new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot),
+            new AgentDeveloperSelector($boardService),
+            $boardService,
+            $driver,
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
+            new FakeBacklogCommandRunner(),
+            new NullEntryRebaseService(),
+        );
+
+        $previousCwd = getcwd();
+        $output = '';
+        try {
+            chdir($projectRoot);
+            ob_start();
+            $cmd->handle(['claude'], ['developer' => true, 'code' => 'd32']);
+            $output = (string) ob_get_clean();
+        } catch (\Throwable $e) {
+            ob_end_clean();
+            echo "FAIL testStartCleansGhostSessionWhenWorktreeAbsent: unexpected " . get_class($e) . ': ' . $e->getMessage() . "\n";
+            return 1;
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        if (!str_contains($output, 'Stale session for d32')) {
+            echo "FAIL testStartCleansGhostSessionWhenWorktreeAbsent: expected cleanup message, got: {$output}\n";
+            return 1;
+        }
+
+        if ($driver->lastLaunchCall === null) {
+            echo "FAIL testStartCleansGhostSessionWhenWorktreeAbsent: expected driver->launch() after cleanup\n";
+            return 1;
+        }
+
+        echo "OK testStartCleansGhostSessionWhenWorktreeAbsent\n";
+        return 0;
+    }
+
+    private function testForceNewDropsLiveSessionAndCreatesNew(): int
+    {
+        // When --force-new is passed and there is a live session, start must drop the live
+        // session (kill driver session + remove sessions.json entry) and create a new one.
+        $projectRoot = $this->createGitProject('force-new-live');
+        $worktreesRoot = $projectRoot . '/.agent-worktrees';
+        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
+        $worktree = $worktreesRoot . '/d33';
+
+        $this->writeBoard($boardPath, [
+            [
+                'kind' => 'feature',
+                'stage' => 'development',
+                'feature' => 'force-feature',
+                'agent' => 'd33',
+                'branch' => 'feat/force-feature',
+            ],
+        ]);
+        $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' worktree add --detach ' . escapeshellarg($worktree) . ' HEAD');
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($projectRoot);
+
+        $this->writeSessionsJson($projectRoot, [
+            'd33' => [
+                'client' => 'claude',
+                'role' => 'developer',
+                'pid' => 77703,
+                'worktree' => $worktree,
+                'started_at' => '2026-01-01T00:00:00+00:00',
+                'last_seen_at' => '2026-01-01T00:00:00+00:00',
+                'session_id' => null,
+            ],
+        ]);
+
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        $driver = new FakeSessionDriver();
+        $driver->setAlive('d33', true);
+        $driver->setExists('d33', true);
+
+        $cmd = new AgentStartCommand(
+            $projectRoot,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
+            $sessionService,
+            new AgentContextBuilder($projectRoot, $boardPath, $boardService),
+            $this->buildRealWorktreeService($projectRoot, $worktreesRoot, $boardService),
+            new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot),
+            new AgentDeveloperSelector($boardService),
+            $boardService,
+            $driver,
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
+            new FakeBacklogCommandRunner(),
+            new NullEntryRebaseService(),
+        );
+
+        $previousCwd = getcwd();
+        $output = '';
+        try {
+            chdir($projectRoot);
+            ob_start();
+            $cmd->handle(['claude'], ['developer' => true, 'code' => 'd33', BacklogCliOption::FORCE_NEW->value => true]);
+            $output = (string) ob_get_clean();
+        } catch (\Throwable $e) {
+            ob_end_clean();
+            echo "FAIL testForceNewDropsLiveSessionAndCreatesNew: unexpected " . get_class($e) . ': ' . $e->getMessage() . "\n";
+            return 1;
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        if (!str_contains($output, 'Dropping live session for d33')) {
+            echo "FAIL testForceNewDropsLiveSessionAndCreatesNew: expected drop message, got: {$output}\n";
+            return 1;
+        }
+
+        if (!in_array('d33', $driver->killedCodes, true)) {
+            echo "FAIL testForceNewDropsLiveSessionAndCreatesNew: expected driver->kill('d33') to be called\n";
+            return 1;
+        }
+
+        if ($driver->lastLaunchCall === null) {
+            echo "FAIL testForceNewDropsLiveSessionAndCreatesNew: expected driver->launch() after drop\n";
+            return 1;
+        }
+
+        if ($driver->lastResumeCall !== null) {
+            echo "FAIL testForceNewDropsLiveSessionAndCreatesNew: driver->resume() must not be called after force-new\n";
+            return 1;
+        }
+
+        echo "OK testForceNewDropsLiveSessionAndCreatesNew\n";
+        return 0;
     }
 
     private function rmdir(string $dir): void

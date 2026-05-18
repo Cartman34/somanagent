@@ -198,17 +198,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                     $boardPath,
                     $this->boardService(),
                 ),
-                'resume' => new AgentResumeCommand(
-                    $this->projectRoot,
-                    $this->registry(),
-                    $this->contextBuilder($boardPath),
-                    $this->sessionService(),
-                    $this->boardService(),
-                    $this->worktreeService($boardPath, $worktreesRoot),
-                    $boardPath,
-                    $this->sessionDriver(),
-                    $this->processSignaler(),
-                ),
+                'resume' => new AgentResumeCommand(),
                 'sessions' => new AgentSessionsCommand(
                     $this->console,
                     $this->sessionService(),
@@ -279,12 +269,10 @@ final class BacklogAgentRunner extends AbstractScriptRunner
     {
         if ($this->codeService === null) {
             $this->codeService = new AgentCodeService(
-                $this->projectRoot,
                 $worktreesRoot,
                 $boardPath,
                 $this->boardService(),
                 $this->sessionService(),
-                $this->processSignaler(),
             );
         }
 

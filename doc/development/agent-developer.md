@@ -79,7 +79,7 @@ Default model profile is `balanced+medium`. The operator may override it with `-
 
 **Auto-pick at start:** when the developer has no active entry, `start` automatically calls `work-start` on the first queued task and injects that entry into the generated context. If the entry was concurrently claimed by another agent between the read and the mutation, `start` silently moves to the next candidate in the todo list — the retry is bounded by the list length and never blocks. If the developer already has an active entry (e.g. after a session disconnect), `start` resumes that entry without consuming anything from the todo queue.
 
-**`resume` never auto-picks:** `resume --code=<dXX>` reconnects to the existing session without touching the todo queue, regardless of its contents.
+**`start` is the single entry point** — no separate `resume` command is needed. When `--code=<dXX>` is passed and a session entry already exists, `start` inspects the real state and dispatches automatically: live session (driver alive + WA present) → re-attach; ghost session (driver dead or WA absent) → silent cleanup then create; `--force-new` → drop live session then create.
 
 Supported clients:
 
@@ -97,14 +97,14 @@ The following environment variables are injected into every session:
 | `SOMANAGER_CLIENT` | `claude`, `codex`, `opencode`, or `gemini` |
 | `SOMANAGER_WP` | Absolute path to the main workspace |
 
-A context file is generated at `<WA>/local/agent-context.md` on every session start and resume. It summarises the current task, allowed commands, and backlog vocabulary. Do not commit or push this file.
+A context file is generated at `<WA>/local/agent-context.md` on every `start`. It summarises the current task, allowed commands, and backlog vocabulary. Do not commit or push this file.
 
 The launcher spawns the AI client via the active **session driver** and records the client PID (and tmux session name when applicable) in `local/tmp/agent-sessions.json`:
 
-- **tmux driver** (default): wraps the session in a named tmux session (`somanagent-<code>`). SSH-resilient — the client keeps running after a terminal disconnect. `stop` kills the tmux session; `resume` re-attaches to it.
+- **tmux driver** (default): wraps the session in a named tmux session (`somanagent-<code>`). SSH-resilient — the client keeps running after a terminal disconnect. `stop` kills the tmux session; `start --code=<dXX>` re-attaches to it.
 - **direct driver** (`BACKLOG_AGENT_SESSION_DRIVER=direct`): spawns the client via `proc_open`. Not SSH-resilient. `stop` sends SIGTERM then SIGKILL after 5 seconds.
 
-A `resume` re-attaches to a detached tmux session, but is refused while the PHP wrapper is still alive or when the direct driver still has a live client process. See `doc/development/agent-workflow.md` for the full lifecycle and `last_seen_at` semantics.
+`start --code=<dXX>` re-attaches to a detached tmux session. Re-attach is refused while the PHP wrapper is still alive or when the direct driver still has a live client process. See `doc/development/agent-workflow.md` for the full lifecycle and `last_seen_at` semantics.
 
 `php scripts/backlog-agent.php prune` (operator command, not part of the developer workflow) batch-cleans invalid entries from `agent-sessions.json`: launches never finalised, dead processes, and orphan worktrees. Pass `--dry-run` to preview or `--force` to also drop warning entries with a still-live process. See `doc/development/agent-workflow.md` for the full ruleset.
 

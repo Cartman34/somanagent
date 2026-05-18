@@ -16,6 +16,7 @@ use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use SoManAgent\Script\Backlog\Agent\Exception\ActiveSessionException;
 use SoManAgent\Script\Backlog\Agent\Exception\ClientNotInstalledException;
+use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 use SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
 use SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
 use SoManAgent\Script\Backlog\Agent\Service\AgentDeveloperSelector;
@@ -31,10 +32,17 @@ use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 use SoManAgent\Script\Backlog\Service\EntryRebaseService;
 
 /**
- * Starts an AI agent session in a dedicated worktree.
+ * Starts or re-attaches an AI agent session in a dedicated worktree.
+ *
+ * When a sessions.json entry already exists for the requested code, start dispatches
+ * automatically based on the observed liveness of that session:
+ *   - Live session (driver isAlive + WA present) → re-attach (equivalent to the old resume)
+ *   - Ghost session (driver dead or WA absent)   → silent cleanup, then create a new session
+ *
+ * Pass --force-new to drop a live session and force a fresh start.
  *
  * Usage:
- *   php scripts/backlog-agent.php start <client> --developer [--code=<dXX>] [--reset]
+ *   php scripts/backlog-agent.php start <client> --developer [--code=<dXX>] [--reset] [--force-new]
  *   php scripts/backlog-agent.php start <client> --reviewer [--code=<rXX>] [--feature=<slug>] [--task=<feature/task>] [--developer=<dXX>] [--force]
  *   php scripts/backlog-agent.php start <client> --manager  [--code=<mXX>]
  */
@@ -72,7 +80,7 @@ final class AgentStartCommand extends AbstractAgentCommand
      * @param AgentDeveloperSelector $developerSelector Used to check for an active entry or auto-select the first queued task
      * @param BacklogBoardService $boardService
      * @param SessionDriverInterface $sessionDriver
-     * @param ProcessSignaler $signaler Used for ActiveSessionException liveness check
+     * @param ProcessSignaler $signaler Used for liveness checks in attach and ghost-cleanup logic
      * @param ProcessRunner $shellRunner Used to check for local changes in the worktree
      * @param BacklogCommandRunner $backlogCommandRunner Used to delegate review-next, review-cancel, work-start, and entry-release under the backlog lock
      * @param EntryRebaseService $entryRebaseService Handles approved-entry rebase before developer session launch; use NullEntryRebaseService in tests that do not exercise the approved path
@@ -135,6 +143,7 @@ final class AgentStartCommand extends AbstractAgentCommand
             ['name' => '--effort=<effort>', 'description' => 'Reasoning effort override: low, medium, high'],
             ['name' => '--model=<model>', 'description' => 'Raw model name override passed directly to the client'],
             ['name' => '--reset', 'description' => 'Remove and recreate the worktree before launching (developer only; refuses if dirty)'],
+            ['name' => '--force-new', 'description' => 'Drop a live session and create a fresh one (developer only)'],
             ['name' => '--feature=<slug>', 'description' => 'Reviewer: target the feature entry at stage=review with this slug'],
             ['name' => '--task=<feature/task>', 'description' => 'Reviewer: target the task entry at stage=review with this reference'],
             ['name' => '--developer=<dXX>', 'description' => 'Reviewer: target the active entry assigned to this developer code'],
@@ -163,12 +172,17 @@ final class AgentStartCommand extends AbstractAgentCommand
 
         $role = $this->resolveRole($options);
         $reset = isset($options[BacklogCliOption::RESET->value]);
+        $forceNew = isset($options[BacklogCliOption::FORCE_NEW->value]);
         $tierOverride = $this->getSingleOption($options, 'tier');
         $effortOverride = $this->getSingleOption($options, 'effort');
         $modelOverride = $this->getSingleOption($options, 'model');
 
         if ($reset && $role !== AgentRole::DEVELOPER) {
             throw new \RuntimeException('--reset is only allowed with --developer.');
+        }
+
+        if ($forceNew && $role !== AgentRole::DEVELOPER) {
+            throw new \RuntimeException('--force-new is only allowed with --developer.');
         }
 
         $resolvedModel = $this->modelResolver?->resolve($client, $role, $tierOverride, $effortOverride, $modelOverride);
@@ -188,6 +202,32 @@ final class AgentStartCommand extends AbstractAgentCommand
             $code = $codeOption;
         } else {
             $code = $this->codeService->allocateForRole($role);
+        }
+
+        // Resolve existing session entry and dispatch: attach live, clean ghost, or proceed to create.
+        $existingSession = $this->sessionService->get($code);
+
+        if ($existingSession !== null) {
+            $isDriverAlive = $this->sessionDriver->isAlive($existingSession);
+            $isWorktreePresent = is_dir($existingSession->worktree);
+            $isLive = $isDriverAlive && $isWorktreePresent;
+
+            if ($isLive && !$forceNew) {
+                return $this->handleAttach($existingSession, $originalCwd);
+            }
+
+            if ($isLive) {
+                // --force-new: drop the live session and create a fresh one.
+                echo sprintf("Dropping live session for %s, creating new session.\n", $code);
+                if ($this->sessionDriver->sessionExists($code)) {
+                    $this->sessionDriver->kill($code);
+                }
+            } else {
+                // Ghost session (driver dead or WA absent): silent cleanup.
+                echo sprintf("Stale session for %s cleaned, creating new session.\n", $code);
+            }
+
+            $this->sessionService->remove($code);
         }
 
         // Refuse when the driver already tracks a live session for this code (e.g. orphan tmux session).
@@ -322,13 +362,154 @@ final class AgentStartCommand extends AbstractAgentCommand
 
         $session = $this->sessionService->get($code);
         if ($session !== null && $this->sessionDriver->isAlive($session)) {
-            echo sprintf("Session detached. Use 'resume --code=%s' to reconnect.\n", $code);
+            echo sprintf("Session detached. Use 'start --code=%s' to reconnect.\n", $code);
             return 0;
         }
 
         $this->sessionService->remove($code);
 
         return $exitCode;
+    }
+
+    /**
+     * Re-attaches to an existing live session (equivalent to the old resume command).
+     *
+     * Refuses if the PHP wrapper is still alive or the direct driver has a live client
+     * process (which would start a second client instance). Reconstructs the reviewer WA
+     * when the stored path is missing.
+     */
+    private function handleAttach(AgentSession $existingSession, false|string $originalCwd): int
+    {
+        $code = $existingSession->code;
+        $client = $existingSession->client;
+        $role = $existingSession->role;
+
+        // Refuse when the wrapper is still alive or the driver cannot safely re-attach.
+        $isAlive = $this->sessionDriver->isAlive($existingSession);
+        $wrapperAlive = $this->signaler->isAlive($existingSession->pid);
+        if ($isAlive && ($wrapperAlive || !$this->sessionDriver->allowsResumeWhileAlive())) {
+            throw new \RuntimeException(sprintf(
+                "Session %s is still running (a tracked process is alive). Stop it first:\n" .
+                "  php scripts/backlog-agent.php stop --code=%s",
+                $code,
+                $code,
+            ));
+        }
+
+        $this->sessionService->updateLastSeen($code);
+
+        $worktree = $existingSession->worktree;
+
+        if (!is_dir($worktree)) {
+            if ($role === AgentRole::REVIEWER) {
+                $worktree = $this->reconstructReviewerWorktree($code, $worktree);
+                if ($worktree !== $existingSession->worktree) {
+                    $this->sessionService->updateWorktree($code, $worktree);
+                }
+            } else {
+                throw new \RuntimeException(sprintf("Worktree not found for code '%s' at %s.", $code, $worktree));
+            }
+        }
+
+        $launcher = $this->registry->get($client);
+
+        if (!$launcher->isAvailable()) {
+            throw new ClientNotInstalledException($client);
+        }
+
+        $contextFilePath = $this->contextBuilder->build($worktree, $code, $role);
+
+        $launcher->prepareWorktree($worktree, $contextFilePath);
+
+        [$bin, $binArgs] = $launcher->buildLaunchCommand($worktree, $contextFilePath, $role, null, true);
+
+        $baseEnv = $this->buildBaseEnv($code, $role, $client);
+        $env = $launcher->buildEnvironment($baseEnv, $contextFilePath);
+
+        $this->sessionService->create($code, $client, $role, (int) getmypid(), $worktree);
+
+        chdir($worktree);
+
+        $sessionSvc = $this->sessionService;
+        try {
+            $exitCode = $this->sessionDriver->resume(
+                $code,
+                $bin,
+                $binArgs,
+                $worktree,
+                $env,
+                static function (int $clientPid, ?string $tmuxSession) use ($sessionSvc, $code): void {
+                    $sessionSvc->updateClientPid($code, $clientPid > 0 ? $clientPid : null);
+                    if ($tmuxSession !== null) {
+                        $sessionSvc->updateTmuxSession($code, $tmuxSession);
+                    }
+                },
+            );
+        } finally {
+            if ($originalCwd !== false) {
+                chdir($originalCwd);
+            }
+        }
+
+        $capturedId = $launcher->captureCurrentSessionId($worktree);
+        if ($capturedId !== null) {
+            $this->sessionService->updateSessionId($code, $capturedId);
+        }
+
+        $session = $this->sessionService->get($code);
+        if ($session !== null && $this->sessionDriver->isAlive($session)) {
+            echo sprintf("Session detached. Use 'start --code=%s' to reconnect.\n", $code);
+            return 0;
+        }
+
+        $this->sessionService->remove($code);
+
+        return $exitCode;
+    }
+
+    /**
+     * Attempts to reconstruct the developer WA for a reviewer session whose stored worktree is missing.
+     *
+     * @throws \RuntimeException when reconstruction is impossible
+     */
+    private function reconstructReviewerWorktree(string $reviewerCode, string $missingWorktree): string
+    {
+        if (!is_file($this->boardPath)) {
+            throw new \RuntimeException(sprintf(
+                'Developer WA not present at %s and could not be reconstructed: backlog board not found.',
+                $missingWorktree,
+            ));
+        }
+
+        try {
+            $board = $this->boardService->loadBoard($this->boardPath);
+            $match = $this->boardService->findReviewingEntryByReviewer($board, $reviewerCode);
+        } catch (\RuntimeException $e) {
+            throw new \RuntimeException(sprintf(
+                'Developer WA not present at %s and could not be reconstructed: %s',
+                $missingWorktree,
+                $e->getMessage(),
+            ));
+        }
+
+        if ($match === null) {
+            throw new \RuntimeException(sprintf(
+                'Developer WA not present at %s and could not be reconstructed: reviewer %s has no active reviewing entry.',
+                $missingWorktree,
+                $reviewerCode,
+            ));
+        }
+
+        $entry = $match->getEntry();
+        try {
+            return $this->worktreeService->prepareFeatureAgentWorktree($entry);
+        } catch (\RuntimeException $e) {
+            throw new \RuntimeException(sprintf(
+                'Developer WA not present at %s and could not be reconstructed: %s',
+                $missingWorktree,
+                $e->getMessage(),
+            ));
+        }
     }
 
     /**

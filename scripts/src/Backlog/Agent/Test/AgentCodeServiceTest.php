@@ -8,7 +8,6 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Agent\Test;
 
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
-use SoManAgent\Script\Backlog\Agent\Exception\ActiveSessionException;
 use SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
@@ -54,7 +53,6 @@ final class AgentCodeServiceTest
         $failed += $this->testValidateFormatError();
         $failed += $this->testValidateRoleMismatch();
         $failed += $this->testValidateAcceptsLowExplicitCode();
-        $failed += $this->testValidateActiveSessionThrows();
         $failed += $this->testAllocateManagerPrefix();
 
         return $failed;
@@ -204,40 +202,6 @@ final class AgentCodeServiceTest
         return 0;
     }
 
-    private function testValidateActiveSessionThrows(): int
-    {
-        $sessionsDir = $this->tmpDir . '/local/tmp';
-        mkdir($sessionsDir, 0755, true);
-        file_put_contents($sessionsDir . '/agent-sessions.json', json_encode([
-            'd01' => [
-                'client' => 'claude',
-                'role' => 'developer',
-                'pid' => 1,
-                'worktree' => '/fake',
-                'started_at' => '2026-01-01T00:00:00+00:00',
-                'last_seen_at' => '2026-01-01T00:00:00+00:00',
-                'session_id' => null,
-            ],
-        ]));
-
-        $service = $this->makeService(projectRoot: $this->tmpDir);
-        try {
-            $service->validate('d01', AgentRole::DEVELOPER);
-            echo "FAIL testValidateActiveSessionThrows: expected ActiveSessionException\n";
-            $this->rmdir($sessionsDir);
-            rmdir($this->tmpDir . '/local');
-            return 1;
-        } catch (ActiveSessionException $e) {
-            echo "OK testValidateActiveSessionThrows\n";
-        }
-
-        $this->rmdir($sessionsDir);
-        if (is_dir($this->tmpDir . '/local')) {
-            rmdir($this->tmpDir . '/local');
-        }
-        return 0;
-    }
-
     private function testAllocateManagerPrefix(): int
     {
         $service = $this->makeService();
@@ -259,7 +223,7 @@ final class AgentCodeServiceTest
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         $sessionService = new AgentSessionService($projectRoot);
 
-        return new AgentCodeService($projectRoot, $worktreesRoot, $boardPath, $boardService, $sessionService, new FakeProcessSignaler());
+        return new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService);
     }
 
     private function rmdir(string $dir): void
