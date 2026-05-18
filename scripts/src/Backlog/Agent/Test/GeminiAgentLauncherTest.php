@@ -11,6 +11,7 @@ use SoManAgent\Script\Backlog\Agent\Client\GeminiAgentLauncher;
 use SoManAgent\Script\Backlog\Agent\Client\ProcessRunner;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use SoManAgent\Script\Backlog\BacklogPaths;
 
 /**
  * Unit tests for GeminiAgentLauncher hooks.
@@ -208,7 +209,7 @@ final class GeminiAgentLauncherTest
             'resume' => $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, 'session-x'),
         ] as $mode => [, $args]) {
             $idx = array_search('--include-directories', $args, true);
-            if ($idx === false || ($args[$idx + 1] ?? null) !== '/wp-root/local/backlog') {
+            if ($idx === false || ($args[$idx + 1] ?? null) !== BacklogPaths::directory('/wp-root')) {
                 echo "FAIL testBuildLaunchCommandIncludesBacklogDir ({$mode}): --include-directories /wp-root/local/backlog missing\n";
                 return 1;
             }

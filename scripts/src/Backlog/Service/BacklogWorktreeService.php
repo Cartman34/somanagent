@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Service;
 
+use SoManAgent\Script\Backlog\BacklogPaths;
 use SoManAgent\Script\Backlog\Enum\WorktreeAction;
 use SoManAgent\Script\Backlog\Enum\WorktreeState;
 use SoManAgent\Script\Backlog\Model\ActiveEntryReference;
@@ -27,8 +28,6 @@ use SoManAgent\Script\LocalWorkingDirectories;
  */
 final class BacklogWorktreeService
 {
-    private const REVIEW_RESULT_FILE = 'local/backlog-review-result.txt';
-
     private string $projectRoot;
     private string $worktreesRoot;
     private bool $dryRun;
@@ -572,7 +571,7 @@ final class BacklogWorktreeService
             : '';
         [$code, $output] = $this->scripts->captureWithExitCode(AppScript::REVIEW, $arguments, projectRoot: $worktree);
 
-        $resultPath = $worktree . '/' . self::REVIEW_RESULT_FILE;
+        $resultPath = $worktree . '/' . BacklogPaths::REVIEW_RESULT;
         $this->fs->makeDirectory(dirname($resultPath));
         $this->fs->writeFilePath($resultPath, $output);
         $this->displayReviewResultPointer($output, $code === 0);
@@ -588,7 +587,7 @@ final class BacklogWorktreeService
      */
     public function loadReviewResult(string $worktree): ?string
     {
-        $path = $worktree . '/' . self::REVIEW_RESULT_FILE;
+        $path = $worktree . '/' . BacklogPaths::REVIEW_RESULT;
 
         return $this->fs->isFile($path) ? $this->fs->getFileContents($path) : null;
     }
@@ -612,7 +611,7 @@ final class BacklogWorktreeService
         echo "Mechanical review status: {$status}\n";
         echo sprintf(
             "Review report saved to %s (%d bytes, %d lines).\n",
-            self::REVIEW_RESULT_FILE,
+            BacklogPaths::REVIEW_RESULT,
             $bytes,
             $lines,
         );

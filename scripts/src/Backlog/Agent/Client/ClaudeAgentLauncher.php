@@ -11,6 +11,7 @@ use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use SoManAgent\Script\Backlog\Agent\Model\ResolvedModel;
 use SoManAgent\Script\Backlog\Agent\Model\SessionInfo;
+use SoManAgent\Script\Backlog\BacklogPaths;
 
 /**
  * Launcher implementation for Claude Code.
@@ -103,7 +104,7 @@ final class ClaudeAgentLauncher extends AbstractAgentClientLauncher
 
         if ($this->projectRoot !== null) {
             $args[] = '--add-dir';
-            $args[] = $this->projectRoot . '/local/backlog';
+            $args[] = BacklogPaths::directory($this->projectRoot);
         }
 
         if ($resolvedModel !== null) {

@@ -37,6 +37,7 @@ use SoManAgent\Script\Backlog\Agent\Service\AgentLaunchPromptResolver;
 use SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
 use SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
+use SoManAgent\Script\Backlog\BacklogPaths;
 use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
@@ -63,7 +64,6 @@ use SoManAgent\Script\TextSlugger;
  */
 final class BacklogAgentRunner extends AbstractScriptRunner
 {
-    private const DEFAULT_BOARD_PATH = 'local/backlog/backlog-board.yaml';
     private const DEFAULT_WORKTREES_DIR = '.agent-worktrees';
 
     /** @var array<string, AbstractAgentCommand>|null */
@@ -147,7 +147,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
     private function commands(): array
     {
         if ($this->commands === null) {
-            $boardPath = $this->projectRoot . '/' . self::DEFAULT_BOARD_PATH;
+            $boardPath = BacklogPaths::boardPath($this->projectRoot);
             $worktreesRoot = $this->projectRoot . '/' . self::DEFAULT_WORKTREES_DIR;
 
             $this->commands = [

@@ -11,6 +11,7 @@ use SoManAgent\Script\Backlog\Agent\Client\OpenCodeAgentLauncher;
 use SoManAgent\Script\Backlog\Agent\Client\ProcessRunner;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use SoManAgent\Script\Backlog\BacklogPaths;
 
 /**
  * Unit tests for OpenCodeAgentLauncher hooks.
@@ -218,7 +219,7 @@ final class OpenCodeAgentLauncherTest
         $launcher->prepareWorktree($worktree, $worktree . '/local/agent-context.md');
 
         $data = json_decode((string) file_get_contents($worktree . '/opencode.json'), true);
-        $pattern = '/wp-root/local/backlog/**';
+        $pattern = BacklogPaths::directory('/wp-root') . '/**';
         $permission = $data['permission']['external_directory'][$pattern] ?? null;
         if ($permission !== 'allow') {
             echo "FAIL testPrepareWorktreeAddsBacklogPermission: expected allow permission for {$pattern}\n";
@@ -240,7 +241,7 @@ final class OpenCodeAgentLauncherTest
 
         $data = json_decode((string) file_get_contents($worktree . '/opencode.json'), true);
         $externalDirectory = $data['permission']['external_directory'] ?? [];
-        $count = count(array_filter(array_keys($externalDirectory), static fn(int|string $k): bool => str_contains((string) $k, 'local/backlog')));
+        $count = count(array_filter(array_keys($externalDirectory), static fn(int|string $k): bool => str_contains((string) $k, BacklogPaths::DIRECTORY)));
         if ($count !== 1) {
             echo "FAIL testPrepareWorktreeIsBacklogPermissionIdempotent: backlog permission duplicated (count={$count})\n";
 

@@ -9,6 +9,7 @@ namespace SoManAgent\Script\Backlog\Test;
 
 use SoManAgent\Script\Application;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
+use SoManAgent\Script\Backlog\BacklogPaths;
 use SoManAgent\Script\Backlog\Command\BacklogReviewNextCommand;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
@@ -176,7 +177,7 @@ final class BacklogReviewNextCommandTest
             new AgentSessionService($projectRoot),
             $boardService,
         );
-        $command->setBoardPath($projectRoot . '/local/backlog-board.yaml');
+        $command->setBoardPath(BacklogPaths::boardPath($projectRoot));
 
         return $command;
     }
@@ -185,6 +186,7 @@ final class BacklogReviewNextCommandTest
     {
         $projectRoot = $this->tmpDir . '/' . $name;
         mkdir($projectRoot . '/local/tmp', 0755, true);
+        mkdir(BacklogPaths::directory($projectRoot), 0755, true);
         mkdir($projectRoot . '/.agent-worktrees/d05', 0755, true);
         mkdir($projectRoot . '/.agent-worktrees/d06', 0755, true);
 
@@ -196,7 +198,7 @@ final class BacklogReviewNextCommandTest
      */
     private function writeBoard(string $projectRoot, array $entries): void
     {
-        file_put_contents($projectRoot . '/local/backlog-board.yaml', Yaml::dump([
+        file_put_contents(BacklogPaths::boardPath($projectRoot), Yaml::dump([
             'version' => 1,
             'todo' => [],
             'active' => $entries,
@@ -206,7 +208,7 @@ final class BacklogReviewNextCommandTest
     private function loadBoard(string $projectRoot): BacklogBoard
     {
         return (new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false))
-            ->loadBoard($projectRoot . '/local/backlog-board.yaml');
+            ->loadBoard(BacklogPaths::boardPath($projectRoot));
     }
 
     private function writeReviewerSession(string $projectRoot, string $reviewer, string $developer): void

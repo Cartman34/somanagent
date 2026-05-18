@@ -11,6 +11,7 @@ use SoManAgent\Script\Backlog\Agent\Client\CodexAgentLauncher;
 use SoManAgent\Script\Backlog\Agent\Client\ProcessRunner;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use SoManAgent\Script\Backlog\BacklogPaths;
 
 /**
  * Unit tests for CodexAgentLauncher hooks.
@@ -206,7 +207,7 @@ final class CodexAgentLauncherTest
             'resume' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, 'session-x'),
         ] as $mode => [, $args]) {
             $idx = array_search('--add-dir', $args, true);
-            if ($idx === false || ($args[$idx + 1] ?? null) !== '/wp-root/local/backlog') {
+            if ($idx === false || ($args[$idx + 1] ?? null) !== BacklogPaths::directory('/wp-root')) {
                 echo "FAIL testBuildLaunchCommandIncludesBacklogDir ({$mode}): --add-dir /wp-root/local/backlog missing\n";
                 return 1;
             }

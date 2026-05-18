@@ -11,6 +11,7 @@ use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use SoManAgent\Script\Backlog\Agent\Model\ResolvedModel;
 use SoManAgent\Script\Backlog\Agent\Model\SessionInfo;
+use SoManAgent\Script\Backlog\BacklogPaths;
 
 /**
  * Launcher implementation for OpenCode.
@@ -104,7 +105,7 @@ final class OpenCodeAgentLauncher extends AbstractAgentClientLauncher
         $data['instructions'] = array_values($instructions);
 
         if ($this->projectRoot !== null) {
-            $backlogPattern = $this->projectRoot . '/local/backlog/**';
+            $backlogPattern = BacklogPaths::directory($this->projectRoot) . '/**';
             $permission = $data['permission'] ?? [];
             if (!is_array($permission)) {
                 $permission = [];
