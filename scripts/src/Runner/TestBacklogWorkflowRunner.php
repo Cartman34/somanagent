@@ -29,15 +29,15 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
 {
     private const NAME = 'test-backlog-workflow';
 
-    private const CAMPAIGN_BOARD_FORMAT_NORMALIZATION = self::CAMPAIGN_BOARD_FORMAT_NORMALIZATION;
-    private const CAMPAIGN_ENTRY_CREATE_FORMATS = self::CAMPAIGN_ENTRY_CREATE_FORMATS;
-    private const CAMPAIGN_WORK_START_TYPE_PREFIX = self::CAMPAIGN_WORK_START_TYPE_PREFIX;
-    private const CAMPAIGN_TODO_AND_PLAIN_FEATURE_LIFECYCLE = self::CAMPAIGN_TODO_AND_PLAIN_FEATURE_LIFECYCLE;
-    private const CAMPAIGN_SCOPED_TASK_LIFECYCLE = self::CAMPAIGN_SCOPED_TASK_LIFECYCLE;
-    private const CAMPAIGN_MUTATION_LOCK = self::CAMPAIGN_MUTATION_LOCK;
-    private const CAMPAIGN_PENDING_MIGRATION = self::CAMPAIGN_PENDING_MIGRATION;
-    private const CAMPAIGN_FEATURE_REVIEW_LIFECYCLE = self::CAMPAIGN_FEATURE_REVIEW_LIFECYCLE;
-    private const CAMPAIGN_USER_MERGE = self::CAMPAIGN_USER_MERGE;
+    private const CAMPAIGN_BOARD_FORMAT_NORMALIZATION = 'board-format-normalization';
+    private const CAMPAIGN_ENTRY_CREATE_FORMATS = 'entry-create-formats';
+    private const CAMPAIGN_WORK_START_TYPE_PREFIX = 'work-start-type-prefix';
+    private const CAMPAIGN_TODO_AND_PLAIN_FEATURE_LIFECYCLE = 'todo-and-plain-feature-lifecycle';
+    private const CAMPAIGN_SCOPED_TASK_LIFECYCLE = 'scoped-task-lifecycle';
+    private const CAMPAIGN_MUTATION_LOCK = 'mutation-lock';
+    private const CAMPAIGN_PENDING_MIGRATION = 'pending-migration';
+    private const CAMPAIGN_FEATURE_REVIEW_LIFECYCLE = 'feature-review-lifecycle';
+    private const CAMPAIGN_USER_MERGE = 'user-merge';
 
     protected function getName(): string
     {

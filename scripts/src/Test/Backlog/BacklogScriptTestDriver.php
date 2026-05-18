@@ -25,7 +25,7 @@ use SoManAgent\Script\Service\GitService;
  */
 final class BacklogScriptTestDriver
 {
-    private const TEST_REVIEWER_AGENT = self::TEST_REVIEWER_AGENT;
+    private const TEST_REVIEWER_AGENT = 'test-reviewer';
 
     private BacklogScriptTestContext $context;
     private ConsoleClient $consoleClient;
