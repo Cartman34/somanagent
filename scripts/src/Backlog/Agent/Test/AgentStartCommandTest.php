@@ -86,6 +86,7 @@ final class AgentStartCommandTest
         $failed += $this->testRequiresExactlyOneRoleFlag();
         $failed += $this->testRejectsMultipleRoleFlags();
         $failed += $this->testRejectsResetWithReviewer();
+        $failed += $this->testRejectsForceNewWithReviewer();
         $failed += $this->testRaisesClientNotInstalledWhenLauncherUnavailable();
         $failed += $this->testTierOverrideIsForwardedToLauncher();
         $failed += $this->testClaudeEffortOverrideIsForwardedToLauncher();
@@ -207,6 +208,24 @@ final class AgentStartCommandTest
             return 1;
         }
         echo "OK testRejectsResetWithReviewer\n";
+        return 0;
+    }
+
+    private function testRejectsForceNewWithReviewer(): int
+    {
+        $cmd = $this->buildCommand(new FakeAgentClientLauncher(AgentClient::CLAUDE));
+
+        $threw = false;
+        try {
+            $cmd->handle(['claude'], ['reviewer' => true, 'force-new' => true]);
+        } catch (\RuntimeException $e) {
+            $threw = str_contains($e->getMessage(), '--force-new is only allowed with --developer');
+        }
+        if (!$threw) {
+            echo "FAIL testRejectsForceNewWithReviewer: expected --force-new/--reviewer rejection\n";
+            return 1;
+        }
+        echo "OK testRejectsForceNewWithReviewer\n";
         return 0;
     }
 

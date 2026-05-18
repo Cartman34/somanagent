@@ -181,6 +181,10 @@ final class AgentStartCommand extends AbstractAgentCommand
             throw new \RuntimeException('--reset is only allowed with --developer.');
         }
 
+        if ($forceNew && $role !== AgentRole::DEVELOPER) {
+            throw new \RuntimeException('--force-new is only allowed with --developer.');
+        }
+
         $resolvedModel = $this->modelResolver?->resolve($client, $role, $tierOverride, $effortOverride, $modelOverride);
         if ($resolvedModel !== null) {
             foreach ($resolvedModel->warnings as $warning) {
