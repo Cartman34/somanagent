@@ -230,6 +230,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 4. The current task review stage does not gate this merge. `development`, `review`, `rejected`, and `approved` are all mergeable when the user explicitly asks for `merge`.
 5. The child task entry is removed from `active:` after the local merge. The child task worktree is removed when that agent no longer owns any active task.
 6. The parent `kind=feature` entry remains, keeps the merged task content in its aggregated lines, and is moved back to `development` so the remote review flow must be requested again on the parent branch. The parent's agent assignment is never modified by a task merge — use `entry-assign` to take integration ownership of the feature after all tasks are merged.
+7. CWD guarantee: if the calling process was running from inside a worktree that gets removed by this command, the process CWD is automatically redirected to the project root before deletion. `getcwd()` is guaranteed to return a valid path after the command returns.
 
 ### `entry-assign`
 
