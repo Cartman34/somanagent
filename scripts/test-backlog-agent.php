@@ -43,6 +43,7 @@ use SoManAgent\Script\Backlog\Agent\Test\SystemInteractiveProcessRunnerTest;
 use SoManAgent\Script\Backlog\Agent\Test\TmuxSessionDriverTest;
 use SoManAgent\Script\Backlog\Agent\Test\WorktreeScriptProxyTest;
 use SoManAgent\Script\Backlog\Test\BacklogCommitGateCommandTest;
+use SoManAgent\Script\Backlog\Test\BacklogReviewNextCommandTest;
 use SoManAgent\Script\Backlog\Test\BacklogWorktreeServiceTest;
 use SoManAgent\Script\Console;
 
@@ -73,6 +74,7 @@ $suites = [
     'BacklogAgentRunnerStrictOptionsTest' => BacklogAgentRunnerStrictOptionsTest::class,
     'BacklogWorktreeServiceTest' => BacklogWorktreeServiceTest::class,
     'BacklogCommitGateCommandTest' => BacklogCommitGateCommandTest::class,
+    'BacklogReviewNextCommandTest' => BacklogReviewNextCommandTest::class,
     'WorktreeScriptProxyTest' => WorktreeScriptProxyTest::class,
     'ClaudeAgentLauncherTest' => ClaudeAgentLauncherTest::class,
     'CodexAgentLauncherTest' => CodexAgentLauncherTest::class,

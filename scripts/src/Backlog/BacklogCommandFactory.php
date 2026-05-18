@@ -45,6 +45,7 @@ use SoManAgent\Script\Backlog\Command\BacklogWorktreeListCommand;
 use SoManAgent\Script\Backlog\Command\BacklogWorktreeRestoreCommand;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Backlog\Service\BacklogPermissionService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use SoManAgent\Script\Backlog\Service\BacklogReviewBodyFormatter;
@@ -81,6 +82,7 @@ final class BacklogCommandFactory
     private string $reviewFilePath;
 
     private ?BacklogBoardService $boardService = null;
+    private ?AgentSessionService $agentSessionService = null;
     private ?BacklogWorktreeService $worktreeService = null;
     private ?BacklogPermissionService $permissionService = null;
     private ?BacklogPresenter $presenter = null;
@@ -207,10 +209,12 @@ final class BacklogCommandFactory
                 },
                 'string' => match ($parameter->getName()) {
                     'projectRoot' => $this->projectRoot,
+                    'worktreesRoot' => $this->worktreesRoot,
                     'boardPath' => $this->boardPath,
                     default => throw new \RuntimeException('Unable to inject string parameter: ' . $parameter->getName()),
                 },
                 BacklogBoardService::class => $this->getBoardService(),
+                AgentSessionService::class => $this->getAgentSessionService(),
                 BacklogWorktreeService::class => $this->getWorktreeService(),
                 BacklogPermissionService::class => $this->getPermissionService(),
                 GitService::class => $this->getGitService(),
@@ -232,6 +236,15 @@ final class BacklogCommandFactory
         $command->setReviewFilePath($this->reviewFilePath);
 
         return $command;
+    }
+
+    private function getAgentSessionService(): AgentSessionService
+    {
+        if ($this->agentSessionService === null) {
+            $this->agentSessionService = new AgentSessionService($this->projectRoot);
+        }
+
+        return $this->agentSessionService;
     }
 
     /* --- Lazy Loading Getters --- */
