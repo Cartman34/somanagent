@@ -51,6 +51,7 @@ use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use SoManAgent\Script\Backlog\Service\BacklogReviewBodyFormatter;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 use SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
+use SoManAgent\Script\Backlog\Service\PostMergeSessionStopper;
 use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Client\FilesystemClient;
 use SoManAgent\Script\Client\FilesystemClientInterface;
@@ -100,6 +101,7 @@ final class BacklogCommandFactory
     private ?BacklogFeatureTaskMergeCommand $featureTaskMergeCommand = null;
     private ?BodyFilePathResolver $bodyFilePathResolver = null;
     private ?EntryRebaseService $entryRebaseService = null;
+    private ?PostMergeSessionStopper $postMergeSessionStopper = null;
 
     /**
      * Constructor.
@@ -225,6 +227,7 @@ final class BacklogCommandFactory
                 BacklogFeatureMergeCommand::class => $this->getFeatureMergeCommand(),
                 BacklogFeatureTaskMergeCommand::class => $this->getFeatureTaskMergeCommand(),
                 EntryRebaseService::class => $this->getEntryRebaseService(),
+                PostMergeSessionStopper::class => $this->getPostMergeSessionStopper(),
                 self::class => $this,
                 default => throw new \RuntimeException('Unable to inject ' . $type->getName()),
             };
@@ -499,6 +502,7 @@ final class BacklogCommandFactory
                 $this->getGitService(),
                 $this->getPullRequestService(),
                 $this->getBodyFilePathResolver(),
+                $this->getPostMergeSessionStopper(),
             );
             $this->featureMergeCommand->setBoardPath($this->boardPath);
             $this->featureMergeCommand->setReviewFilePath($this->reviewFilePath);
@@ -522,11 +526,21 @@ final class BacklogCommandFactory
                 $this->getBoardService(),
                 $this->getWorktreeService(),
                 $this->getGitService(),
+                $this->getPostMergeSessionStopper(),
             );
             $this->featureTaskMergeCommand->setBoardPath($this->boardPath);
             $this->featureTaskMergeCommand->setReviewFilePath($this->reviewFilePath);
         }
 
         return $this->featureTaskMergeCommand;
+    }
+
+    private function getPostMergeSessionStopper(): PostMergeSessionStopper
+    {
+        if ($this->postMergeSessionStopper === null) {
+            $this->postMergeSessionStopper = new PostMergeSessionStopper($this->getPresenter(), $this->projectRoot);
+        }
+
+        return $this->postMergeSessionStopper;
     }
 }

@@ -15,6 +15,7 @@ use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 use SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
+use SoManAgent\Script\Backlog\Service\PostMergeSessionStopper;
 use SoManAgent\Script\Service\GitService;
 use SoManAgent\Script\Service\PullRequestService;
 
@@ -31,6 +32,8 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
 
     private BodyFilePathResolver $bodyFilePathResolver;
 
+    private PostMergeSessionStopper $sessionStopper;
+
     /**
      * @param BacklogPresenter $presenter
      * @param bool $dryRun
@@ -40,6 +43,7 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
      * @param GitService $gitService
      * @param PullRequestService $pullRequestService
      * @param BodyFilePathResolver $bodyFilePathResolver
+     * @param PostMergeSessionStopper $sessionStopper
      */
     public function __construct(
         BacklogPresenter $presenter,
@@ -49,13 +53,15 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         BacklogWorktreeService $worktreeService,
         GitService $gitService,
         PullRequestService $pullRequestService,
-        BodyFilePathResolver $bodyFilePathResolver
+        BodyFilePathResolver $bodyFilePathResolver,
+        PostMergeSessionStopper $sessionStopper
     ) {
         parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
         $this->worktreeService = $worktreeService;
         $this->gitService = $gitService;
         $this->pullRequestService = $pullRequestService;
         $this->bodyFilePathResolver = $bodyFilePathResolver;
+        $this->sessionStopper = $sessionStopper;
     }
 
     /**
@@ -94,6 +100,9 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         $entry = $match->getEntry();
         $this->boardService->checkIsFeatureEntry($entry) || throw new \RuntimeException('feature-merge only applies to kind=feature entries.');
         $this->boardService->assertNoActiveTasksForFeature($board, $feature, BacklogCommandName::FEATURE_MERGE->value);
+
+        $devCode = $entry->getAgent();
+        $reviewerCode = $entry->getReviewer();
 
         if ($this->boardService->getFeatureStage($entry) !== BacklogBoard::STAGE_APPROVED) {
             throw new \RuntimeException(sprintf(
@@ -146,6 +155,8 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
                 $this->presenter->displayLine('⚠ ' . $warning);
             }
         }
+
+        $this->sessionStopper->stopSessions($devCode, $reviewerCode);
     }
 
     /**

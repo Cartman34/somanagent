@@ -15,6 +15,7 @@ use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
+use SoManAgent\Script\Backlog\Service\PostMergeSessionStopper;
 use SoManAgent\Script\Service\GitService;
 
 /**
@@ -26,6 +27,8 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
 
     private GitService $gitService;
 
+    private PostMergeSessionStopper $sessionStopper;
+
     /**
      * @param BacklogPresenter $presenter
      * @param bool $dryRun
@@ -33,6 +36,7 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
      * @param BacklogBoardService $boardService
      * @param BacklogWorktreeService $worktreeService
      * @param GitService $gitService
+     * @param PostMergeSessionStopper $sessionStopper
      */
     public function __construct(
         BacklogPresenter $presenter,
@@ -40,11 +44,13 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
         string $projectRoot,
         BacklogBoardService $boardService,
         BacklogWorktreeService $worktreeService,
-        GitService $gitService
+        GitService $gitService,
+        PostMergeSessionStopper $sessionStopper
     ) {
         parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
         $this->worktreeService = $worktreeService;
         $this->gitService = $gitService;
+        $this->sessionStopper = $sessionStopper;
     }
 
     /**
@@ -86,7 +92,8 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
         if ($agent !== null && $entry->getAgent() !== $agent) {
             throw new \RuntimeException('feature-task-merge requires the task to be assigned to the provided agent.');
         }
-        $taskAgent = $entry->getAgent() ?? '';
+        $devCode = $entry->getAgent();
+        $taskAgent = $devCode ?? '';
 
         $feature = $entry->getFeature() ?? '';
         $task = $entry->getTask() ?? '';
@@ -126,6 +133,8 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
         $this->gitService->deleteLocalBranch($taskBranch);
 
         $this->presenter->displaySuccess(sprintf('Merged task %s into feature %s locally', $task, $feature));
+
+        $this->sessionStopper->stopSessions($devCode, null);
     }
 
     private function invalidateFeatureReviewState(BoardEntry $featureEntry): void
