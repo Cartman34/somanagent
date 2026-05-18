@@ -166,6 +166,7 @@ Block on:
 - Obvious functional bug
 - Dead code: methods, functions, properties, classes, or imports declared in the branch (or kept by it) that have no caller or reader anywhere in the codebase. Treat lingering remnants of an earlier refactor the same way as freshly-added dead code. Dead public elements in `scripts/src/` are caught automatically by the PHPStan `unused-public` extension (the mechanical review runs `php scripts/phpstan.php`) — a reviewer does not need to grep manually for these; manual scan remains necessary for imports and for non-public elements.
 - `backend/composer.json`, `scripts/composer.json`, or `frontend/package.json` modified without a matching `meta.dependency-update` on the entry covering the relevant scope(s). Use `php scripts/backlog.php status <entry-ref>` to inspect `meta.dependency-update`; a missing or empty value when a manifest was touched is a blocker.
+- Hardcoded reused literal for a domain identifier — CLI command name (e.g. `'feature-merge'`, `'entry-merge'`), CLI option name (`'body-file'`, `'agent'`, `'type'`), stage, scope, type — repeated at multiple call sites instead of an enum case or class constant. The rule lives in [`conventions.md` — Constants And Static Configuration](../technical/conventions.md#constants-and-static-configuration); apply the same threshold (≥ 2 reuses for a domain identifier without a single source of truth = blocker).
 
 Also check:
 
