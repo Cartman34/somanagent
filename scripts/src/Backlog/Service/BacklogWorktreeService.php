@@ -662,7 +662,6 @@ final class BacklogWorktreeService
 
         $this->syncWorktreeRootEnv($worktree);
         $this->writeBackendWorktreeEnvLocal($worktree);
-        $this->installPreCommitHook($worktree);
         $this->alignComposerVendorIfNeeded($worktree);
     }
 
@@ -976,35 +975,6 @@ final class BacklogWorktreeService
         exec($shell . ' 2>&1', $output, $code);
 
         return [$code, implode("\n", $output)];
-    }
-
-    private function installPreCommitHook(string $worktree): void
-    {
-        $hookSource = $this->projectRoot . '/scripts/resources/worktree-hooks/pre-commit';
-        if (!$this->fs->isFile($hookSource)) {
-            return;
-        }
-
-        // Hooks live in <WA>/.githooks/ (never in .git/hooks/ which is shared between worktrees and
-        // read-only in sandboxed agent environments). The per-WA git config points core.hooksPath there,
-        // isolating the hook to this worktree only.
-        $hooksDir = $worktree . '/.githooks';
-        $hookPath = $hooksDir . '/pre-commit';
-
-        if ($this->dryRun) {
-            $this->logVerbose('[dry-run] Would install pre-commit hook: ' . $this->git->toRelativeProjectPath($hookPath));
-            $this->git->run($this->git->inPath($worktree, 'config core.hooksPath .githooks'));
-
-            return;
-        }
-
-        if (!$this->fs->isDirectory($hooksDir)) {
-            $this->fs->makeDirectory($hooksDir);
-        }
-
-        $this->fs->copyPath($hookSource, $hookPath);
-        chmod($hookPath, 0o755);
-        $this->git->run($this->git->inPath($worktree, 'config core.hooksPath .githooks'));
     }
 
     private function checkIsManagedAgentWorktree(string $path): bool

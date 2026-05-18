@@ -81,4 +81,17 @@ if ($updateMode) {
 } else {
     fwrite(STDOUT, "scripts dependencies installed.\n");
 }
+
+// Activate the versioned pre-commit hook by pointing git's hooksPath to scripts/githooks/.
+// Idempotent: safe to run on every install or update.
+$gitConfigOutput = [];
+$gitConfigCode = 0;
+exec(sprintf('git -C %s config core.hooksPath scripts/githooks 2>&1', escapeshellarg($projectRoot)), $gitConfigOutput, $gitConfigCode);
+if ($gitConfigCode !== 0) {
+    fwrite(STDERR, "Warning: could not set core.hooksPath — git hooks may not be active.\n");
+    fwrite(STDERR, implode("\n", $gitConfigOutput) . "\n");
+} else {
+    fwrite(STDOUT, "Git hooks activated (core.hooksPath = scripts/githooks).\n");
+}
+
 exit(0);

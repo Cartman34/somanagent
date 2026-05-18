@@ -42,8 +42,6 @@ final class BacklogWorktreeServiceTest
         $failed += $this->testPrepareAgentWorktreeCreatesLocalWorkingDirectories();
         $failed += $this->testPrepareAgentWorktreeLocalWorkingDirectoriesAreIdempotent();
         $failed += $this->testPrepareAgentWorktreeDoesNotWriteUnderGitInternals();
-        $failed += $this->testPrepareAgentWorktreeInstallsPreCommitHook();
-        $failed += $this->testPrepareAgentWorktreePreCommitHookIsIdempotent();
         $failed += $this->testRunReviewScriptPersistsFullOutputAndPrintsPointerOnSuccess();
         $failed += $this->testRunReviewScriptPersistsFullOutputAndPrintsPointerBeforeFailure();
         $failed += $this->testCleanupAbandonedWorktreeChdirsToProjectRootWhenCwdIsInside();
@@ -258,77 +256,6 @@ final class BacklogWorktreeServiceTest
         return 0;
     }
 
-    private function testPrepareAgentWorktreeInstallsPreCommitHook(): int
-    {
-        $agent = 'test-d10-hook-' . $this->uniqueToken();
-        $worktreesRoot = $this->projectRoot . '/local/tests/worktree-service';
-        $worktree = $worktreesRoot . '/' . $agent;
-
-        try {
-            $this->createExistingAgentRepository($worktree);
-            $service = $this->createService($worktreesRoot);
-            $service->prepareAgentWorktree($agent);
-
-            // Hook must be placed in .githooks/ inside the WA, never in .git/hooks/.
-            $hookPath = $worktree . '/.githooks/pre-commit';
-            if (!is_file($hookPath)) {
-                echo "FAIL testPrepareAgentWorktreeInstallsPreCommitHook: pre-commit hook not found at {$hookPath}\n";
-                return 1;
-            }
-            if (!is_executable($hookPath)) {
-                echo "FAIL testPrepareAgentWorktreeInstallsPreCommitHook: pre-commit hook is not executable\n";
-                return 1;
-            }
-
-            // git must be configured to look in .githooks/ for this WA.
-            $hooksPath = $this->captureGitConfig($worktree, 'core.hooksPath');
-            if ($hooksPath !== '.githooks') {
-                echo "FAIL testPrepareAgentWorktreeInstallsPreCommitHook: core.hooksPath is '{$hooksPath}', expected '.githooks'\n";
-                return 1;
-            }
-        } finally {
-            $this->cleanupWorktree($worktree);
-        }
-
-        echo "OK testPrepareAgentWorktreeInstallsPreCommitHook\n";
-        return 0;
-    }
-
-    private function testPrepareAgentWorktreePreCommitHookIsIdempotent(): int
-    {
-        $agent = 'test-d10-hook-idem-' . $this->uniqueToken();
-        $worktreesRoot = $this->projectRoot . '/local/tests/worktree-service';
-        $worktree = $worktreesRoot . '/' . $agent;
-
-        try {
-            $this->createExistingAgentRepository($worktree);
-            $service = $this->createService($worktreesRoot);
-            $service->prepareAgentWorktree($agent);
-            $service->prepareAgentWorktree($agent);
-
-            $hookPath = $worktree . '/.githooks/pre-commit';
-            if (!is_file($hookPath)) {
-                echo "FAIL testPrepareAgentWorktreePreCommitHookIsIdempotent: pre-commit hook not found after second prepare\n";
-                return 1;
-            }
-            if (!is_executable($hookPath)) {
-                echo "FAIL testPrepareAgentWorktreePreCommitHookIsIdempotent: pre-commit hook is not executable after second prepare\n";
-                return 1;
-            }
-
-            $hooksPath = $this->captureGitConfig($worktree, 'core.hooksPath');
-            if ($hooksPath !== '.githooks') {
-                echo "FAIL testPrepareAgentWorktreePreCommitHookIsIdempotent: core.hooksPath is '{$hooksPath}' after second prepare, expected '.githooks'\n";
-                return 1;
-            }
-        } finally {
-            $this->cleanupWorktree($worktree);
-        }
-
-        echo "OK testPrepareAgentWorktreePreCommitHookIsIdempotent\n";
-        return 0;
-    }
-
     private function testCleanupAbandonedWorktreeChdirsToProjectRootWhenCwdIsInside(): int
     {
         $agent = 'test-d10-cwd-inside-' . $this->uniqueToken();
@@ -497,19 +424,6 @@ final class BacklogWorktreeServiceTest
             'git -C %s commit -m init',
             escapeshellarg($this->relativePath($worktree)),
         ));
-    }
-
-    private function captureGitConfig(string $worktree, string $key): string
-    {
-        $output = [];
-        $code = 0;
-        exec(sprintf(
-            'git -C %s config --get %s 2>&1',
-            escapeshellarg($this->relativePath($worktree)),
-            escapeshellarg($key),
-        ), $output, $code);
-
-        return trim(implode("\n", $output));
     }
 
     private function createReviewScriptFixture(string $worktree, string $output, int $exitCode): void

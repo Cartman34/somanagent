@@ -297,9 +297,9 @@ An agent running in a session started by `backlog-agent.php` must:
 
 ### Pre-commit Hook
 
-Every managed worktree receives a `pre-commit` git hook when `BacklogWorktreeService::prepareAgentWorktree` runs. The hook calls `php scripts/backlog.php commit-gate` (proxied to WP automatically) to check the stage of the active backlog entry before every commit. It blocks the commit and prints a descriptive message if the entry stage is not `development`. If the stage cannot be determined (no active entry, board unreachable), the hook fails safe and also blocks the commit. The hook only activates when `SOMANAGER_AGENT` is set and the working tree path matches the agent's managed WA; it is a no-op for any other context (e.g. commits made in WP without an agent session).
+The pre-commit hook calls `php scripts/backlog.php commit-gate` (proxied to WP automatically) to check the stage of the active backlog entry before every commit. It blocks the commit and prints a descriptive message if the entry stage is not `development`. If the stage cannot be determined (no active entry, board unreachable), the hook fails safe and also blocks the commit. The hook only activates when `SOMANAGER_AGENT` is set and the working tree path matches the agent's managed WA; it is a no-op for any other context (e.g. commits made in WP without an agent session).
 
-The hook file is placed under `<WA>/.githooks/pre-commit` (inside the worktree directory, not in `.git/hooks/`). The WA-local git config entry `core.hooksPath = .githooks` tells git to look there instead of the shared `.git/hooks/` directory. This keeps the hook isolated to the specific WA and avoids any write to the shared `.git/` directory, which is read-only in sandboxed agent environments (e.g. Codex). The hook source lives at `scripts/resources/worktree-hooks/pre-commit` and is copied on each `prepareAgentWorktree` call (idempotent).
+The hook is versioned at `scripts/githooks/pre-commit`. Running `php scripts/scripts-install.php` sets `core.hooksPath = scripts/githooks` once in the WP git config; all linked worktrees (WAs) inherit this setting automatically. No runtime copy or per-WA git config write is needed. On a fresh checkout, running `scripts-install.php` is all that is required to activate the hook.
 
 ### Context File
 
