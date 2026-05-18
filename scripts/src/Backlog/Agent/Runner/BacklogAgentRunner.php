@@ -40,12 +40,14 @@ use SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
+use SoManAgent\Script\Backlog\Service\EntryRebaseService;
 use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Client\FilesystemClient;
 use SoManAgent\Script\Client\GitClient;
 use SoManAgent\Script\Client\ProjectScriptClient;
 use SoManAgent\Script\RetryPolicy;
 use SoManAgent\Script\Runner\AbstractScriptRunner;
+use SoManAgent\Script\Service\GitService;
 use SoManAgent\Script\TextSlugger;
 
 /**
@@ -81,6 +83,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
     private ?SessionDriverInterface $sessionDriver = null;
     private ?ProcessSignaler $processSignaler = null;
     private ?BacklogCommandRunner $backlogCommandRunner = null;
+    private ?EntryRebaseService $entryRebaseService = null;
 
     /**
      * {@inheritdoc}
@@ -164,6 +167,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                     $this->processSignaler(),
                     new ShellProcessRunner(),
                     $this->backlogCommandRunner(),
+                    $this->entryRebaseService(),
                     $this->modelResolver(),
                     $this->launchPromptResolver(),
                 ),
@@ -386,5 +390,15 @@ final class BacklogAgentRunner extends AbstractScriptRunner
         }
 
         return $this->backlogCommandRunner;
+    }
+
+    private function entryRebaseService(): EntryRebaseService
+    {
+        if ($this->entryRebaseService === null) {
+            $gitService = new GitService(false, $this->console, $this->gitClient(), static function (string $m): void {});
+            $this->entryRebaseService = new EntryRebaseService($this->boardService(), $gitService);
+        }
+
+        return $this->entryRebaseService;
     }
 }

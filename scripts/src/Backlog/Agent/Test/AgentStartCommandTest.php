@@ -26,6 +26,7 @@ use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use Symfony\Component\Yaml\Yaml;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 use SoManAgent\Script\Backlog\Service\EntryRebaseResult;
+use SoManAgent\Script\Backlog\Service\EntryRebaseService;
 use SoManAgent\Script\Application;
 use SoManAgent\Script\Client\ConsoleClient;
 use SoManAgent\Script\Client\FilesystemClient;
@@ -399,6 +400,7 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             $fakeRunner,
+            new NullEntryRebaseService(),
             null,
             $this->buildLaunchPromptResolver(),
         );
@@ -516,6 +518,7 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             $fakeRunner,
+            new NullEntryRebaseService(),
             null,
             $this->buildLaunchPromptResolver(),
         );
@@ -644,6 +647,7 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             $fakeRunner,
+            new NullEntryRebaseService(),
             null,
             $this->buildLaunchPromptResolver(),
         );
@@ -764,6 +768,7 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             $fakeRunner,
+            new NullEntryRebaseService(),
             null,
             $this->buildLaunchPromptResolver(),
         );
@@ -874,6 +879,7 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             $fakeRunner,
+            new NullEntryRebaseService(),
             null,
             $this->buildLaunchPromptResolver(),
         );
@@ -942,6 +948,7 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             $shellRunner,
             new FakeBacklogCommandRunner(),
+            new NullEntryRebaseService(),
         );
 
         $threw = false;
@@ -1004,6 +1011,7 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             new FakeBacklogCommandRunner(),
+            new NullEntryRebaseService(),
         );
 
         $previousCwd = getcwd();
@@ -1078,6 +1086,7 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             new FakeBacklogCommandRunner(),
+            new NullEntryRebaseService(),
         );
 
         $previousCwd = getcwd();
@@ -1152,6 +1161,7 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             $fakeRunner,
+            new NullEntryRebaseService(),
             null,
             $this->buildLaunchPromptResolver(),
         );
@@ -1226,6 +1236,7 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             $fakeRunner,
+            new NullEntryRebaseService(),
             null,
             $this->buildLaunchPromptResolver(),
         );
@@ -1295,6 +1306,7 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             $fakeRunner,
+            new NullEntryRebaseService(),
             null,
             $this->buildLaunchPromptResolver(),
         );
@@ -1367,6 +1379,7 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             $fakeRunner,
+            new NullEntryRebaseService(),
         );
 
         $previousCwd = getcwd();
@@ -1451,6 +1464,7 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             new FakeBacklogCommandRunner(),
+            new NullEntryRebaseService(),
         );
 
         $cwdBefore = getcwd();
@@ -1527,6 +1541,7 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             new FakeBacklogCommandRunner(),
+            new NullEntryRebaseService(),
         );
 
         $cwdBefore = getcwd();
@@ -1577,6 +1592,7 @@ final class AgentStartCommandTest
                 'feature' => 'review-feature',
                 'agent' => 'd20',
                 'branch' => 'feat/review-feature',
+                'type' => 'tech',
             ],
         ]);
 
@@ -1624,6 +1640,7 @@ final class AgentStartCommandTest
                 'feature' => 'reviewing-feature',
                 'agent' => 'd21',
                 'branch' => 'feat/reviewing-feature',
+                'type' => 'tech',
             ],
         ]);
 
@@ -1676,6 +1693,7 @@ final class AgentStartCommandTest
                 'feature' => 'approved-feature',
                 'agent' => 'd22',
                 'branch' => 'feat/approved-feature',
+                'type' => 'tech',
             ],
         ]);
         $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' worktree add --detach ' . escapeshellarg($worktree) . ' HEAD');
@@ -1704,9 +1722,9 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             new FakeBacklogCommandRunner(),
+            $fakeRebase,
             null,
             $this->buildLaunchPromptResolver(),
-            $fakeRebase,
         );
 
         $previousCwd = getcwd();
@@ -1759,6 +1777,7 @@ final class AgentStartCommandTest
                 'feature' => 'conflict-feature',
                 'agent' => 'd23',
                 'branch' => 'feat/conflict-feature',
+                'type' => 'tech',
             ],
         ]);
         $this->runShell('git -C ' . escapeshellarg($projectRoot) . ' worktree add --detach ' . escapeshellarg($worktree) . ' HEAD');
@@ -1787,9 +1806,9 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             new FakeBacklogCommandRunner(),
+            $fakeRebase,
             null,
             $this->buildLaunchPromptResolver(),
-            $fakeRebase,
         );
 
         $previousCwd = getcwd();
@@ -1884,6 +1903,7 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             new FakeBacklogCommandRunner(),
+            new NullEntryRebaseService(),
             $modelResolver,
             $this->buildLaunchPromptResolver(),
         );
@@ -1917,6 +1937,7 @@ final class AgentStartCommandTest
             new FakeProcessSignaler(),
             new FakeProcessRunner(),
             new FakeBacklogCommandRunner(),
+            new NullEntryRebaseService(),
             $modelResolver,
             $this->buildLaunchPromptResolver(),
         );
