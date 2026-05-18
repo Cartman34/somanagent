@@ -53,11 +53,4 @@ final class AgentClientLauncherRegistry
         return isset($this->launchers[$client->value]);
     }
 
-    /**
-     * @return list<AgentClientLauncher>
-     */
-    public function all(): array
-    {
-        return array_values($this->launchers);
-    }
 }

@@ -158,7 +158,7 @@ Block on:
 - French literal in `.php`, `.ts`, `.tsx` outside `backend/translations/*.yaml`
 - Missing PHPDoc on public PHP methods or JSDoc/TSDoc on exported TS/React code
 - Obvious functional bug
-- Dead code: methods, functions, properties, classes, or imports declared in the branch (or kept by it) that have no caller or reader anywhere in the codebase. Treat lingering remnants of an earlier refactor the same way as freshly-added dead code.
+- Dead code: methods, functions, properties, classes, or imports declared in the branch (or kept by it) that have no caller or reader anywhere in the codebase. Treat lingering remnants of an earlier refactor the same way as freshly-added dead code. Dead public elements in `scripts/src/` are caught automatically by the PHPStan `unused-public` extension (the mechanical review runs `php scripts/phpstan.php`) — a reviewer does not need to grep manually for these; manual scan remains necessary for imports and for non-public elements.
 
 Also check:
 

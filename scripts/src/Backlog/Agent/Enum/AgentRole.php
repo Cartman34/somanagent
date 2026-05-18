@@ -27,12 +27,4 @@ enum AgentRole: string
             self::MANAGER => 'm',
         };
     }
-
-    /**
-     * Returns the human-readable label for the role.
-     */
-    public function label(): string
-    {
-        return $this->value;
-    }
 }

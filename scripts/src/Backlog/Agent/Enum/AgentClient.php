@@ -16,12 +16,4 @@ enum AgentClient: string
     case CODEX = 'codex';
     case OPENCODE = 'opencode';
     case GEMINI = 'gemini';
-
-    /**
-     * Returns the human-readable label for the client.
-     */
-    public function label(): string
-    {
-        return $this->value;
-    }
 }

@@ -12,7 +12,7 @@ namespace SoManAgent\Script\Runner;
  */
 final class ValidateBackendTestsRunner extends AbstractScriptRunner
 {
-    public const NAME = 'validate-backend-tests';
+    private const NAME = 'validate-backend-tests';
 
     protected function getName(): string
     {

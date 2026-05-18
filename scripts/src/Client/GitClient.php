@@ -551,17 +551,6 @@ final class GitClient
     }
 
     /**
-     * Checks out a branch and pulls the latest changes.
-     *
-     * @param string $branch Branch to checkout and pull
-     */
-    public function checkoutAndPull(string $branch): void
-    {
-        $this->run(sprintf('git checkout %s', escapeshellarg($branch)));
-        $this->runNetwork('git pull');
-    }
-
-    /**
      * @return list<string>
      */
     public function getChangedFiles(string $base, string $branch): array

@@ -20,7 +20,7 @@ use SoManAgent\Script\Service\CommandHelpService;
  */
 final class BacklogRunner extends AbstractScriptRunner
 {
-    public const NAME = 'backlog';
+    private const NAME = 'backlog';
 
     private const DEFAULT_BOARD_PATH = 'local/backlog-board.yaml';
     private const DEFAULT_REVIEW_FILE_PATH = 'local/backlog-review.md';

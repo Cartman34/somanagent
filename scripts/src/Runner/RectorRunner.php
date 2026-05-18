@@ -14,7 +14,7 @@ namespace SoManAgent\Script\Runner;
  */
 final class RectorRunner extends AbstractScriptRunner
 {
-    public const NAME = 'rector';
+    private const NAME = 'rector';
 
     protected function getName(): string
     {

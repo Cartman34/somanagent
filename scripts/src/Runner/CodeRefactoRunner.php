@@ -12,7 +12,7 @@ namespace SoManAgent\Script\Runner;
  */
 final class CodeRefactoRunner extends AbstractScriptRunner
 {
-    public const NAME = 'code-refacto';
+    private const NAME = 'code-refacto';
 
     protected function getName(): string
     {

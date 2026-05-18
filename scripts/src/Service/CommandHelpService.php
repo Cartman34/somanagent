@@ -63,7 +63,6 @@ class CommandHelpService
         }
 
         return new RunnerHelp(
-            name:         $runnerName,
             description:  (string) $raw['description'],
             options:      $this->normalizeToParams($raw['options'] ?? [], "runner options for {$runnerName}"),
             examples:     array_values(array_map(static fn(mixed $v): string => (string) $v, $examples)),

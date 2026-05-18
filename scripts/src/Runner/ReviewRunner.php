@@ -14,7 +14,7 @@ namespace SoManAgent\Script\Runner;
  */
 final class ReviewRunner extends AbstractScriptRunner
 {
-    public const NAME = 'review';
+    private const NAME = 'review';
 
     protected function getName(): string
     {

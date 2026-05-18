@@ -26,16 +26,6 @@ final class BacklogBoardService
     public const ENTRY_KIND_FEATURE = 'feature';
     public const ENTRY_KIND_TASK = 'task';
 
-    /**
-     * @deprecated Use BacklogTaskType::FEAT->branchPrefix() instead.
-     */
-    public const BRANCH_TYPE_FEAT = 'feat';
-
-    /**
-     * @deprecated Use BacklogTaskType::FIX->branchPrefix() instead.
-     */
-    public const BRANCH_TYPE_FIX = 'fix';
-
     private const LEADING_PREFIX_PATTERN = '/^\[([A-Za-z0-9_-]+)\]\s*(.*)$/s';
     private const TASK_SCOPE_PREFIX_PATTERN = '/^\[([A-Za-z0-9_-]+)\]\[([A-Za-z0-9_-]+)\]\s*(.+)$/';
     private const SINGLE_FEATURE_PREFIX_PATTERN = '/^\[([A-Za-z0-9_-]+)\](?!\[)\s*(.+)$/';
@@ -744,22 +734,6 @@ final class BacklogBoardService
         return $matches;
     }
 
-    /**
-     * Returns the first unassigned task in the TODO section, or null if force is false and all are assigned.
-     * @param BacklogBoard $board, bool $force
-     * @return ?BoardEntryMatch
-     */
-    public function fetchNextBookableTask(BacklogBoard $board, bool $force = false): ?BoardEntryMatch
-    {
-        foreach ($board->getEntries(BacklogBoard::SECTION_TODO) as $index => $entry) {
-            if ($force || $entry->getAgent() === null) {
-                return new BoardEntryMatch(BacklogBoard::SECTION_TODO, $index, $entry);
-            }
-        }
-
-        return null;
-    }
-
     /* --- Board Entry Markdown Parsing & Formatting --- */
 
     /**
@@ -967,21 +941,6 @@ final class BacklogBoardService
         $entries = $board->getEntries(BacklogBoard::SECTION_ACTIVE);
         array_splice($entries, $index, 1);
         $board->setEntries(BacklogBoard::SECTION_ACTIVE, array_values($entries));
-    }
-
-    /**
-     * Updates the stage of a feature entry.
-     * @param BacklogBoard $board, string $feature, string $stage
-     */
-    public function updateFeatureStage(BacklogBoard $board, string $feature, string $stage): void
-    {
-        $match = $this->resolveFeature($board, $feature);
-        $normalizedStage = $this->getNormalizedStage($stage);
-        if ($normalizedStage === null) {
-            throw new \RuntimeException("Unknown feature stage: {$stage}");
-        }
-
-        $match->getEntry()->setStage($normalizedStage);
     }
 
     /**
@@ -1203,23 +1162,6 @@ final class BacklogBoardService
     }
 
     /**
-     * Resolves the branch type for a new feature, respecting override, first entry, and parent.
-     *
-     * Returns the branch prefix string of the resolved {@see BacklogTaskType}. An explicit
-     * override is validated against the enum and rejected when unknown. When nothing else
-     * matches, the default is {@see BacklogTaskType::FEAT}.
-     *
-     * @param BoardEntry $first
-     * @param ?BoardEntry $parent
-     * @param string $override
-     * @return string
-     */
-    public function resolveFeatureStartBranchType(BoardEntry $first, ?BoardEntry $parent, string $override): string
-    {
-        return $this->resolveTaskTypeOrDefault($first, $parent, $override)->branchPrefix();
-    }
-
-    /**
      * Resolves the canonical {@see BacklogTaskType} for an entry being started.
      *
      * @param BoardEntry $first
@@ -1325,19 +1267,6 @@ final class BacklogBoardService
                 $command,
                 $feature,
             ));
-        }
-    }
-
-    /**
-     * Throws if a task slug is already used for the feature.
-     * @param BacklogBoard $board, BoardEntry $featureEntry, string $feature, string $task, string $command
-     */
-    public function assertTaskSlugAvailableForFeature(BacklogBoard $board, BoardEntry $featureEntry, string $feature, string $task, string $command): void
-    {
-        foreach ($this->findTaskEntriesByFeature($board, $feature) as $match) {
-            if ($match->getEntry()->getTask() === $task) {
-                throw new \RuntimeException(sprintf('%s: Task slug %s is already used for feature %s.', $command, $task, $feature));
-            }
         }
     }
 

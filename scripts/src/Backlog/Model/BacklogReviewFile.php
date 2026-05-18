@@ -53,15 +53,6 @@ final class BacklogReviewFile
     }
 
     /**
-     * @param string $header
-     * @return void
-     */
-    public function setHeader(string $header): void
-    {
-        $this->header = $header;
-    }
-
-    /**
      * @return array<string, array<string>>
      */
     public function getSections(): array

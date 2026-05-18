@@ -27,6 +27,7 @@ final class BodyFilePathResolverTest
 {
     /**
      * Runs all test cases and returns the total number of failures.
+     * @api
      */
     public function run(): int
     {

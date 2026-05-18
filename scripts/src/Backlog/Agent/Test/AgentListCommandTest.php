@@ -49,6 +49,7 @@ final class AgentListCommandTest
 
     /**
      * Runs every test case and returns the cumulative number of failures.
+     * @api
      */
     public function run(): int
     {

@@ -757,7 +757,7 @@ final class BacklogWorktreeService
                 continue;
             }
 
-            $features[$branch] = new ActiveEntryReference($feature, $agent, $branch);
+            $features[$branch] = new ActiveEntryReference($feature, $agent);
         }
 
         return $features;
@@ -776,7 +776,7 @@ final class BacklogWorktreeService
                 continue;
             }
 
-            $entries[$agent] = new ActiveEntryReference($feature, $agent, $entry->getBranch());
+            $entries[$agent] = new ActiveEntryReference($feature, $agent);
         }
 
         return $entries;

@@ -7,7 +7,6 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\DevEnv;
 
-use SoManAgent\Script\DevEnv\Model\Dependency;
 use SoManAgent\Script\DevEnv\Model\LockEntry;
 
 /**
@@ -25,14 +24,12 @@ final class PlannedDep
 
     /**
      * @param LockEntry        $entry            Target lock entry (version to install)
-     * @param Dependency|null  $dep              Manifest dependency (null for orphaned lockfile entries)
      * @param string           $action           One of the ACTION_* constants
      * @param string|null      $installedVersion Currently installed version, or null when not installed
      * @param string|null      $blockReason      Human-readable reason when action=blocked
      */
     public function __construct(
         public readonly LockEntry $entry,
-        public readonly ?Dependency $dep,
         public readonly string $action,
         public readonly ?string $installedVersion,
         public readonly ?string $blockReason = null,

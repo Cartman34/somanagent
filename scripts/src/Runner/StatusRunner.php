@@ -14,7 +14,7 @@ namespace SoManAgent\Script\Runner;
  */
 final class StatusRunner extends AbstractScriptRunner
 {
-    public const NAME = 'status';
+    private const NAME = 'status';
 
     protected function getName(): string
     {

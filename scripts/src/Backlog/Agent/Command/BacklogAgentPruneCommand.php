@@ -68,31 +68,11 @@ final class BacklogAgentPruneCommand extends AbstractAgentCommand
     /**
      * {@inheritdoc}
      */
-    public function getDescription(): string
-    {
-        return 'Remove invalid or orphan entries from agent-sessions.json';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function getOptions(): array
     {
         return [
             ['name' => '--dry-run', 'description' => 'Preview removals without writing changes'],
             ['name' => '--force', 'description' => 'Also remove warning entries (worktree gone, process still alive). The process itself is not signalled.'],
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getUsageExamples(): array
-    {
-        return [
-            'php scripts/backlog-agent.php prune',
-            'php scripts/backlog-agent.php prune --dry-run',
-            'php scripts/backlog-agent.php prune --force',
         ];
     }
 

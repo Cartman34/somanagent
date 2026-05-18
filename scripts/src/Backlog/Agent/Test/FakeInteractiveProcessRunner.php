@@ -22,7 +22,7 @@ final class FakeInteractiveProcessRunner implements InteractiveProcessRunner
     /** @var array{bin: string, args: list<string>, cwd: string, env: array<string, string>}|null */
     public ?array $lastCall = null;
 
-    public int $nextExitCode = 0;
+    private int $nextExitCode = 0;
     public int $nextClientPid = 12345;
 
     /**

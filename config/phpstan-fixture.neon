@@ -1,0 +1,23 @@
+# PHPStan config for running dead code detection fixtures in isolation.
+#
+# Used only for manual verification of the unused-public detection feature.
+# Not part of the regular pipeline.
+#
+# Run fixture with dead code (expects failure):
+#   php scripts/vendor/bin/phpstan analyse --configuration config/phpstan-fixture.neon scripts/src/Validation/Test/Fixture/DeadPublicMethodFixture.php
+#
+# Run fixture with @api (expects success):
+#   php scripts/vendor/bin/phpstan analyse --configuration config/phpstan-fixture.neon scripts/src/Validation/Test/Fixture/ApiAnnotatedFixture.php
+
+includes:
+    - ../scripts/vendor/tomasvotruba/unused-public/config/extension.neon
+
+parameters:
+    level: 8
+    paths: []
+    bootstrapFiles:
+        - ../scripts/vendor/autoload.php
+    unused_public:
+        methods: true
+        properties: true
+        constants: true

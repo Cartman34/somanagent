@@ -63,39 +63,6 @@ final class PullRequestService
     }
 
     /**
-     * Update the body of the PR attached to a branch.
-     *
-     * @param string $branch Source branch of the PR
-     * @param string $bodyFile Local file containing the new PR body
-     * @throws \RuntimeException When no open PR exists for the branch
-     */
-    public function updatePrBody(string $branch, string $bodyFile): void
-    {
-        $prNumber = $this->findPrNumberByBranch($branch);
-        if ($prNumber === null) {
-            throw new \RuntimeException("No open PR found for branch {$branch}.");
-        }
-
-        $this->github->editPr($prNumber, null, $bodyFile);
-    }
-
-    /**
-     * Update the body of the PR attached to a branch when a PR exists, no-op otherwise.
-     *
-     * @param string $branch Source branch of the PR
-     * @param string $bodyFile Local file containing the new PR body
-     */
-    public function updatePrBodyIfExists(string $branch, string $bodyFile): void
-    {
-        $prNumber = $this->findPrNumberByBranch($branch);
-        if ($prNumber === null) {
-            return;
-        }
-
-        $this->github->editPr($prNumber, null, $bodyFile);
-    }
-
-    /**
      * Close a PR by number.
      *
      * @param int $prNumber Pull request number on GitHub

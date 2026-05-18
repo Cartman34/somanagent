@@ -14,7 +14,7 @@ namespace SoManAgent\Script\Runner;
  */
 final class HealthRunner extends AbstractScriptRunner
 {
-    public const NAME = 'health';
+    private const NAME = 'health';
 
     protected function getName(): string
     {

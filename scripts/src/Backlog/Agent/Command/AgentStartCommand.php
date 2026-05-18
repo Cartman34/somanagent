@@ -123,24 +123,6 @@ final class AgentStartCommand extends AbstractAgentCommand
     /**
      * {@inheritdoc}
      */
-    public function getDescription(): string
-    {
-        return 'Start an AI agent session in a dedicated worktree';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getArguments(): array
-    {
-        return [
-            ['name' => '<client>', 'description' => 'AI client to launch: claude, codex, opencode, gemini'],
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function getOptions(): array
     {
         return [
@@ -156,24 +138,6 @@ final class AgentStartCommand extends AbstractAgentCommand
             ['name' => '--task=<feature/task>', 'description' => 'Reviewer: target the task entry at stage=review with this reference'],
             ['name' => '--developer=<dXX>', 'description' => 'Reviewer: target the active entry assigned to this developer code'],
             ['name' => '--force', 'description' => 'Reviewer: proceed even when another reviewer session is active in the target WA'],
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getUsageExamples(): array
-    {
-        return [
-            'php scripts/backlog-agent.php start claude --developer',
-            'php scripts/backlog-agent.php start claude --developer --code=d04',
-            'php scripts/backlog-agent.php start codex --developer --tier=economy --effort=low',
-            'php scripts/backlog-agent.php start gemini --manager --model=gemini-2.5-pro',
-            'php scripts/backlog-agent.php start claude --reviewer',
-            'php scripts/backlog-agent.php start claude --reviewer --feature=my-feature',
-            'php scripts/backlog-agent.php start claude --reviewer --task=my-feature/my-task',
-            'php scripts/backlog-agent.php start claude --reviewer --developer=d04',
-            'php scripts/backlog-agent.php start claude --reviewer --developer=d04 --force',
         ];
     }
 

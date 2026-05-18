@@ -56,31 +56,11 @@ final class AgentListCommand extends AbstractAgentCommand
     /**
      * {@inheritdoc}
      */
-    public function getDescription(): string
-    {
-        return 'List active agent sessions';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function getOptions(): array
     {
         return [
             ['name' => '--running', 'description' => 'Show only sessions with a live PID'],
             ['name' => '--all', 'description' => 'Include stale entries (PID dead)'],
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getUsageExamples(): array
-    {
-        return [
-            'php scripts/backlog-agent.php list',
-            'php scripts/backlog-agent.php list --running',
-            'php scripts/backlog-agent.php list --all',
         ];
     }
 

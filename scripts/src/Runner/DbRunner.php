@@ -14,7 +14,7 @@ namespace SoManAgent\Script\Runner;
  */
 final class DbRunner extends AbstractScriptRunner
 {
-    public const NAME = 'db';
+    private const NAME = 'db';
 
     protected function getName(): string
     {

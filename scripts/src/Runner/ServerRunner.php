@@ -28,7 +28,7 @@ use SoManAgent\Script\Server\NativeHealthProbe;
  */
 final class ServerRunner extends AbstractScriptRunner
 {
-    public const NAME = 'server';
+    private const NAME = 'server';
 
     private const SERVICES_FULL = 'php, worker, nginx, node, mercure, db, redis';
     private const SERVICES_MINIMAL = 'db, redis';

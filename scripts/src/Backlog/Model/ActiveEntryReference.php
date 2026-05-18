@@ -16,27 +16,29 @@ final class ActiveEntryReference
 
     private string $agent;
 
-    private ?string $branch;
-
-    public function __construct(string $feature, string $agent, ?string $branch = null)
+    /**
+     * @param string $feature Feature slug
+     * @param string $agent   Agent code
+     */
+    public function __construct(string $feature, string $agent)
     {
         $this->feature = $feature;
         $this->agent = $agent;
-        $this->branch = $branch;
     }
 
+    /**
+     * @return string
+     */
     public function getFeature(): string
     {
         return $this->feature;
     }
 
+    /**
+     * @return string
+     */
     public function getAgent(): string
     {
         return $this->agent;
-    }
-
-    public function getBranch(): ?string
-    {
-        return $this->branch;
     }
 }

@@ -41,14 +41,6 @@ final class BacklogScriptTestDriver
     }
 
     /**
-     * Initialize test artifacts
-     */
-    public function initializeArtifacts(): void
-    {
-        $this->resetArtifacts();
-    }
-
-    /**
      * Reset test artifacts to clean state
      */
     public function resetArtifacts(): void
@@ -313,14 +305,6 @@ MD);
         $this->context->recordWorktree($worktreePath);
 
         return $output;
-    }
-
-    /**
-     * Runs `todo-list` and returns its output.
-     */
-    public function todoList(): string
-    {
-        return $this->runBacklog(['todo-list']);
     }
 
     /**

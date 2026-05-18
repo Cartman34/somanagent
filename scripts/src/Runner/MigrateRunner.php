@@ -18,7 +18,7 @@ use SoManAgent\Script\WorktreeScriptProxy;
  */
 final class MigrateRunner extends AbstractScriptRunner
 {
-    public const NAME = 'migrate';
+    private const NAME = 'migrate';
 
     protected function getName(): string
     {

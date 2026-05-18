@@ -55,7 +55,7 @@ use SoManAgent\Script\LocalWorkingDirectories;
  */
 final class SetupRunner extends AbstractScriptRunner
 {
-    public const NAME = 'setup';
+    private const NAME = 'setup';
 
     private const MANIFEST_PATH = 'scripts/resources/dependencies.yaml';
     private const LOCK_PATH = 'scripts/resources/dependencies.lock';

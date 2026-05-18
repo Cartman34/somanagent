@@ -17,7 +17,7 @@ use SoManAgent\Script\Service\GitService;
  */
 final class GitHubRunner extends AbstractScriptRunner
 {
-    public const NAME = 'github';
+    private const NAME = 'github';
 
     private ?string $token = null;
     private ?string $repo = null;

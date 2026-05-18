@@ -18,7 +18,7 @@ use SoManAgent\Script\Validation\ScriptExecBitValidator;
  */
 final class ValidateFilesRunner extends AbstractScriptRunner
 {
-    public const NAME = 'validate-files';
+    private const NAME = 'validate-files';
 
     protected function getName(): string
     {

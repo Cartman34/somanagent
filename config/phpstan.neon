@@ -12,6 +12,8 @@ includes:
     - ../scripts/vendor/phpstan/phpstan-symfony/extension.neon
     - ../scripts/vendor/phpstan/phpstan-doctrine/extension.neon
     - ../scripts/vendor/phpstan/phpstan-phpunit/extension.neon
+    - ../scripts/vendor/tomasvotruba/unused-public/config/extension.neon
+    - phpstan-baseline.neon
 
 parameters:
     level: 8
@@ -19,6 +21,12 @@ parameters:
         - ../backend/src
         - ../backend/tests
         - ../scripts/src
+    excludePaths:
+        - ../scripts/src/Validation/Test/Fixture
     bootstrapFiles:
         - ../backend/vendor/autoload.php
         - ../scripts/vendor/autoload.php
+    unused_public:
+        methods: true
+        properties: true
+        constants: true

@@ -16,7 +16,7 @@ use SoManAgent\Script\CodexAuthManager;
  */
 final class CodexAuthRunner extends AbstractScriptRunner
 {
-    public const NAME = 'codex-auth';
+    private const NAME = 'codex-auth';
 
     protected function getName(): string
     {

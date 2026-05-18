@@ -37,12 +37,4 @@ final class WorkStartPlan
     ) {
     }
 
-    /**
-     * Returns the branch the agent will end up checked out on (task branch when scoped,
-     * feature branch otherwise).
-     */
-    public function getActiveBranch(): string
-    {
-        return $this->taskBranch ?? $this->featureBranch;
-    }
 }

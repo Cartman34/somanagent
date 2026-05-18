@@ -43,24 +43,6 @@ final class AgentWhoamiCommand extends AbstractAgentCommand
     /**
      * {@inheritdoc}
      */
-    public function getDescription(): string
-    {
-        return 'Show identity and context for the current agent session (run from inside a WA)';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getUsageExamples(): array
-    {
-        return [
-            'php scripts/backlog-agent.php whoami',
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function handle(array $args, array $options): int
     {
         $code = (string) (getenv('SOMANAGER_AGENT') ?: '');

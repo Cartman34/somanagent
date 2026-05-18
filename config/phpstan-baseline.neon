@@ -1,0 +1,655 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Public method "App\\Adapter\\AI\\AbstractConnector\:\:healthCheck\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Adapter/AI/AbstractConnector.php
+
+		-
+			message: '#^Public method "App\\Adapter\\AI\\AbstractConnector\:\:healthCheckReason\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Adapter/AI/AbstractConnector.php
+
+		-
+			message: '#^Public method "App\\Entity\\Agent\:\:getTeams\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/Agent.php
+
+		-
+			message: '#^Public method "App\\Entity\\Agent\:\:setIsActive\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/Agent.php
+
+		-
+			message: '#^Public method "App\\Entity\\AgentAction\:\:getCreatedAt\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/AgentAction.php
+
+		-
+			message: '#^Public method "App\\Entity\\AgentAction\:\:getUpdatedAt\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/AgentAction.php
+
+		-
+			message: '#^Public method "App\\Entity\\AgentAction\:\:isActive\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/AgentAction.php
+
+		-
+			message: '#^Public method "App\\Entity\\AgentAction\:\:setDescription\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/AgentAction.php
+
+		-
+			message: '#^Public method "App\\Entity\\AgentAction\:\:setIsActive\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/AgentAction.php
+
+		-
+			message: '#^Public method "App\\Entity\\AgentAction\:\:setLabel\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/AgentAction.php
+
+		-
+			message: '#^Public method "App\\Entity\\AgentTaskExecution\:\:getAgentAction\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/AgentTaskExecution.php
+
+		-
+			message: '#^Public method "App\\Entity\\AgentTaskExecution\:\:getUpdatedAt\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/AgentTaskExecution.php
+
+		-
+			message: '#^Public method "App\\Entity\\AgentTaskExecutionAttempt\:\:getCreatedAt\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/AgentTaskExecutionAttempt.php
+
+		-
+			message: '#^Public method "App\\Entity\\ExternalReference\:\:getEntityId\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/ExternalReference.php
+
+		-
+			message: '#^Public method "App\\Entity\\ExternalReference\:\:getEntityType\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/ExternalReference.php
+
+		-
+			message: '#^Public method "App\\Entity\\ExternalReference\:\:getExternalId\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/ExternalReference.php
+
+		-
+			message: '#^Public method "App\\Entity\\ExternalReference\:\:getExternalUrl\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/ExternalReference.php
+
+		-
+			message: '#^Public method "App\\Entity\\ExternalReference\:\:getId\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/ExternalReference.php
+
+		-
+			message: '#^Public method "App\\Entity\\ExternalReference\:\:getMetadata\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/ExternalReference.php
+
+		-
+			message: '#^Public method "App\\Entity\\ExternalReference\:\:getSyncedAt\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/ExternalReference.php
+
+		-
+			message: '#^Public method "App\\Entity\\ExternalReference\:\:getSystem\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/ExternalReference.php
+
+		-
+			message: '#^Public method "App\\Entity\\ExternalReference\:\:markSynced\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/ExternalReference.php
+
+		-
+			message: '#^Public method "App\\Entity\\ExternalReference\:\:setExternalUrl\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/ExternalReference.php
+
+		-
+			message: '#^Public method "App\\Entity\\ExternalReference\:\:setMetadata\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/ExternalReference.php
+
+		-
+			message: '#^Public method "App\\Entity\\Module\:\:archive\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/Module.php
+
+		-
+			message: '#^Public method "App\\Entity\\Module\:\:getCreatedAt\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/Module.php
+
+		-
+			message: '#^Public method "App\\Entity\\Module\:\:getUpdatedAt\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/Module.php
+
+		-
+			message: '#^Public method "App\\Entity\\Module\:\:setStatus\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/Module.php
+
+		-
+			message: '#^Public method "App\\Entity\\Project\:\:removeModule\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/Project.php
+
+		-
+			message: '#^Public method "App\\Entity\\Skill\:\:setDescription\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/Skill.php
+
+		-
+			message: '#^Public method "App\\Entity\\Skill\:\:setFilePath\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/Skill.php
+
+		-
+			message: '#^Public method "App\\Entity\\Skill\:\:setName\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/Skill.php
+
+		-
+			message: '#^Public method "App\\Entity\\Ticket\:\:getAddedBy\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/Ticket.php
+
+		-
+			message: '#^Public method "App\\Entity\\Ticket\:\:getLogs\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/Ticket.php
+
+		-
+			message: '#^Public method "App\\Entity\\Ticket\:\:setAddedBy\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/Ticket.php
+
+		-
+			message: '#^Public method "App\\Entity\\Ticket\:\:setAssignedAgent\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/Ticket.php
+
+		-
+			message: '#^Public method "App\\Entity\\TicketLog\:\:setTicketTask\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/TicketLog.php
+
+		-
+			message: '#^Public method "App\\Entity\\TicketTaskDependency\:\:getId\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/TicketTaskDependency.php
+
+		-
+			message: '#^Public method "App\\Entity\\TicketTaskDependency\:\:getTicketTask\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/TicketTaskDependency.php
+
+		-
+			message: '#^Public method "App\\Entity\\TokenUsage\:\:getAgent\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/TokenUsage.php
+
+		-
+			message: '#^Public method "App\\Entity\\TokenUsage\:\:getWorkflowStep\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/TokenUsage.php
+
+		-
+			message: '#^Public method "App\\Entity\\Workflow\:\:isUsable\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/Workflow.php
+
+		-
+			message: '#^Public method "App\\Entity\\Workflow\:\:lock\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/Workflow.php
+
+		-
+			message: '#^Public method "App\\Entity\\Workflow\:\:removeStep\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/Workflow.php
+
+		-
+			message: '#^Public method "App\\Entity\\WorkflowStep\:\:markDone\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/WorkflowStep.php
+
+		-
+			message: '#^Public method "App\\Entity\\WorkflowStep\:\:markError\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/WorkflowStep.php
+
+		-
+			message: '#^Public method "App\\Entity\\WorkflowStep\:\:markRunning\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/WorkflowStep.php
+
+		-
+			message: '#^Public method "App\\Entity\\WorkflowStep\:\:markSkipped\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/WorkflowStep.php
+
+		-
+			message: '#^Public method "App\\Entity\\WorkflowStep\:\:removeAction\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/WorkflowStep.php
+
+		-
+			message: '#^Public method "App\\Entity\\WorkflowStep\:\:setLastOutput\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/WorkflowStep.php
+
+		-
+			message: '#^Public method "App\\Entity\\WorkflowStep\:\:setName\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/WorkflowStep.php
+
+		-
+			message: '#^Public method "App\\Entity\\WorkflowStep\:\:setOutputKey\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/WorkflowStep.php
+
+		-
+			message: '#^Public method "App\\Entity\\WorkflowStep\:\:setStepOrder\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/WorkflowStep.php
+
+		-
+			message: '#^Public method "App\\Entity\\WorkflowStepAction\:\:setAgentAction\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Entity/WorkflowStepAction.php
+
+		-
+			message: '#^Public method "App\\Enum\\ModuleStatus\:\:label\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Enum/ModuleStatus.php
+
+		-
+			message: '#^Public method "App\\Enum\\WorkflowStatus\:\:label\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Enum/WorkflowStatus.php
+
+		-
+			message: '#^Public method "App\\Enum\\WorkflowStepStatus\:\:label\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Enum/WorkflowStepStatus.php
+
+		-
+			message: '#^Public method "App\\Enum\\WorkflowTrigger\:\:label\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Enum/WorkflowTrigger.php
+
+		-
+			message: '#^Public method "App\\EventSubscriber\\TicketLogRealtimeSubscriber\:\:postPersist\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/EventSubscriber/TicketLogRealtimeSubscriber.php
+
+		-
+			message: '#^Public method "App\\EventSubscriber\\TicketLogRealtimeSubscriber\:\:postUpdate\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/EventSubscriber/TicketLogRealtimeSubscriber.php
+
+		-
+			message: '#^Public method "App\\Repository\\AgentActionRepository\:\:findOneActiveByRoleAndSkill\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Repository/AgentActionRepository.php
+
+		-
+			message: '#^Public method "App\\Repository\\AgentActionRepository\:\:findOneActiveByRoleSlug\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Repository/AgentActionRepository.php
+
+		-
+			message: '#^Public method "App\\Repository\\ExternalReferenceRepository\:\:findForEntity\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Repository/ExternalReferenceRepository.php
+
+		-
+			message: '#^Public method "App\\Repository\\ExternalReferenceRepository\:\:findOne\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Repository/ExternalReferenceRepository.php
+
+		-
+			message: '#^Public method "App\\Repository\\TicketRepository\:\:findRecentStories\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Repository/TicketRepository.php
+
+		-
+			message: '#^Public method "App\\Repository\\TicketRepository\:\:findStoriesByTitleLike\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Repository/TicketRepository.php
+
+		-
+			message: '#^Public method "App\\Repository\\TicketTaskDependencyRepository\:\:findGroupedByTicketTasks\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Repository/TicketTaskDependencyRepository.php
+
+		-
+			message: '#^Public method "App\\Repository\\WorkflowStepActionRepository\:\:findUniqueByWorkflowAndAction\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Repository/WorkflowStepActionRepository.php
+
+		-
+			message: '#^Public method "App\\Repository\\WorkflowStepRepository\:\:findByWorkflowAndKey\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Repository/WorkflowStepRepository.php
+
+		-
+			message: '#^Public method "App\\Service\\AgentTaskExecutionService\:\:findByTicketTask\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Service/AgentTaskExecutionService.php
+
+		-
+			message: '#^Public method "App\\Service\\ChatService\:\:sendAgent\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Service/ChatService.php
+
+		-
+			message: '#^Public method "App\\Service\\ChatService\:\:sendHuman\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Service/ChatService.php
+
+		-
+			message: '#^Public method "App\\Service\\ConnectorRegistry\:\:healthCheckAll\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Service/ConnectorRegistry.php
+
+		-
+			message: '#^Public method "App\\Service\\MessengerExecutionContext\:\:get\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Service/MessengerExecutionContext.php
+
+		-
+			message: '#^Public constant "App\\Service\\RealtimeTopicFactory\:\:BASE_URI" is never used$#'
+			identifier: public.classConstant.unused
+			count: 1
+			path: ../backend/src/Service/RealtimeTopicFactory.php
+
+		-
+			message: '#^Public constant "App\\Service\\RequestCorrelationService\:\:ATTRIBUTE" is never used$#'
+			identifier: public.classConstant.unused
+			count: 1
+			path: ../backend/src/Service/RequestCorrelationService.php
+
+		-
+			message: '#^Public method "App\\Service\\RoleService\:\:findBySlug\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Service/RoleService.php
+
+		-
+			message: '#^Public method "App\\Service\\SkillService\:\:findBySlug\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Service/SkillService.php
+
+		-
+			message: '#^Public method "App\\Service\\TicketLogService\:\:countClarificationQuestionsForTask\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Service/TicketLogService.php
+
+		-
+			message: '#^Public method "App\\Service\\TicketLogService\:\:countPendingAnswersForTicket\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Service/TicketLogService.php
+
+		-
+			message: '#^Public method "App\\Service\\TicketLogService\:\:findPendingQuestionsForTask\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Service/TicketLogService.php
+
+		-
+			message: '#^Public method "App\\Service\\TicketService\:\:findByFeature\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Service/TicketService.php
+
+		-
+			message: '#^Public method "App\\Service\\TicketTaskService\:\:addDependency\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Service/TicketTaskService.php
+
+		-
+			message: '#^Public method "App\\Service\\TicketTaskService\:\:findAssignedAgent\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Service/TicketTaskService.php
+
+		-
+			message: '#^Public method "App\\Service\\TicketTaskService\:\:findChildrenGroupedByParent\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Service/TicketTaskService.php
+
+		-
+			message: '#^Public method "App\\Service\\TicketTaskService\:\:findRootsByTicket\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Service/TicketTaskService.php
+
+		-
+			message: '#^Public method "App\\Service\\TokenUsageService\:\:record\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/Service/TokenUsageService.php
+
+		-
+			message: '#^Public property "App\\ValueObject\\AgentConnectorCatalog\:\:\$cacheTtlSeconds" is never used$#'
+			identifier: public.property.unused
+			count: 1
+			path: ../backend/src/ValueObject/AgentConnectorCatalog.php
+
+		-
+			message: '#^Public property "App\\ValueObject\\AgentConnectorCatalog\:\:\$connector" is never used$#'
+			identifier: public.property.unused
+			count: 1
+			path: ../backend/src/ValueObject/AgentConnectorCatalog.php
+
+		-
+			message: '#^Public property "App\\ValueObject\\AgentConnectorCatalog\:\:\$supportsPromptExecution" is never used$#'
+			identifier: public.property.unused
+			count: 1
+			path: ../backend/src/ValueObject/AgentConnectorCatalog.php
+
+		-
+			message: '#^Public property "App\\ValueObject\\AgentModelAdvisory\:\:\$code" is never used$#'
+			identifier: public.property.unused
+			count: 1
+			path: ../backend/src/ValueObject/AgentModelAdvisory.php
+
+		-
+			message: '#^Public property "App\\ValueObject\\AgentModelAdvisory\:\:\$level" is never used$#'
+			identifier: public.property.unused
+			count: 1
+			path: ../backend/src/ValueObject/AgentModelAdvisory.php
+
+		-
+			message: '#^Public property "App\\ValueObject\\AgentModelCapabilities\:\:\$additional" is never used$#'
+			identifier: public.property.unused
+			count: 1
+			path: ../backend/src/ValueObject/AgentModelCapabilities.php
+
+		-
+			message: '#^Public property "App\\ValueObject\\AgentModelCapabilities\:\:\$input" is never used$#'
+			identifier: public.property.unused
+			count: 1
+			path: ../backend/src/ValueObject/AgentModelCapabilities.php
+
+		-
+			message: '#^Public property "App\\ValueObject\\AgentModelCapabilities\:\:\$output" is never used$#'
+			identifier: public.property.unused
+			count: 1
+			path: ../backend/src/ValueObject/AgentModelCapabilities.php
+
+		-
+			message: '#^Public property "App\\ValueObject\\AgentModelPricing\:\:\$cacheRead" is never used$#'
+			identifier: public.property.unused
+			count: 1
+			path: ../backend/src/ValueObject/AgentModelPricing.php
+
+		-
+			message: '#^Public property "App\\ValueObject\\AgentModelPricing\:\:\$cacheWrite" is never used$#'
+			identifier: public.property.unused
+			count: 1
+			path: ../backend/src/ValueObject/AgentModelPricing.php
+
+		-
+			message: '#^Public property "App\\ValueObject\\ConnectorAuthStatus\:\:\$required" is never used$#'
+			identifier: public.property.unused
+			count: 1
+			path: ../backend/src/ValueObject/ConnectorAuthStatus.php
+
+		-
+			message: '#^Public method "App\\ValueObject\\ConnectorHealthCheckResult\:\:isHealthy\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/ValueObject/ConnectorHealthCheckResult.php
+
+		-
+			message: '#^Public property "App\\ValueObject\\ConnectorHealthCheckResult\:\:\$details" is never used$#'
+			identifier: public.property.unused
+			count: 1
+			path: ../backend/src/ValueObject/ConnectorHealthCheckResult.php
+
+		-
+			message: '#^Public method "App\\ValueObject\\ConnectorHealthReport\:\:toArray\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/ValueObject/ConnectorHealthReport.php
+
+		-
+			message: '#^Public property "App\\ValueObject\\ConnectorHealthReport\:\:\$connector" is never used$#'
+			identifier: public.property.unused
+			count: 1
+			path: ../backend/src/ValueObject/ConnectorHealthReport.php
+
+		-
+			message: '#^Public property "App\\ValueObject\\ConnectorRequest\:\:\$metadata" is never used$#'
+			identifier: public.property.unused
+			count: 1
+			path: ../backend/src/ValueObject/ConnectorRequest.php
+
+		-
+			message: '#^Public property "App\\ValueObject\\ConnectorRequest\:\:\$sessionId" is never used$#'
+			identifier: public.property.unused
+			count: 1
+			path: ../backend/src/ValueObject/ConnectorRequest.php
+
+		-
+			message: '#^Public method "App\\ValueObject\\ConnectorResponse\:\:toArray\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/ValueObject/ConnectorResponse.php
+
+		-
+			message: '#^Public property "App\\ValueObject\\PlanningOutput\:\:\$specUpdates" is never used$#'
+			identifier: public.property.unused
+			count: 1
+			path: ../backend/src/ValueObject/PlanningOutput.php
+
+		-
+			message: '#^Public method "App\\ValueObject\\Prompt\:\:getSkillContent\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/ValueObject/Prompt.php
+
+		-
+			message: '#^Public method "App\\ValueObject\\RealtimeUpdate\:\:getOccurredAt\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/ValueObject/RealtimeUpdate.php
+
+		-
+			message: '#^Public method "App\\ValueObject\\RealtimeUpdate\:\:getPayload\(\)" is never used$#'
+			identifier: public.method.unused
+			count: 1
+			path: ../backend/src/ValueObject/RealtimeUpdate.php

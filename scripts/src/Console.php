@@ -33,6 +33,9 @@ final class Console
         $this->eol = (Environment::isWsl() && !$this->isTty()) ? "\r\n" : "\n";
     }
 
+    /**
+     * @return self
+     */
     public static function getInstance(): self
     {
         if (self::$instance === null) {
@@ -47,18 +50,6 @@ final class Console
     public function line(string $text = ''): void
     {
         echo $text . $this->eol;
-    }
-
-    /** Horizontal rule: ══════════════ */
-    public function hr(int $width = 50, string $char = '═'): void
-    {
-        $this->line(str_repeat($char, $width));
-    }
-
-    /** Thin horizontal rule: ────────── */
-    public function separator(int $width = 50): void
-    {
-        $this->hr($width, '─');
     }
 
     // ── Semantic helpers (used by scripts) ────────────────────────────────────

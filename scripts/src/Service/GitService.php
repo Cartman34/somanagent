@@ -94,29 +94,6 @@ final class GitService
     }
 
     /**
-     * Check if a local branch exists.
-     *
-     * @param string $branch Branch name
-     * @return bool True if local branch exists
-     */
-    public function checkLocalBranchExists(string $branch): bool
-    {
-        return $this->git->localBranchExists($branch);
-    }
-
-    /**
-     * Check if a remote branch exists.
-     *
-     * @param string $branch Branch name
-     * @param string $remote Remote name (default: origin)
-     * @return bool True if remote branch exists
-     */
-    public function checkRemoteBranchExists(string $branch, string $remote = self::ORIGIN_REMOTE): bool
-    {
-        return $this->git->remoteBranchExists($remote, $branch);
-    }
-
-    /**
      * Delete a local branch.
      *
      * @param string $branch Branch name to delete
@@ -203,30 +180,6 @@ final class GitService
         } catch (\RuntimeException) {
             return $this->git->getUnmergedFilesInPath($worktree);
         }
-    }
-
-    /**
-     * Check if a branch has no development commits compared to base.
-     *
-     * @param string $base Base branch
-     * @param string $branch Branch to check
-     * @return bool True if branch has no commits since base
-     */
-    public function checkBranchHasNoDevelopment(string $base, string $branch): bool
-    {
-        return !$this->hasCommitsSince($base, $branch);
-    }
-
-    /**
-     * Check if there are changed files since base.
-     *
-     * @param string $base Base commit/branch
-     * @param string $branch Branch to check
-     * @return bool True if there are changes
-     */
-    public function hasChangesSince(string $base, string $branch): bool
-    {
-        return $this->git->getChangedFiles($base, $branch) !== [];
     }
 
     /**
@@ -341,22 +294,6 @@ final class GitService
     }
 
     /**
-     * Check if workspace has local changes.
-     *
-     * @return bool True if there are uncommitted changes
-     */
-    public function checkWorkspaceHasLocalChanges(): bool
-    {
-        if ($this->dryRun) {
-            $this->logVerbose('[dry-run] Inspect workspace changes');
-
-            return $this->git->hasLocalChanges();
-        }
-
-        return $this->git->hasLocalChanges();
-    }
-
-    /**
      * Get current branch of workspace.
      *
      * @return string Current branch name
@@ -414,27 +351,6 @@ final class GitService
     public function getChangedFiles(string $base, string $branch): array
     {
         return $this->git->getChangedFiles($base, $branch);
-    }
-
-    /**
-     * Checkout a branch and pull latest changes.
-     *
-     * @param string $branch Branch to checkout and pull
-     */
-    public function checkoutAndPull(string $branch): void
-    {
-        $this->git->checkoutAndPull($branch);
-    }
-
-    /**
-     * Fetch a branch from remote.
-     *
-     * @param string $branch Branch to fetch
-     * @param string $remote Remote name (default: origin)
-     */
-    public function fetchBranch(string $branch, string $remote = self::ORIGIN_REMOTE): void
-    {
-        $this->git->fetch($remote, $branch, $branch);
     }
 
     private function updateLocalMainBranchWithWarning(): void

@@ -20,6 +20,7 @@ final class BacklogBoardServiceReviewingTest
 {
     /**
      * Runs all test cases and returns the total number of failures.
+     * @api
      */
     public function run(): int
     {
@@ -37,7 +38,7 @@ final class BacklogBoardServiceReviewingTest
     private function testFindReviewingEntryByReviewerReturnsMatchingEntry(): int
     {
         $service = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
-        $board = new BacklogBoard('/tmp/board.md', '# Test backlog');
+        $board = new BacklogBoard('/tmp/board.md');
         $target = $this->entry('target-feature', 'reviewing', 'r02');
         $board->setEntries(BacklogBoard::SECTION_ACTIVE, [
             $this->entry('other-feature', 'reviewing', 'r01'),
@@ -58,7 +59,7 @@ final class BacklogBoardServiceReviewingTest
     private function testFindReviewingEntryByReviewerIgnoresReviewStageAndOtherReviewer(): int
     {
         $service = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
-        $board = new BacklogBoard('/tmp/board.md', '# Test backlog');
+        $board = new BacklogBoard('/tmp/board.md');
         $board->setEntries(BacklogBoard::SECTION_ACTIVE, [
             $this->entry('review-feature', 'review', 'r02'),
             $this->entry('claimed-feature', 'reviewing', 'r03'),
@@ -110,7 +111,7 @@ final class BacklogBoardServiceReviewingTest
     private function testTaskNotFoundSuggestsEntryReferenceForKnownBranch(): int
     {
         $service = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
-        $board = new BacklogBoard('/tmp/board.md', '# Test backlog');
+        $board = new BacklogBoard('/tmp/board.md');
         $entry = $this->taskEntry('reference-feature', 'child-task', 'review', 'r01');
         $entry->setBranch('tech/reference-feature--child-task');
         $board->setEntries(BacklogBoard::SECTION_ACTIVE, [$entry]);

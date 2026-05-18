@@ -20,7 +20,7 @@ use Symfony\Component\Yaml\Yaml;
  */
 final class ValidateTranslationsRunner extends AbstractScriptRunner
 {
-    public const NAME = 'validate-translations';
+    private const NAME = 'validate-translations';
 
     protected function getName(): string
     {

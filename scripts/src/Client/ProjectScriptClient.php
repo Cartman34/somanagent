@@ -29,22 +29,6 @@ final class ProjectScriptClient
     }
 
     /**
-     * Executes one known project script and throws on failure.
-     */
-    public function run(AppScript $script, string $arguments = '', ?string $projectRoot = null): void
-    {
-        $this->console->run($this->command($script, $arguments, $projectRoot));
-    }
-
-    /**
-     * Executes one known project script and returns its captured output.
-     */
-    public function capture(AppScript $script, string $arguments = '', ?string $projectRoot = null): string
-    {
-        return $this->console->capture($this->command($script, $arguments, $projectRoot));
-    }
-
-    /**
      * @return array{0: int, 1: string}
      */
     public function captureWithExitCode(AppScript $script, string $arguments = '', ?string $projectRoot = null): array
