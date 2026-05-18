@@ -343,8 +343,15 @@ This keyword applies only when the active entry is in `development` stage. Refus
    - For a `kind=feature`: `git fetch origin main` then `git rebase origin/main`.
    - For a `kind=task`: `git fetch origin <parent-feature-branch>` then `git rebase <parent-feature-branch>` (the parent branch name comes from the entry's `feature` mapped through the project branch convention).
 2. If the rebase reports conflicts: resolve them file by file in the `WA`, then `git add <file>` and `git rebase --continue`. Repeat until the rebase finishes. Never `git rebase --abort` unless the user explicitly asks for it.
-3. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php base-update <entry-ref>` to refresh `base`.
-4. Stop. Do not run `submit` unless the user explicitly asks for it.
+3. Special case — conflict on `composer.lock` (or `package-lock.json`): the lock file is not meaningfully mergeable. Regenerate it from the merged manifest instead:
+   1. Resolve the conflict on `composer.json` (or `package.json`) by taking the union of `require` blocks when both sides only added dependencies. For non-trivial conflicts on constraints, autoload, scripts, or other sections, resolve manually.
+   2. `git checkout --theirs composer.lock` (or `--ours` — both are stale, the file will be rewritten).
+   3. Run `composer update --lock` to regenerate the lock from the merged `composer.json` without touching `vendor/`. If composer reports unsatisfiable constraints between the merged dependencies, stop and escalate — the operator must arbitrate.
+   4. Run `composer install` to align `vendor/` with the new lock.
+   5. `git add composer.json composer.lock` and `git rebase --continue`.
+   6. For `package-lock.json`, the equivalent is `npm install` (which regenerates the lock from the merged `package.json`).
+4. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php base-update <entry-ref>` to refresh `base`.
+5. Stop. Do not run `submit` unless the user explicitly asks for it.
 
 ### `cleanup`
 

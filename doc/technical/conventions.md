@@ -75,6 +75,23 @@ Example:
 
 The goal is to keep behavior declarative, reduce drift between validation and execution, and make future changes local and auditable.
 
+### No Dynamic Class Or Method Dispatch
+
+When the set of targets is closed (a fixed list of classes, methods, or callables), prefer a static mapping over runtime resolution.
+
+Avoid:
+- `new $className()`
+- `$className::method()`
+- `call_user_func([$className, $method], ...)`
+- any equivalent pattern that hides the call site from static analysis
+
+Prefer:
+- a static map of name → closure that explicitly instantiates and invokes the target, for example `'foo' => static fn() => (new Foo())->run()`
+- a `match` expression that returns or invokes the explicit target
+- a switch of explicit `new Foo()` / `new Bar()` branches when the set is small
+
+PHPStan and other static analysers must see every call site. Dynamic dispatch breaks `public.method.unused` detection and produces false positives or hides real dead code. Dynamic dispatch is acceptable only when the set of targets is genuinely open (plugin loader, runtime-registered handler); document the reason inline.
+
 ---
 
 ## Control Flow Blocks
