@@ -44,7 +44,7 @@ final class BacklogReviewNextCommandTest
     }
 
     /**
-     * @api
+     * Runs every test case and returns the cumulative number of failures.
      */
     public function run(): int
     {

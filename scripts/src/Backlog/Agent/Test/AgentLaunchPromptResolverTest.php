@@ -56,7 +56,6 @@ final class AgentLaunchPromptResolverTest
 
     /**
      * Runs all test cases and returns the cumulative failure count.
-     * @api
      */
     public function run(): int
     {

@@ -47,7 +47,6 @@ final class AgentSessionsCommandTest
 
     /**
      * Runs every test case and returns the cumulative number of failures.
-     * @api
      */
     public function run(): int
     {

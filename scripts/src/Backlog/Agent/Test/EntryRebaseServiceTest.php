@@ -60,7 +60,6 @@ final class EntryRebaseServiceTest
 
     /**
      * Runs all test cases and returns the cumulative failure count.
-     * @api
      */
     public function run(): int
     {
