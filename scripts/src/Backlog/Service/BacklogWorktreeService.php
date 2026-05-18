@@ -186,7 +186,7 @@ final class BacklogWorktreeService
             ));
         }
 
-        $this->git->removeWorktreeForce($path);
+        $this->removeSafeWorktree($path);
     }
 
     /**
@@ -219,7 +219,7 @@ final class BacklogWorktreeService
             ));
         }
 
-        $this->git->removeWorktreeForce($path);
+        $this->removeSafeWorktree($path);
     }
 
     /**
@@ -240,7 +240,7 @@ final class BacklogWorktreeService
             ));
         }
 
-        $this->git->removeWorktreeForce($path);
+        $this->removeSafeWorktree($path);
     }
 
     /**
@@ -449,18 +449,32 @@ final class BacklogWorktreeService
      */
     public function cleanupAbandonedManagedWorktrees(BacklogBoard $board): int
     {
-        $managed = $this->classifyWorktrees($board)->getManaged();
-
-        $cleanable = array_values(array_filter(
-            $managed,
-            static fn(ManagedWorktree $item): bool => in_array($item->getState(), [WorktreeState::ORPHAN, WorktreeState::DETACHED_MANAGED], true),
-        ));
-
-        foreach ($cleanable as $item) {
-            $this->git->removeWorktreeForce($item->getPath());
+        $originalCwd = getcwd();
+        if (!$this->dryRun) {
+            chdir($this->projectRoot);
         }
 
-        return count($cleanable);
+        $count = 0;
+        try {
+            $managed = $this->classifyWorktrees($board)->getManaged();
+
+            $cleanable = array_values(array_filter(
+                $managed,
+                static fn(ManagedWorktree $item): bool => in_array($item->getState(), [WorktreeState::ORPHAN, WorktreeState::DETACHED_MANAGED], true),
+            ));
+
+            foreach ($cleanable as $item) {
+                $this->removeSafeWorktree($item->getPath());
+            }
+
+            $count = count($cleanable);
+        } finally {
+            if ($originalCwd !== false && is_dir($originalCwd)) {
+                chdir($originalCwd);
+            }
+        }
+
+        return $count;
     }
 
     /**
@@ -483,7 +497,7 @@ final class BacklogWorktreeService
                 continue;
             }
 
-            $this->git->removeWorktreeForce($item->getPath());
+            $this->removeSafeWorktree($item->getPath());
             $count++;
         }
 
@@ -773,7 +787,7 @@ final class BacklogWorktreeService
                 throw new \RuntimeException("Branch {$branch} is active in a non-managed worktree: {$path}");
             }
 
-            $this->git->removeWorktreeForce($path);
+            $this->removeSafeWorktree($path);
         }
     }
 
@@ -996,6 +1010,29 @@ final class BacklogWorktreeService
     private function checkIsManagedAgentWorktree(string $path): bool
     {
         return str_starts_with($path, $this->worktreesRoot . '/');
+    }
+
+    /**
+     * Removes a git worktree, ensuring the current process CWD remains valid.
+     *
+     * If the PHP process CWD is inside the worktree being removed, chdir to the
+     * project root before deletion so that getcwd() stays valid after the call.
+     * This prevents the "getcwd: cannot access parent directories" error that would
+     * otherwise propagate to any caller running from inside the deleted worktree.
+     *
+     * @param string $path Absolute path of the worktree to remove
+     * @return void
+     */
+    private function removeSafeWorktree(string $path): void
+    {
+        $cwdBefore = getcwd();
+        if (!$this->dryRun) {
+            if ($cwdBefore !== false && str_starts_with($cwdBefore . '/', $path . '/')) {
+                chdir($this->projectRoot);
+            }
+        }
+
+        $this->git->removeWorktreeForce($path);
     }
 
     private function logVerbose(string $message): void

@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Test;
 
 use SoManAgent\Script\Application;
+use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 use SoManAgent\Script\Client\ConsoleClient;
@@ -45,6 +46,8 @@ final class BacklogWorktreeServiceTest
         $failed += $this->testPrepareAgentWorktreePreCommitHookIsIdempotent();
         $failed += $this->testRunReviewScriptPersistsFullOutputAndPrintsPointerOnSuccess();
         $failed += $this->testRunReviewScriptPersistsFullOutputAndPrintsPointerBeforeFailure();
+        $failed += $this->testCleanupAbandonedWorktreeChdirsToProjectRootWhenCwdIsInside();
+        $failed += $this->testCleanupAbandonedWorktreeLeavesCwdUnchangedWhenOutside();
 
         return $failed;
     }
@@ -326,6 +329,78 @@ final class BacklogWorktreeServiceTest
         return 0;
     }
 
+    private function testCleanupAbandonedWorktreeChdirsToProjectRootWhenCwdIsInside(): int
+    {
+        $agent = 'test-d10-cwd-inside-' . $this->uniqueToken();
+        $worktreesRoot = $this->projectRoot . '/local/tests/worktree-service';
+        $worktree = $worktreesRoot . '/' . $agent;
+        $originalCwd = (string) getcwd();
+
+        $this->runCommand(sprintf(
+            'git -C %s worktree add --detach %s',
+            escapeshellarg($this->projectRoot),
+            escapeshellarg($worktree),
+        ));
+
+        try {
+            chdir($worktree);
+
+            $service = $this->createService($worktreesRoot);
+            $board = new BacklogBoard($this->projectRoot . '/local/backlog-board.yaml');
+            $service->cleanupAbandonedManagedWorktrees($board);
+
+            $cwd = getcwd();
+            if ($cwd === false || !is_dir($cwd)) {
+                echo "FAIL testCleanupAbandonedWorktreeChdirsToProjectRootWhenCwdIsInside: getcwd() returned an invalid path after cleanup\n";
+                return 1;
+            }
+            if ($cwd !== $this->projectRoot) {
+                echo "FAIL testCleanupAbandonedWorktreeChdirsToProjectRootWhenCwdIsInside: expected cwd={$this->projectRoot}, got {$cwd}\n";
+                return 1;
+            }
+        } finally {
+            // Ensure CWD is valid before any further cleanup commands
+            chdir($this->projectRoot);
+            $this->pruneLinkedWorktreeIfExists($worktree);
+            chdir($originalCwd !== '' ? $originalCwd : $this->projectRoot);
+        }
+
+        echo "OK testCleanupAbandonedWorktreeChdirsToProjectRootWhenCwdIsInside\n";
+        return 0;
+    }
+
+    private function testCleanupAbandonedWorktreeLeavesCwdUnchangedWhenOutside(): int
+    {
+        $agent = 'test-d10-cwd-outside-' . $this->uniqueToken();
+        $worktreesRoot = $this->projectRoot . '/local/tests/worktree-service';
+        $worktree = $worktreesRoot . '/' . $agent;
+
+        $this->runCommand(sprintf(
+            'git -C %s worktree add --detach %s',
+            escapeshellarg($this->projectRoot),
+            escapeshellarg($worktree),
+        ));
+
+        try {
+            $cwdBefore = (string) getcwd();
+
+            $service = $this->createService($worktreesRoot);
+            $board = new BacklogBoard($this->projectRoot . '/local/backlog-board.yaml');
+            $service->cleanupAbandonedManagedWorktrees($board);
+
+            $cwdAfter = (string) getcwd();
+            if ($cwdAfter !== $cwdBefore) {
+                echo "FAIL testCleanupAbandonedWorktreeLeavesCwdUnchangedWhenOutside: cwd changed from {$cwdBefore} to {$cwdAfter}\n";
+                return 1;
+            }
+        } finally {
+            $this->pruneLinkedWorktreeIfExists($worktree);
+        }
+
+        echo "OK testCleanupAbandonedWorktreeLeavesCwdUnchangedWhenOutside\n";
+        return 0;
+    }
+
     private function createService(string $worktreesRoot): BacklogWorktreeService
     {
         $console = new ConsoleClient(
@@ -365,6 +440,21 @@ final class BacklogWorktreeServiceTest
     private function cleanupWorktree(string $worktree): void
     {
         $this->removePath($worktree);
+    }
+
+    private function pruneLinkedWorktreeIfExists(string $path): void
+    {
+        if (!file_exists($path)) {
+            return;
+        }
+
+        exec(sprintf(
+            'git -C %s worktree remove --force %s 2>&1',
+            escapeshellarg($this->projectRoot),
+            escapeshellarg($path),
+        ));
+
+        $this->removePath($path);
     }
 
     private function createExistingAgentRepository(string $worktree): void
