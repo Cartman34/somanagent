@@ -1,0 +1,37 @@
+#!/bin/bash
+# Managed worktree pre-commit hook — installed by BacklogWorktreeService::prepareAgentWorktree.
+# Blocks commits in agent WAs when the backlog entry is not in development stage.
+# Self-aware: only activates inside agent sessions (SOMANAGER_AGENT set) running in a managed WA.
+
+AGENT="${SOMANAGER_AGENT:-}"
+ROLE="${SOMANAGER_ROLE:-developer}"
+
+# Not an agent session — allow
+if [ -z "$AGENT" ]; then
+    exit 0
+fi
+
+# Determine working tree root
+WA_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+if [ -z "$WA_ROOT" ]; then
+    printf '❌ Pre-commit hook: cannot determine worktree root. Commit blocked.\n' >&2
+    printf '   Use git commit --no-verify only with explicit user authorization.\n' >&2
+    exit 1
+fi
+
+# Only activate inside a managed agent worktree (path ends with /.agent-worktrees/<agent>)
+case "$WA_ROOT" in
+    *"/.agent-worktrees/$AGENT") ;;
+    *) exit 0 ;;
+esac
+
+# Query entry stage via backlog.php (proxied to WP automatically by WorktreeScriptProxy)
+OUTPUT=$(SOMANAGER_ROLE="$ROLE" SOMANAGER_AGENT="$AGENT" php "$WA_ROOT/scripts/backlog.php" commit-gate 2>&1)
+EXIT_CODE=$?
+
+if [ "$EXIT_CODE" -ne 0 ]; then
+    printf '%s\n' "$OUTPUT" >&2
+    exit 1
+fi
+
+exit 0

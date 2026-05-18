@@ -45,6 +45,7 @@ enum BacklogCommandName: string
     case FEATURE_CLOSE = 'feature-close';
     case USER_MERGE = 'user-merge';
     case ENTRY_REBASE = 'entry-rebase';
+    case COMMIT_GATE = 'commit-gate';
 
     /**
      * Returns true when this command mutates board, review, worktree, or associated state.
@@ -60,7 +61,8 @@ enum BacklogCommandName: string
             self::TODO_LIST,
             self::REVIEW_LIST,
             self::REVIEW_NOTES,
-            self::REVIEW_CHECK => false,
+            self::REVIEW_CHECK,
+            self::COMMIT_GATE => false,
             default => true,
         };
     }

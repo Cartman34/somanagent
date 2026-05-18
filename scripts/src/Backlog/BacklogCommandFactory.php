@@ -9,6 +9,7 @@ namespace SoManAgent\Script\Backlog;
 
 use SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
 use SoManAgent\Script\Backlog\Command\BacklogBaseUpdateCommand;
+use SoManAgent\Script\Backlog\Command\BacklogCommitGateCommand;
 use SoManAgent\Script\Backlog\Command\BacklogEntryAssignCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureBlockCommand;
 use SoManAgent\Script\Backlog\Command\BacklogFeatureCloseCommand;
@@ -172,6 +173,7 @@ final class BacklogCommandFactory
             BacklogCommandName::FEATURE_CLOSE->value => BacklogFeatureCloseCommand::class,
             BacklogCommandName::USER_MERGE->value => BacklogUserMergeCommand::class,
             BacklogCommandName::ENTRY_REBASE->value => BacklogEntryRebaseCommand::class,
+            BacklogCommandName::COMMIT_GATE->value => BacklogCommitGateCommand::class,
         ];
 
         $class = $map[$commandName] ?? null;

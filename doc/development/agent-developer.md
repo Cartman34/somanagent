@@ -61,6 +61,7 @@ The cross-role tooling and path rules in [`agent-workflow.md` — Tools And Path
 - start a second visible backlog entry for the same feature
 - edit `local/backlog-board.yaml` or `local/backlog-review.md` manually
 - introduce or leave dead code in the branch — methods, functions, properties, classes, or imports without any caller or reader anywhere in the codebase. This includes lingering remnants of an earlier refactor that the current change is supposed to clean up. The reviewer treats dead code as a blocker.
+- use `git commit --no-verify` to bypass the pre-commit hook unless the user has explicitly asked for it. The hook exists to enforce stage integrity; bypassing it is only legitimate on explicit user instruction.
 
 ## Session Environment
 
