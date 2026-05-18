@@ -346,7 +346,7 @@ final class BacklogWorktreeServiceTest
             chdir($worktree);
 
             $service = $this->createService($worktreesRoot);
-            $board = new BacklogBoard($this->projectRoot . '/local/backlog-board.yaml');
+            $board = new BacklogBoard($this->projectRoot . '/local/backlog/backlog-board.yaml');
             $service->cleanupAbandonedManagedWorktrees($board);
 
             $cwd = getcwd();
@@ -359,7 +359,6 @@ final class BacklogWorktreeServiceTest
                 return 1;
             }
         } finally {
-            // Ensure CWD is valid before any further cleanup commands
             chdir($this->projectRoot);
             $this->pruneLinkedWorktreeIfExists($worktree);
             chdir($originalCwd !== '' ? $originalCwd : $this->projectRoot);
@@ -385,7 +384,7 @@ final class BacklogWorktreeServiceTest
             $cwdBefore = (string) getcwd();
 
             $service = $this->createService($worktreesRoot);
-            $board = new BacklogBoard($this->projectRoot . '/local/backlog-board.yaml');
+            $board = new BacklogBoard($this->projectRoot . '/local/backlog/backlog-board.yaml');
             $service->cleanupAbandonedManagedWorktrees($board);
 
             $cwdAfter = (string) getcwd();
