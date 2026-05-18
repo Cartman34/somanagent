@@ -104,6 +104,8 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $reviewCheckOutput = $driver->reviewCheck($context->agentSecondary, $context->fixFeature);
         $driver->assertContains($reviewCheckOutput, 'Entry-ref: ' . $context->fixFeature);
         $driver->assertContains($reviewCheckOutput, 'Branch: fix/' . $context->fixFeature);
+        $driver->assertContains($reviewCheckOutput, 'Mechanical review status: PASS');
+        $driver->assertContains($reviewCheckOutput, 'Review report saved to local/backlog-review-result.txt');
         $driver->assertReviewRejectFails($context->agentSecondary, $context->fixFeature, $invalidRejectBody, 'Review body items must be plain findings');
         $driver->rejectReviewViaUnifiedCommand($context->agentSecondary, $context->fixFeature, $rejectBody);
         $driver->assertReviewContains($context->fixFeature);

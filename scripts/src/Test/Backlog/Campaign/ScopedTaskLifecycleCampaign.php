@@ -76,6 +76,8 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $reviewCheckOutput = $driver->reviewCheck($context->agentSecondary, $taskARef);
         $driver->assertContains($reviewCheckOutput, 'Entry-ref: ' . $taskARef);
         $driver->assertContains($reviewCheckOutput, 'Branch: feat/' . $context->scopedFeature . '--' . $context->childA);
+        $driver->assertContains($reviewCheckOutput, 'Mechanical review status: PASS');
+        $driver->assertContains($reviewCheckOutput, 'Review report saved to local/backlog-review-result.txt');
         $driver->assertReviewRejectFails($context->agentSecondary, $taskARef, $invalidRejectBody, 'Review body items must be plain findings');
         $driver->rejectReviewViaUnifiedCommand($context->agentSecondary, $taskARef, $rejectBody);
         $driver->assertReviewContains($taskARef);
