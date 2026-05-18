@@ -133,7 +133,7 @@ final class BacklogReviewCheckCommand extends AbstractBacklogCommand
         $savedResult = $this->worktreeService->loadReviewResult($reviewWorktree);
 
         if ($savedResult !== null) {
-            echo rtrim($savedResult) . "\n";
+            $this->worktreeService->displayReviewResultPointer($savedResult, true);
             $this->presenter->displaySuccess(sprintf('Mechanical review passed for %s', $label));
 
             return;

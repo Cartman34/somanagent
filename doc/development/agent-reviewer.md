@@ -153,7 +153,8 @@ Rules:
 3. The script runs the mechanical review for the matching entry kind.
 4. Short task references (bare task slug without the parent feature) are refused; use `<entry-ref>`.
 5. The caller context identifies the reviewer and is required.
-6. If the mechanical review fails, the entry is automatically rejected with a standard message.
+6. The command does not print the full mechanical review report on stdout. It prints a short pointer with the global PASS/FAIL status, the saved report path `local/backlog-review-result.txt` relative to the WA, and the report length. Open that file with the client Read tool for details.
+7. If the mechanical review fails, the pointer is printed before the command error is raised, and the entry is automatically rejected with a standard message.
 
 Block on:
 

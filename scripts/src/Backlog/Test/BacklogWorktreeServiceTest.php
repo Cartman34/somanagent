@@ -44,8 +44,106 @@ final class BacklogWorktreeServiceTest
         $failed += $this->testPrepareAgentWorktreeDoesNotWriteUnderGitInternals();
         $failed += $this->testPrepareAgentWorktreeInstallsPreCommitHook();
         $failed += $this->testPrepareAgentWorktreePreCommitHookIsIdempotent();
+        $failed += $this->testRunReviewScriptPersistsFullOutputAndPrintsPointerOnSuccess();
+        $failed += $this->testRunReviewScriptPersistsFullOutputAndPrintsPointerBeforeFailure();
 
         return $failed;
+    }
+
+    private function testRunReviewScriptPersistsFullOutputAndPrintsPointerOnSuccess(): int
+    {
+        $agent = 'test-d10-review-pass-' . $this->uniqueToken();
+        $worktreesRoot = $this->projectRoot . '/local/tests/worktree-service';
+        $worktree = $worktreesRoot . '/' . $agent;
+        $fullReport = "FULL-REPORT-START\n" . str_repeat('x', 4096) . "\nFULL-REPORT-END";
+
+        try {
+            $this->createReviewScriptFixture($worktree, $fullReport, 0);
+            $service = $this->createService($worktreesRoot);
+
+            ob_start();
+            $service->runReviewScript($worktree);
+            $stdout = (string) ob_get_clean();
+
+            $resultPath = $worktree . '/local/backlog-review-result.txt';
+            if ((string) file_get_contents($resultPath) !== $fullReport) {
+                echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerOnSuccess: full report was not persisted\n";
+                return 1;
+            }
+            if (!str_contains($stdout, 'Mechanical review status: PASS')) {
+                echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerOnSuccess: PASS status missing\n";
+                return 1;
+            }
+            if (!str_contains($stdout, 'Review report saved to local/backlog-review-result.txt')) {
+                echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerOnSuccess: pointer missing\n";
+                return 1;
+            }
+            if (str_contains($stdout, 'FULL-REPORT-START') || str_contains($stdout, 'FULL-REPORT-END')) {
+                echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerOnSuccess: stdout replayed the full report\n";
+                return 1;
+            }
+        } finally {
+            if (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+            $this->cleanupWorktree($worktree);
+        }
+
+        echo "OK testRunReviewScriptPersistsFullOutputAndPrintsPointerOnSuccess\n";
+        return 0;
+    }
+
+    private function testRunReviewScriptPersistsFullOutputAndPrintsPointerBeforeFailure(): int
+    {
+        $agent = 'test-d10-review-fail-' . $this->uniqueToken();
+        $worktreesRoot = $this->projectRoot . '/local/tests/worktree-service';
+        $worktree = $worktreesRoot . '/' . $agent;
+        $fullReport = "FAIL-REPORT-START\n" . str_repeat('y', 4096) . "\nFAIL-REPORT-END";
+
+        try {
+            $this->createReviewScriptFixture($worktree, $fullReport, 7);
+            $service = $this->createService($worktreesRoot);
+
+            ob_start();
+            try {
+                $service->runReviewScript($worktree);
+                ob_end_clean();
+                echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerBeforeFailure: expected exception\n";
+                return 1;
+            } catch (\RuntimeException $exception) {
+                $stdout = (string) ob_get_clean();
+                if (!str_contains($exception->getMessage(), 'Review script failed with exit code 7.')) {
+                    echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerBeforeFailure: unexpected exception {$exception->getMessage()}\n";
+                    return 1;
+                }
+            }
+
+            $resultPath = $worktree . '/local/backlog-review-result.txt';
+            if ((string) file_get_contents($resultPath) !== $fullReport) {
+                echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerBeforeFailure: full report was not persisted\n";
+                return 1;
+            }
+            if (!str_contains($stdout, 'Mechanical review status: FAIL')) {
+                echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerBeforeFailure: FAIL status missing before exception\n";
+                return 1;
+            }
+            if (!str_contains($stdout, 'Review report saved to local/backlog-review-result.txt')) {
+                echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerBeforeFailure: pointer missing before exception\n";
+                return 1;
+            }
+            if (str_contains($stdout, 'FAIL-REPORT-START') || str_contains($stdout, 'FAIL-REPORT-END')) {
+                echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerBeforeFailure: stdout replayed the full report\n";
+                return 1;
+            }
+        } finally {
+            if (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+            $this->cleanupWorktree($worktree);
+        }
+
+        echo "OK testRunReviewScriptPersistsFullOutputAndPrintsPointerBeforeFailure\n";
+        return 0;
     }
 
     private function testPrepareAgentWorktreeDoesNotWriteUnderGitInternals(): int
@@ -324,6 +422,20 @@ final class BacklogWorktreeServiceTest
         ), $output, $code);
 
         return trim(implode("\n", $output));
+    }
+
+    private function createReviewScriptFixture(string $worktree, string $output, int $exitCode): void
+    {
+        $scriptDir = $worktree . '/scripts';
+        if (!is_dir($scriptDir) && !mkdir($scriptDir, 0o755, true) && !is_dir($scriptDir)) {
+            throw new \RuntimeException("Unable to create script fixture: {$scriptDir}");
+        }
+
+        file_put_contents($scriptDir . '/review.php', sprintf(
+            "<?php\necho %s;\nexit(%d);\n",
+            var_export($output, true),
+            $exitCode,
+        ));
     }
 
     private function runCommand(string $command): void

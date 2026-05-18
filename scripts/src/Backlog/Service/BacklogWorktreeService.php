@@ -510,7 +510,7 @@ final class BacklogWorktreeService
         $resultPath = $worktree . '/' . self::REVIEW_RESULT_FILE;
         $this->fs->makeDirectory(dirname($resultPath));
         $this->fs->writeFilePath($resultPath, $output);
-        echo rtrim($output) . "\n";
+        $this->displayReviewResultPointer($output, $code === 0);
 
         if ($code !== 0) {
             throw new \RuntimeException("Review script failed with exit code {$code}.");
@@ -526,6 +526,32 @@ final class BacklogWorktreeService
         $path = $worktree . '/' . self::REVIEW_RESULT_FILE;
 
         return $this->fs->isFile($path) ? $this->fs->getFileContents($path) : null;
+    }
+
+    /**
+     * Prints the short review result contract without replaying the full report.
+     *
+     * @param string $output The saved review output
+     * @param bool $passed Whether the mechanical review passed
+     * @return void
+     */
+    public function displayReviewResultPointer(string $output, bool $passed): void
+    {
+        $status = $passed ? 'PASS' : 'FAIL';
+        $bytes = strlen($output);
+        $lines = substr_count($output, "\n");
+        if ($output !== '' && !str_ends_with($output, "\n")) {
+            $lines++;
+        }
+
+        echo "Mechanical review status: {$status}\n";
+        echo sprintf(
+            "Review report saved to %s (%d bytes, %d lines).\n",
+            self::REVIEW_RESULT_FILE,
+            $bytes,
+            $lines,
+        );
+        echo "Open the file with Read for full details.\n";
     }
 
     private function ensureWorktreeRuntimeState(string $worktree, bool $created): void
