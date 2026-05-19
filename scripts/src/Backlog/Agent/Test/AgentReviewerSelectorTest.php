@@ -381,7 +381,7 @@ final class AgentReviewerSelectorTest
         $board = $this->loadBoard($projectRoot);
 
         try {
-            $selector->selectByTask($board, 'feat-a/task-b', 'r01');
+            $selector->selectByTask($board, self::FEATURE_A . '/task-b', 'r01');
             echo "FAIL testSelectByTaskReviewingForOtherReviewerThrows: expected RuntimeException\n";
             return 1;
         } catch (\RuntimeException $e) {
@@ -601,7 +601,7 @@ final class AgentReviewerSelectorTest
         $runner->onReviewNext = static function (string $reviewerCode, string $ref) use (&$callCount): void {
             $callCount++;
             if ($callCount === 1) {
-                throw new EntryNotReservableException($ref, 'Entry "feat-a" is already in reviewing by r99.');
+                throw new EntryNotReservableException($ref, 'Entry "' . self::FEATURE_A . '" is already in reviewing by r99.');
             }
         };
 

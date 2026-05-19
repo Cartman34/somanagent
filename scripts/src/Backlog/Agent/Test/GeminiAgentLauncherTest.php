@@ -180,7 +180,7 @@ final class GeminiAgentLauncherTest
         [$bin, $args] = $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, self::RESUME_SESSION_ID);
 
         if ($bin !== 'gemini' || $args !== ['--approval-mode', 'auto_edit', '--skip-trust', '-r', self::RESUME_SESSION_ID]) {
-            echo "FAIL testBuildLaunchCommandResumeId: expected permission flags + ['-r', 'session-abc']\n";
+            echo "FAIL testBuildLaunchCommandResumeId: expected permission flags + ['-r', " . self::RESUME_SESSION_ID . "]\n";
             return 1;
         }
 
@@ -340,7 +340,7 @@ final class GeminiAgentLauncherTest
         $id = $launcher->captureCurrentSessionId('/fake-worktree');
 
         if ($id !== self::LATEST_SESSION_ID) {
-            echo "FAIL testCaptureCurrentSessionIdReturnsFirstFromList: expected 'latest-session', got " . var_export($id, true) . "\n";
+            echo "FAIL testCaptureCurrentSessionIdReturnsFirstFromList: expected '" . self::LATEST_SESSION_ID . "', got " . var_export($id, true) . "\n";
             return 1;
         }
 
