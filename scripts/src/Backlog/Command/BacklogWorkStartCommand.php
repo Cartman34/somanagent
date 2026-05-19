@@ -99,7 +99,7 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
             [$matchIndex, $matchEntry] = $this->boardService->resolveQueuedEntryByReference(
                 $board,
                 $explicitReference,
-                BacklogCommandName::WORK_START->value,
+                BacklogCommandName::START->value,
             );
             $target = new BoardEntryMatch(BacklogBoard::SECTION_TODO, $matchIndex, $matchEntry);
         } else {
@@ -139,7 +139,7 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
         $entries[] = $featureEntry;
         $board->setEntries(BacklogBoard::SECTION_ACTIVE, $entries);
 
-        $this->saveBoard($board, BacklogCommandName::WORK_START->value);
+        $this->saveBoard($board, BacklogCommandName::START->value);
 
         $this->presenter->displaySuccess(sprintf(
             'Started %s %s on %s',
@@ -198,7 +198,7 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
                 if ($match->getEntry()->getTask() === $taskSlug) {
                     throw new \RuntimeException(sprintf(
                         '%s: Task slug %s is already used for feature %s.',
-                        BacklogCommandName::WORK_START->value,
+                        BacklogCommandName::START->value,
                         $taskSlug,
                         $featureSlug,
                     ));
