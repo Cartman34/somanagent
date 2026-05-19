@@ -114,7 +114,7 @@ The launcher spawns the AI client via the active **session driver** and records 
 
 Run `php scripts/backlog-agent.php whoami` from inside the WA to confirm the session identity.
 
-**Auto-stop on entry-merge:** when `entry-merge` completes successfully, the sessions of the developer and reviewer assigned to the merged entry are stopped automatically. The session that ran the command receives a deferred self-stop (~3 s delay) so it finishes printing its output before the tmux session closes. Sessions of absent roles (no reviewer on a task, no active session for a code) are silently skipped.
+**Auto-stop on entry-merge:** when `entry-merge` completes successfully, the sessions of the developer and approving reviewer assigned to the merged entry are stopped automatically. The session that ran the command receives a deferred self-stop (~3 s delay) so it finishes printing its output before the tmux session closes. Sessions of absent roles (no recorded reviewer, no active session for a code) are silently skipped.
 
 ## Read Only When Needed
 
