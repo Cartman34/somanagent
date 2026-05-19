@@ -331,6 +331,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         chdir($worktree);
 
         $sessionSvc = $this->sessionService;
+        $driverName = $this->sessionDriver->driverName();
         try {
             $exitCode = $this->sessionDriver->launch(
                 $code,
@@ -340,10 +341,13 @@ final class AgentStartCommand extends AbstractAgentCommand
                 $binArgs,
                 $worktree,
                 $env,
-                static function (int $clientPid, ?string $tmuxSession) use ($sessionSvc, $code): void {
+                static function (int $clientPid, ?string $tmuxSession) use ($sessionSvc, $code, $role, $client, $driverName, $bin, $binArgs): void {
                     $sessionSvc->updateClientPid($code, $clientPid > 0 ? $clientPid : null);
                     if ($tmuxSession !== null) {
                         $sessionSvc->updateTmuxSession($code, $tmuxSession);
+                    }
+                    if ($clientPid > 0) {
+                        $sessionSvc->logLaunch($code, $role, $client, $driverName, $bin, $binArgs, $clientPid);
                     }
                 },
             );
@@ -433,6 +437,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         chdir($worktree);
 
         $sessionSvc = $this->sessionService;
+        $driverName = $this->sessionDriver->driverName();
         try {
             $exitCode = $this->sessionDriver->resume(
                 $code,
@@ -442,10 +447,13 @@ final class AgentStartCommand extends AbstractAgentCommand
                 $binArgs,
                 $worktree,
                 $env,
-                static function (int $clientPid, ?string $tmuxSession) use ($sessionSvc, $code): void {
+                static function (int $clientPid, ?string $tmuxSession) use ($sessionSvc, $code, $role, $client, $driverName, $bin, $binArgs): void {
                     $sessionSvc->updateClientPid($code, $clientPid > 0 ? $clientPid : null);
                     if ($tmuxSession !== null) {
                         $sessionSvc->updateTmuxSession($code, $tmuxSession);
+                    }
+                    if ($clientPid > 0) {
+                        $sessionSvc->logLaunch($code, $role, $client, $driverName, $bin, $binArgs, $clientPid);
                     }
                 },
             );

@@ -171,7 +171,7 @@ Notes:
 - `BACKLOG_AGENT_SESSION_DRIVER=tmux|direct` selects the session driver
 - `tmux` is the default driver and keeps the live client session recoverable after terminal or SSH disconnects; mouse mode and a 50 000-line scrollback buffer are applied automatically so the mouse wheel can scroll the pane history; the window tab shows the agent code (e.g. `d04`); the right side of the status bar shows `role · client · date`
 - `direct` is a degraded driver that keeps the previous interactive process behavior, without live terminal recovery
-
+- every client launch (start or resume, regardless of driver) appends one line to `local/tmp/agent-launches.log`; the file is append-only, not versioned, and never read by the workflow — it exists solely for post-mortem diagnostics (e.g. verifying which flags were passed to a client for a past session); format is tab-separated: `timestamp ISO 8601`, `agent code`, `role`, `client`, `driver`, `full command line (binary + shell-quoted args)`, `client PID`
 
 Client option references:
 

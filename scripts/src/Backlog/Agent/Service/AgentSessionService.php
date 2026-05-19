@@ -17,10 +17,14 @@ use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
  * JSON key = agent code (unique). Fields: client, role, pid, worktree,
  * started_at, last_seen_at, session_id, client_pid, tmux_session.
  * Forbidden fields in JSON: feature, task, reviewing (always derived from backlog).
+ *
+ * Also appends one line per client launch to local/tmp/agent-launches.log for post-mortem
+ * diagnostics. The log is never read by the workflow; it is append-only and not rotated.
  */
 final class AgentSessionService
 {
     private string $sessionsPath;
+    private string $launchesLogPath;
 
     /**
      * @param string $projectRoot Absolute path to the main workspace (WP)
@@ -28,6 +32,7 @@ final class AgentSessionService
     public function __construct(string $projectRoot)
     {
         $this->sessionsPath = $projectRoot . '/local/tmp/agent-sessions.json';
+        $this->launchesLogPath = $projectRoot . '/local/tmp/agent-launches.log';
     }
 
     /**
@@ -227,5 +232,39 @@ final class AgentSessionService
         $this->add($session);
 
         return $session;
+    }
+
+    /**
+     * Appends one line to the launch log at local/tmp/agent-launches.log.
+     *
+     * Called once per client launch (start or resume), right after the driver reports the
+     * client PID via the onSpawned callback. The log is append-only, never read by the
+     * workflow, and serves exclusively for post-mortem diagnostics (e.g. verifying which
+     * flags were passed to a client for a past session).
+     *
+     * Line format (tab-separated):
+     *   timestamp ISO 8601 | agent code | role | client | driver | full command line | client PID
+     *
+     * @param list<string> $args
+     */
+    public function logLaunch(
+        string $code,
+        AgentRole $role,
+        AgentClient $client,
+        string $driver,
+        string $bin,
+        array $args,
+        int $clientPid,
+    ): void {
+        $dir = dirname($this->launchesLogPath);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        $timestamp = (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM);
+        $cmdLine = implode(' ', array_map('escapeshellarg', [$bin, ...$args]));
+        $line = implode("\t", [$timestamp, $code, $role->value, $client->value, $driver, $cmdLine, (string) $clientPid]) . "\n";
+
+        file_put_contents($this->launchesLogPath, $line, FILE_APPEND | LOCK_EX);
     }
 }

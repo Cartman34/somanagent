@@ -138,4 +138,12 @@ interface SessionDriverInterface
      * @param string $agentCode Agent code (e.g. d01)
      */
     public function kill(string $agentCode): void;
+
+    /**
+     * Returns the canonical driver name used in the launch log.
+     *
+     * For TmuxSessionDriver: 'tmux'.
+     * For DirectSessionDriver: 'direct'.
+     */
+    public function driverName(): string;
 }

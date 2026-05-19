@@ -54,6 +54,7 @@ final class AgentSessionServiceTest
         $failed += $this->testLoadsLegacyEntryWithoutClientProcessFields();
         $failed += $this->testIsAliveUsesClientPidFirst();
         $failed += $this->testLoadIgnoresMalformedEntries();
+        $failed += $this->testLogLaunchAppendsLine();
 
         return $failed;
     }
@@ -139,12 +140,13 @@ final class AgentSessionServiceTest
         mkdir($dir, 0755, true);
         $service = new AgentSessionService($dir);
 
+        $sessionId = 'abc-uuid';
         $service->add($this->makeSession('d01'));
-        $service->updateSessionId('d01', 'abc-uuid');
+        $service->updateSessionId('d01', $sessionId);
 
         $got = $service->get('d01');
-        if ($got?->sessionId !== 'abc-uuid') {
-            echo "FAIL testUpdateSessionId: expected 'abc-uuid', got " . var_export($got?->sessionId, true) . "\n";
+        if ($got?->sessionId !== $sessionId) {
+            echo "FAIL testUpdateSessionId: expected '$sessionId', got " . var_export($got?->sessionId, true) . "\n";
             $this->rmdir($dir);
             return 1;
         }
@@ -179,12 +181,13 @@ final class AgentSessionServiceTest
         mkdir($dir, 0755, true);
         $service = new AgentSessionService($dir);
 
+        $tmuxSession = 'somanagent-d01';
         $service->add($this->makeSession('d01'));
-        $service->updateTmuxSession('d01', 'somanagent-d01');
+        $service->updateTmuxSession('d01', $tmuxSession);
 
         $got = $service->get('d01');
-        if ($got === null || $got->tmuxSession !== 'somanagent-d01') {
-            echo "FAIL testUpdateTmuxSession: expected tmuxSession='somanagent-d01', got " . var_export($got?->tmuxSession, true) . "\n";
+        if ($got === null || $got->tmuxSession !== $tmuxSession) {
+            echo "FAIL testUpdateTmuxSession: expected tmuxSession='$tmuxSession', got " . var_export($got?->tmuxSession, true) . "\n";
             $this->rmdir($dir);
             return 1;
         }
@@ -199,6 +202,7 @@ final class AgentSessionServiceTest
         mkdir($dir, 0755, true);
         $service = new AgentSessionService($dir);
 
+        $tmuxSession = 'somanagent-d07';
         $now = new \DateTimeImmutable('2026-05-12T10:00:00+00:00');
         $session = new AgentSession(
             code: 'd07',
@@ -210,7 +214,7 @@ final class AgentSessionServiceTest
             lastSeenAt: $now,
             sessionId: 'abc',
             clientPid: 200,
-            tmuxSession: 'somanagent-d07',
+            tmuxSession: $tmuxSession,
         );
         $service->add($session);
 
@@ -218,7 +222,7 @@ final class AgentSessionServiceTest
         if ($reloaded === null
             || $reloaded->pid !== 100
             || $reloaded->clientPid !== 200
-            || $reloaded->tmuxSession !== 'somanagent-d07'
+            || $reloaded->tmuxSession !== $tmuxSession
             || $reloaded->sessionId !== 'abc'
         ) {
             echo "FAIL testClientProcessRoundTrip: unexpected reloaded session\n";
@@ -324,6 +328,60 @@ final class AgentSessionServiceTest
             return 1;
         }
         echo "OK testLoadIgnoresMalformedEntries\n";
+        $this->rmdir($dir);
+        return 0;
+    }
+
+    private function testLogLaunchAppendsLine(): int
+    {
+        $dir = $this->tmpDir . '/launches-' . uniqid('', true);
+        mkdir($dir . '/local/tmp', 0755, true);
+        $service = new AgentSessionService($dir);
+
+        $service->logLaunch('d01', AgentRole::DEVELOPER, AgentClient::CLAUDE, 'tmux', '/usr/bin/claude', ['--add-dir', '/some/path with spaces'], 12345);
+        $service->logLaunch('d01', AgentRole::DEVELOPER, AgentClient::CLAUDE, 'tmux', '/usr/bin/claude', ['--resume'], 12399);
+
+        $logPath = $dir . '/local/tmp/agent-launches.log';
+        if (!is_file($logPath)) {
+            echo "FAIL testLogLaunchAppendsLine: log file not created\n";
+            $this->rmdir($dir);
+            return 1;
+        }
+
+        $content = file_get_contents($logPath);
+        if ($content === false) {
+            echo "FAIL testLogLaunchAppendsLine: could not read log file\n";
+            $this->rmdir($dir);
+            return 1;
+        }
+        $lines = array_filter(explode("\n", $content));
+        if (count($lines) !== 2) {
+            echo "FAIL testLogLaunchAppendsLine: expected 2 lines, got " . count($lines) . "\n";
+            $this->rmdir($dir);
+            return 1;
+        }
+
+        $fields = explode("\t", array_values($lines)[0]);
+        if (count($fields) !== 7) {
+            echo "FAIL testLogLaunchAppendsLine: expected 7 tab-separated fields, got " . count($fields) . "\n";
+            $this->rmdir($dir);
+            return 1;
+        }
+
+        [, $code, $role, $client, $driver, $cmdLine, $pid] = $fields;
+        if ($code !== 'd01' || $role !== 'developer' || $client !== 'claude' || $driver !== 'tmux' || (int) $pid !== 12345) {
+            echo "FAIL testLogLaunchAppendsLine: unexpected field values in first line\n";
+            $this->rmdir($dir);
+            return 1;
+        }
+
+        if (!str_contains($cmdLine, '/usr/bin/claude') || !str_contains($cmdLine, '--add-dir')) {
+            echo "FAIL testLogLaunchAppendsLine: command line missing expected tokens\n";
+            $this->rmdir($dir);
+            return 1;
+        }
+
+        echo "OK testLogLaunchAppendsLine\n";
         $this->rmdir($dir);
         return 0;
     }
