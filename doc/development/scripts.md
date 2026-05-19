@@ -173,6 +173,14 @@ Notes:
 - `tmux` is the default driver and keeps the live client session recoverable after terminal or SSH disconnects; mouse mode and a 50 000-line scrollback buffer are applied automatically so the mouse wheel can scroll the pane history; the window tab shows the agent code (e.g. `d04`); the right side of the status bar shows `role · client · date`
 - `direct` is a degraded driver that keeps the previous interactive process behavior, without live terminal recovery
 - every client launch (start or resume, regardless of driver) appends one line to `local/tmp/agent-launches.log`; the file is append-only, not versioned, and never read by the workflow — it exists solely for post-mortem diagnostics (e.g. verifying which flags were passed to a client for a past session); format is tab-separated: `timestamp ISO 8601`, `agent code`, `role`, `client`, `driver`, `full command line (binary + shell-quoted args)`, `client PID`
+- when `start --reviewer` (without `--code`) auto-picks a review-stage entry whose developer WA is already occupied by an existing reviewer session, the command resolves the conflict as follows:
+  - **Dead session** (process gone): the registry entry is silently removed and the entry is claimed normally as a fresh session
+  - **Alive + tmux attached elsewhere**: the entry is auto-skipped with an informational message; the next review-stage entry is tried
+  - **Alive + tmux detached**: an interactive prompt is shown with up to three choices:
+    - `[A] Accept` — assigns the entry to the existing session via `review-next` and re-attaches the tmux session; no new session is created
+    - `[P] Pass` — skips this entry and continues to the next review-stage candidate; only shown when at least one other candidate exists
+    - `[Q] Quit` — aborts the picker; no entry is claimed and no session is started
+  - if all candidates are exhausted without a successful pick the command exits with an error
 
 Client option references:
 

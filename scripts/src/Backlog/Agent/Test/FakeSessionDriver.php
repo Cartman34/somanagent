@@ -24,6 +24,9 @@ final class FakeSessionDriver implements SessionDriverInterface
     /** @var array<string, bool> Keyed by agent code */
     private array $aliveByCode = [];
 
+    /** @var array<string, bool> Keyed by agent code */
+    private array $attachedByCode = [];
+
     /** @var array<string, bool> Codes that sessionExists() should return true for */
     private array $existingByCode = [];
 
@@ -75,6 +78,14 @@ final class FakeSessionDriver implements SessionDriverInterface
     public function setExists(string $code, bool $exists): void
     {
         $this->existingByCode[$code] = $exists;
+    }
+
+    /**
+     * Controls whether isAttached() returns true for the given agent code.
+     */
+    public function setAttached(string $code, bool $attached): void
+    {
+        $this->attachedByCode[$code] = $attached;
     }
 
     /**
@@ -160,6 +171,14 @@ final class FakeSessionDriver implements SessionDriverInterface
     public function isAlive(AgentSession $session): bool
     {
         return $this->aliveByCode[$session->code] ?? false;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function isAttached(AgentSession $session): bool
+    {
+        return $this->attachedByCode[$session->code] ?? false;
     }
 
     /**

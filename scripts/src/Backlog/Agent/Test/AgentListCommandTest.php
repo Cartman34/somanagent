@@ -361,6 +361,14 @@ final class AgentListCommandTest
 
             /**
              * {@inheritdoc}
+             */
+            public function isAttached(AgentSession $session): bool
+            {
+                return false;
+            }
+
+            /**
+             * {@inheritdoc}
              *
              * @return list<string>
              */

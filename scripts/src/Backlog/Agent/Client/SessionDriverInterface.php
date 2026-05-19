@@ -114,6 +114,15 @@ interface SessionDriverInterface
     public function isAlive(AgentSession $session): bool;
 
     /**
+     * Returns true when the session has at least one terminal client attached to it.
+     *
+     * For TmuxSessionDriver: queries tmux for the session_attached flag; returns false when
+     * session->tmuxSession is null or the tmux session does not exist.
+     * For DirectSessionDriver: always returns false (no persistent session concept).
+     */
+    public function isAttached(AgentSession $session): bool;
+
+    /**
      * Lists all agent codes currently tracked by the driver as live sessions.
      *
      * Returns codes only (e.g. 'd11'), not full session names.
