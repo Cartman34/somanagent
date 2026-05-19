@@ -11,6 +11,8 @@ namespace SoManAgent\Script\Backlog;
  * Single source of truth for all backlog file and directory paths, relative to the project root.
  *
  * Use the static helpers to build absolute paths. Never concatenate these literals manually.
+ *
+ * @api
  */
 final class BacklogPaths
 {
