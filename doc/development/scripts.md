@@ -169,7 +169,7 @@ Notes:
 | `gemini` | `--approval-mode auto_edit --skip-trust` | Mirrors Claude's acceptEdits; `--skip-trust` suppresses the session-level trust dialog only |
 | `opencode` | `--dangerously-skip-permissions` | Only available auto-approval flag in OpenCode CLI; impact limited because opencode is used infrequently via backlog-agent |
 - `BACKLOG_AGENT_SESSION_DRIVER=tmux|direct` selects the session driver
-- `tmux` is the default driver and keeps the live client session recoverable after terminal or SSH disconnects; mouse mode and a 50 000-line scrollback buffer are applied automatically so the mouse wheel can scroll the pane history
+- `tmux` is the default driver and keeps the live client session recoverable after terminal or SSH disconnects; mouse mode and a 50 000-line scrollback buffer are applied automatically so the mouse wheel can scroll the pane history; the window tab shows the agent code (e.g. `d04`); the right side of the status bar shows `role · client · date`
 - `direct` is a degraded driver that keeps the previous interactive process behavior, without live terminal recovery
 
 

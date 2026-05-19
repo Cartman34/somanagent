@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Agent\Client;
 
+use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
+use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 use SoManAgent\Script\Console;
 
@@ -87,7 +89,7 @@ final class DirectSessionDriver implements SessionDriverInterface
     /**
      * {@inheritdoc}
      */
-    public function launch(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
+    public function launch(string $agentCode, AgentRole $role, AgentClient $client, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
     {
         return $this->run($bin, $args, $cwd, $env, $onSpawned);
     }
@@ -98,7 +100,7 @@ final class DirectSessionDriver implements SessionDriverInterface
      * For the direct driver, resume is identical to launch: proc_open re-executes the binary with
      * the resume flags already present in $args. No live terminal session can be re-attached.
      */
-    public function resume(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
+    public function resume(string $agentCode, AgentRole $role, AgentClient $client, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
     {
         return $this->run($bin, $args, $cwd, $env, $onSpawned);
     }

@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Agent\Client;
 
+use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
+use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 use SoManAgent\Script\Console;
 
@@ -95,7 +97,7 @@ final class TmuxSessionDriver implements SessionDriverInterface
      * Creates a new detached tmux session, gets the pane PID, calls onSpawned, then attaches.
      * Throws when the tmux session somanagent-<code> already exists (use resume to reconnect).
      */
-    public function launch(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
+    public function launch(string $agentCode, AgentRole $role, AgentClient $client, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
     {
         $name = $this->sessionName($agentCode);
 
@@ -110,7 +112,7 @@ final class TmuxSessionDriver implements SessionDriverInterface
         $wrapperPath = $this->writeWrapperScript($bin, $args, $env);
 
         try {
-            $this->createSession($name, $agentCode, $wrapperPath, $cwd);
+            $this->createSession($name, $agentCode, $role, $client, $wrapperPath, $cwd);
             $panePid = $this->getPanePid($name);
             $onSpawned($panePid, $name);
 
@@ -126,7 +128,7 @@ final class TmuxSessionDriver implements SessionDriverInterface
      * Re-attaches to an existing tmux session when it is still alive. Otherwise creates a new
      * session and launches the client with the resume args already embedded in $args.
      */
-    public function resume(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
+    public function resume(string $agentCode, AgentRole $role, AgentClient $client, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
     {
         $name = $this->sessionName($agentCode);
 
@@ -142,7 +144,7 @@ final class TmuxSessionDriver implements SessionDriverInterface
         $wrapperPath = $this->writeWrapperScript($bin, $args, $env);
 
         try {
-            $this->createSession($name, $agentCode, $wrapperPath, $cwd);
+            $this->createSession($name, $agentCode, $role, $client, $wrapperPath, $cwd);
             $panePid = $this->getPanePid($name);
             $onSpawned($panePid, $name);
 
@@ -274,7 +276,7 @@ final class TmuxSessionDriver implements SessionDriverInterface
      * in the pane via tmux copy mode. These options are ergonomic improvements; if any set call
      * fails, a warning is emitted and the session continues without that option.
      */
-    private function createSession(string $name, string $agentCode, string $wrapperPath, string $cwd): void
+    private function createSession(string $name, string $agentCode, AgentRole $role, AgentClient $client, string $wrapperPath, string $cwd): void
     {
         $command = sprintf(
             'tmux new-session -d -s %s -c %s %s',
@@ -294,13 +296,16 @@ final class TmuxSessionDriver implements SessionDriverInterface
             $this->console->warn(sprintf("tmux set-option history-limit failed for session '%s'; scrollback history uses the tmux default.", $name));
         }
 
-        $this->applySowappsStatusLine($name, $agentCode);
+        $this->applySowappsStatusLine($name, $agentCode, $role, $client);
     }
 
     /**
-     * Applies the one-line Sowapps tmux status-line branding to this session only.
+     * Applies the Sowapps tmux status-line branding to this session only.
+     *
+     * The window tab shows the agent code. The right side shows role · client · date
+     * rendered with the session status-style (no inline color override).
      */
-    private function applySowappsStatusLine(string $name, string $agentCode): void
+    private function applySowappsStatusLine(string $name, string $agentCode, AgentRole $role, AgentClient $client): void
     {
         $options = [
             'status' => 'on',
@@ -308,9 +313,9 @@ final class TmuxSessionDriver implements SessionDriverInterface
             'status-left-length' => '20',
             'status-right-length' => '50',
             'status-left' => '#[fg=colour202,bg=colour231] SOWAPPS #[default] ',
-            'status-right' => sprintf('#[fg=colour202,bg=colour231] %s #[default] %%Y-%%m-%%d %%H:%%M:%%S ', $agentCode),
-            'window-status-format' => ' #W ',
-            'window-status-current-format' => ' #W ',
+            'status-right' => sprintf(' %s · %s · %%Y-%%m-%%d %%H:%%M:%%S ', $role->value, $client->value),
+            'window-status-format' => sprintf(' %s ', $agentCode),
+            'window-status-current-format' => sprintf(' %s ', $agentCode),
             'window-status-style' => 'bg=colour202,fg=colour231',
             'window-status-current-style' => 'bg=terminal,fg=colour231,bold',
             'window-status-separator' => '',

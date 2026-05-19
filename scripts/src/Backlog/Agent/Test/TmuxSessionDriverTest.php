@@ -21,6 +21,14 @@ use SoManAgent\Script\Console;
  */
 final class TmuxSessionDriverTest
 {
+    private const SESSION_D01 = 'somanagent-d01';
+    private const SESSION_D03 = 'somanagent-d03';
+    private const SESSION_D11 = 'somanagent-d11';
+    private const CODE_D03 = 'd03';
+    private const TMUX_KILL_SESSION = 'kill-session';
+    private const TMUX_SET_OPTION = 'set-option';
+    private const TMUX_HISTORY_LIMIT = 'history-limit';
+
     /**
      * Runs all test cases and returns the total number of failures.
      */
@@ -171,7 +179,7 @@ final class TmuxSessionDriverTest
         $runner->succeedsResult = true; // tmux has-session succeeds
 
         $driver = new TmuxSessionDriver($runner, Console::getInstance());
-        $session = $this->makeSession('d01', tmuxSession: 'somanagent-d01');
+        $session = $this->makeSession('d01', tmuxSession: self::SESSION_D01);
 
         if (!$driver->isAlive($session)) {
             echo "FAIL testIsAliveReturnsTrueWhenTmuxSessionExists: expected alive\n";
@@ -187,7 +195,7 @@ final class TmuxSessionDriverTest
         $runner->succeedsResult = false; // tmux has-session fails (session gone)
 
         $driver = new TmuxSessionDriver($runner, Console::getInstance());
-        $session = $this->makeSession('d01', tmuxSession: 'somanagent-d01');
+        $session = $this->makeSession('d01', tmuxSession: self::SESSION_D01);
 
         if ($driver->isAlive($session)) {
             echo "FAIL testIsAliveReturnsFalseWhenTmuxSessionGone: expected dead\n";
@@ -218,20 +226,20 @@ final class TmuxSessionDriverTest
         $runner = new RecordingProcessRunner();
 
         $driver = new TmuxSessionDriver($runner, Console::getInstance());
-        $session = $this->makeSession('d01', tmuxSession: 'somanagent-d01');
+        $session = $this->makeSession('d01', tmuxSession: self::SESSION_D01);
 
         ob_start();
         $driver->stop($session);
         ob_end_clean();
 
-        $killCalls = array_filter($runner->calledCommands, fn(string $c): bool => str_contains($c, 'kill-session'));
+        $killCalls = array_filter($runner->calledCommands, fn(string $c): bool => str_contains($c, self::TMUX_KILL_SESSION));
         if ($killCalls === []) {
             echo "FAIL testStopCallsKillSession: tmux kill-session was not called\n";
             return 1;
         }
         $killCmd = reset($killCalls);
-        if (!str_contains($killCmd, 'somanagent-d01')) {
-            echo "FAIL testStopCallsKillSession: kill-session did not target 'somanagent-d01'\n";
+        if (!str_contains($killCmd, self::SESSION_D01)) {
+            echo "FAIL testStopCallsKillSession: kill-session did not target self::SESSION_D01\n";
             return 1;
         }
         echo "OK testStopCallsKillSession\n";
@@ -262,15 +270,16 @@ final class TmuxSessionDriverTest
      */
     private function testGetPanePidQuotesFormatToken(): int
     {
+        $session = self::SESSION_D03;
         $runner = new FakeProcessRunner();
         $runner->outputMap = [
-            "tmux display-message -t 'somanagent-d03' -p '#{pane_pid}'" => "58250\n",
+            "tmux display-message -t '$session' -p '#{pane_pid}'" => "58250\n",
         ];
 
         $driver = new TmuxSessionDriver($runner, Console::getInstance());
         $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'getPanePid');
         $reflection->setAccessible(true);
-        $pid = $reflection->invoke($driver, 'somanagent-d03');
+        $pid = $reflection->invoke($driver, self::SESSION_D03);
 
         if ($pid !== 58250) {
             echo "FAIL testGetPanePidQuotesFormatToken: expected pid 58250, got " . var_export($pid, true) . "\n";
@@ -285,7 +294,7 @@ final class TmuxSessionDriverTest
             echo "FAIL testGetPanePidQuotesFormatToken: command does not quote the format token: {$command}\n";
             return 1;
         }
-        if (!str_contains($command, "'somanagent-d03'")) {
+        if (!str_contains($command, "'$session'")) {
             echo "FAIL testGetPanePidQuotesFormatToken: command does not include the escaped session name: {$command}\n";
             return 1;
         }
@@ -301,9 +310,10 @@ final class TmuxSessionDriverTest
      */
     private function testGetPanePidThrowsWhenOutputIsTmuxDefault(): int
     {
+        $session = self::SESSION_D03;
         $runner = new FakeProcessRunner();
         $runner->outputMap = [
-            "tmux display-message -t 'somanagent-d03' -p '#{pane_pid}'"
+            "tmux display-message -t '$session' -p '#{pane_pid}'"
                 => "[session] 0:window, current pane 0 - (-:-)\n",
         ];
 
@@ -312,7 +322,7 @@ final class TmuxSessionDriverTest
         $reflection->setAccessible(true);
 
         try {
-            $reflection->invoke($driver, 'somanagent-d03');
+            $reflection->invoke($driver, self::SESSION_D03);
         } catch (\ReflectionException $e) {
             $previous = $e->getPrevious();
             if (!$previous instanceof \RuntimeException || !str_contains($previous->getMessage(), 'Could not determine pane PID')) {
@@ -344,11 +354,11 @@ final class TmuxSessionDriverTest
         $driver = new TmuxSessionDriver($runner, Console::getInstance());
         $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'createSession');
         $reflection->setAccessible(true);
-        $reflection->invoke($driver, 'somanagent-d03', 'd03', '/tmp/fake.sh', '/tmp/wa');
+        $reflection->invoke($driver, self::SESSION_D03, self::CODE_D03, AgentRole::DEVELOPER, AgentClient::CLAUDE, '/tmp/fake.sh', '/tmp/wa');
 
         $mouseCalls = array_filter(
             $runner->succeedsCalls,
-            static fn(string $c): bool => str_contains($c, 'set-option') && str_contains($c, 'mouse on'),
+            static fn(string $c): bool => str_contains($c, self::TMUX_SET_OPTION) && str_contains($c, 'mouse on'),
         );
         if ($mouseCalls === []) {
             echo "FAIL testCreateSessionAppliesMouseOption: 'tmux set-option ... mouse on' was not called\n";
@@ -368,11 +378,11 @@ final class TmuxSessionDriverTest
         $driver = new TmuxSessionDriver($runner, Console::getInstance());
         $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'createSession');
         $reflection->setAccessible(true);
-        $reflection->invoke($driver, 'somanagent-d03', 'd03', '/tmp/fake.sh', '/tmp/wa');
+        $reflection->invoke($driver, self::SESSION_D03, self::CODE_D03, AgentRole::DEVELOPER, AgentClient::CLAUDE, '/tmp/fake.sh', '/tmp/wa');
 
         $histCalls = array_filter(
             $runner->succeedsCalls,
-            static fn(string $c): bool => str_contains($c, 'set-option') && str_contains($c, 'history-limit 50000'),
+            static fn(string $c): bool => str_contains($c, self::TMUX_SET_OPTION) && str_contains($c, 'history-limit 50000'),
         );
         if ($histCalls === []) {
             echo "FAIL testCreateSessionAppliesHistoryLimit: 'tmux set-option ... history-limit 50000' was not called\n";
@@ -392,25 +402,27 @@ final class TmuxSessionDriverTest
         $driver = new TmuxSessionDriver($runner, Console::getInstance());
         $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'createSession');
         $reflection->setAccessible(true);
-        $reflection->invoke($driver, 'somanagent-d03', 'd03', '/tmp/fake.sh', '/tmp/wa');
+        $s = self::SESSION_D03;
+        $c = self::CODE_D03;
+        $reflection->invoke($driver, self::SESSION_D03, self::CODE_D03, AgentRole::DEVELOPER, AgentClient::CLAUDE, '/tmp/fake.sh', '/tmp/wa');
 
         $expectedBranding = [
-            "tmux set -t 'somanagent-d03' status 'on'",
-            "tmux set -t 'somanagent-d03' status-style 'bg=colour202,fg=colour231'",
-            "tmux set -t 'somanagent-d03' status-left-length '20'",
-            "tmux set -t 'somanagent-d03' status-right-length '50'",
-            "tmux set -t 'somanagent-d03' status-left '#[fg=colour202,bg=colour231] SOWAPPS #[default] '",
-            "tmux set -t 'somanagent-d03' status-right '#[fg=colour202,bg=colour231] d03 #[default] %Y-%m-%d %H:%M:%S '",
-            "tmux set -t 'somanagent-d03' window-status-format ' #W '",
-            "tmux set -t 'somanagent-d03' window-status-current-format ' #W '",
-            "tmux set -t 'somanagent-d03' window-status-style 'bg=colour202,fg=colour231'",
-            "tmux set -t 'somanagent-d03' window-status-current-style 'bg=terminal,fg=colour231,bold'",
-            "tmux set -t 'somanagent-d03' window-status-separator ''",
+            "tmux set -t '$s' status 'on'",
+            "tmux set -t '$s' status-style 'bg=colour202,fg=colour231'",
+            "tmux set -t '$s' status-left-length '20'",
+            "tmux set -t '$s' status-right-length '50'",
+            "tmux set -t '$s' status-left '#[fg=colour202,bg=colour231] SOWAPPS #[default] '",
+            "tmux set -t '$s' status-right ' developer · claude · %Y-%m-%d %H:%M:%S '",
+            "tmux set -t '$s' window-status-format ' $c '",
+            "tmux set -t '$s' window-status-current-format ' $c '",
+            "tmux set -t '$s' window-status-style 'bg=colour202,fg=colour231'",
+            "tmux set -t '$s' window-status-current-style 'bg=terminal,fg=colour231,bold'",
+            "tmux set -t '$s' window-status-separator ''",
         ];
         $expectedAll = [
-            "tmux new-session -d -s 'somanagent-d03' -c '/tmp/wa' '/tmp/fake.sh'",
-            "tmux set-option -t 'somanagent-d03' mouse on",
-            "tmux set-option -t 'somanagent-d03' history-limit 50000",
+            "tmux new-session -d -s '$s' -c '/tmp/wa' '/tmp/fake.sh'",
+            "tmux set-option -t '$s' mouse on",
+            "tmux set-option -t '$s' history-limit 50000",
             ...$expectedBranding,
         ];
         $brandingCalls = array_values(array_filter(
@@ -441,7 +453,7 @@ final class TmuxSessionDriverTest
         $driver = new TmuxSessionDriver($runner, Console::getInstance());
         $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'createSession');
         $reflection->setAccessible(true);
-        $reflection->invoke($driver, 'somanagent-d03', 'd03', '/tmp/fake.sh', '/tmp/wa');
+        $reflection->invoke($driver, self::SESSION_D03, self::CODE_D03, AgentRole::DEVELOPER, AgentClient::CLAUDE, '/tmp/fake.sh', '/tmp/wa');
 
         foreach ($runner->succeedsCalls as $command) {
             if (str_contains($command, ' -g')) {
@@ -468,7 +480,7 @@ final class TmuxSessionDriverTest
 
         ob_start();
         try {
-            $reflection->invoke($driver, 'somanagent-d03', 'd03', '/tmp/fake.sh', '/tmp/wa');
+            $reflection->invoke($driver, self::SESSION_D03, self::CODE_D03, AgentRole::DEVELOPER, AgentClient::CLAUDE, '/tmp/fake.sh', '/tmp/wa');
         } catch (\Throwable $e) {
             ob_end_clean();
             $inner = $e instanceof \ReflectionException ? $e->getPrevious() : $e;
@@ -510,7 +522,7 @@ final class TmuxSessionDriverTest
 
         ob_start();
         try {
-            $reflection->invoke($driver, 'somanagent-d03', 'd03', '/tmp/fake.sh', '/tmp/wa');
+            $reflection->invoke($driver, self::SESSION_D03, self::CODE_D03, AgentRole::DEVELOPER, AgentClient::CLAUDE, '/tmp/fake.sh', '/tmp/wa');
         } catch (\Throwable $e) {
             ob_end_clean();
             $inner = $e instanceof \ReflectionException ? $e->getPrevious() : $e;
@@ -523,8 +535,8 @@ final class TmuxSessionDriverTest
             echo "FAIL testCreateSessionWarnsWhenSetOptionFails: expected warning mentioning 'mouse', got: " . var_export($output, true) . "\n";
             return 1;
         }
-        if (!str_contains((string) $output, 'history-limit')) {
-            echo "FAIL testCreateSessionWarnsWhenSetOptionFails: expected warning mentioning 'history-limit', got: " . var_export($output, true) . "\n";
+        if (!str_contains((string) $output, self::TMUX_HISTORY_LIMIT)) {
+            echo "FAIL testCreateSessionWarnsWhenSetOptionFails: expected warning mentioning '" . self::TMUX_HISTORY_LIMIT . "', got: " . var_export($output, true) . "\n";
             return 1;
         }
         echo "OK testCreateSessionWarnsWhenSetOptionFails\n";
@@ -587,14 +599,14 @@ final class TmuxSessionDriverTest
         $driver->kill('d11');
         ob_end_clean();
 
-        $killCalls = array_filter($runner->calledCommands, fn(string $c): bool => str_contains($c, 'kill-session'));
+        $killCalls = array_filter($runner->calledCommands, fn(string $c): bool => str_contains($c, self::TMUX_KILL_SESSION));
         if ($killCalls === []) {
             echo "FAIL testKillCallsKillSession: tmux kill-session was not called\n";
             return 1;
         }
         $killCmd = reset($killCalls);
-        if (!str_contains($killCmd, 'somanagent-d11')) {
-            echo "FAIL testKillCallsKillSession: kill-session did not target 'somanagent-d11'\n";
+        if (!str_contains($killCmd, self::SESSION_D11)) {
+            echo "FAIL testKillCallsKillSession: kill-session did not target self::SESSION_D11\n";
             return 1;
         }
         echo "OK testKillCallsKillSession\n";

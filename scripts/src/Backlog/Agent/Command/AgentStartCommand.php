@@ -334,6 +334,8 @@ final class AgentStartCommand extends AbstractAgentCommand
         try {
             $exitCode = $this->sessionDriver->launch(
                 $code,
+                $role,
+                $client,
                 $bin,
                 $binArgs,
                 $worktree,
@@ -434,6 +436,8 @@ final class AgentStartCommand extends AbstractAgentCommand
         try {
             $exitCode = $this->sessionDriver->resume(
                 $code,
+                $role,
+                $client,
                 $bin,
                 $binArgs,
                 $worktree,
