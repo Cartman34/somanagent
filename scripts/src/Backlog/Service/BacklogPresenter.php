@@ -85,9 +85,7 @@ final class BacklogPresenter
         $this->console->line('Branch: ' . ($entry->getBranch() ?? '-'));
         $this->console->line('Base: ' . ($entry->getBase() ?? '-'));
         $this->console->line('Stage: ' . $this->boardService->getStageLabel($stage));
-        if ($entry->getReviewer() !== null) {
-            $this->console->line('Reviewer: ' . $entry->getReviewer());
-        }
+        $this->console->line('Reviewer: ' . $this->formatReviewer($entry));
         $this->console->line('PR: ' . $this->describePrStatus($entry));
         $this->console->line('Summary: ' . $entry->getText());
         $this->displayEntryDetails($entry);
@@ -187,9 +185,7 @@ final class BacklogPresenter
         if (!$isTask) {
             $parts[] = 'pr=' . $this->describePrStatus($entry);
         }
-        if ($entry->getReviewer() !== null) {
-            $parts[] = 'reviewer=' . $entry->getReviewer();
-        }
+        $parts[] = 'reviewer=' . $this->formatReviewer($entry);
         if ($entry->checkIsBlocked()) {
             $parts[] = 'blocked=' . BacklogMetaValue::YES->value;
         }
@@ -234,6 +230,11 @@ final class BacklogPresenter
         }
 
         return '#' . $pr;
+    }
+
+    private function formatReviewer(BoardEntry $entry): string
+    {
+        return $entry->getReviewer() ?? BacklogMetaValue::NONE->value;
     }
 
     private function nextStepForEntry(BoardEntry $entry, string $stage): string
