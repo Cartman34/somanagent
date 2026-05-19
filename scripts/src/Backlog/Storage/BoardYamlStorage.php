@@ -43,10 +43,11 @@ use Symfony\Component\Yaml\Yaml;
 final class BoardYamlStorage
 {
     private const VERSION = 1;
+    private const FIELD_FEATURE_BRANCH = 'feature-branch';
 
     private const KNOWN_ACTIVE_FIELDS = [
         'kind', 'stage', 'feature', 'task', 'developer', 'reviewer',
-        'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type', 'title', 'body',
+        'branch', self::FIELD_FEATURE_BRANCH, 'base', 'pr', 'blocked', 'type', 'title', 'body',
     ];
 
     /**
@@ -154,7 +155,7 @@ final class BoardYamlStorage
             $entry->setDeveloper($this->str($item['developer'] ?? null));
             $entry->setReviewer($this->str($item['reviewer'] ?? null));
             $entry->setBranch($this->str($item['branch'] ?? null));
-            $entry->setFeatureBranch($this->str($item['feature-branch'] ?? null));
+            $entry->setFeatureBranch($this->str($item[self::FIELD_FEATURE_BRANCH] ?? null));
             $entry->setBase($this->str($item['base'] ?? null));
             $entry->setPr($this->str($item['pr'] ?? null));
             $entry->setBlocked(($item['blocked'] ?? null) === BacklogMetaValue::YES->value);
@@ -219,7 +220,7 @@ final class BoardYamlStorage
                 'developer' => $entry->getDeveloper(),
                 'reviewer' => $entry->getReviewer(),
                 'branch' => $entry->getBranch(),
-                'feature-branch' => $entry->getFeatureBranch(),
+                self::FIELD_FEATURE_BRANCH => $entry->getFeatureBranch(),
                 'base' => $entry->getBase(),
                 'pr' => $entry->getPr(),
             ];

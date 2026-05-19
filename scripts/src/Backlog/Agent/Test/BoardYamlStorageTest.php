@@ -22,6 +22,11 @@ use SoManAgent\Script\Backlog\Storage\BoardYamlStorage;
  */
 final class BoardYamlStorageTest
 {
+    private const FEATURE_SLUG = 'my-feature';
+    private const SCOPED_FEATURE = 'parent-feature';
+    private const SCOPED_TASK = 'child-task';
+    private const FULL_FEATURE = 'crypto-feature';
+
     private string $tmpDir;
 
     /**
@@ -111,7 +116,7 @@ final class BoardYamlStorageTest
         $board = $storage->load($path);
 
         $entry = new BoardEntry('Plain feature title');
-        $entry->setFeature('my-feature');
+        $entry->setFeature(self::FEATURE_SLUG);
         $entry->setType('feat');
         $board->setEntries(BacklogBoard::SECTION_TODO, [$entry]);
 
@@ -124,7 +129,7 @@ final class BoardYamlStorageTest
             return 1;
         }
         $r = $entries[0];
-        if ($r->getFeature() !== 'my-feature'
+        if ($r->getFeature() !== self::FEATURE_SLUG
             || $r->getType() !== 'feat'
             || $r->getText() !== 'Plain feature title'
             || $r->getTask() !== null) {
@@ -144,8 +149,8 @@ final class BoardYamlStorageTest
         $board = $storage->load($path);
 
         $entry = new BoardEntry('Scoped child task title');
-        $entry->setFeature('parent-feature');
-        $entry->setTask('child-task');
+        $entry->setFeature(self::SCOPED_FEATURE);
+        $entry->setTask(self::SCOPED_TASK);
         $entry->setType('tech');
         $entry->setDeveloper('d05');
         $board->setEntries(BacklogBoard::SECTION_TODO, [$entry]);
@@ -154,8 +159,8 @@ final class BoardYamlStorageTest
         $reloaded = $storage->load($path);
         $r = $reloaded->getEntries(BacklogBoard::SECTION_TODO)[0];
 
-        if ($r->getFeature() !== 'parent-feature'
-            || $r->getTask() !== 'child-task'
+        if ($r->getFeature() !== self::SCOPED_FEATURE
+            || $r->getTask() !== self::SCOPED_TASK
             || $r->getType() !== 'tech'
             || $r->getDeveloper() !== 'd05'
             || $r->getText() !== 'Scoped child task title') {
@@ -177,10 +182,10 @@ final class BoardYamlStorageTest
         $entry = new BoardEntry('Feature in review');
         $entry->setKind('feature');
         $entry->setStage('reviewing');
-        $entry->setFeature('crypto-feature');
+        $entry->setFeature(self::FULL_FEATURE);
         $entry->setDeveloper('d04');
         $entry->setReviewer('r01');
-        $entry->setBranch('feat/crypto-feature');
+        $entry->setBranch('feat/' . self::FULL_FEATURE);
         $entry->setBase('abc123def456');
         $entry->setPr(BacklogMetaValue::NONE->value);
         $entry->setType('feat');
@@ -192,7 +197,7 @@ final class BoardYamlStorageTest
 
         if ($r->getKind() !== 'feature'
             || $r->getStage() !== 'reviewing'
-            || $r->getFeature() !== 'crypto-feature'
+            || $r->getFeature() !== self::FULL_FEATURE
             || $r->getDeveloper() !== 'd04'
             || $r->getReviewer() !== 'r01'
             || $r->getBranch() !== 'feat/crypto-feature'
@@ -218,8 +223,8 @@ final class BoardYamlStorageTest
         $entry = new BoardEntry('Plain title');
         $entry->setKind('feature');
         $entry->setStage('development');
-        $entry->setFeature('my-feature');
-        $entry->setBranch('feat/my-feature');
+        $entry->setFeature(self::FEATURE_SLUG);
+        $entry->setBranch('feat/' . self::FEATURE_SLUG);
         $board->setEntries(BacklogBoard::SECTION_ACTIVE, [$entry]);
 
         $storage->save($board);
@@ -248,7 +253,7 @@ final class BoardYamlStorageTest
             '  - Sub-item one',
             '  - Sub-item two',
         ]);
-        $entry->setFeature('my-feature');
+        $entry->setFeature(self::FEATURE_SLUG);
         $board->setEntries(BacklogBoard::SECTION_TODO, [$entry]);
 
         $storage->save($board);
