@@ -48,6 +48,7 @@ These files are part of the project codebase and must follow explicit convention
 - Every runnable script must accept `-h` or `--help` and display its header (description + usage).
 - `php scripts/help.php` must remain accurate.
 - `doc/development/scripts.md` must list runnable scripts that are intended for developer use.
+- Inline comments follow [`conventions.md` — Comments](../technical/conventions.md#comments). External-tool integrations and system boundaries (sandbox, locks, env vars, signals, FS outside the project) are explicit cases where a comment is essential; apply the canonical rule.
 - Deeper rules or cross-cutting standards for scripts belong in this file, not in a local `README` inside `scripts/`.
 
 ## Executable Bit

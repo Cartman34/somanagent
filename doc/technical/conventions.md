@@ -228,6 +228,30 @@ The documentation must explain the role, the important inputs/outputs, and any s
 
 ---
 
+## Comments
+
+Inline comments primarily document the WHY. The WHAT can also deserve a comment when the code is dense or hard to scan at a glance — a complex regex, a non-trivial algorithm, a multi-step transformation, a tricky bit-manipulation — where a short prose summary genuinely helps a reader grasp the intent before parsing the details. The judgment is: would a future reader save real effort thanks to this comment? If yes, write it.
+
+Avoid the opposite extreme: a comment that mechanically paraphrases a trivial statement adds noise. Avoid annotations tied to call history — which feature triggered the change, who added a method, which ticket motivated it — that belongs in commit messages or the PR description, not in the source.
+
+### Essential comments
+
+Some boundaries demand a comment. The reviewer treats the lack of one as a finding.
+
+- **External integrations.** Any call to an external CLI (codex, tmux, docker, gh, …), any HTTP call to a third-party API, any IPC with a process outside the project — document what is expected, why the exact flags or arguments are used, and what known failure modes the call guards against.
+- **System boundaries.** Any contract with a system not owned by the project: file paths outside the working tree, environment variables expected by a sandbox or container, signals, lock files, OS-specific behavior. Name the contract; do not let the reader reconstruct it from intuition.
+- **Fragile or non-obvious behavior.** Anything that depends on a deprecated flag, a version-specific quirk, a race window, an observed edge case, or a workaround for an upstream bug. State what the bug is and when the workaround can be removed.
+- **Non-obvious invariants.** Any precondition, postcondition, or invariant that the code maintains but that the reader cannot infer from the structure alone. State the invariant and what would break if it were violated.
+
+A useful boundary comment answers three questions:
+1. What does the surrounding code expect from this external system?
+2. Why this exact form? (flag choice, arg order, retry policy, …)
+3. What goes wrong if a future change drops or rewords it?
+
+When in doubt, write the comment. Under-documentation at a boundary is the kind of nit the reviewer should never have to raise.
+
+---
+
 ## Translations
 
 User-facing text must **not** be hardcoded in French in application source code (`.php`, `.ts`, `.tsx`).
