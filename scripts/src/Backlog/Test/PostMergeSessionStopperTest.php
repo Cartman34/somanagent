@@ -23,17 +23,26 @@ final class PostMergeSessionStopperTest
 {
     private string $tmpDir;
 
+    /**
+     * Sets up a temporary directory for test fixtures.
+     */
     public function __construct()
     {
         $this->tmpDir = dirname(__DIR__, 4) . '/local/tests/post-merge-session-stopper-test-' . uniqid('', true);
         mkdir($this->tmpDir, 0755, true);
     }
 
+    /**
+     * Removes the temporary directory after the test.
+     */
     public function __destruct()
     {
         $this->rmdir($this->tmpDir);
     }
 
+    /**
+     * Runs all test cases and returns the cumulative exit code.
+     */
     public function run(): int
     {
         return $this->testStopsDeveloperAndReviewer();

@@ -86,7 +86,7 @@ final class BacklogPresenter
         $this->console->line('Base: ' . ($entry->getBase() ?? '-'));
         $this->console->line('Stage: ' . $this->boardService->getStageLabel($stage));
         if ($entry->getReviewer() !== null) {
-            $this->console->line('Reviewer: ' . ($entry->getReviewer() ?? '-'));
+            $this->console->line('Reviewer: ' . $entry->getReviewer());
         }
         $this->console->line('PR: ' . $this->describePrStatus($entry));
         $this->console->line('Summary: ' . $entry->getText());
@@ -188,7 +188,7 @@ final class BacklogPresenter
             $parts[] = 'pr=' . $this->describePrStatus($entry);
         }
         if ($entry->getReviewer() !== null) {
-            $parts[] = 'reviewer=' . ($entry->getReviewer() ?? '-');
+            $parts[] = 'reviewer=' . $entry->getReviewer();
         }
         if ($entry->checkIsBlocked()) {
             $parts[] = 'blocked=' . BacklogMetaValue::YES->value;

@@ -27,19 +27,30 @@ use Symfony\Component\Yaml\Yaml;
  */
 final class BacklogReviewApproveCommandTest
 {
+    private const string FEATURE_SLUG = self::FEATURE_SLUG;
+
     private string $tmpDir;
 
+    /**
+     * Sets up a temporary directory for test fixtures.
+     */
     public function __construct()
     {
         $this->tmpDir = dirname(__DIR__, 4) . '/local/tests/backlog-review-approve-command-test-' . uniqid('', true);
         mkdir($this->tmpDir, 0755, true);
     }
 
+    /**
+     * Removes the temporary directory after the test.
+     */
     public function __destruct()
     {
         $this->rmdir($this->tmpDir);
     }
 
+    /**
+     * Runs all test cases and returns the cumulative exit code.
+     */
     public function run(): int
     {
         return $this->testTaskApprovalPreservesReviewer();
@@ -55,7 +66,7 @@ final class BacklogReviewApproveCommandTest
             [
                 'kind' => 'feature',
                 'stage' => 'development',
-                'feature' => 'reviewer-stop',
+                'feature' => self::FEATURE_SLUG,
                 'branch' => 'tech/reviewer-stop',
                 'base' => 'abc123',
                 'pr' => 'none',
@@ -65,7 +76,7 @@ final class BacklogReviewApproveCommandTest
             [
                 'kind' => 'task',
                 'stage' => 'reviewing',
-                'feature' => 'reviewer-stop',
+                'feature' => self::FEATURE_SLUG,
                 'task' => 'approved-task',
                 'agent' => 'd13',
                 'reviewer' => 'r12',
