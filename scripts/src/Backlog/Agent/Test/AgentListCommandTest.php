@@ -28,6 +28,10 @@ use Symfony\Component\Yaml\Yaml;
  */
 final class AgentListCommandTest
 {
+    private const CODE_ALIVE = 'd-alive';
+    private const CODE_DEAD = 'd-dead';
+    private const FEATURE_SLUG = 'some-feature';
+
     private string $tmpDir;
 
     /**
@@ -86,16 +90,16 @@ final class AgentListCommandTest
     {
         $dir = $this->scratch('default-alive');
         $service = new AgentSessionService($dir);
-        $service->add($this->makeSession('d-alive', AgentRole::DEVELOPER, pid: getmypid() ?: 1));
-        $service->add($this->makeSession('d-dead', AgentRole::DEVELOPER, pid: 0));
+        $service->add($this->makeSession(self::CODE_ALIVE, AgentRole::DEVELOPER, pid: getmypid() ?: 1));
+        $service->add($this->makeSession(self::CODE_DEAD, AgentRole::DEVELOPER, pid: 0));
 
         $output = $this->captureHandle($this->buildCommand($service, $dir, $dir . '/missing-board.md'), []);
 
-        if (!str_contains($output, 'd-alive')) {
+        if (!str_contains($output, self::CODE_ALIVE)) {
             echo "FAIL testDefaultHidesDeadSessions: missing alive session in output\n{$output}\n";
             return 1;
         }
-        if (str_contains($output, 'd-dead')) {
+        if (str_contains($output, self::CODE_DEAD)) {
             echo "FAIL testDefaultHidesDeadSessions: dead session leaked into default output\n{$output}\n";
             return 1;
         }
@@ -107,12 +111,12 @@ final class AgentListCommandTest
     {
         $dir = $this->scratch('running-filter');
         $service = new AgentSessionService($dir);
-        $service->add($this->makeSession('d-alive', AgentRole::DEVELOPER, pid: getmypid() ?: 1));
-        $service->add($this->makeSession('d-dead', AgentRole::DEVELOPER, pid: 0));
+        $service->add($this->makeSession(self::CODE_ALIVE, AgentRole::DEVELOPER, pid: getmypid() ?: 1));
+        $service->add($this->makeSession(self::CODE_DEAD, AgentRole::DEVELOPER, pid: 0));
 
         $output = $this->captureHandle($this->buildCommand($service, $dir, $dir . '/missing.md'), ['running' => true]);
 
-        if (!str_contains($output, 'd-alive') || str_contains($output, 'd-dead')) {
+        if (!str_contains($output, self::CODE_ALIVE) || str_contains($output, self::CODE_DEAD)) {
             echo "FAIL testRunningFilterShowsOnlyAlive: unexpected filter result\n{$output}\n";
             return 1;
         }
@@ -124,12 +128,12 @@ final class AgentListCommandTest
     {
         $dir = $this->scratch('all-filter');
         $service = new AgentSessionService($dir);
-        $service->add($this->makeSession('d-alive', AgentRole::DEVELOPER, pid: getmypid() ?: 1));
-        $service->add($this->makeSession('d-dead', AgentRole::DEVELOPER, pid: 0));
+        $service->add($this->makeSession(self::CODE_ALIVE, AgentRole::DEVELOPER, pid: getmypid() ?: 1));
+        $service->add($this->makeSession(self::CODE_DEAD, AgentRole::DEVELOPER, pid: 0));
 
         $output = $this->captureHandle($this->buildCommand($service, $dir, $dir . '/missing.md'), ['all' => true]);
 
-        if (!str_contains($output, 'd-alive') || !str_contains($output, 'd-dead')) {
+        if (!str_contains($output, self::CODE_ALIVE) || !str_contains($output, self::CODE_DEAD)) {
             echo "FAIL testAllIncludesDeadSessions: --all should include both alive and dead sessions\n{$output}\n";
             return 1;
         }
@@ -152,7 +156,7 @@ final class AgentListCommandTest
             [
                 'kind' => 'feature',
                 'stage' => 'development',
-                'feature' => 'some-feature',
+                'feature' => self::FEATURE_SLUG,
                 'agent' => 'd01',
                 'branch' => 'feat/some-feature',
                 'type' => 'feat',
@@ -161,7 +165,7 @@ final class AgentListCommandTest
 
         $output = $this->captureHandle($this->buildCommand($service, $dir, $boardPath), []);
 
-        if (!str_contains($output, 'some-feature')) {
+        if (!str_contains($output, self::FEATURE_SLUG)) {
             echo "FAIL testDerivesDeveloperEntryFromBoard: current label missing\n{$output}\n";
             return 1;
         }

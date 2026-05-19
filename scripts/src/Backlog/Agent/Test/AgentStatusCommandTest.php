@@ -28,6 +28,9 @@ use Symfony\Component\Yaml\Yaml;
  */
 final class AgentStatusCommandTest
 {
+    private const CODE_ALIVE = 'd-alive';
+    private const CODE_DEAD = 'd-dead';
+
     private string $tmpDir;
 
     /**
@@ -122,13 +125,13 @@ final class AgentStatusCommandTest
     {
         $dir = $this->scratch('all-table');
         $service = new AgentSessionService($dir);
-        $service->add($this->makeSession('d-alive', AgentRole::DEVELOPER, pid: getmypid() ?: 1));
-        $service->add($this->makeSession('d-dead', AgentRole::DEVELOPER, pid: 0));
+        $service->add($this->makeSession(self::CODE_ALIVE, AgentRole::DEVELOPER, pid: getmypid() ?: 1));
+        $service->add($this->makeSession(self::CODE_DEAD, AgentRole::DEVELOPER, pid: 0));
 
         $output = $this->captureHandle($this->buildCommand($service, $dir, $dir . '/missing.md'), []);
 
         // statusAll() must behave like list --all: both alive and dead entries appear.
-        if (!str_contains($output, 'd-alive') || !str_contains($output, 'd-dead')) {
+        if (!str_contains($output, self::CODE_ALIVE) || !str_contains($output, self::CODE_DEAD)) {
             echo "FAIL testStatusAllShowsDeadEntries: expected both sessions in output\n{$output}\n";
             return 1;
         }
