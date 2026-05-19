@@ -248,7 +248,7 @@ final class BacklogPresenter
     {
         return match ($stage) {
             BacklogBoard::STAGE_IN_PROGRESS => BacklogCommandName::REVIEW_REQUEST->value,
-            BacklogBoard::STAGE_IN_REVIEW => BacklogCommandName::REVIEW_CHECK->value . ' or ' . BacklogCommandName::REVIEW_APPROVE->value,
+            BacklogBoard::STAGE_PENDING_REVIEW => BacklogCommandName::REVIEW_CHECK->value . ' or ' . BacklogCommandName::REVIEW_APPROVE->value,
             BacklogBoard::STAGE_REVIEWING => BacklogCommandName::REVIEW_CANCEL->value . ' or ' . BacklogCommandName::REVIEW_CHECK->value . ' or ' . BacklogCommandName::REVIEW_APPROVE->value,
             BacklogBoard::STAGE_REJECTED => BacklogCommandName::REWORK->value,
             BacklogBoard::STAGE_APPROVED => BacklogCommandName::ENTRY_MERGE->value,
@@ -260,7 +260,7 @@ final class BacklogPresenter
     {
         return match ($stage) {
             BacklogBoard::STAGE_IN_PROGRESS => BacklogCommandName::REVIEW_REQUEST->value,
-            BacklogBoard::STAGE_IN_REVIEW => BacklogCommandName::REVIEW_CHECK->value . ' or ' . BacklogCommandName::REVIEW_APPROVE->value,
+            BacklogBoard::STAGE_PENDING_REVIEW => BacklogCommandName::REVIEW_CHECK->value . ' or ' . BacklogCommandName::REVIEW_APPROVE->value,
             BacklogBoard::STAGE_REVIEWING => BacklogCommandName::REVIEW_CANCEL->value . ' or ' . BacklogCommandName::REVIEW_CHECK->value . ' or ' . BacklogCommandName::REVIEW_APPROVE->value,
             BacklogBoard::STAGE_REJECTED => BacklogCommandName::REWORK->value,
             BacklogBoard::STAGE_APPROVED => BacklogCommandName::ENTRY_MERGE->value,

@@ -2,7 +2,7 @@ description: 'Claim a task or feature waiting in review and move it to the revie
 arguments:
   -
     name: '[<entry-ref>]'
-    description: 'Optional stable reference exposed by `review-list`. When omitted, review-next claims implicitly: from a backlog-agent reviewer session, the first review entry for the current developer WA; outside such a session, the first entry waiting in review.'
+    description: 'Optional stable reference. Use `list --stage=review` to discover refs. When omitted, review-next claims implicitly: from a backlog-agent reviewer session, the first review entry for the current developer WA; outside such a session, the first entry waiting in review.'
 examples:
   - 'SOMANAGER_AGENT=cp-01 php scripts/backlog.php review-next'
   - 'SOMANAGER_AGENT=cp-01 php scripts/backlog.php review-next my-feature'

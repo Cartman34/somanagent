@@ -125,7 +125,7 @@ final class BacklogReviewRejectCommand extends AbstractBacklogCommand
     private function assertStageAllowsReviewMutation(BoardEntry $entry, string $action): void
     {
         $stage = $this->boardService->getFeatureStage($entry);
-        if ($stage === BacklogBoard::STAGE_IN_REVIEW || $stage === BacklogBoard::STAGE_REVIEWING) {
+        if ($stage === BacklogBoard::STAGE_PENDING_REVIEW || $stage === BacklogBoard::STAGE_REVIEWING) {
             return;
         }
 
@@ -136,7 +136,7 @@ final class BacklogReviewRejectCommand extends AbstractBacklogCommand
         throw new \RuntimeException(sprintf(
             '%s must be in %s or %s to be %s.',
             $label,
-            $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_REVIEW),
+            $this->boardService->getStageLabel(BacklogBoard::STAGE_PENDING_REVIEW),
             $this->boardService->getStageLabel(BacklogBoard::STAGE_REVIEWING),
             $action,
         ));

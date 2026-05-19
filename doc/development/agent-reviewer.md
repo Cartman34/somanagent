@@ -14,13 +14,11 @@ The cross-role tooling and path rules in [`agent-workflow.md` — Tools And Path
 - `review-amend`
 - `review-cancel`
 - `review-reopen`
-- `review-list`
 - `review-next`
 - `review-notes`
 - `feature-close`
 - `entry-merge`
 - `entry-create`
-- `todo-list`
 - `task-remove`
 - `list`
 - `worktree-list`
@@ -97,22 +95,11 @@ Rules:
 - Do not interrupt a developer command sequence unless the user explicitly redirects.
 - Do not edit backlog files directly when `entry-create` covers the change.
 
-### `todo-list`
-
-1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php todo-list`.
-2. The script prints queued tasks in priority order. Each line shows the display index, the queued entry's stable reference between brackets, and the original task text. Numbers are advisory only and never accepted as mutation identity.
-
 ### `task-remove`
 
 1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php task-remove <entry-ref>`.
-2. The reference is the stable `<entry-ref>` shown between brackets by `todo-list`.
+2. The reference is the stable `<entry-ref>` shown by `list --stage=todo`.
 3. The script refuses an empty, unknown, or ambiguous reference; rename a colliding queued task or pass the full `<entry-ref>` to disambiguate.
-
-### `review-list`
-
-1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-list`.
-2. The script prints entries waiting in `stage=review`, one per line shaped `- <ref> kind=<feature|task> developer=<x> ...`, where `<ref>` is the stable reference usable by `review-next`.
-3. Entries already in `stage=reviewing` are excluded because they are claimed by another reviewer.
 
 ### `review-next`
 
@@ -120,7 +107,7 @@ Rules:
 2. Without a target from an active `backlog-agent` reviewer session, the script first uses the session's recorded developer WA and selects the first entry with `stage=review` whose developer agent maps to that same WA. It transitions that entry to `stage=reviewing`, records the reviewer in `reviewer`, and displays the entry.
 3. If the current reviewer session WA has no matching entry in `stage=review`, the script refuses explicitly instead of silently falling back to another developer WA. Use an explicit `<entry-ref>` from the matching reviewer session, or stop this session and start/resume a reviewer session for the intended developer WA.
 4. Without a target outside a `backlog-agent` reviewer session (manual CLI usage), the script keeps the historical behavior: it selects the first entry with `stage=review`.
-5. With an explicit `<entry-ref>` reference (the same shape printed by `review-list`), the script claims that exact entry. It refuses with a clear error when the entry is already in `stage=reviewing` (claimed by another reviewer) or no longer in `stage=review`.
+5. With an explicit `<entry-ref>` reference (the same shape shown by `list --stage=review`), the script claims that exact entry. It refuses with a clear error when the entry is already in `stage=reviewing` (claimed by another reviewer) or no longer in `stage=review`.
 6. Automated workflows must always pass an explicit target; the implicit form is reserved for interactive usage inside the active reviewer context.
 7. The command refuses if the reviewer already has an entry in `reviewing`. Run `review-cancel` first to release it.
 8. Use `Kind` and `Ref`/`Feature` in the output to choose the matching review check command.
@@ -151,8 +138,10 @@ Rules:
 
 ### `list`
 
-1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php list`.
-2. The script prints all active entries (features and tasks) grouped by workflow stage.
+1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php list [--stage=<stage>] [--no-stage=<stage>] [--format=<format>] [--flat]`.
+2. Without flags, prints all entries (todo queue + all active stages) grouped by stage with a header per stage.
+3. `--stage=<stage>` (repeatable, or CSV) filters to a positive selection. `--no-stage=<stage>` (same syntax) excludes stages. Both are mutually exclusive. Allowed values: `todo`, `development`, `review`, `reviewing`, `approved`, `rejected`.
+4. Use `list --stage=review` to see entries waiting for a reviewer (replaces the former `review-list`). Use `list --stage=todo` to see the queued entries (replaces the former `todo-list`).
 
 ### `worktree-list`
 
@@ -265,7 +254,7 @@ Also check:
 
 ### `review`
 
-1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-list`.
+1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php list --stage=review`.
 2. Choose the intended `<entry-ref>` from the output.
 3. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-next <entry-ref>`.
 4. The entry moves to `reviewing` and the reviewer is recorded.

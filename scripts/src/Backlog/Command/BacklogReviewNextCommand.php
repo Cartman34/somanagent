@@ -92,13 +92,13 @@ final class BacklogReviewNextCommand extends AbstractBacklogCommand
         }
 
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-            if ($this->boardService->getFeatureStage($entry) === BacklogBoard::STAGE_IN_REVIEW) {
+            if ($this->boardService->getFeatureStage($entry) === BacklogBoard::STAGE_PENDING_REVIEW) {
                 return $entry;
             }
         }
 
         throw new RuntimeException(
-            'No task or feature available in ' . $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_REVIEW) . '.'
+            'No task or feature available in ' . $this->boardService->getStageLabel(BacklogBoard::STAGE_PENDING_REVIEW) . '.'
         );
     }
 
@@ -109,7 +109,7 @@ final class BacklogReviewNextCommand extends AbstractBacklogCommand
     {
         $availableReferences = [];
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-            if ($this->boardService->getFeatureStage($entry) !== BacklogBoard::STAGE_IN_REVIEW) {
+            if ($this->boardService->getFeatureStage($entry) !== BacklogBoard::STAGE_PENDING_REVIEW) {
                 continue;
             }
 
@@ -186,7 +186,7 @@ final class BacklogReviewNextCommand extends AbstractBacklogCommand
     /**
      * Locates the active entry matching the given reference and verifies it is still in review.
      *
-     * The reference is an `<entry-ref>` as exposed by `review-list`. The lookup
+     * The reference is an `<entry-ref>` as exposed by `list --stage=review`. The lookup
      * uses the recorded `meta.feature` and `meta.task` of active entries.
      */
     private function resolveExplicitTarget(BacklogBoard $board, string $reference): BoardEntry
@@ -234,11 +234,11 @@ final class BacklogReviewNextCommand extends AbstractBacklogCommand
                     $entry->getReviewer() ?? '-',
                 ));
             }
-            if ($stage !== BacklogBoard::STAGE_IN_REVIEW) {
+            if ($stage !== BacklogBoard::STAGE_PENDING_REVIEW) {
                 throw new RuntimeException(sprintf(
                     'Entry "%s" is not in %s (current stage: %s). Only entries waiting in review can be claimed.',
                     $reference,
-                    $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_REVIEW),
+                    $this->boardService->getStageLabel(BacklogBoard::STAGE_PENDING_REVIEW),
                     $this->boardService->getStageLabel($stage),
                 ));
             }
@@ -247,7 +247,7 @@ final class BacklogReviewNextCommand extends AbstractBacklogCommand
         }
 
         throw new RuntimeException(sprintf(
-            'No active entry matches reference "%s". Run `review-list` to see available references.',
+            'No active entry matches reference "%s". Run `list --stage=review` to see available references.',
             $reference,
         ));
     }

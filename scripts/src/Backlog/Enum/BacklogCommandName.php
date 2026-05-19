@@ -15,7 +15,6 @@ enum BacklogCommandName: string
     case BASE_UPDATE = 'base-update';
     case STATUS = 'status';
     case ENTRY_CREATE = 'entry-create';
-    case TODO_LIST = 'todo-list';
     case TASK_REMOVE = 'task-remove';
     case REVIEW_CANCEL = 'review-cancel';
     case REVIEW_CHECK = 'review-check';
@@ -23,7 +22,6 @@ enum BacklogCommandName: string
     case REVIEW_REJECT = 'review-reject';
     case REVIEW_AMEND = 'review-amend';
     case REVIEW_REOPEN = 'review-reopen';
-    case REVIEW_LIST = 'review-list';
     case REVIEW_NEXT = 'review-next';
     case REVIEW_NOTES = 'review-notes';
     case REVIEW_REQUEST = 'review-request';
@@ -59,8 +57,6 @@ enum BacklogCommandName: string
             self::STATUS,
             self::LIST,
             self::WORKTREE_LIST,
-            self::TODO_LIST,
-            self::REVIEW_LIST,
             self::REVIEW_NOTES,
             self::REVIEW_CHECK,
             self::COMMIT_GATE => false,

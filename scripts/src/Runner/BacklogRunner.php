@@ -65,6 +65,14 @@ final class BacklogRunner extends AbstractScriptRunner
         $this->configureExecutionModes($options);
         $this->configureTestFileOverrides($options);
 
+        if ($command === 'todo-list') {
+            $this->console->fail('todo-list has been removed. Use: php scripts/backlog.php list --stage=todo');
+        }
+
+        if ($command === 'review-list') {
+            $this->console->fail('review-list has been removed. Use: php scripts/backlog.php list --stage=review');
+        }
+
         try {
             if ($command === '') {
                 $this->optionValidator()->assertGlobalOptionsAccepted($options);

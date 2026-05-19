@@ -14,6 +14,7 @@ use SoManAgent\Script\Test\Backlog\Campaign\BoardFormatNormalizationCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\CampaignInterface;
 use SoManAgent\Script\Test\Backlog\Campaign\FeatureReviewLifecycleCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\HelpCampaign;
+use SoManAgent\Script\Test\Backlog\Campaign\ListFlagsCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\MutationLockCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\PendingMigrationCampaign;
 use SoManAgent\Script\Test\Backlog\Campaign\ScopedTaskLifecycleCampaign;
@@ -38,6 +39,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
     private const CAMPAIGN_PENDING_MIGRATION = 'pending-migration';
     private const CAMPAIGN_FEATURE_REVIEW_LIFECYCLE = 'feature-review-lifecycle';
     private const CAMPAIGN_USER_MERGE = 'user-merge';
+    private const CAMPAIGN_LIST_FLAGS = 'list-flags';
 
     protected function getName(): string
     {
@@ -56,7 +58,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
     {
         return array_merge(
             [
-                ['name' => '--campaign', 'description' => 'Campaign to run: help, board-format-normalization, todo-and-plain-feature-lifecycle, scoped-task-lifecycle, entry-create-formats, work-start-type-prefix, feature-review-lifecycle, mutation-lock, pending-migration, user-merge, or all'],
+                ['name' => '--campaign', 'description' => 'Campaign to run: help, board-format-normalization, todo-and-plain-feature-lifecycle, scoped-task-lifecycle, entry-create-formats, work-start-type-prefix, feature-review-lifecycle, mutation-lock, pending-migration, user-merge, list-flags, or all'],
                 ['name' => '--allow-remote', 'description' => 'Allow campaigns that push branches or create/merge GitHub PRs'],
                 ['name' => '--allow-integration', 'description' => 'Allow steps that require Docker/app containers to be running (e.g. migrate --generate)'],
                 ['name' => '--keep-artifacts', 'description' => 'Keep test campaign artifacts under local/tests/ after execution'],
@@ -182,6 +184,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
             }
 
             $resolved[] = $campaigns[self::CAMPAIGN_USER_MERGE];
+            $resolved[] = $campaigns[self::CAMPAIGN_LIST_FLAGS];
 
             return $resolved;
         }
@@ -218,6 +221,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
                 self::CAMPAIGN_PENDING_MIGRATION => new PendingMigrationCampaign(),
                 self::CAMPAIGN_FEATURE_REVIEW_LIFECYCLE => new FeatureReviewLifecycleCampaign(),
                 self::CAMPAIGN_USER_MERGE => new UserMergeCampaign(),
+                self::CAMPAIGN_LIST_FLAGS => new ListFlagsCampaign(),
             ];
         }
 

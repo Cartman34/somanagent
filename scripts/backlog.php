@@ -6,7 +6,7 @@
 // Description: Local backlog workflow helper for developer and reviewer commands
 // Usage: php scripts/backlog.php
 // Usage: php scripts/backlog.php --help
-// Usage: php scripts/backlog.php todo-list
+// Usage: php scripts/backlog.php list --stage=todo
 // Usage: php scripts/backlog.php work-start --agent agent-01
 // Usage: php scripts/backlog.php review-request --agent agent-01
 // Usage: php scripts/backlog.php review-check --agent r01 my-feature

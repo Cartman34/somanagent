@@ -80,7 +80,7 @@ final class BacklogReviewCancelCommand extends AbstractBacklogCommand
             ));
         }
 
-        $entry->setStage(BacklogBoard::STAGE_IN_REVIEW);
+        $entry->setStage(BacklogBoard::STAGE_PENDING_REVIEW);
         $entry->setReviewer(null);
         $this->saveBoard($board, BacklogCommandName::REVIEW_CANCEL->value);
 
@@ -88,7 +88,7 @@ final class BacklogReviewCancelCommand extends AbstractBacklogCommand
             '%s %s released back to %s',
             $this->boardService->checkIsTaskEntry($entry) ? 'Task' : 'Feature',
             $this->describeEntry($entry),
-            $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_REVIEW),
+            $this->boardService->getStageLabel(BacklogBoard::STAGE_PENDING_REVIEW),
         ));
     }
 

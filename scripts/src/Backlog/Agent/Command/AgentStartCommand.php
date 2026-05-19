@@ -345,7 +345,7 @@ final class AgentStartCommand extends AbstractAgentCommand
                 $worktree = $this->prepareClaimedReviewerEntry($code);
                 $takenEntryRef = $watchClaimedRef;
                 $takenReviewerCode = $code;
-                $initialPrompt = $this->launchPromptResolver->resolveStageDecision(AgentRole::REVIEWER, BacklogBoard::STAGE_IN_REVIEW)->getPrompt();
+                $initialPrompt = $this->launchPromptResolver->resolveStageDecision(AgentRole::REVIEWER, BacklogBoard::STAGE_PENDING_REVIEW)->getPrompt();
             } else {
                 $reviewerOutcome = $this->prepareReviewerMode($options, $code);
 
@@ -368,7 +368,7 @@ final class AgentStartCommand extends AbstractAgentCommand
                 $worktree = $reviewerOutcome->getWorktree();
                 $takenEntryRef = $reviewerOutcome->getTakenEntryRef();
                 $takenReviewerCode = $reviewerOutcome->getTakenReviewerCode();
-                $reviewerStage = $takenEntryRef !== null ? BacklogBoard::STAGE_IN_REVIEW : BacklogBoard::STAGE_REVIEWING;
+                $reviewerStage = $takenEntryRef !== null ? BacklogBoard::STAGE_PENDING_REVIEW : BacklogBoard::STAGE_REVIEWING;
                 $initialPrompt = $this->launchPromptResolver->resolveStageDecision(AgentRole::REVIEWER, $reviewerStage)->getPrompt();
             }
         } elseif ($role === AgentRole::MANAGER) {
@@ -593,7 +593,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         }
 
         $entry = $match->getEntry();
-        $devCode = $entry->getAgent() ?? '';
+        $devCode = $entry->getDeveloper() ?? '';
         if ($devCode === '') {
             throw new \RuntimeException('Cannot determine developer agent code for the claimed review entry.');
         }
@@ -627,7 +627,7 @@ final class AgentStartCommand extends AbstractAgentCommand
     private function tryWatchDeveloperClaim(BacklogBoard $board, string $developerCode): ?string
     {
         foreach ($board->getEntries(BacklogBoard::SECTION_TODO) as $entry) {
-            if ($entry->getAgent() !== null) {
+            if ($entry->getDeveloper() !== null) {
                 continue;
             }
 
@@ -654,7 +654,7 @@ final class AgentStartCommand extends AbstractAgentCommand
     private function tryWatchReviewerClaim(BacklogBoard $board, string $reviewerCode): ?string
     {
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-            if ($this->boardService->getNormalizedStage($entry->getStage()) !== BacklogBoard::STAGE_IN_REVIEW) {
+            if ($this->boardService->getNormalizedStage($entry->getStage()) !== BacklogBoard::STAGE_PENDING_REVIEW) {
                 continue;
             }
             if ($entry->getReviewer() !== null) {
@@ -662,7 +662,7 @@ final class AgentStartCommand extends AbstractAgentCommand
             }
 
             $entryRef = $this->buildEntryRef($entry);
-            $devCode = $entry->getAgent() ?? '';
+            $devCode = $entry->getDeveloper() ?? '';
             if ($devCode !== '' && $this->isWorktreeUsedByLiveReviewerSession($this->reviewerSelector->devCodeToWorktree($devCode))) {
                 continue;
             }
@@ -690,8 +690,8 @@ final class AgentStartCommand extends AbstractAgentCommand
             if ($this->buildEntryRef($entry) !== $entryRef) {
                 continue;
             }
-            if ($entry->getAgent() !== null) {
-                $agentCodes[] = $entry->getAgent();
+            if ($entry->getDeveloper() !== null) {
+                $agentCodes[] = $entry->getDeveloper();
             }
         }
 
@@ -964,7 +964,7 @@ final class AgentStartCommand extends AbstractAgentCommand
             // Delegate the review transition to backlog.php under the global mutation lock.
             // Only applies when the entry is in review stage; an already-reviewing entry
             // means the reviewer owns it via explicit targeting after step 1 missed it.
-            if ($this->boardService->getNormalizedStage($entry->getStage()) === BacklogBoard::STAGE_IN_REVIEW) {
+            if ($this->boardService->getNormalizedStage($entry->getStage()) === BacklogBoard::STAGE_PENDING_REVIEW) {
                 $entryRef = $this->buildEntryRef($entry);
                 $this->backlogCommandRunner->reviewNext($reviewerCode, $entryRef);
                 $takenEntryRef = $entryRef;
@@ -1060,7 +1060,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         // Pre-collect candidates so we can compute hasMoreCandidates accurately.
         $candidates = [];
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $index => $entry) {
-            if ($this->boardService->getNormalizedStage($entry->getStage()) !== BacklogBoard::STAGE_IN_REVIEW) {
+            if ($this->boardService->getNormalizedStage($entry->getStage()) !== BacklogBoard::STAGE_PENDING_REVIEW) {
                 continue;
             }
             $devCode = $entry->getDeveloper() ?? '';

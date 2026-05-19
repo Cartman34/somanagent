@@ -661,7 +661,7 @@ final class AgentStartCommandTest
             $board = $boardService->loadBoard($boardPath);
             foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
                 if ($entry->getFeature() === self::FEATURE_CRYPTO) {
-                    $entry->setStage(BacklogBoard::STAGE_IN_REVIEW);
+                    $entry->setStage(BacklogBoard::STAGE_PENDING_REVIEW);
                     $entry->setReviewer(null);
                     $boardService->saveBoard($board);
                     break;
@@ -728,7 +728,7 @@ final class AgentStartCommandTest
         // Board must be back at stage=review (simulated by fakeRunner callbacks)
         $reloaded = $boardService->loadBoard($boardPath);
         $entry = $reloaded->getEntries(BacklogBoard::SECTION_ACTIVE)[0] ?? null;
-        if ($entry === null || $entry->getStage() !== BacklogBoard::STAGE_IN_REVIEW || $entry->getReviewer() !== null) {
+        if ($entry === null || $entry->getStage() !== BacklogBoard::STAGE_PENDING_REVIEW || $entry->getReviewer() !== null) {
             echo "FAIL testReviewerModeRollsBackViaCancelWhenPreparationFails: expected stage=review and reviewer cleared\n";
             return 1;
         }
@@ -893,7 +893,7 @@ final class AgentStartCommandTest
             $board = $boardService->loadBoard($boardPath);
             foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
                 if ($entry->getFeature() === self::FEATURE_CRYPTO) {
-                    $entry->setStage(BacklogBoard::STAGE_IN_REVIEW);
+                    $entry->setStage(BacklogBoard::STAGE_PENDING_REVIEW);
                     $entry->setReviewer(null);
                     $boardService->saveBoard($board);
                     break;

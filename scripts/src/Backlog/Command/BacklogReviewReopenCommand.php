@@ -89,7 +89,7 @@ final class BacklogReviewReopenCommand extends AbstractBacklogCommand
         $review->clearReview($reviewKey);
 
         $isManager = $role === self::ROLE_MANAGER;
-        $targetStage = $isManager ? BacklogBoard::STAGE_IN_REVIEW : BacklogBoard::STAGE_REVIEWING;
+        $targetStage = $isManager ? BacklogBoard::STAGE_PENDING_REVIEW : BacklogBoard::STAGE_REVIEWING;
 
         $entry->setStage($targetStage);
         $entry->setReviewer($isManager ? null : $agent);

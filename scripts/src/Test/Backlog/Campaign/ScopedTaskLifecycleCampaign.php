@@ -59,9 +59,9 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_IN_PROGRESS);
 
         $driver->requestTaskReview($context->agentPrimary);
-        $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_IN_REVIEW);
+        $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_PENDING_REVIEW);
         $driver->assertReworkFails($context->agentPrimary, $taskARef, 'rework only accepts');
-        $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_IN_REVIEW);
+        $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_PENDING_REVIEW);
 
         $reviewNextOutput = $driver->reviewNext($context->agentSecondary);
         if (!str_contains($reviewNextOutput, $taskARef)) {
@@ -189,7 +189,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->injectReviewNote($taskRef, ['Fake note — manager reopen must clear this.']);
         $driver->assertReviewContains('Fake note — manager reopen must clear this.');
         $driver->reviewReopen('manager', $manager, $taskRef);
-        $driver->assertTaskStage($taskRef, BacklogBoard::STAGE_IN_REVIEW);
+        $driver->assertTaskStage($taskRef, BacklogBoard::STAGE_PENDING_REVIEW);
         $driver->assertReviewMissing('Fake note — manager reopen must clear this.');
 
         // Refusal: stage is now review, not approved
@@ -208,7 +208,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
 
         // Verify meta.reviewer is set to reviewer by confirming review-cancel succeeds for that reviewer
         $driver->reviewCancel($reviewer, $taskRef);
-        $driver->assertTaskStage($taskRef, BacklogBoard::STAGE_IN_REVIEW);
+        $driver->assertTaskStage($taskRef, BacklogBoard::STAGE_PENDING_REVIEW);
 
         // Re-approve: leaves the entry in APPROVED for the rest of the campaign
         $driver->approveTaskViaUnifiedCommand($reviewer, $taskRef);
@@ -241,7 +241,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
             "    stage: development\n    feature: {$guardFeature}",
             "    stage: review\n    feature: {$guardFeature}",
         );
-        $driver->assertFeatureStage($guardFeature, BacklogBoard::STAGE_IN_REVIEW);
+        $driver->assertFeatureStage($guardFeature, BacklogBoard::STAGE_PENDING_REVIEW);
         $driver->createTodoTask(sprintf('[%s][%s] Task C for review revert guard', $guardFeature, $guardTaskC));
         $driver->assertFeatureStage($guardFeature, BacklogBoard::STAGE_IN_PROGRESS);
         $driver->removeTodoTask(sprintf('%s/%s', $guardFeature, $guardTaskC));

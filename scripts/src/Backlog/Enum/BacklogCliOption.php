@@ -45,6 +45,10 @@ enum BacklogCliOption: string
     case TEST_MODE = 'test-mode';
     case TYPE = 'type';
     case VERBOSE = 'verbose';
+    case FLAT = 'flat';
+    case FORMAT = 'format';
+    case NO_STAGE = 'no-stage';
+    case STAGE = 'stage';
     case WATCH = 'watch';
     case WATCH_INTERVAL = 'watch-interval';
     case WORKTREE_DIR = 'worktree-dir';

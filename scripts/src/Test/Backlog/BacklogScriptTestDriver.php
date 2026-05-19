@@ -290,7 +290,7 @@ MD);
      */
     public function assertTodoContains(string $needle): void
     {
-        $this->assertOutputContains($this->runBacklog(['todo-list']), $needle);
+        $this->assertOutputContains($this->runBacklog(['list', '--stage=todo']), $needle);
     }
 
     /**
@@ -319,11 +319,11 @@ MD);
     }
 
     /**
-     * Runs `review-list` and returns its output.
+     * Runs `list --stage=review` and returns its output.
      */
     public function reviewList(): string
     {
-        return $this->runBacklog(['review-list']);
+        return $this->runBacklog(['list', '--stage=review', '--flat']);
     }
 
     /**
