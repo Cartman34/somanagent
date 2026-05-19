@@ -140,12 +140,13 @@ final class AgentSessionServiceTest
         mkdir($dir, 0755, true);
         $service = new AgentSessionService($dir);
 
+        $sessionId = 'abc-uuid';
         $service->add($this->makeSession('d01'));
-        $service->updateSessionId('d01', 'abc-uuid');
+        $service->updateSessionId('d01', $sessionId);
 
         $got = $service->get('d01');
-        if ($got?->sessionId !== 'abc-uuid') {
-            echo "FAIL testUpdateSessionId: expected 'abc-uuid', got " . var_export($got?->sessionId, true) . "\n";
+        if ($got?->sessionId !== $sessionId) {
+            echo "FAIL testUpdateSessionId: expected '$sessionId', got " . var_export($got?->sessionId, true) . "\n";
             $this->rmdir($dir);
             return 1;
         }
@@ -180,12 +181,13 @@ final class AgentSessionServiceTest
         mkdir($dir, 0755, true);
         $service = new AgentSessionService($dir);
 
+        $tmuxSession = 'somanagent-d01';
         $service->add($this->makeSession('d01'));
-        $service->updateTmuxSession('d01', 'somanagent-d01');
+        $service->updateTmuxSession('d01', $tmuxSession);
 
         $got = $service->get('d01');
-        if ($got === null || $got->tmuxSession !== 'somanagent-d01') {
-            echo "FAIL testUpdateTmuxSession: expected tmuxSession='somanagent-d01', got " . var_export($got?->tmuxSession, true) . "\n";
+        if ($got === null || $got->tmuxSession !== $tmuxSession) {
+            echo "FAIL testUpdateTmuxSession: expected tmuxSession='$tmuxSession', got " . var_export($got?->tmuxSession, true) . "\n";
             $this->rmdir($dir);
             return 1;
         }
@@ -200,6 +202,7 @@ final class AgentSessionServiceTest
         mkdir($dir, 0755, true);
         $service = new AgentSessionService($dir);
 
+        $tmuxSession = 'somanagent-d07';
         $now = new \DateTimeImmutable('2026-05-12T10:00:00+00:00');
         $session = new AgentSession(
             code: 'd07',
@@ -211,7 +214,7 @@ final class AgentSessionServiceTest
             lastSeenAt: $now,
             sessionId: 'abc',
             clientPid: 200,
-            tmuxSession: 'somanagent-d07',
+            tmuxSession: $tmuxSession,
         );
         $service->add($session);
 
@@ -219,7 +222,7 @@ final class AgentSessionServiceTest
         if ($reloaded === null
             || $reloaded->pid !== 100
             || $reloaded->clientPid !== 200
-            || $reloaded->tmuxSession !== 'somanagent-d07'
+            || $reloaded->tmuxSession !== $tmuxSession
             || $reloaded->sessionId !== 'abc'
         ) {
             echo "FAIL testClientProcessRoundTrip: unexpected reloaded session\n";
