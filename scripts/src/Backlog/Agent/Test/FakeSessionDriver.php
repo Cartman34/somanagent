@@ -181,4 +181,12 @@ final class FakeSessionDriver implements SessionDriverInterface
         $this->existingByCode[$agentCode] = false;
         $this->aliveByCode[$agentCode] = false;
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function driverName(): string
+    {
+        return 'fake';
+    }
 }

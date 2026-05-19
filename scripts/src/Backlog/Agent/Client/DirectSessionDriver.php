@@ -167,6 +167,14 @@ final class DirectSessionDriver implements SessionDriverInterface
 
     /**
      * {@inheritdoc}
+     */
+    public function driverName(): string
+    {
+        return 'direct';
+    }
+
+    /**
+     * {@inheritdoc}
      *
      * Checks session->clientPid first, then session->pid via ProcessSignaler.
      */

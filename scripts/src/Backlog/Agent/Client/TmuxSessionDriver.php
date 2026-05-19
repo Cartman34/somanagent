@@ -234,6 +234,14 @@ final class TmuxSessionDriver implements SessionDriverInterface
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function driverName(): string
+    {
+        return 'tmux';
+    }
+
+    /**
      * Returns the tmux session name for the given agent code.
      */
     private function sessionName(string $agentCode): string

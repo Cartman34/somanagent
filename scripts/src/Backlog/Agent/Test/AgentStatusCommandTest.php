@@ -356,6 +356,14 @@ final class AgentStatusCommandTest
              * {@inheritdoc}
              */
             public function kill(string $agentCode): void {}
+
+            /**
+             * {@inheritdoc}
+             */
+            public function driverName(): string
+            {
+                return 'fake';
+            }
         };
     }
 
