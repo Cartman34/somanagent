@@ -93,6 +93,7 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
             throw new \RuntimeException('feature-task-merge requires the task to be assigned to the provided agent.');
         }
         $devCode = $entry->getAgent();
+        $reviewerCode = $entry->getReviewer();
         $taskAgent = $devCode ?? '';
 
         $feature = $entry->getFeature() ?? '';
@@ -134,7 +135,7 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
 
         $this->presenter->displaySuccess(sprintf('Merged task %s into feature %s locally', $task, $feature));
 
-        $this->sessionStopper->stopSessions($devCode, null);
+        $this->sessionStopper->stopSessions($devCode, $reviewerCode);
     }
 
     private function invalidateFeatureReviewState(BoardEntry $featureEntry): void

@@ -85,8 +85,8 @@ final class BacklogPresenter
         $this->console->line('Branch: ' . ($entry->getBranch() ?? '-'));
         $this->console->line('Base: ' . ($entry->getBase() ?? '-'));
         $this->console->line('Stage: ' . $this->boardService->getStageLabel($stage));
-        if ($stage === BacklogBoard::STAGE_REVIEWING) {
-            $this->console->line('Reviewer: ' . ($entry->getReviewer() ?? '-'));
+        if ($entry->getReviewer() !== null) {
+            $this->console->line('Reviewer: ' . $entry->getReviewer());
         }
         $this->console->line('PR: ' . $this->describePrStatus($entry));
         $this->console->line('Summary: ' . $entry->getText());
@@ -173,7 +173,6 @@ final class BacklogPresenter
      */
     public function displayEntryLine(BoardEntry $entry): void
     {
-        $stage = $this->boardService->getFeatureStage($entry);
         $isTask = $this->boardService->checkIsTaskEntry($entry);
         $feature = $entry->getFeature() ?? '-';
         $reference = $isTask
@@ -188,8 +187,8 @@ final class BacklogPresenter
         if (!$isTask) {
             $parts[] = 'pr=' . $this->describePrStatus($entry);
         }
-        if ($stage === BacklogBoard::STAGE_REVIEWING) {
-            $parts[] = 'reviewer=' . ($entry->getReviewer() ?? '-');
+        if ($entry->getReviewer() !== null) {
+            $parts[] = 'reviewer=' . $entry->getReviewer();
         }
         if ($entry->checkIsBlocked()) {
             $parts[] = 'blocked=' . BacklogMetaValue::YES->value;

@@ -83,7 +83,6 @@ final class BacklogReviewApproveCommand extends AbstractBacklogCommand
 
             $reviewKey = $this->boardService->getTaskReviewKey($entry);
             $entry->setStage(BacklogBoard::STAGE_APPROVED);
-            $entry->setReviewer(null);
             $review->clearReview($reviewKey);
             $this->saveBoard($board, BacklogCommandName::REVIEW_APPROVE->value);
             $this->saveReviewFile($review, BacklogCommandName::REVIEW_APPROVE->value);
@@ -134,7 +133,6 @@ final class BacklogReviewApproveCommand extends AbstractBacklogCommand
             $entry->setPr((string) $prNumber);
         }
         $entry->setStage(BacklogBoard::STAGE_APPROVED);
-        $entry->setReviewer(null);
         $review->clearReview($slug);
         $this->saveBoard($board, BacklogCommandName::REVIEW_APPROVE->value);
         $this->saveReviewFile($review, BacklogCommandName::REVIEW_APPROVE->value);

@@ -15,4 +15,5 @@ notes:
   - 'Use <entry-ref> for both feature and child task entries.'
   - 'Short task references (bare task slug without the parent feature) are refused; use <entry-ref>.'
   - '--body-file is required for feature approvals and rejected for task approvals.'
+  - 'When approval follows a reviewing claim, meta.reviewer is preserved until merge as the last reviewer who acted on the entry.'
   - 'For feature approvals: refused if the feature has any active child task branches (kind=task in In progress) or any queued child tasks (in To do). Both guards must pass before the approval proceeds.'
