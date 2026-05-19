@@ -10,6 +10,7 @@ namespace SoManAgent\Script\Backlog\Agent\Test;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
+use SoManAgent\Script\Backlog\BacklogPaths;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Client\FilesystemClient;
 use SoManAgent\Script\TextSlugger;
@@ -218,7 +219,7 @@ final class AgentCodeServiceTest
     {
         $projectRoot = $projectRoot ?? $this->tmpDir;
         $worktreesRoot = $worktreesRoot ?? ($this->tmpDir . '/worktrees-empty');
-        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
+        $boardPath = BacklogPaths::boardPath($projectRoot);
 
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         $sessionService = new AgentSessionService($projectRoot);

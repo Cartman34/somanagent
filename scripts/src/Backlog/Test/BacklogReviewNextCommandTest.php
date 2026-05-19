@@ -9,6 +9,7 @@ namespace SoManAgent\Script\Backlog\Test;
 
 use SoManAgent\Script\Application;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
+use SoManAgent\Script\Backlog\BacklogPaths;
 use SoManAgent\Script\Backlog\Command\BacklogReviewNextCommand;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
@@ -24,6 +25,10 @@ use Symfony\Component\Yaml\Yaml;
  */
 final class BacklogReviewNextCommandTest
 {
+    private const OTHER_FEATURE = 'other-feature';
+
+    private const TARGET_FEATURE = 'target-feature';
+
     private string $tmpDir;
 
     /**
@@ -60,8 +65,8 @@ final class BacklogReviewNextCommandTest
     {
         $projectRoot = $this->makeProject('session-prefers-wa');
         $this->writeBoard($projectRoot, [
-            $this->featureEntry('other-feature', 'd06'),
-            $this->featureEntry('target-feature', 'd05'),
+            $this->featureEntry(self::OTHER_FEATURE, 'd06'),
+            $this->featureEntry(self::TARGET_FEATURE, 'd05'),
         ]);
         $this->writeReviewerSession($projectRoot, 'r01', 'd05');
 
@@ -98,7 +103,7 @@ final class BacklogReviewNextCommandTest
     {
         $projectRoot = $this->makeProject('session-refuses-other-wa');
         $this->writeBoard($projectRoot, [
-            $this->featureEntry('other-feature', 'd06'),
+            $this->featureEntry(self::OTHER_FEATURE, 'd06'),
         ]);
         $this->writeReviewerSession($projectRoot, 'r01', 'd05');
 
@@ -113,7 +118,7 @@ final class BacklogReviewNextCommandTest
             });
         } catch (\RuntimeException $e) {
             $threw = str_contains($e->getMessage(), 'No review-stage entry belongs to the current reviewer WA')
-                && str_contains($e->getMessage(), 'other-feature');
+                && str_contains($e->getMessage(), self::OTHER_FEATURE);
         }
 
         if (!$threw) {
@@ -135,8 +140,8 @@ final class BacklogReviewNextCommandTest
     {
         $projectRoot = $this->makeProject('manual-keeps-first');
         $this->writeBoard($projectRoot, [
-            $this->featureEntry('other-feature', 'd06'),
-            $this->featureEntry('target-feature', 'd05'),
+            $this->featureEntry(self::OTHER_FEATURE, 'd06'),
+            $this->featureEntry(self::TARGET_FEATURE, 'd05'),
         ]);
         $this->writeReviewerSession($projectRoot, 'r01', 'd05');
 
@@ -176,7 +181,7 @@ final class BacklogReviewNextCommandTest
             new AgentSessionService($projectRoot),
             $boardService,
         );
-        $command->setBoardPath($projectRoot . '/local/backlog-board.yaml');
+        $command->setBoardPath(BacklogPaths::boardPath($projectRoot));
 
         return $command;
     }
@@ -185,6 +190,7 @@ final class BacklogReviewNextCommandTest
     {
         $projectRoot = $this->tmpDir . '/' . $name;
         mkdir($projectRoot . '/local/tmp', 0755, true);
+        mkdir(BacklogPaths::directory($projectRoot), 0755, true);
         mkdir($projectRoot . '/.agent-worktrees/d05', 0755, true);
         mkdir($projectRoot . '/.agent-worktrees/d06', 0755, true);
 
@@ -196,7 +202,7 @@ final class BacklogReviewNextCommandTest
      */
     private function writeBoard(string $projectRoot, array $entries): void
     {
-        file_put_contents($projectRoot . '/local/backlog-board.yaml', Yaml::dump([
+        file_put_contents(BacklogPaths::boardPath($projectRoot), Yaml::dump([
             'version' => 1,
             'todo' => [],
             'active' => $entries,
@@ -206,7 +212,7 @@ final class BacklogReviewNextCommandTest
     private function loadBoard(string $projectRoot): BacklogBoard
     {
         return (new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false))
-            ->loadBoard($projectRoot . '/local/backlog-board.yaml');
+            ->loadBoard(BacklogPaths::boardPath($projectRoot));
     }
 
     private function writeReviewerSession(string $projectRoot, string $reviewer, string $developer): void

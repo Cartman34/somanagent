@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
+use SoManAgent\Script\Backlog\BacklogPaths;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use SoManAgent\Script\Backlog\Model\BacklogReviewFile;
@@ -67,7 +68,7 @@ abstract class AbstractBacklogCommand
 
     protected function loadBoard(?string $boardFile = null): BacklogBoard
     {
-        return $this->boardService->loadBoard($boardFile ?? $this->boardPath ?? ($this->projectRoot . '/local/backlog/backlog-board.yaml'));
+        return $this->boardService->loadBoard($boardFile ?? $this->boardPath ?? BacklogPaths::boardPath($this->projectRoot));
     }
 
     protected function saveBoard(BacklogBoard $board, string $reason): void
@@ -83,7 +84,7 @@ abstract class AbstractBacklogCommand
 
     protected function loadReviewFile(?string $reviewFile = null): BacklogReviewFile
     {
-        return $this->boardService->loadReviewFile($reviewFile ?? $this->reviewFilePath ?? ($this->projectRoot . '/local/backlog/backlog-review.md'));
+        return $this->boardService->loadReviewFile($reviewFile ?? $this->reviewFilePath ?? BacklogPaths::reviewPath($this->projectRoot));
     }
 
     protected function saveReviewFile(BacklogReviewFile $review, string $reason): void

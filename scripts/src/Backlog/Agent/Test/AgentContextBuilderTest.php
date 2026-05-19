@@ -9,6 +9,7 @@ namespace SoManAgent\Script\Backlog\Agent\Test;
 
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
+use SoManAgent\Script\Backlog\BacklogPaths;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Client\FilesystemClient;
 use SoManAgent\Script\TextSlugger;
@@ -19,6 +20,8 @@ use Symfony\Component\Yaml\Yaml;
  */
 final class AgentContextBuilderTest
 {
+    private const FEATURE_SLUG = 'my-feature';
+
     private string $tmpDir;
 
     /**
@@ -184,8 +187,8 @@ final class AgentContextBuilderTest
     private function testReviewerContextShowsNoReviewWhenNoReviewingEntry(): int
     {
         $projectRoot = $this->tmpDir . '/proj-reviewer-noentry-' . uniqid('', true);
-        mkdir($projectRoot . '/local/backlog', 0755, true);
-        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
+        mkdir(BacklogPaths::directory($projectRoot), 0755, true);
+        $boardPath = BacklogPaths::boardPath($projectRoot);
         file_put_contents($boardPath, $this->boardWithFeatureAtReview('some-feature', 'd01'));
 
         $worktree = $projectRoot . '/wt';
@@ -209,9 +212,9 @@ final class AgentContextBuilderTest
     private function testReviewerContextShowsCurrentReview(): int
     {
         $projectRoot = $this->tmpDir . '/proj-reviewer-entry-' . uniqid('', true);
-        mkdir($projectRoot . '/local/backlog', 0755, true);
-        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
-        file_put_contents($boardPath, $this->boardWithFeatureAtReviewing('my-feature', 'd04', 'r01'));
+        mkdir(BacklogPaths::directory($projectRoot), 0755, true);
+        $boardPath = BacklogPaths::boardPath($projectRoot);
+        file_put_contents($boardPath, $this->boardWithFeatureAtReviewing(self::FEATURE_SLUG, 'd04', 'r01'));
 
         $worktree = $projectRoot . '/wt';
 
@@ -279,11 +282,11 @@ final class AgentContextBuilderTest
     private function testDeveloperContextWithActiveEntryHasWorkflow(): int
     {
         $projectRoot = $this->tmpDir . '/proj-dev-workflow-' . uniqid('', true);
-        mkdir($projectRoot . '/local/backlog', 0755, true);
+        mkdir(BacklogPaths::directory($projectRoot), 0755, true);
         mkdir($projectRoot . '/doc/development', 0755, true);
 
-        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
-        file_put_contents($boardPath, $this->boardWithFeatureAtDevelopment('my-feature', 'd01'));
+        $boardPath = BacklogPaths::boardPath($projectRoot);
+        file_put_contents($boardPath, $this->boardWithFeatureAtDevelopment(self::FEATURE_SLUG, 'd01'));
 
         // Minimal role doc with two keywords so we can assert `next` is removed but `submit` kept.
         file_put_contents(
@@ -325,11 +328,11 @@ final class AgentContextBuilderTest
     private function testReviewerContextWithActiveEntryHasWorkflow(): int
     {
         $projectRoot = $this->tmpDir . '/proj-rev-workflow-' . uniqid('', true);
-        mkdir($projectRoot . '/local/backlog', 0755, true);
+        mkdir(BacklogPaths::directory($projectRoot), 0755, true);
         mkdir($projectRoot . '/doc/development', 0755, true);
 
-        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
-        file_put_contents($boardPath, $this->boardWithFeatureAtReviewing('my-feature', 'd04', 'r01'));
+        $boardPath = BacklogPaths::boardPath($projectRoot);
+        file_put_contents($boardPath, $this->boardWithFeatureAtReviewing(self::FEATURE_SLUG, 'd04', 'r01'));
 
         // Minimal role doc with two keywords so we can assert `review` is removed but `approve` kept.
         file_put_contents(

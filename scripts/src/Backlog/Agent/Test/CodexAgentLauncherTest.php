@@ -11,12 +11,23 @@ use SoManAgent\Script\Backlog\Agent\Client\CodexAgentLauncher;
 use SoManAgent\Script\Backlog\Agent\Client\ProcessRunner;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use SoManAgent\Script\Backlog\BacklogPaths;
 
 /**
  * Unit tests for CodexAgentLauncher hooks.
  */
 final class CodexAgentLauncherTest
 {
+    private const RESUME_SESSION_ID = 'session-123';
+
+    private const SESSION_ID_X = 'session-x';
+
+    private const CAPTURED_SESSION_ID = 'new-id';
+
+    private const SESSION_ID_A = 'session-a';
+
+    private const SESSION_ID_B = 'session-b';
+
     /**
      * Temporary root containing generated context files, worktrees, and Codex rollout fixtures.
      */
@@ -164,9 +175,9 @@ final class CodexAgentLauncherTest
     {
         $launcher = new CodexAgentLauncher($this->makeProcessRunner(true), $this->tmpDir);
 
-        [$bin, $args] = $launcher->buildLaunchCommand('/worktree', $this->tmpDir . '/missing-context.md', AgentRole::DEVELOPER, 'session-123');
+        [$bin, $args] = $launcher->buildLaunchCommand('/worktree', $this->tmpDir . '/missing-context.md', AgentRole::DEVELOPER, self::RESUME_SESSION_ID);
 
-        if ($bin !== 'codex' || $args !== ['-C', '/worktree', '--ask-for-approval', 'never', 'resume', 'session-123']) {
+        if ($bin !== 'codex' || $args !== ['-C', '/worktree', '--ask-for-approval', 'never', 'resume', self::RESUME_SESSION_ID]) {
             echo "FAIL testBuildLaunchCommandResumeId: unexpected resume command\n";
             return 1;
         }
@@ -183,7 +194,7 @@ final class CodexAgentLauncherTest
         foreach ([
             'initial' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER),
             'continue' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, null, true),
-            'resume' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, 'session-x'),
+            'resume' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, self::SESSION_ID_X),
         ] as $mode => [, $args]) {
             if (!in_array('--ask-for-approval', $args, true) || !in_array('never', $args, true)) {
                 echo "FAIL testBuildLaunchCommandIncludesApprovalFlags ($mode): --ask-for-approval never missing\n";
@@ -203,10 +214,10 @@ final class CodexAgentLauncherTest
         foreach ([
             'initial' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER),
             'continue' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, null, true),
-            'resume' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, 'session-x'),
+            'resume' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, self::SESSION_ID_X),
         ] as $mode => [, $args]) {
             $idx = array_search('--add-dir', $args, true);
-            if ($idx === false || ($args[$idx + 1] ?? null) !== '/wp-root/local/backlog') {
+            if ($idx === false || ($args[$idx + 1] ?? null) !== BacklogPaths::directory('/wp-root')) {
                 echo "FAIL testBuildLaunchCommandIncludesBacklogDir ({$mode}): --add-dir /wp-root/local/backlog missing\n";
                 return 1;
             }
@@ -220,11 +231,11 @@ final class CodexAgentLauncherTest
     {
         $worktree = $this->makeWorktree('capture');
         $this->writeRollout('2026/01/01', 'old-id', $worktree, '2026-01-01T10:00:00+00:00', 'old prompt');
-        $this->writeRollout('2026/01/02', 'new-id', $worktree, '2026-01-02T10:00:00+00:00', 'new prompt');
+        $this->writeRollout('2026/01/02', self::CAPTURED_SESSION_ID, $worktree, '2026-01-02T10:00:00+00:00', 'new prompt');
 
         $launcher = new CodexAgentLauncher($this->makeProcessRunner(true), $this->tmpDir);
 
-        if ($launcher->captureCurrentSessionId($worktree) !== 'new-id') {
+        if ($launcher->captureCurrentSessionId($worktree) !== self::CAPTURED_SESSION_ID) {
             echo "FAIL testCaptureCurrentSessionId: expected newest rollout id\n";
             return 1;
         }
@@ -237,14 +248,14 @@ final class CodexAgentLauncherTest
     {
         $worktree = $this->makeWorktree('sessions');
         $otherWorktree = $this->makeWorktree('other');
-        $this->writeRollout('2026/01/01', 'session-a', $worktree, '2026-01-01T10:00:00+00:00', str_repeat('A', 90));
-        $this->writeRollout('2026/01/02', 'session-b', $worktree, '2026-01-02T10:00:00+00:00', 'second prompt');
+        $this->writeRollout('2026/01/01', self::SESSION_ID_A, $worktree, '2026-01-01T10:00:00+00:00', str_repeat('A', 90));
+        $this->writeRollout('2026/01/02', self::SESSION_ID_B, $worktree, '2026-01-02T10:00:00+00:00', 'second prompt');
         $this->writeRollout('2026/01/03', 'ignored', $otherWorktree, '2026-01-03T10:00:00+00:00', 'other prompt');
 
         $launcher = new CodexAgentLauncher($this->makeProcessRunner(true), $this->tmpDir);
         $sessions = $launcher->listSessions($worktree);
 
-        if (count($sessions) !== 2 || $sessions[0]->id !== 'session-b' || $sessions[1]->id !== 'session-a') {
+        if (count($sessions) !== 2 || $sessions[0]->id !== self::SESSION_ID_B || $sessions[1]->id !== self::SESSION_ID_A) {
             echo "FAIL testListSessionsParsesCodexRollouts: unexpected order or count\n";
             return 1;
         }

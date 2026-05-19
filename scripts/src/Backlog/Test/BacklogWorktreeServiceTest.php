@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Test;
 
 use SoManAgent\Script\Application;
+use SoManAgent\Script\Backlog\BacklogPaths;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
@@ -65,7 +66,7 @@ final class BacklogWorktreeServiceTest
             $service->runReviewScript($worktree);
             $stdout = (string) ob_get_clean();
 
-            $resultPath = $worktree . '/local/backlog-review-result.txt';
+            $resultPath = BacklogPaths::reviewResultPath($worktree);
             if ((string) file_get_contents($resultPath) !== $fullReport) {
                 echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerOnSuccess: full report was not persisted\n";
                 return 1;
@@ -74,7 +75,7 @@ final class BacklogWorktreeServiceTest
                 echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerOnSuccess: PASS status missing\n";
                 return 1;
             }
-            if (!str_contains($stdout, 'Review report saved to local/backlog-review-result.txt')) {
+            if (!str_contains($stdout, 'Review report saved to ' . BacklogPaths::REVIEW_RESULT)) {
                 echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerOnSuccess: pointer missing\n";
                 return 1;
             }
@@ -118,7 +119,7 @@ final class BacklogWorktreeServiceTest
                 }
             }
 
-            $resultPath = $worktree . '/local/backlog-review-result.txt';
+            $resultPath = BacklogPaths::reviewResultPath($worktree);
             if ((string) file_get_contents($resultPath) !== $fullReport) {
                 echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerBeforeFailure: full report was not persisted\n";
                 return 1;
@@ -127,7 +128,7 @@ final class BacklogWorktreeServiceTest
                 echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerBeforeFailure: FAIL status missing before exception\n";
                 return 1;
             }
-            if (!str_contains($stdout, 'Review report saved to local/backlog-review-result.txt')) {
+            if (!str_contains($stdout, 'Review report saved to ' . BacklogPaths::REVIEW_RESULT)) {
                 echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerBeforeFailure: pointer missing before exception\n";
                 return 1;
             }
@@ -273,7 +274,7 @@ final class BacklogWorktreeServiceTest
             chdir($worktree);
 
             $service = $this->createService($worktreesRoot);
-            $board = new BacklogBoard($this->projectRoot . '/local/backlog/backlog-board.yaml');
+            $board = new BacklogBoard(BacklogPaths::boardPath($this->projectRoot));
             $service->cleanupAbandonedManagedWorktrees($board);
 
             $cwd = getcwd();
@@ -311,7 +312,7 @@ final class BacklogWorktreeServiceTest
             $cwdBefore = (string) getcwd();
 
             $service = $this->createService($worktreesRoot);
-            $board = new BacklogBoard($this->projectRoot . '/local/backlog/backlog-board.yaml');
+            $board = new BacklogBoard(BacklogPaths::boardPath($this->projectRoot));
             $service->cleanupAbandonedManagedWorktrees($board);
 
             $cwdAfter = (string) getcwd();
