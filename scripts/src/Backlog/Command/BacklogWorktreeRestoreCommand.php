@@ -55,13 +55,13 @@ final class BacklogWorktreeRestoreCommand extends AbstractBacklogCommand
         $match = $taskMatch ?? $featureMatch;
 
         if ($match === null) {
-            throw new \RuntimeException("Agent {$agent} has no active task or feature.");
+            throw new \RuntimeException("Developer {$agent} has no active task or feature.");
         }
 
         $entry = $match->getEntry();
         $branch = $entry->getBranch();
         if ($branch === null) {
-            throw new \RuntimeException("Agent {$agent} has an active entry but no branch metadata.");
+            throw new \RuntimeException("Developer {$agent} has an active entry but no branch metadata.");
         }
 
         if (isset($options[BacklogCliOption::FORCE->value])) {

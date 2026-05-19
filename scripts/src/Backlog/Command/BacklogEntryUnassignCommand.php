@@ -76,7 +76,7 @@ final class BacklogEntryUnassignCommand extends AbstractBacklogCommand
         $this->permissionService->assertCanUnassignEntry($actorRole, $actorAgent, $callerAgent, $entryRef, $entry);
         $assignedAgent = $entry->getDeveloper();
         if ($assignedAgent === null) {
-            throw new RuntimeException(sprintf('%s %s is not assigned to any agent.', ucfirst($kind), $entryRef));
+            throw new RuntimeException(sprintf('%s %s is not assigned to any developer.', ucfirst($kind), $entryRef));
         }
 
         $entry->setDeveloper(null);

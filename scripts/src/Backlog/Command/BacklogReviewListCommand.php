@@ -40,7 +40,7 @@ final class BacklogReviewListCommand extends AbstractBacklogCommand
     /**
      * List entries currently in the review stage.
      *
-     * Each line is shaped `- <ref> kind=<feature|task> agent=<x> pr=<y>` where
+     * Each line is shaped `- <ref> kind=<feature|task> developer=<x> pr=<y>` where
      * <ref> is the stable target usable by `review-next`.
      *
      * @param list<string> $commandArgs
