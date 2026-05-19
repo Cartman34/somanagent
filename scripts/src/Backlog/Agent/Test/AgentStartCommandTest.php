@@ -2116,7 +2116,7 @@ final class AgentStartCommandTest
         // start must call driver->resume() rather than driver->launch().
         $projectRoot = $this->createGitProject('attach-live');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
+        $boardPath = BacklogPaths::boardPath($projectRoot);
         $worktree = $worktreesRoot . '/d30';
 
         $this->writeBoard($boardPath, [
@@ -2210,7 +2210,7 @@ final class AgentStartCommandTest
         // print a cleanup message, remove the entry, and create a fresh session.
         $projectRoot = $this->createGitProject('ghost-driver-dead');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
+        $boardPath = BacklogPaths::boardPath($projectRoot);
         $worktree = $worktreesRoot . '/d31';
 
         $this->writeBoard($boardPath, [
@@ -2307,7 +2307,7 @@ final class AgentStartCommandTest
         // directory is missing, start must treat it as a ghost: cleanup + create a new session.
         $projectRoot = $this->createGitProject('ghost-wa-absent');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
+        $boardPath = BacklogPaths::boardPath($projectRoot);
         $missingWorktree = $worktreesRoot . '/d32';
 
         $this->writeBoard($boardPath, [
@@ -2400,7 +2400,7 @@ final class AgentStartCommandTest
         // session (kill driver session + remove sessions.json entry) and create a new one.
         $projectRoot = $this->createGitProject('force-new-live');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
-        $boardPath = $projectRoot . '/local/backlog/backlog-board.yaml';
+        $boardPath = BacklogPaths::boardPath($projectRoot);
         $worktree = $worktreesRoot . '/d33';
 
         $this->writeBoard($boardPath, [
