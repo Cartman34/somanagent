@@ -85,7 +85,7 @@ final class BacklogPresenter
         $this->console->line('Branch: ' . ($entry->getBranch() ?? '-'));
         $this->console->line('Base: ' . ($entry->getBase() ?? '-'));
         $this->console->line('Stage: ' . $this->boardService->getStageLabel($stage));
-        $this->console->line('Reviewer: reviewer=' . $this->formatReviewer($entry));
+        $this->console->line('Reviewer: ' . $this->formatReviewer($entry));
         $this->console->line('PR: ' . $this->describePrStatus($entry));
         $this->console->line('Summary: ' . $entry->getText());
         $this->displayEntryDetails($entry);

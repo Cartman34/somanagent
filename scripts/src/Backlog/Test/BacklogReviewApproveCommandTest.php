@@ -123,8 +123,8 @@ final class BacklogReviewApproveCommandTest
         ob_start();
         $presenter->displayEntryStatus($entry);
         $statusOutput = (string) ob_get_clean();
-        if (!str_contains($statusOutput, 'Reviewer: reviewer=r12')) {
-            return 'status output should include Reviewer: reviewer=r12 for approved entries';
+        if (!str_contains($statusOutput, 'Reviewer: r12')) {
+            return 'status output should include Reviewer: r12 for approved entries';
         }
 
         ob_start();
@@ -171,8 +171,8 @@ final class BacklogReviewApproveCommandTest
         ob_start();
         $presenter->displayEntryStatus($entry);
         $statusOutput = (string) ob_get_clean();
-        if (!str_contains($statusOutput, 'Reviewer: reviewer=' . $expectedReviewer)) {
-            return 'status output should include Reviewer: reviewer=' . $expectedReviewer;
+        if (!str_contains($statusOutput, 'Reviewer: ' . $expectedReviewer)) {
+            return 'status output should include Reviewer: ' . $expectedReviewer;
         }
 
         ob_start();
