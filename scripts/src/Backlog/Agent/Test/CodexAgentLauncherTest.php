@@ -66,6 +66,7 @@ final class CodexAgentLauncherTest
         $failed += $this->testBuildLaunchCommandResumeId();
         $failed += $this->testBuildLaunchCommandIncludesApprovalFlags();
         $failed += $this->testBuildLaunchCommandIncludesBacklogDir();
+        $failed += $this->testBuildLaunchCommandWritableRootsExtensibility();
         $failed += $this->testCaptureCurrentSessionId();
         $failed += $this->testListSessionsParsesCodexRollouts();
         $failed += $this->testListSessionsSkipsCompressedRolloutWithoutZstd();
@@ -210,20 +211,38 @@ final class CodexAgentLauncherTest
     {
         $context = $this->writeContext('context backlog-dir');
         $launcher = new CodexAgentLauncher($this->makeProcessRunner(true), $this->tmpDir, null, '/wp-root');
+        $expectedConfig = 'sandbox_workspace_write.writable_roots=["' . BacklogPaths::directory('/wp-root') . '/"]';
 
         foreach ([
             'initial' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER),
             'continue' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, null, true),
             'resume' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, self::SESSION_ID_X),
         ] as $mode => [, $args]) {
-            $idx = array_search('--add-dir', $args, true);
-            if ($idx === false || ($args[$idx + 1] ?? null) !== BacklogPaths::directory('/wp-root')) {
-                echo "FAIL testBuildLaunchCommandIncludesBacklogDir ({$mode}): --add-dir /wp-root/local/backlog missing\n";
+            $idx = array_search('--config', $args, true);
+            if ($idx === false || ($args[$idx + 1] ?? null) !== $expectedConfig) {
+                echo "FAIL testBuildLaunchCommandIncludesBacklogDir ({$mode}): --config with writable_roots missing or wrong\n";
                 return 1;
             }
         }
 
         echo "OK testBuildLaunchCommandIncludesBacklogDir\n";
+        return 0;
+    }
+
+    private function testBuildLaunchCommandWritableRootsExtensibility(): int
+    {
+        $context = $this->writeContext('context extensibility');
+        $launcher = new CodexAgentLauncher($this->makeProcessRunner(true), $this->tmpDir, null, '/wp-root', ['/extra/path/']);
+        $expectedConfig = 'sandbox_workspace_write.writable_roots=["' . BacklogPaths::directory('/wp-root') . '/", "/extra/path/"]';
+
+        [, $args] = $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER);
+        $idx = array_search('--config', $args, true);
+        if ($idx === false || ($args[$idx + 1] ?? null) !== $expectedConfig) {
+            echo "FAIL testBuildLaunchCommandWritableRootsExtensibility: extra root not present in --config\n";
+            return 1;
+        }
+
+        echo "OK testBuildLaunchCommandWritableRootsExtensibility\n";
         return 0;
     }
 

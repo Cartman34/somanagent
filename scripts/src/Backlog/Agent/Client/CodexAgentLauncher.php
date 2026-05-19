@@ -23,8 +23,8 @@ final class CodexAgentLauncher extends AbstractAgentClientLauncher
 
     /**
      * Approval flags injected at every launch to suppress interactive prompts within the WA session.
-     * Combined with sandbox_mode=workspace-write from the user's ~/.codex/config.toml, this keeps
-     * filesystem writes safe while removing the approval dialog.
+     * `sandbox_mode=workspace-write` in ~/.codex/config.toml constrains filesystem writes to the WA;
+     * writable_roots are extended to cover WP paths (e.g. local/backlog/) via --config at launch time.
      */
     private const APPROVAL_FLAGS = ['--ask-for-approval', 'never'];
 
@@ -46,24 +46,30 @@ final class CodexAgentLauncher extends AbstractAgentClientLauncher
     private $warningWriter;
 
     /**
-     * Absolute project root (WP path) used to whitelist `local/backlog/` in the Codex sandbox.
+     * Absolute paths that the Codex sandbox must be able to write to beyond the WA cwd.
+     * Initialized from projectRoot (local/backlog/) and extended via extraWritableRoots.
+     * Serialized as a TOML array and injected via --config at every launch.
+     *
+     * @var list<string>
      */
-    private ?string $projectRoot;
+    private array $writableRoots;
 
     /**
      * @param ProcessRunner|null $processRunner Runner used to check local binary availability
      * @param string|null $homeDir Home directory containing the .codex/sessions rollout store
      * @param callable(string): void|null $warningWriter Warning output hook for skipped compressed rollouts
-     * @param string|null $projectRoot Project root; when set, adds `local/backlog/` to the Codex sandbox whitelist
+     * @param string|null $projectRoot Project root; when set, adds local/backlog/ to the writable roots
+     * @param list<string> $extraWritableRoots Additional absolute paths to include in writable_roots
      */
-    public function __construct(?ProcessRunner $processRunner = null, ?string $homeDir = null, ?callable $warningWriter = null, ?string $projectRoot = null)
+    public function __construct(?ProcessRunner $processRunner = null, ?string $homeDir = null, ?callable $warningWriter = null, ?string $projectRoot = null, array $extraWritableRoots = [])
     {
         $this->processRunner = $processRunner ?? new ShellProcessRunner();
         $this->homeDir = $homeDir;
         $this->warningWriter = $warningWriter ?? static function (string $message): void {
             fwrite(STDERR, $message);
         };
-        $this->projectRoot = $projectRoot;
+        $roots = $projectRoot !== null ? [BacklogPaths::directory($projectRoot) . '/'] : [];
+        $this->writableRoots = array_merge($roots, $extraWritableRoots);
     }
 
     /**
@@ -87,7 +93,7 @@ final class CodexAgentLauncher extends AbstractAgentClientLauncher
      */
     public function requiredCliFlags(): array
     {
-        return ['-C', '--last', '--model', '--config', '--ask-for-approval', '--add-dir'];
+        return ['-C', '--last', '--model', '--config', '--ask-for-approval'];
     }
 
     /**
@@ -104,9 +110,9 @@ final class CodexAgentLauncher extends AbstractAgentClientLauncher
     ): array {
         $args = ['-C', $worktree, ...self::APPROVAL_FLAGS];
 
-        if ($this->projectRoot !== null) {
-            $args[] = '--add-dir';
-            $args[] = BacklogPaths::directory($this->projectRoot);
+        if ($this->writableRoots !== []) {
+            $args[] = '--config';
+            $args[] = $this->buildWritableRootsConfig();
         }
 
         if ($resumeSessionId !== null) {
@@ -143,6 +149,20 @@ final class CodexAgentLauncher extends AbstractAgentClientLauncher
         $args[] = $prompt;
 
         return ['codex', $args];
+    }
+
+    /**
+     * Serializes the writable roots list as an inline TOML array for the --config flag.
+     * Each path is double-quoted; backslashes and double-quotes inside paths are escaped.
+     */
+    private function buildWritableRootsConfig(): string
+    {
+        $quoted = array_map(
+            static fn(string $path): string => '"' . str_replace(['\\', '"'], ['\\\\', '\\"'], $path) . '"',
+            $this->writableRoots,
+        );
+
+        return 'sandbox_workspace_write.writable_roots=[' . implode(', ', $quoted) . ']';
     }
 
     /**
