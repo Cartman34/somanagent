@@ -29,7 +29,6 @@ use SoManAgent\Script\Backlog\Command\BacklogFeatureUnblockCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewApproveCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewCancelCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewCheckCommand;
-use SoManAgent\Script\Backlog\Command\BacklogReviewListCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewNextCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewNotesCommand;
 use SoManAgent\Script\Backlog\Command\BacklogReviewAmendCommand;
@@ -39,7 +38,6 @@ use SoManAgent\Script\Backlog\Command\BacklogReviewRequestCommand;
 use SoManAgent\Script\Backlog\Command\BacklogStatusCommand;
 use SoManAgent\Script\Backlog\Command\BacklogEntryCreateCommand;
 use SoManAgent\Script\Backlog\Command\BacklogTaskRemoveCommand;
-use SoManAgent\Script\Backlog\Command\BacklogTodoListCommand;
 use SoManAgent\Script\Backlog\Command\BacklogWorktreeCleanCommand;
 use SoManAgent\Script\Backlog\Command\BacklogWorktreeListCommand;
 use SoManAgent\Script\Backlog\Command\BacklogWorktreeRestoreCommand;
@@ -150,7 +148,6 @@ final class BacklogCommandFactory
             BacklogCommandName::WORKTREE_CLEAN->value => BacklogWorktreeCleanCommand::class,
             BacklogCommandName::WORKTREE_RESTORE->value => BacklogWorktreeRestoreCommand::class,
             BacklogCommandName::ENTRY_CREATE->value => BacklogEntryCreateCommand::class,
-            BacklogCommandName::TODO_LIST->value => BacklogTodoListCommand::class,
             BacklogCommandName::TASK_REMOVE->value => BacklogTaskRemoveCommand::class,
             BacklogCommandName::REVIEW_REQUEST->value => BacklogReviewRequestCommand::class,
             BacklogCommandName::REWORK->value => BacklogReworkCommand::class,
@@ -163,7 +160,6 @@ final class BacklogCommandFactory
             BacklogCommandName::REVIEW_REJECT->value => BacklogReviewRejectCommand::class,
             BacklogCommandName::REVIEW_AMEND->value => BacklogReviewAmendCommand::class,
             BacklogCommandName::REVIEW_REOPEN->value => BacklogReviewReopenCommand::class,
-            BacklogCommandName::REVIEW_LIST->value => BacklogReviewListCommand::class,
             BacklogCommandName::REVIEW_NEXT->value => BacklogReviewNextCommand::class,
             BacklogCommandName::REVIEW_NOTES->value => BacklogReviewNotesCommand::class,
             BacklogCommandName::WORK_START->value => BacklogWorkStartCommand::class,

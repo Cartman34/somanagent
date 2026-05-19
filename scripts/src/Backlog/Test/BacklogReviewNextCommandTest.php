@@ -86,7 +86,7 @@ final class BacklogReviewNextCommandTest
         $board = $this->loadBoard($projectRoot);
         $other = $board->getEntries(BacklogBoard::SECTION_ACTIVE)[0];
         $target = $board->getEntries(BacklogBoard::SECTION_ACTIVE)[1];
-        if ($other->getStage() !== BacklogBoard::STAGE_IN_REVIEW || $target->getStage() !== BacklogBoard::STAGE_REVIEWING) {
+        if ($other->getStage() !== BacklogBoard::STAGE_PENDING_REVIEW || $target->getStage() !== BacklogBoard::STAGE_REVIEWING) {
             echo "FAIL testReviewerSessionImplicitPickPrefersCurrentDeveloperWa: expected d05 entry only to move to reviewing\n";
             return 1;
         }
@@ -127,7 +127,7 @@ final class BacklogReviewNextCommandTest
         }
 
         $entry = $this->loadBoard($projectRoot)->getEntries(BacklogBoard::SECTION_ACTIVE)[0];
-        if ($entry->getStage() !== BacklogBoard::STAGE_IN_REVIEW || $entry->getReviewer() !== null) {
+        if ($entry->getStage() !== BacklogBoard::STAGE_PENDING_REVIEW || $entry->getReviewer() !== null) {
             echo "FAIL testReviewerSessionImplicitPickRefusesOtherDeveloperWa: refusal must not claim another WA entry\n";
             return 1;
         }
@@ -161,7 +161,7 @@ final class BacklogReviewNextCommandTest
         $board = $this->loadBoard($projectRoot);
         $other = $board->getEntries(BacklogBoard::SECTION_ACTIVE)[0];
         $target = $board->getEntries(BacklogBoard::SECTION_ACTIVE)[1];
-        if ($other->getStage() !== BacklogBoard::STAGE_REVIEWING || $target->getStage() !== BacklogBoard::STAGE_IN_REVIEW) {
+        if ($other->getStage() !== BacklogBoard::STAGE_REVIEWING || $target->getStage() !== BacklogBoard::STAGE_PENDING_REVIEW) {
             echo "FAIL testManualImplicitPickKeepsFirstReviewEntry: expected old first-entry behavior outside reviewer session\n";
             return 1;
         }

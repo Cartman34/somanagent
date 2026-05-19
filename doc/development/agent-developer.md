@@ -10,7 +10,6 @@ The cross-role tooling and path rules in [`agent-workflow.md` — Tools And Path
 
 - `entry-create`
 - `status`
-- `todo-list`
 - `task-remove`
 - `review-notes`
 - `review-request`
@@ -145,15 +144,10 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --feature=my-feature --type=feat --body-file=local/tmp/new-feature-task.md --position=index --index=2
 ```
 
-### `todo-list`
-
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php todo-list`.
-2. The script prints queued tasks in priority order, one per line shaped `N. [<ref>] <text>`. `<ref>` is the queued entry's stable `<entry-ref>`. Numbers are advisory only and never accepted as mutation identity; `<ref>` is the only valid target for mutating commands such as `task-remove` and `work-start`.
-
 ### `task-remove`
 
 1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php task-remove <entry-ref>`.
-2. The reference is the stable `<entry-ref>` shown between brackets by `todo-list`.
+2. The reference is the stable `<entry-ref>` shown by `list --stage=todo`.
 3. The script refuses an empty, unknown, or ambiguous reference; rename a colliding queued task or pass the full `<entry-ref>` to disambiguate.
 
 ### `entry-rename`
@@ -210,7 +204,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 
 1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php work-start [<entry-ref>] [--branch-type=<feat|fix|tech>] [--dry-run]`.
 2. The agent must have no active entry. If one exists, the script refuses and describes the required next step.
-3. Without a target, the script consumes the first queued entry implicitly. With an explicit `<entry-ref>` reference (the same shape printed by `todo-list`), the script locates the matching queued entry by its `[feature-slug]` or `[feature-slug][task-slug]` prefix and refuses with a clear error when no queued entry matches.
+3. Without a target, the script consumes the first queued entry implicitly. With an explicit `<entry-ref>` reference (the same shape shown by `list --stage=todo`), the script locates the matching queued entry by its `[feature-slug]` or `[feature-slug][task-slug]` prefix and refuses with a clear error when no queued entry matches.
 4. Automated workflows must always pass an explicit target; the implicit head form is reserved for interactive usage.
 5. The script reads the branch type from the queued task prefix `[feat]`, `[fix]` or `[tech]` (case-insensitive). The type prefix is recognized at any position in the leading bracket sequence. `--branch-type` overrides the queued prefix and rejects any value not in the canonical type list.
 6. The script validates the queued entry fully (type, feature and task slugs, conflicts) before any worktree, branch or backlog mutation. A refusal leaves no leftover worktree or backlog state behind.
@@ -273,9 +267,12 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 
 ### `list`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php list`.
-2. The script prints all active entries (`kind=feature` and `kind=task`) grouped by workflow stage.
-3. Each line includes the `<entry-ref>`, the `kind=` indicator, and the assigned agent.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php list [--stage=<stage>] [--no-stage=<stage>] [--format=<format>] [--flat]`.
+2. Without flags, prints all entries (todo queue + all active stages) grouped by stage with a header per stage.
+3. `--stage=<stage>` (repeatable, or CSV) filters to a positive selection of stages. `--no-stage=<stage>` (same syntax) excludes stages. Both flags are mutually exclusive.
+4. Allowed stage values: `todo`, `development`, `review`, `reviewing`, `approved`, `rejected`.
+5. `--format=default` (rich `- <ref> kind=… agent=… pr=… reviewer=… title=…`), `--format=numbered` (same prefixed `N. `), `--format=ref` (one ref per line), `--format=json` (structured array). Absent fields shown as `none`.
+6. `--flat` suppresses stage headers; requires exactly one `--stage` value.
 
 ### `worktree-list`
 
@@ -330,7 +327,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 
 ### `next`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php todo-list` and read the first entry's `<entry-ref>` (the value in brackets at the start of each line).
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php list --stage=todo` and read the first entry's `<entry-ref>` (the `ref` value on each line).
 2. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php work-start <entry-ref>`. The explicit reference is required for agent-driven flows so that target selection is unambiguous and a concurrent agent cannot consume a different head between read and mutation.
 3. Implement the feature scope on the branch checked out for that task.
 4. Inspect the local diff and fix issues in scope before moving on.

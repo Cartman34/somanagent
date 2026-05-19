@@ -71,7 +71,7 @@ final class BacklogCommitGateCommandTest
 
     private function testBlocksReviewStage(): int
     {
-        return $this->assertBlocked('testBlocksReviewStage', BacklogBoard::STAGE_IN_REVIEW, "'review'");
+        return $this->assertBlocked('testBlocksReviewStage', BacklogBoard::STAGE_PENDING_REVIEW, "'review'");
     }
 
     private function testBlocksReviewingStage(): int

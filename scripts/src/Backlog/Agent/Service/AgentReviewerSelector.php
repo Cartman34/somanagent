@@ -64,7 +64,7 @@ final class AgentReviewerSelector
     public function autoSelect(BacklogBoard $board): BoardEntryMatch
     {
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $index => $entry) {
-            if ($this->boardService->getNormalizedStage($entry->getStage()) !== BacklogBoard::STAGE_IN_REVIEW) {
+            if ($this->boardService->getNormalizedStage($entry->getStage()) !== BacklogBoard::STAGE_PENDING_REVIEW) {
                 continue;
             }
             $devCode = $entry->getDeveloper() ?? '';
@@ -99,7 +99,7 @@ final class AgentReviewerSelector
                 continue;
             }
             $stage = $this->boardService->getNormalizedStage($entry->getStage());
-            if ($stage !== BacklogBoard::STAGE_IN_REVIEW && $stage !== BacklogBoard::STAGE_REVIEWING) {
+            if ($stage !== BacklogBoard::STAGE_PENDING_REVIEW && $stage !== BacklogBoard::STAGE_REVIEWING) {
                 continue;
             }
             if ($stage === BacklogBoard::STAGE_REVIEWING && $entry->getReviewer() !== $reviewerCode) {
@@ -143,7 +143,7 @@ final class AgentReviewerSelector
                 continue;
             }
             $stage = $this->boardService->getNormalizedStage($entry->getStage());
-            if ($stage !== BacklogBoard::STAGE_IN_REVIEW && $stage !== BacklogBoard::STAGE_REVIEWING) {
+            if ($stage !== BacklogBoard::STAGE_PENDING_REVIEW && $stage !== BacklogBoard::STAGE_REVIEWING) {
                 continue;
             }
             if ($stage === BacklogBoard::STAGE_REVIEWING && $entry->getReviewer() !== $reviewerCode) {
@@ -175,7 +175,7 @@ final class AgentReviewerSelector
                 continue;
             }
             $stage = $this->boardService->getNormalizedStage($entry->getStage());
-            if ($stage !== BacklogBoard::STAGE_IN_REVIEW && $stage !== BacklogBoard::STAGE_REVIEWING) {
+            if ($stage !== BacklogBoard::STAGE_PENDING_REVIEW && $stage !== BacklogBoard::STAGE_REVIEWING) {
                 continue;
             }
             if ($stage === BacklogBoard::STAGE_REVIEWING && $entry->getReviewer() !== $reviewerCode) {
@@ -212,7 +212,7 @@ final class AgentReviewerSelector
     public function pick(BacklogBoard $board, string $reviewerCode, BacklogCommandRunner $runner): ?BoardEntryMatch
     {
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $index => $entry) {
-            if ($this->boardService->getNormalizedStage($entry->getStage()) !== BacklogBoard::STAGE_IN_REVIEW) {
+            if ($this->boardService->getNormalizedStage($entry->getStage()) !== BacklogBoard::STAGE_PENDING_REVIEW) {
                 continue;
             }
             $devCode = $entry->getDeveloper() ?? '';

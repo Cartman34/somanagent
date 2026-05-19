@@ -94,11 +94,11 @@ Validate that backlog help is available globally and per command via `--help`.
 
 ### Goal
 
-Validate queued task insertion, ordering, listing, and removal, including the stable references exposed by `todo-list`.
+Validate queued task insertion, ordering, listing, and removal, including the stable references exposed by `list --stage=todo`.
 
 ### Steps
 
-1. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php todo-list`
+1. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php list --stage=todo`
 2. Write `[scenario-todo-end] Test inserted at end` to `local/tests/test-scenario-todo-end.md`, then:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tests/test-scenario-todo-end.md`
 3. Write `[scenario-todo-start] Test inserted at start` to `local/tests/test-scenario-todo-start.md`, then:
@@ -107,15 +107,15 @@ Validate queued task insertion, ordering, listing, and removal, including the st
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tests/test-scenario-todo-index.md --position=index --index=2`
 5. Write `[scenario-feature][scenario-task] Stable ref task` to `local/tests/test-scenario-feature-task.md`, then:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tests/test-scenario-feature-task.md`
-6. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php todo-list`
-7. Remove one inserted task by its stable reference shown in todo-list:
+6. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php list --stage=todo`
+7. Remove one inserted task by its stable reference shown in `list --stage=todo`:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php task-remove scenario-todo-index`
 
 ### Expected checks
 
 - inserted tasks appear in the expected order
 - typed input such as `[feat]` or `[fix]` keeps valid metadata behavior
-- todo-list shows each queued entry with its stable reference between brackets, in the form `N. [<ref>] <text>`
+- `list --stage=todo` shows each queued entry with its stable `ref=` value, one per line
 - the scoped entry `[scenario-feature][scenario-task] Stable ref task` is printed as `N. [scenario-feature/scenario-task] Stable ref task` and is usable as the work-start target
 - removing a queued task by reference updates only the todo section
 - `task-remove` refuses an empty, unknown, or ambiguous reference and never accepts display numbers as identity
@@ -132,7 +132,7 @@ Validate `work-start` on a plain queued task.
 1. Create the plain test task — write `[feat][test-plain-feature-alpha] test-plain-feature-alpha` to `local/tests/test-plain-feature-alpha.md`, then:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tests/test-plain-feature-alpha.md`
 2. Confirm next plain task with:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php todo-list`
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php list --stage=todo`
 3. Start it:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php work-start`
 4. Inspect result:
@@ -161,14 +161,14 @@ Validate `work-start <entry-ref>` consumes the named queued entry instead of the
 1. Create two prefixed queued tasks — write each body to `local/tests/`, then:
    - Write `[ws-head] Head entry that should stay queued` to `local/tests/test-ws-head.md`, then: `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tests/test-ws-head.md`
    - Write `[ws-target] Explicit target entry` to `local/tests/test-ws-target.md`, then: `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tests/test-ws-target.md`
-2. Confirm both entries appear in `todo-list` with their stable reference.
+2. Confirm both entries appear in `list --stage=todo` with their stable reference.
 3. Try a target that does not match any queued entry:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php work-start unknown-slug`
 4. Start the second entry by explicit reference:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php work-start ws-target`
 5. Inspect the result:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php list`
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php todo-list`
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php list --stage=todo`
 
 ### Expected checks
 
@@ -222,7 +222,7 @@ Validate `entry-release` on a feature with no actual development ahead of base.
 1. Release the active feature:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-release`
 2. Inspect:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php todo-list`
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php list --stage=todo`
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php list`
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php worktree-list`
 
@@ -287,7 +287,7 @@ Validate `work-start` on scoped queued tasks.
 1. Create the first scoped child task — write `[feat][test-scoped-feature][test-child-a] Implement test child task A` to `local/tests/test-child-a.md`, then:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tests/test-child-a.md`
 2. Confirm next queued entry is the scoped task:
-   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php todo-list`
+   - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php list --stage=todo`
 3. Start it:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php work-start`
 4. Inspect:
@@ -315,7 +315,7 @@ Validate local child task review commands (reject, rework, approve). Demonstrate
 1. Submit the task for review:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php review-request`
 2. Inspect the review queue and claim the task by explicit reference:
-   - `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=r01 php scripts/backlog.php review-list`
+   - `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=r01 php scripts/backlog.php list --stage=review`
    - `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=r01 php scripts/backlog.php review-next test-scoped-feature/test-child-a`
 3. Run the mechanical check:
    - `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=r01 php scripts/backlog.php review-check test-scoped-feature/test-child-a`
@@ -337,7 +337,7 @@ Validate local child task review commands (reject, rework, approve). Demonstrate
 ### Expected checks
 
 - stage transitions follow `development → review → rejected → development → review → approved`
-- `review-list` prints the entry with line `- test-scoped-feature/test-child-a kind=task agent=d01` while it waits in review
+- `list --stage=review` prints the entry with line `- test-scoped-feature/test-child-a kind=task agent=d01` while it waits in review
 - `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=r01 php scripts/backlog.php review-next test-scoped-feature/test-child-a` claims the named entry, moves it to `reviewing`, and refuses with `is already in Reviewing` when any other reviewer targets it before review-cancel runs
 - review notes are written to `local/backlog-review.md` on rejection
 - review notes are cleared on approval
@@ -584,7 +584,7 @@ When the full scenario set is too expensive, run at least:
 
 1. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php`
 2. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php work-start --help`
-3. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php todo-list`
+3. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php list --stage=todo`
 4. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php list`
 5. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php worktree-list`
 6. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php status --agent <known-agent>`

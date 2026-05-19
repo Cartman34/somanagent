@@ -88,7 +88,7 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
         $this->worktreeService->runReviewScript($taskWorktree, $newBase);
 
         $entry->setBase($newBase);
-        $entry->setStage(BacklogBoard::STAGE_IN_REVIEW);
+        $entry->setStage(BacklogBoard::STAGE_PENDING_REVIEW);
         $review->clearReview($this->boardService->getTaskReviewKey($entry));
         $this->saveBoard($board, BacklogCommandName::REVIEW_REQUEST->value);
         $this->saveReviewFile($review, BacklogCommandName::REVIEW_REQUEST->value);
@@ -96,7 +96,7 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
         $this->presenter->displaySuccess(sprintf(
             'Task %s moved to %s',
             $this->boardService->getTaskReviewKey($entry),
-            $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_REVIEW),
+            $this->boardService->getStageLabel(BacklogBoard::STAGE_PENDING_REVIEW),
         ));
     }
 
@@ -130,13 +130,13 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
         $this->worktreeService->runReviewScript($worktree, $newBase);
 
         $entry->setBase($newBase);
-        $entry->setStage(BacklogBoard::STAGE_IN_REVIEW);
+        $entry->setStage(BacklogBoard::STAGE_PENDING_REVIEW);
         $this->saveBoard($board, BacklogCommandName::REVIEW_REQUEST->value);
 
         $this->presenter->displaySuccess(sprintf(
             'Feature %s moved to %s',
             $feature,
-            $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_REVIEW),
+            $this->boardService->getStageLabel(BacklogBoard::STAGE_PENDING_REVIEW),
         ));
     }
 

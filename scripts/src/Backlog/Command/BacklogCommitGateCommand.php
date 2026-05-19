@@ -70,7 +70,7 @@ final class BacklogCommitGateCommand extends AbstractBacklogCommand
         }
 
         throw new \RuntimeException(match ($stage) {
-            BacklogBoard::STAGE_IN_REVIEW =>
+            BacklogBoard::STAGE_PENDING_REVIEW =>
                 "❌ Commit blocked: entry is in stage 'review'.\n" .
                 "   The entry is under review. Wait for reviewer feedback.\n" .
                 "   To make a fix before the reviewer acts, run `rework` first.",

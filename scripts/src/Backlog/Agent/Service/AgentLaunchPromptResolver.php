@@ -82,7 +82,7 @@ final class AgentLaunchPromptResolver
             BacklogBoard::STAGE_IN_PROGRESS => LaunchDecision::prompt($this->requirePrompt('developer_resume')),
             BacklogBoard::STAGE_REJECTED => LaunchDecision::prompt($this->requirePrompt('developer_rework')),
             BacklogBoard::STAGE_APPROVED => LaunchDecision::launcherHandled(),
-            BacklogBoard::STAGE_IN_REVIEW => LaunchDecision::refuse($this->requireRefusal('developer_review')),
+            BacklogBoard::STAGE_PENDING_REVIEW => LaunchDecision::refuse($this->requireRefusal('developer_review')),
             BacklogBoard::STAGE_REVIEWING => LaunchDecision::refuse($this->requireRefusal('developer_reviewing')),
             default => LaunchDecision::refuse($this->requireRefusal('developer_done')),
         };
@@ -94,7 +94,7 @@ final class AgentLaunchPromptResolver
     private function resolveForReviewer(?string $stage): LaunchDecision
     {
         return match ($stage) {
-            BacklogBoard::STAGE_IN_REVIEW => LaunchDecision::prompt($this->requirePrompt('reviewer')),
+            BacklogBoard::STAGE_PENDING_REVIEW => LaunchDecision::prompt($this->requirePrompt('reviewer')),
             BacklogBoard::STAGE_REVIEWING => LaunchDecision::prompt($this->requirePrompt('reviewer_resume')),
             null => LaunchDecision::refuse($this->requireRefusal('reviewer_todo')),
             BacklogBoard::STAGE_IN_PROGRESS => LaunchDecision::refuse($this->requireRefusal('reviewer_development')),

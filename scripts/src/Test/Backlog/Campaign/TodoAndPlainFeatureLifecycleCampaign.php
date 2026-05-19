@@ -27,8 +27,8 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
     public function run(BacklogScriptTestDriver $driver, BacklogScriptTestContext $context): void
     {
         $driver->createTodoTask('[test-remove-task] test-remove-task');
-        $driver->assertTodoContains('test-remove-task');
-        $driver->assertTodoContains('[test-remove-task]');
+        $driver->assertTodoContains('test-remove-task kind=feature');
+        $driver->assertTodoContains('title=test-remove-task');
         $driver->assertTaskRemoveFails('', 'requires a queued task reference');
         $driver->assertTaskRemoveFails('does-not-exist-slug', 'No queued task found for reference: does-not-exist-slug');
         $driver->removeTodoTask('test-remove-task');

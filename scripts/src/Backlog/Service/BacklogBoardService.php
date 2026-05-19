@@ -492,7 +492,7 @@ final class BacklogBoardService
 
         if ($matches === []) {
             throw new \RuntimeException(sprintf(
-                'No queued task found for reference: %s. Run todo-list to see queued references.',
+                'No queued task found for reference: %s. Run list --stage=todo to see queued references.',
                 $normalized,
             ));
         }
@@ -692,7 +692,7 @@ final class BacklogBoardService
         if ($this->checkIsTaskEntry($entry)) {
             return match ($stage) {
                 BacklogBoard::STAGE_IN_PROGRESS => "run `review-request --agent={$agent}` to submit the task for review",
-                BacklogBoard::STAGE_IN_REVIEW   => 'wait for reviewer action on the active task',
+                BacklogBoard::STAGE_PENDING_REVIEW   => 'wait for reviewer action on the active task',
                 BacklogBoard::STAGE_REJECTED    => "run `rework --agent={$agent}` to resume development on the rejected task",
                 BacklogBoard::STAGE_APPROVED    => "run `entry-merge <entry-ref> --agent={$agent}` to merge the task into its parent feature",
                 default                         => 'check status',
@@ -701,7 +701,7 @@ final class BacklogBoardService
 
         return match ($stage) {
             BacklogBoard::STAGE_IN_PROGRESS => "run `review-request --agent={$agent}` to submit for review, or `entry-release --agent={$agent}` if no commits were made",
-            BacklogBoard::STAGE_IN_REVIEW   => 'wait for reviewer action on the active feature',
+            BacklogBoard::STAGE_PENDING_REVIEW   => 'wait for reviewer action on the active feature',
             BacklogBoard::STAGE_REJECTED    => "run `rework --agent={$agent}` to resume development on the rejected feature",
             BacklogBoard::STAGE_APPROVED    => 'wait for the manager to merge the feature',
             default                         => 'check status',
@@ -793,7 +793,7 @@ final class BacklogBoardService
 
         return match ($stage) {
             BacklogBoard::STAGE_IN_PROGRESS => BacklogBoard::STAGE_IN_PROGRESS,
-            BacklogBoard::STAGE_IN_REVIEW => BacklogBoard::STAGE_IN_REVIEW,
+            BacklogBoard::STAGE_PENDING_REVIEW => BacklogBoard::STAGE_PENDING_REVIEW,
             BacklogBoard::STAGE_REVIEWING => BacklogBoard::STAGE_REVIEWING,
             BacklogBoard::STAGE_REJECTED => BacklogBoard::STAGE_REJECTED,
             BacklogBoard::STAGE_APPROVED => BacklogBoard::STAGE_APPROVED,
@@ -810,7 +810,7 @@ final class BacklogBoardService
     {
         return match ($this->getNormalizedStage($stage)) {
             BacklogBoard::STAGE_IN_PROGRESS => 'In development',
-            BacklogBoard::STAGE_IN_REVIEW => 'In review',
+            BacklogBoard::STAGE_PENDING_REVIEW => 'Pending review',
             BacklogBoard::STAGE_REVIEWING => 'Reviewing',
             BacklogBoard::STAGE_REJECTED => 'Rejected',
             BacklogBoard::STAGE_APPROVED => 'Approved',
@@ -825,7 +825,7 @@ final class BacklogBoardService
     {
         return [
             BacklogBoard::STAGE_IN_PROGRESS,
-            BacklogBoard::STAGE_IN_REVIEW,
+            BacklogBoard::STAGE_PENDING_REVIEW,
             BacklogBoard::STAGE_REVIEWING,
             BacklogBoard::STAGE_REJECTED,
             BacklogBoard::STAGE_APPROVED,
@@ -1232,7 +1232,7 @@ final class BacklogBoardService
     public function isFeatureInReviewLikeStage(BoardEntry $featureEntry): bool
     {
         return in_array($this->getFeatureStage($featureEntry), [
-            BacklogBoard::STAGE_IN_REVIEW,
+            BacklogBoard::STAGE_PENDING_REVIEW,
             BacklogBoard::STAGE_REVIEWING,
             BacklogBoard::STAGE_APPROVED,
         ], true);

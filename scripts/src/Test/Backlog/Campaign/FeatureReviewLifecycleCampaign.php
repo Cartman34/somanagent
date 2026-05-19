@@ -40,7 +40,7 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
 
         $driver->requestFeatureReview($context->agentPrimary);
 
-        // review-list exposes the stable reference for entries waiting in review
+        // list --stage=review exposes the stable reference for entries waiting in review
         $reviewListOutput = $driver->reviewList();
         $driver->assertOutputContainsAll($reviewListOutput, [
             '- ' . $context->fixFeature . ' ',

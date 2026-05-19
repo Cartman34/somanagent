@@ -142,7 +142,7 @@ final class BacklogReviewApproveCommandTest
         $projectRoot = $this->makeProject('presenter-reviewer-by-stage');
         $stages = [
             BacklogBoard::STAGE_IN_PROGRESS,
-            BacklogBoard::STAGE_IN_REVIEW,
+            BacklogBoard::STAGE_PENDING_REVIEW,
             BacklogBoard::STAGE_REVIEWING,
             BacklogBoard::STAGE_APPROVED,
             BacklogBoard::STAGE_REJECTED,

@@ -37,7 +37,7 @@ final class AgentLaunchPromptResolverTest
             // Developer x 7 stages
             'dev_todo'        => [AgentRole::DEVELOPER, null,                              LaunchDecision::TYPE_PROMPT],
             'dev_development' => [AgentRole::DEVELOPER, BacklogBoard::STAGE_IN_PROGRESS,  LaunchDecision::TYPE_PROMPT],
-            'dev_review'      => [AgentRole::DEVELOPER, BacklogBoard::STAGE_IN_REVIEW,    LaunchDecision::TYPE_REFUSE],
+            'dev_review'      => [AgentRole::DEVELOPER, BacklogBoard::STAGE_PENDING_REVIEW,    LaunchDecision::TYPE_REFUSE],
             'dev_reviewing'   => [AgentRole::DEVELOPER, BacklogBoard::STAGE_REVIEWING,    LaunchDecision::TYPE_REFUSE],
             'dev_rejected'    => [AgentRole::DEVELOPER, BacklogBoard::STAGE_REJECTED,     LaunchDecision::TYPE_PROMPT],
             'dev_approved'    => [AgentRole::DEVELOPER, BacklogBoard::STAGE_APPROVED,     LaunchDecision::TYPE_LAUNCHER_HANDLED],
@@ -46,7 +46,7 @@ final class AgentLaunchPromptResolverTest
             // Reviewer x 7 stages
             'rev_todo'        => [AgentRole::REVIEWER, null,                              LaunchDecision::TYPE_REFUSE],
             'rev_development' => [AgentRole::REVIEWER, BacklogBoard::STAGE_IN_PROGRESS,  LaunchDecision::TYPE_REFUSE],
-            'rev_review'      => [AgentRole::REVIEWER, BacklogBoard::STAGE_IN_REVIEW,    LaunchDecision::TYPE_PROMPT],
+            'rev_review'      => [AgentRole::REVIEWER, BacklogBoard::STAGE_PENDING_REVIEW,    LaunchDecision::TYPE_PROMPT],
             'rev_reviewing'   => [AgentRole::REVIEWER, BacklogBoard::STAGE_REVIEWING,    LaunchDecision::TYPE_PROMPT],
             'rev_rejected'    => [AgentRole::REVIEWER, BacklogBoard::STAGE_REJECTED,     LaunchDecision::TYPE_REFUSE],
             'rev_approved'    => [AgentRole::REVIEWER, BacklogBoard::STAGE_APPROVED,     LaunchDecision::TYPE_REFUSE],

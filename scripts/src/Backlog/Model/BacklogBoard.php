@@ -16,7 +16,7 @@ final class BacklogBoard
     public const SECTION_ACTIVE = 'In progress';
 
     public const STAGE_IN_PROGRESS = 'development';
-    public const STAGE_IN_REVIEW = 'review';
+    public const STAGE_PENDING_REVIEW = 'review';
     public const STAGE_REVIEWING = 'reviewing';
     public const STAGE_REJECTED = 'rejected';
     public const STAGE_APPROVED = 'approved';
