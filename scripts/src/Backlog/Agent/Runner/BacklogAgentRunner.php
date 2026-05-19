@@ -23,7 +23,6 @@ use SoManAgent\Script\Backlog\Agent\Client\SystemInteractiveProcessRunner;
 use SoManAgent\Script\Backlog\Agent\Client\TmuxSessionDriver;
 use SoManAgent\Script\Backlog\Agent\Command\AbstractAgentCommand;
 use SoManAgent\Script\Backlog\Agent\Command\AgentListCommand;
-use SoManAgent\Script\Backlog\Agent\Command\AgentResumeCommand;
 use SoManAgent\Script\Backlog\Agent\Command\AgentSessionsCommand;
 use SoManAgent\Script\Backlog\Agent\Command\AgentStartCommand;
 use SoManAgent\Script\Backlog\Agent\Command\AgentStatusCommand;
@@ -198,7 +197,6 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                     $boardPath,
                     $this->boardService(),
                 ),
-                'resume' => new AgentResumeCommand(),
                 'sessions' => new AgentSessionsCommand(
                     $this->console,
                     $this->sessionService(),

@@ -15,7 +15,7 @@ use SoManAgent\Script\Backlog\Agent\Test\AgentCodeServiceTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentContextBuilderTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentListCommandTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentModelResolverTest;
-use SoManAgent\Script\Backlog\Agent\Test\AgentResumeCommandTest;
+
 use SoManAgent\Script\Backlog\Agent\Test\AgentDeveloperSelectorTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentReviewerSelectorTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentSessionServiceTest;
@@ -89,7 +89,7 @@ $suites = [
     'SystemInteractiveProcessRunnerTest' => static fn(): int => (new SystemInteractiveProcessRunnerTest())->run(),
     'TmuxSessionDriverTest' => static fn(): int => (new TmuxSessionDriverTest())->run(),
     'AgentStopCommandTest' => static fn(): int => (new AgentStopCommandTest())->run(),
-    'AgentResumeCommandTest' => static fn(): int => (new AgentResumeCommandTest())->run(),
+
     'AgentLaunchPromptResolverTest' => static fn(): int => (new AgentLaunchPromptResolverTest())->run(),
     'AgentStartCommandTest' => static fn(): int => (new AgentStartCommandTest())->run(),
     'EntryRebaseServiceTest' => static fn(): int => (new EntryRebaseServiceTest())->run(),

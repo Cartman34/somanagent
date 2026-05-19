@@ -8,8 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Agent\Client;
 
 /**
- * Abstraction over POSIX process signaling so AgentStopCommand and AgentResumeCommand can be tested
- * without spawning real processes.
+ * Abstraction over POSIX process signaling so AgentStopCommand can be tested without spawning real processes.
  *
  * `signal($pid, 0)` is the canonical aliveness check and is delegated to `isAlive` for clarity.
  * Positive `$pid` targets a single process; negative `$pid` targets a process group, matching POSIX

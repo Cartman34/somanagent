@@ -71,10 +71,8 @@ A context file is generated at `<WP>/local/agent-context.md` on every session st
 
 The launcher spawns the AI client via the active **session driver** and records the client PID (and tmux session name when applicable) in `local/tmp/agent-sessions.json`:
 
-- **tmux driver** (default): wraps the session in a named tmux session (`somanagent-<code>`). SSH-resilient — the client keeps running after a terminal disconnect. `stop` kills the tmux session; `resume` re-attaches to it.
+- **tmux driver** (default): wraps the session in a named tmux session (`somanagent-<code>`). SSH-resilient — the client keeps running after a terminal disconnect. `stop` kills the tmux session.
 - **direct driver** (`BACKLOG_AGENT_SESSION_DRIVER=direct`): spawns the client via `proc_open`. Not SSH-resilient. `stop` sends SIGTERM then SIGKILL after 5 seconds.
-
-A `resume` re-attaches to a detached tmux session, but is refused while the PHP wrapper is still alive or when the direct driver still has a live client process. See `doc/development/agent-workflow.md` for the full lifecycle and `last_seen_at` semantics.
 
 `php scripts/backlog-agent.php prune` batch-cleans invalid entries from `agent-sessions.json` (launches never finalised, dead processes, orphan worktrees) without targeting one code. Pass `--dry-run` to preview or `--force` to also drop warning entries with a still-live process. See `doc/development/agent-workflow.md` for the full ruleset.
 

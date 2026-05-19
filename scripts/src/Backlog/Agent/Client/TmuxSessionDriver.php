@@ -101,8 +101,7 @@ final class TmuxSessionDriver implements SessionDriverInterface
 
         if ($this->sessionExists($agentCode)) {
             throw new \RuntimeException(sprintf(
-                "A tmux session '%s' already exists. Use resume to reconnect:\n" .
-                "  php scripts/backlog-agent.php resume --code=%s",
+                "A tmux session '%s' already exists. Use start --code=%s to reconnect.",
                 $name,
                 $agentCode,
             ));

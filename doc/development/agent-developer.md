@@ -83,7 +83,7 @@ Default model profile is `balanced+medium`. The operator may override it with `-
 
 **Auto-pick at start:** when the developer has no active entry, `start` automatically calls `work-start` on the first queued task and injects that entry into the generated context. If the entry was concurrently claimed by another agent between the read and the mutation, `start` silently moves to the next candidate in the todo list — the retry is bounded by the list length and never blocks. If the developer already has an active entry (e.g. after a session disconnect), `start` resumes that entry without consuming anything from the todo queue.
 
-**`start` is the single entry point** — no separate `resume` command is needed. When `--code=<dXX>` is passed and a session entry already exists, `start` inspects the real state and dispatches automatically: live session (driver alive + WA present) → re-attach; ghost session (driver dead or WA absent) → silent cleanup then create; `--force-new` → drop live session then create.
+**`start` is the single entry point.** When `--code=<dXX>` is passed and a session entry already exists, `start` inspects the real state and dispatches automatically: live session (driver alive + WA present) → re-attach; ghost session (driver dead or WA absent) → silent cleanup then create; `--force-new` → drop live session then create.
 
 Supported clients:
 
