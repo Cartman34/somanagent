@@ -68,7 +68,7 @@ final class BacklogListCommand extends AbstractBacklogCommand
     {
         [$stageFilter, $noStageFilter, $format, $flat] = $this->parseOptions($options);
 
-        $stages = $this->resolveStages($stageFilter, $noStageFilter, $flat);
+        $stages = $this->resolveStages($stageFilter, $noStageFilter);
 
         $board = $this->loadBoard();
 
@@ -181,7 +181,7 @@ final class BacklogListCommand extends AbstractBacklogCommand
      * @param list<string> $noStageFilter
      * @return list<string>
      */
-    private function resolveStages(array $stageFilter, array $noStageFilter, bool $flat): array
+    private function resolveStages(array $stageFilter, array $noStageFilter): array
     {
         if ($stageFilter !== []) {
             return $stageFilter;
