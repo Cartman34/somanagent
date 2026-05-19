@@ -216,7 +216,7 @@ final class DirectSessionDriverTest
         $capturedPid = null;
         $capturedTmux = 'sentinel';
 
-        $exitCode = $driver->launch('d01', '/bin/sh', ['-c', 'true'], sys_get_temp_dir(), [], static function (int $pid, ?string $tmux) use (&$capturedPid, &$capturedTmux): void {
+        $exitCode = $driver->launch('d01', AgentRole::DEVELOPER, AgentClient::CLAUDE, '/bin/sh', ['-c', 'true'], sys_get_temp_dir(), [], static function (int $pid, ?string $tmux) use (&$capturedPid, &$capturedTmux): void {
             $capturedPid = $pid;
             $capturedTmux = $tmux;
         });
@@ -250,7 +250,7 @@ final class DirectSessionDriverTest
 
         $capturedTmux = 'sentinel';
 
-        $driver->resume('d01', '/bin/sh', ['-c', 'true'], sys_get_temp_dir(), [], static function (int $pid, ?string $tmux) use (&$capturedTmux): void {
+        $driver->resume('d01', AgentRole::DEVELOPER, AgentClient::CLAUDE, '/bin/sh', ['-c', 'true'], sys_get_temp_dir(), [], static function (int $pid, ?string $tmux) use (&$capturedTmux): void {
             $capturedTmux = $tmux;
         });
 

@@ -329,7 +329,7 @@ final class AgentListCommandTest
             /**
              * {@inheritdoc}
              */
-            public function launch(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
+            public function launch(string $agentCode, AgentRole $role, AgentClient $client, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
             {
                 return 0;
             }
@@ -337,7 +337,7 @@ final class AgentListCommandTest
             /**
              * {@inheritdoc}
              */
-            public function resume(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
+            public function resume(string $agentCode, AgentRole $role, AgentClient $client, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
             {
                 return 0;
             }

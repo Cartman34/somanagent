@@ -344,7 +344,7 @@ final class TmuxSessionDriverTest
         $driver = new TmuxSessionDriver($runner, Console::getInstance());
         $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'createSession');
         $reflection->setAccessible(true);
-        $reflection->invoke($driver, 'somanagent-d03', 'd03', '/tmp/fake.sh', '/tmp/wa');
+        $reflection->invoke($driver, 'somanagent-d03', 'd03', AgentRole::DEVELOPER, AgentClient::CLAUDE, '/tmp/fake.sh', '/tmp/wa');
 
         $mouseCalls = array_filter(
             $runner->succeedsCalls,
@@ -368,7 +368,7 @@ final class TmuxSessionDriverTest
         $driver = new TmuxSessionDriver($runner, Console::getInstance());
         $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'createSession');
         $reflection->setAccessible(true);
-        $reflection->invoke($driver, 'somanagent-d03', 'd03', '/tmp/fake.sh', '/tmp/wa');
+        $reflection->invoke($driver, 'somanagent-d03', 'd03', AgentRole::DEVELOPER, AgentClient::CLAUDE, '/tmp/fake.sh', '/tmp/wa');
 
         $histCalls = array_filter(
             $runner->succeedsCalls,
@@ -392,7 +392,7 @@ final class TmuxSessionDriverTest
         $driver = new TmuxSessionDriver($runner, Console::getInstance());
         $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'createSession');
         $reflection->setAccessible(true);
-        $reflection->invoke($driver, 'somanagent-d03', 'd03', '/tmp/fake.sh', '/tmp/wa');
+        $reflection->invoke($driver, 'somanagent-d03', 'd03', AgentRole::DEVELOPER, AgentClient::CLAUDE, '/tmp/fake.sh', '/tmp/wa');
 
         $expectedBranding = [
             "tmux set -t 'somanagent-d03' status 'on'",
@@ -400,9 +400,9 @@ final class TmuxSessionDriverTest
             "tmux set -t 'somanagent-d03' status-left-length '20'",
             "tmux set -t 'somanagent-d03' status-right-length '50'",
             "tmux set -t 'somanagent-d03' status-left '#[fg=colour202,bg=colour231] SOWAPPS #[default] '",
-            "tmux set -t 'somanagent-d03' status-right '#[fg=colour202,bg=colour231] d03 #[default] %Y-%m-%d %H:%M:%S '",
-            "tmux set -t 'somanagent-d03' window-status-format ' #W '",
-            "tmux set -t 'somanagent-d03' window-status-current-format ' #W '",
+            "tmux set -t 'somanagent-d03' status-right ' developer · claude · %Y-%m-%d %H:%M:%S '",
+            "tmux set -t 'somanagent-d03' window-status-format ' d03 '",
+            "tmux set -t 'somanagent-d03' window-status-current-format ' d03 '",
             "tmux set -t 'somanagent-d03' window-status-style 'bg=colour202,fg=colour231'",
             "tmux set -t 'somanagent-d03' window-status-current-style 'bg=terminal,fg=colour231,bold'",
             "tmux set -t 'somanagent-d03' window-status-separator ''",
@@ -441,7 +441,7 @@ final class TmuxSessionDriverTest
         $driver = new TmuxSessionDriver($runner, Console::getInstance());
         $reflection = new \ReflectionMethod(TmuxSessionDriver::class, 'createSession');
         $reflection->setAccessible(true);
-        $reflection->invoke($driver, 'somanagent-d03', 'd03', '/tmp/fake.sh', '/tmp/wa');
+        $reflection->invoke($driver, 'somanagent-d03', 'd03', AgentRole::DEVELOPER, AgentClient::CLAUDE, '/tmp/fake.sh', '/tmp/wa');
 
         foreach ($runner->succeedsCalls as $command) {
             if (str_contains($command, ' -g')) {
@@ -468,7 +468,7 @@ final class TmuxSessionDriverTest
 
         ob_start();
         try {
-            $reflection->invoke($driver, 'somanagent-d03', 'd03', '/tmp/fake.sh', '/tmp/wa');
+            $reflection->invoke($driver, 'somanagent-d03', 'd03', AgentRole::DEVELOPER, AgentClient::CLAUDE, '/tmp/fake.sh', '/tmp/wa');
         } catch (\Throwable $e) {
             ob_end_clean();
             $inner = $e instanceof \ReflectionException ? $e->getPrevious() : $e;
@@ -510,7 +510,7 @@ final class TmuxSessionDriverTest
 
         ob_start();
         try {
-            $reflection->invoke($driver, 'somanagent-d03', 'd03', '/tmp/fake.sh', '/tmp/wa');
+            $reflection->invoke($driver, 'somanagent-d03', 'd03', AgentRole::DEVELOPER, AgentClient::CLAUDE, '/tmp/fake.sh', '/tmp/wa');
         } catch (\Throwable $e) {
             ob_end_clean();
             $inner = $e instanceof \ReflectionException ? $e->getPrevious() : $e;

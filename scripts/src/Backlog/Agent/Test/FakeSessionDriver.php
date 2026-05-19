@@ -8,6 +8,8 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Agent\Test;
 
 use SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
+use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
+use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 
 /**
@@ -122,7 +124,7 @@ final class FakeSessionDriver implements SessionDriverInterface
     /**
      * {@inheritdoc}
      */
-    public function launch(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
+    public function launch(string $agentCode, AgentRole $role, AgentClient $client, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
     {
         $this->lastLaunchCall = ['agentCode' => $agentCode, 'bin' => $bin, 'args' => $args, 'cwd' => $cwd];
         $onSpawned($this->nextClientPid, null);
@@ -136,7 +138,7 @@ final class FakeSessionDriver implements SessionDriverInterface
     /**
      * {@inheritdoc}
      */
-    public function resume(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
+    public function resume(string $agentCode, AgentRole $role, AgentClient $client, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int
     {
         $this->lastResumeCall = ['agentCode' => $agentCode, 'bin' => $bin, 'args' => $args, 'cwd' => $cwd];
         $onSpawned($this->nextClientPid, null);

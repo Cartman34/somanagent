@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Agent\Client;
 
+use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
+use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 
 /**
@@ -60,6 +62,8 @@ interface SessionDriverInterface
      * For DirectSessionDriver: blocks until the client process exits; returns the client exit code.
      *
      * @param string $agentCode Agent code (e.g. d01); used to name the tmux session
+     * @param AgentRole $role Role of the agent session; used for tmux branding
+     * @param AgentClient $client AI client being launched; used for tmux branding
      * @param string $bin Absolute or PATH-resolvable client binary
      * @param list<string> $args Arguments for the client binary
      * @param string $cwd Working directory for the session
@@ -67,7 +71,7 @@ interface SessionDriverInterface
      * @param callable(int $clientPid, ?string $tmuxSession): void $onSpawned Called once right after spawn, before blocking
      * @return int Exit code (0 on normal exit or tmux detach; client exit code for direct driver)
      */
-    public function launch(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int;
+    public function launch(string $agentCode, AgentRole $role, AgentClient $client, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int;
 
     /**
      * Re-launches the AI client for an interrupted session and blocks until exit.
@@ -79,6 +83,8 @@ interface SessionDriverInterface
      * For DirectSessionDriver: same as launch() — no live terminal session to re-attach.
      *
      * @param string $agentCode Agent code (e.g. d01); used to locate or create the tmux session
+     * @param AgentRole $role Role of the agent session; used for tmux branding when a new session is created
+     * @param AgentClient $client AI client being launched; used for tmux branding when a new session is created
      * @param string $bin Absolute or PATH-resolvable client binary
      * @param list<string> $args Arguments for the client binary (resume flags already embedded)
      * @param string $cwd Working directory for the session
@@ -86,7 +92,7 @@ interface SessionDriverInterface
      * @param callable(int $clientPid, ?string $tmuxSession): void $onSpawned Called once right after spawn, before blocking
      * @return int Exit code (0 on normal exit or tmux detach; client exit code for direct driver)
      */
-    public function resume(string $agentCode, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int;
+    public function resume(string $agentCode, AgentRole $role, AgentClient $client, string $bin, array $args, string $cwd, array $env, callable $onSpawned): int;
 
     /**
      * Terminates the session tracked by the given AgentSession entry.
