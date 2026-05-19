@@ -24,7 +24,7 @@ final class CodexAgentLauncher extends AbstractAgentClientLauncher
     /**
      * Approval flags injected at every launch to suppress interactive prompts within the WA session.
      * `sandbox_mode=workspace-write` in ~/.codex/config.toml constrains filesystem writes to the WA;
-     * writable_roots are extended to cover WP paths (e.g. local/backlog/) via --config at launch time.
+     * writable_roots are extended to cover WP paths (e.g. local/backlog/, .git/) via --config at launch time.
      */
     private const APPROVAL_FLAGS = ['--ask-for-approval', 'never'];
 
@@ -68,7 +68,7 @@ final class CodexAgentLauncher extends AbstractAgentClientLauncher
         $this->warningWriter = $warningWriter ?? static function (string $message): void {
             fwrite(STDERR, $message);
         };
-        $roots = $projectRoot !== null ? [BacklogPaths::directory($projectRoot) . '/'] : [];
+        $roots = $projectRoot !== null ? [BacklogPaths::directory($projectRoot) . '/', rtrim($projectRoot, '/') . '/.git/'] : [];
         $this->writableRoots = array_merge($roots, $extraWritableRoots);
     }
 

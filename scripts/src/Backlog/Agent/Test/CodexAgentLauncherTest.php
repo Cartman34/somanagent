@@ -66,6 +66,7 @@ final class CodexAgentLauncherTest
         $failed += $this->testBuildLaunchCommandResumeId();
         $failed += $this->testBuildLaunchCommandIncludesApprovalFlags();
         $failed += $this->testBuildLaunchCommandIncludesBacklogDir();
+        $failed += $this->testBuildLaunchCommandIncludesGitDir();
         $failed += $this->testBuildLaunchCommandWritableRootsExtensibility();
         $failed += $this->testCaptureCurrentSessionId();
         $failed += $this->testListSessionsParsesCodexRollouts();
@@ -211,7 +212,7 @@ final class CodexAgentLauncherTest
     {
         $context = $this->writeContext('context backlog-dir');
         $launcher = new CodexAgentLauncher($this->makeProcessRunner(true), $this->tmpDir, null, '/wp-root');
-        $expectedConfig = 'sandbox_workspace_write.writable_roots=["' . BacklogPaths::directory('/wp-root') . '/"]';
+        $expectedConfig = 'sandbox_workspace_write.writable_roots=["' . BacklogPaths::directory('/wp-root') . '/", "/wp-root/.git/"]';
 
         foreach ([
             'initial' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER),
@@ -229,11 +230,33 @@ final class CodexAgentLauncherTest
         return 0;
     }
 
+    private function testBuildLaunchCommandIncludesGitDir(): int
+    {
+        $context = $this->writeContext('context git-dir');
+        $launcher = new CodexAgentLauncher($this->makeProcessRunner(true), $this->tmpDir, null, '/wp-root');
+
+        foreach ([
+            'initial' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER),
+            'continue' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, null, true),
+            'resume' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, self::SESSION_ID_X),
+        ] as $mode => [, $args]) {
+            $idx = array_search('--config', $args, true);
+            $config = $args[$idx + 1] ?? '';
+            if ($idx === false || !str_contains($config, '"/wp-root/.git/"')) {
+                echo "FAIL testBuildLaunchCommandIncludesGitDir ({$mode}): .git/ not present in writable_roots\n";
+                return 1;
+            }
+        }
+
+        echo "OK testBuildLaunchCommandIncludesGitDir\n";
+        return 0;
+    }
+
     private function testBuildLaunchCommandWritableRootsExtensibility(): int
     {
         $context = $this->writeContext('context extensibility');
         $launcher = new CodexAgentLauncher($this->makeProcessRunner(true), $this->tmpDir, null, '/wp-root', ['/extra/path/']);
-        $expectedConfig = 'sandbox_workspace_write.writable_roots=["' . BacklogPaths::directory('/wp-root') . '/", "/extra/path/"]';
+        $expectedConfig = 'sandbox_workspace_write.writable_roots=["' . BacklogPaths::directory('/wp-root') . '/", "/wp-root/.git/", "/extra/path/"]';
 
         [, $args] = $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER);
         $idx = array_search('--config', $args, true);
