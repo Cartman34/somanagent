@@ -632,7 +632,7 @@ final class AgentStartCommand extends AbstractAgentCommand
             }
 
             $entryRef = $this->boardService->computeQueuedEntryReference($entry);
-            if ($this->isEntryRefOwnedByLiveDeveloperSession($entryRef)) {
+            if ($this->isEntryRefOwnedByLiveDeveloperSession($board, $entryRef)) {
                 continue;
             }
 
@@ -682,9 +682,8 @@ final class AgentStartCommand extends AbstractAgentCommand
     /**
      * Returns true when a live developer session is already tied to this entry ref.
      */
-    private function isEntryRefOwnedByLiveDeveloperSession(string $entryRef): bool
+    private function isEntryRefOwnedByLiveDeveloperSession(BacklogBoard $board, string $entryRef): bool
     {
-        $board = $this->boardService->loadBoard($this->boardPath);
         $agentCodes = [];
 
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
