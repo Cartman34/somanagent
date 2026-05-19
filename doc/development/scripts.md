@@ -120,6 +120,7 @@ Notes:
 - child task review stays local; only the parent feature uses the remote PR flow
 - `user-merge` lists all approved entries in board order, shows a preview (commits, diff stat, PR info), and prompts the user interactively (y/n/d/q); no SOMANAGER_ROLE or SOMANAGER_AGENT required; use `--dry-run` for a non-interactive preview
 - `entry-rebase` rebases an active entry branch onto its canonical target and pushes on success: task → parent feature branch (local-only, no push) ; root feature → `origin/main` (fetch + rebase + push with `--force-with-lease`). Prints "Already up to date with <target>" (exit 0) if no rebase is needed, "Rebased on <target> and pushed" (exit 0) on success, or lists conflicting files and exits non-zero on conflict. Use `--dry-run` to check whether a rebase is needed without running it. Prefer this command over raw git rebase for any backlog entry to ensure consistent fetch + rebase + push handling. The agent launcher also uses this service automatically when a developer starts with an approved entry
+- `list` and `status` always show `reviewer=<code>` or `reviewer=none` for active entries, including `development`, `review`, `reviewing`, `approved`, and `rejected` stages
 
 ---
 

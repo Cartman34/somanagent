@@ -53,7 +53,8 @@ final class BacklogReviewApproveCommandTest
      */
     public function run(): int
     {
-        return $this->testTaskApprovalPreservesReviewer();
+        return $this->testTaskApprovalPreservesReviewer()
+            + $this->testPresenterShowsReviewerForEveryActiveStage();
     }
 
     private function testTaskApprovalPreservesReviewer(): int
@@ -122,8 +123,8 @@ final class BacklogReviewApproveCommandTest
         ob_start();
         $presenter->displayEntryStatus($entry);
         $statusOutput = (string) ob_get_clean();
-        if (!str_contains($statusOutput, 'Reviewer: r12')) {
-            return 'status output should include Reviewer: r12 for approved entries';
+        if (!str_contains($statusOutput, 'Reviewer: reviewer=r12')) {
+            return 'status output should include Reviewer: reviewer=r12 for approved entries';
         }
 
         ob_start();
@@ -134,6 +135,70 @@ final class BacklogReviewApproveCommandTest
         }
 
         return null;
+    }
+
+    private function testPresenterShowsReviewerForEveryActiveStage(): int
+    {
+        $projectRoot = $this->makeProject('presenter-reviewer-by-stage');
+        $stages = [
+            BacklogBoard::STAGE_IN_PROGRESS,
+            BacklogBoard::STAGE_IN_REVIEW,
+            BacklogBoard::STAGE_REVIEWING,
+            BacklogBoard::STAGE_APPROVED,
+            BacklogBoard::STAGE_REJECTED,
+        ];
+
+        foreach ($stages as $stage) {
+            foreach ([null, 'r22'] as $reviewer) {
+                $entry = $this->entryForStage($stage, $reviewer);
+                $expected = $reviewer ?? 'none';
+                $failure = $this->assertPresenterShowsReviewer($projectRoot, $entry, $expected);
+                if ($failure !== null) {
+                    echo "FAIL testPresenterShowsReviewerForEveryActiveStage: stage={$stage} reviewer={$expected} {$failure}\n";
+                    return 1;
+                }
+            }
+        }
+
+        echo "OK testPresenterShowsReviewerForEveryActiveStage\n";
+        return 0;
+    }
+
+    private function assertPresenterShowsReviewer(string $projectRoot, BoardEntry $entry, string $expectedReviewer): ?string
+    {
+        $presenter = $this->makePresenter($projectRoot);
+
+        ob_start();
+        $presenter->displayEntryStatus($entry);
+        $statusOutput = (string) ob_get_clean();
+        if (!str_contains($statusOutput, 'Reviewer: reviewer=' . $expectedReviewer)) {
+            return 'status output should include Reviewer: reviewer=' . $expectedReviewer;
+        }
+
+        ob_start();
+        $presenter->displayEntryLine($entry);
+        $lineOutput = (string) ob_get_clean();
+        if (!str_contains($lineOutput, 'reviewer=' . $expectedReviewer)) {
+            return 'list output should include reviewer=' . $expectedReviewer;
+        }
+
+        return null;
+    }
+
+    private function entryForStage(string $stage, ?string $reviewer): BoardEntry
+    {
+        $entry = new BoardEntry('Reviewer visibility');
+        $entry->setKind('feature');
+        $entry->setStage($stage);
+        $entry->setFeature('reviewer-visibility-' . str_replace('-', '', $stage));
+        $entry->setAgent('d13');
+        $entry->setReviewer($reviewer);
+        $entry->setBranch('tech/reviewer-visibility');
+        $entry->setBase('abc123');
+        $entry->setPr('none');
+        $entry->setType('tech');
+
+        return $entry;
     }
 
     private function makeCommand(string $projectRoot, string $boardPath, string $reviewPath): BacklogReviewApproveCommand
