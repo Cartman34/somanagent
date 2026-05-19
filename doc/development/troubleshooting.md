@@ -27,6 +27,16 @@ php scripts/logs.php worker --tail 120
 php scripts/db.php query "SELECT source, category, level, title, occurred_at FROM log_event ORDER BY occurred_at DESC LIMIT 20;"
 ```
 
+## Git Hooks
+
+The pre-commit hook (`scripts/githooks/pre-commit`) is activated once by running:
+
+```bash
+php scripts/scripts-install.php
+```
+
+This sets `core.hooksPath = scripts/githooks` in the WP git config. All linked worktrees (agent WAs) inherit it automatically — no per-WA setup needed. On a fresh checkout, re-run `scripts-install.php` if the hook is not firing.
+
 ## Local PHPUnit
 
 - Dedicated backend service tests follow the mapping `backend/src/Service/...` -> `backend/tests/Unit/Service/...Test.php`

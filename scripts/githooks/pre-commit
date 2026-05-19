@@ -1,5 +1,5 @@
 #!/bin/bash
-# Managed worktree pre-commit hook — installed by BacklogWorktreeService::prepareAgentWorktree.
+# Managed worktree pre-commit hook — installed once via scripts/scripts-install.php.
 # Blocks commits in agent WAs when the backlog entry is not in development stage.
 # Self-aware: only activates inside agent sessions (SOMANAGER_AGENT set) running in a managed WA.
 

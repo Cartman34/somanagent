@@ -24,7 +24,7 @@ final class BacklogPreCommitHookTest
     public function __construct()
     {
         $this->projectRoot = dirname(__DIR__, 4);
-        $this->hookSourcePath = $this->projectRoot . '/scripts/resources/worktree-hooks/pre-commit';
+        $this->hookSourcePath = $this->projectRoot . '/scripts/githooks/pre-commit';
     }
 
     /**
