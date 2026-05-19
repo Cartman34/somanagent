@@ -166,7 +166,7 @@ Notes:
 | Client | Permission flag(s) injected | Rationale |
 |---|---|---|
 | `claude` | `--permission-mode acceptEdits` | Approves edits/writes without full bypass; relies on `.claude/settings.local.json` for Bash whitelist |
-| `codex` | `--ask-for-approval never` + `--config sandbox_workspace_write.writable_roots=[…]` | Removes prompts; `sandbox_mode=workspace-write` in `~/.codex/config.toml` limits writes to the WA; `writable_roots` extends the whitelist to WP paths needed by agents (today: `local/backlog/`). To add a path, pass it in `extraWritableRoots` to `CodexAgentLauncher`. |
+| `codex` | `--ask-for-approval never` + `--config sandbox_workspace_write.writable_roots=[…]` | Removes prompts; `sandbox_mode=workspace-write` in `~/.codex/config.toml` limits writes to the WA; `writable_roots` extends the whitelist to WP paths needed by agents (today: `local/backlog/`, `.git/`). To add a path, pass it in `extraWritableRoots` to `CodexAgentLauncher`. |
 | `gemini` | `--approval-mode auto_edit --skip-trust` | Mirrors Claude's acceptEdits; `--skip-trust` suppresses the session-level trust dialog only |
 | `opencode` | `--dangerously-skip-permissions` | Only available auto-approval flag in OpenCode CLI; impact limited because opencode is used infrequently via backlog-agent |
 - `BACKLOG_AGENT_SESSION_DRIVER=tmux|direct` selects the session driver
