@@ -27,7 +27,7 @@ use Symfony\Component\Yaml\Yaml;
  */
 final class BacklogReviewApproveCommandTest
 {
-    private const string FEATURE_SLUG = self::FEATURE_SLUG;
+    private const string FEATURE_SLUG = 'reviewer-stop';
 
     private string $tmpDir;
 
