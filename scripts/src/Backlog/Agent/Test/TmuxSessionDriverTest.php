@@ -536,7 +536,7 @@ final class TmuxSessionDriverTest
             return 1;
         }
         if (!str_contains((string) $output, self::TMUX_HISTORY_LIMIT)) {
-            echo "FAIL testCreateSessionWarnsWhenSetOptionFails: expected warning mentioning 'history-limit', got: " . var_export($output, true) . "\n";
+            echo "FAIL testCreateSessionWarnsWhenSetOptionFails: expected warning mentioning '" . self::TMUX_HISTORY_LIMIT . "', got: " . var_export($output, true) . "\n";
             return 1;
         }
         echo "OK testCreateSessionWarnsWhenSetOptionFails\n";
