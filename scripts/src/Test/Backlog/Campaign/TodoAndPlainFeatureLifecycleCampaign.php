@@ -18,6 +18,8 @@ use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
 final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
 {
     private const MANAGER_AGENT = 'test-m01';
+    private const AMBIGUOUS_SLUG = 'ambiguous-plain-ref';
+    private const AMBIGUOUS_SLUG_2 = 'ambiguous-plain-ref-2';
 
     public function getName(): string
     {
@@ -38,17 +40,17 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
         $driver->removeTodoTask('stable-feature-ref/stable-task-ref');
         $driver->removeTodoTask('stable-feature-ref');
 
-        $driver->createTodoTask('[ambiguous-plain-ref] First plain instance');
-        $driver->createTodoTask('[ambiguous-plain-ref] Second plain instance with same feature slug');
-        $driver->assertTaskRemoveFails('ambiguous-plain-ref', 'Ambiguous queued reference ambiguous-plain-ref');
+        $driver->createTodoTask('[' . self::AMBIGUOUS_SLUG . '] First plain instance');
+        $driver->createTodoTask('[' . self::AMBIGUOUS_SLUG . '] Second plain instance with same feature slug');
+        $driver->assertTaskRemoveFails(self::AMBIGUOUS_SLUG, 'Ambiguous queued reference ' . self::AMBIGUOUS_SLUG);
         $driver->renameTodoEntry(
-            'ambiguous-plain-ref',
-            'ambiguous-plain-ref-2',
+            self::AMBIGUOUS_SLUG,
+            self::AMBIGUOUS_SLUG_2,
             'Second plain instance with same feature slug',
             'Second plain instance with renamed feature slug',
         );
-        $driver->removeTodoTask('ambiguous-plain-ref');
-        $driver->removeTodoTask('ambiguous-plain-ref-2');
+        $driver->removeTodoTask(self::AMBIGUOUS_SLUG);
+        $driver->removeTodoTask(self::AMBIGUOUS_SLUG_2);
 
         // review-cancel guard runs before loadBoard, so we can exercise the explicit-reference
         // contract directly here without bringing up a full review-stage flow.

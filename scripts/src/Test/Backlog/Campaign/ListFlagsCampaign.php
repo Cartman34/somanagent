@@ -17,6 +17,9 @@ use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
  */
 final class ListFlagsCampaign implements CampaignInterface
 {
+    private const REMOVED_TODO_LIST = 'todo-list';
+    private const REMOVED_REVIEW_LIST = 'review-list';
+
     public function getName(): string
     {
         return 'list-flags';
@@ -36,10 +39,10 @@ final class ListFlagsCampaign implements CampaignInterface
 
     private function assertRemovedCommands(BacklogScriptTestDriver $driver): void
     {
-        $driver->assertBacklogFails(['todo-list'], 'todo-list has been removed');
-        $driver->assertBacklogFails(['todo-list'], 'list --stage=todo');
-        $driver->assertBacklogFails(['review-list'], 'review-list has been removed');
-        $driver->assertBacklogFails(['review-list'], 'list --stage=review');
+        $driver->assertBacklogFails([self::REMOVED_TODO_LIST], self::REMOVED_TODO_LIST . ' has been removed');
+        $driver->assertBacklogFails([self::REMOVED_TODO_LIST], 'list --stage=todo');
+        $driver->assertBacklogFails([self::REMOVED_REVIEW_LIST], self::REMOVED_REVIEW_LIST . ' has been removed');
+        $driver->assertBacklogFails([self::REMOVED_REVIEW_LIST], 'list --stage=review');
     }
 
     private function assertStageFilter(BacklogScriptTestDriver $driver, BacklogScriptTestContext $context): void

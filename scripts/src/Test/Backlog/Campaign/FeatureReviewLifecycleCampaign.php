@@ -19,6 +19,8 @@ use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
  */
 final class FeatureReviewLifecycleCampaign implements CampaignInterface
 {
+    private const UNKNOWN_ENTRY_REF = 'unknown-feature-target';
+
     public function getName(): string
     {
         return 'feature-review-lifecycle';
@@ -51,8 +53,8 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         // review-next with an unknown explicit target refuses without claiming anything
         $driver->assertReviewNextFails(
             $context->agentSecondary,
-            'No active entry matches reference "unknown-feature-target"',
-            'unknown-feature-target',
+            'No active entry matches reference "' . self::UNKNOWN_ENTRY_REF . '"',
+            self::UNKNOWN_ENTRY_REF,
         );
 
         // review-next claims the entry by explicit reference and transitions it to reviewing
