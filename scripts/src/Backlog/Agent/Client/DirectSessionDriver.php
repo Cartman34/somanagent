@@ -146,6 +146,16 @@ final class DirectSessionDriver implements SessionDriverInterface
     /**
      * {@inheritdoc}
      *
+     * The direct driver has no persistent session concept — always returns false.
+     */
+    public function isAttached(AgentSession $session): bool
+    {
+        return false;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * The direct driver has no persistent session concept — always returns an empty array.
      *
      * @return list<string>

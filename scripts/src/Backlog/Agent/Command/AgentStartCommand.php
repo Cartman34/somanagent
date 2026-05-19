@@ -14,9 +14,12 @@ use SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
 use SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use SoManAgent\Script\Backlog\Agent\Enum\WaOccupantChoice;
 use SoManAgent\Script\Backlog\Agent\Exception\ActiveSessionException;
 use SoManAgent\Script\Backlog\Agent\Exception\ClientNotInstalledException;
+use SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException;
 use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
+use SoManAgent\Script\Backlog\Agent\Model\ReviewerPickOutcome;
 use SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
 use SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
 use SoManAgent\Script\Backlog\Agent\Service\AgentDeveloperSelector;
@@ -27,6 +30,7 @@ use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
+use SoManAgent\Script\Backlog\Model\BoardEntryMatch;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 use SoManAgent\Script\Backlog\Service\EntryRebaseService;
@@ -68,6 +72,17 @@ final class AgentStartCommand extends AbstractAgentCommand
     private EntryRebaseService $entryRebaseService;
 
     /**
+     * Optional override for the interactive WA-occupant conflict prompt.
+     *
+     * Signature: callable(AgentSession $existing, BoardEntry $entry, bool $hasMoreCandidates): WaOccupantChoice
+     *
+     * When null, the production stdin-based prompter is used. Inject a fake in tests.
+     *
+     * @var (callable(AgentSession, BoardEntry, bool): WaOccupantChoice)|null
+     */
+    private $waConflictPrompter;
+
+    /**
      * @param string $projectRoot
      * @param string $worktreesRoot
      * @param string $boardPath
@@ -86,6 +101,7 @@ final class AgentStartCommand extends AbstractAgentCommand
      * @param EntryRebaseService $entryRebaseService Handles approved-entry rebase before developer session launch; use NullEntryRebaseService in tests that do not exercise the approved path
      * @param AgentModelResolver|null $modelResolver Resolves role/client model tier and effort into CLI args
      * @param AgentLaunchPromptResolver|null $launchPromptResolver Resolves role-specific initial prompts for auto-picked entries; defaults to the bundled scripts resource
+     * @param (callable(AgentSession, BoardEntry, bool): WaOccupantChoice)|null $waConflictPrompter Override for the interactive WA-occupant conflict prompt; when null the production stdin prompter is used
      */
     public function __construct(
         string $projectRoot,
@@ -106,6 +122,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         EntryRebaseService $entryRebaseService,
         ?AgentModelResolver $modelResolver = null,
         ?AgentLaunchPromptResolver $launchPromptResolver = null,
+        ?callable $waConflictPrompter = null,
     ) {
         $this->projectRoot = $projectRoot;
         $this->worktreesRoot = $worktreesRoot;
@@ -127,6 +144,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         $this->launchPromptResolver = $launchPromptResolver ?? new AgentLaunchPromptResolver(
             dirname(__DIR__, 4) . '/resources/backlog-agent/launch-prompts.yaml',
         );
+        $this->waConflictPrompter = $waConflictPrompter;
     }
 
     /**
@@ -254,7 +272,27 @@ final class AgentStartCommand extends AbstractAgentCommand
         $initialPrompt = null;
 
         if ($role === AgentRole::REVIEWER) {
-            [$worktree, $takenEntryRef, $takenReviewerCode] = $this->prepareReviewerMode($options, $code);
+            $reviewerOutcome = $this->prepareReviewerMode($options, $code);
+
+            if ($reviewerOutcome->isQuit()) {
+                return 0;
+            }
+
+            if ($reviewerOutcome->isAdopt()) {
+                $adoptedSession = $reviewerOutcome->getAdoptSession();
+                $adoptRollbackRef = $reviewerOutcome->getTakenEntryRef();
+                $adoptRollbackCode = $reviewerOutcome->getTakenReviewerCode();
+                try {
+                    return $this->handleAttach($adoptedSession, $originalCwd);
+                } catch (\Throwable $e) {
+                    $this->rollbackReviewTransition($adoptRollbackRef, $adoptRollbackCode);
+                    throw $e;
+                }
+            }
+
+            $worktree = $reviewerOutcome->getWorktree();
+            $takenEntryRef = $reviewerOutcome->getTakenEntryRef();
+            $takenReviewerCode = $reviewerOutcome->getTakenReviewerCode();
             $reviewerStage = $takenEntryRef !== null ? BacklogBoard::STAGE_IN_REVIEW : BacklogBoard::STAGE_REVIEWING;
             $initialPrompt = $this->launchPromptResolver->resolveStageDecision(AgentRole::REVIEWER, $reviewerStage)->getPrompt();
         } elseif ($role === AgentRole::MANAGER) {
@@ -527,18 +565,19 @@ final class AgentStartCommand extends AbstractAgentCommand
     /**
      * Resolves and prepares the reviewer session: reuses an owned reviewing entry or takes a new one.
      *
-     * When a new entry is taken via review-next, [1] holds the entry ref and [2] the reviewer
-     * code so that rollbackReviewTransition() can release it via review-cancel on failure.
-     * Both are null when an already-reviewing entry is reused (no rollback needed).
+     * Returns a {@see ReviewerPickOutcome} describing what the caller should do:
+     *   - normal: launch a new reviewer session on the resolved worktree
+     *   - adopt: attach to an existing live reviewer session chosen by the operator
+     *   - quit: the operator aborted; return 0 immediately
      *
      * For auto-select (no explicit target flag), the full list of review-stage entries is tried
-     * in order via {@see AgentReviewerSelector::pick()} so that a concurrent reviewer claiming
-     * the head entry does not abort this launch — it simply moves to the next candidate.
+     * in order. Entries whose developer WA is occupied by a live reviewer session trigger an
+     * interactive conflict-resolution prompt (Accept / Pass / Quit); dead registry entries are
+     * cleaned silently and the entry is retried as a normal candidate.
      *
      * @param array<string, string|bool|array<bool|string>> $options
-     * @return array{0: string, 1: string|null, 2: string|null}
      */
-    private function prepareReviewerMode(array $options, string $reviewerCode): array
+    private function prepareReviewerMode(array $options, string $reviewerCode): ReviewerPickOutcome
     {
         $force = isset($options[BacklogCliOption::FORCE->value]);
         $featureOpt = $this->getSingleOption($options, 'feature');
@@ -603,25 +642,26 @@ final class AgentStartCommand extends AbstractAgentCommand
                 $takenReviewerCode = null;
             }
         } else {
-            // Step 2b: auto-select — iterate all candidates with retry on contention
-            $match = $this->reviewerSelector->pick($board, $reviewerCode, $this->backlogCommandRunner);
-            if ($match === null) {
+            // Step 2b: auto-select with interactive conflict resolution for occupied WAs.
+            $pickOutcome = $this->pickInteractiveReviewer($board, $reviewerCode);
+
+            if ($pickOutcome === null) {
                 throw new \RuntimeException(
                     'No review available. All review-stage entries are already being reviewed or no entry is ready for review.',
                 );
             }
 
-            $entry = $match->getEntry();
-            $devCode = $entry->getAgent() ?? '';
-
-            if ($devCode === '') {
-                throw new \RuntimeException(
-                    'Cannot determine developer agent code for the selected entry. The entry may be unassigned.',
-                );
+            if ($pickOutcome->isQuit()) {
+                return ReviewerPickOutcome::quit();
             }
 
-            $worktree = $this->reviewerSelector->devCodeToWorktree($devCode);
-            $takenEntryRef = $this->buildEntryRef($entry);
+            if ($pickOutcome->isAdopt()) {
+                return $pickOutcome;
+            }
+
+            // Normal taken path: worktree and entryRef are already in the outcome.
+            $worktree = $pickOutcome->getWorktree();
+            $takenEntryRef = $pickOutcome->getTakenEntryRef();
             $takenReviewerCode = $reviewerCode;
 
             // Reload board so subsequent steps use the entry at its updated stage.
@@ -629,6 +669,13 @@ final class AgentStartCommand extends AbstractAgentCommand
             $reloadedMatch = $this->reviewerSelector->findOwnedReviewingEntry($board, $reviewerCode);
             if ($reloadedMatch !== null) {
                 $entry = $reloadedMatch->getEntry();
+            } elseif ($pickOutcome->getTakenMatch() !== null) {
+                // Fallback: use the pre-reload entry (e.g. timing edge case after review-next).
+                $entry = $pickOutcome->getTakenMatch()->getEntry();
+            } else {
+                throw new \RuntimeException(
+                    'Could not find the reviewing entry after reloading the board.',
+                );
             }
         }
 
@@ -652,7 +699,191 @@ final class AgentStartCommand extends AbstractAgentCommand
             throw new ActiveSessionException($existingReviewer, $this->projectRoot, $this->signaler);
         }
 
-        return [$worktree, $takenEntryRef, $takenReviewerCode];
+        return ReviewerPickOutcome::normal($worktree, $takenEntryRef, $takenReviewerCode);
+    }
+
+    /**
+     * Auto-picker with interactive conflict resolution for occupied developer WAs.
+     *
+     * Iterates all review-stage candidates in board order. For each candidate:
+     *   - No existing reviewer session → try review-next; contention (EntryNotReservable) is silently skipped.
+     *   - Dead registry entry → clean it from the registry and retry that entry as a normal candidate.
+     *   - Alive + tmux attached elsewhere → log and auto-pass (cannot double-attach).
+     *   - Alive + tmux detached → prompt the operator (Accept / Pass / Quit).
+     *
+     * Returns null when all candidates are exhausted without a successful pick.
+     * Returns a quit outcome when the operator chose to abort.
+     * Returns an adopt outcome when the operator accepted an existing session.
+     * Returns a normal taken outcome when an entry was successfully claimed.
+     */
+    private function pickInteractiveReviewer(BacklogBoard $board, string $reviewerCode): ?ReviewerPickOutcome
+    {
+        // Pre-collect candidates so we can compute hasMoreCandidates accurately.
+        $candidates = [];
+        foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $index => $entry) {
+            if ($this->boardService->getNormalizedStage($entry->getStage()) !== BacklogBoard::STAGE_IN_REVIEW) {
+                continue;
+            }
+            $devCode = $entry->getAgent() ?? '';
+            if ($devCode === '') {
+                continue;
+            }
+            $candidates[] = [$index, $entry];
+        }
+
+        $count = count($candidates);
+        for ($i = 0; $i < $count; $i++) {
+            [$index, $entry] = $candidates[$i];
+            $devCode = $entry->getAgent() ?? '';
+            $worktree = $this->reviewerSelector->devCodeToWorktree($devCode);
+            $existingReviewer = $this->reviewerSelector->findExistingReviewerForWorktree($worktree);
+
+            if ($existingReviewer === null) {
+                // Normal case: no occupant — try to claim the entry.
+                $entryRef = $this->buildEntryRef($entry);
+                try {
+                    $this->backlogCommandRunner->reviewNext($reviewerCode, $entryRef);
+
+                    return ReviewerPickOutcome::normalWithMatch(
+                        $worktree,
+                        $entryRef,
+                        $reviewerCode,
+                        new BoardEntryMatch(BacklogBoard::SECTION_ACTIVE, $index, $entry),
+                    );
+                } catch (EntryNotReservableException) {
+                    continue;
+                }
+            }
+
+            // WA is occupied by an existing reviewer session — check liveness.
+            $isAlive = $this->sessionDriver->isAlive($existingReviewer);
+
+            if (!$isAlive) {
+                // Dead session: remove from registry and retry this entry as a fresh candidate.
+                echo sprintf(
+                    "Reviewer session %s in the registry is no longer alive. Cleaning up registry entry...\n",
+                    $existingReviewer->code,
+                );
+                $this->sessionService->remove($existingReviewer->code);
+
+                $entryRef = $this->buildEntryRef($entry);
+                try {
+                    $this->backlogCommandRunner->reviewNext($reviewerCode, $entryRef);
+
+                    return ReviewerPickOutcome::normalWithMatch(
+                        $worktree,
+                        $entryRef,
+                        $reviewerCode,
+                        new BoardEntryMatch(BacklogBoard::SECTION_ACTIVE, $index, $entry),
+                    );
+                } catch (EntryNotReservableException) {
+                    continue;
+                }
+            }
+
+            // Session is alive — check whether a terminal is already attached to it.
+            $isAttached = $this->sessionDriver->isAttached($existingReviewer);
+
+            if ($isAttached) {
+                // Auto-pass: the session is attached elsewhere; double-attaching is forbidden.
+                echo sprintf(
+                    "Reviewer session %s is already attached to another terminal. Skipping entry '%s'.\n",
+                    $existingReviewer->code,
+                    $this->buildEntryRef($entry),
+                );
+                continue;
+            }
+
+            // Session is alive and detached: prompt the operator.
+            $hasMoreCandidates = $i < $count - 1;
+            $choice = $this->resolveWaConflict($existingReviewer, $entry, $hasMoreCandidates);
+
+            if ($choice === WaOccupantChoice::Pass) {
+                continue;
+            }
+
+            if ($choice === WaOccupantChoice::Quit) {
+                return ReviewerPickOutcome::quit();
+            }
+
+            // Accept: assign the entry to the existing reviewer session via review-next.
+            $entryRef = $this->buildEntryRef($entry);
+            $this->backlogCommandRunner->reviewNext($existingReviewer->code, $entryRef);
+
+            return ReviewerPickOutcome::adopt($existingReviewer, $entryRef, $existingReviewer->code);
+        }
+
+        return null;
+    }
+
+    /**
+     * Resolves the operator's choice when a developer WA is occupied by a live detached reviewer session.
+     *
+     * Delegates to the injected $waConflictPrompter when set (for tests); otherwise reads from stdin.
+     *
+     * @param bool $hasMoreCandidates True when at least one more review-stage entry exists after this one
+     */
+    private function resolveWaConflict(AgentSession $existing, BoardEntry $entry, bool $hasMoreCandidates): WaOccupantChoice
+    {
+        if ($this->waConflictPrompter !== null) {
+            return ($this->waConflictPrompter)($existing, $entry, $hasMoreCandidates);
+        }
+
+        return $this->promptWaConflict($existing, $entry, $hasMoreCandidates);
+    }
+
+    /**
+     * Displays the WA-occupant conflict prompt on stdout and reads the operator's choice from stdin.
+     *
+     * @param bool $hasMoreCandidates True when at least one more review-stage entry exists after this one
+     */
+    private function promptWaConflict(AgentSession $existing, BoardEntry $entry, bool $hasMoreCandidates): WaOccupantChoice
+    {
+        $relativeWorktree = str_replace($this->projectRoot . '/', '', $existing->worktree);
+        $entryRef = $this->buildEntryRef($entry);
+
+        echo sprintf(
+            "\nEntry '%s' is awaiting review, but its developer WA (%s) is already occupied\n" .
+            "by a live reviewer session:\n" .
+            "  code       : %s\n" .
+            "  client     : %s\n" .
+            "  started_at : %s\n" .
+            "  last_seen  : %s\n\n",
+            $entryRef,
+            $relativeWorktree,
+            $existing->code,
+            $existing->client->value,
+            $existing->startedAt->format(\DateTimeInterface::ATOM),
+            $existing->lastSeenAt->format(\DateTimeInterface::ATOM),
+        );
+
+        $options = ['A' => WaOccupantChoice::Accept, 'Q' => WaOccupantChoice::Quit];
+        $labels = ['A' => 'Accept (attach to the existing session and assign this entry to it)'];
+
+        if ($hasMoreCandidates) {
+            $options['P'] = WaOccupantChoice::Pass;
+            $labels['P'] = 'Pass (skip this entry and continue to the next one)';
+        }
+
+        $labels['Q'] = 'Quit (abort the picker; no entry is claimed)';
+
+        foreach ($labels as $key => $label) {
+            echo sprintf("  [%s] %s\n", $key, $label);
+        }
+
+        $prompt = sprintf("\nChoice [%s]: ", implode('/', array_keys($options)));
+
+        while (true) {
+            echo $prompt;
+            $line = fgets(STDIN);
+            if ($line === false) {
+                return WaOccupantChoice::Quit;
+            }
+            $upper = strtoupper(trim($line));
+            if (isset($options[$upper])) {
+                return $options[$upper];
+            }
+        }
     }
 
     /**

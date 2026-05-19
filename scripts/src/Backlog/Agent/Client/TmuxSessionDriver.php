@@ -196,6 +196,27 @@ final class TmuxSessionDriver implements SessionDriverInterface
     /**
      * {@inheritdoc}
      *
+     * Returns true when the tmux session has at least one client attached (session_attached == 1).
+     * Returns false when tmuxSession is null or the tmux session does not exist.
+     */
+    public function isAttached(AgentSession $session): bool
+    {
+        $tmuxSession = $session->tmuxSession;
+
+        if ($tmuxSession === null || $tmuxSession === '') {
+            return false;
+        }
+
+        $output = $this->shellRunner->output(
+            sprintf("tmux display-message -t %s -p '#{session_attached}'", escapeshellarg($tmuxSession)),
+        );
+
+        return trim((string) $output) === '1';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * Runs tmux list-sessions and returns codes extracted from somanagent-<code> session names.
      * Sessions whose names do not carry the somanagent- prefix are silently ignored.
      * Returns an empty array when no tmux server is running or when no managed sessions exist.

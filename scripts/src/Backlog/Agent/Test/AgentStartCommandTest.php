@@ -12,8 +12,10 @@ use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
 use SoManAgent\Script\Backlog\Agent\Command\AgentStartCommand;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use SoManAgent\Script\Backlog\Agent\Enum\WaOccupantChoice;
 use SoManAgent\Script\Backlog\Agent\Exception\ActiveSessionException;
 use SoManAgent\Script\Backlog\Agent\Exception\ClientNotInstalledException;
+use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 use SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
 use SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
 use SoManAgent\Script\Backlog\Agent\Service\AgentDeveloperSelector;
@@ -23,6 +25,7 @@ use SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Backlog\BacklogPaths;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use Symfony\Component\Yaml\Yaml;
 use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
@@ -117,6 +120,12 @@ final class AgentStartCommandTest
         $failed += $this->testStartCleansGhostSessionWhenDriverDead();
         $failed += $this->testStartCleansGhostSessionWhenWorktreeAbsent();
         $failed += $this->testForceNewDropsLiveSessionAndCreatesNew();
+        $failed += $this->testWaOccupantAcceptAdoptsExistingSession();
+        $failed += $this->testWaOccupantPassSkipsToNextEntry();
+        $failed += $this->testWaOccupantQuitAbortsPickerReturnsZero();
+        $failed += $this->testDeadRegistrySessionIsCleanedAndEntryTakenNormally();
+        $failed += $this->testAliveAttachedSessionIsAutoPassedToNextEntry();
+        $failed += $this->testPassOptionNotOfferedForSingleCandidate();
 
         return $failed;
     }
@@ -2494,6 +2503,691 @@ final class AgentStartCommandTest
         }
 
         echo "OK testForceNewDropsLiveSessionAndCreatesNew\n";
+        return 0;
+    }
+
+    private function testWaOccupantAcceptAdoptsExistingSession(): int
+    {
+        // When the operator chooses Accept for an occupied developer WA, the entry must be
+        // assigned to the existing reviewer session (r99) via review-next, and that session
+        // must be re-attached via driver->resume() rather than a fresh launch.
+        $dir = $this->scratchDir('wa-accept');
+        $boardPath = $dir . '/board.yaml';
+        $worktreesRoot = $dir . '/worktrees';
+        $devWa = $worktreesRoot . '/d04';
+        mkdir($devWa, 0755, true);
+
+        $this->writeBoard($boardPath, [
+            [
+                'kind' => 'feature',
+                'stage' => 'review',
+                'feature' => self::FEATURE_CRYPTO,
+                'agent' => 'd04',
+                'branch' => 'feat/' . self::FEATURE_CRYPTO,
+                'type' => 'feat',
+            ],
+        ]);
+
+        // Existing reviewer r99 occupies d04's WA.
+        $this->writeSessionsJson($dir, [
+            'r99' => [
+                'client' => 'claude',
+                'role' => 'reviewer',
+                'pid' => 99999,
+                'worktree' => $devWa,
+                'started_at' => '2026-01-01T00:00:00+00:00',
+                'last_seen_at' => '2026-01-01T00:00:00+00:00',
+                'session_id' => null,
+            ],
+        ]);
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($dir);
+        $reviewerSelector = new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot);
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        $fakeRunner = new FakeBacklogCommandRunner();
+        $fakeRunner->onReviewNext = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
+            $board = $boardService->loadBoard($boardPath);
+            foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
+                if ($entry->getFeature() === $entryRef) {
+                    $entry->setStage(BacklogBoard::STAGE_REVIEWING);
+                    $entry->setReviewer($reviewerCode);
+                    $boardService->saveBoard($board);
+                    break;
+                }
+            }
+        };
+
+        $driver = new FakeSessionDriver();
+        // r99 is alive and detached → eligible for Accept prompt.
+        $driver->setAlive('r99', true);
+        $driver->setAttached('r99', false);
+        // Allow resume while alive (simulates tmux re-attach behaviour).
+        $driver->setAllowsResumeWhileAlive(true);
+
+        $cmd = new AgentStartCommand(
+            $dir,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
+            $sessionService,
+            new AgentContextBuilder($dir, $boardPath, $boardService),
+            (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor(),
+            $reviewerSelector,
+            new AgentDeveloperSelector($boardService),
+            $boardService,
+            $driver,
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
+            $fakeRunner,
+            new NullEntryRebaseService(),
+            null,
+            $this->buildLaunchPromptResolver(),
+            static fn(AgentSession $existing, BoardEntry $entry, bool $hasMore): WaOccupantChoice => WaOccupantChoice::Accept,
+        );
+
+        $previousCwd = getcwd();
+        try {
+            $cmd->handle(['claude'], ['reviewer' => true, 'code' => 'r01']);
+        } catch (\Throwable $e) {
+            echo "FAIL testWaOccupantAcceptAdoptsExistingSession: unexpected " . get_class($e) . ': ' . $e->getMessage() . "\n";
+            return 1;
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        // review-next must be called with the existing reviewer code (r99), not the new one (r01).
+        if (count($fakeRunner->calls) !== 1 || $fakeRunner->calls[0]['method'] !== 'reviewNext') {
+            echo "FAIL testWaOccupantAcceptAdoptsExistingSession: expected one reviewNext call, got " . json_encode($fakeRunner->calls) . "\n";
+            return 1;
+        }
+        if ($fakeRunner->calls[0]['reviewerCode'] !== 'r99' || $fakeRunner->calls[0]['entryRef'] !== self::FEATURE_CRYPTO) {
+            echo "FAIL testWaOccupantAcceptAdoptsExistingSession: unexpected reviewNext args: " . json_encode($fakeRunner->calls[0]) . "\n";
+            return 1;
+        }
+
+        // The existing session (r99) must be re-attached via resume(), not launch().
+        if ($driver->lastResumeCall === null || $driver->lastResumeCall['agentCode'] !== 'r99') {
+            $code = $driver->lastResumeCall['agentCode'] ?? '<null>';
+            echo "FAIL testWaOccupantAcceptAdoptsExistingSession: expected driver->resume('r99'), got '{$code}'\n";
+            return 1;
+        }
+        if ($driver->lastLaunchCall !== null) {
+            echo "FAIL testWaOccupantAcceptAdoptsExistingSession: driver->launch() must not be called on adopt\n";
+            return 1;
+        }
+
+        echo "OK testWaOccupantAcceptAdoptsExistingSession\n";
+        return 0;
+    }
+
+    private function testWaOccupantPassSkipsToNextEntry(): int
+    {
+        // When the operator chooses Pass for the first entry (occupied WA), the picker must skip
+        // it and claim the second review-stage entry (free WA) via review-next.
+        $dir = $this->scratchDir('wa-pass');
+        $boardPath = $dir . '/board.yaml';
+        $worktreesRoot = $dir . '/worktrees';
+        $devWaD04 = $worktreesRoot . '/d04';
+        $devWaD05 = $worktreesRoot . '/d05';
+        mkdir($devWaD04, 0755, true);
+        mkdir($devWaD05, 0755, true);
+
+        $this->writeBoard($boardPath, [
+            [
+                'kind' => 'feature',
+                'stage' => 'review',
+                'feature' => self::FEATURE_CRYPTO,
+                'agent' => 'd04',
+                'branch' => 'feat/' . self::FEATURE_CRYPTO,
+                'type' => 'feat',
+            ],
+            [
+                'kind' => 'feature',
+                'stage' => 'review',
+                'feature' => self::FEATURE_MY,
+                'agent' => 'd05',
+                'branch' => 'feat/' . self::FEATURE_MY,
+                'type' => 'feat',
+            ],
+        ]);
+
+        // r99 occupies d04's WA.
+        $this->writeSessionsJson($dir, [
+            'r99' => [
+                'client' => 'claude',
+                'role' => 'reviewer',
+                'pid' => 99999,
+                'worktree' => $devWaD04,
+                'started_at' => '2026-01-01T00:00:00+00:00',
+                'last_seen_at' => '2026-01-01T00:00:00+00:00',
+                'session_id' => null,
+            ],
+        ]);
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($dir);
+        $reviewerSelector = new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot);
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        $fakeRunner = new FakeBacklogCommandRunner();
+        $fakeRunner->onReviewNext = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
+            $board = $boardService->loadBoard($boardPath);
+            foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
+                if ($entry->getFeature() === $entryRef) {
+                    $entry->setStage(BacklogBoard::STAGE_REVIEWING);
+                    $entry->setReviewer($reviewerCode);
+                    $boardService->saveBoard($board);
+                    break;
+                }
+            }
+        };
+
+        $driver = new FakeSessionDriver();
+        $driver->setAlive('r99', true);
+        $driver->setAttached('r99', false);
+
+        $cmd = new AgentStartCommand(
+            $dir,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
+            $sessionService,
+            new AgentContextBuilder($dir, $boardPath, $boardService),
+            (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor(),
+            $reviewerSelector,
+            new AgentDeveloperSelector($boardService),
+            $boardService,
+            $driver,
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
+            $fakeRunner,
+            new NullEntryRebaseService(),
+            null,
+            $this->buildLaunchPromptResolver(),
+            static fn(AgentSession $existing, BoardEntry $entry, bool $hasMore): WaOccupantChoice => WaOccupantChoice::Pass,
+        );
+
+        $previousCwd = getcwd();
+        try {
+            $cmd->handle(['claude'], ['reviewer' => true, 'code' => 'r01']);
+        } catch (\Throwable $e) {
+            echo "FAIL testWaOccupantPassSkipsToNextEntry: unexpected " . get_class($e) . ': ' . $e->getMessage() . "\n";
+            return 1;
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        // review-next must be called once with r01 for the second entry (my-feature), not the first.
+        if (count($fakeRunner->calls) !== 1 || $fakeRunner->calls[0]['method'] !== 'reviewNext') {
+            echo "FAIL testWaOccupantPassSkipsToNextEntry: expected one reviewNext call, got " . json_encode($fakeRunner->calls) . "\n";
+            return 1;
+        }
+        if ($fakeRunner->calls[0]['reviewerCode'] !== 'r01' || $fakeRunner->calls[0]['entryRef'] !== self::FEATURE_MY) {
+            echo "FAIL testWaOccupantPassSkipsToNextEntry: unexpected reviewNext args: " . json_encode($fakeRunner->calls[0]) . "\n";
+            return 1;
+        }
+
+        // The second entry's WA must be the launch target.
+        if ($driver->lastLaunchCall === null || $driver->lastLaunchCall['cwd'] !== $devWaD05) {
+            $cwd = $driver->lastLaunchCall['cwd'] ?? '<null>';
+            echo "FAIL testWaOccupantPassSkipsToNextEntry: expected launch on '{$devWaD05}', got '{$cwd}'\n";
+            return 1;
+        }
+
+        echo "OK testWaOccupantPassSkipsToNextEntry\n";
+        return 0;
+    }
+
+    private function testWaOccupantQuitAbortsPickerReturnsZero(): int
+    {
+        // When the operator chooses Quit, the picker must abort immediately, claim no entry,
+        // and handle() must return 0 without launching or resuming any session.
+        $dir = $this->scratchDir('wa-quit');
+        $boardPath = $dir . '/board.yaml';
+        $worktreesRoot = $dir . '/worktrees';
+        $devWa = $worktreesRoot . '/d04';
+        mkdir($devWa, 0755, true);
+
+        $this->writeBoard($boardPath, [
+            [
+                'kind' => 'feature',
+                'stage' => 'review',
+                'feature' => self::FEATURE_CRYPTO,
+                'agent' => 'd04',
+                'branch' => 'feat/' . self::FEATURE_CRYPTO,
+                'type' => 'feat',
+            ],
+        ]);
+
+        $this->writeSessionsJson($dir, [
+            'r99' => [
+                'client' => 'claude',
+                'role' => 'reviewer',
+                'pid' => 99999,
+                'worktree' => $devWa,
+                'started_at' => '2026-01-01T00:00:00+00:00',
+                'last_seen_at' => '2026-01-01T00:00:00+00:00',
+                'session_id' => null,
+            ],
+        ]);
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($dir);
+        $reviewerSelector = new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot);
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        $fakeRunner = new FakeBacklogCommandRunner();
+        $driver = new FakeSessionDriver();
+        $driver->setAlive('r99', true);
+        $driver->setAttached('r99', false);
+
+        $cmd = new AgentStartCommand(
+            $dir,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
+            $sessionService,
+            new AgentContextBuilder($dir, $boardPath, $boardService),
+            (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor(),
+            $reviewerSelector,
+            new AgentDeveloperSelector($boardService),
+            $boardService,
+            $driver,
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
+            $fakeRunner,
+            new NullEntryRebaseService(),
+            null,
+            $this->buildLaunchPromptResolver(),
+            static fn(AgentSession $existing, BoardEntry $entry, bool $hasMore): WaOccupantChoice => WaOccupantChoice::Quit,
+        );
+
+        $previousCwd = getcwd();
+        $exitCode = null;
+        try {
+            $exitCode = $cmd->handle(['claude'], ['reviewer' => true, 'code' => 'r01']);
+        } catch (\Throwable $e) {
+            echo "FAIL testWaOccupantQuitAbortsPickerReturnsZero: unexpected " . get_class($e) . ': ' . $e->getMessage() . "\n";
+            return 1;
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        if ($exitCode !== 0) {
+            echo "FAIL testWaOccupantQuitAbortsPickerReturnsZero: expected exit code 0, got {$exitCode}\n";
+            return 1;
+        }
+        if (!empty($fakeRunner->calls)) {
+            echo "FAIL testWaOccupantQuitAbortsPickerReturnsZero: review-next must not be called on Quit, got " . json_encode($fakeRunner->calls) . "\n";
+            return 1;
+        }
+        if ($driver->lastLaunchCall !== null || $driver->lastResumeCall !== null) {
+            echo "FAIL testWaOccupantQuitAbortsPickerReturnsZero: no driver call expected on Quit\n";
+            return 1;
+        }
+
+        echo "OK testWaOccupantQuitAbortsPickerReturnsZero\n";
+        return 0;
+    }
+
+    private function testDeadRegistrySessionIsCleanedAndEntryTakenNormally(): int
+    {
+        // When the registry has a reviewer session for the target WA but the driver reports
+        // that session as dead, the command must silently remove the registry entry and then
+        // claim the entry normally as a fresh reviewer session (r01).
+        $dir = $this->scratchDir('wa-dead');
+        $boardPath = $dir . '/board.yaml';
+        $worktreesRoot = $dir . '/worktrees';
+        $devWa = $worktreesRoot . '/d04';
+        mkdir($devWa, 0755, true);
+
+        $this->writeBoard($boardPath, [
+            [
+                'kind' => 'feature',
+                'stage' => 'review',
+                'feature' => self::FEATURE_CRYPTO,
+                'agent' => 'd04',
+                'branch' => 'feat/' . self::FEATURE_CRYPTO,
+                'type' => 'feat',
+            ],
+        ]);
+
+        // r99 is in the registry but its driver process is dead (isAlive defaults to false).
+        $this->writeSessionsJson($dir, [
+            'r99' => [
+                'client' => 'claude',
+                'role' => 'reviewer',
+                'pid' => 99999,
+                'worktree' => $devWa,
+                'started_at' => '2026-01-01T00:00:00+00:00',
+                'last_seen_at' => '2026-01-01T00:00:00+00:00',
+                'session_id' => null,
+            ],
+        ]);
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($dir);
+        $reviewerSelector = new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot);
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        $fakeRunner = new FakeBacklogCommandRunner();
+        $fakeRunner->onReviewNext = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
+            $board = $boardService->loadBoard($boardPath);
+            foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
+                if ($entry->getFeature() === $entryRef) {
+                    $entry->setStage(BacklogBoard::STAGE_REVIEWING);
+                    $entry->setReviewer($reviewerCode);
+                    $boardService->saveBoard($board);
+                    break;
+                }
+            }
+        };
+
+        // Driver reports r99 as dead by default (isAlive not set).
+        $driver = new FakeSessionDriver();
+
+        $cmd = new AgentStartCommand(
+            $dir,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
+            $sessionService,
+            new AgentContextBuilder($dir, $boardPath, $boardService),
+            (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor(),
+            $reviewerSelector,
+            new AgentDeveloperSelector($boardService),
+            $boardService,
+            $driver,
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
+            $fakeRunner,
+            new NullEntryRebaseService(),
+            null,
+            $this->buildLaunchPromptResolver(),
+        );
+
+        $previousCwd = getcwd();
+        try {
+            $cmd->handle(['claude'], ['reviewer' => true, 'code' => 'r01']);
+        } catch (\Throwable $e) {
+            echo "FAIL testDeadRegistrySessionIsCleanedAndEntryTakenNormally: unexpected " . get_class($e) . ': ' . $e->getMessage() . "\n";
+            return 1;
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        // r99 must have been removed from the registry.
+        if ($sessionService->get('r99') !== null) {
+            echo "FAIL testDeadRegistrySessionIsCleanedAndEntryTakenNormally: dead session r99 must be removed from registry\n";
+            return 1;
+        }
+
+        // review-next must be called with r01 for the entry.
+        if (count($fakeRunner->calls) !== 1 || $fakeRunner->calls[0]['method'] !== 'reviewNext') {
+            echo "FAIL testDeadRegistrySessionIsCleanedAndEntryTakenNormally: expected one reviewNext call, got " . json_encode($fakeRunner->calls) . "\n";
+            return 1;
+        }
+        if ($fakeRunner->calls[0]['reviewerCode'] !== 'r01' || $fakeRunner->calls[0]['entryRef'] !== self::FEATURE_CRYPTO) {
+            echo "FAIL testDeadRegistrySessionIsCleanedAndEntryTakenNormally: unexpected reviewNext args: " . json_encode($fakeRunner->calls[0]) . "\n";
+            return 1;
+        }
+
+        // The entry must be claimed (launch called on devWa).
+        if ($driver->lastLaunchCall === null || $driver->lastLaunchCall['cwd'] !== $devWa) {
+            $cwd = $driver->lastLaunchCall['cwd'] ?? '<null>';
+            echo "FAIL testDeadRegistrySessionIsCleanedAndEntryTakenNormally: expected launch on '{$devWa}', got '{$cwd}'\n";
+            return 1;
+        }
+
+        echo "OK testDeadRegistrySessionIsCleanedAndEntryTakenNormally\n";
+        return 0;
+    }
+
+    private function testAliveAttachedSessionIsAutoPassedToNextEntry(): int
+    {
+        // When the existing reviewer session is alive and attached to another terminal, the picker
+        // must auto-pass the first entry (no prompt) and claim the second review-stage entry.
+        $dir = $this->scratchDir('wa-attached');
+        $boardPath = $dir . '/board.yaml';
+        $worktreesRoot = $dir . '/worktrees';
+        $devWaD04 = $worktreesRoot . '/d04';
+        $devWaD05 = $worktreesRoot . '/d05';
+        mkdir($devWaD04, 0755, true);
+        mkdir($devWaD05, 0755, true);
+
+        $this->writeBoard($boardPath, [
+            [
+                'kind' => 'feature',
+                'stage' => 'review',
+                'feature' => self::FEATURE_CRYPTO,
+                'agent' => 'd04',
+                'branch' => 'feat/' . self::FEATURE_CRYPTO,
+                'type' => 'feat',
+            ],
+            [
+                'kind' => 'feature',
+                'stage' => 'review',
+                'feature' => self::FEATURE_MY,
+                'agent' => 'd05',
+                'branch' => 'feat/' . self::FEATURE_MY,
+                'type' => 'feat',
+            ],
+        ]);
+
+        // r99 is attached to another terminal in d04's WA.
+        $this->writeSessionsJson($dir, [
+            'r99' => [
+                'client' => 'claude',
+                'role' => 'reviewer',
+                'pid' => 99999,
+                'worktree' => $devWaD04,
+                'started_at' => '2026-01-01T00:00:00+00:00',
+                'last_seen_at' => '2026-01-01T00:00:00+00:00',
+                'session_id' => null,
+            ],
+        ]);
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($dir);
+        $reviewerSelector = new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot);
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        $fakeRunner = new FakeBacklogCommandRunner();
+        $fakeRunner->onReviewNext = static function (string $reviewerCode, string $entryRef) use ($boardService, $boardPath): void {
+            $board = $boardService->loadBoard($boardPath);
+            foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
+                if ($entry->getFeature() === $entryRef) {
+                    $entry->setStage(BacklogBoard::STAGE_REVIEWING);
+                    $entry->setReviewer($reviewerCode);
+                    $boardService->saveBoard($board);
+                    break;
+                }
+            }
+        };
+
+        $driver = new FakeSessionDriver();
+        $driver->setAlive('r99', true);
+        $driver->setAttached('r99', true); // Already attached elsewhere: auto-pass.
+
+        $cmd = new AgentStartCommand(
+            $dir,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
+            $sessionService,
+            new AgentContextBuilder($dir, $boardPath, $boardService),
+            (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor(),
+            $reviewerSelector,
+            new AgentDeveloperSelector($boardService),
+            $boardService,
+            $driver,
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
+            $fakeRunner,
+            new NullEntryRebaseService(),
+            null,
+            $this->buildLaunchPromptResolver(),
+        );
+
+        $previousCwd = getcwd();
+        $output = '';
+        $buffering = false;
+        try {
+            ob_start();
+            $buffering = true;
+            $cmd->handle(['claude'], ['reviewer' => true, 'code' => 'r01']);
+            $output = (string) ob_get_clean();
+            $buffering = false;
+        } catch (\Throwable $e) {
+            if ($buffering && ob_get_level() > 0) {
+                ob_end_clean();
+            }
+            echo "FAIL testAliveAttachedSessionIsAutoPassedToNextEntry: unexpected " . get_class($e) . ': ' . $e->getMessage() . "\n";
+            return 1;
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        // Auto-pass message must mention that r99 is already attached.
+        if (!str_contains($output, 'r99') || !str_contains($output, 'already attached')) {
+            echo "FAIL testAliveAttachedSessionIsAutoPassedToNextEntry: expected auto-pass message for r99, got: {$output}\n";
+            return 1;
+        }
+
+        // The second entry must be claimed (r01 takes my-feature).
+        if (count($fakeRunner->calls) !== 1 || $fakeRunner->calls[0]['entryRef'] !== self::FEATURE_MY) {
+            echo "FAIL testAliveAttachedSessionIsAutoPassedToNextEntry: expected reviewNext for my-feature, got " . json_encode($fakeRunner->calls) . "\n";
+            return 1;
+        }
+
+        if ($driver->lastLaunchCall === null || $driver->lastLaunchCall['cwd'] !== $devWaD05) {
+            $cwd = $driver->lastLaunchCall['cwd'] ?? '<null>';
+            echo "FAIL testAliveAttachedSessionIsAutoPassedToNextEntry: expected launch on '{$devWaD05}', got '{$cwd}'\n";
+            return 1;
+        }
+
+        echo "OK testAliveAttachedSessionIsAutoPassedToNextEntry\n";
+        return 0;
+    }
+
+    private function testPassOptionNotOfferedForSingleCandidate(): int
+    {
+        // When there is only one candidate entry, the conflict prompter must receive
+        // hasMoreCandidates=false so the Pass option is not offered to the operator.
+        $dir = $this->scratchDir('wa-no-pass');
+        $boardPath = $dir . '/board.yaml';
+        $worktreesRoot = $dir . '/worktrees';
+        $devWa = $worktreesRoot . '/d04';
+        mkdir($devWa, 0755, true);
+
+        $this->writeBoard($boardPath, [
+            [
+                'kind' => 'feature',
+                'stage' => 'review',
+                'feature' => self::FEATURE_CRYPTO,
+                'agent' => 'd04',
+                'branch' => 'feat/' . self::FEATURE_CRYPTO,
+                'type' => 'feat',
+            ],
+        ]);
+
+        $this->writeSessionsJson($dir, [
+            'r99' => [
+                'client' => 'claude',
+                'role' => 'reviewer',
+                'pid' => 99999,
+                'worktree' => $devWa,
+                'started_at' => '2026-01-01T00:00:00+00:00',
+                'last_seen_at' => '2026-01-01T00:00:00+00:00',
+                'session_id' => null,
+            ],
+        ]);
+
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $sessionService = new AgentSessionService($dir);
+        $reviewerSelector = new AgentReviewerSelector($boardService, $sessionService, $worktreesRoot);
+        $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
+        $registry = new AgentClientLauncherRegistry();
+        $registry->register($launcher);
+
+        $driver = new FakeSessionDriver();
+        $driver->setAlive('r99', true);
+        $driver->setAttached('r99', false);
+
+        $capturedHasMoreCandidates = null;
+        $prompter = static function (AgentSession $existing, BoardEntry $entry, bool $hasMoreCandidates) use (&$capturedHasMoreCandidates): WaOccupantChoice {
+            $capturedHasMoreCandidates = $hasMoreCandidates;
+            return WaOccupantChoice::Quit;
+        };
+
+        $cmd = new AgentStartCommand(
+            $dir,
+            $worktreesRoot,
+            $boardPath,
+            $registry,
+            new AgentCodeService($worktreesRoot, $boardPath, $boardService, $sessionService),
+            $sessionService,
+            new AgentContextBuilder($dir, $boardPath, $boardService),
+            (new \ReflectionClass(BacklogWorktreeService::class))->newInstanceWithoutConstructor(),
+            $reviewerSelector,
+            new AgentDeveloperSelector($boardService),
+            $boardService,
+            $driver,
+            new FakeProcessSignaler(),
+            new FakeProcessRunner(),
+            new FakeBacklogCommandRunner(),
+            new NullEntryRebaseService(),
+            null,
+            $this->buildLaunchPromptResolver(),
+            $prompter,
+        );
+
+        $previousCwd = getcwd();
+        try {
+            $cmd->handle(['claude'], ['reviewer' => true, 'code' => 'r01']);
+        } catch (\Throwable $e) {
+            echo "FAIL testPassOptionNotOfferedForSingleCandidate: unexpected " . get_class($e) . ': ' . $e->getMessage() . "\n";
+            return 1;
+        } finally {
+            if ($previousCwd !== false) {
+                chdir($previousCwd);
+            }
+        }
+
+        if ($capturedHasMoreCandidates !== false) {
+            echo "FAIL testPassOptionNotOfferedForSingleCandidate: expected hasMoreCandidates=false for single candidate, got "
+                . var_export($capturedHasMoreCandidates, true) . "\n";
+            return 1;
+        }
+
+        echo "OK testPassOptionNotOfferedForSingleCandidate\n";
         return 0;
     }
 
