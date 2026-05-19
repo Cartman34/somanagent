@@ -234,7 +234,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
      *
      * Called at startup so that a previous Ctrl+C / kill before the finally block does not leave
      * stale git worktrees registered for branches like feat/test-plain-feature-alpha, which would
-     * cause the next work-start to fail with "Branch X is active in a non-managed worktree".
+     * cause the next start to fail with "Branch X is active in a non-managed worktree".
      */
     private function sweepStaleTestWorktrees(string $testWorktreesParent): void
     {

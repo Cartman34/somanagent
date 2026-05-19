@@ -51,11 +51,11 @@ final class BacklogEntryRenameCommand extends AbstractBacklogCommand
         if ($isManager) {
             $reference = $this->boardService->sanitizeString($commandArgs[0] ?? null);
             if ($reference === null) {
-                throw new \RuntimeException('entry-rename requires an explicit <entry-ref> when SOMANAGER_ROLE=manager.');
+                throw new \RuntimeException('rename requires an explicit <entry-ref> when SOMANAGER_ROLE=manager.');
             }
             $newText = $this->boardService->sanitizeString(implode(' ', array_slice($commandArgs, 1)));
             if ($newText === null || $newText === '') {
-                throw new \RuntimeException('entry-rename requires a new text as argument.');
+                throw new \RuntimeException('rename requires a new text as argument.');
             }
             $current = $this->boardService->resolveActiveEntryByReference($board, $reference, BacklogCommandName::ENTRY_RENAME->value);
         } else {
@@ -63,7 +63,7 @@ final class BacklogEntryRenameCommand extends AbstractBacklogCommand
         }
 
         if ($newText === null || $newText === '') {
-            throw new \RuntimeException('entry-rename requires a new text as argument.');
+            throw new \RuntimeException('rename requires a new text as argument.');
         }
 
         $entry = $current->getEntry();
@@ -82,7 +82,7 @@ final class BacklogEntryRenameCommand extends AbstractBacklogCommand
             }
         }
 
-        $this->saveBoard($board, BacklogCommandName::ENTRY_RENAME->value);
+        $this->saveBoard($board, BacklogCommandName::RENAME->value);
 
         $this->presenter->displaySuccess(sprintf(
             '%s %s renamed: %s → %s',
@@ -119,7 +119,7 @@ final class BacklogEntryRenameCommand extends AbstractBacklogCommand
         if ($activeEntries === []) {
             throw new \RuntimeException(
                 "Agent {$agent} has no active entry.\n" .
-                "Run `php scripts/backlog.php work-start --agent={$agent}` to start one."
+                "Run `php scripts/backlog.php start --agent={$agent}` to start one."
             );
         }
 

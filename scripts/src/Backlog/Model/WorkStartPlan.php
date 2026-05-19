@@ -11,7 +11,7 @@ use SoManAgent\Script\Backlog\Enum\BacklogTaskType;
 
 /**
  * Immutable plan describing the resolved interpretation of a queued task before any
- * mutation happens during work-start.
+ * mutation happens during start.
  *
  * Built fully from read-only operations (board parsing + Git reads); used to display
  * the planned action under --dry-run and as the source of truth for the executor.

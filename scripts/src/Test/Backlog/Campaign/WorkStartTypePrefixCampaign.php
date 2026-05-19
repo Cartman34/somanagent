@@ -11,9 +11,9 @@ use SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
 
 /**
- * Work-start type prefix campaign.
+ * Start type prefix campaign.
  *
- * Validates that work-start parses task type prefixes ([feat], [fix], [tech]) at any
+ * Validates that start parses task type prefixes ([feat], [fix], [tech]) at any
  * position in the leading bracket sequence, maps each type to the matching branch
  * prefix 1:1, rejects unknown --branch-type values, rejects when the queued feature
  * slug is already active, refuses without leaving any worktree behind, and supports
@@ -40,7 +40,7 @@ final class WorkStartTypePrefixCampaign implements CampaignInterface
             'No mutation performed (--dry-run).',
         ]);
         if ($driver->checkManagedWorktreeExists($primary)) {
-            throw new \RuntimeException('Dry-run work-start must not create a managed worktree.');
+            throw new \RuntimeException('Dry-run start must not create a managed worktree.');
         }
         $driver->assertTodoContains('Tech-leading single feature');
         $driver->removeFirstTodoTask();
@@ -87,7 +87,7 @@ final class WorkStartTypePrefixCampaign implements CampaignInterface
             ['--branch-type=invalid', '--dry-run'],
         );
         if ($driver->checkManagedWorktreeExists($primary)) {
-            throw new \RuntimeException('A refused work-start must not create a managed worktree.');
+            throw new \RuntimeException('A refused start must not create a managed worktree.');
         }
         $driver->assertTodoContains('Plain feature for unknown branch-type test');
         $driver->removeFirstTodoTask();
@@ -105,7 +105,7 @@ final class WorkStartTypePrefixCampaign implements CampaignInterface
             ['--dry-run'],
         );
         if ($driver->checkManagedWorktreeExists($secondary)) {
-            throw new \RuntimeException('A refused work-start must not create a managed worktree for the second agent.');
+            throw new \RuntimeException('A refused start must not create a managed worktree for the second agent.');
         }
         $driver->assertTodoContains('Second feature instance with same slug');
 

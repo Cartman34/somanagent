@@ -67,13 +67,13 @@ Prefer:
 
 Avoid:
 - duplicated string literals such as `'frontend'`, `'backend'`, `'review'`, `'blocked'` repeated in multiple conditions
-- hardcoded CLI command names (`'feature-merge'`, `'entry-merge'`, etc.) or option names (`'body-file'`, `'agent'`) reused at multiple call sites instead of an enum or constant — this is the same rule, applied to command and option identifiers
+- hardcoded CLI command names (`'feature-merge'`, `'merge'`, etc.) or option names (`'body-file'`, `'agent'`) reused at multiple call sites instead of an enum or constant — this is the same rule, applied to command and option identifiers
 - imperative selection code built from many small `if` branches when the behavior is configuration-driven
 - ad hoc inline lists of allowed values repeated in validation and execution paths
 
 Example:
 - prefer a constant like `self::SCOPE_FRONTEND` over a hardcoded `'frontend'`
-- prefer `BacklogCommandName::ENTRY_MERGE->value` over a hardcoded `'entry-merge'` (or `'feature-merge'` for internal traces — extend the enum if the value still needs to exist somewhere)
+- prefer `BacklogCommandName::MERGE->value` over a hardcoded `'merge'` (or `'feature-merge'` for internal traces — extend the enum if the value still needs to exist somewhere)
 - prefer a static map of scope-to-directories over multiple `if ($scope !== ...)` branches
 
 The goal is to keep behavior declarative, reduce drift between validation and execution, and make future changes local and auditable.

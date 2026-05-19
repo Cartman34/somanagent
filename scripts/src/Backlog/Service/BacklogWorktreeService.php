@@ -146,7 +146,7 @@ final class BacklogWorktreeService
         if ($existingPath !== null) {
             if ($this->git->hasLocalChanges($existingPath)) {
                 throw new \RuntimeException(sprintf(
-                    'Feature branch %s is still dirty in worktree %s. Clean it before entry-merge.',
+                    'Feature branch %s is still dirty in worktree %s. Clean it before merge.',
                     $featureBranch,
                     $existingPath,
                 ));

@@ -78,7 +78,7 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
 
         if ($activeEntries !== []) {
             // Allow starting a scoped child task when the agent's only active entry is the parent
-            // feature container for that task (auto-assigned by entry-merge on prior task merge).
+            // feature container for that task (auto-assigned by merge on prior task merge).
             // Only applies when no explicit reference is given; explicit references use the normal guard.
             $allowStart = false;
             if ($explicitReference === null && count($activeEntries) === 1) {
@@ -239,7 +239,7 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
         if ($this->boardService->findParentFeatureEntry($board, $feature) !== null) {
             throw new \RuntimeException(
                 "Feature {$feature} already exists in active entries.\n" .
-                "Use `php scripts/backlog.php work-start --developer={$agent}` only for new features, " .
+                "Use `php scripts/backlog.php start --developer={$agent}` only for new features, " .
                 "or prefix the task as [{$feature}][task-slug] to add a child task instead."
             );
         }
@@ -311,7 +311,7 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
         }
 
         $taskBase = $this->gitService->getBranchHead($featureBranch);
-        $this->worktreeService->requireLocalBranchExists($featureBranch, BacklogCommandName::WORK_START->value);
+        $this->worktreeService->requireLocalBranchExists($featureBranch, BacklogCommandName::START->value);
         $this->worktreeService->checkoutBranchInWorktree($worktree, $branch, true, $featureBranch);
 
         $taskEntry = new BoardEntry($plan->entryText, $first->getExtraLines());

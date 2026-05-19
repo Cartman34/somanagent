@@ -197,7 +197,7 @@ final class BacklogAgentRunner extends AbstractScriptRunner
                     $boardPath,
                     $this->boardService(),
                 ),
-                'sessions' => new AgentSessionsCommand(
+                'agent-history' => new AgentSessionsCommand(
                     $this->console,
                     $this->sessionService(),
                     $this->registry(),

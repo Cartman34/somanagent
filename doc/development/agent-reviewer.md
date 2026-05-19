@@ -17,9 +17,9 @@ The cross-role tooling and path rules in [`agent-workflow.md` — Tools And Path
 - `review-next`
 - `review-notes`
 - `feature-close`
-- `entry-merge`
+- `merge`
 - `entry-create`
-- `task-remove`
+- `entry-remove`
 - `list`
 - `worktree-list`
 - `worktree-clean`
@@ -96,9 +96,9 @@ Rules:
 - Do not interrupt a developer command sequence unless the user explicitly redirects.
 - Do not edit backlog files directly when `entry-create` covers the change.
 
-### `task-remove`
+### `entry-remove`
 
-1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php task-remove <entry-ref>`.
+1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-remove <entry-ref>`.
 2. The reference is the stable `<entry-ref>` shown by `list --stage=todo`.
 3. The script refuses an empty, unknown, or ambiguous reference; rename a colliding queued task or pass the full `<entry-ref>` to disambiguate.
 
@@ -127,7 +127,7 @@ Rules:
 3. Clears any existing review notes for the entry from `local/backlog-review.md`.
 4. Reviewer behavior: transitions the entry from `approved` to `reviewing` and sets `reviewer` to the calling reviewer code.
 5. Non-exclusive: a different reviewer may use `review-reopen` to claim an approved entry even if another reviewer was previously recorded in `reviewer`.
-6. Use `review-reopen` when an approved entry must go through another review cycle — for example when a post-approval finding requires re-evaluation before `entry-merge` is called.
+6. Use `review-reopen` when an approved entry must go through another review cycle — for example when a post-approval finding requires re-evaluation before `merge` is called.
 7. A manager calling with `SOMANAGER_ROLE=manager` instead transitions the entry from `approved` to `review` and clears `reviewer`, putting the entry back in the open queue.
 
 ### `review-notes`
@@ -155,7 +155,7 @@ Rules:
 1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php worktree-clean`.
 2. The script removes only abandoned managed worktrees under `.agent-worktrees/` when they are safe to delete.
 3. Dirty, blocked, or external worktrees are left untouched and must be handled manually.
-4. In the normal workflow, this command is mainly triggered automatically after `feature-close` and `entry-merge`, or manually through `cleanup`.
+4. In the normal workflow, this command is mainly triggered automatically after `feature-close` and `merge`, or manually through `cleanup`.
 
 ### `review-check`
 
@@ -176,7 +176,7 @@ Block on:
 - Obvious functional bug
 - Dead code: methods, functions, properties, classes, or imports declared in the branch (or kept by it) that have no caller or reader anywhere in the codebase. Treat lingering remnants of an earlier refactor the same way as freshly-added dead code. Dead public elements in `scripts/src/` are caught automatically by the PHPStan `unused-public` extension (the mechanical review runs `php scripts/phpstan.php`) — a reviewer does not need to grep manually for these; manual scan remains necessary for imports and for non-public elements.
 - `backend/composer.json`, `scripts/composer.json`, or `frontend/package.json` modified without a matching `meta.dependency-update` on the entry covering the relevant scope(s). Use `php scripts/backlog.php status <entry-ref>` to inspect `meta.dependency-update`; a missing or empty value when a manifest was touched is a blocker.
-- Hardcoded reused literal for a domain identifier — CLI command name (e.g. `'feature-merge'`, `'entry-merge'`), CLI option name (`'body-file'`, `'agent'`, `'type'`), stage, scope, type — repeated at multiple call sites instead of an enum case or class constant. The rule lives in [`conventions.md` — Constants And Static Configuration](../technical/conventions.md#constants-and-static-configuration); apply the same threshold (≥ 2 reuses for a domain identifier without a single source of truth = blocker).
+- Hardcoded reused literal for a domain identifier — CLI command name (e.g. `'feature-merge'`, `'merge'`), CLI option name (`'body-file'`, `'agent'`, `'type'`), stage, scope, type — repeated at multiple call sites instead of an enum case or class constant. The rule lives in [`conventions.md` — Constants And Static Configuration](../technical/conventions.md#constants-and-static-configuration); apply the same threshold (≥ 2 reuses for a domain identifier without a single source of truth = blocker).
 
 Also check:
 
@@ -224,12 +224,12 @@ Also check:
 5. If a PR exists, the script closes it, keeps the remote branch, removes the feature from the local backlog, and clears the related review state.
 6. The script runs `worktree-clean` automatically at the end.
 
-### `entry-merge`
+### `merge`
 
-1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-merge <entry-ref>`.
+1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php merge <entry-ref>`.
 2. Use the stable `<entry-ref>` for the target feature or child task entry.
 3. A feature entry merges into `main`; a child task entry merges locally into its parent feature branch.
-4. Do not use a short task slug with `entry-merge`; `entry-merge <task>` is refused even when the task slug is unique.
+4. Do not use a short task slug with `merge`; `merge <task>` is refused even when the task slug is unique.
 5. The caller context identifies the reviewer. It is not a developer owner lookup.
 6. The command prints the resolved type, target, merge target, and equivalent internal command before running the merge.
 7. Pass `--body-file=<path>` only for feature merges, and only when the existing PR body must be replaced. Omit it to keep the body unchanged.
@@ -272,7 +272,7 @@ Also check:
 
 ### `merge`
 
-1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-merge <entry-ref>`.
+1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php merge <entry-ref>`.
 2. For a feature merge, prepare a final PR body file under `local/tmp/` and pass `--body-file=<path>` only when the PR body must be updated before merge.
 
 ### `cleanup`
@@ -298,7 +298,7 @@ If any subsequent preparation step fails (WA missing and unreconstructable, revi
 
 Once the interactive client process starts, no automatic rollback occurs; the entry remains at `stage=reviewing` until the manager or a backlog command changes it. The launcher also records the client PID (and tmux session name when applicable) in `local/tmp/agent-sessions.json`. The active session driver determines how `stop` and re-attach work: the default tmux driver is SSH-resilient (the client keeps running after a disconnect; `start --code=<rXX>` re-attaches to the detached session; `stop` kills the tmux session), while the direct driver (`BACKLOG_AGENT_SESSION_DRIVER=direct`) uses SIGTERM/SIGKILL and refuses re-attach while the tracked client process is alive. See `doc/development/agent-workflow.md` for the full lifecycle.
 
-**Auto-stop on entry-merge:** when `entry-merge` completes successfully for a feature, both the developer session and the reviewer session are stopped automatically. The session that ran the command receives a deferred self-stop (~3 s delay); the other session is stopped synchronously. Any stop error is printed in the merge output but does not affect the merge result.
+**Auto-stop on merge:** when `merge` completes successfully for a feature, both the developer session and the reviewer session are stopped automatically. The session that ran the command receives a deferred self-stop (~3 s delay); the other session is stopped synchronously. Any stop error is printed in the merge output but does not affect the merge result.
 
 ### Owned reviewing entry reuse
 

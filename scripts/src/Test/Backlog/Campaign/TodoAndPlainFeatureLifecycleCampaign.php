@@ -177,7 +177,7 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
 
         $driver->assertRenameEntryAsManagerWithoutReferenceFails(
             self::MANAGER_AGENT,
-            'entry-rename requires an explicit <entry-ref> when SOMANAGER_ROLE=manager.',
+            'rename requires an explicit <entry-ref> when SOMANAGER_ROLE=manager.',
         );
         $driver->assertBlockFeatureAsManagerWithoutReferenceFails(
             self::MANAGER_AGENT,
@@ -189,7 +189,7 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
         );
         $driver->assertReleaseEntryAsManagerWithoutReferenceFails(
             self::MANAGER_AGENT,
-            'entry-release requires an explicit <entry-ref> when SOMANAGER_ROLE=manager.',
+            'release requires an explicit <entry-ref> when SOMANAGER_ROLE=manager.',
         );
 
         $driver->createTodoTask(sprintf('[%s] Feature for manager override coverage', $feature));
@@ -229,7 +229,7 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
     }
 
     /**
-     * Validates that `work-start <reference>` consumes the explicit target instead of
+     * Validates that `start <reference>` consumes the explicit target instead of
      * the head, and refuses with a clear error when the target does not match any
      * queued entry.
      */
@@ -249,7 +249,7 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
             ['unknown-slug-that-does-not-exist'],
         );
         if ($driver->checkManagedWorktreeExists($context->agentPrimary)) {
-            throw new \RuntimeException('A refused work-start must not create a managed worktree.');
+            throw new \RuntimeException('A refused start must not create a managed worktree.');
         }
         $driver->assertTodoContains($headSlug);
         $driver->assertTodoContains($targetSlug);

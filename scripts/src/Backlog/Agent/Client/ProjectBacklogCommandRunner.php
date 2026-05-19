@@ -82,7 +82,7 @@ final class ProjectBacklogCommandRunner implements BacklogCommandRunner
         [$code, $output] = $this->scriptClient->captureWithExitCodeWithEnv(
             AppScript::BACKLOG,
             ['SOMANAGER_ROLE' => 'developer', 'SOMANAGER_AGENT' => $developerCode],
-            'work-start ' . escapeshellarg($entryRef),
+            'start ' . escapeshellarg($entryRef),
             $this->projectRoot,
         );
 
@@ -91,7 +91,7 @@ final class ProjectBacklogCommandRunner implements BacklogCommandRunner
                 throw new EntryNotReservableException($entryRef, $output);
             }
 
-            throw new \RuntimeException(sprintf("work-start failed (exit %d): %s", $code, $output));
+            throw new \RuntimeException(sprintf("start failed (exit %d): %s", $code, $output));
         }
 
         if ($output !== '') {
@@ -107,7 +107,7 @@ final class ProjectBacklogCommandRunner implements BacklogCommandRunner
         $this->scriptClient->runWithEnv(
             AppScript::BACKLOG,
             ['SOMANAGER_ROLE' => 'developer', 'SOMANAGER_AGENT' => $developerCode],
-            'entry-release ' . escapeshellarg($entryRef),
+            'release ' . escapeshellarg($entryRef),
             $this->projectRoot,
         );
     }

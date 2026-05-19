@@ -97,13 +97,13 @@ Runs the documented local backlog workflow, including feature start/review/merge
 ```bash
 SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php
 SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php base-update my-feature
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php work-start --help
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php work-start my-feature
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php start --help
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php start my-feature
 SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php review-request
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-rename "New description"
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php rename "New description"
 SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=r01 php scripts/backlog.php review-approve my-feature/my-task
 SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php rework my-feature/my-task
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-merge my-feature/my-task
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php merge my-feature/my-task
 SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php worktree-restore --agent d01 --force
 ```
 
@@ -114,13 +114,13 @@ Notes:
 - `--agent` is used only by commands where it identifies a target or explicit lookup, not to repeat the caller
 - `base-update` refreshes the recorded Git base after a rebase; features update `origin/main` before using the merge base with it, and local child tasks default to the merge base with their parent feature branch
 - `worktree-restore` validates copied PHP vendors with `autoload.php` witnesses and can recreate a clean managed worktree with `--force`
-- `work-start` reads the next queued board entry, accepts plain text, the type prefixes `[feat]` / `[fix]` / `[tech]` (case-insensitive, at any position in the leading bracket sequence), a single `[feature-slug]` prefix, and scoped entries like `[feature-slug][task-slug] Task text`, then prints the started task or feature details with the assigned worktree
+- `start` reads the next queued board entry, accepts plain text, the type prefixes `[feat]` / `[fix]` / `[tech]` (case-insensitive, at any position in the leading bracket sequence), a single `[feature-slug]` prefix, and scoped entries like `[feature-slug][task-slug] Task text`, then prints the started task or feature details with the assigned worktree
 - branch prefix matches the type 1:1 (`feat → feat/<slug>`, `fix → fix/<slug>`, `tech → tech/<slug>`); `--branch-type=<feat|fix|tech>` overrides the queued prefix and rejects unknown values
-- `work-start` validates the queued entry fully (type, slugs, conflicts) before any worktree, branch or backlog mutation; a refusal leaves no leftover state. With `--dry-run` it prints the resolved interpretation and performs no Git, worktree or backlog mutation (Git fetch / `origin/main` reads remain enabled)
+- `start` validates the queued entry fully (type, slugs, conflicts) before any worktree, branch or backlog mutation; a refusal leaves no leftover state. With `--dry-run` it prints the resolved interpretation and performs no Git, worktree or backlog mutation (Git fetch / `origin/main` reads remain enabled)
 - child task review stays local; only the parent feature uses the remote PR flow
 - `user-merge` lists all approved entries in board order, shows a preview (commits, diff stat, PR info), and prompts the user interactively (y/n/d/q); no SOMANAGER_ROLE or SOMANAGER_AGENT required; use `--dry-run` for a non-interactive preview
-- `entry-rebase` rebases an active entry branch onto its canonical target and pushes on success: task → parent feature branch (local-only, no push) ; root feature → `origin/main` (fetch + rebase + push with `--force-with-lease`). Prints "Already up to date with <target>" (exit 0) if no rebase is needed, "Rebased on <target> and pushed" (exit 0) on success, or lists conflicting files and exits non-zero on conflict. Use `--dry-run` to check whether a rebase is needed without running it. Prefer this command over raw git rebase for any backlog entry to ensure consistent fetch + rebase + push handling. The agent launcher also uses this service automatically when a developer starts with an approved entry
-- `list` covers all backlog sections (todo queue + all active stages) in a single command. Without flags it prints all entries grouped by stage with a header per stage. Use `--stage=<stage>` (repeatable, or CSV `--stage=todo,review`) to filter to a positive selection of stages. Use `--no-stage=<stage>` (same syntax) to exclude stages from the full list. `--stage` and `--no-stage` are mutually exclusive. Allowed stage values: `todo`, `development`, `review`, `reviewing`, `approved`, `rejected`. Use `--format=<format>` to choose the output format: `default` (rich `- <ref> kind=… developer=… pr=… reviewer=… title=…`), `numbered` (same prefixed `N. `), `ref` (one stable ref per line), `json` (structured array). Absent fields are shown as `none`, never omitted. Use `--flat` (requires exactly one `--stage` value) to suppress stage headers and print entries directly.
+- `rebase` rebases an active entry branch onto its canonical target and pushes on success: task → parent feature branch (local-only, no push) ; root feature → `origin/main` (fetch + rebase + push with `--force-with-lease`). Prints "Already up to date with <target>" (exit 0) if no rebase is needed, "Rebased on <target> and pushed" (exit 0) on success, or lists conflicting files and exits non-zero on conflict. Use `--dry-run` to check whether a rebase is needed without running it. Prefer this command over raw git rebase for any backlog entry to ensure consistent fetch + rebase + push handling. The agent launcher also uses this service automatically when a developer starts with an approved entry
+- `list` covers all backlog sections (todo queue + all active stages) in a single command. Without flags it prints all entries grouped by stage with a header per stage. Use `--stage=<stage>` (repeatable, or CSV `--stage=todo,review`) to filter to a positive selection of stages. Use `--no-stage=<stage>` (same syntax) to exclude stages from the full list. `--stage` and `--no-stage` are mutually exclusive. Allowed stage values: `todo`, `development`, `review`, `reviewing`, `approved`, `rejected`. Use `--format=<format>` to choose the output format: `default` (rich `- <ref> kind=… agent=… pr=… reviewer=… title=…`), `numbered` (same prefixed `N. `), `ref` (one stable ref per line), `json` (structured array). Absent fields are shown as `none`, never omitted. Use `--flat` (requires exactly one `--stage` value) to suppress stage headers and print entries directly.
 - `list` and the list-style active sections of `status` always show `reviewer=<code>` or `reviewer=none` for active entries, including `development`, `review`, `reviewing`, `approved`, and `rejected` stages. Detailed entry output keeps the `Reviewer: <code|none>` line.
 
 ---

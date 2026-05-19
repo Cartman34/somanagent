@@ -99,7 +99,7 @@ final class AgentStartCommand extends AbstractAgentCommand
      * @param SessionDriverInterface $sessionDriver
      * @param ProcessSignaler $signaler Used for liveness checks in attach and ghost-cleanup logic
      * @param ProcessRunner $shellRunner Used to check for local changes in the worktree
-     * @param BacklogCommandRunner $backlogCommandRunner Used to delegate review-next, review-cancel, work-start, and entry-release under the backlog lock
+     * @param BacklogCommandRunner $backlogCommandRunner Used to delegate review-next, review-cancel, start, and release under the backlog lock
      * @param EntryRebaseService $entryRebaseService Handles approved-entry rebase before developer session launch; use NullEntryRebaseService in tests that do not exercise the approved path
      * @param AgentModelResolver|null $modelResolver Resolves role/client model tier and effort into CLI args
      * @param AgentLaunchPromptResolver|null $launchPromptResolver Resolves role-specific initial prompts for auto-picked entries; defaults to the bundled scripts resource
@@ -1276,9 +1276,9 @@ final class AgentStartCommand extends AbstractAgentCommand
     }
 
     /**
-     * Rolls back a work-start transition on best-effort basis via entry-release.
+     * Rolls back a start transition on best-effort basis via release.
      *
-     * Delegates to entry-release via BacklogCommandRunner so the release goes through
+     * Delegates to release via BacklogCommandRunner so the release goes through
      * the same lock and revalidation path as any other backlog mutation.
      * Accepts nullable parameters so callers can pass tracked state directly.
      */

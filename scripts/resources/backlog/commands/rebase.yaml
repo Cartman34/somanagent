@@ -6,9 +6,9 @@ options:
   - name: '--dry-run'
     description: 'Check whether a rebase is needed without executing it'
 examples:
-  - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=d10 php scripts/backlog.php entry-rebase my-feature'
-  - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=d10 php scripts/backlog.php entry-rebase my-feature/my-task'
-  - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=d10 php scripts/backlog.php entry-rebase my-feature --dry-run'
+  - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=d10 php scripts/backlog.php rebase my-feature'
+  - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=d10 php scripts/backlog.php rebase my-feature/my-task'
+  - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=d10 php scripts/backlog.php rebase my-feature --dry-run'
 notes:
   - 'Target branch resolution: task → parent feature branch; root feature → origin/main (fetched first).'
   - 'The command prints `Entry-ref:` and `Branch:` before rebase details; copy `Entry-ref:` for later backlog commands.'

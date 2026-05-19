@@ -58,7 +58,7 @@ final class BacklogCommitGateCommand extends AbstractBacklogCommand
         if ($entry === null) {
             throw new \RuntimeException(sprintf(
                 "❌ Commit blocked: no active backlog entry found for agent %s.\n" .
-                "   Ensure the entry was started via work-start and is still active.",
+                "   Ensure the entry was started via start and is still active.",
                 $agent,
             ));
         }

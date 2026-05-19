@@ -3,7 +3,7 @@ options:
   - name: '--code=<code>'
     description: 'Agent code whose session history to list (required)'
 examples:
-  - 'php scripts/backlog-agent.php sessions --code=d04'
+  - 'php scripts/backlog-agent.php agent-history --code=d04'
 notes:
   - '--code is required.'
   - 'Reads past CLI sessions from the client-specific session store in the agent WA.'

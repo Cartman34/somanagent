@@ -66,7 +66,7 @@ final class AgentDeveloperSelector
     /**
      * Auto-picks and reserves the first available queued task by looping the todo list.
      *
-     * For each candidate, attempts work-start via the runner. An {@see EntryNotReservableException}
+     * For each candidate, attempts start via the runner. An {@see EntryNotReservableException}
      * (entry claimed between read and mutation by a concurrent launch) is silently skipped.
      * Any other exception propagates immediately. Returns null when the list is exhausted.
      *

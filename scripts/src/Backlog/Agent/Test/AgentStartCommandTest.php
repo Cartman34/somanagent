@@ -1166,7 +1166,7 @@ final class AgentStartCommandTest
     private function testDeveloperAutoPicksFirstQueuedTask(): int
     {
         // When the developer has no active entry and the todo has a queued task,
-        // start --developer must call work-start with the task's entry ref.
+        // start --developer must call start with the task's entry ref.
         $projectRoot = $this->createGitProject('dev-auto-pick');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
         $boardPath = BacklogPaths::boardPath($projectRoot);
@@ -1225,11 +1225,11 @@ final class AgentStartCommandTest
             }
         }
         if ($workStartCall === null) {
-            echo "FAIL testDeveloperAutoPicksFirstQueuedTask: work-start was not called\n";
+            echo "FAIL testDeveloperAutoPicksFirstQueuedTask: start was not called\n";
             return 1;
         }
         if ($workStartCall['developerCode'] !== 'd08' || $workStartCall['entryRef'] !== self::FEATURE_MY) {
-            echo "FAIL testDeveloperAutoPicksFirstQueuedTask: unexpected work-start args: "
+            echo "FAIL testDeveloperAutoPicksFirstQueuedTask: unexpected start args: "
                 . json_encode($workStartCall) . "\n";
             return 1;
         }
@@ -1247,7 +1247,7 @@ final class AgentStartCommandTest
     private function testDeveloperRefusesWhenTodoEmpty(): int
     {
         // When the todo list is empty and the developer has no active entry,
-        // start --developer must refuse with a clear error and must not call work-start.
+        // start --developer must refuse with a clear error and must not call start.
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         $sessionService = new AgentSessionService($this->tmpDir);
         $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
@@ -1292,7 +1292,7 @@ final class AgentStartCommandTest
         }
         foreach ($fakeRunner->calls as $call) {
             if ($call['method'] === 'workStart') {
-                echo "FAIL testDeveloperRefusesWhenTodoEmpty: work-start must not be called\n";
+                echo "FAIL testDeveloperRefusesWhenTodoEmpty: start must not be called\n";
                 return 1;
             }
         }
@@ -1303,7 +1303,7 @@ final class AgentStartCommandTest
 
     private function testDeveloperSkipsAutoPickWhenAlreadyHasActiveEntry(): int
     {
-        // When the developer already has an active entry, start must not call work-start.
+        // When the developer already has an active entry, start must not call start again.
         $projectRoot = $this->createGitProject('dev-skip-pick');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
         $boardPath = BacklogPaths::boardPath($projectRoot);
@@ -1364,7 +1364,7 @@ final class AgentStartCommandTest
 
         foreach ($fakeRunner->calls as $call) {
             if ($call['method'] === 'workStart') {
-                echo "FAIL testDeveloperSkipsAutoPickWhenAlreadyHasActiveEntry: work-start must not be called when entry already active\n";
+                echo "FAIL testDeveloperSkipsAutoPickWhenAlreadyHasActiveEntry: start must not be called when entry already active\n";
                 return 1;
             }
         }
@@ -1381,7 +1381,7 @@ final class AgentStartCommandTest
 
     private function testDeveloperRollsBackViaEntryReleaseWhenPreparationFails(): int
     {
-        // When launcher.prepareWorktree() fails after work-start succeeded, the command
+        // When launcher.prepareWorktree() fails after start succeeded, the command
         // must call BacklogCommandRunner::entryRelease() to roll back the taken task.
         $projectRoot = $this->createGitProject('dev-rollback');
         $worktreesRoot = $projectRoot . '/.agent-worktrees';
@@ -1446,11 +1446,11 @@ final class AgentStartCommandTest
             }
         }
         if ($releaseCall === null) {
-            echo "FAIL testDeveloperRollsBackViaEntryReleaseWhenPreparationFails: entry-release was not called\n";
+            echo "FAIL testDeveloperRollsBackViaEntryReleaseWhenPreparationFails: release was not called\n";
             return 1;
         }
         if ($releaseCall['developerCode'] !== 'd10' || $releaseCall['entryRef'] !== self::FEATURE_ROLLBACK) {
-            echo "FAIL testDeveloperRollsBackViaEntryReleaseWhenPreparationFails: unexpected entry-release args: "
+            echo "FAIL testDeveloperRollsBackViaEntryReleaseWhenPreparationFails: unexpected release args: "
                 . json_encode($releaseCall) . "\n";
             return 1;
         }

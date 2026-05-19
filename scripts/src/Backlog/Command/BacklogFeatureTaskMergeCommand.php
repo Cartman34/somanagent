@@ -61,7 +61,7 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
     public function handle(array $commandArgs, array $options): void
     {
         throw new \RuntimeException(
-            'feature-task-merge is no longer a public command. Use: php scripts/backlog.php entry-merge <entry-ref> --agent=<reviewer>',
+            'feature-task-merge is no longer a public command. Use: php scripts/backlog.php merge <entry-ref> --agent=<reviewer>',
         );
     }
 

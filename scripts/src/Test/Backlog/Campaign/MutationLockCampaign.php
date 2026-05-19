@@ -44,19 +44,19 @@ final class MutationLockCampaign implements CampaignInterface
         $context->recordLocalBranch('feat/' . self::FEATURE_ALPHA);
         $context->recordLocalBranch('feat/' . self::FEATURE_BETA);
 
-        // Launch both work-start commands concurrently. With the lock both must complete
+        // Launch both start commands concurrently. With the lock both must complete
         // without corrupting the board. Without the lock they would race on the queued tasks
         // and both might consume the first task, leaving the board inconsistent.
         [[$codeAlpha, $outAlpha], [$codeBeta, $outBeta]] = $driver->runTwoConcurrentBacklog(
-            [BacklogCommandName::WORK_START->value],
-            [BacklogCommandName::WORK_START->value],
+            [BacklogCommandName::START->value],
+            [BacklogCommandName::START->value],
             ['SOMANAGER_AGENT' => $agentAlpha],
             ['SOMANAGER_AGENT' => $agentBeta],
         );
 
         if ($codeAlpha !== 0) {
             throw new \RuntimeException(sprintf(
-                'Concurrent work-start for %s failed (exit %d): %s',
+                'Concurrent start for %s failed (exit %d): %s',
                 $agentAlpha,
                 $codeAlpha,
                 $outAlpha,
@@ -65,7 +65,7 @@ final class MutationLockCampaign implements CampaignInterface
 
         if ($codeBeta !== 0) {
             throw new \RuntimeException(sprintf(
-                'Concurrent work-start for %s failed (exit %d): %s',
+                'Concurrent start for %s failed (exit %d): %s',
                 $agentBeta,
                 $codeBeta,
                 $outBeta,
@@ -100,7 +100,7 @@ final class MutationLockCampaign implements CampaignInterface
 
         if (!$straightOk && !$crossedOk) {
             throw new \RuntimeException(sprintf(
-                "Concurrent work-start produced unexpected feature distribution.\nAgent alpha output: %s\nAgent beta output: %s",
+                "Concurrent start produced unexpected feature distribution.\nAgent alpha output: %s\nAgent beta output: %s",
                 $outAlpha,
                 $outBeta,
             ));
