@@ -18,6 +18,7 @@ use SoManAgent\Script\Backlog\Agent\Service\AgentLaunchPromptResolver;
 use SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Backlog\BacklogPaths;
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
@@ -36,17 +37,26 @@ final class AgentWatchModeTest
 {
     private string $tmpDir;
 
+    /**
+     * Sets up a temporary directory for test fixtures.
+     */
     public function __construct()
     {
         $this->tmpDir = sys_get_temp_dir() . '/backlog-agent-watch-test-' . uniqid('', true);
         mkdir($this->tmpDir, 0755, true);
     }
 
+    /**
+     * Removes the temporary directory created by the constructor.
+     */
     public function __destruct()
     {
         $this->rmdir($this->tmpDir);
     }
 
+    /**
+     * Runs all watch-mode test cases and returns the failure count.
+     */
     public function run(): int
     {
         $failed = 0;
@@ -66,9 +76,10 @@ final class AgentWatchModeTest
 
     private function testDeveloperWatchClaimsTodoAndLaunches(): int
     {
+        $featureSlug = 'todo-feature';
         $fixture = $this->makeFixture('developer-watch');
         $this->writeBoard($fixture['boardPath'], [], [
-            ['feature' => 'todo-feature', 'type' => 'tech', 'title' => 'Todo feature'],
+            ['feature' => $featureSlug, 'type' => 'tech', 'title' => 'Todo feature'],
         ]);
         $runner = new FakeBacklogCommandRunner();
         $runner->onWorkStart = function (string $developerCode, string $entryRef) use ($fixture): void {
@@ -80,13 +91,13 @@ final class AgentWatchModeTest
         $driver = new FakeSessionDriver();
         $cmd = $this->buildCommand($fixture, $launcher, $runner, $driver);
 
-        $result = $this->runCommand($fixture['projectRoot'], $cmd, ['claude'], ['developer' => true, 'watch' => true, 'watch-interval' => '0', 'code' => 'd10']);
+        $result = $this->runCommand($fixture['projectRoot'], $cmd, ['claude'], ['developer' => true, 'watch' => true, BacklogCliOption::WATCH_INTERVAL->value => '0', 'code' => 'd10']);
         if ($result !== 0 || $driver->lastLaunchCall === null || $driver->lastLaunchCall['agentCode'] !== 'd10') {
             echo "FAIL testDeveloperWatchClaimsTodoAndLaunches: expected d10 launch, result {$result}\n";
             return 1;
         }
-        if (($runner->calls[0]['method'] ?? '') !== 'workStart' || ($runner->calls[0]['entryRef'] ?? '') !== 'todo-feature') {
-            echo "FAIL testDeveloperWatchClaimsTodoAndLaunches: expected workStart(todo-feature)\n";
+        if (($runner->calls[0]['method'] ?? '') !== 'workStart' || ($runner->calls[0]['entryRef'] ?? '') !== $featureSlug) {
+            echo "FAIL testDeveloperWatchClaimsTodoAndLaunches: expected workStart({$featureSlug})\n";
             return 1;
         }
 
@@ -96,9 +107,10 @@ final class AgentWatchModeTest
 
     private function testReviewerWatchClaimsReviewAndLaunches(): int
     {
+        $featureSlug = 'review-feature';
         $fixture = $this->makeFixture('reviewer-watch');
         $this->writeBoard($fixture['boardPath'], [
-            ['kind' => 'feature', 'stage' => 'review', 'feature' => 'review-feature', 'agent' => 'd20', 'branch' => 'tech/review-feature', 'type' => 'tech'],
+            ['kind' => 'feature', 'stage' => 'review', 'feature' => $featureSlug, 'agent' => 'd20', 'branch' => 'tech/' . $featureSlug, 'type' => 'tech'],
         ]);
         $this->addWorktree($fixture['projectRoot'], $fixture['worktreesRoot'] . '/d20');
         $runner = new FakeBacklogCommandRunner();
@@ -111,13 +123,13 @@ final class AgentWatchModeTest
         $driver = new FakeSessionDriver();
         $cmd = $this->buildCommand($fixture, $launcher, $runner, $driver);
 
-        $result = $this->runCommand($fixture['projectRoot'], $cmd, ['claude'], ['reviewer' => true, 'watch' => true, 'watch-interval' => '0', 'code' => 'r10']);
+        $result = $this->runCommand($fixture['projectRoot'], $cmd, ['claude'], ['reviewer' => true, 'watch' => true, BacklogCliOption::WATCH_INTERVAL->value => '0', 'code' => 'r10']);
         if ($result !== 0 || $driver->lastLaunchCall === null || $driver->lastLaunchCall['agentCode'] !== 'r10') {
             echo "FAIL testReviewerWatchClaimsReviewAndLaunches: expected r10 launch, result {$result}\n";
             return 1;
         }
-        if (($runner->calls[0]['method'] ?? '') !== 'reviewNext' || ($runner->calls[0]['entryRef'] ?? '') !== 'review-feature') {
-            echo "FAIL testReviewerWatchClaimsReviewAndLaunches: expected reviewNext(review-feature)\n";
+        if (($runner->calls[0]['method'] ?? '') !== 'reviewNext' || ($runner->calls[0]['entryRef'] ?? '') !== $featureSlug) {
+            echo "FAIL testReviewerWatchClaimsReviewAndLaunches: expected reviewNext({$featureSlug})\n";
             return 1;
         }
 
@@ -164,7 +176,7 @@ final class AgentWatchModeTest
         $driver->setAlive('d40', true);
         $cmd = $this->buildCommand($fixture, new FakeAgentClientLauncher(AgentClient::CLAUDE), $runner, $driver);
 
-        $this->runCommand($fixture['projectRoot'], $cmd, ['claude'], ['developer' => true, 'watch' => true, 'watch-interval' => '0', 'code' => 'd41']);
+        $this->runCommand($fixture['projectRoot'], $cmd, ['claude'], ['developer' => true, 'watch' => true, BacklogCliOption::WATCH_INTERVAL->value => '0', 'code' => 'd41']);
         if (($runner->calls[0]['entryRef'] ?? '') !== 'free') {
             echo "FAIL testWatchSkipsTodoAlreadyOwnedByLiveSession: expected free to be claimed\n";
             return 1;
@@ -192,7 +204,7 @@ final class AgentWatchModeTest
             ]);
         };
         $cmd = $this->buildCommand($fixture, new FakeAgentClientLauncher(AgentClient::CLAUDE), $runner, new FakeSessionDriver());
-        $this->runCommand($fixture['projectRoot'], $cmd, ['claude'], ['developer' => true, 'watch' => true, 'watch-interval' => '0', 'code' => 'd50']);
+        $this->runCommand($fixture['projectRoot'], $cmd, ['claude'], ['developer' => true, 'watch' => true, BacklogCliOption::WATCH_INTERVAL->value => '0', 'code' => 'd50']);
         if ($attempts !== 2) {
             echo "FAIL testWatchRetriesAfterContention: expected 2 attempts, got {$attempts}\n";
             return 1;
@@ -227,7 +239,7 @@ final class AgentWatchModeTest
             }
         };
         $cmd = $this->buildCommand($fixture, new FakeAgentClientLauncher(AgentClient::CLAUDE), $runner, $driver);
-        $result = $this->runCommand($fixture['projectRoot'], $cmd, ['claude'], ['developer' => true, 'watch' => true, 'loop' => true, 'watch-interval' => '0']);
+        $result = $this->runCommand($fixture['projectRoot'], $cmd, ['claude'], ['developer' => true, 'watch' => true, 'loop' => true, BacklogCliOption::WATCH_INTERVAL->value => '0']);
         if ($result !== 7 || $claims !== 2) {
             echo "FAIL testLoopRestartsAfterCleanExitAndStopsOnError: result={$result}, claims={$claims}\n";
             return 1;
@@ -274,7 +286,7 @@ final class AgentWatchModeTest
         unset($_SERVER['LC_ALL'], $_SERVER['LC_CTYPE']);
         $_SERVER['LANG'] = 'C';
         $cmd = $this->buildCommand($fixture, new FakeAgentClientLauncher(AgentClient::CLAUDE), $runner, new FakeSessionDriver());
-        $output = $this->captureCommand($fixture['projectRoot'], $cmd, ['claude'], ['developer' => true, 'watch' => true, 'watch-interval' => '0', 'code' => 'd80']);
+        $output = $this->captureCommand($fixture['projectRoot'], $cmd, ['claude'], ['developer' => true, 'watch' => true, BacklogCliOption::WATCH_INTERVAL->value => '0', 'code' => 'd80']);
         if ($oldLang === null) {
             unset($_SERVER['LANG']);
         } else {
@@ -320,7 +332,7 @@ final class AgentWatchModeTest
         };
         $driver = new FakeSessionDriver();
         $cmd = $this->buildCommand($fixture, new FakeAgentClientLauncher(AgentClient::CLAUDE), $runner, $driver);
-        $this->runCommand($fixture['projectRoot'], $cmd, ['claude'], ['watch' => true, 'watch-interval' => '0']);
+        $this->runCommand($fixture['projectRoot'], $cmd, ['claude'], ['watch' => true, BacklogCliOption::WATCH_INTERVAL->value => '0']);
 
         if ($driver->lastLaunchCall === null || $driver->lastLaunchCall['agentCode'] !== $expectedCode || ($runner->calls[0]['method'] ?? '') !== $expectedMethod) {
             echo "FAIL {$testName}: expected {$expectedMethod} with {$expectedCode}\n";
