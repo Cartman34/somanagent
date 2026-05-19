@@ -593,7 +593,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         }
 
         $entry = $match->getEntry();
-        $devCode = $entry->getAgent() ?? '';
+        $devCode = $entry->getDeveloper() ?? '';
         if ($devCode === '') {
             throw new \RuntimeException('Cannot determine developer agent code for the claimed review entry.');
         }
@@ -627,7 +627,7 @@ final class AgentStartCommand extends AbstractAgentCommand
     private function tryWatchDeveloperClaim(BacklogBoard $board, string $developerCode): ?string
     {
         foreach ($board->getEntries(BacklogBoard::SECTION_TODO) as $entry) {
-            if ($entry->getAgent() !== null) {
+            if ($entry->getDeveloper() !== null) {
                 continue;
             }
 
@@ -662,7 +662,7 @@ final class AgentStartCommand extends AbstractAgentCommand
             }
 
             $entryRef = $this->buildEntryRef($entry);
-            $devCode = $entry->getAgent() ?? '';
+            $devCode = $entry->getDeveloper() ?? '';
             if ($devCode !== '' && $this->isWorktreeUsedByLiveReviewerSession($this->reviewerSelector->devCodeToWorktree($devCode))) {
                 continue;
             }
@@ -690,8 +690,8 @@ final class AgentStartCommand extends AbstractAgentCommand
             if ($this->buildEntryRef($entry) !== $entryRef) {
                 continue;
             }
-            if ($entry->getAgent() !== null) {
-                $agentCodes[] = $entry->getAgent();
+            if ($entry->getDeveloper() !== null) {
+                $agentCodes[] = $entry->getDeveloper();
             }
         }
 
