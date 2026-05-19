@@ -3056,15 +3056,12 @@ final class AgentStartCommandTest
 
         $previousCwd = getcwd();
         $output = '';
-        $buffering = false;
         try {
             ob_start();
-            $buffering = true;
             $cmd->handle(['claude'], ['reviewer' => true, 'code' => 'r01']);
             $output = (string) ob_get_clean();
-            $buffering = false;
         } catch (\Throwable $e) {
-            if ($buffering && ob_get_level() > 0) {
+            if (ob_get_level() > 0) {
                 ob_end_clean();
             }
             echo "FAIL testAliveAttachedSessionIsAutoPassedToNextEntry: unexpected " . get_class($e) . ': ' . $e->getMessage() . "\n";
