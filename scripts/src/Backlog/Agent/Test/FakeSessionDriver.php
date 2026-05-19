@@ -44,6 +44,8 @@ final class FakeSessionDriver implements SessionDriverInterface
     private bool $dependencyCheckPasses = true;
 
     private int $nextExitCode = 0;
+    /** @var list<int> */
+    private array $exitCodeQueue = [];
     private int $nextClientPid = 12345;
 
     /** @var array{agentCode: string, bin: string, args: list<string>, cwd: string}|null */
@@ -63,6 +65,14 @@ final class FakeSessionDriver implements SessionDriverInterface
      * @var (\Closure(): void)|null
      */
     public ?\Closure $onLaunchHook = null;
+
+    /**
+     * @param list<int> $exitCodes
+     */
+    public function setExitCodeQueue(array $exitCodes): void
+    {
+        $this->exitCodeQueue = $exitCodes;
+    }
 
     /**
      * Controls whether isAlive() returns true for the given agent code.
@@ -143,7 +153,7 @@ final class FakeSessionDriver implements SessionDriverInterface
             ($this->onLaunchHook)();
         }
 
-        return $this->nextExitCode;
+        return array_shift($this->exitCodeQueue) ?? $this->nextExitCode;
     }
 
     /**
@@ -154,7 +164,7 @@ final class FakeSessionDriver implements SessionDriverInterface
         $this->lastResumeCall = ['agentCode' => $agentCode, 'bin' => $bin, 'args' => $args, 'cwd' => $cwd];
         $onSpawned($this->nextClientPid, null);
 
-        return $this->nextExitCode;
+        return array_shift($this->exitCodeQueue) ?? $this->nextExitCode;
     }
 
     /**

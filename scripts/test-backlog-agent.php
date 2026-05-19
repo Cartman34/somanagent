@@ -23,6 +23,7 @@ use SoManAgent\Script\Backlog\Agent\Test\AgentSessionsCommandTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentLaunchPromptResolverTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentStartCommandManagerTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentStartCommandTest;
+use SoManAgent\Script\Backlog\Agent\Test\AgentWatchModeTest;
 use SoManAgent\Script\Backlog\Agent\Test\EntryRebaseCommandTest;
 use SoManAgent\Script\Backlog\Agent\Test\EntryRebaseServiceTest;
 use SoManAgent\Script\Backlog\Agent\Test\AgentStatusCommandTest;
@@ -96,6 +97,7 @@ $suites = [
 
     'AgentLaunchPromptResolverTest' => static fn(): int => (new AgentLaunchPromptResolverTest())->run(),
     'AgentStartCommandTest' => static fn(): int => (new AgentStartCommandTest())->run(),
+    'AgentWatchModeTest' => static fn(): int => (new AgentWatchModeTest())->run(),
     'EntryRebaseServiceTest' => static fn(): int => (new EntryRebaseServiceTest())->run(),
     'EntryRebaseCommandTest' => static fn(): int => (new EntryRebaseCommandTest())->run(),
     'AgentListCommandTest' => static fn(): int => (new AgentListCommandTest())->run(),

@@ -83,6 +83,10 @@ Default model profile is `balanced+medium`. The operator may override it with `-
 
 **Auto-pick at start:** when the developer has no active entry, `start` automatically calls `work-start` on the first queued task and injects that entry into the generated context. If the entry was concurrently claimed by another agent between the read and the mutation, `start` silently moves to the next candidate in the todo list — the retry is bounded by the list length and never blocks. If the developer already has an active entry (e.g. after a session disconnect), `start` resumes that entry without consuming anything from the todo queue.
 
+**Watch mode:** `php scripts/backlog-agent.php start <client> --developer --watch` keeps the launcher open until an unassigned `todo` entry is available. The wait line is rendered on one terminal line as `Watching for work...` with a spinner; the poll interval is 3 seconds by default and can be changed with `--watch-interval=<seconds>`. Claims still go through `work-start`, so the backlog lock and contention handling stay centralised in `backlog.php`; if another process wins the claim, watch silently returns to polling.
+
+**Loop mode:** `--loop` is valid only with `--watch`. After a clean client exit, the launcher forgets the previous cycle and watches again, including role/code allocation. If the client exits non-zero, the launcher exits non-zero instead of chaining another session.
+
 **`start` is the single entry point.** When `--code=<dXX>` is passed and a session entry already exists, `start` inspects the real state and dispatches automatically: live session (driver alive + WA present) → re-attach; ghost session (driver dead or WA absent) → silent cleanup then create; `--force-new` → drop live session then create.
 
 Supported clients:

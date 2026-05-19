@@ -218,6 +218,9 @@ Sessions for developer, reviewer, and manager agents are launched by the operato
   - **reviewer**: if no owned reviewing entry, the launcher claims a review-stage entry via `review-next <entry-ref>` after resolving the intended target; if the reviewer already owns a reviewing entry, that entry is reused.
   - **manager**: no auto-pick; runs in WP directly.
   - `start --code=<code>` **never** auto-picks when re-attaching: it reconnects to the existing session without touching the backlog queue.
+- can be started with `--watch` for developer or reviewer roles. In watch mode the launcher polls the board without taking the backlog lock, renders a single-line `Watching for work...` spinner, and launches no client until it successfully claims a target through the existing `work-start` or `review-next` mutation path. The default poll interval is 3 seconds and can be changed with `--watch-interval=<seconds>`.
+- can be started as `start <client> --watch` without a role. The launcher then watches both minimal queues: unassigned `todo` entries for developer work and unclaimed `review` entries for reviewer work. If both exist on the same tick, reviewer work wins because it is further along the workflow.
+- supports `--loop` only with `--watch`. A clean client exit returns to the watch loop with no role or code carried over from the previous cycle. A non-zero client exit stops the loop and returns that error.
 - generates `<WA>/local/agent-context.md` with the current task (or current review for reviewer), allowed commands, backlog vocabulary, and identification instructions
 - injects the env vars below into the CLI process
 - spawns the AI client via the active **session driver** and records its real PID (and tmux session name when applicable) in `local/tmp/agent-sessions.json` so `stop` can terminate the actual client, not only the PHP wrapper
