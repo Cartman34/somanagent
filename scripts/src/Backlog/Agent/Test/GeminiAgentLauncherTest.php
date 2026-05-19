@@ -18,6 +18,14 @@ use SoManAgent\Script\Backlog\BacklogPaths;
  */
 final class GeminiAgentLauncherTest
 {
+    private const RESUME_SESSION_ID = 'session-abc';
+
+    private const SESSION_ID_X = 'session-x';
+
+    private const SESSION_ID_FIRST = 'sess-1';
+
+    private const LATEST_SESSION_ID = 'latest-session';
+
     private string $tmpDir;
 
     /**
@@ -169,9 +177,9 @@ final class GeminiAgentLauncherTest
     {
         $launcher = new GeminiAgentLauncher($this->makeProcessRunner(true), $this->tmpDir);
 
-        [$bin, $args] = $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, 'session-abc');
+        [$bin, $args] = $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, self::RESUME_SESSION_ID);
 
-        if ($bin !== 'gemini' || $args !== ['--approval-mode', 'auto_edit', '--skip-trust', '-r', 'session-abc']) {
+        if ($bin !== 'gemini' || $args !== ['--approval-mode', 'auto_edit', '--skip-trust', '-r', self::RESUME_SESSION_ID]) {
             echo "FAIL testBuildLaunchCommandResumeId: expected permission flags + ['-r', 'session-abc']\n";
             return 1;
         }
@@ -187,7 +195,7 @@ final class GeminiAgentLauncherTest
         foreach ([
             'initial' => $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER),
             'continue' => $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, null, true),
-            'resume' => $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, 'session-x'),
+            'resume' => $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, self::SESSION_ID_X),
         ] as $mode => [, $args]) {
             if (!in_array('--approval-mode', $args, true) || !in_array('auto_edit', $args, true) || !in_array('--skip-trust', $args, true)) {
                 echo "FAIL testBuildLaunchCommandIncludesPermissionFlags ($mode): --approval-mode auto_edit --skip-trust missing\n";
@@ -206,7 +214,7 @@ final class GeminiAgentLauncherTest
         foreach ([
             'initial' => $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER),
             'continue' => $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, null, true),
-            'resume' => $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, 'session-x'),
+            'resume' => $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, self::SESSION_ID_X),
         ] as $mode => [, $args]) {
             $idx = array_search('--include-directories', $args, true);
             if ($idx === false || ($args[$idx + 1] ?? null) !== BacklogPaths::directory('/wp-root')) {
@@ -242,7 +250,7 @@ final class GeminiAgentLauncherTest
     private function testListSessionsFromJsonOutput(): int
     {
         $jsonOutput = json_encode([
-            ['id' => 'sess-1', 'created_at' => '2026-05-02T09:00:00+00:00', 'message_count' => 4],
+            ['id' => self::SESSION_ID_FIRST, 'created_at' => '2026-05-02T09:00:00+00:00', 'message_count' => 4],
             ['id' => 'sess-2', 'created_at' => '2026-05-01T08:00:00+00:00', 'message_count' => 2],
         ]);
         assert(is_string($jsonOutput));
@@ -250,7 +258,7 @@ final class GeminiAgentLauncherTest
 
         $sessions = $launcher->listSessions('/fake-worktree');
 
-        if (count($sessions) !== 2 || $sessions[0]->id !== 'sess-1' || $sessions[0]->messageCount !== 4) {
+        if (count($sessions) !== 2 || $sessions[0]->id !== self::SESSION_ID_FIRST || $sessions[0]->messageCount !== 4) {
             echo "FAIL testListSessionsFromJsonOutput: unexpected sessions\n";
             return 1;
         }
@@ -326,12 +334,12 @@ final class GeminiAgentLauncherTest
 
     private function testCaptureCurrentSessionIdReturnsFirstFromList(): int
     {
-        $tableOutput = "latest-session   2026-05-03T12:00:00Z\nolder-session    2026-05-01T09:00:00Z";
+        $tableOutput = self::LATEST_SESSION_ID . "   2026-05-03T12:00:00Z\nolder-session    2026-05-01T09:00:00Z";
         $launcher = new GeminiAgentLauncher($this->makeProcessRunner(true, $tableOutput), $this->tmpDir);
 
         $id = $launcher->captureCurrentSessionId('/fake-worktree');
 
-        if ($id !== 'latest-session') {
+        if ($id !== self::LATEST_SESSION_ID) {
             echo "FAIL testCaptureCurrentSessionIdReturnsFirstFromList: expected 'latest-session', got " . var_export($id, true) . "\n";
             return 1;
         }

@@ -18,6 +18,10 @@ use SoManAgent\Script\Backlog\BacklogPaths;
  */
 final class OpenCodeAgentLauncherTest
 {
+    private const MODEL_NAME = 'gpt-4';
+
+    private const RESUME_SESSION_ID = 'session-abc';
+
     private string $tmpDir;
 
     /**
@@ -195,13 +199,13 @@ final class OpenCodeAgentLauncherTest
         $worktree = $this->makeWorktree('preserve');
         file_put_contents(
             $worktree . '/opencode.json',
-            json_encode(['model' => 'gpt-4', 'theme' => 'dark', 'instructions' => []]) . "\n",
+            json_encode(['model' => self::MODEL_NAME, 'theme' => 'dark', 'instructions' => []]) . "\n",
         );
         $launcher = new OpenCodeAgentLauncher($this->makeProcessRunner(true));
         $launcher->prepareWorktree($worktree, $worktree . '/local/agent-context.md');
 
         $data = json_decode((string) file_get_contents($worktree . '/opencode.json'), true);
-        if (($data['model'] ?? null) !== 'gpt-4' || ($data['theme'] ?? null) !== 'dark') {
+        if (($data['model'] ?? null) !== self::MODEL_NAME || ($data['theme'] ?? null) !== 'dark') {
             echo "FAIL testPrepareWorktreePreservesOtherKeys: other keys lost\n";
 
             return 1;
@@ -312,9 +316,9 @@ final class OpenCodeAgentLauncherTest
     private function testBuildLaunchCommandResumeId(): int
     {
         $launcher = new OpenCodeAgentLauncher($this->makeProcessRunner(true));
-        [$bin, $args] = $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, 'session-abc');
+        [$bin, $args] = $launcher->buildLaunchCommand('/worktree', '/ctx.md', AgentRole::DEVELOPER, self::RESUME_SESSION_ID);
 
-        if ($bin !== 'opencode' || $args !== ['--dangerously-skip-permissions', '-s', 'session-abc']) {
+        if ($bin !== 'opencode' || $args !== ['--dangerously-skip-permissions', '-s', self::RESUME_SESSION_ID]) {
             echo "FAIL testBuildLaunchCommandResumeId: expected permission flag + [-s, session-abc]\n";
 
             return 1;
@@ -357,7 +361,7 @@ final class OpenCodeAgentLauncherTest
         $runner = $this->makeProcessRunner(true, ['opencode session list -n 1' => $fakeOutput]);
         $launcher = new OpenCodeAgentLauncher($runner);
 
-        if ($launcher->captureCurrentSessionId('/worktree') !== 'session-abc') {
+        if ($launcher->captureCurrentSessionId('/worktree') !== self::RESUME_SESSION_ID) {
             echo "FAIL testCaptureCurrentSessionIdParsesFirstRow: unexpected id\n";
 
             return 1;
@@ -417,7 +421,7 @@ final class OpenCodeAgentLauncherTest
 
             return 1;
         }
-        if ($sessions[0]->id !== 'session-abc' || $sessions[1]->id !== 'session-def') {
+        if ($sessions[0]->id !== self::RESUME_SESSION_ID || $sessions[1]->id !== 'session-def') {
             echo "FAIL testListSessionsParsesRows: unexpected session ids\n";
 
             return 1;

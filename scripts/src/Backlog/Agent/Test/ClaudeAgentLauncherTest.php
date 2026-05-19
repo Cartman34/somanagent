@@ -18,6 +18,12 @@ use SoManAgent\Script\Backlog\BacklogPaths;
  */
 final class ClaudeAgentLauncherTest
 {
+    private const RESUME_SESSION_ID = 'session-123';
+
+    private const SESSION_ID_X = 'session-x';
+
+    private const SESSION_ID_A = 'session-a';
+
     private string $tmpDir;
 
     /**
@@ -168,9 +174,9 @@ final class ClaudeAgentLauncherTest
         $context = $this->writeContext('context resume');
         $launcher = new ClaudeAgentLauncher($this->makeProcessRunner(true), $this->tmpDir);
 
-        [, $args] = $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, 'session-123');
+        [, $args] = $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, self::RESUME_SESSION_ID);
 
-        if (!in_array('--resume', $args, true) || !in_array('session-123', $args, true)) {
+        if (!in_array('--resume', $args, true) || !in_array(self::RESUME_SESSION_ID, $args, true)) {
             echo "FAIL testBuildLaunchCommandResumeId: missing resume args\n";
             return 1;
         }
@@ -195,7 +201,7 @@ final class ClaudeAgentLauncherTest
         foreach ([
             'initial' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER),
             'continue' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, null, true),
-            'resume' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, 'session-x'),
+            'resume' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, self::SESSION_ID_X),
         ] as $mode => [, $args]) {
             if (!in_array('--permission-mode', $args, true) || !in_array('acceptEdits', $args, true)) {
                 echo "FAIL testBuildLaunchCommandIncludesPermissionFlags ($mode): --permission-mode acceptEdits missing\n";
@@ -215,7 +221,7 @@ final class ClaudeAgentLauncherTest
         foreach ([
             'initial' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER),
             'continue' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, null, true),
-            'resume' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, 'session-x'),
+            'resume' => $launcher->buildLaunchCommand('/worktree', $context, AgentRole::DEVELOPER, self::SESSION_ID_X),
         ] as $mode => [, $args]) {
             $idx = array_search('--add-dir', $args, true);
             if ($idx === false || ($args[$idx + 1] ?? null) !== BacklogPaths::directory('/wp-root')) {
@@ -254,8 +260,8 @@ final class ClaudeAgentLauncherTest
     {
         $worktree = $this->makeWorktree('sessions');
         $dir = $this->makeClaudeProjectDir($worktree);
-        file_put_contents($dir . '/session-a.jsonl', implode("\n", [
-            json_encode(['type' => 'summary', 'sessionId' => 'session-a']),
+        file_put_contents($dir . '/' . self::SESSION_ID_A . '.jsonl', implode("\n", [
+            json_encode(['type' => 'summary', 'sessionId' => self::SESSION_ID_A]),
             json_encode(['timestamp' => '2026-01-01T10:00:00+00:00', 'type' => 'user', 'message' => ['role' => 'user', 'content' => [['type' => 'text', 'text' => str_repeat('A', 90)]]]]),
             json_encode(['timestamp' => '2026-01-01T10:05:00+00:00', 'type' => 'assistant', 'message' => ['role' => 'assistant', 'content' => [['type' => 'text', 'text' => 'answer']]]]),
             '',
@@ -268,7 +274,7 @@ final class ClaudeAgentLauncherTest
         $launcher = new ClaudeAgentLauncher($this->makeProcessRunner(true), $this->tmpDir);
         $sessions = $launcher->listSessions($worktree);
 
-        if (count($sessions) !== 2 || $sessions[0]->id !== 'session-b' || $sessions[1]->id !== 'session-a') {
+        if (count($sessions) !== 2 || $sessions[0]->id !== 'session-b' || $sessions[1]->id !== self::SESSION_ID_A) {
             echo "FAIL testListSessionsParsesClaudeJsonl: unexpected order or count\n";
             return 1;
         }

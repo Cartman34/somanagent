@@ -20,6 +20,8 @@ use Symfony\Component\Yaml\Yaml;
  */
 final class AgentContextBuilderTest
 {
+    private const FEATURE_SLUG = 'my-feature';
+
     private string $tmpDir;
 
     /**
@@ -212,7 +214,7 @@ final class AgentContextBuilderTest
         $projectRoot = $this->tmpDir . '/proj-reviewer-entry-' . uniqid('', true);
         mkdir(BacklogPaths::directory($projectRoot), 0755, true);
         $boardPath = BacklogPaths::boardPath($projectRoot);
-        file_put_contents($boardPath, $this->boardWithFeatureAtReviewing('my-feature', 'd04', 'r01'));
+        file_put_contents($boardPath, $this->boardWithFeatureAtReviewing(self::FEATURE_SLUG, 'd04', 'r01'));
 
         $worktree = $projectRoot . '/wt';
 
@@ -284,7 +286,7 @@ final class AgentContextBuilderTest
         mkdir($projectRoot . '/doc/development', 0755, true);
 
         $boardPath = BacklogPaths::boardPath($projectRoot);
-        file_put_contents($boardPath, $this->boardWithFeatureAtDevelopment('my-feature', 'd01'));
+        file_put_contents($boardPath, $this->boardWithFeatureAtDevelopment(self::FEATURE_SLUG, 'd01'));
 
         // Minimal role doc with two keywords so we can assert `next` is removed but `submit` kept.
         file_put_contents(
@@ -330,7 +332,7 @@ final class AgentContextBuilderTest
         mkdir($projectRoot . '/doc/development', 0755, true);
 
         $boardPath = BacklogPaths::boardPath($projectRoot);
-        file_put_contents($boardPath, $this->boardWithFeatureAtReviewing('my-feature', 'd04', 'r01'));
+        file_put_contents($boardPath, $this->boardWithFeatureAtReviewing(self::FEATURE_SLUG, 'd04', 'r01'));
 
         // Minimal role doc with two keywords so we can assert `review` is removed but `approve` kept.
         file_put_contents(

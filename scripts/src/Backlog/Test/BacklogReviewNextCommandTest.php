@@ -25,6 +25,10 @@ use Symfony\Component\Yaml\Yaml;
  */
 final class BacklogReviewNextCommandTest
 {
+    private const OTHER_FEATURE = 'other-feature';
+
+    private const TARGET_FEATURE = 'target-feature';
+
     private string $tmpDir;
 
     /**
@@ -61,8 +65,8 @@ final class BacklogReviewNextCommandTest
     {
         $projectRoot = $this->makeProject('session-prefers-wa');
         $this->writeBoard($projectRoot, [
-            $this->featureEntry('other-feature', 'd06'),
-            $this->featureEntry('target-feature', 'd05'),
+            $this->featureEntry(self::OTHER_FEATURE, 'd06'),
+            $this->featureEntry(self::TARGET_FEATURE, 'd05'),
         ]);
         $this->writeReviewerSession($projectRoot, 'r01', 'd05');
 
@@ -99,7 +103,7 @@ final class BacklogReviewNextCommandTest
     {
         $projectRoot = $this->makeProject('session-refuses-other-wa');
         $this->writeBoard($projectRoot, [
-            $this->featureEntry('other-feature', 'd06'),
+            $this->featureEntry(self::OTHER_FEATURE, 'd06'),
         ]);
         $this->writeReviewerSession($projectRoot, 'r01', 'd05');
 
@@ -114,7 +118,7 @@ final class BacklogReviewNextCommandTest
             });
         } catch (\RuntimeException $e) {
             $threw = str_contains($e->getMessage(), 'No review-stage entry belongs to the current reviewer WA')
-                && str_contains($e->getMessage(), 'other-feature');
+                && str_contains($e->getMessage(), self::OTHER_FEATURE);
         }
 
         if (!$threw) {
@@ -136,8 +140,8 @@ final class BacklogReviewNextCommandTest
     {
         $projectRoot = $this->makeProject('manual-keeps-first');
         $this->writeBoard($projectRoot, [
-            $this->featureEntry('other-feature', 'd06'),
-            $this->featureEntry('target-feature', 'd05'),
+            $this->featureEntry(self::OTHER_FEATURE, 'd06'),
+            $this->featureEntry(self::TARGET_FEATURE, 'd05'),
         ]);
         $this->writeReviewerSession($projectRoot, 'r01', 'd05');
 
