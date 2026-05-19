@@ -19,6 +19,7 @@ use SoManAgent\Script\Backlog\Agent\Exception\ActiveSessionException;
 use SoManAgent\Script\Backlog\Agent\Exception\ClientNotInstalledException;
 use SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException;
 use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
+use SoManAgent\Script\Backlog\Agent\Model\ResolvedModel;
 use SoManAgent\Script\Backlog\Agent\Model\ReviewerPickOutcome;
 use SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
 use SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
@@ -70,6 +71,7 @@ final class AgentStartCommand extends AbstractAgentCommand
     private ?AgentModelResolver $modelResolver;
     private AgentLaunchPromptResolver $launchPromptResolver;
     private EntryRebaseService $entryRebaseService;
+    private bool $watchStopRequested = false;
 
     /**
      * Optional override for the interactive WA-occupant conflict prompt.
@@ -162,6 +164,9 @@ final class AgentStartCommand extends AbstractAgentCommand
             ['name' => '--model=<model>', 'description' => 'Raw model name override passed directly to the client'],
             ['name' => '--reset', 'description' => 'Remove and recreate the worktree before launching (developer only; refuses if dirty)'],
             ['name' => '--force-new', 'description' => 'Drop a live session and create a fresh one (developer only)'],
+            ['name' => '--watch', 'description' => 'Wait for an eligible developer or reviewer entry before launching'],
+            ['name' => '--watch-interval=<sec>', 'description' => 'Polling interval for --watch, in seconds (default: 3)'],
+            ['name' => '--loop', 'description' => 'With --watch, return to watching after a clean client exit'],
             ['name' => '--feature=<slug>', 'description' => 'Reviewer: target the feature entry at stage=review with this slug'],
             ['name' => '--task=<feature/task>', 'description' => 'Reviewer: target the task entry at stage=review with this reference'],
             ['name' => '--developer=<dXX>', 'description' => 'Reviewer: target the active entry assigned to this developer code'],
@@ -188,12 +193,22 @@ final class AgentStartCommand extends AbstractAgentCommand
             ));
         }
 
-        $role = $this->resolveRole($options);
+        $watch = isset($options[BacklogCliOption::WATCH->value]);
+        $loop = isset($options[BacklogCliOption::LOOP->value]);
+        $role = $this->resolveRole($options, $watch);
         $reset = isset($options[BacklogCliOption::RESET->value]);
         $forceNew = isset($options[BacklogCliOption::FORCE_NEW->value]);
         $tierOverride = $this->getSingleOption($options, 'tier');
         $effortOverride = $this->getSingleOption($options, 'effort');
         $modelOverride = $this->getSingleOption($options, 'model');
+
+        if ($loop && !$watch) {
+            throw new \RuntimeException('--loop requires --watch.');
+        }
+
+        if ($role === AgentRole::MANAGER && $watch) {
+            throw new \RuntimeException('--watch is only supported for developer and reviewer launches.');
+        }
 
         if ($reset && $role !== AgentRole::DEVELOPER) {
             throw new \RuntimeException('--reset is only allowed with --developer.');
@@ -203,25 +218,85 @@ final class AgentStartCommand extends AbstractAgentCommand
             throw new \RuntimeException('--force-new is only allowed with --developer.');
         }
 
-        $resolvedModel = $this->modelResolver?->resolve($client, $role, $tierOverride, $effortOverride, $modelOverride);
-        if ($resolvedModel !== null) {
-            foreach ($resolvedModel->warnings as $warning) {
-                echo "Warning: {$warning}\n";
-            }
-        }
-
         // Validate driver dependencies (e.g. tmux binary) before any worktree work.
         $this->sessionDriver->checkDependencies();
 
-        $codeOption = $this->getSingleOption($options, 'code');
+        $launcher = $this->registry->get($client);
 
-        if ($codeOption !== null) {
-            $this->codeService->validate($codeOption, $role);
-            $code = $codeOption;
-        } else {
-            $code = $this->codeService->allocateForRole($role);
+        if (!$launcher->isAvailable()) {
+            throw new ClientNotInstalledException($client);
         }
 
+        $codeOption = $this->getSingleOption($options, 'code');
+
+        if ($codeOption !== null && $role === null) {
+            throw new \RuntimeException('--code requires an explicit role when --watch is used.');
+        }
+
+        do {
+            $cycleRole = $role;
+            $watchClaimedRef = null;
+            if ($watch) {
+                $watchResult = $this->watchForWork($role, $codeOption, $this->resolveWatchInterval($options));
+                if ($watchResult === null) {
+                    return 130;
+                }
+                [$cycleRole, $code, $watchClaimedRef] = $watchResult;
+            } else {
+                if ($cycleRole === null) {
+                    throw new \LogicException('Non-watch launch requires a resolved role.');
+                }
+                if ($codeOption !== null) {
+                    $this->codeService->validate($codeOption, $cycleRole);
+                    $code = $codeOption;
+                } else {
+                    $code = $this->codeService->allocateForRole($cycleRole);
+                }
+            }
+
+            $resolvedModel = $this->modelResolver?->resolve($client, $cycleRole, $tierOverride, $effortOverride, $modelOverride);
+            if ($resolvedModel !== null) {
+                foreach ($resolvedModel->warnings as $warning) {
+                    echo "Warning: {$warning}\n";
+                }
+            }
+
+            $exitCode = $this->launchCycle(
+                $client,
+                $launcher,
+                $cycleRole,
+                $code,
+                $options,
+                $reset,
+                $forceNew,
+                $resolvedModel,
+                $originalCwd,
+                $watchClaimedRef,
+            );
+
+            if (!$loop || $exitCode !== 0) {
+                return $exitCode;
+            }
+        } while (true);
+    }
+
+    /**
+     * Runs one complete create/resume/launch cycle after the role and code are known.
+     *
+     * @param array<string, string|bool|array<bool|string>> $options
+     */
+    private function launchCycle(
+        AgentClient $client,
+        \SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncher $launcher,
+        AgentRole $role,
+        string $code,
+        array $options,
+        bool $reset,
+        bool $forceNew,
+        ?ResolvedModel $resolvedModel,
+        false|string $originalCwd,
+        ?string $watchClaimedRef = null,
+    ): int {
         // Resolve existing session entry and dispatch: attach live, clean ghost, or proceed to create.
         $existingSession = $this->sessionService->get($code);
 
@@ -259,12 +334,6 @@ final class AgentStartCommand extends AbstractAgentCommand
             ));
         }
 
-        $launcher = $this->registry->get($client);
-
-        if (!$launcher->isAvailable()) {
-            throw new ClientNotInstalledException($client);
-        }
-
         $takenEntryRef = null;
         $takenReviewerCode = null;
         $takenWorkStartRef = null;
@@ -272,29 +341,36 @@ final class AgentStartCommand extends AbstractAgentCommand
         $initialPrompt = null;
 
         if ($role === AgentRole::REVIEWER) {
-            $reviewerOutcome = $this->prepareReviewerMode($options, $code);
+            if ($watchClaimedRef !== null) {
+                $worktree = $this->prepareClaimedReviewerEntry($code);
+                $takenEntryRef = $watchClaimedRef;
+                $takenReviewerCode = $code;
+                $initialPrompt = $this->launchPromptResolver->resolveStageDecision(AgentRole::REVIEWER, BacklogBoard::STAGE_IN_REVIEW)->getPrompt();
+            } else {
+                $reviewerOutcome = $this->prepareReviewerMode($options, $code);
 
-            if ($reviewerOutcome->isQuit()) {
-                return 0;
-            }
-
-            if ($reviewerOutcome->isAdopt()) {
-                $adoptedSession = $reviewerOutcome->getAdoptSession();
-                $adoptRollbackRef = $reviewerOutcome->getTakenEntryRef();
-                $adoptRollbackCode = $reviewerOutcome->getTakenReviewerCode();
-                try {
-                    return $this->handleAttach($adoptedSession, $originalCwd);
-                } catch (\Throwable $e) {
-                    $this->rollbackReviewTransition($adoptRollbackRef, $adoptRollbackCode);
-                    throw $e;
+                if ($reviewerOutcome->isQuit()) {
+                    return 0;
                 }
-            }
 
-            $worktree = $reviewerOutcome->getWorktree();
-            $takenEntryRef = $reviewerOutcome->getTakenEntryRef();
-            $takenReviewerCode = $reviewerOutcome->getTakenReviewerCode();
-            $reviewerStage = $takenEntryRef !== null ? BacklogBoard::STAGE_IN_REVIEW : BacklogBoard::STAGE_REVIEWING;
-            $initialPrompt = $this->launchPromptResolver->resolveStageDecision(AgentRole::REVIEWER, $reviewerStage)->getPrompt();
+                if ($reviewerOutcome->isAdopt()) {
+                    $adoptedSession = $reviewerOutcome->getAdoptSession();
+                    $adoptRollbackRef = $reviewerOutcome->getTakenEntryRef();
+                    $adoptRollbackCode = $reviewerOutcome->getTakenReviewerCode();
+                    try {
+                        return $this->handleAttach($adoptedSession, $originalCwd);
+                    } catch (\Throwable $e) {
+                        $this->rollbackReviewTransition($adoptRollbackRef, $adoptRollbackCode);
+                        throw $e;
+                    }
+                }
+
+                $worktree = $reviewerOutcome->getWorktree();
+                $takenEntryRef = $reviewerOutcome->getTakenEntryRef();
+                $takenReviewerCode = $reviewerOutcome->getTakenReviewerCode();
+                $reviewerStage = $takenEntryRef !== null ? BacklogBoard::STAGE_IN_REVIEW : BacklogBoard::STAGE_REVIEWING;
+                $initialPrompt = $this->launchPromptResolver->resolveStageDecision(AgentRole::REVIEWER, $reviewerStage)->getPrompt();
+            }
         } elseif ($role === AgentRole::MANAGER) {
             $worktree = $this->projectRoot;
         } else {
@@ -305,7 +381,12 @@ final class AgentStartCommand extends AbstractAgentCommand
                 }
                 $this->worktreeService->removeAgentWorktreeForRestore($code);
             }
-            [$takenWorkStartRef, $takenWorkStartDevCode] = $this->prepareDeveloperMode($code);
+            if ($watchClaimedRef !== null) {
+                $takenWorkStartRef = $watchClaimedRef;
+                $takenWorkStartDevCode = $code;
+            } else {
+                [$takenWorkStartRef, $takenWorkStartDevCode] = $this->prepareDeveloperMode($code);
+            }
 
             if ($takenWorkStartRef !== null) {
                 // Auto-picked new entry from todo
@@ -413,6 +494,264 @@ final class AgentStartCommand extends AbstractAgentCommand
         $this->sessionService->remove($code);
 
         return $exitCode;
+    }
+
+    /**
+     * Polls the board until a claimable target is reserved, then returns the elected role/code.
+     *
+     * @return array{0: AgentRole, 1: string, 2: string}|null
+     */
+    private function watchForWork(?AgentRole $requestedRole, ?string $codeOption, int $intervalSeconds): ?array
+    {
+        $spinner = $this->selectSpinnerFrames();
+        $tick = 0;
+        $printed = false;
+        $previousSigintHandler = null;
+        $this->watchStopRequested = false;
+
+        if (function_exists('pcntl_signal')) {
+            $previousSigintHandler = function_exists('pcntl_signal_get_handler') ? pcntl_signal_get_handler(SIGINT) : null;
+            pcntl_signal(SIGINT, function (): void {
+                $this->watchStopRequested = true;
+            });
+        }
+
+        try {
+            while (true) {
+                if (function_exists('pcntl_signal_dispatch')) {
+                    pcntl_signal_dispatch();
+                }
+                if ($this->watchStopRequested) {
+                    if ($printed) {
+                        echo "\r" . str_repeat(' ', 24) . "\r";
+                    }
+                    echo "Watch stopped.\n";
+
+                    return null;
+                }
+
+                $frame = $spinner[$tick % count($spinner)];
+                echo "\r{$frame} Watching for work...";
+                $printed = true;
+
+                $board = $this->boardService->loadBoard($this->boardPath);
+                $roles = $requestedRole !== null
+                    ? [$requestedRole]
+                    : [AgentRole::REVIEWER, AgentRole::DEVELOPER];
+
+                foreach ($roles as $role) {
+                    $code = $codeOption;
+                    if ($code !== null) {
+                        $this->codeService->validate($code, $role);
+                    } else {
+                        $code = $this->codeService->allocateForRole($role);
+                    }
+
+                    $entryRef = $role === AgentRole::REVIEWER
+                        ? $this->tryWatchReviewerClaim($board, $code)
+                        : $this->tryWatchDeveloperClaim($board, $code);
+
+                    if ($entryRef !== null) {
+                        echo "\r" . str_repeat(' ', 24) . "\r";
+
+                        return [$role, $code, $entryRef];
+                    }
+                }
+
+                $tick++;
+                if ($intervalSeconds > 0) {
+                    $this->sleepWatchInterval($intervalSeconds);
+                }
+            }
+        } finally {
+            if (function_exists('pcntl_signal') && $previousSigintHandler !== null) {
+                pcntl_signal(SIGINT, $previousSigintHandler);
+            }
+        }
+    }
+
+    private function sleepWatchInterval(int $intervalSeconds): void
+    {
+        $deadline = time() + $intervalSeconds;
+        while (!$this->watchStopRequested && time() < $deadline) {
+            sleep(1);
+            if (function_exists('pcntl_signal_dispatch')) {
+                pcntl_signal_dispatch();
+            }
+        }
+    }
+
+    /**
+     * Resolves the developer worktree for a review entry already claimed by watch mode.
+     */
+    private function prepareClaimedReviewerEntry(string $reviewerCode): string
+    {
+        $board = $this->boardService->loadBoard($this->boardPath);
+        $match = $this->reviewerSelector->findOwnedReviewingEntry($board, $reviewerCode);
+        if ($match === null) {
+            throw new \RuntimeException(sprintf('Reviewer %s did not keep the claimed review entry.', $reviewerCode));
+        }
+
+        $entry = $match->getEntry();
+        $devCode = $entry->getAgent() ?? '';
+        if ($devCode === '') {
+            throw new \RuntimeException('Cannot determine developer agent code for the claimed review entry.');
+        }
+
+        $worktree = $this->reviewerSelector->devCodeToWorktree($devCode);
+        if (!is_dir($worktree)) {
+            try {
+                $this->worktreeService->prepareFeatureAgentWorktree($entry);
+            } catch (\RuntimeException $e) {
+                $this->rollbackReviewTransition($this->buildEntryRef($entry), $reviewerCode);
+                throw new \RuntimeException(sprintf(
+                    'Developer WA not present at %s and could not be reconstructed: %s',
+                    $worktree,
+                    $e->getMessage(),
+                ));
+            }
+        }
+
+        $existingReviewer = $this->reviewerSelector->findExistingReviewerForWorktree($worktree);
+        if ($existingReviewer !== null) {
+            $this->rollbackReviewTransition($this->buildEntryRef($entry), $reviewerCode);
+            throw new ActiveSessionException($existingReviewer, $this->projectRoot, $this->signaler);
+        }
+
+        return $worktree;
+    }
+
+    /**
+     * Attempts to reserve one developer candidate from the current board snapshot.
+     */
+    private function tryWatchDeveloperClaim(BacklogBoard $board, string $developerCode): ?string
+    {
+        foreach ($board->getEntries(BacklogBoard::SECTION_TODO) as $entry) {
+            if ($entry->getAgent() !== null) {
+                continue;
+            }
+
+            $entryRef = $this->boardService->computeQueuedEntryReference($entry);
+            if ($this->isEntryRefOwnedByLiveDeveloperSession($board, $entryRef)) {
+                continue;
+            }
+
+            try {
+                $this->backlogCommandRunner->workStart($developerCode, $entryRef);
+
+                return $entryRef;
+            } catch (\RuntimeException) {
+                continue;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Attempts to reserve one reviewer candidate from the current board snapshot.
+     */
+    private function tryWatchReviewerClaim(BacklogBoard $board, string $reviewerCode): ?string
+    {
+        foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
+            if ($this->boardService->getNormalizedStage($entry->getStage()) !== BacklogBoard::STAGE_IN_REVIEW) {
+                continue;
+            }
+            if ($entry->getReviewer() !== null) {
+                continue;
+            }
+
+            $entryRef = $this->buildEntryRef($entry);
+            $devCode = $entry->getAgent() ?? '';
+            if ($devCode !== '' && $this->isWorktreeUsedByLiveReviewerSession($this->reviewerSelector->devCodeToWorktree($devCode))) {
+                continue;
+            }
+
+            try {
+                $this->backlogCommandRunner->reviewNext($reviewerCode, $entryRef);
+
+                return $entryRef;
+            } catch (\RuntimeException) {
+                continue;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns true when a live developer session is already tied to this entry ref.
+     */
+    private function isEntryRefOwnedByLiveDeveloperSession(BacklogBoard $board, string $entryRef): bool
+    {
+        $agentCodes = [];
+
+        foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
+            if ($this->buildEntryRef($entry) !== $entryRef) {
+                continue;
+            }
+            if ($entry->getAgent() !== null) {
+                $agentCodes[] = $entry->getAgent();
+            }
+        }
+
+        foreach (array_unique($agentCodes) as $agentCode) {
+            $session = $this->sessionService->get($agentCode);
+            if ($session !== null && $this->sessionDriver->isAlive($session)) {
+                return true;
+            }
+            if ($this->sessionDriver->sessionExists($agentCode)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns true when a live reviewer session already targets this developer worktree.
+     */
+    private function isWorktreeUsedByLiveReviewerSession(string $worktree): bool
+    {
+        foreach ($this->sessionService->load() as $session) {
+            if ($session->role !== AgentRole::REVIEWER || $session->worktree !== $worktree) {
+                continue;
+            }
+            if ($this->sessionDriver->isAlive($session) || $this->sessionDriver->sessionExists($session->code)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array<string, string|bool|array<bool|string>> $options
+     */
+    private function resolveWatchInterval(array $options): int
+    {
+        $raw = $this->getSingleOption($options, BacklogCliOption::WATCH_INTERVAL->value);
+        if ($raw === null) {
+            return 3;
+        }
+        if (!preg_match('/^\d+$/', $raw)) {
+            throw new \RuntimeException('--watch-interval must be a non-negative integer.');
+        }
+
+        return (int) $raw;
+    }
+
+    /**
+     * @return non-empty-list<string>
+     */
+    private function selectSpinnerFrames(): array
+    {
+        $locale = strtolower((string) ($_SERVER['LC_ALL'] ?? $_SERVER['LC_CTYPE'] ?? $_SERVER['LANG'] ?? ''));
+        if (str_contains($locale, 'utf-8') || str_contains($locale, 'utf8')) {
+            return ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+        }
+
+        return ['|', '/', '-', '\\'];
     }
 
     /**
@@ -980,7 +1319,7 @@ final class AgentStartCommand extends AbstractAgentCommand
      *
      * @param array<string, string|bool|array<bool|string>> $options
      */
-    private function resolveRole(array $options): AgentRole
+    private function resolveRole(array $options, bool $allowMissing = false): ?AgentRole
     {
         $isDeveloper = ($options[BacklogCliOption::DEVELOPER->value] ?? null) === true;
         $isReviewer = isset($options[BacklogCliOption::REVIEWER->value]);
@@ -988,6 +1327,9 @@ final class AgentStartCommand extends AbstractAgentCommand
 
         $count = (int) $isDeveloper + (int) $isReviewer + (int) $isManager;
         if ($count === 0) {
+            if ($allowMissing) {
+                return null;
+            }
             throw new \RuntimeException('Exactly one of --developer, --reviewer, or --manager is required.');
         }
         if ($count > 1) {

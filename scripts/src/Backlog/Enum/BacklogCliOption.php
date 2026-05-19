@@ -30,6 +30,7 @@ enum BacklogCliOption: string
     case FORCE_NEW = 'force-new';
     case HELP = 'help';
     case INDEX = 'index';
+    case LOOP = 'loop';
     case MANAGER = 'manager';
     case MIGRATION_MARKER_FILE = 'migration-marker-file';
     case MIGRATIONS_DIR = 'migrations-dir';
@@ -44,6 +45,8 @@ enum BacklogCliOption: string
     case TEST_MODE = 'test-mode';
     case TYPE = 'type';
     case VERBOSE = 'verbose';
+    case WATCH = 'watch';
+    case WATCH_INTERVAL = 'watch-interval';
     case WORKTREE_DIR = 'worktree-dir';
 
     /**
