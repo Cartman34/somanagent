@@ -345,7 +345,13 @@ final class AgentSessionServiceTest
             return 1;
         }
 
-        $lines = array_filter(explode("\n", file_get_contents($logPath)));
+        $content = file_get_contents($logPath);
+        if ($content === false) {
+            echo "FAIL testLogLaunchAppendsLine: could not read log file\n";
+            $this->rmdir($dir);
+            return 1;
+        }
+        $lines = array_filter(explode("\n", $content));
         if (count($lines) !== 2) {
             echo "FAIL testLogLaunchAppendsLine: expected 2 lines, got " . count($lines) . "\n";
             $this->rmdir($dir);
