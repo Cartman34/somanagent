@@ -110,7 +110,7 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
         }
 
         $first = $target->getEntry();
-        $first->setAgent(null);
+        $first->setDeveloper(null);
 
         $plan = $this->buildPlan($board, $first, $agent, $branchTypeOverride);
 
@@ -239,7 +239,7 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
         if ($this->boardService->findParentFeatureEntry($board, $feature) !== null) {
             throw new \RuntimeException(
                 "Feature {$feature} already exists in active entries.\n" .
-                "Use `php scripts/backlog.php work-start --agent={$agent}` only for new features, " .
+                "Use `php scripts/backlog.php work-start --developer={$agent}` only for new features, " .
                 "or prefix the task as [{$feature}][task-slug] to add a child task instead."
             );
         }
@@ -283,7 +283,7 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
                 BoardEntry::META_KIND => BacklogBoardService::ENTRY_KIND_FEATURE,
                 BoardEntry::META_STAGE => BacklogBoard::STAGE_IN_PROGRESS,
                 BoardEntry::META_FEATURE => $featureGroup,
-                BoardEntry::META_AGENT => BacklogMetaValue::NONE->value,
+                BoardEntry::META_DEVELOPER => BacklogMetaValue::NONE->value,
                 BoardEntry::META_BRANCH => $featureBranch,
                 BoardEntry::META_BASE => $featureBase,
                 BoardEntry::META_PR => BacklogMetaValue::NONE->value,
@@ -320,7 +320,7 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
             BoardEntry::META_STAGE => BacklogBoard::STAGE_IN_PROGRESS,
             BoardEntry::META_FEATURE => $featureGroup,
             BoardEntry::META_TASK => $task,
-            BoardEntry::META_AGENT => $plan->agent,
+            BoardEntry::META_DEVELOPER => $plan->agent,
             BoardEntry::META_BRANCH => $branch,
             BoardEntry::META_FEATURE_BRANCH => $featureBranch,
             BoardEntry::META_BASE => $taskBase,
@@ -353,7 +353,7 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
             BoardEntry::META_KIND => BacklogBoardService::ENTRY_KIND_FEATURE,
             BoardEntry::META_STAGE => BacklogBoard::STAGE_IN_PROGRESS,
             BoardEntry::META_FEATURE => $plan->featureSlug,
-            BoardEntry::META_AGENT => $plan->agent,
+            BoardEntry::META_DEVELOPER => $plan->agent,
             BoardEntry::META_BRANCH => $branch,
             BoardEntry::META_BASE => $base,
             BoardEntry::META_PR => BacklogMetaValue::NONE->value,
@@ -383,7 +383,7 @@ final class BacklogWorkStartCommand extends AbstractBacklogCommand
         if ($plan->kind === WorkStartPlan::KIND_TASK) {
             $this->presenter->displayLine('Feature parent: ' . ($plan->featureContainerNeedsCreation ? 'will be created' : 'already exists'));
         }
-        $this->presenter->displayLine('Agent:          ' . $plan->agent);
+        $this->presenter->displayLine('Developer:      ' . $plan->agent);
         $this->presenter->displayLine('No mutation performed (--dry-run).');
     }
 

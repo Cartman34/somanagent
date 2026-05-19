@@ -119,7 +119,7 @@ final class BacklogWorktreeService
      */
     public function prepareFeatureAgentWorktree(BoardEntry $entry): string
     {
-        $agent = $entry->getAgent() ?? '';
+        $agent = $entry->getDeveloper() ?? '';
         if ($agent === '') {
             throw new \RuntimeException('Feature has no assigned agent worktree.');
         }
@@ -842,7 +842,7 @@ final class BacklogWorktreeService
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
             $branch = $entry->getBranch() ?? '';
             $feature = $entry->getFeature() ?? '';
-            $agent = $entry->getAgent() ?? '';
+            $agent = $entry->getDeveloper() ?? '';
             if ($branch === '' || $feature === '') {
                 continue;
             }
@@ -860,7 +860,7 @@ final class BacklogWorktreeService
     {
         $entries = [];
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-            $agent = $entry->getAgent() ?? '';
+            $agent = $entry->getDeveloper() ?? '';
             $feature = $entry->getFeature() ?? '';
             if ($agent === '' || $feature === '') {
                 continue;

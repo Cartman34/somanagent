@@ -20,8 +20,8 @@ Rules:
 
 - Files under `local/` are local-only and must not be committed.
 - The backlog board is a YAML file with three top-level keys: `version` (currently `1`), `todo` (queued priorities), and `active` (features and child tasks with workflow state in `stage`).
-- A queued entry under `todo` carries the keys `feature`, optional `task`, optional `type`, optional `agent`, `title`, and optional `body`.
-- An active entry under `active` carries the meta fields (`kind`, `stage`, `feature`, `task`, `agent`, `reviewer`, `branch`, `feature-branch`, `base`, `pr`, `blocked`, `type`), followed by `title`, optional `body`, and any extra metadata.
+- A queued entry under `todo` carries the keys `feature`, optional `task`, optional `type`, optional `developer`, `title`, and optional `body`.
+- An active entry under `active` carries the meta fields (`kind`, `stage`, `feature`, `task`, `developer`, `reviewer`, `branch`, `feature-branch`, `base`, `pr`, `blocked`, `type`), followed by `title`, optional `body`, and any extra metadata.
 - Local backlog files are not edited manually.
 - If a needed backlog transition or backlog mutation is not covered by an existing command, stop and ask the user before proceeding.
 
@@ -54,7 +54,7 @@ Rules:
    - kind: feature
      stage: development
      feature: <slug>
-     agent: <code>
+     developer: <code>
      branch: <type>/<slug>
      base: <sha>
      pr: none
@@ -98,13 +98,13 @@ Every entry carries one of three types: `feat`, `fix`, or `tech`. The rule and t
 
 1. `entry-assign` and `entry-unassign` read the active caller context from `SOMANAGER_ROLE` and `SOMANAGER_AGENT`.
 2. Allowed values are `manager` and `developer`.
-3. For `entry-unassign`, `--agent` identifies the caller. With an explicit entry reference, it does not select which assigned agent is removed.
-4. For a developer caller context, the agent code from that context is mandatory and must match the `--agent` value passed to the command.
+3. For `entry-unassign`, `--agent` identifies the caller. With an explicit entry reference, it does not select which assigned developer is removed.
+4. For a developer caller context and `entry-assign`, the agent code from that context is mandatory and must match the `--developer` value passed to the command.
 5. `Manager` may assign any unassigned active entry (feature or task), may refresh the same assignment when the entry is already assigned to the target agent, and may unassign any active entry (feature or task) for any developer agent.
 6. `Developer` may only assign itself to an unassigned active entry or refresh an entry already assigned to itself.
 7. `Developer` may only unassign itself from its own active entry, whether it is a `kind=task` or a `kind=feature`.
 8. `entry-unassign` accepts an `<entry-ref>`, or no reference to fall back to the caller agent's single active entry. A plain slug that matches both a feature and a task is rejected as ambiguous.
-9. Missing `agent` metadata and legacy `agent: none` both mean an entry is unassigned. A different real agent code means the entry is assigned and must be unassigned before another agent can be assigned.
+9. Missing `developer` metadata and legacy `developer: none` both mean an entry is unassigned. A different real agent code means the entry is assigned and must be unassigned before another developer can be assigned.
 
 ## Queued Task Format
 
@@ -156,7 +156,7 @@ The `dependency-update` extra-metadata key on a backlog entry declares which ins
 2. Use `SOMANAGER_ROLE=<role> SOMANAGER_AGENT=<code> php scripts/backlog.php --help` for the global backlog help.
 3. Use `SOMANAGER_ROLE=<role> SOMANAGER_AGENT=<code> php scripts/backlog.php <command> --help` for one command.
 4. Every backlog command run by an agent must use the caller context prefix `SOMANAGER_ROLE=<role> SOMANAGER_AGENT=<code> php scripts/backlog.php ...` in that exact order. Valid agent roles are `developer`, `reviewer`, and `manager`.
-5. `--agent` is kept only for commands that explicitly target another agent: `entry-assign`, `entry-unassign`, `worktree-restore`, `status`, and `review-notes`.
+5. `--developer` is used by `entry-assign` and `worktree-restore` to identify the target developer. `--agent` is kept for role-agnostic commands: `entry-unassign`, `status`, and `review-notes`.
 6. The agent code must never leave local backlog files.
 7. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php work-start [<entry-ref>]` takes a queued task from `todo:`; no separate reservation step is part of the standard workflow. Without a target, the first queued entry is consumed implicitly. With an explicit reference (same shape exposed by `todo-list`), the matching queued entry is located by its `[feature-slug]` or `[feature-slug][task-slug]` prefix and the command refuses with a clear error when no queued entry matches. Automated workflows must always pass an explicit target; the implicit head form is reserved for interactive usage.
 7a. `todo-list` prints queued tasks one per line shaped `N. [<ref>] <text>`, where `<ref>` is the queued entry's stable reference and the only valid target for mutating commands (`task-remove`, `work-start`). The number is advisory only and never accepted as mutation identity. The command is read-only and never mutates backlog state.
@@ -195,7 +195,7 @@ The `dependency-update` extra-metadata key on a backlog entry declares which ins
 31. When the user invokes a documented workflow keyword or command sequence, agents must rerun that documented procedure each time unless the user cancels it. Repetition is not a reason to switch to advisory mode or rely on remembered state instead of the workflow result.
 32. An agent can have at most one active entry at a time, either `kind=task` or `kind=feature`. `work-start` and `entry-assign` are enforced at the script level and refuse when the agent already has any active entry, with one exception: `work-start` allows starting a scoped child task when the agent's only active entry is the parent feature container for that task. The refusal message includes the current active entry and the required next step to unblock.
 33. PR merges use a standard merge by default. Squash merge is available on explicit user request only.
-34. `backlog.php` rejects unknown CLI options. Each command accepts the options declared in its `scripts/resources/backlog/commands/<command>.yaml` plus the global options `--dry-run`, `--verbose`, `--no-verbose`, `--help`, `--test-mode`, `--board-file`, `--review-file`, `--worktree-dir`, `--migrations-dir`, `--migration-marker-file` and `--pr-base-branch`. Both the `--option=value` and `--option value` forms are validated. A typo such as `--as=<code>` instead of `--agent=<code>` produces an `Unknown option(s)` error instead of being silently ignored.
+34. `backlog.php` rejects unknown CLI options. Each command accepts the options declared in its `scripts/resources/backlog/commands/<command>.yaml` plus the global options `--dry-run`, `--verbose`, `--no-verbose`, `--help`, `--test-mode`, `--board-file`, `--review-file`, `--worktree-dir`, `--migrations-dir`, `--migration-marker-file` and `--pr-base-branch`. Both the `--option=value` and `--option value` forms are validated. A typo such as `--as=<code>` instead of `--developer=<code>` (for `entry-assign`) produces an `Unknown option(s)` error instead of being silently ignored.
 35. Mutating `backlog.php` commands are serialised by a global WP-level advisory file lock (`local/backlog/backlog.lock`). The lock is acquired before the command runs and released immediately after. If the lock is already held by another concurrent invocation, the command waits up to 30 seconds and prints a waiting message once the first retry fires; it exits with an error if the lock cannot be acquired within that window. Read-only commands (`status`, `list`, `todo-list`, `worktree-list`, `review-notes`, `review-check`) and `--dry-run` invocations skip the lock entirely. In test mode the lock file is isolated per board file.
 36. Before dispatching any backlog command, `backlog.php` checks `scripts/migrations/` against `local/backlog/migrations.applied`. If any migration script is present but not marked as applied, every backlog command is blocked, including read-only commands, because legacy backlog state may be misleading. The error is printed as a protected read-only block titled `Migration pending - operator action required` and ending with `MIGRATION_ALERT_END`; agents report it to the user and do not run the operator commands listed inside.
 

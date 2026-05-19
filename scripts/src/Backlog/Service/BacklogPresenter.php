@@ -73,7 +73,7 @@ final class BacklogPresenter
         $stage = $this->boardService->getFeatureStage($entry);
         $this->console->line('Entry-ref: ' . $this->boardService->getEntryReference($entry));
         $this->console->line('Kind: ' . $this->boardService->getEntryKind($entry));
-        $this->console->line('Agent: ' . ($entry->getAgent() ?? BacklogMetaValue::NONE->value));
+        $this->console->line('Developer: ' . ($entry->getDeveloper() ?? BacklogMetaValue::NONE->value));
         if ($this->boardService->checkIsTaskEntry($entry)) {
             $this->console->line('Feature: ' . ($entry->getFeature() ?? '-'));
             $this->console->line('Task: ' . ($entry->getTask() ?? '-'));
@@ -180,7 +180,7 @@ final class BacklogPresenter
         $parts = [
             $reference,
             'kind=' . $this->boardService->getEntryKind($entry),
-            'agent=' . ($entry->getAgent() ?? BacklogMetaValue::NONE->value),
+            'developer=' . ($entry->getDeveloper() ?? BacklogMetaValue::NONE->value),
         ];
         if (!$isTask) {
             $parts[] = 'pr=' . $this->describePrStatus($entry);
@@ -198,7 +198,7 @@ final class BacklogPresenter
     public function displayTodoEntryLine(BoardEntry $entry): void
     {
         $parts = [
-            'agent=' . ($entry->getAgent() ?? '-'),
+            'developer=' . ($entry->getDeveloper() ?? '-'),
         ];
         if ($this->boardService->checkIsTaskEntry($entry)) {
             $parts[] = 'task=' . ($entry->getTask() ?? '-');

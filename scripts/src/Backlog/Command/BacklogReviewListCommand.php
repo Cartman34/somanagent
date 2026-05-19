@@ -78,7 +78,7 @@ final class BacklogReviewListCommand extends AbstractBacklogCommand
         $parts = [
             $reference,
             'kind=' . ($isTask ? BacklogBoardService::ENTRY_KIND_TASK : BacklogBoardService::ENTRY_KIND_FEATURE),
-            'agent=' . ($entry->getAgent() ?? BacklogMetaValue::NONE->value),
+            'developer=' . ($entry->getDeveloper() ?? BacklogMetaValue::NONE->value),
         ];
         if (!$isTask) {
             $pr = $entry->getPr();

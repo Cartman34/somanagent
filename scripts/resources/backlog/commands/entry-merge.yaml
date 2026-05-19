@@ -12,7 +12,7 @@ examples:
   - 'SOMANAGER_AGENT=cp-01 php scripts/backlog.php entry-merge onboarding/task-copy-review'
   - 'SOMANAGER_AGENT=cp-01 php scripts/backlog.php entry-merge delete-question-reply --body-file local/tmp/pr_body.md'
 notes:
-  - 'Relative --body-file paths for feature merges resolve first against the developer WA (from entry meta.agent), then cwd. Absolute paths are used as-is.'
+  - 'Relative --body-file paths for feature merges resolve first against the developer WA (from entry meta.developer), then cwd. Absolute paths are used as-is.'
   - 'The caller agent (SOMANAGER_AGENT) identifies the reviewer performing the merge; it is never used to resolve a developer-owned task.'
   - 'A task merge must use the full <entry-ref>. A short task slug is refused even when it is unique.'
   - 'Before merging, the command prints `Entry-ref:`, resolved type, target, merge target, and equivalent legacy command. Copy `Entry-ref:` for follow-up commands.'

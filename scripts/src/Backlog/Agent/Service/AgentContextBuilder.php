@@ -266,7 +266,7 @@ final class AgentContextBuilder
         $entry = $match->getEntry();
         $feature = $entry->getFeature() ?? '';
         $task = $entry->getTask() ?? '';
-        $devCode = $entry->getAgent() ?? '';
+        $devCode = $entry->getDeveloper() ?? '';
         $branch = $entry->getBranch() ?? '';
         $base = $entry->getBase() ?? '';
         $stage = $entry->getStage() ?? '';

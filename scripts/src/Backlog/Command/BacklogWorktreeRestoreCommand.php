@@ -45,9 +45,9 @@ final class BacklogWorktreeRestoreCommand extends AbstractBacklogCommand
     public function handle(array $commandArgs, array $options): void
     {
         $board = $this->loadBoard();
-        $agent = $this->boardService->sanitizeString((string) ($options[BacklogCliOption::AGENT->value] ?? ''));
+        $agent = $this->boardService->sanitizeString((string) ($options[BacklogCliOption::DEVELOPER->value] ?? ''));
         if ($agent === null) {
-            throw new \RuntimeException('worktree-restore requires --agent=<code>.');
+            throw new \RuntimeException('worktree-restore requires --developer=<code>.');
         }
 
         $taskMatch = $this->boardService->findTaskEntriesByAgent($board, $agent)[0] ?? null;

@@ -76,7 +76,7 @@ final class BacklogFeatureCloseCommand extends AbstractBacklogCommand
         }
 
         $this->boardService->deleteFeature($board, $feature);
-        $this->boardService->clearAgentReservations($board, $entry->getAgent() ?? '', $feature);
+        $this->boardService->clearAgentReservations($board, $entry->getDeveloper() ?? '', $feature);
         $review->clearReview($feature);
         $this->saveBoard($board, BacklogCommandName::FEATURE_CLOSE->value);
         $this->saveReviewFile($review, BacklogCommandName::FEATURE_CLOSE->value);

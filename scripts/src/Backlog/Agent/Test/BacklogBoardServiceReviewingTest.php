@@ -137,7 +137,7 @@ final class BacklogBoardServiceReviewingTest
         $entry->setKind(BacklogBoardService::ENTRY_KIND_FEATURE);
         $entry->setFeature($feature);
         $entry->setStage($stage);
-        $entry->setAgent('d01');
+        $entry->setDeveloper('d01');
         $entry->setReviewer($reviewer);
 
         return $entry;
@@ -150,7 +150,7 @@ final class BacklogBoardServiceReviewingTest
         $entry->setFeature($feature);
         $entry->setTask($task);
         $entry->setStage($stage);
-        $entry->setAgent('d01');
+        $entry->setDeveloper('d01');
         $entry->setReviewer($reviewer);
 
         return $entry;

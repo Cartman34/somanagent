@@ -67,7 +67,7 @@ final class AgentReviewerSelector
             if ($this->boardService->getNormalizedStage($entry->getStage()) !== BacklogBoard::STAGE_IN_REVIEW) {
                 continue;
             }
-            $devCode = $entry->getAgent() ?? '';
+            $devCode = $entry->getDeveloper() ?? '';
             if ($devCode === '') {
                 continue;
             }
@@ -171,7 +171,7 @@ final class AgentReviewerSelector
     public function selectByDeveloper(BacklogBoard $board, string $developerCode, string $reviewerCode): BoardEntryMatch
     {
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $index => $entry) {
-            if ($entry->getAgent() !== $developerCode) {
+            if ($entry->getDeveloper() !== $developerCode) {
                 continue;
             }
             $stage = $this->boardService->getNormalizedStage($entry->getStage());
@@ -215,7 +215,7 @@ final class AgentReviewerSelector
             if ($this->boardService->getNormalizedStage($entry->getStage()) !== BacklogBoard::STAGE_IN_REVIEW) {
                 continue;
             }
-            $devCode = $entry->getAgent() ?? '';
+            $devCode = $entry->getDeveloper() ?? '';
             if ($devCode === '') {
                 continue;
             }

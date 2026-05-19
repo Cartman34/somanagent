@@ -111,11 +111,11 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
                 "Feature {$feature} must be in " . $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_PROGRESS) . '.'
             );
         }
-        $featureAgent = $entry->getAgent();
+        $featureAgent = $entry->getDeveloper();
         if ($featureAgent === null || $featureAgent === BacklogMetaValue::NONE->value) {
             throw new \RuntimeException(
                 "Feature {$feature} has no assigned developer.\n" .
-                "Run `php scripts/backlog.php entry-assign --agent={$agent} {$feature}` to take ownership before submitting for review."
+                "Run `php scripts/backlog.php entry-assign --developer={$agent} {$feature}` to take ownership before submitting for review."
             );
         }
         if ($featureAgent !== $agent) {

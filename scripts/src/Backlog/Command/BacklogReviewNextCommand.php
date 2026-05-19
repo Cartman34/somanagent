@@ -165,7 +165,7 @@ final class BacklogReviewNextCommand extends AbstractBacklogCommand
 
     private function resolveEntryDeveloperWorktree(BoardEntry $entry): ?string
     {
-        $developerCode = $entry->getAgent();
+        $developerCode = $entry->getDeveloper();
         if ($developerCode === null || trim($developerCode) === '') {
             return null;
         }

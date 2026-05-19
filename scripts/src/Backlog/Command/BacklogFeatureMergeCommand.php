@@ -101,7 +101,7 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         $this->boardService->checkIsFeatureEntry($entry) || throw new \RuntimeException('feature-merge only applies to kind=feature entries.');
         $this->boardService->assertNoActiveTasksForFeature($board, $feature, BacklogCommandName::FEATURE_MERGE->value);
 
-        $devCode = $entry->getAgent();
+        $devCode = $entry->getDeveloper();
         $reviewerCode = $entry->getReviewer();
 
         if ($this->boardService->getFeatureStage($entry) !== BacklogBoard::STAGE_APPROVED) {

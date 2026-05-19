@@ -21,6 +21,7 @@ final class BacklogMigrationGuard
     private const SEED_APPLIED_MIGRATIONS = [
         '2026-05-17-backlog-yaml.php',
         '2026-05-18-backlog-dir.php',
+        '2026-05-19-rename-agent-to-developer.php',
     ];
 
     /**

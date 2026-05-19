@@ -159,7 +159,7 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
         $this->displayReviewNotesHint($entry, $this->loadReviewKeys());
 
         $this->presenter->displayLine('');
-        $this->statusWorktree($board, $entry->getAgent());
+        $this->statusWorktree($board, $entry->getDeveloper());
     }
 
     private function statusForTask(BacklogBoard $board, string $requestedTarget): void
@@ -172,7 +172,7 @@ final class BacklogStatusCommand extends AbstractBacklogCommand
         $this->displayReviewNotesHint($entry, $this->loadReviewKeys());
 
         $this->presenter->displayLine('');
-        $this->statusWorktree($board, $entry->getAgent());
+        $this->statusWorktree($board, $entry->getDeveloper());
     }
 
     /**

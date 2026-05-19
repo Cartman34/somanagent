@@ -22,7 +22,7 @@ use Symfony\Component\Yaml\Yaml;
  *   - feature: my-feature
  *     task: my-task        # optional
  *     type: feat           # optional
- *     agent: d01           # optional reservation
+ *     developer: d01       # optional reservation
  *     title: Task title
  *     body: |              # optional body lines (without 2-space board prefix)
  *       - Sub-task 1
@@ -30,7 +30,7 @@ use Symfony\Component\Yaml\Yaml;
  *   - kind: feature
  *     stage: development
  *     feature: my-feature
- *     agent: d01           # null-valued fields are omitted
+ *     developer: d01       # null-valued fields are omitted
  *     branch: feat/my-feature
  *     ...
  *     database: my_db      # extra metadata at the end
@@ -45,7 +45,7 @@ final class BoardYamlStorage
     private const VERSION = 1;
 
     private const KNOWN_ACTIVE_FIELDS = [
-        'kind', 'stage', 'feature', 'task', 'agent', 'reviewer',
+        'kind', 'stage', 'feature', 'task', 'developer', 'reviewer',
         'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type', 'title', 'body',
     ];
 
@@ -127,7 +127,7 @@ final class BoardYamlStorage
             $entry->setFeature($this->str($item['feature'] ?? null));
             $entry->setTask($this->str($item['task'] ?? null));
             $entry->setType($this->str($item['type'] ?? null));
-            $entry->setAgent($this->str($item['agent'] ?? null));
+            $entry->setDeveloper($this->str($item['developer'] ?? null));
             $entry->setExtraLines($this->loadBodyLines($item['body'] ?? null));
             $entries[] = $entry;
         }
@@ -151,7 +151,7 @@ final class BoardYamlStorage
             $entry->setStage($this->str($item['stage'] ?? null));
             $entry->setFeature($this->str($item['feature'] ?? null));
             $entry->setTask($this->str($item['task'] ?? null));
-            $entry->setAgent($this->str($item['agent'] ?? null));
+            $entry->setDeveloper($this->str($item['developer'] ?? null));
             $entry->setReviewer($this->str($item['reviewer'] ?? null));
             $entry->setBranch($this->str($item['branch'] ?? null));
             $entry->setFeatureBranch($this->str($item['feature-branch'] ?? null));
@@ -186,8 +186,8 @@ final class BoardYamlStorage
             if ($entry->getTask() !== null) {
                 $item['task'] = $entry->getTask();
             }
-            if ($entry->getAgent() !== null) {
-                $item['agent'] = $entry->getAgent();
+            if ($entry->getDeveloper() !== null) {
+                $item['developer'] = $entry->getDeveloper();
             }
             if ($entry->getType() !== null) {
                 $item['type'] = $entry->getType();
@@ -216,7 +216,7 @@ final class BoardYamlStorage
                 'stage' => $entry->getStage(),
                 'feature' => $entry->getFeature(),
                 'task' => $entry->getTask(),
-                'agent' => $entry->getAgent(),
+                'developer' => $entry->getDeveloper(),
                 'reviewer' => $entry->getReviewer(),
                 'branch' => $entry->getBranch(),
                 'feature-branch' => $entry->getFeatureBranch(),

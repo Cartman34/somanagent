@@ -563,7 +563,7 @@ final class BacklogBoardService
     {
         $matches = [];
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $index => $entry) {
-            if (!$this->checkIsTaskEntry($entry) || $entry->getAgent() !== $agent) {
+            if (!$this->checkIsTaskEntry($entry) || $entry->getDeveloper() !== $agent) {
                 continue;
             }
 
@@ -598,7 +598,7 @@ final class BacklogBoardService
     {
         $matches = [];
         foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $index => $entry) {
-            if (!$this->checkIsFeatureEntry($entry) || $entry->getAgent() !== $agent) {
+            if (!$this->checkIsFeatureEntry($entry) || $entry->getDeveloper() !== $agent) {
                 continue;
             }
 
@@ -716,11 +716,11 @@ final class BacklogBoardService
         $matches = [];
 
         foreach ($board->getEntries(BacklogBoard::SECTION_TODO) as $index => $entry) {
-            if ($entry->getAgent() === null) {
+            if ($entry->getDeveloper() === null) {
                 continue;
             }
 
-            if ($agent !== null && $entry->getAgent() !== $agent) {
+            if ($agent !== null && $entry->getDeveloper() !== $agent) {
                 continue;
             }
 
@@ -741,7 +741,7 @@ final class BacklogBoardService
      */
     public function hydrateEntryFromMetadata(BoardEntry $entry, array $metadata): void
     {
-        $entry->setAgent($this->sanitizeString($metadata[BoardEntry::META_AGENT] ?? null));
+        $entry->setDeveloper($this->sanitizeString($metadata[BoardEntry::META_DEVELOPER] ?? null));
         $entry->setBase($this->sanitizeString($metadata[BoardEntry::META_BASE] ?? null));
         $entry->setBlocked($this->sanitizeString($metadata[BoardEntry::META_BLOCKED] ?? null) === BacklogMetaValue::YES->value);
         $entry->setBranch($this->sanitizeString($metadata[BoardEntry::META_BRANCH] ?? null));
@@ -755,7 +755,7 @@ final class BacklogBoardService
         $entry->setType($this->sanitizeString($metadata[BoardEntry::META_TYPE] ?? null));
 
         $knownKeys = [
-            BoardEntry::META_AGENT, BoardEntry::META_BASE, BoardEntry::META_BLOCKED, BoardEntry::META_BRANCH,
+            BoardEntry::META_DEVELOPER, BoardEntry::META_BASE, BoardEntry::META_BLOCKED, BoardEntry::META_BRANCH,
             BoardEntry::META_FEATURE, BoardEntry::META_FEATURE_BRANCH, BoardEntry::META_KIND,
             BoardEntry::META_PR, BoardEntry::META_REVIEWER, BoardEntry::META_STAGE, BoardEntry::META_TASK, BoardEntry::META_TYPE,
         ];
@@ -969,7 +969,7 @@ final class BacklogBoardService
         $entries = $board->getEntries(BacklogBoard::SECTION_TODO);
 
         foreach ($entries as $entry) {
-            if ($entry->getAgent() !== $agent) {
+            if ($entry->getDeveloper() !== $agent) {
                 continue;
             }
 
@@ -977,7 +977,7 @@ final class BacklogBoardService
                 continue;
             }
 
-            $entry->setAgent(null);
+            $entry->setDeveloper(null);
         }
 
         $board->setEntries(BacklogBoard::SECTION_TODO, $entries);

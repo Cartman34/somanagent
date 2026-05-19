@@ -147,7 +147,7 @@ final class BoardYamlStorageTest
         $entry->setFeature('parent-feature');
         $entry->setTask('child-task');
         $entry->setType('tech');
-        $entry->setAgent('d05');
+        $entry->setDeveloper('d05');
         $board->setEntries(BacklogBoard::SECTION_TODO, [$entry]);
 
         $storage->save($board);
@@ -157,7 +157,7 @@ final class BoardYamlStorageTest
         if ($r->getFeature() !== 'parent-feature'
             || $r->getTask() !== 'child-task'
             || $r->getType() !== 'tech'
-            || $r->getAgent() !== 'd05'
+            || $r->getDeveloper() !== 'd05'
             || $r->getText() !== 'Scoped child task title') {
             echo "FAIL testTodoScopedTaskRoundTrip: lost field on reload\n";
             return 1;
@@ -178,7 +178,7 @@ final class BoardYamlStorageTest
         $entry->setKind('feature');
         $entry->setStage('reviewing');
         $entry->setFeature('crypto-feature');
-        $entry->setAgent('d04');
+        $entry->setDeveloper('d04');
         $entry->setReviewer('r01');
         $entry->setBranch('feat/crypto-feature');
         $entry->setBase('abc123def456');
@@ -193,7 +193,7 @@ final class BoardYamlStorageTest
         if ($r->getKind() !== 'feature'
             || $r->getStage() !== 'reviewing'
             || $r->getFeature() !== 'crypto-feature'
-            || $r->getAgent() !== 'd04'
+            || $r->getDeveloper() !== 'd04'
             || $r->getReviewer() !== 'r01'
             || $r->getBranch() !== 'feat/crypto-feature'
             || $r->getBase() !== 'abc123def456'
@@ -333,7 +333,7 @@ final class BoardYamlStorageTest
         $entry->setKind('feature');
         $entry->setStage('development');
         $entry->setFeature('order-feature');
-        $entry->setAgent('d01');
+        $entry->setDeveloper('d01');
         $entry->setBranch('feat/order-feature');
         $entry->setBase('abc');
         $board->setEntries(BacklogBoard::SECTION_ACTIVE, [$entry]);
@@ -345,7 +345,7 @@ final class BoardYamlStorageTest
             'kind:',
             'stage:',
             'feature:',
-            'agent:',
+            'developer:',
             'branch:',
             'base:',
             'title:',

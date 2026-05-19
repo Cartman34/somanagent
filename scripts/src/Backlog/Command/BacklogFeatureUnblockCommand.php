@@ -52,7 +52,7 @@ final class BacklogFeatureUnblockCommand extends AbstractBacklogCommand
         
         $entry = $match->getEntry();
         $feature = $entry->getFeature() ?? '-';
-        if ($entry->getAgent() !== $agent) {
+        if ($entry->getDeveloper() !== $agent) {
             throw new \RuntimeException("Feature {$feature} is not assigned to agent {$agent}.");
         }
 
