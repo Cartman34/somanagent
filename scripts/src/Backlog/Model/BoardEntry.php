@@ -12,7 +12,7 @@ namespace SoManAgent\Script\Backlog\Model;
  */
 final class BoardEntry
 {
-    public const META_AGENT = 'agent';
+    public const META_DEVELOPER = 'developer';
     public const META_BASE = 'base';
     public const META_BLOCKED = 'blocked';
     public const META_BRANCH = 'branch';
@@ -26,9 +26,9 @@ final class BoardEntry
     public const META_TYPE = 'type';
 
     /**
-     * Agent code currently assigned to the entry, or null when the entry is unassigned.
+     * Developer agent code currently assigned to the entry, or null when the entry is unassigned.
      */
-    private ?string $agent = null;
+    private ?string $developer = null;
 
     /**
      * Recorded Git base commit used to scope reviews and rebases for the entry branch.
@@ -150,19 +150,19 @@ final class BoardEntry
     /**
      * @return ?string
      */
-    public function getAgent(): ?string
+    public function getDeveloper(): ?string
     {
-        return $this->agent;
+        return $this->developer;
     }
 
     /**
-     * @param ?string $agent
+     * @param ?string $developer
      * @return void
      */
-    public function setAgent(?string $agent): void
+    public function setDeveloper(?string $developer): void
     {
-        $agent = trim((string) $agent);
-        $this->agent = $agent === '' || $agent === 'none' ? null : $agent;
+        $developer = trim((string) $developer);
+        $this->developer = $developer === '' || $developer === 'none' ? null : $developer;
     }
 
     /**

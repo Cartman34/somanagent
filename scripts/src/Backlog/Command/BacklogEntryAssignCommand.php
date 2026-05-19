@@ -19,7 +19,7 @@ use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 
 /**
- * Command for assigning an active backlog entry to an agent.
+ * Command for assigning an active backlog entry to a developer agent.
  */
 final class BacklogEntryAssignCommand extends AbstractBacklogCommand
 {
@@ -55,9 +55,9 @@ final class BacklogEntryAssignCommand extends AbstractBacklogCommand
     public function handle(array $commandArgs, array $options): void
     {
         $actorRole = $this->permissionService->requireWorkflowRole();
-        $agent = $options[BacklogCliOption::AGENT->value] ?? null;
+        $agent = $options[BacklogCliOption::DEVELOPER->value] ?? null;
         if (!is_string($agent)) {
-            throw new RuntimeException('Option --agent is required.');
+            throw new RuntimeException('Option --developer is required.');
         }
         if (!isset($commandArgs[0])) {
             throw new RuntimeException('entry-assign requires <entry-ref>.');
@@ -84,7 +84,7 @@ final class BacklogEntryAssignCommand extends AbstractBacklogCommand
         }
 
         $cleaned = $this->worktreeService->cleanupAbandonedManagedWorktrees($board);
-        $entry->setAgent($agent);
+        $entry->setDeveloper($agent);
         $this->saveBoard($board, BacklogCommandName::ENTRY_ASSIGN->value);
 
         $worktree = $this->worktreeService->prepareAgentWorktree($agent);

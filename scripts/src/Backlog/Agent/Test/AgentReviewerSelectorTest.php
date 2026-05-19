@@ -110,8 +110,8 @@ final class AgentReviewerSelectorTest
             return 1;
         }
 
-        if ($match->getEntry()->getAgent() !== 'd01') {
-            echo "FAIL testAutoSelectPicksFirstReviewEntry: expected agent=d01, got {$match->getEntry()->getAgent()}\n";
+        if ($match->getEntry()->getDeveloper() !== 'd01') {
+            echo "FAIL testAutoSelectPicksFirstReviewEntry: expected developer=d01, got {$match->getEntry()->getDeveloper()}\n";
             return 1;
         }
         if ($match->getEntry()->getFeature() !== self::FEATURE_MY) {
@@ -157,8 +157,8 @@ final class AgentReviewerSelectorTest
             return 1;
         }
 
-        if ($match->getEntry()->getAgent() !== 'd02') {
-            echo "FAIL testAutoSelectSkipsClaimedWorktree: expected agent=d02 (d01 claimed), got {$match->getEntry()->getAgent()}\n";
+        if ($match->getEntry()->getDeveloper() !== 'd02') {
+            echo "FAIL testAutoSelectSkipsClaimedWorktree: expected developer=d02 (d01 claimed), got {$match->getEntry()->getDeveloper()}\n";
             return 1;
         }
 
@@ -411,8 +411,8 @@ final class AgentReviewerSelectorTest
             return 1;
         }
 
-        if ($match->getEntry()->getAgent() !== 'd05') {
-            echo "FAIL testSelectByDeveloperFound: wrong agent in match\n";
+        if ($match->getEntry()->getDeveloper() !== 'd05') {
+            echo "FAIL testSelectByDeveloperFound: wrong developer in match\n";
             return 1;
         }
 
@@ -759,7 +759,7 @@ final class AgentReviewerSelectorTest
      */
     private function boardWithEntries(array $entries): string
     {
-        $order = ['kind', 'stage', 'feature', 'task', 'agent', 'reviewer', 'branch', self::YAML_KEY_FEATURE_BRANCH, 'base', 'pr', 'blocked', 'type'];
+        $order = ['kind', 'stage', 'feature', 'task', 'developer', 'reviewer', 'branch', self::YAML_KEY_FEATURE_BRANCH, 'base', 'pr', 'blocked', 'type'];
         $active = [];
         foreach ($entries as $entry) {
             $item = [];
@@ -793,7 +793,7 @@ final class AgentReviewerSelectorTest
             'kind' => 'feature',
             'stage' => 'review',
             'feature' => $feature,
-            'agent' => $agent,
+            'developer' => $agent,
             'branch' => 'feat/' . $feature,
             'base' => 'abc123def456',
             'pr' => 'none',
@@ -815,7 +815,7 @@ final class AgentReviewerSelectorTest
             'kind' => 'feature',
             'stage' => 'reviewing',
             'feature' => $feature,
-            'agent' => $agent,
+            'developer' => $agent,
             'reviewer' => $reviewer,
             'branch' => 'feat/' . $feature,
             'base' => 'abc123def456',
@@ -831,7 +831,7 @@ final class AgentReviewerSelectorTest
                 'kind' => 'feature',
                 'stage' => 'development',
                 'feature' => $feature,
-                'agent' => $agent,
+                'developer' => $agent,
                 'branch' => 'feat/' . $feature,
                 'base' => 'abc123def456',
                 'pr' => 'none',
@@ -848,7 +848,7 @@ final class AgentReviewerSelectorTest
                 'stage' => 'review',
                 'feature' => $feature,
                 'task' => $task,
-                'agent' => $agent,
+                'developer' => $agent,
                 self::YAML_KEY_FEATURE_BRANCH => 'feat/' . $feature,
                 'branch' => 'feat/' . $feature . '--' . $task,
                 'base' => 'abc123def456',
@@ -866,7 +866,7 @@ final class AgentReviewerSelectorTest
                 'stage' => 'reviewing',
                 'feature' => $feature,
                 'task' => $task,
-                'agent' => $agent,
+                'developer' => $agent,
                 'reviewer' => $reviewer,
                 self::YAML_KEY_FEATURE_BRANCH => 'feat/' . $feature,
                 'branch' => 'feat/' . $feature . '--' . $task,

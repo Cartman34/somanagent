@@ -122,13 +122,13 @@ final class BacklogReworkCommand extends AbstractBacklogCommand
             $slug = $this->boardService->normalizeFeatureSlug($reference);
 
             $featureMatch = $this->boardService->findParentFeatureEntry($board, $slug);
-            if ($featureMatch !== null && $featureMatch->getEntry()->getAgent() !== $agent) {
+            if ($featureMatch !== null && $featureMatch->getEntry()->getDeveloper() !== $agent) {
                 $featureMatch = null;
             }
 
             $taskMatches = array_values(array_filter(
                 $this->boardService->findTaskEntriesByTaskSlug($board, $slug),
-                fn(mixed $match) => $match->getEntry()->getAgent() === $agent,
+                fn(mixed $match) => $match->getEntry()->getDeveloper() === $agent,
             ));
 
             if ($featureMatch !== null && $taskMatches !== []) {
@@ -155,7 +155,7 @@ final class BacklogReworkCommand extends AbstractBacklogCommand
             throw new RuntimeException(sprintf('No active entry found for reference: %s', $reference));
         }
 
-        if ($entry->getAgent() !== $agent) {
+        if ($entry->getDeveloper() !== $agent) {
             throw new RuntimeException('rework requires the entry to be assigned to the provided agent.');
         }
 

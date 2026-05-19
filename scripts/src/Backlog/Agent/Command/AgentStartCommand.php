@@ -590,7 +590,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         $ownedMatch = $this->reviewerSelector->findOwnedReviewingEntry($board, $reviewerCode);
         if ($ownedMatch !== null) {
             $entry = $ownedMatch->getEntry();
-            $devCode = $entry->getAgent() ?? '';
+            $devCode = $entry->getDeveloper() ?? '';
             if ($devCode === '') {
                 throw new \RuntimeException(
                     'Cannot determine developer agent code for the owned reviewing entry. The entry may be unassigned.',
@@ -612,7 +612,7 @@ final class AgentStartCommand extends AbstractAgentCommand
             }
 
             $entry = $match->getEntry();
-            $devCode = $entry->getAgent() ?? '';
+            $devCode = $entry->getDeveloper() ?? '';
 
             if ($devCode === '') {
                 throw new \RuntimeException(
@@ -724,7 +724,7 @@ final class AgentStartCommand extends AbstractAgentCommand
             if ($this->boardService->getNormalizedStage($entry->getStage()) !== BacklogBoard::STAGE_IN_REVIEW) {
                 continue;
             }
-            $devCode = $entry->getAgent() ?? '';
+            $devCode = $entry->getDeveloper() ?? '';
             if ($devCode === '') {
                 continue;
             }
@@ -734,7 +734,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         $count = count($candidates);
         for ($i = 0; $i < $count; $i++) {
             [$index, $entry] = $candidates[$i];
-            $devCode = $entry->getAgent() ?? '';
+            $devCode = $entry->getDeveloper() ?? '';
             $worktree = $this->reviewerSelector->devCodeToWorktree($devCode);
             $existingReviewer = $this->reviewerSelector->findExistingReviewerForWorktree($worktree);
 

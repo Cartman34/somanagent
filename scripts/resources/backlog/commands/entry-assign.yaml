@@ -5,13 +5,13 @@ arguments:
     description: 'Active entry reference to assign (feature or task)'
 options:
   -
-    name: '--agent'
+    name: '--developer'
     description: 'Developer agent code to assign'
 examples:
-  - 'php scripts/backlog.php entry-assign delete-question-reply --agent agent-01'
-  - 'php scripts/backlog.php entry-assign delete-question-reply/cleanup --agent agent-01'
+  - 'php scripts/backlog.php entry-assign delete-question-reply --developer agent-01'
+  - 'php scripts/backlog.php entry-assign delete-question-reply/cleanup --developer agent-01'
 notes:
   - 'Works on both feature and task entries.'
-  - 'The target entry must be unassigned or already assigned to the same target agent. Missing `agent` metadata and legacy `agent: none` both mean unassigned.'
-  - 'An entry assigned to a different real agent must be unassigned before another agent can be assigned.'
+  - 'The target entry must be unassigned or already assigned to the same target developer. Missing `developer` metadata and legacy `developer: none` both mean unassigned.'
+  - 'An entry assigned to a different real developer must be unassigned before another developer can be assigned.'
   - 'A plain slug that matches both a feature and a task is rejected as ambiguous; use `<entry-ref>` to disambiguate.'

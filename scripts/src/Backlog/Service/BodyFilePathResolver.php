@@ -163,7 +163,7 @@ final class BodyFilePathResolver
                 }
             }
 
-            return $match->getEntry()->getAgent();
+            return $match->getEntry()->getDeveloper();
         } catch (\Throwable) {
             return null;
         }

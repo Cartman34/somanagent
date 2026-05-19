@@ -69,7 +69,7 @@ final class BacklogPermissionService
      *
      * @param string $actorRole Caller role (manager or developer)
      * @param ?string $actorAgent Caller agent code when actorRole is developer
-     * @param string $targetAgent Agent code passed via --agent
+     * @param string $targetAgent Developer agent code passed via --developer
      * @param string $entryRef Human-readable entry reference for error messages
      * @param BoardEntry $entry Resolved active backlog entry to assign
      */
@@ -101,11 +101,11 @@ final class BacklogPermissionService
      *
      * @param BoardEntry $entry Resolved active backlog entry to assign
      * @param string $entryRef Human-readable entry reference for error messages
-     * @param string $targetAgent Agent code passed via --agent
+     * @param string $targetAgent Developer agent code passed via --developer
      */
     private function assertEntryIsUnassignedOrAssignedToTarget(BoardEntry $entry, string $entryRef, string $targetAgent): void
     {
-        $assignedAgent = $entry->getAgent();
+        $assignedAgent = $entry->getDeveloper();
         if ($assignedAgent !== null && $assignedAgent !== $targetAgent) {
             throw new RuntimeException(sprintf(
                 'Entry %s is already assigned to %s.',
@@ -147,7 +147,7 @@ final class BacklogPermissionService
             ));
         }
 
-        $assignedAgent = $entry->getAgent();
+        $assignedAgent = $entry->getDeveloper();
         if ($assignedAgent !== $actorAgent) {
             throw new RuntimeException(sprintf(
                 'Entry %s is assigned to %s. Developer role can only unassign its own entry.',

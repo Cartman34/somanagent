@@ -240,11 +240,11 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 
 ### `entry-assign`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-assign --agent=<code> <entry-ref>`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-assign --developer=<code> <entry-ref>`.
 2. Works on both `kind=feature` and `kind=task` entries.
 3. Developer can only assign an unassigned entry to itself, or refresh an entry already assigned to itself.
 4. The script assigns the entry to that same agent and prepares the `WA`.
-5. Missing `agent` metadata and legacy `agent: none` both mean the entry is unassigned. A different real agent code means the entry is already assigned and must not be reassigned through `entry-assign`.
+5. Missing `developer` metadata and legacy `developer: none` both mean the entry is unassigned. A different real agent code means the entry is already assigned and must not be reassigned through `entry-assign`.
 6. For unassigned `kind=feature` containers created from a `[feature-slug][task-slug]`-prefixed task, this is the required step before running `review-request` on the feature. The developer takes integration ownership of the feature branch.
 
 ### `entry-unassign`
@@ -288,11 +288,11 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 
 ### `worktree-restore`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-restore --agent=<code>` or `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-restore <entry-ref>`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-restore --developer=<code>` or `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-restore <entry-ref>`.
 2. The script recreates or refreshes the managed worktree for the active feature or task recorded in backlog metadata without changing the workflow stage.
 3. Existing PHP vendors are validated with `scripts/vendor/autoload.php` and `backend/vendor/autoload.php`; when a witness is missing, the whole matching vendor directory is replaced from `WP`.
-4. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-restore --agent=<code> --force` to recreate the managed worktree completely; the script refuses `--force` when the existing worktree has local changes.
-5. Use this command when `.agent-worktrees/<agent>` was removed or when copied PHP runtime dependencies are incomplete while the backlog still has active development.
+4. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-restore --developer=<code> --force` to recreate the managed worktree completely; the script refuses `--force` when the existing worktree has local changes.
+5. Use this command when `.agent-worktrees/<developer>` was removed or when copied PHP runtime dependencies are incomplete while the backlog still has active development.
 
 ### `status`
 
@@ -318,7 +318,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 - Do not edit local backlog files directly.
 - A plain feature is considered done for Developer only when it is committed, mechanically valid, and passed to `stage=review`.
 - A `kind=task` entry may be submitted for review with `review-request`, but it is considered done for Developer only when it is committed, mechanically valid, and merged locally into its parent feature branch with `entry-merge`.
-- For `entry-assign` and `entry-unassign`, `SOMANAGER_ROLE` must be `developer` and `SOMANAGER_AGENT` must match `--agent`.
+- For `entry-assign`, `SOMANAGER_ROLE` must be `developer` and `SOMANAGER_AGENT` must match `--developer`. For `entry-unassign`, `SOMANAGER_ROLE` must be `developer` and `SOMANAGER_AGENT` must match `--agent`.
 - User workflow keywords are procedural orders. For `next`, `submit`, `rework`, and `cleanup`, execute the documented command sequence exactly as written, even if memory suggests the feature state is inconsistent or unchanged.
 - If a needed backlog action is missing from `backlog.php`, stop and ask the user instead of editing the backlog manually.
 

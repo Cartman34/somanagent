@@ -65,8 +65,8 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
 
         if ($activeEntries === []) {
             throw new \RuntimeException(
-                "Agent {$agent} has no active entry.\n" .
-                "Run `php scripts/backlog.php work-start --agent={$agent}` to start one."
+                "Developer {$agent} has no active entry.\n" .
+                "Run `php scripts/backlog.php work-start` to start one."
             );
         }
 
@@ -111,16 +111,16 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
                 "Feature {$feature} must be in " . $this->boardService->getStageLabel(BacklogBoard::STAGE_IN_PROGRESS) . '.'
             );
         }
-        $featureAgent = $entry->getAgent();
+        $featureAgent = $entry->getDeveloper();
         if ($featureAgent === null || $featureAgent === BacklogMetaValue::NONE->value) {
             throw new \RuntimeException(
                 "Feature {$feature} has no assigned developer.\n" .
-                "Run `php scripts/backlog.php entry-assign --agent={$agent} {$feature}` to take ownership before submitting for review."
+                "Run `php scripts/backlog.php entry-assign --developer={$agent} {$feature}` to take ownership before submitting for review."
             );
         }
         if ($featureAgent !== $agent) {
             throw new \RuntimeException(
-                "Feature {$feature} is assigned to agent {$featureAgent}, not {$agent}.\n" .
+                "Feature {$feature} is assigned to developer {$featureAgent}, not {$agent}.\n" .
                 "Details: php scripts/backlog.php status --agent={$agent}"
             );
         }

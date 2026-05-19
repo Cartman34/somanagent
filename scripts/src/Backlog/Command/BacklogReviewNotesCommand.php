@@ -185,7 +185,7 @@ final class BacklogReviewNotesCommand extends AbstractBacklogCommand
         if ($agent === null) {
             return;
         }
-        if ($entry->getAgent() !== $agent) {
+        if ($entry->getDeveloper() !== $agent) {
             throw new RuntimeException(sprintf(
                 'Entry %s is not assigned to agent %s.',
                 $this->boardService->checkIsTaskEntry($entry)

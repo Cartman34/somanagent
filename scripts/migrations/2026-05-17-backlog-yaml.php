@@ -252,7 +252,7 @@ function buildActiveEntry(array $current, BacklogBoardService $service): BoardEn
     $entry->setStage($meta['stage'] ?? null);
     $entry->setFeature($meta['feature'] ?? null);
     $entry->setTask($meta['task'] ?? null);
-    $entry->setAgent($meta['agent'] ?? null);
+    $entry->setDeveloper($meta['agent'] ?? null);
     $entry->setReviewer($meta['reviewer'] ?? null);
     $entry->setBranch($meta['branch'] ?? null);
     $entry->setFeatureBranch($meta['feature-branch'] ?? null);
@@ -261,7 +261,7 @@ function buildActiveEntry(array $current, BacklogBoardService $service): BoardEn
     $entry->setType($meta['type'] ?? null);
     $entry->setBlocked(($meta['blocked'] ?? null) === 'yes');
 
-    $known = ['kind', 'stage', 'feature', 'task', 'agent', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'type', 'blocked'];
+    $known = ['kind', 'stage', 'feature', 'task', 'developer', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'type', 'blocked'];
     $extras = [];
     foreach ($meta as $key => $value) {
         if (!in_array($key, $known, true)) {

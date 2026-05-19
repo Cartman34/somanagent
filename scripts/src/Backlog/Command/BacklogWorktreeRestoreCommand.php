@@ -45,9 +45,9 @@ final class BacklogWorktreeRestoreCommand extends AbstractBacklogCommand
     public function handle(array $commandArgs, array $options): void
     {
         $board = $this->loadBoard();
-        $agent = $this->boardService->sanitizeString((string) ($options[BacklogCliOption::AGENT->value] ?? ''));
+        $agent = $this->boardService->sanitizeString((string) ($options[BacklogCliOption::DEVELOPER->value] ?? ''));
         if ($agent === null) {
-            throw new \RuntimeException('worktree-restore requires --agent=<code>.');
+            throw new \RuntimeException('worktree-restore requires --developer=<code>.');
         }
 
         $taskMatch = $this->boardService->findTaskEntriesByAgent($board, $agent)[0] ?? null;
@@ -55,13 +55,13 @@ final class BacklogWorktreeRestoreCommand extends AbstractBacklogCommand
         $match = $taskMatch ?? $featureMatch;
 
         if ($match === null) {
-            throw new \RuntimeException("Agent {$agent} has no active task or feature.");
+            throw new \RuntimeException("Developer {$agent} has no active task or feature.");
         }
 
         $entry = $match->getEntry();
         $branch = $entry->getBranch();
         if ($branch === null) {
-            throw new \RuntimeException("Agent {$agent} has an active entry but no branch metadata.");
+            throw new \RuntimeException("Developer {$agent} has an active entry but no branch metadata.");
         }
 
         if (isset($options[BacklogCliOption::FORCE->value])) {

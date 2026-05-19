@@ -18,6 +18,9 @@ use SoManAgent\Script\TextSlugger;
  */
 final class BacklogBoardServiceReviewingTest
 {
+    private const REFERENCE_FEATURE = 'reference-feature';
+    private const REFERENCE_TASK = 'child-task';
+
     /**
      * Runs all test cases and returns the total number of failures.
      */
@@ -78,12 +81,12 @@ final class BacklogBoardServiceReviewingTest
     private function testEntryReferenceUsesFeatureSlugForFeatures(): int
     {
         $service = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
-        $entry = $this->entry('reference-feature', 'review', 'r01');
-        $entry->setBranch('tech/reference-feature');
+        $entry = $this->entry(self::REFERENCE_FEATURE, 'review', 'r01');
+        $entry->setBranch('tech/' . self::REFERENCE_FEATURE);
 
         $reference = $service->getEntryReference($entry);
-        if ($reference !== 'reference-feature') {
-            echo "FAIL testEntryReferenceUsesFeatureSlugForFeatures: expected reference-feature, got {$reference}\n";
+        if ($reference !== self::REFERENCE_FEATURE) {
+            echo "FAIL testEntryReferenceUsesFeatureSlugForFeatures: expected " . self::REFERENCE_FEATURE . ", got {$reference}\n";
             return 1;
         }
 
@@ -94,12 +97,12 @@ final class BacklogBoardServiceReviewingTest
     private function testEntryReferenceUsesFullReferenceForTasks(): int
     {
         $service = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
-        $entry = $this->taskEntry('reference-feature', 'child-task', 'review', 'r01');
-        $entry->setBranch('tech/reference-feature--child-task');
+        $entry = $this->taskEntry(self::REFERENCE_FEATURE, self::REFERENCE_TASK, 'review', 'r01');
+        $entry->setBranch('tech/' . self::REFERENCE_FEATURE . '--' . self::REFERENCE_TASK);
 
         $reference = $service->getEntryReference($entry);
-        if ($reference !== 'reference-feature/child-task') {
-            echo "FAIL testEntryReferenceUsesFullReferenceForTasks: expected reference-feature/child-task, got {$reference}\n";
+        if ($reference !== self::REFERENCE_FEATURE . '/' . self::REFERENCE_TASK) {
+            echo "FAIL testEntryReferenceUsesFullReferenceForTasks: expected " . self::REFERENCE_FEATURE . '/' . self::REFERENCE_TASK . ", got {$reference}\n";
             return 1;
         }
 
@@ -111,14 +114,14 @@ final class BacklogBoardServiceReviewingTest
     {
         $service = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         $board = new BacklogBoard('/tmp/board.md');
-        $entry = $this->taskEntry('reference-feature', 'child-task', 'review', 'r01');
-        $entry->setBranch('tech/reference-feature--child-task');
+        $entry = $this->taskEntry(self::REFERENCE_FEATURE, self::REFERENCE_TASK, 'review', 'r01');
+        $entry->setBranch('tech/' . self::REFERENCE_FEATURE . '--' . self::REFERENCE_TASK);
         $board->setEntries(BacklogBoard::SECTION_ACTIVE, [$entry]);
 
         try {
-            $service->resolveTaskByReference($board, 'tech/reference-feature--child-task', 'review-check');
+            $service->resolveTaskByReference($board, 'tech/' . self::REFERENCE_FEATURE . '--' . self::REFERENCE_TASK, 'review-check');
         } catch (\RuntimeException $exception) {
-            if (str_contains($exception->getMessage(), 'Did you mean reference-feature/child-task?')) {
+            if (str_contains($exception->getMessage(), 'Did you mean ' . self::REFERENCE_FEATURE . '/' . self::REFERENCE_TASK . '?')) {
                 echo "OK testTaskNotFoundSuggestsEntryReferenceForKnownBranch\n";
                 return 0;
             }
@@ -137,7 +140,7 @@ final class BacklogBoardServiceReviewingTest
         $entry->setKind(BacklogBoardService::ENTRY_KIND_FEATURE);
         $entry->setFeature($feature);
         $entry->setStage($stage);
-        $entry->setAgent('d01');
+        $entry->setDeveloper('d01');
         $entry->setReviewer($reviewer);
 
         return $entry;
@@ -150,7 +153,7 @@ final class BacklogBoardServiceReviewingTest
         $entry->setFeature($feature);
         $entry->setTask($task);
         $entry->setStage($stage);
-        $entry->setAgent('d01');
+        $entry->setDeveloper('d01');
         $entry->setReviewer($reviewer);
 
         return $entry;

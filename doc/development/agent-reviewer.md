@@ -97,7 +97,7 @@ Rules:
 ### `review-list`
 
 1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-list`.
-2. The script prints entries waiting in `stage=review`, one per line shaped `- <ref> kind=<feature|task> agent=<x> ...`, where `<ref>` is the stable reference usable by `review-next`.
+2. The script prints entries waiting in `stage=review`, one per line shaped `- <ref> kind=<feature|task> developer=<x> ...`, where `<ref>` is the stable reference usable by `review-next`.
 3. Entries already in `stage=reviewing` are excluded because they are claimed by another reviewer.
 
 ### `review-next`
@@ -183,7 +183,7 @@ Also check:
 
 ### `review-reject`
 
-1. Prepare the review body file: one plain finding per line kept verbatim. Lines that start with `#`, `##`, or `###` followed by a space are rejected as Markdown headings; `####` and above are allowed. Write the file under your WA's `local/tmp/` — a relative path resolves automatically against the developer's WA (derived from the entry's `meta.agent`), so you do not need to know the WP path.
+1. Prepare the review body file: one plain finding per line kept verbatim. Lines that start with `#`, `##`, or `###` followed by a space are rejected as Markdown headings; `####` and above are allowed. Write the file under your WA's `local/tmp/` — a relative path resolves automatically against the developer's WA (derived from the entry's `meta.developer`), so you do not need to know the WP path.
 2. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-reject <entry-ref> --body-file=<path>`.
 3. Use the stable `<entry-ref>` for the target feature or child task entry.
 4. Short task references are refused; use `<entry-ref>`.
@@ -191,7 +191,7 @@ Also check:
 
 ### `review-amend`
 
-1. Prepare the replacement review body file: one plain finding per line kept verbatim. Lines that start with `#`, `##`, or `###` followed by a space are rejected as Markdown headings; `####` and above are allowed. Write the file under your WA's `local/tmp/` — a relative path resolves automatically against the developer's WA (derived from the entry's `meta.agent`), so you do not need to know the WP path.
+1. Prepare the replacement review body file: one plain finding per line kept verbatim. Lines that start with `#`, `##`, or `###` followed by a space are rejected as Markdown headings; `####` and above are allowed. Write the file under your WA's `local/tmp/` — a relative path resolves automatically against the developer's WA (derived from the entry's `meta.developer`), so you do not need to know the WP path.
 2. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-amend <entry-ref> --body-file=<path>`.
 3. Use the stable `<entry-ref>` for the target feature or child task entry.
 4. Short task references are refused; use `<entry-ref>`.
@@ -202,7 +202,7 @@ Also check:
 
 ### `review-approve`
 
-1. For a feature: prepare the approved PR body file. Relative paths (e.g. `local/tmp/approve.md`) resolve automatically: the resolver first checks the developer's WA (derived from the entry's `meta.agent`), then falls back to cwd.
+1. For a feature: prepare the approved PR body file. Relative paths (e.g. `local/tmp/approve.md`) resolve automatically: the resolver first checks the developer's WA (derived from the entry's `meta.developer`), then falls back to cwd.
 2. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-approve <entry-ref> [--body-file=<path>]`.
 3. Pass `--body-file` for a feature entry. Do not pass `--body-file` for a child task entry.
 4. Short task references are refused; use `<entry-ref>`.

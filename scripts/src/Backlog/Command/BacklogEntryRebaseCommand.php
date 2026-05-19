@@ -78,10 +78,10 @@ final class BacklogEntryRebaseCommand extends AbstractBacklogCommand
         $entry = $match->getEntry();
         $entryReference = $this->boardService->getEntryReference($entry);
 
-        $agent = $entry->getAgent();
+        $agent = $entry->getDeveloper();
         if ($agent === null || $agent === '') {
             throw new \RuntimeException(sprintf(
-                'Cannot rebase entry "%s": no agent is assigned. Assign it first with entry-assign.',
+                'Cannot rebase entry "%s": no developer is assigned. Assign it first with entry-assign.',
                 $slug,
             ));
         }

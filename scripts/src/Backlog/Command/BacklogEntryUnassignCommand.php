@@ -74,12 +74,12 @@ final class BacklogEntryUnassignCommand extends AbstractBacklogCommand
         $actorAgent = $actorRole === BacklogPermissionService::ROLE_DEVELOPER ? $this->permissionService->requireWorkflowAgent() : null;
 
         $this->permissionService->assertCanUnassignEntry($actorRole, $actorAgent, $callerAgent, $entryRef, $entry);
-        $assignedAgent = $entry->getAgent();
+        $assignedAgent = $entry->getDeveloper();
         if ($assignedAgent === null) {
-            throw new RuntimeException(sprintf('%s %s is not assigned to any agent.', ucfirst($kind), $entryRef));
+            throw new RuntimeException(sprintf('%s %s is not assigned to any developer.', ucfirst($kind), $entryRef));
         }
 
-        $entry->setAgent(null);
+        $entry->setDeveloper(null);
         $this->saveBoard($board, BacklogCommandName::ENTRY_UNASSIGN->value);
         $cleaned = $this->worktreeService->cleanupAbandonedManagedWorktrees($board);
 

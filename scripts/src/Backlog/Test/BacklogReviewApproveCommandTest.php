@@ -191,7 +191,7 @@ final class BacklogReviewApproveCommandTest
         $entry->setKind('feature');
         $entry->setStage($stage);
         $entry->setFeature('reviewer-visibility-' . str_replace('-', '', $stage));
-        $entry->setAgent('d13');
+        $entry->setDeveloper('d13');
         $entry->setReviewer($reviewer);
         $entry->setBranch('tech/reviewer-visibility');
         $entry->setBase('abc123');

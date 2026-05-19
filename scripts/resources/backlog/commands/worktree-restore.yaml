@@ -2,20 +2,20 @@ description: 'Recreate the managed worktree for an active feature or task withou
 arguments:
   -
     name: '<entry-ref>'
-    description: 'Entry reference to restore when --agent is not used'
+    description: 'Entry reference to restore when --developer is not used'
 options:
   -
-    name: '--agent'
-    description: 'Restore the worktree for the active feature or task assigned to this agent'
+    name: '--developer'
+    description: 'Restore the worktree for the active feature or task assigned to this developer'
   -
     name: '--force'
     description: 'Remove and recreate the managed worktree after refusing dirty local changes'
 examples:
-  - 'php scripts/backlog.php worktree-restore --agent agent-01'
-  - 'php scripts/backlog.php worktree-restore --agent agent-01 --force'
+  - 'php scripts/backlog.php worktree-restore --developer agent-01'
+  - 'php scripts/backlog.php worktree-restore --developer agent-01 --force'
   - 'php scripts/backlog.php worktree-restore my-feature-slug'
 notes:
-  - 'Use this when `.agent-worktrees/<agent>` was removed while the backlog still has active development.'
+  - 'Use this when `.agent-worktrees/<developer>` was removed while the backlog still has active development.'
   - 'The command checks out the branch recorded in backlog metadata and does not change the workflow stage.'
   - 'Existing PHP vendor directories are kept when their `autoload.php` witness exists, and replaced from WP when that witness is missing.'
   - '`--force` recreates the managed worktree only after confirming it has no local changes.'

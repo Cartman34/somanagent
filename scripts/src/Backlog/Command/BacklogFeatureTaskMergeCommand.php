@@ -89,10 +89,10 @@ final class BacklogFeatureTaskMergeCommand extends AbstractBacklogCommand
         }
         $entry = $match->getEntry();
         $this->boardService->checkIsTaskEntry($entry) || throw new \RuntimeException('feature-task-merge only applies to kind=task entries.');
-        if ($agent !== null && $entry->getAgent() !== $agent) {
+        if ($agent !== null && $entry->getDeveloper() !== $agent) {
             throw new \RuntimeException('feature-task-merge requires the task to be assigned to the provided agent.');
         }
-        $devCode = $entry->getAgent();
+        $devCode = $entry->getDeveloper();
         $reviewerCode = $entry->getReviewer();
         $taskAgent = $devCode ?? '';
 

@@ -111,7 +111,7 @@ final class AgentCodeService
             try {
                 $board = $this->boardService->loadBoard($this->boardPath);
                 foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
-                    $agent = $entry->getAgent() ?? '';
+                    $agent = $entry->getDeveloper() ?? '';
                     if (preg_match('/^' . preg_quote($prefix, '/') . '(\d{2,})$/', $agent, $m)) {
                         $used[] = (int) $m[1];
                     }

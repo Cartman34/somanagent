@@ -67,7 +67,7 @@ final class AgentWhoamiCommand extends AbstractAgentCommand
                         $entry = $match->getEntry();
                         $feature = $entry->getFeature() ?? '';
                         $task = $entry->getTask() ?? '';
-                        $devCode = $entry->getAgent() ?? '';
+                        $devCode = $entry->getDeveloper() ?? '';
                         $ref = $task !== '' ? "{$feature}/{$task}" : $feature;
                         $current = "[reviewing] {$ref} (developer: {$devCode})";
                     } else {
