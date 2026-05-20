@@ -123,12 +123,12 @@ Rules:
 ### `review-reopen`
 
 1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php review-reopen <entry-ref>`.
-2. The entry must be in `approved` stage; any other stage is refused. An explicit `<entry-ref>` is always required — no auto-resolution.
-3. Clears any existing review notes for the entry from `local/backlog-review.md`.
-4. Reviewer behavior: transitions the entry from `approved` to `reviewing` and sets `reviewer` to the calling reviewer code.
-5. Non-exclusive: a different reviewer may use `review-reopen` to claim an approved entry even if another reviewer was previously recorded in `reviewer`.
-6. Use `review-reopen` when an approved entry must go through another review cycle — for example when a post-approval finding requires re-evaluation before `merge` is called.
-7. A manager calling with `SOMANAGER_ROLE=manager` instead transitions the entry from `approved` to `review` and clears `reviewer`, putting the entry back in the open queue.
+2. The entry must be in `approved` or `rejected` stage; any other stage is refused. An explicit `<entry-ref>` is always required — no auto-resolution.
+3. When the source stage is `approved`, existing review notes are cleared. When the source stage is `rejected`, existing review notes are preserved.
+4. Reviewer behavior: transitions the entry from `approved` or `rejected` to `reviewing` and sets `reviewer` to the calling reviewer code.
+5. Non-exclusive: a different reviewer may use `review-reopen` to claim the entry even if another reviewer was previously recorded in `reviewer`.
+6. Use `review-reopen` when an approved entry must go through another review cycle (e.g. a post-approval finding), or to contest an erroneous rejection without forcing a spurious rework cycle.
+7. A manager calling with `SOMANAGER_ROLE=manager` instead transitions the entry from `approved` or `rejected` to `review` and clears `reviewer`, putting the entry back in the open queue.
 
 ### `review-notes`
 
