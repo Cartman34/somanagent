@@ -105,7 +105,7 @@ Every entry carries one of three types: `feat`, `fix`, or `tech`. The rule and t
 7. `Developer` may only unassign itself from its own active entry, whether it is a `kind=task` or a `kind=feature`.
 8. `unassign` accepts an `<entry-ref>`, or no reference to fall back to the caller agent's single active entry. A plain slug that matches both a feature and a task is rejected as ambiguous.
 9. Missing `developer` metadata and legacy `developer: none` both mean an entry is unassigned. A different real agent code means the entry is assigned and must be unassigned before another developer can be assigned.
-10. Manager callers may target active entries explicitly for `entry-rename <entry-ref>`, `entry-release <entry-ref>`, `review-cancel <entry-ref>`, `feature-block <feature>`, and `feature-unblock <feature>`. In `SOMANAGER_ROLE=manager` mode, the explicit reference is mandatory; there is no fallback to a manager-owned active entry.
+10. Manager callers may target active entries explicitly for `rename <entry-ref>`, `release <entry-ref>`, `review-cancel <entry-ref>`, `feature-block <feature>`, and `feature-unblock <feature>`. In `SOMANAGER_ROLE=manager` mode, the explicit reference is mandatory; there is no fallback to a manager-owned active entry.
 
 ## Queued Task Format
 

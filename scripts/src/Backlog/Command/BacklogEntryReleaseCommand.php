@@ -59,7 +59,7 @@ final class BacklogEntryReleaseCommand extends AbstractBacklogCommand
         $requestedTarget = $this->boardService->sanitizeString($commandArgs[0] ?? null);
 
         if ($isManager && $requestedTarget === null) {
-            throw new \RuntimeException('entry-release requires an explicit <entry-ref> when SOMANAGER_ROLE=manager.');
+            throw new \RuntimeException('release requires an explicit <entry-ref> when SOMANAGER_ROLE=manager.');
         }
 
         if ($requestedTarget !== null) {
