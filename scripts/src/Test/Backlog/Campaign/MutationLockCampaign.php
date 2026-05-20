@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Test\Backlog\Campaign;
 
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
 
@@ -47,8 +48,8 @@ final class MutationLockCampaign implements CampaignInterface
         // without corrupting the board. Without the lock they would race on the queued tasks
         // and both might consume the first task, leaving the board inconsistent.
         [[$codeAlpha, $outAlpha], [$codeBeta, $outBeta]] = $driver->runTwoConcurrentBacklog(
-            ['work-start'],
-            ['work-start'],
+            [BacklogCommandName::WORK_START->value],
+            [BacklogCommandName::WORK_START->value],
             ['SOMANAGER_AGENT' => $agentAlpha],
             ['SOMANAGER_AGENT' => $agentBeta],
         );

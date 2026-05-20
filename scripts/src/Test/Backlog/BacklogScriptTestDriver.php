@@ -1026,7 +1026,7 @@ MD);
      */
     public function renameEntry(string $agent, string $newText): void
     {
-        $this->runBacklog(['entry-rename', $newText], ['SOMANAGER_AGENT' => $agent]);
+        $this->runBacklog([BacklogCommandName::ENTRY_RENAME->value, $newText], ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -1036,7 +1036,7 @@ MD);
      */
     public function renameEntryAsManager(string $manager, string $entryRef, string $newText): void
     {
-        $this->runBacklog(['entry-rename', $entryRef, $newText], [
+        $this->runBacklog([BacklogCommandName::ENTRY_RENAME->value, $entryRef, $newText], [
             'SOMANAGER_ROLE' => 'manager',
             'SOMANAGER_AGENT' => $manager,
         ]);
@@ -1048,7 +1048,7 @@ MD);
      */
     public function assertRenameEntryAsManagerWithoutReferenceFails(string $manager, string $needle): void
     {
-        $this->assertBacklogFails(['entry-rename'], $needle, [
+        $this->assertBacklogFails([BacklogCommandName::ENTRY_RENAME->value], $needle, [
             'SOMANAGER_ROLE' => 'manager',
             'SOMANAGER_AGENT' => $manager,
         ]);
@@ -1062,7 +1062,7 @@ MD);
      */
     public function assertRenameEntryFails(string $agent, string $entryRef, string $newText, string $needle): void
     {
-        $this->assertBacklogFails(['entry-rename', $entryRef, $newText], $needle, ['SOMANAGER_AGENT' => $agent]);
+        $this->assertBacklogFails([BacklogCommandName::ENTRY_RENAME->value, $entryRef, $newText], $needle, ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -1132,7 +1132,7 @@ MD);
      */
     public function blockFeature(string $agent, string $feature): void
     {
-        $this->runBacklog(['feature-block', $feature], ['SOMANAGER_AGENT' => $agent]);
+        $this->runBacklog([BacklogCommandName::FEATURE_BLOCK->value, $feature], ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -1141,7 +1141,7 @@ MD);
      */
     public function blockFeatureAsManager(string $manager, string $feature): void
     {
-        $this->runBacklog(['feature-block', $feature], [
+        $this->runBacklog([BacklogCommandName::FEATURE_BLOCK->value, $feature], [
             'SOMANAGER_ROLE' => 'manager',
             'SOMANAGER_AGENT' => $manager,
         ]);
@@ -1153,7 +1153,7 @@ MD);
      */
     public function assertBlockFeatureAsManagerWithoutReferenceFails(string $manager, string $needle): void
     {
-        $this->assertBacklogFails(['feature-block'], $needle, [
+        $this->assertBacklogFails([BacklogCommandName::FEATURE_BLOCK->value], $needle, [
             'SOMANAGER_ROLE' => 'manager',
             'SOMANAGER_AGENT' => $manager,
         ]);
@@ -1166,7 +1166,7 @@ MD);
      */
     public function assertBlockFeatureFails(string $agent, string $feature, string $needle): void
     {
-        $this->assertBacklogFails(['feature-block', $feature], $needle, ['SOMANAGER_AGENT' => $agent]);
+        $this->assertBacklogFails([BacklogCommandName::FEATURE_BLOCK->value, $feature], $needle, ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -1175,7 +1175,7 @@ MD);
      */
     public function unblockFeature(string $agent, string $feature): void
     {
-        $this->runBacklog(['feature-unblock', $feature], ['SOMANAGER_AGENT' => $agent]);
+        $this->runBacklog([BacklogCommandName::FEATURE_UNBLOCK->value, $feature], ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -1184,7 +1184,7 @@ MD);
      */
     public function unblockFeatureAsManager(string $manager, string $feature): void
     {
-        $this->runBacklog(['feature-unblock', $feature], [
+        $this->runBacklog([BacklogCommandName::FEATURE_UNBLOCK->value, $feature], [
             'SOMANAGER_ROLE' => 'manager',
             'SOMANAGER_AGENT' => $manager,
         ]);
@@ -1196,7 +1196,7 @@ MD);
      */
     public function assertUnblockFeatureAsManagerWithoutReferenceFails(string $manager, string $needle): void
     {
-        $this->assertBacklogFails(['feature-unblock'], $needle, [
+        $this->assertBacklogFails([BacklogCommandName::FEATURE_UNBLOCK->value], $needle, [
             'SOMANAGER_ROLE' => 'manager',
             'SOMANAGER_AGENT' => $manager,
         ]);
@@ -1209,7 +1209,7 @@ MD);
      */
     public function assertUnblockFeatureFails(string $agent, string $feature, string $needle): void
     {
-        $this->assertBacklogFails(['feature-unblock', $feature], $needle, ['SOMANAGER_AGENT' => $agent]);
+        $this->assertBacklogFails([BacklogCommandName::FEATURE_UNBLOCK->value, $feature], $needle, ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
