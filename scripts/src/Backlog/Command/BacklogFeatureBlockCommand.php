@@ -61,7 +61,7 @@ final class BacklogFeatureBlockCommand extends AbstractBacklogCommand
         $match = $requestedFeature !== null
             ? $this->boardService->resolveFeature($board, $this->boardService->normalizeFeatureSlug($requestedFeature))
             : $this->boardService->resolveSingleFeatureForAgent($board, $agent);
-        
+
         $entry = $match->getEntry();
         $feature = $entry->getFeature() ?? '-';
         if (!$isManager && $entry->getDeveloper() !== $agent) {
@@ -73,8 +73,8 @@ final class BacklogFeatureBlockCommand extends AbstractBacklogCommand
 
         $prNumber = $this->pullRequestService->findPrNumberByBranch($entry->getBranch() ?? '');
         if ($prNumber !== null) {
-            $tag = $this->boardService->getFeatureStage($entry) === BacklogBoard::STAGE_APPROVED 
-                ? $this->pullRequestService->getPrTypeFromChanges($entry->getBase() ?? '', $entry->getBranch() ?? '') 
+            $tag = $this->boardService->getFeatureStage($entry) === BacklogBoard::STAGE_APPROVED
+                ? $this->pullRequestService->getPrTypeFromChanges($entry->getBase() ?? '', $entry->getBranch() ?? '')
                 : PullRequestTag::WIP;
             $title = $this->pullRequestService->buildPrTitle($tag, $entry->getText(), true);
             $this->pullRequestService->editPrTitle($prNumber, $title);

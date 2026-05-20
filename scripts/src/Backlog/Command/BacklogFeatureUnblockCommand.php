@@ -57,7 +57,7 @@ final class BacklogFeatureUnblockCommand extends AbstractBacklogCommand
         $match = $requestedFeature !== null
             ? $this->boardService->resolveFeature($board, $this->boardService->normalizeFeatureSlug($requestedFeature))
             : $this->boardService->resolveSingleFeatureForAgent($board, $agent);
-        
+
         $entry = $match->getEntry();
         $feature = $entry->getFeature() ?? '-';
         if (!$isManager && $entry->getDeveloper() !== $agent) {
