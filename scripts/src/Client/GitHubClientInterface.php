@@ -23,8 +23,14 @@ interface GitHubClientInterface
      */
     public function editPr(int $prNumber, ?string $title = null, ?string $bodyFilePath = null): void;
 
+    /**
+     * Close a PR without merging.
+     */
     public function closePr(int $prNumber): void;
 
+    /**
+     * Merge a PR.
+     */
     public function mergePr(int $prNumber): void;
 
     /**

@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Runner;
 
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\GitHub\Enum\GitHubCommandName;
 use SoManAgent\Script\Service\GitService;
 
@@ -86,7 +87,7 @@ final class GitHubRunner extends AbstractScriptRunner
         $title    = $this->getSingleOption($flags, 'title');
         $head     = $this->getSingleOption($flags, 'head');
         $base     = $this->getSingleOption($flags, 'base') ?? GitService::MAIN_BRANCH;
-        $bodyFile = $this->getSingleOption($flags, 'body-file');
+        $bodyFile = $this->getSingleOption($flags, BacklogCliOption::BODY_FILE->value);
 
         if (is_string($bodyFile)) {
             $body = $this->readBodyFile($bodyFile);
@@ -185,7 +186,7 @@ final class GitHubRunner extends AbstractScriptRunner
             $patch['title'] = $title;
         }
 
-        $bodyFile = $this->getSingleOption($flags, 'body-file');
+        $bodyFile = $this->getSingleOption($flags, BacklogCliOption::BODY_FILE->value);
         $body = $this->getSingleOption($flags, 'body');
 
         if (is_string($bodyFile)) {

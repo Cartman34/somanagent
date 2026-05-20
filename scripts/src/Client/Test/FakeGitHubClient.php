@@ -21,16 +21,25 @@ final class FakeGitHubClient implements GitHubClientInterface
 
     private int $mergeCallCount = 0;
 
+    /**
+     * Configure the fake state for a given PR number.
+     */
     public function setPrState(int $prNumber, string $state): void
     {
         $this->prStates[$prNumber] = $state;
     }
 
+    /**
+     * Returns the number of times mergePr was called.
+     */
     public function getMergeCallCount(): int
     {
         return $this->mergeCallCount;
     }
 
+    /**
+     * Returns the configured state for the given PR number.
+     */
     public function getPrState(int $prNumber): string
     {
         if (!isset($this->prStates[$prNumber])) {
@@ -40,16 +49,25 @@ final class FakeGitHubClient implements GitHubClientInterface
         return $this->prStates[$prNumber];
     }
 
+    /**
+     * Records the merge call; does not perform any real merge.
+     */
     public function mergePr(int $prNumber): void
     {
         $this->mergeCallCount++;
     }
 
+    /**
+     * Returns an empty string (no real API calls in tests).
+     */
     public function listPrs(): string
     {
         return '';
     }
 
+    /**
+     * Returns an empty string (no real API calls in tests).
+     */
     public function listAllPrs(): string
     {
         return '';
@@ -63,10 +81,19 @@ final class FakeGitHubClient implements GitHubClientInterface
         return [0, ''];
     }
 
+    /**
+     * No-op in test context.
+     *
+     * @param string|null $title
+     * @param string|null $bodyFilePath
+     */
     public function editPr(int $prNumber, ?string $title = null, ?string $bodyFilePath = null): void
     {
     }
 
+    /**
+     * No-op in test context.
+     */
     public function closePr(int $prNumber): void
     {
     }
