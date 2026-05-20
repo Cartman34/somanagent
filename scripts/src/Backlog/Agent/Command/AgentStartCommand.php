@@ -165,7 +165,7 @@ final class AgentStartCommand extends AbstractAgentCommand
             ['name' => '--reset', 'description' => 'Remove and recreate the worktree before launching (developer only; refuses if dirty)'],
             ['name' => '--force-new', 'description' => 'Drop a live session and create a fresh one (developer only)'],
             ['name' => '--watch', 'description' => 'Wait for an eligible developer or reviewer entry before launching'],
-            ['name' => '--watch-interval=<sec>', 'description' => 'Polling interval for --watch, in seconds (default: 3)'],
+            ['name' => '--watch-interval=<sec>', 'description' => 'Polling interval for --watch, in seconds (default: 2)'],
             ['name' => '--loop', 'description' => 'With --watch, return to watching after a clean client exit'],
             ['name' => '--feature=<slug>', 'description' => 'Reviewer: target the feature entry at stage=review with this slug'],
             ['name' => '--task=<feature/task>', 'description' => 'Reviewer: target the task entry at stage=review with this reference'],
@@ -732,7 +732,7 @@ final class AgentStartCommand extends AbstractAgentCommand
     {
         $raw = $this->getSingleOption($options, BacklogCliOption::WATCH_INTERVAL->value);
         if ($raw === null) {
-            return 3;
+            return 2;
         }
         if (!preg_match('/^\d+$/', $raw)) {
             throw new \RuntimeException('--watch-interval must be a non-negative integer.');
