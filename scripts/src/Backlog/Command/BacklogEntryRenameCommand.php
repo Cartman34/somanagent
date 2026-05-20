@@ -99,14 +99,6 @@ final class BacklogEntryRenameCommand extends AbstractBacklogCommand
      */
     private function resolveCallerEntryAndText(BacklogBoard $board, string $agent, array $commandArgs): array
     {
-        $activeEntries = $this->boardService->findActiveEntriesByAgent($board, $agent);
-        if ($activeEntries === []) {
-            throw new \RuntimeException(
-                "Agent {$agent} has no active entry.\n" .
-                "Run `php scripts/backlog.php work-start --agent={$agent}` to start one."
-            );
-        }
-
         $firstArgument = $this->boardService->sanitizeString($commandArgs[0] ?? null);
         if ($firstArgument !== null && count($commandArgs) > 1) {
             $explicit = $this->findActiveEntryByReferenceIfPresent($board, $firstArgument);
@@ -121,6 +113,14 @@ final class BacklogEntryRenameCommand extends AbstractBacklogCommand
 
                 return [$explicit, $this->boardService->sanitizeString(implode(' ', array_slice($commandArgs, 1)))];
             }
+        }
+
+        $activeEntries = $this->boardService->findActiveEntriesByAgent($board, $agent);
+        if ($activeEntries === []) {
+            throw new \RuntimeException(
+                "Agent {$agent} has no active entry.\n" .
+                "Run `php scripts/backlog.php work-start --agent={$agent}` to start one."
+            );
         }
 
         return [$activeEntries[0], $this->boardService->sanitizeString(implode(' ', $commandArgs))];
