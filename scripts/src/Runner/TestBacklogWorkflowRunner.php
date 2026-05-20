@@ -32,7 +32,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
 
     private const CAMPAIGN_BOARD_FORMAT_NORMALIZATION = 'board-format-normalization';
     private const CAMPAIGN_ENTRY_CREATE_FORMATS = 'entry-create-formats';
-    private const CAMPAIGN_WORK_START_TYPE_PREFIX = 'work-start-type-prefix';
+    private const CAMPAIGN_START_TYPE_PREFIX = 'start-type-prefix';
     private const CAMPAIGN_TODO_AND_PLAIN_FEATURE_LIFECYCLE = 'todo-and-plain-feature-lifecycle';
     private const CAMPAIGN_SCOPED_TASK_LIFECYCLE = 'scoped-task-lifecycle';
     private const CAMPAIGN_MUTATION_LOCK = 'mutation-lock';
@@ -58,7 +58,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
     {
         return array_merge(
             [
-                ['name' => '--campaign', 'description' => 'Campaign to run: help, board-format-normalization, todo-and-plain-feature-lifecycle, scoped-task-lifecycle, entry-create-formats, work-start-type-prefix, feature-review-lifecycle, mutation-lock, pending-migration, user-merge, list-flags, or all'],
+                ['name' => '--campaign', 'description' => 'Campaign to run: help, board-format-normalization, todo-and-plain-feature-lifecycle, scoped-task-lifecycle, entry-create-formats, start-type-prefix, feature-review-lifecycle, mutation-lock, pending-migration, user-merge, list-flags, or all'],
                 ['name' => '--allow-remote', 'description' => 'Allow campaigns that push branches or create/merge GitHub PRs'],
                 ['name' => '--allow-integration', 'description' => 'Allow steps that require Docker/app containers to be running (e.g. migrate --generate)'],
                 ['name' => '--keep-artifacts', 'description' => 'Keep test campaign artifacts under local/tests/ after execution'],
@@ -165,7 +165,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
                 $campaigns['help'],
                 $campaigns[self::CAMPAIGN_BOARD_FORMAT_NORMALIZATION],
                 $campaigns[self::CAMPAIGN_ENTRY_CREATE_FORMATS],
-                $campaigns[self::CAMPAIGN_WORK_START_TYPE_PREFIX],
+                $campaigns[self::CAMPAIGN_START_TYPE_PREFIX],
                 $campaigns[self::CAMPAIGN_TODO_AND_PLAIN_FEATURE_LIFECYCLE],
                 $campaigns[self::CAMPAIGN_SCOPED_TASK_LIFECYCLE],
             ];
@@ -215,7 +215,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
                 'help' => new HelpCampaign(),
                 self::CAMPAIGN_BOARD_FORMAT_NORMALIZATION => new BoardFormatNormalizationCampaign(),
                 self::CAMPAIGN_ENTRY_CREATE_FORMATS => new TaskCreateFormatsCampaign(),
-                self::CAMPAIGN_WORK_START_TYPE_PREFIX => new WorkStartTypePrefixCampaign(),
+                self::CAMPAIGN_START_TYPE_PREFIX => new WorkStartTypePrefixCampaign(),
                 self::CAMPAIGN_TODO_AND_PLAIN_FEATURE_LIFECYCLE => new TodoAndPlainFeatureLifecycleCampaign(),
                 self::CAMPAIGN_SCOPED_TASK_LIFECYCLE => new ScopedTaskLifecycleCampaign(),
                 self::CAMPAIGN_MUTATION_LOCK => new MutationLockCampaign(),

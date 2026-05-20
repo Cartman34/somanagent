@@ -23,7 +23,7 @@ final class WorkStartTypePrefixCampaign implements CampaignInterface
 {
     public function getName(): string
     {
-        return 'work-start-type-prefix';
+        return 'start-type-prefix';
     }
 
     public function run(BacklogScriptTestDriver $driver, BacklogScriptTestContext $context): void
