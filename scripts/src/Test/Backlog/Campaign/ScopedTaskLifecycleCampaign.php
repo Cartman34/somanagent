@@ -50,6 +50,10 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->renameEntry($context->agentPrimary, $renamedTaskText);
         $driver->assertStatusContains($context->agentPrimary, $renamedTaskText, true);
         $driver->assertStatusContains($context->scopedFeature, $renamedTaskText);
+        $managerRenamedTaskText = 'Manager renamed child task A';
+        $driver->renameEntryAsManager(self::MANAGER_AGENT, $taskARef, $managerRenamedTaskText);
+        $driver->assertStatusContains($context->agentPrimary, $managerRenamedTaskText, true);
+        $driver->assertStatusContains($context->scopedFeature, $managerRenamedTaskText);
 
         $rejectBody = $driver->createBodyFile('test-task-review-reject.md', ['1. Reject child task for test workflow.']);
         $invalidRejectBody = $driver->createBodyFile('test-task-review-invalid.md', ['### Task review']);
@@ -67,6 +71,11 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         if (!str_contains($reviewNextOutput, $taskARef)) {
             throw new \RuntimeException('Expected review-next to return the active task review.');
         }
+        $driver->assertContains($reviewNextOutput, 'Entry-ref: ' . $taskARef);
+        $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_REVIEWING);
+        $driver->reviewCancelAsManager(self::MANAGER_AGENT, $taskARef);
+        $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_PENDING_REVIEW);
+        $reviewNextOutput = $driver->reviewNext($context->agentSecondary, $taskARef);
         $driver->assertContains($reviewNextOutput, 'Entry-ref: ' . $taskARef);
         $driver->assertTaskStage($taskARef, BacklogBoard::STAGE_REVIEWING);
         // legacy command names must fall through to the standard unknown-command error
@@ -126,7 +135,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->assertContains($featureListOutput, $taskARef . ' kind=task');
         $driver->assertContains($featureListOutput, $context->scopedFeature . ' kind=feature');
 
-        $driver->mergeTask($taskARef);
+        $driver->mergeTaskAsManager(self::MANAGER_AGENT, $taskARef, '-');
 
         // After task merge, parent must keep no agent (no auto-assignment).
         $driver->assertStatusContains($context->scopedFeature, 'Developer: none');
@@ -150,7 +159,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->rework($context->agentPrimary, $taskBRef);
         $driver->requestTaskReview($context->agentPrimary);
         $driver->approveTaskViaUnifiedCommand($context->agentSecondary, $taskBRef);
-        $driver->mergeTask($taskBRef);
+        $driver->mergeTask($taskBRef, '-');
 
         $driver->closeFeature($context->scopedFeature);
         $driver->assertActiveFeatureMissing($context->scopedFeature);
@@ -317,7 +326,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->startNextFeature($context->agentPrimary);
 
         // Simulate a feature container that was explicitly assigned to a different agent
-        // before the task merge. The parent has no `agent:` line when unset, so we insert
+        // before the task merge. The parent has no `developer:` line when unset, so we insert
         // one between `feature:` and `branch:` (which is unique to the feature meta block).
         $driver->replaceBoardText(
             sprintf("    feature: %s\n    branch:", $feature),
@@ -418,12 +427,11 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
             sprintf('Ambiguous reference %s: matches both a feature and a task.', $ambSlug),
         );
 
-        // Cleanup so the next campaign starts from a clean board.
-        // agentPrimary's scoped task must be released first; this also removes the parent feature container.
-        $driver->releaseEntry($context->agentPrimary, $ambSlug);
-        $driver->releaseEntry($context->agentSecondary, $ambSlug);
+        // Cleanup: release agentPrimary's task first (parent feature auto-removed when last task is gone),
+        // then close the plain feature that agentSecondary started.
+        $driver->releaseEntry($context->agentPrimary, $ambFeatureContainer . '/' . $ambSlug);
         $driver->removeFirstTodoTask();
-        $driver->removeFirstTodoTask();
+        $driver->closeFeature($ambSlug);
     }
 
     /**
@@ -535,7 +543,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
             sprintf('Ambiguous reference %s: matches both a feature and a task.', $taskSlug),
         );
 
-        $driver->releaseEntry($context->agentSecondary, $taskSlug);
-        $driver->removeFirstTodoTask();
+        // Cleanup: close the plain feature (was started → already removed from todo).
+        $driver->closeFeature($taskSlug);
     }
 }

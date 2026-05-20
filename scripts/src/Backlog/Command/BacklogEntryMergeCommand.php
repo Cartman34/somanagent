@@ -10,6 +10,7 @@ namespace SoManAgent\Script\Backlog\Command;
 use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Model\BoardEntryMatch;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
@@ -51,27 +52,28 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
      */
     public function handle(array $commandArgs, array $options): void
     {
-        $reviewer = $this->resolveReviewer();
+        $caller = $this->resolveCallerAgent();
+        $callerRole = $this->readCallerRole() ?? '-';
         $reference = $this->resolveReference($commandArgs);
         $board = $this->loadBoard();
 
         if (str_contains($reference, '/')) {
-            $this->handleTaskMerge($board, $reference, $reviewer, $options);
+            $this->handleTaskMerge($board, $reference, $caller, $callerRole, $options);
 
             return;
         }
 
-        $this->handleFeatureMerge($board, $reference, $reviewer, $options);
+        $this->handleFeatureMerge($board, $reference, $caller, $callerRole, $options);
     }
 
-    private function resolveReviewer(): string
+    private function resolveCallerAgent(): string
     {
-        $reviewer = $this->boardService->sanitizeString($this->requireCallerAgent());
-        if ($reviewer === null) {
+        $caller = $this->boardService->sanitizeString($this->requireCallerAgent());
+        if ($caller === null) {
             throw new \RuntimeException('Command requires SOMANAGER_AGENT=<code>.');
         }
 
-        return $reviewer;
+        return $caller;
     }
 
     /**
@@ -90,10 +92,11 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
     /**
      * @param array<string, bool|string> $options
      */
-    private function handleFeatureMerge(BacklogBoard $board, string $reference, string $reviewer, array $options): void
+    private function handleFeatureMerge(BacklogBoard $board, string $reference, string $caller, string $callerRole, array $options): void
     {
         $feature = $this->boardService->normalizeFeatureSlug($reference);
-        if ($this->boardService->findParentFeatureEntry($board, $feature) === null) {
+        $featureMatch = $this->boardService->findParentFeatureEntry($board, $feature);
+        if ($featureMatch === null) {
             $taskMatches = $this->boardService->findTaskEntriesByTaskSlug($board, $feature);
             if ($taskMatches !== []) {
                 throw new \RuntimeException(sprintf(
@@ -116,7 +119,9 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
         }
 
         $this->displayResolvedMerge(
-            $reviewer,
+            $featureMatch->getEntry(),
+            $caller,
+            $callerRole,
             'feature',
             $feature,
             $feature,
@@ -130,7 +135,7 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
     /**
      * @param array<string, bool|string> $options
      */
-    private function handleTaskMerge(BacklogBoard $board, string $reference, string $reviewer, array $options): void
+    private function handleTaskMerge(BacklogBoard $board, string $reference, string $caller, string $callerRole, array $options): void
     {
         if (array_key_exists(BacklogCliOption::BODY_FILE->value, $options)) {
             throw new \RuntimeException('entry-merge accepts --body-file only for feature merges.');
@@ -142,7 +147,9 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
         $parentFeature = $entry->getFeature() ?? '';
 
         $this->displayResolvedMerge(
-            $reviewer,
+            $entry,
+            $caller,
+            $callerRole,
             'task',
             $target,
             $target,
@@ -186,7 +193,9 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
     }
 
     private function displayResolvedMerge(
-        string $reviewer,
+        BoardEntry $entry,
+        string $caller,
+        string $callerRole,
         string $type,
         string $target,
         string $entryReference,
@@ -195,7 +204,8 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
     ): void {
         $this->presenter->displayLine('[Entry merge]');
         $this->presenter->displayLine('Entry-ref: ' . $entryReference);
-        $this->presenter->displayLine('Reviewer: ' . $reviewer);
+        $this->presenter->displayLine('Reviewer: ' . ($entry->getReviewer() ?? '-'));
+        $this->presenter->displayLine(sprintf('Caller: %s (%s)', $caller, $callerRole));
         $this->presenter->displayLine('Resolved type: ' . $type);
         $this->presenter->displayLine('Target: ' . $target);
         $this->presenter->displayLine('Merge target: ' . $mergeTarget);

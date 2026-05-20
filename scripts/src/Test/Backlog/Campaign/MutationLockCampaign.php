@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Test\Backlog\Campaign;
 
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
 
@@ -20,6 +21,7 @@ final class MutationLockCampaign implements CampaignInterface
 {
     private const FEATURE_ALPHA = 'lock-feat-alpha';
     private const FEATURE_BETA = 'lock-feat-beta';
+    private const MANAGER_AGENT = 'test-m01';
 
     public function getName(): string
     {
@@ -46,8 +48,8 @@ final class MutationLockCampaign implements CampaignInterface
         // without corrupting the board. Without the lock they would race on the queued tasks
         // and both might consume the first task, leaving the board inconsistent.
         [[$codeAlpha, $outAlpha], [$codeBeta, $outBeta]] = $driver->runTwoConcurrentBacklog(
-            ['work-start'],
-            ['work-start'],
+            [BacklogCommandName::WORK_START->value],
+            [BacklogCommandName::WORK_START->value],
             ['SOMANAGER_AGENT' => $agentAlpha],
             ['SOMANAGER_AGENT' => $agentBeta],
         );
@@ -77,9 +79,10 @@ final class MutationLockCampaign implements CampaignInterface
         $driver->assertActiveFeatureExists(self::FEATURE_ALPHA);
         $driver->assertActiveFeatureExists(self::FEATURE_BETA);
 
-        // Cleanup: release both features (no commits, so entry-release is allowed).
-        $driver->releaseEntry($agentAlpha, self::FEATURE_ALPHA);
-        $driver->releaseEntry($agentBeta, self::FEATURE_BETA);
+        // Cleanup: manager release bypasses ownership so it works regardless of which agent
+        // got which feature during the concurrent race.
+        $driver->releaseEntryAsManager(self::MANAGER_AGENT, self::FEATURE_ALPHA);
+        $driver->releaseEntryAsManager(self::MANAGER_AGENT, self::FEATURE_BETA);
 
         $driver->assertActiveFeatureMissing(self::FEATURE_ALPHA);
         $driver->assertActiveFeatureMissing(self::FEATURE_BETA);
@@ -103,8 +106,6 @@ final class MutationLockCampaign implements CampaignInterface
             ));
         }
 
-        // Verify there is no overlap: each agent must reference exactly one of the two features,
-        // and they must not reference the same feature.
         $alphaFeature = $alphaGotAlpha ? self::FEATURE_ALPHA : self::FEATURE_BETA;
         $betaFeature = $betaGotAlpha ? self::FEATURE_ALPHA : self::FEATURE_BETA;
 

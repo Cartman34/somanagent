@@ -1,7 +1,14 @@
-description: 'Rename the active entry text for the caller agent'
+description: 'Rename an active entry text'
+arguments:
+  -
+    name: '[<entry-ref>] <new-text>'
+    description: 'Developer/reviewer callers may omit <entry-ref> to rename their active entry; manager callers must pass an explicit <entry-ref>.'
 examples:
   - 'SOMANAGER_AGENT=agent-01 php scripts/backlog.php entry-rename "New description for the active task or feature"'
+  - 'SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-rename onboarding/task-copy-review "New task description"'
 notes:
   - 'Accepts the agent''s single active entry, whether kind=task or kind=feature.'
+  - 'With SOMANAGER_ROLE=manager, <entry-ref> is mandatory and may target an unassigned entry.'
+  - 'Developer and reviewer callers remain restricted to entries assigned to the caller agent.'
   - 'For kind=task, also updates the matching contribution line in the parent feature container to keep them in sync.'
   - 'Fails when the agent has no active entry.'

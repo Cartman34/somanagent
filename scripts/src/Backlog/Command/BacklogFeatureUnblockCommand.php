@@ -17,6 +17,8 @@ use SoManAgent\Script\Service\PullRequestService;
  */
 final class BacklogFeatureUnblockCommand extends AbstractBacklogCommand
 {
+    private const ROLE_MANAGER = 'manager';
+
     private PullRequestService $pullRequestService;
 
     /**
@@ -45,14 +47,20 @@ final class BacklogFeatureUnblockCommand extends AbstractBacklogCommand
     public function handle(array $commandArgs, array $options): void
     {
         $agent = $this->requireCallerAgent();
+        $isManager = $this->readCallerRole() === self::ROLE_MANAGER;
+        $requestedFeature = $this->boardService->sanitizeString($commandArgs[0] ?? null);
+        if ($isManager && $requestedFeature === null) {
+            throw new \RuntimeException('feature-unblock requires an explicit <feature> when SOMANAGER_ROLE=manager.');
+        }
+
         $board = $this->loadBoard();
-        $match = isset($commandArgs[0])
-            ? $this->boardService->resolveFeature($board, $this->boardService->normalizeFeatureSlug($commandArgs[0]))
+        $match = $requestedFeature !== null
+            ? $this->boardService->resolveFeature($board, $this->boardService->normalizeFeatureSlug($requestedFeature))
             : $this->boardService->resolveSingleFeatureForAgent($board, $agent);
-        
+
         $entry = $match->getEntry();
         $feature = $entry->getFeature() ?? '-';
-        if ($entry->getDeveloper() !== $agent) {
+        if (!$isManager && $entry->getDeveloper() !== $agent) {
             throw new \RuntimeException("Feature {$feature} is not assigned to developer {$agent}.");
         }
 

@@ -64,6 +64,10 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
             '   ',
             'review-cancel requires an explicit <entry-ref> reference.',
         );
+        $driver->assertReviewCancelAsManagerWithoutReferenceFails(
+            self::MANAGER_AGENT,
+            'review-cancel requires an explicit <entry-ref> reference.',
+        );
 
         $driver->createTodoTask(sprintf('[%s] %s', $context->plainFeature, $context->plainFeature));
         $driver->assertTodoContains($context->plainFeature);
@@ -135,6 +139,8 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
         $driver->assertTodoContains($context->assignFeature);
         $driver->removeFirstTodoTask();
 
+        $this->assertManagerOverridesOnUnassignedFeature($driver, $context);
+
         $singlePrefixSlug = 'test-single-prefix';
         $driver->createTodoTask(sprintf('[%s] Single prefix feature description', $singlePrefixSlug));
         $startOutput = $driver->startNextFeature($context->agentPrimary);
@@ -156,6 +162,70 @@ final class TodoAndPlainFeatureLifecycleCampaign implements CampaignInterface
             $committedFeature,
             'Active entry already has development work and cannot be released back to todo.',
         );
+    }
+
+    /**
+     * Manager can target an explicit unassigned active feature, while non-manager callers
+     * remain restricted to their own active entry.
+     */
+    private function assertManagerOverridesOnUnassignedFeature(
+        BacklogScriptTestDriver $driver,
+        BacklogScriptTestContext $context,
+    ): void {
+        $feature = 'test-manager-override-feature';
+        $renamed = 'Manager renamed unassigned feature';
+
+        $driver->assertRenameEntryAsManagerWithoutReferenceFails(
+            self::MANAGER_AGENT,
+            'entry-rename requires an explicit <entry-ref> when SOMANAGER_ROLE=manager.',
+        );
+        $driver->assertBlockFeatureAsManagerWithoutReferenceFails(
+            self::MANAGER_AGENT,
+            'feature-block requires an explicit <feature> when SOMANAGER_ROLE=manager.',
+        );
+        $driver->assertUnblockFeatureAsManagerWithoutReferenceFails(
+            self::MANAGER_AGENT,
+            'feature-unblock requires an explicit <feature> when SOMANAGER_ROLE=manager.',
+        );
+        $driver->assertReleaseEntryAsManagerWithoutReferenceFails(
+            self::MANAGER_AGENT,
+            'entry-release requires an explicit <entry-ref> when SOMANAGER_ROLE=manager.',
+        );
+
+        $driver->createTodoTask(sprintf('[%s] Feature for manager override coverage', $feature));
+        $driver->startNextFeature($context->agentPrimary);
+        $driver->assertRenameEntryFails(
+            $context->agentSecondary,
+            $feature,
+            'Secondary agent must not rename this',
+            sprintf('Entry %s is not assigned to caller agent %s.', $feature, $context->agentSecondary),
+        );
+        $driver->assertBlockFeatureFails(
+            $context->agentSecondary,
+            $feature,
+            sprintf('Feature %s is not assigned to developer %s.', $feature, $context->agentSecondary),
+        );
+        $driver->assertUnblockFeatureFails(
+            $context->agentSecondary,
+            $feature,
+            sprintf('Feature %s is not assigned to developer %s.', $feature, $context->agentSecondary),
+        );
+        $driver->assertReleaseEntryFails(
+            $context->agentSecondary,
+            $feature,
+            sprintf('Entry %s is not assigned to caller agent %s.', $feature, $context->agentSecondary),
+        );
+
+        $driver->unassignEntryAsManager($feature, self::MANAGER_AGENT);
+        $driver->renameEntryAsManager(self::MANAGER_AGENT, $feature, $renamed);
+        $driver->assertStatusContains($feature, $renamed);
+        $driver->blockFeatureAsManager(self::MANAGER_AGENT, $feature);
+        $driver->assertStatusContains($feature, 'Blocker: blocked');
+        $driver->unblockFeatureAsManager(self::MANAGER_AGENT, $feature);
+        $driver->assertStatusContains($feature, 'Blocker: -');
+        $driver->releaseEntryAsManager(self::MANAGER_AGENT, $feature);
+        $driver->assertTodoContains($renamed);
+        $driver->removeFirstTodoTask();
     }
 
     /**

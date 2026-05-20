@@ -19,6 +19,8 @@ use SoManAgent\Script\Service\PullRequestService;
  */
 final class BacklogFeatureBlockCommand extends AbstractBacklogCommand
 {
+    private const ROLE_MANAGER = 'manager';
+
     private PullRequestService $pullRequestService;
 
     /**
@@ -49,20 +51,30 @@ final class BacklogFeatureBlockCommand extends AbstractBacklogCommand
     public function handle(array $commandArgs, array $options): void
     {
         $agent = $this->requireCallerAgent();
+        $isManager = $this->readCallerRole() === self::ROLE_MANAGER;
+        $requestedFeature = $this->boardService->sanitizeString($commandArgs[0] ?? null);
+        if ($isManager && $requestedFeature === null) {
+            throw new \RuntimeException('feature-block requires an explicit <feature> when SOMANAGER_ROLE=manager.');
+        }
+
         $board = $this->loadBoard();
-        $match = isset($commandArgs[0])
-            ? $this->boardService->resolveFeature($board, $this->boardService->normalizeFeatureSlug($commandArgs[0]))
+        $match = $requestedFeature !== null
+            ? $this->boardService->resolveFeature($board, $this->boardService->normalizeFeatureSlug($requestedFeature))
             : $this->boardService->resolveSingleFeatureForAgent($board, $agent);
-        
+
         $entry = $match->getEntry();
         $feature = $entry->getFeature() ?? '-';
+        if (!$isManager && $entry->getDeveloper() !== $agent) {
+            throw new \RuntimeException("Feature {$feature} is not assigned to developer {$agent}.");
+        }
+
         $entry->setBlocked(true);
         $this->saveBoard($board, BacklogCommandName::FEATURE_BLOCK->value);
 
         $prNumber = $this->pullRequestService->findPrNumberByBranch($entry->getBranch() ?? '');
         if ($prNumber !== null) {
-            $tag = $this->boardService->getFeatureStage($entry) === BacklogBoard::STAGE_APPROVED 
-                ? $this->pullRequestService->getPrTypeFromChanges($entry->getBase() ?? '', $entry->getBranch() ?? '') 
+            $tag = $this->boardService->getFeatureStage($entry) === BacklogBoard::STAGE_APPROVED
+                ? $this->pullRequestService->getPrTypeFromChanges($entry->getBase() ?? '', $entry->getBranch() ?? '')
                 : PullRequestTag::WIP;
             $title = $this->pullRequestService->buildPrTitle($tag, $entry->getText(), true);
             $this->pullRequestService->editPrTitle($prNumber, $title);

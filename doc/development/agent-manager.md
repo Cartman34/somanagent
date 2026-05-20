@@ -35,6 +35,18 @@ Read this file only when the active task requires backlog management or workflow
 - For `entry-unassign`, `--developer=<code>` identifies the caller developer. Use an explicit `<entry-ref>` to choose the entry to unassign.
 - Every manager backlog command must be prefixed exactly as `SOMANAGER_ROLE=manager SOMANAGER_AGENT=<code> php scripts/backlog.php ...`.
 
+## Explicit Entry Overrides
+
+Managers do not have an auto-picked active entry, so manager calls that mutate an existing entry must name the target explicitly.
+
+- `entry-rename <entry-ref> "<new text>"` renames the targeted active feature or task, including unassigned entries. For tasks, the parent feature contribution line is updated too.
+- `feature-block <feature>` and `feature-unblock <feature>` mutate the targeted active feature, including an unassigned feature container.
+- `review-cancel <entry-ref>` moves any `reviewing` entry back to `review` and clears its reviewer, regardless of which reviewer claimed it.
+- `entry-release <entry-ref>` returns an untouched `development` entry to `todo`, with the same no-development and child-task constraints as the developer flow.
+- `entry-merge <entry-ref>` may be invoked by a manager for an explicit merge instruction. Its output prints both the stored reviewer (`Reviewer:`) and the manager caller (`Caller:`) for traceability.
+
+If the explicit `<entry-ref>` or `<feature>` is omitted in manager mode, these commands fail instead of falling back to a caller-owned active entry.
+
 ## Session Environment
 
 Manager sessions are started by the operator with:

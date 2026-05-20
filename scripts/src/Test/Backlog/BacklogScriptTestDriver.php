@@ -405,6 +405,18 @@ MD);
     }
 
     /**
+     * @param string $manager Agent code used as manager caller
+     * @param string $entryRef Entry ref to release
+     */
+    public function releaseEntryAsManager(string $manager, string $entryRef): void
+    {
+        $this->runBacklog([BacklogCommandName::ENTRY_RELEASE->value, $entryRef], [
+            'SOMANAGER_ROLE' => 'manager',
+            'SOMANAGER_AGENT' => $manager,
+        ]);
+    }
+
+    /**
      * @param string $agent      Agent attempting the release
      * @param string $entryRef   Entry ref to release
      * @param string $needle     Expected error message
@@ -412,6 +424,18 @@ MD);
     public function assertReleaseEntryFails(string $agent, string $entryRef, string $needle): void
     {
         $this->assertBacklogFails([BacklogCommandName::ENTRY_RELEASE->value, $entryRef], $needle, ['SOMANAGER_AGENT' => $agent]);
+    }
+
+    /**
+     * @param string $manager Agent code used as manager caller
+     * @param string $needle Expected error message
+     */
+    public function assertReleaseEntryAsManagerWithoutReferenceFails(string $manager, string $needle): void
+    {
+        $this->assertBacklogFails([BacklogCommandName::ENTRY_RELEASE->value], $needle, [
+            'SOMANAGER_ROLE' => 'manager',
+            'SOMANAGER_AGENT' => $manager,
+        ]);
     }
 
     /**
@@ -485,6 +509,18 @@ MD);
     }
 
     /**
+     * @param string $manager Manager agent code
+     * @param string $reference Entry reference
+     */
+    public function reviewCancelAsManager(string $manager, string $reference): void
+    {
+        $this->runBacklog([BacklogCommandName::REVIEW_CANCEL->value, $reference], [
+            'SOMANAGER_ROLE' => 'manager',
+            'SOMANAGER_AGENT' => $manager,
+        ]);
+    }
+
+    /**
      * @param string $reviewer Reviewer agent code
      * @param string $reference Optional entry reference; empty to omit
      * @param string $needle Expected error message
@@ -496,6 +532,18 @@ MD);
             $args[] = $reference;
         }
         $this->assertBacklogFails($args, $needle, ['SOMANAGER_AGENT' => $reviewer]);
+    }
+
+    /**
+     * @param string $manager Manager agent code
+     * @param string $needle Expected error message
+     */
+    public function assertReviewCancelAsManagerWithoutReferenceFails(string $manager, string $needle): void
+    {
+        $this->assertBacklogFails([BacklogCommandName::REVIEW_CANCEL->value], $needle, [
+            'SOMANAGER_ROLE' => 'manager',
+            'SOMANAGER_AGENT' => $manager,
+        ]);
     }
 
     /**
@@ -835,12 +883,35 @@ MD);
     /**
      * @param string $reference Task reference to merge
      */
-    public function mergeTask(string $reference): void
+    public function mergeTask(string $reference, ?string $expectedReviewer = null, ?string $expectedCaller = null): void
     {
         $output = $this->runBacklog([BacklogCommandName::ENTRY_MERGE->value, $reference], ['SOMANAGER_AGENT' => self::TEST_REVIEWER_AGENT]);
         $this->assertOutputContains($output, 'Entry-ref: ' . $reference);
+        if ($expectedReviewer !== null) {
+            $this->assertOutputContains($output, 'Reviewer: ' . $expectedReviewer);
+        }
+        if ($expectedCaller !== null) {
+            $this->assertOutputContains($output, 'Caller: ' . $expectedCaller);
+        }
         $this->assertOutputContains($output, 'Resolved type: task');
         $this->assertOutputContains($output, 'Equivalent command: feature-task-merge ' . $reference);
+    }
+
+    /**
+     * @param string $manager Manager agent code
+     * @param string $reference Task reference to merge
+     * @param string $expectedReviewer Stored reviewer expected in the output
+     */
+    public function mergeTaskAsManager(string $manager, string $reference, string $expectedReviewer): void
+    {
+        $output = $this->runBacklog([BacklogCommandName::ENTRY_MERGE->value, $reference], [
+            'SOMANAGER_ROLE' => 'manager',
+            'SOMANAGER_AGENT' => $manager,
+        ]);
+        $this->assertOutputContains($output, 'Entry-ref: ' . $reference);
+        $this->assertOutputContains($output, 'Reviewer: ' . $expectedReviewer);
+        $this->assertOutputContains($output, 'Caller: ' . $manager . ' (manager)');
+        $this->assertOutputContains($output, 'Resolved type: task');
     }
 
     /**
@@ -955,7 +1026,43 @@ MD);
      */
     public function renameEntry(string $agent, string $newText): void
     {
-        $this->runBacklog(['entry-rename', $newText], ['SOMANAGER_AGENT' => $agent]);
+        $this->runBacklog([BacklogCommandName::ENTRY_RENAME->value, $newText], ['SOMANAGER_AGENT' => $agent]);
+    }
+
+    /**
+     * @param string $manager Manager agent code
+     * @param string $entryRef Entry reference to rename
+     * @param string $newText New entry text
+     */
+    public function renameEntryAsManager(string $manager, string $entryRef, string $newText): void
+    {
+        $this->runBacklog([BacklogCommandName::ENTRY_RENAME->value, $entryRef, $newText], [
+            'SOMANAGER_ROLE' => 'manager',
+            'SOMANAGER_AGENT' => $manager,
+        ]);
+    }
+
+    /**
+     * @param string $manager Manager agent code
+     * @param string $needle Expected error message
+     */
+    public function assertRenameEntryAsManagerWithoutReferenceFails(string $manager, string $needle): void
+    {
+        $this->assertBacklogFails([BacklogCommandName::ENTRY_RENAME->value], $needle, [
+            'SOMANAGER_ROLE' => 'manager',
+            'SOMANAGER_AGENT' => $manager,
+        ]);
+    }
+
+    /**
+     * @param string $agent Caller agent
+     * @param string $entryRef Explicit entry reference
+     * @param string $newText New entry text
+     * @param string $needle Expected error message
+     */
+    public function assertRenameEntryFails(string $agent, string $entryRef, string $newText, string $needle): void
+    {
+        $this->assertBacklogFails([BacklogCommandName::ENTRY_RENAME->value, $entryRef, $newText], $needle, ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -1025,7 +1132,41 @@ MD);
      */
     public function blockFeature(string $agent, string $feature): void
     {
-        $this->runBacklog(['feature-block', $feature], ['SOMANAGER_AGENT' => $agent]);
+        $this->runBacklog([BacklogCommandName::FEATURE_BLOCK->value, $feature], ['SOMANAGER_AGENT' => $agent]);
+    }
+
+    /**
+     * @param string $manager Manager agent code
+     * @param string $feature Feature slug
+     */
+    public function blockFeatureAsManager(string $manager, string $feature): void
+    {
+        $this->runBacklog([BacklogCommandName::FEATURE_BLOCK->value, $feature], [
+            'SOMANAGER_ROLE' => 'manager',
+            'SOMANAGER_AGENT' => $manager,
+        ]);
+    }
+
+    /**
+     * @param string $manager Manager agent code
+     * @param string $needle Expected error message
+     */
+    public function assertBlockFeatureAsManagerWithoutReferenceFails(string $manager, string $needle): void
+    {
+        $this->assertBacklogFails([BacklogCommandName::FEATURE_BLOCK->value], $needle, [
+            'SOMANAGER_ROLE' => 'manager',
+            'SOMANAGER_AGENT' => $manager,
+        ]);
+    }
+
+    /**
+     * @param string $agent Caller agent
+     * @param string $feature Feature slug
+     * @param string $needle Expected error message
+     */
+    public function assertBlockFeatureFails(string $agent, string $feature, string $needle): void
+    {
+        $this->assertBacklogFails([BacklogCommandName::FEATURE_BLOCK->value, $feature], $needle, ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -1034,7 +1175,41 @@ MD);
      */
     public function unblockFeature(string $agent, string $feature): void
     {
-        $this->runBacklog(['feature-unblock', $feature], ['SOMANAGER_AGENT' => $agent]);
+        $this->runBacklog([BacklogCommandName::FEATURE_UNBLOCK->value, $feature], ['SOMANAGER_AGENT' => $agent]);
+    }
+
+    /**
+     * @param string $manager Manager agent code
+     * @param string $feature Feature slug
+     */
+    public function unblockFeatureAsManager(string $manager, string $feature): void
+    {
+        $this->runBacklog([BacklogCommandName::FEATURE_UNBLOCK->value, $feature], [
+            'SOMANAGER_ROLE' => 'manager',
+            'SOMANAGER_AGENT' => $manager,
+        ]);
+    }
+
+    /**
+     * @param string $manager Manager agent code
+     * @param string $needle Expected error message
+     */
+    public function assertUnblockFeatureAsManagerWithoutReferenceFails(string $manager, string $needle): void
+    {
+        $this->assertBacklogFails([BacklogCommandName::FEATURE_UNBLOCK->value], $needle, [
+            'SOMANAGER_ROLE' => 'manager',
+            'SOMANAGER_AGENT' => $manager,
+        ]);
+    }
+
+    /**
+     * @param string $agent Caller agent
+     * @param string $feature Feature slug
+     * @param string $needle Expected error message
+     */
+    public function assertUnblockFeatureFails(string $agent, string $feature, string $needle): void
+    {
+        $this->assertBacklogFails([BacklogCommandName::FEATURE_UNBLOCK->value, $feature], $needle, ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
