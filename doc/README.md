@@ -32,6 +32,7 @@ It lets you assemble generic AI agent teams, assign them roles and skills, then 
 | [Realtime Updates](technical/realtime.md) | Mercure architecture, event model, topics, and diagrams |
 | [Adapters](technical/adapters.md) | Hexagonal ports and their implementations |
 | [Configuration](technical/configuration.md) | Environment variables, .env file |
+| [System dependencies](technical/system-dependencies.md) | Host-level system dependencies required to run the project, with scope and purpose |
 | [Translations Strategy](technical/translations.md) | Conventions and migration strategy for translator-backed application messages |
 
 ### Quick reference — which doc for which task
@@ -44,6 +45,7 @@ It lets you assemble generic AI agent teams, assign them roles and skills, then 
 | Applying a PHPDoc, JSDoc, or CSS class rule | [conventions.md](technical/conventions.md) |
 | Adding a translation key or migrating a French string | [translations.md](technical/translations.md) |
 | Configuring environment variables | [configuration.md](technical/configuration.md) |
+| Adding or upgrading a host system dependency | [system-dependencies.md](technical/system-dependencies.md) |
 | Adding or modifying a script in `scripts/` | [scripts.md](development/scripts.md) |
 | Writing or updating a local spec under `local/specs/` | [spec-conventions.md](development/spec-conventions.md) |
 | Understanding the hexagonal architecture | [architecture.md](technical/architecture.md) |

@@ -1,6 +1,6 @@
 # Installation and Getting Started
 
-> See also: [Configuration](../technical/configuration.md) · [Scripts](scripts.md) · [Symfony Commands](commands.md)
+> See also: [Configuration](../technical/configuration.md) · [System dependencies](../technical/system-dependencies.md) · [Scripts](scripts.md) · [Symfony Commands](commands.md)
 
 ## Prerequisites
 
