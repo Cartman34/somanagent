@@ -115,7 +115,7 @@ final class BacklogCommitGateCommandTest
             mkdir($this->testBoardDir, 0o755, true);
         }
         // Entry exists but stage key is absent — getStage() returns null
-        $yaml = "version: 1\ntodo: []\nactive:\n  - kind: feature\n    feature: test-feature\n    agent: d99\n    branch: tech/test-feature\n    base: abc123\n    pr: none\n    type: tech\n    title: Test feature\n";
+        $yaml = "version: 1\ntodo: []\nactive:\n  - kind: feature\n    feature: test-feature\n    developer: d99\n    branch: tech/test-feature\n    base: abc123\n    pr: none\n    type: tech\n    title: Test feature\n";
         file_put_contents($path, $yaml);
 
         $command = $this->createCommand($path, 'd99');
@@ -184,7 +184,7 @@ final class BacklogCommitGateCommandTest
         if (!is_dir($this->testBoardDir)) {
             mkdir($this->testBoardDir, 0o755, true);
         }
-        $yaml = "version: 1\ntodo: []\nactive:\n  - kind: feature\n    stage: {$stage}\n    feature: test-feature\n    agent: {$agentCode}\n    branch: tech/test-feature\n    base: abc123\n    pr: none\n    type: tech\n    title: Test feature\n";
+        $yaml = "version: 1\ntodo: []\nactive:\n  - kind: feature\n    stage: {$stage}\n    feature: test-feature\n    developer: {$agentCode}\n    branch: tech/test-feature\n    base: abc123\n    pr: none\n    type: tech\n    title: Test feature\n";
         file_put_contents($path, $yaml);
 
         return $path;

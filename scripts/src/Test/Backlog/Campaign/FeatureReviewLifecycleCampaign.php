@@ -47,7 +47,7 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $driver->assertOutputContainsAll($reviewListOutput, [
             '- ' . $context->fixFeature . ' ',
             'kind=feature',
-            'agent=' . $context->agentPrimary,
+            'developer=' . $context->agentPrimary,
         ]);
 
         // review-next with an unknown explicit target refuses without claiming anything

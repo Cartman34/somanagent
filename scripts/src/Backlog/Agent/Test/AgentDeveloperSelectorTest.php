@@ -82,7 +82,7 @@ final class AgentDeveloperSelectorTest
                 'kind' => 'feature',
                 'stage' => 'development',
                 'feature' => 'my-feature',
-                'agent' => 'd05',
+                'developer' =>'d05',
                 'branch' => 'feat/my-feature',
             ],
         ]);
@@ -109,7 +109,7 @@ final class AgentDeveloperSelectorTest
                 'kind' => 'feature',
                 'stage' => 'development',
                 'feature' => 'other-feature',
-                'agent' => 'd03',
+                'developer' =>'d03',
                 'branch' => 'feat/other-feature',
             ],
         ]);
@@ -318,7 +318,7 @@ final class AgentDeveloperSelectorTest
     {
         $boardPath = $this->tmpDir . '/board-' . uniqid('', true) . '.yaml';
 
-        $order = ['kind', 'stage', 'feature', 'task', 'agent', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type'];
+        $order = ['kind', 'stage', 'feature', 'task', 'developer', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type'];
         $todo = array_map(static function (array $e): array {
             $item = ['feature' => $e['feature']];
             if (array_key_exists('task', $e)) {

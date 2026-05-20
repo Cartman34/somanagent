@@ -18,7 +18,7 @@ use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 
 /**
- * Command for unassigning a backlog entry (feature or task) from an agent.
+ * Command for unassigning a backlog entry (feature or task) from a developer.
  */
 final class BacklogEntryUnassignCommand extends AbstractBacklogCommand
 {
@@ -54,16 +54,16 @@ final class BacklogEntryUnassignCommand extends AbstractBacklogCommand
     public function handle(array $commandArgs, array $options): void
     {
         $actorRole = $this->permissionService->requireWorkflowRole();
-        $callerAgent = $options[BacklogCliOption::AGENT->value] ?? null;
-        if (!is_string($callerAgent)) {
-            throw new RuntimeException('Option --agent is required.');
+        $callerDeveloper = $options[BacklogCliOption::DEVELOPER->value] ?? null;
+        if (!is_string($callerDeveloper)) {
+            throw new RuntimeException('Option --developer is required.');
         }
         $board = $this->loadBoard();
 
         $reference = $commandArgs[0] ?? null;
         $entry = $reference !== null
             ? $this->resolveByReference($board, $reference)
-            : $this->resolveSingleActiveEntryForAgent($board, $callerAgent);
+            : $this->resolveSingleActiveEntryForDeveloper($board, $callerDeveloper);
 
         $isTask = $this->boardService->checkIsTaskEntry($entry);
         $kind = $isTask ? 'task' : 'feature';
@@ -71,9 +71,9 @@ final class BacklogEntryUnassignCommand extends AbstractBacklogCommand
             ? $this->boardService->getTaskReviewKey($entry)
             : ($entry->getFeature() ?? '-');
 
-        $actorAgent = $actorRole === BacklogPermissionService::ROLE_DEVELOPER ? $this->permissionService->requireWorkflowAgent() : null;
+        $actorDeveloper = $actorRole === BacklogPermissionService::ROLE_DEVELOPER ? $this->permissionService->requireWorkflowAgent() : null;
 
-        $this->permissionService->assertCanUnassignEntry($actorRole, $actorAgent, $callerAgent, $entryRef, $entry);
+        $this->permissionService->assertCanUnassignEntry($actorRole, $actorDeveloper, $callerDeveloper, $entryRef, $entry);
         $assignedAgent = $entry->getDeveloper();
         if ($assignedAgent === null) {
             throw new RuntimeException(sprintf('%s %s is not assigned to any developer.', ucfirst($kind), $entryRef));
@@ -135,22 +135,22 @@ final class BacklogEntryUnassignCommand extends AbstractBacklogCommand
     }
 
     /**
-     * Resolves the agent's single active entry, throwing on none or multiple.
+     * Resolves the developer's single active entry, throwing on none or multiple.
      *
      * @param BacklogBoard $board
-     * @param string $agent
+     * @param string $developer
      * @return BoardEntry
      */
-    private function resolveSingleActiveEntryForAgent(BacklogBoard $board, string $agent): BoardEntry
+    private function resolveSingleActiveEntryForDeveloper(BacklogBoard $board, string $developer): BoardEntry
     {
-        $matches = $this->boardService->findActiveEntriesByAgent($board, $agent);
+        $matches = $this->boardService->findActiveEntriesByAgent($board, $developer);
         if ($matches === []) {
-            throw new RuntimeException(sprintf('Agent %s has no active entry.', $agent));
+            throw new RuntimeException(sprintf('Developer %s has no active entry.', $developer));
         }
         if (count($matches) > 1) {
             throw new RuntimeException(sprintf(
-                'Agent %s has multiple active entries. Provide an explicit reference.',
-                $agent,
+                'Developer %s has multiple active entries. Provide an explicit reference.',
+                $developer,
             ));
         }
 

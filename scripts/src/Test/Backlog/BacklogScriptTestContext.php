@@ -34,6 +34,7 @@ final class BacklogScriptTestContext
         public readonly string $tmpDir,
         public readonly string $worktreesRoot,
         public readonly bool $allowIntegration,
+        public readonly bool $allowRemote,
         public readonly bool $keepArtifacts,
         public readonly bool $dryRun,
         public readonly bool $verbose,

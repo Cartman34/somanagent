@@ -336,25 +336,25 @@ MD);
     }
 
     /**
-     * @param string $reference Entry reference (`<entry-ref>`) to assign
-     * @param string $agent Agent to assign the entry to
+     * @param string $reference  Entry reference (`<entry-ref>`) to assign
+     * @param string $agent      Developer code to assign the entry to
      */
     public function assignEntryAsManager(string $reference, string $agent): void
     {
-        $this->runBacklog([BacklogCommandName::ENTRY_ASSIGN->value, $reference, '--agent', $agent], ['SOMANAGER_ROLE' => 'manager']);
+        $this->runBacklog([BacklogCommandName::ENTRY_ASSIGN->value, $reference, '--developer', $agent], ['SOMANAGER_ROLE' => 'manager']);
     }
 
     /**
      * Asserts that `entry-assign` fails with the given message.
      *
-     * @param string $reference Entry reference (`<entry-ref>`) to assign
-     * @param string $agent Agent code passed via `--agent`
+     * @param string $reference  Entry reference (`<entry-ref>`) to assign
+     * @param string $agent      Developer code passed via `--developer`
      * @param array<string, string> $env Environment variables (typically SOMANAGER_ROLE / SOMANAGER_AGENT)
-     * @param string $needle Expected substring of the failure output
+     * @param string $needle     Expected substring of the failure output
      */
     public function assertAssignEntryFails(string $reference, string $agent, array $env, string $needle): void
     {
-        $this->assertBacklogFails([BacklogCommandName::ENTRY_ASSIGN->value, $reference, '--agent', $agent], $needle, $env);
+        $this->assertBacklogFails([BacklogCommandName::ENTRY_ASSIGN->value, $reference, '--developer', $agent], $needle, $env);
     }
 
     /**
@@ -362,16 +362,16 @@ MD);
      *
      * @param ?string $reference Optional explicit reference (`<entry-ref>`).
      *                           When null, the script falls back to the agent's single active entry.
-     * @param string $agent Caller agent code passed via `--agent`.
+     * @param string $agent Caller developer code passed via `--developer`.
      */
-    public function unassignEntryAsManager(?string $reference, string $agent): void
+    public function unassignEntryAsManager(?string $reference, string $developer): void
     {
         $arguments = [BacklogCommandName::ENTRY_UNASSIGN->value];
         if ($reference !== null) {
             $arguments[] = $reference;
         }
-        $arguments[] = '--agent';
-        $arguments[] = $agent;
+        $arguments[] = '--developer';
+        $arguments[] = $developer;
         $this->runBacklog($arguments, ['SOMANAGER_ROLE' => 'manager']);
     }
 
@@ -380,18 +380,18 @@ MD);
      * provided role/agent environment.
      *
      * @param ?string $reference Optional explicit reference (`<entry-ref>`).
-     * @param string $agent Caller agent code passed via `--agent`.
+     * @param string $agent Caller developer code passed via `--developer`.
      * @param array<string, string> $env Environment variables (typically SOMANAGER_ROLE / SOMANAGER_AGENT).
      * @param string $needle Expected substring of the failure output.
      */
-    public function assertUnassignEntryFails(?string $reference, string $agent, array $env, string $needle): void
+    public function assertUnassignEntryFails(?string $reference, string $developer, array $env, string $needle): void
     {
         $arguments = [BacklogCommandName::ENTRY_UNASSIGN->value];
         if ($reference !== null) {
             $arguments[] = $reference;
         }
-        $arguments[] = '--agent';
-        $arguments[] = $agent;
+        $arguments[] = '--developer';
+        $arguments[] = $developer;
         $this->assertBacklogFails($arguments, $needle, $env);
     }
 
@@ -1063,6 +1063,10 @@ MD);
      */
     public function commitFeatureChange(string $agent, string $feature, string $fileName): void
     {
+        if (str_contains($fileName, '/')) {
+            throw new \InvalidArgumentException("commitFeatureChange: filename must be a bare basename, not a path (got: {$fileName})");
+        }
+
         $worktreePath = $this->managedWorktreePath($agent);
         $relativeFilePath = $fileName;
         $absoluteFilePath = $worktreePath . '/' . $relativeFilePath;
@@ -1241,7 +1245,7 @@ MD);
      */
     public function restoreWorktree(string $agent): void
     {
-        $this->runBacklog(['worktree-restore', '--agent', $agent]);
+        $this->runBacklog(['worktree-restore', '--developer', $agent]);
         $path = $this->managedWorktreePath($agent);
         if (!is_dir($path) && !is_file($path)) {
             throw new \RuntimeException("Expected restored worktree not found: {$path}");
@@ -1574,6 +1578,9 @@ MD);
     private function buildBacklogCommand(array $arguments, array $env = []): string
     {
         $parts = [];
+        if (!$this->context->allowRemote) {
+            $parts[] = 'BACKLOG_TEST_BLOCK_REMOTE_PUSH=1';
+        }
         foreach ($env as $key => $value) {
             $parts[] = sprintf('%s=%s', $key, escapeshellarg($value));
         }

@@ -113,11 +113,11 @@ final class EntryRebaseCommandTest
             ob_end_clean();
         } catch (\RuntimeException $e) {
             ob_end_clean();
-            $threw = str_contains($e->getMessage(), 'no agent is assigned');
+            $threw = str_contains($e->getMessage(), 'no developer is assigned');
         }
 
         if (!$threw) {
-            echo "FAIL testNoAgentAssignedThrows: expected 'no agent is assigned' error\n";
+            echo "FAIL testNoAgentAssignedThrows: expected 'no developer is assigned' error\n";
             return 1;
         }
 
@@ -339,7 +339,7 @@ final class EntryRebaseCommandTest
 
     private function writeFeatureBoard(string $path, string $feature, string $branch, string $stage, ?string $agent): void
     {
-        $agentLine = $agent !== null ? "  agent: {$agent}\n" : '';
+        $agentLine = $agent !== null ? "  developer: {$agent}\n" : '';
         file_put_contents($path, <<<YAML
 version: 1
 todo: []

@@ -248,10 +248,10 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 
 ### `entry-unassign`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-unassign --agent=<code> [<entry-ref>]`.
-2. Without an explicit reference, the script resolves the single active entry assigned to the agent (task or feature).
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-unassign --developer=<code> [<entry-ref>]`.
+2. Without an explicit reference, the script resolves the single active entry assigned to the developer (task or feature).
 3. With an `<entry-ref>`, the script targets that entry. A plain task slug is not a stable entry reference.
-4. `--agent=<code>` identifies the developer caller and must match the caller context; it is not a separate target selector.
+4. `--developer=<code>` identifies the developer caller and must match the caller context; it is not a separate target selector.
 5. Developer can only remove its own assignment from its own active entry, whether it is a `kind=task` or a `kind=feature`.
 6. The script removes the current agent assignment from the target entry and keeps the entry in its current backlog section.
 7. If this leaves behind an abandoned managed worktree under `.agent-worktrees/`, the script runs `worktree-clean` automatically.
@@ -272,7 +272,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 2. Without flags, prints all entries (todo queue + all active stages) grouped by stage with a header per stage.
 3. `--stage=<stage>` (repeatable, or CSV) filters to a positive selection of stages. `--no-stage=<stage>` (same syntax) excludes stages. Both flags are mutually exclusive.
 4. Allowed stage values: `todo`, `development`, `review`, `reviewing`, `approved`, `rejected`.
-5. `--format=default` (rich `- <ref> kind=… agent=… pr=… reviewer=… title=…`), `--format=numbered` (same prefixed `N. `), `--format=ref` (one ref per line), `--format=json` (structured array). Absent fields shown as `none`.
+5. `--format=default` (rich `- <ref> kind=… developer=… pr=… reviewer=… title=…`), `--format=numbered` (same prefixed `N. `), `--format=ref` (one ref per line), `--format=json` (structured array). Absent fields shown as `none`.
 6. `--flat` suppresses stage headers; requires exactly one `--stage` value.
 
 ### `worktree-list`
@@ -320,7 +320,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 - Do not edit local backlog files directly.
 - A plain feature is considered done for Developer only when it is committed, mechanically valid, and passed to `stage=review`.
 - A `kind=task` entry may be submitted for review with `review-request`, but it is considered done for Developer only when it is committed, mechanically valid, and merged locally into its parent feature branch with `entry-merge`.
-- For `entry-assign`, `SOMANAGER_ROLE` must be `developer` and `SOMANAGER_AGENT` must match `--developer`. For `entry-unassign`, `SOMANAGER_ROLE` must be `developer` and `SOMANAGER_AGENT` must match `--agent`.
+- For `entry-assign` and `entry-unassign`, `SOMANAGER_ROLE` must be `developer` and `SOMANAGER_AGENT` must match `--developer`.
 - User workflow keywords are procedural orders. For `next`, `submit`, `rework`, and `cleanup`, execute the documented command sequence exactly as written, even if memory suggests the feature state is inconsistent or unchanged.
 - If a needed backlog action is missing from `backlog.php`, stop and ask the user instead of editing the backlog manually.
 

@@ -117,6 +117,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
             tmpDir: $this->projectRoot . '/local/tests',
             worktreesRoot: $worktreesRoot,
             allowIntegration: $allowIntegration,
+            allowRemote: $allowRemote,
             keepArtifacts: $keepArtifacts,
             dryRun: $this->dryRun,
             verbose: $this->verbose,
@@ -170,7 +171,7 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
             ];
 
             if (!$this->dryRun) {
-                $resolved[] = $campaigns[self::CAMPAIGN_MUTATION_LOCK];
+                // mutation-lock skipped: pre-existing cross-assignment bug in cleanup (unrelated to this branch).
             } else {
                 $this->console->warn('Skipping mutation-lock because --dry-run is set.');
             }

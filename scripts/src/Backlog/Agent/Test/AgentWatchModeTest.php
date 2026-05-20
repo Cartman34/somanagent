@@ -84,7 +84,7 @@ final class AgentWatchModeTest
         $runner = new FakeBacklogCommandRunner();
         $runner->onWorkStart = function (string $developerCode, string $entryRef) use ($fixture): void {
             $this->writeBoard($fixture['boardPath'], [
-                ['kind' => 'feature', 'stage' => 'development', 'feature' => $entryRef, 'agent' => $developerCode, 'branch' => 'tech/' . $entryRef, 'type' => 'tech'],
+                ['kind' => 'feature', 'stage' => 'development', 'feature' => $entryRef, 'developer' =>$developerCode, 'branch' => 'tech/' . $entryRef, 'type' => 'tech'],
             ]);
         };
         $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
@@ -110,13 +110,13 @@ final class AgentWatchModeTest
         $featureSlug = 'review-feature';
         $fixture = $this->makeFixture('reviewer-watch');
         $this->writeBoard($fixture['boardPath'], [
-            ['kind' => 'feature', 'stage' => 'review', 'feature' => $featureSlug, 'agent' => 'd20', 'branch' => 'tech/' . $featureSlug, 'type' => 'tech'],
+            ['kind' => 'feature', 'stage' => 'review', 'feature' => $featureSlug, 'developer' =>'d20', 'branch' => 'tech/' . $featureSlug, 'type' => 'tech'],
         ]);
         $this->addWorktree($fixture['projectRoot'], $fixture['worktreesRoot'] . '/d20');
         $runner = new FakeBacklogCommandRunner();
         $runner->onReviewNext = function (string $reviewerCode, string $entryRef) use ($fixture): void {
             $this->writeBoard($fixture['boardPath'], [
-                ['kind' => 'feature', 'stage' => 'reviewing', 'feature' => $entryRef, 'agent' => 'd20', 'reviewer' => $reviewerCode, 'branch' => 'tech/' . $entryRef, 'type' => 'tech'],
+                ['kind' => 'feature', 'stage' => 'reviewing', 'feature' => $entryRef, 'developer' =>'d20', 'reviewer' => $reviewerCode, 'branch' => 'tech/' . $entryRef, 'type' => 'tech'],
             ]);
         };
         $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
@@ -145,14 +145,14 @@ final class AgentWatchModeTest
     private function testWatchWithoutRoleElectsReviewerForReviewOnly(): int
     {
         return $this->assertRoleElection('watch-elects-reviewer', [], [
-            ['kind' => 'feature', 'stage' => 'review', 'feature' => 'review-only', 'agent' => 'd30', 'branch' => 'tech/review-only', 'type' => 'tech'],
+            ['kind' => 'feature', 'stage' => 'review', 'feature' => 'review-only', 'developer' =>'d30', 'branch' => 'tech/review-only', 'type' => 'tech'],
         ], 'r10', 'reviewNext', 'testWatchWithoutRoleElectsReviewerForReviewOnly');
     }
 
     private function testWatchWithoutRolePrefersReviewerWhenBothExist(): int
     {
         return $this->assertRoleElection('watch-prefers-reviewer', [['feature' => 'todo-too', 'type' => 'tech', 'title' => 'Todo']], [
-            ['kind' => 'feature', 'stage' => 'review', 'feature' => 'review-wins', 'agent' => 'd31', 'branch' => 'tech/review-wins', 'type' => 'tech'],
+            ['kind' => 'feature', 'stage' => 'review', 'feature' => 'review-wins', 'developer' =>'d31', 'branch' => 'tech/review-wins', 'type' => 'tech'],
         ], 'r10', 'reviewNext', 'testWatchWithoutRolePrefersReviewerWhenBothExist');
     }
 
@@ -160,7 +160,7 @@ final class AgentWatchModeTest
     {
         $fixture = $this->makeFixture('watch-skip-live');
         $this->writeBoard($fixture['boardPath'], [
-            ['kind' => 'feature', 'stage' => 'development', 'feature' => 'taken', 'agent' => 'd40', 'branch' => 'tech/taken', 'type' => 'tech'],
+            ['kind' => 'feature', 'stage' => 'development', 'feature' => 'taken', 'developer' =>'d40', 'branch' => 'tech/taken', 'type' => 'tech'],
         ], [
             ['feature' => 'taken', 'type' => 'tech', 'title' => 'Taken'],
             ['feature' => 'free', 'type' => 'tech', 'title' => 'Free'],
@@ -169,7 +169,7 @@ final class AgentWatchModeTest
         $runner = new FakeBacklogCommandRunner();
         $runner->onWorkStart = function (string $developerCode, string $entryRef) use ($fixture): void {
             $this->writeBoard($fixture['boardPath'], [
-                ['kind' => 'feature', 'stage' => 'development', 'feature' => $entryRef, 'agent' => $developerCode, 'branch' => 'tech/' . $entryRef, 'type' => 'tech'],
+                ['kind' => 'feature', 'stage' => 'development', 'feature' => $entryRef, 'developer' =>$developerCode, 'branch' => 'tech/' . $entryRef, 'type' => 'tech'],
             ]);
         };
         $driver = new FakeSessionDriver();
@@ -200,7 +200,7 @@ final class AgentWatchModeTest
                 throw new \RuntimeException('backlog lock busy');
             }
             $this->writeBoard($fixture['boardPath'], [
-                ['kind' => 'feature', 'stage' => 'development', 'feature' => $entryRef, 'agent' => $developerCode, 'branch' => 'tech/' . $entryRef, 'type' => 'tech'],
+                ['kind' => 'feature', 'stage' => 'development', 'feature' => $entryRef, 'developer' =>$developerCode, 'branch' => 'tech/' . $entryRef, 'type' => 'tech'],
             ]);
         };
         $cmd = $this->buildCommand($fixture, new FakeAgentClientLauncher(AgentClient::CLAUDE), $runner, new FakeSessionDriver());
@@ -226,7 +226,7 @@ final class AgentWatchModeTest
             $claims++;
             $feature = 'loop-' . $claims;
             $this->writeBoard($fixture['boardPath'], [
-                ['kind' => 'feature', 'stage' => 'development', 'feature' => $feature, 'agent' => $developerCode, 'branch' => 'tech/' . $feature, 'type' => 'tech'],
+                ['kind' => 'feature', 'stage' => 'development', 'feature' => $feature, 'developer' =>$developerCode, 'branch' => 'tech/' . $feature, 'type' => 'tech'],
             ]);
         };
         $driver = new FakeSessionDriver();
@@ -277,7 +277,7 @@ final class AgentWatchModeTest
         $runner = new FakeBacklogCommandRunner();
         $runner->onWorkStart = function (string $developerCode, string $entryRef) use ($fixture): void {
             $this->writeBoard($fixture['boardPath'], [
-                ['kind' => 'feature', 'stage' => 'development', 'feature' => $entryRef, 'agent' => $developerCode, 'branch' => 'tech/' . $entryRef, 'type' => 'tech'],
+                ['kind' => 'feature', 'stage' => 'development', 'feature' => $entryRef, 'developer' =>$developerCode, 'branch' => 'tech/' . $entryRef, 'type' => 'tech'],
             ]);
         };
         $oldLang = $_SERVER['LANG'] ?? null;
@@ -316,18 +316,18 @@ final class AgentWatchModeTest
         $fixture = $this->makeFixture($label);
         $this->writeBoard($fixture['boardPath'], $active, $todo);
         if ($expectedMethod === 'reviewNext') {
-            $this->addWorktree($fixture['projectRoot'], $fixture['worktreesRoot'] . '/' . ($active[0]['agent'] ?? 'd30'));
+            $this->addWorktree($fixture['projectRoot'], $fixture['worktreesRoot'] . '/' . ($active[0]['developer'] ?? 'd30'));
         }
         $runner = new FakeBacklogCommandRunner();
         $runner->onWorkStart = function (string $developerCode, string $entryRef) use ($fixture): void {
             $this->writeBoard($fixture['boardPath'], [
-                ['kind' => 'feature', 'stage' => 'development', 'feature' => $entryRef, 'agent' => $developerCode, 'branch' => 'tech/' . $entryRef, 'type' => 'tech'],
+                ['kind' => 'feature', 'stage' => 'development', 'feature' => $entryRef, 'developer' =>$developerCode, 'branch' => 'tech/' . $entryRef, 'type' => 'tech'],
             ]);
         };
         $runner->onReviewNext = function (string $reviewerCode, string $entryRef) use ($fixture, $active): void {
-            $dev = (string) ($active[0]['agent'] ?? 'd30');
+            $dev = (string) ($active[0]['developer'] ?? 'd30');
             $this->writeBoard($fixture['boardPath'], [
-                ['kind' => 'feature', 'stage' => 'reviewing', 'feature' => $entryRef, 'agent' => $dev, 'reviewer' => $reviewerCode, 'branch' => 'tech/' . $entryRef, 'type' => 'tech'],
+                ['kind' => 'feature', 'stage' => 'reviewing', 'feature' => $entryRef, 'developer' =>$dev, 'reviewer' => $reviewerCode, 'branch' => 'tech/' . $entryRef, 'type' => 'tech'],
             ]);
         };
         $driver = new FakeSessionDriver();

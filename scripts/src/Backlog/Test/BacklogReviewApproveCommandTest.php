@@ -79,7 +79,7 @@ final class BacklogReviewApproveCommandTest
                 'stage' => 'reviewing',
                 'feature' => self::FEATURE_SLUG,
                 'task' => 'approved-task',
-                'agent' => 'd13',
+                'developer' =>'d13',
                 'reviewer' => 'r12',
                 'branch' => 'tech/reviewer-stop--approved-task',
                 'feature-branch' => 'tech/reviewer-stop',

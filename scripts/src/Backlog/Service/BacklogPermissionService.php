@@ -67,46 +67,46 @@ final class BacklogPermissionService
      * assigned to another real agent are refused so assignment does not silently reassign
      * ownership.
      *
-     * @param string $actorRole Caller role (manager or developer)
-     * @param ?string $actorAgent Caller agent code when actorRole is developer
-     * @param string $targetAgent Developer agent code passed via --developer
-     * @param string $entryRef Human-readable entry reference for error messages
-     * @param BoardEntry $entry Resolved active backlog entry to assign
+     * @param string $actorRole      Caller role (manager or developer)
+     * @param ?string $actorDeveloper Caller developer code when actorRole is developer
+     * @param string $targetDeveloper Developer code passed via --developer
+     * @param string $entryRef       Human-readable entry reference for error messages
+     * @param BoardEntry $entry      Resolved active backlog entry to assign
      */
     public function assertCanAssignEntry(
         string $actorRole,
-        ?string $actorAgent,
-        string $targetAgent,
+        ?string $actorDeveloper,
+        string $targetDeveloper,
         string $entryRef,
         BoardEntry $entry
     ): void {
         if ($actorRole === self::ROLE_MANAGER) {
-            $this->assertEntryIsUnassignedOrAssignedToTarget($entry, $entryRef, $targetAgent);
+            $this->assertEntryIsUnassignedOrAssignedToTarget($entry, $entryRef, $targetDeveloper);
 
             return;
         }
 
-        if ($actorAgent !== $targetAgent) {
+        if ($actorDeveloper !== $targetDeveloper) {
             throw new RuntimeException(sprintf(
                 'Developer role can only assign itself. %s must match --agent.',
                 self::ENV_ACTIVE_AGENT,
             ));
         }
 
-        $this->assertEntryIsUnassignedOrAssignedToTarget($entry, $entryRef, $targetAgent);
+        $this->assertEntryIsUnassignedOrAssignedToTarget($entry, $entryRef, $targetDeveloper);
     }
 
     /**
      * Refuses assignment only when the entry is assigned to another real agent.
      *
-     * @param BoardEntry $entry Resolved active backlog entry to assign
-     * @param string $entryRef Human-readable entry reference for error messages
-     * @param string $targetAgent Developer agent code passed via --developer
+     * @param BoardEntry $entry      Resolved active backlog entry to assign
+     * @param string $entryRef       Human-readable entry reference for error messages
+     * @param string $targetDeveloper Developer code passed via --developer
      */
-    private function assertEntryIsUnassignedOrAssignedToTarget(BoardEntry $entry, string $entryRef, string $targetAgent): void
+    private function assertEntryIsUnassignedOrAssignedToTarget(BoardEntry $entry, string $entryRef, string $targetDeveloper): void
     {
         $assignedAgent = $entry->getDeveloper();
-        if ($assignedAgent !== null && $assignedAgent !== $targetAgent) {
+        if ($assignedAgent !== null && $assignedAgent !== $targetDeveloper) {
             throw new RuntimeException(sprintf(
                 'Entry %s is already assigned to %s.',
                 $entryRef,

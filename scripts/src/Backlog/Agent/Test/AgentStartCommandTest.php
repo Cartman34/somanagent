@@ -272,7 +272,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'development',
                 'feature' => 'tier-feature',
-                'agent' => 'd11',
+                'developer' =>'d11',
                 'branch' => 'feat/tier-feature',
             ],
         ]);
@@ -308,7 +308,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'development',
                 'feature' => 'effort-feature',
-                'agent' => 'd12',
+                'developer' =>'d12',
                 'branch' => 'feat/effort-feature',
             ],
         ]);
@@ -344,7 +344,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'development',
                 'feature' => 'gemini-feature',
-                'agent' => 'd13',
+                'developer' =>'d13',
                 'branch' => 'feat/gemini-feature',
             ],
         ]);
@@ -401,7 +401,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'reviewing',
                 'feature' => self::FEATURE_CRYPTO,
-                'agent' => 'd04',
+                'developer' =>'d04',
                 'reviewer' => 'r01',
                 'branch' => 'feat/' . self::FEATURE_CRYPTO,
                 'type' => 'feat',
@@ -513,7 +513,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'review',
                 'feature' => self::FEATURE_CRYPTO,
-                'agent' => 'd04',
+                'developer' =>'d04',
                 'branch' => 'feat/' . self::FEATURE_CRYPTO,
                 'type' => 'feat',
             ],
@@ -628,7 +628,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'review',
                 'feature' => self::FEATURE_CRYPTO,
-                'agent' => 'd04',
+                'developer' =>'d04',
                 'branch' => 'feat/' . self::FEATURE_CRYPTO,
                 'type' => 'feat',
             ],
@@ -751,7 +751,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'review',
                 'feature' => self::FEATURE_CRYPTO,
-                'agent' => 'd04',
+                'developer' =>'d04',
                 'branch' => 'feat/' . self::FEATURE_CRYPTO,
                 'type' => 'feat',
             ],
@@ -851,7 +851,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'review',
                 'feature' => self::FEATURE_CRYPTO,
-                'agent' => 'd04',
+                'developer' =>'d04',
                 'branch' => 'feat/' . self::FEATURE_CRYPTO,
                 'type' => 'feat',
             ],
@@ -1020,7 +1020,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'development',
                 'feature' => 'reset-feature',
-                'agent' => 'd06',
+                'developer' =>'d06',
                 'branch' => 'feat/reset-feature',
             ],
         ]);
@@ -1092,7 +1092,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'development',
                 'feature' => 'detach-feature',
-                'agent' => 'd07',
+                'developer' =>'d07',
                 'branch' => 'feat/detach-feature',
             ],
         ]);
@@ -1313,7 +1313,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'development',
                 'feature' => 'active-feature',
-                'agent' => 'd09',
+                'developer' =>'d09',
                 'branch' => 'feat/active-feature',
             ],
         ], [
@@ -1474,7 +1474,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'development',
                 'feature' => 'cwd-feature',
-                'agent' => 'd14',
+                'developer' =>'d14',
                 'branch' => 'feat/cwd-feature',
             ],
         ]);
@@ -1545,7 +1545,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'development',
                 'feature' => 'cwd-del-feature',
-                'agent' => 'd15',
+                'developer' =>'d15',
                 'branch' => 'feat/cwd-del-feature',
             ],
         ]);
@@ -1628,7 +1628,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'review',
                 'feature' => 'review-feature',
-                'agent' => 'd20',
+                'developer' =>'d20',
                 'branch' => 'feat/review-feature',
                 'type' => 'tech',
             ],
@@ -1676,7 +1676,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'reviewing',
                 'feature' => 'reviewing-feature',
-                'agent' => 'd21',
+                'developer' =>'d21',
                 'branch' => 'feat/reviewing-feature',
                 'type' => 'tech',
             ],
@@ -1729,7 +1729,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'approved',
                 'feature' => 'approved-feature',
-                'agent' => 'd22',
+                'developer' =>'d22',
                 'branch' => 'feat/approved-feature',
                 'type' => 'tech',
             ],
@@ -1813,7 +1813,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'approved',
                 'feature' => 'conflict-feature',
-                'agent' => 'd23',
+                'developer' =>'d23',
                 'branch' => 'feat/conflict-feature',
                 'type' => 'tech',
             ],
@@ -2011,7 +2011,7 @@ final class AgentStartCommandTest
      */
     private function normalizeActiveEntry(array $entry): array
     {
-        $order = ['kind', 'stage', 'feature', 'task', 'agent', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type'];
+        $order = ['kind', 'stage', 'feature', 'task', 'developer', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type'];
         $result = [];
         foreach ($order as $key) {
             if (array_key_exists($key, $entry)) {
@@ -2041,8 +2041,8 @@ final class AgentStartCommandTest
         if (array_key_exists('task', $entry)) {
             $result['task'] = $entry['task'];
         }
-        if (array_key_exists('agent', $entry)) {
-            $result['agent'] = $entry['agent'];
+        if (array_key_exists('developer', $entry)) {
+            $result['developer'] = $entry['developer'];
         }
         if (array_key_exists('type', $entry)) {
             $result['type'] = $entry['type'];
@@ -2133,7 +2133,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'development',
                 'feature' => 'live-feature',
-                'agent' => 'd30',
+                'developer' =>'d30',
                 'branch' => 'feat/live-feature',
             ],
         ]);
@@ -2227,7 +2227,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'development',
                 'feature' => 'ghost-feature',
-                'agent' => 'd31',
+                'developer' =>'d31',
                 'branch' => 'feat/ghost-feature',
             ],
         ]);
@@ -2324,7 +2324,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'development',
                 'feature' => 'wa-absent-feature',
-                'agent' => 'd32',
+                'developer' =>'d32',
                 'branch' => 'feat/wa-absent-feature',
             ],
         ]);
@@ -2417,7 +2417,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'development',
                 'feature' => 'force-feature',
-                'agent' => 'd33',
+                'developer' =>'d33',
                 'branch' => 'feat/force-feature',
             ],
         ]);
@@ -2522,7 +2522,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'review',
                 'feature' => self::FEATURE_CRYPTO,
-                'agent' => 'd04',
+                'developer' =>'d04',
                 'branch' => 'feat/' . self::FEATURE_CRYPTO,
                 'type' => 'feat',
             ],
@@ -2644,7 +2644,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'review',
                 'feature' => self::FEATURE_CRYPTO,
-                'agent' => 'd04',
+                'developer' =>'d04',
                 'branch' => 'feat/' . self::FEATURE_CRYPTO,
                 'type' => 'feat',
             ],
@@ -2652,7 +2652,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'review',
                 'feature' => self::FEATURE_MY,
-                'agent' => 'd05',
+                'developer' =>'d05',
                 'branch' => 'feat/' . self::FEATURE_MY,
                 'type' => 'feat',
             ],
@@ -2765,7 +2765,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'review',
                 'feature' => self::FEATURE_CRYPTO,
-                'agent' => 'd04',
+                'developer' =>'d04',
                 'branch' => 'feat/' . self::FEATURE_CRYPTO,
                 'type' => 'feat',
             ],
@@ -2863,7 +2863,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'review',
                 'feature' => self::FEATURE_CRYPTO,
-                'agent' => 'd04',
+                'developer' =>'d04',
                 'branch' => 'feat/' . self::FEATURE_CRYPTO,
                 'type' => 'feat',
             ],
@@ -2982,7 +2982,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'review',
                 'feature' => self::FEATURE_CRYPTO,
-                'agent' => 'd04',
+                'developer' =>'d04',
                 'branch' => 'feat/' . self::FEATURE_CRYPTO,
                 'type' => 'feat',
             ],
@@ -2990,7 +2990,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'review',
                 'feature' => self::FEATURE_MY,
-                'agent' => 'd05',
+                'developer' =>'d05',
                 'branch' => 'feat/' . self::FEATURE_MY,
                 'type' => 'feat',
             ],
@@ -3109,7 +3109,7 @@ final class AgentStartCommandTest
                 'kind' => 'feature',
                 'stage' => 'review',
                 'feature' => self::FEATURE_CRYPTO,
-                'agent' => 'd04',
+                'developer' =>'d04',
                 'branch' => 'feat/' . self::FEATURE_CRYPTO,
                 'type' => 'feat',
             ],

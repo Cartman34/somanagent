@@ -48,7 +48,10 @@ final class ListFlagsCampaign implements CampaignInterface
     private function assertStageFilter(BacklogScriptTestDriver $driver, BacklogScriptTestContext $context): void
     {
         $feature = 'test-list-stage-dev';
+        $featureExtra = 'test-list-stage-extra';
+        // Two tasks: one will be started (active), one stays queued so [Todo] is non-empty.
         $driver->createTodoTask(sprintf('[%s] Feature for list --stage tests', $feature));
+        $driver->createTodoTask(sprintf('[%s] Extra queued feature for Todo section', $featureExtra));
         $driver->startNextFeature($context->agentPrimary);
 
         // No filter: shows both todo and active stages
@@ -80,10 +83,10 @@ final class ListFlagsCampaign implements CampaignInterface
         // Unknown stage is rejected
         $driver->assertBacklogFails(['list', '--stage=invalid'], 'Unknown stage');
 
-        // Cleanup
+        // Cleanup: move to review to verify development is empty, then close the feature.
         $driver->requestTaskReview($context->agentPrimary);
-        $driver->assertBacklogFails(['list', '--stage=development'], 'No entry found');
-        $driver->releaseEntry($context->agentPrimary, $feature);
+        $driver->assertContains($driver->runBacklog(['list', '--stage=development']), 'No entry found');
+        $driver->closeFeature($feature);
         $driver->removeFirstTodoTask();
     }
 
@@ -134,10 +137,10 @@ final class ListFlagsCampaign implements CampaignInterface
         $driver->createTodoTask(sprintf('[%s] Feature for format tests', $feature));
         $driver->startNextFeature($context->agentPrimary);
 
-        // default format: - <ref> kind=... agent=... pr=... reviewer=... title=...
+        // default format: - <ref> kind=... developer=... pr=... reviewer=... title=...
         $defaultOutput = $driver->runBacklog(['list', '--stage=development', '--flat']);
         $driver->assertContains($defaultOutput, '- ' . $feature . ' kind=feature');
-        $driver->assertContains($defaultOutput, 'agent=');
+        $driver->assertContains($defaultOutput, 'developer=');
         $driver->assertContains($defaultOutput, 'pr=');
         $driver->assertContains($defaultOutput, 'reviewer=');
         $driver->assertContains($defaultOutput, 'title=');
@@ -160,7 +163,7 @@ final class ListFlagsCampaign implements CampaignInterface
             throw new \RuntimeException('list --format=json must return a non-empty JSON array');
         }
         $first = $decoded[0];
-        foreach (['ref', 'kind', 'agent', 'pr', 'reviewer', 'title', 'stage'] as $key) {
+        foreach (['ref', 'kind', 'developer', 'pr', 'reviewer', 'title', 'stage'] as $key) {
             if (!isset($first[$key])) {
                 throw new \RuntimeException("list --format=json item must contain key: {$key}");
             }

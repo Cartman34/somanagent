@@ -381,7 +381,7 @@ final class BodyFilePathResolverTest
             'kind' => 'feature',
             'stage' => 'development',
             'feature' => 'my-feature',
-            'agent' => $agentCode !== null ? $agentCode : 'none',
+            'developer' =>$agentCode !== null ? $agentCode : 'none',
             'branch' => 'fix/my-feature',
             'base' => 'abc123def456abc1',
             'pr' => 'none',
