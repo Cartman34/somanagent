@@ -201,8 +201,8 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->assertTaskStage($taskRef, BacklogBoard::STAGE_PENDING_REVIEW);
         $driver->assertReviewMissing('Fake note — manager reopen must clear this.');
 
-        // Refusal: stage is now review, not approved
-        $driver->assertReviewReopenFails('manager', $manager, $taskRef, 'review-reopen only accepts Approved');
+        // Refusal: stage is now review, not approved or rejected
+        $driver->assertReviewReopenFails('manager', $manager, $taskRef, 'review-reopen only accepts Approved or Rejected');
 
         // Re-approve to restore approved state for the reviewer path
         $driver->approveTaskViaUnifiedCommand($reviewer, $taskRef);
@@ -219,7 +219,53 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->reviewCancel($reviewer, $taskRef);
         $driver->assertTaskStage($taskRef, BacklogBoard::STAGE_PENDING_REVIEW);
 
-        // Re-approve: leaves the entry in APPROVED for the rest of the campaign
+        // Re-approve: leaves the entry in APPROVED for the next sub-scenario
+        $driver->approveTaskViaUnifiedCommand($reviewer, $taskRef);
+        $driver->assertTaskStage($taskRef, BacklogBoard::STAGE_APPROVED);
+
+        $this->assertReviewReopenFromRejected($driver, $context, $taskRef);
+    }
+
+    /**
+     * Exercises review-reopen for an entry in the rejected stage.
+     *
+     * Notes must be preserved (not cleared) when reopening from rejected.
+     * Entry must be in APPROVED when called; leaves it in APPROVED on exit.
+     */
+    private function assertReviewReopenFromRejected(
+        BacklogScriptTestDriver $driver,
+        BacklogScriptTestContext $context,
+        string $taskRef,
+    ): void {
+        $manager = self::MANAGER_AGENT;
+        $reviewer = $context->agentSecondary;
+
+        // Set the task to rejected stage and inject review notes
+        $driver->replaceBoardText(
+            "    stage: approved\n    feature: {$context->scopedFeature}",
+            "    stage: rejected\n    feature: {$context->scopedFeature}",
+        );
+        $driver->assertTaskStage($taskRef, BacklogBoard::STAGE_REJECTED);
+        $driver->injectReviewNote($taskRef, ['1. Preserved note — review-reopen from rejected must keep this.']);
+        $driver->assertReviewContains('Preserved note — review-reopen from rejected must keep this.');
+
+        // Manager path: rejected → review, notes preserved
+        $driver->reviewReopen('manager', $manager, $taskRef);
+        $driver->assertTaskStage($taskRef, BacklogBoard::STAGE_PENDING_REVIEW);
+        $driver->assertReviewContains('Preserved note — review-reopen from rejected must keep this.');
+
+        // Reviewer path: rejected → reviewing, notes preserved
+        $driver->replaceBoardText(
+            "    stage: review\n    feature: {$context->scopedFeature}",
+            "    stage: rejected\n    feature: {$context->scopedFeature}",
+        );
+        $driver->assertTaskStage($taskRef, BacklogBoard::STAGE_REJECTED);
+        $driver->reviewReopen('reviewer', $reviewer, $taskRef);
+        $driver->assertTaskStage($taskRef, BacklogBoard::STAGE_REVIEWING);
+        $driver->assertReviewContains('Preserved note — review-reopen from rejected must keep this.');
+
+        // Cancel and re-approve to restore APPROVED for the rest of the campaign
+        $driver->reviewCancel($reviewer, $taskRef);
         $driver->approveTaskViaUnifiedCommand($reviewer, $taskRef);
         $driver->assertTaskStage($taskRef, BacklogBoard::STAGE_APPROVED);
     }

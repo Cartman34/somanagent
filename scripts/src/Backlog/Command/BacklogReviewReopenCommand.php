@@ -15,15 +15,16 @@ use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use RuntimeException;
 
 /**
- * Reopens an approved entry for a new review cycle.
+ * Reopens an approved or rejected entry for a new review cycle.
  *
  * Only manager and reviewer roles may call this command.
  * An explicit `<entry-ref>` is always required — no implicit resolution.
- * Existing review notes for the entry are cleared on success.
+ * When the source stage is `approved`, existing review notes are cleared.
+ * When the source stage is `rejected`, existing review notes are preserved.
  *
  * Behaviour by role:
- *   - manager: `approved → review`, `meta.reviewer` cleared.
- *   - reviewer: `approved → reviewing`, `meta.reviewer` set to the calling reviewer code.
+ *   - manager: `approved|rejected → review`, `meta.reviewer` cleared.
+ *   - reviewer: `approved|rejected → reviewing`, `meta.reviewer` set to the calling reviewer code.
  *     Non-exclusive: if the originally assigned reviewer is unavailable, another reviewer
  *     may use `review-reopen` to claim the entry directly.
  */
@@ -72,12 +73,13 @@ final class BacklogReviewReopenCommand extends AbstractBacklogCommand
         $entry = $this->resolveByReference($board, $reference);
 
         $stage = $this->boardService->getFeatureStage($entry);
-        if ($stage !== BacklogBoard::STAGE_APPROVED) {
+        if (!in_array($stage, [BacklogBoard::STAGE_APPROVED, BacklogBoard::STAGE_REJECTED], true)) {
             throw new RuntimeException(sprintf(
-                'Entry %s has stage %s, but review-reopen only accepts %s.',
+                'Entry %s has stage %s, but review-reopen only accepts %s or %s.',
                 $this->describeEntry($entry),
                 $this->boardService->getStageLabel($stage),
                 $this->boardService->getStageLabel(BacklogBoard::STAGE_APPROVED),
+                $this->boardService->getStageLabel(BacklogBoard::STAGE_REJECTED),
             ));
         }
 
@@ -86,7 +88,9 @@ final class BacklogReviewReopenCommand extends AbstractBacklogCommand
             : ($entry->getFeature() ?? '-');
 
         $review = $this->loadReviewFile();
-        $review->clearReview($reviewKey);
+        if ($stage === BacklogBoard::STAGE_APPROVED) {
+            $review->clearReview($reviewKey);
+        }
 
         $isManager = $role === self::ROLE_MANAGER;
         $targetStage = $isManager ? BacklogBoard::STAGE_PENDING_REVIEW : BacklogBoard::STAGE_REVIEWING;
@@ -101,7 +105,7 @@ final class BacklogReviewReopenCommand extends AbstractBacklogCommand
             '%s %s moved from %s to %s',
             $this->boardService->checkIsTaskEntry($entry) ? 'Task' : 'Feature',
             $reviewKey,
-            $this->boardService->getStageLabel(BacklogBoard::STAGE_APPROVED),
+            $this->boardService->getStageLabel($stage),
             $this->boardService->getStageLabel($targetStage),
         ));
     }
