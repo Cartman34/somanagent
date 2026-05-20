@@ -64,7 +64,7 @@ final class BacklogEntryRebaseCommand extends AbstractBacklogCommand
     {
         $slug = trim($commandArgs[0] ?? '');
         if ($slug === '') {
-            throw new \RuntimeException('entry-rebase requires <slug>. Example: php scripts/backlog.php entry-rebase my-feature');
+            throw new \RuntimeException('rebase requires <slug>. Example: php scripts/backlog.php rebase my-feature');
         }
 
         $dryRun = isset($options[BacklogCliOption::DRY_RUN->value]);
@@ -72,7 +72,7 @@ final class BacklogEntryRebaseCommand extends AbstractBacklogCommand
         $board = $this->loadBoard();
 
         $match = str_contains($slug, '/')
-            ? $this->boardService->resolveTaskByReference($board, $slug, BacklogCommandName::ENTRY_REBASE->value)
+            ? $this->boardService->resolveTaskByReference($board, $slug, BacklogCommandName::REBASE->value)
             : $this->boardService->resolveFeature($board, $this->boardService->normalizeFeatureSlug($slug));
 
         $entry = $match->getEntry();
@@ -81,7 +81,7 @@ final class BacklogEntryRebaseCommand extends AbstractBacklogCommand
         $agent = $entry->getDeveloper();
         if ($agent === null || $agent === '') {
             throw new \RuntimeException(sprintf(
-                'Cannot rebase entry "%s": no developer is assigned. Assign it first with entry-assign.',
+                'Cannot rebase entry "%s": no developer is assigned. Assign it first with assign.',
                 $slug,
             ));
         }

@@ -4,8 +4,8 @@ arguments:
     name: '<entry-ref>'
     description: 'Stable entry reference shown in brackets by list --stage=todo'
 examples:
-  - 'php scripts/backlog.php task-remove my-feature'
-  - 'php scripts/backlog.php task-remove my-feature/my-task'
+  - 'php scripts/backlog.php entry-remove my-feature'
+  - 'php scripts/backlog.php entry-remove my-feature/my-task'
 notes:
   - 'Queued display numbers shown by list --stage=todo are advisory only; pass the bracketed reference to identify the task.'
   - 'Refuses when the reference is missing, unknown, or matches more than one queued task; rename a colliding queued task or pass a full <entry-ref> to disambiguate.'

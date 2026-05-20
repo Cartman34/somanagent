@@ -42,7 +42,7 @@ interface BacklogCommandRunner
      * Starts the developer's next queued task, transitioning it from todo to in-progress.
      *
      * Equivalent to:
-     *   SOMANAGER_ROLE=developer SOMANAGER_AGENT=<developerCode> php scripts/backlog.php work-start <entryRef>
+     *   SOMANAGER_ROLE=developer SOMANAGER_AGENT=<developerCode> php scripts/backlog.php start <entryRef>
      *
      * @throws \SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException when the entry is no longer
      *         in the todo queue — expected under concurrent developer launches
@@ -51,12 +51,12 @@ interface BacklogCommandRunner
     public function workStart(string $developerCode, string $entryRef): void;
 
     /**
-     * Releases an untouched entry back to the todo queue, rolling back a work-start.
+     * Releases an untouched entry back to the todo queue, rolling back a start.
      *
      * Equivalent to:
-     *   SOMANAGER_ROLE=developer SOMANAGER_AGENT=<developerCode> php scripts/backlog.php entry-release <entryRef>
+     *   SOMANAGER_ROLE=developer SOMANAGER_AGENT=<developerCode> php scripts/backlog.php release <entryRef>
      *
-     * @throws \RuntimeException when entry-release fails
+     * @throws \RuntimeException when release fails
      */
     public function entryRelease(string $developerCode, string $entryRef): void;
 }

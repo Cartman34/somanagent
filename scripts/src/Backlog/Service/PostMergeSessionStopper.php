@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Service;
 
 /**
- * Stops agent sessions after a successful entry-merge.
+ * Stops agent sessions after a successful merge.
  *
  * Called at the end of performMerge in both BacklogFeatureMergeCommand and
  * BacklogFeatureTaskMergeCommand. Stops the developer session synchronously and,

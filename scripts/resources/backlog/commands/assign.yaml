@@ -8,8 +8,8 @@ options:
     name: '--developer'
     description: 'Developer agent code to assign'
 examples:
-  - 'php scripts/backlog.php entry-assign delete-question-reply --developer agent-01'
-  - 'php scripts/backlog.php entry-assign delete-question-reply/cleanup --developer agent-01'
+  - 'php scripts/backlog.php assign delete-question-reply --developer agent-01'
+  - 'php scripts/backlog.php assign delete-question-reply/cleanup --developer agent-01'
 notes:
   - 'Works on both feature and task entries.'
   - 'The target entry must be unassigned or already assigned to the same target developer. Missing `developer` metadata and legacy `developer: none` both mean unassigned.'

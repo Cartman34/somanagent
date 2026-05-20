@@ -40,7 +40,7 @@ final class BacklogTaskRemoveCommand extends AbstractBacklogCommand
     public function handle(array $commandArgs, array $options): void
     {
         $reference = isset($commandArgs[0]) ? (string) $commandArgs[0] : '';
-        $command = BacklogCommandName::TASK_REMOVE->value;
+        $command = BacklogCommandName::ENTRY_REMOVE->value;
         $board = $this->loadBoard();
 
         [$index, $removed] = $this->boardService->resolveQueuedEntryByReference($board, $reference, $command);

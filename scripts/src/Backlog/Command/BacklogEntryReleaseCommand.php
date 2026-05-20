@@ -59,11 +59,11 @@ final class BacklogEntryReleaseCommand extends AbstractBacklogCommand
         $requestedTarget = $this->boardService->sanitizeString($commandArgs[0] ?? null);
 
         if ($isManager && $requestedTarget === null) {
-            throw new \RuntimeException('entry-release requires an explicit <entry-ref> when SOMANAGER_ROLE=manager.');
+            throw new \RuntimeException('release requires an explicit <entry-ref> when SOMANAGER_ROLE=manager.');
         }
 
         if ($requestedTarget !== null) {
-            $current = $this->boardService->resolveActiveEntryByReference($board, $requestedTarget, BacklogCommandName::ENTRY_RELEASE->value);
+            $current = $this->boardService->resolveActiveEntryByReference($board, $requestedTarget, BacklogCommandName::RELEASE->value);
             if (!$isManager && $current->getEntry()->getDeveloper() !== $agent) {
                 throw new \RuntimeException(sprintf(
                     'Entry %s is not assigned to caller agent %s.',
@@ -111,7 +111,7 @@ final class BacklogEntryReleaseCommand extends AbstractBacklogCommand
                     $this->gitService->deleteLocalBranch($parentBranch);
                 }
             }
-            $this->saveBoard($board, BacklogCommandName::ENTRY_RELEASE->value);
+            $this->saveBoard($board, BacklogCommandName::RELEASE->value);
             $cleaned = $this->worktreeService->cleanupManagedWorktreesForBranch($branch, $board);
             $this->gitService->deleteLocalBranch($branch);
 
@@ -124,12 +124,12 @@ final class BacklogEntryReleaseCommand extends AbstractBacklogCommand
         }
 
         $feature = $entry->getFeature() ?? '';
-        $this->boardService->assertNoActiveTasksForFeature($board, $feature, BacklogCommandName::ENTRY_RELEASE->value);
+        $this->boardService->assertNoActiveTasksForFeature($board, $feature, BacklogCommandName::RELEASE->value);
         $todoEntries = $board->getEntries(BacklogBoard::SECTION_TODO);
         array_unshift($todoEntries, new BoardEntry($entry->getText(), $entry->getExtraLines()));
         $board->setEntries(BacklogBoard::SECTION_TODO, $todoEntries);
         $this->boardService->deleteFeature($board, $feature);
-        $this->saveBoard($board, BacklogCommandName::ENTRY_RELEASE->value);
+        $this->saveBoard($board, BacklogCommandName::RELEASE->value);
 
         $cleaned = $this->worktreeService->cleanupManagedWorktreesForBranch($branch, $board);
         $this->gitService->deleteLocalBranch($branch);

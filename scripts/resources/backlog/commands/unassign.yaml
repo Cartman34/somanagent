@@ -8,9 +8,9 @@ options:
     name: '--developer'
     description: 'Caller developer code. With an explicit reference, this is not used to select the entry assignment to remove.'
 examples:
-  - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-unassign --developer d01'
-  - 'SOMANAGER_ROLE=manager php scripts/backlog.php entry-unassign delete-question-reply --developer d01'
-  - 'SOMANAGER_ROLE=manager php scripts/backlog.php entry-unassign delete-question-reply/cleanup --developer d01'
+  - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=agent-01 php scripts/backlog.php unassign --agent agent-01'
+  - 'SOMANAGER_ROLE=manager php scripts/backlog.php unassign delete-question-reply --agent manager-01'
+  - 'SOMANAGER_ROLE=manager php scripts/backlog.php unassign delete-question-reply/cleanup --agent manager-01'
 notes:
   - 'The caller role is controlled by `SOMANAGER_ROLE`.'
   - 'With `SOMANAGER_ROLE=developer`, `SOMANAGER_AGENT` must match `--developer` and the developer may only unassign its own active entry.'

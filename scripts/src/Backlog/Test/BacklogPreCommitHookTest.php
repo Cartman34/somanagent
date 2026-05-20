@@ -62,7 +62,7 @@ final class BacklogPreCommitHookTest
     }
 
     /**
-     * Verifies that the hook exits 0 when commit-gate succeeds (development stage).
+     * Verifies that the hook exits 0 when precommit-check succeeds (development stage).
      */
     private function testHookAllowsCommitInDevelopmentStage(): int
     {
@@ -75,7 +75,7 @@ final class BacklogPreCommitHookTest
     }
 
     /**
-     * Verifies that the hook exits 1 and prints the blocked message when commit-gate fails.
+     * Verifies that the hook exits 1 and prints the blocked message when precommit-check fails.
      */
     private function testHookBlocksCommitInNonDevelopmentStage(): int
     {
@@ -93,7 +93,7 @@ final class BacklogPreCommitHookTest
      * runs the hook script, and asserts the expected exit code and optional output fragment.
      *
      * @param string      $testName          Test identifier for failure messages
-     * @param int         $stubExitCode      Exit code the stub backlog.php returns for commit-gate
+     * @param int         $stubExitCode      Exit code the stub backlog.php returns for precommit-check
      * @param string      $stubStderr        Text the stub writes to stderr when blocking
      * @param int         $expectedExitCode  Expected hook exit code
      * @param string|null $expectedOutput    Fragment that must appear in captured hook output, or null
@@ -140,7 +140,7 @@ final class BacklogPreCommitHookTest
                 mkdir($scriptsDir, 0o755);
             }
             $stub = sprintf(
-                "<?php\nif (isset(\$argv[1]) && \$argv[1] === 'commit-gate') {\n    if (%d !== 0) { fwrite(STDERR, %s); }\n    exit(%d);\n}\nexit(0);\n",
+                "<?php\nif (isset(\$argv[1]) && \$argv[1] === 'precommit-check') {\n    if (%d !== 0) { fwrite(STDERR, %s); }\n    exit(%d);\n}\nexit(0);\n",
                 $stubExitCode,
                 var_export($stubStderr, true),
                 $stubExitCode,

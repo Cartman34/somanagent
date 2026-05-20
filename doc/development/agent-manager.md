@@ -31,19 +31,19 @@ Read this file only when the active task requires backlog management or workflow
 
 - `Manager` can assign any unassigned active feature or task to any developer agent, and can refresh an existing assignment for the same target agent.
 - Missing `agent` metadata and legacy `agent: none` both mean the entry is unassigned; a different real agent code must be unassigned first before a new assignment.
-- `Manager` can unassign any active entry (feature or task) from any developer agent through `entry-unassign`.
-- For `entry-unassign`, `--developer=<code>` identifies the caller developer. Use an explicit `<entry-ref>` to choose the entry to unassign.
+- `Manager` can unassign any active entry (feature or task) from any developer agent through `unassign`.
+- For `unassign`, `--agent=<code>` identifies the manager caller. Use an explicit `<entry-ref>` to choose the entry to unassign.
 - Every manager backlog command must be prefixed exactly as `SOMANAGER_ROLE=manager SOMANAGER_AGENT=<code> php scripts/backlog.php ...`.
 
 ## Explicit Entry Overrides
 
 Managers do not have an auto-picked active entry, so manager calls that mutate an existing entry must name the target explicitly.
 
-- `entry-rename <entry-ref> "<new text>"` renames the targeted active feature or task, including unassigned entries. For tasks, the parent feature contribution line is updated too.
+- `rename <entry-ref> "<new text>"` renames the targeted active feature or task, including unassigned entries. For tasks, the parent feature contribution line is updated too.
 - `feature-block <feature>` and `feature-unblock <feature>` mutate the targeted active feature, including an unassigned feature container.
 - `review-cancel <entry-ref>` moves any `reviewing` entry back to `review` and clears its reviewer, regardless of which reviewer claimed it.
-- `entry-release <entry-ref>` returns an untouched `development` entry to `todo`, with the same no-development and child-task constraints as the developer flow.
-- `entry-merge <entry-ref>` may be invoked by a manager for an explicit merge instruction. Its output prints both the stored reviewer (`Reviewer:`) and the manager caller (`Caller:`) for traceability.
+- `release <entry-ref>` returns an untouched `development` entry to `todo`, with the same no-development and child-task constraints as the developer flow.
+- `merge <entry-ref>` may be invoked by a manager for an explicit merge instruction. Its output prints both the stored reviewer (`Reviewer:`) and the manager caller (`Caller:`) for traceability.
 
 If the explicit `<entry-ref>` or `<feature>` is omitted in manager mode, these commands fail instead of falling back to a caller-owned active entry.
 

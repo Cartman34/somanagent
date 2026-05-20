@@ -15,7 +15,7 @@ enum BacklogCommandName: string
     case BASE_UPDATE = 'base-update';
     case STATUS = 'status';
     case ENTRY_CREATE = 'entry-create';
-    case TASK_REMOVE = 'task-remove';
+    case ENTRY_REMOVE = 'entry-remove';
     case REVIEW_CANCEL = 'review-cancel';
     case REVIEW_CHECK = 'review-check';
     case REVIEW_APPROVE = 'review-approve';
@@ -26,14 +26,14 @@ enum BacklogCommandName: string
     case REVIEW_NOTES = 'review-notes';
     case REVIEW_REQUEST = 'review-request';
     case REWORK = 'rework';
-    case ENTRY_MERGE = 'entry-merge';
-    case ENTRY_RENAME = 'entry-rename';
+    case MERGE = 'merge';
+    case RENAME = 'rename';
     case ENTRY_SET_META = 'entry-set-meta';
-    case WORK_START = 'work-start';
-    case ENTRY_RELEASE = 'entry-release';
+    case START = 'start';
+    case RELEASE = 'release';
     case FEATURE_TASK_MERGE = 'feature-task-merge';
-    case ENTRY_ASSIGN = 'entry-assign';
-    case ENTRY_UNASSIGN = 'entry-unassign';
+    case ASSIGN = 'assign';
+    case UNASSIGN = 'unassign';
     case FEATURE_BLOCK = 'feature-block';
     case FEATURE_UNBLOCK = 'feature-unblock';
     case LIST = 'list';
@@ -43,8 +43,8 @@ enum BacklogCommandName: string
     case FEATURE_CLOSE = 'feature-close';
     case FEATURE_MERGE = 'feature-merge';
     case USER_MERGE = 'user-merge';
-    case ENTRY_REBASE = 'entry-rebase';
-    case COMMIT_GATE = 'commit-gate';
+    case REBASE = 'rebase';
+    case PRECOMMIT_CHECK = 'precommit-check';
 
     /**
      * Returns true when this command mutates board, review, worktree, or associated state.
@@ -59,7 +59,7 @@ enum BacklogCommandName: string
             self::WORKTREE_LIST,
             self::REVIEW_NOTES,
             self::REVIEW_CHECK,
-            self::COMMIT_GATE => false,
+            self::PRECOMMIT_CHECK => false,
             default => true,
         };
     }

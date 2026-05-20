@@ -66,7 +66,7 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
         if ($activeEntries === []) {
             throw new \RuntimeException(
                 "Developer {$agent} has no active entry.\n" .
-                "Run `php scripts/backlog.php work-start` to start one."
+                "Run `php scripts/backlog.php start` to start one."
             );
         }
 
@@ -115,7 +115,7 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
         if ($featureAgent === null || $featureAgent === BacklogMetaValue::NONE->value) {
             throw new \RuntimeException(
                 "Feature {$feature} has no assigned developer.\n" .
-                "Run `php scripts/backlog.php entry-assign --developer={$agent} {$feature}` to take ownership before submitting for review."
+                "Run `php scripts/backlog.php assign --developer={$agent} {$feature}` to take ownership before submitting for review."
             );
         }
         if ($featureAgent !== $agent) {

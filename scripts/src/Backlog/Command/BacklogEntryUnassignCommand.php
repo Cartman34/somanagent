@@ -80,7 +80,7 @@ final class BacklogEntryUnassignCommand extends AbstractBacklogCommand
         }
 
         $entry->setDeveloper(null);
-        $this->saveBoard($board, BacklogCommandName::ENTRY_UNASSIGN->value);
+        $this->saveBoard($board, BacklogCommandName::UNASSIGN->value);
         $cleaned = $this->worktreeService->cleanupAbandonedManagedWorktrees($board);
 
         $this->presenter->displaySuccess(sprintf('Unassigned %s %s from %s', $kind, $entryRef, $assignedAgent));
@@ -102,7 +102,7 @@ final class BacklogEntryUnassignCommand extends AbstractBacklogCommand
     private function resolveByReference(BacklogBoard $board, string $reference): BoardEntry
     {
         if (str_contains($reference, '/')) {
-            return $this->boardService->resolveTaskByReference($board, $reference, BacklogCommandName::ENTRY_UNASSIGN->value)->getEntry();
+            return $this->boardService->resolveTaskByReference($board, $reference, BacklogCommandName::UNASSIGN->value)->getEntry();
         }
 
         $slug = $this->boardService->normalizeFeatureSlug($reference);
@@ -123,7 +123,7 @@ final class BacklogEntryUnassignCommand extends AbstractBacklogCommand
         if ($taskMatches !== []) {
             if (count($taskMatches) > 1) {
                 throw new RuntimeException(sprintf(
-                    'entry-unassign requires a full <entry-ref> because task slug %s is not unique.',
+                    'unassign requires a full <entry-ref> because task slug %s is not unique.',
                     $slug,
                 ));
             }

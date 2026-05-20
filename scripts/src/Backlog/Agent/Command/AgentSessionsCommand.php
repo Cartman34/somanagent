@@ -17,7 +17,7 @@ use SoManAgent\Script\Console;
  * Lists past CLI sessions for the worktree bound to an agent code.
  *
  * Usage:
- *   php scripts/backlog-agent.php sessions --code=<code>
+ *   php scripts/backlog-agent.php agent-history --code=<code>
  */
 final class AgentSessionsCommand extends AbstractAgentCommand
 {

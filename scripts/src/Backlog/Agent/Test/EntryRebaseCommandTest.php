@@ -99,11 +99,11 @@ final class EntryRebaseCommandTest
         try {
             $cmd->handle([], []);
         } catch (\RuntimeException $e) {
-            $threw = str_contains($e->getMessage(), 'entry-rebase requires <slug>');
+            $threw = str_contains($e->getMessage(), 'rebase requires <slug>');
         }
 
         if (!$threw) {
-            echo "FAIL testMissingSlugThrows: expected RuntimeException with 'entry-rebase requires <slug>'\n";
+            echo "FAIL testMissingSlugThrows: expected RuntimeException with 'rebase requires <slug>'\n";
             return 1;
         }
 

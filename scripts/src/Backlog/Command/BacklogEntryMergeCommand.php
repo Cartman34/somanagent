@@ -83,7 +83,7 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
     {
         $reference = trim($commandArgs[0] ?? '');
         if ($reference === '') {
-            throw new \RuntimeException('entry-merge requires <entry-ref>.');
+            throw new \RuntimeException('merge requires <entry-ref>.');
         }
 
         return $reference;
@@ -100,12 +100,12 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
             $taskMatches = $this->boardService->findTaskEntriesByTaskSlug($board, $feature);
             if ($taskMatches !== []) {
                 throw new \RuntimeException(sprintf(
-                    'entry-merge refuses short task reference `%s`; use `<entry-ref>` instead.',
+                    'merge refuses short task reference `%s`; use `<entry-ref>` instead.',
                     $feature,
                 ));
             }
 
-            throw new \RuntimeException(sprintf('Feature not found for entry-merge: %s', $feature));
+            throw new \RuntimeException(sprintf('Feature not found for merge: %s', $feature));
         }
 
         $arguments = [$feature];
@@ -138,7 +138,7 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
     private function handleTaskMerge(BacklogBoard $board, string $reference, string $caller, string $callerRole, array $options): void
     {
         if (array_key_exists(BacklogCliOption::BODY_FILE->value, $options)) {
-            throw new \RuntimeException('entry-merge accepts --body-file only for feature merges.');
+            throw new \RuntimeException('merge accepts --body-file only for feature merges.');
         }
 
         $match = $this->resolveFullTaskReference($board, $reference);
@@ -164,7 +164,7 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
     {
         [$featurePart, $taskPart] = array_pad(explode('/', $reference, 2), 2, '');
         if (trim($featurePart) === '' || trim($taskPart) === '') {
-            throw new \RuntimeException('entry-merge task references must use `<entry-ref>` with both parts filled.');
+            throw new \RuntimeException('merge task references must use `<entry-ref>` with both parts filled.');
         }
 
         $feature = $this->boardService->normalizeFeatureSlug($featurePart);
@@ -178,7 +178,7 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
 
         if ($this->boardService->findParentFeatureEntry($board, $feature) === null) {
             throw new \RuntimeException(sprintf(
-                'Task not found for entry-merge: %s/%s. The parent feature %s is not active.',
+                'Task not found for merge: %s/%s. The parent feature %s is not active.',
                 $feature,
                 $task,
                 $feature,
@@ -186,7 +186,7 @@ final class BacklogEntryMergeCommand extends AbstractBacklogCommand
         }
 
         throw new \RuntimeException(sprintf(
-            'Task not found for entry-merge: %s/%s. Use an active `<entry-ref>`.',
+            'Task not found for merge: %s/%s. Use an active `<entry-ref>`.',
             $feature,
             $task,
         ));

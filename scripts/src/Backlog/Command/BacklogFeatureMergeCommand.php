@@ -72,7 +72,7 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
     public function handle(array $commandArgs, array $options): void
     {
         throw new \RuntimeException(
-            'feature-merge is no longer a public command. Use: php scripts/backlog.php entry-merge <entry-ref> --agent=<reviewer>',
+            'feature-merge is no longer a public command. Use: php scripts/backlog.php merge <entry-ref> --agent=<reviewer>',
         );
     }
 

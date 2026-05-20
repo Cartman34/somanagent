@@ -228,7 +228,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
      * Verifies scope-review integrity guards:
      *   - entry-create on a parent in review reverts it to development
      *   - entry-create on a parent in reviewing reverts it and clears meta.reviewer
-     *   - work-start on a child task reverts a parent in approved to development
+     *   - start on a child task reverts a parent in approved to development
      *   - review-approve on a feature with queued child tasks is refused
      */
     private function assertScopeReviewGuards(
@@ -270,10 +270,10 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->assertFeatureReviewerCleared($guardFeature);
         $driver->removeTodoTask(sprintf('%s/%s', $guardFeature, $guardTaskD));
 
-        // Test C: work-start on a child task reverts parent from approved to development
+        // Test C: start on a child task reverts parent from approved to development
         // entry-create must run while parent is in development so it does not trigger the revert;
-        // only work-start should see the approved stage and be responsible for the transition.
-        $driver->createTodoTask(sprintf('[%s][%s] Task E for work-start revert guard', $guardFeature, $guardTaskE));
+        // only start should see the approved stage and be responsible for the transition.
+        $driver->createTodoTask(sprintf('[%s][%s] Task E for start revert guard', $guardFeature, $guardTaskE));
         $driver->replaceBoardText(
             "    stage: development\n    feature: {$guardFeature}",
             "    stage: approved\n    feature: {$guardFeature}",
@@ -435,7 +435,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
     }
 
     /**
-     * Verifies dependency-update propagation from task to feature on entry-merge.
+     * Verifies dependency-update propagation from task to feature on merge.
      *
      * Covers:
      *   - valid scope set on a task is unioned into parent on merge
@@ -502,7 +502,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
     }
 
     /**
-     * Verify entry-unassign on a child task across reference forms (`<entry-ref>`,
+     * Verify unassign on a child task across reference forms (`<entry-ref>`,
      * `<task>` simple slug, and ambiguity rejection on a slug colliding with a feature).
      *
      * Runs first so it leaves agentPrimary and agentSecondary free for the review-notes
@@ -516,7 +516,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $taskSlug = 'test-eu-task';
         $taskRef = $featureSlug . '/' . $taskSlug;
 
-        $driver->createTodoTask(sprintf('[%s][%s] Task for entry-unassign coverage', $featureSlug, $taskSlug));
+        $driver->createTodoTask(sprintf('[%s][%s] Task for unassign coverage', $featureSlug, $taskSlug));
         $driver->startNextFeature($context->agentPrimary);
         $driver->replaceBoardText(
             '    developer: ' . $context->agentPrimary . "\n",
@@ -529,7 +529,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
 
         $taskOnlyFeature = 'test-eu-task-only-feature';
         $taskOnlySlug = 'test-eu-task-only';
-        $driver->createTodoTask(sprintf('[%s][%s] Task for entry-unassign by task slug only', $taskOnlyFeature, $taskOnlySlug));
+        $driver->createTodoTask(sprintf('[%s][%s] Task for unassign by task slug only', $taskOnlyFeature, $taskOnlySlug));
         $driver->startNextFeature($context->agentPrimary);
         $driver->unassignEntryAsManager($taskOnlySlug, self::MANAGER_AGENT);
 

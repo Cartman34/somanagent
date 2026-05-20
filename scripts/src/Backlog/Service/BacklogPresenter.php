@@ -251,7 +251,7 @@ final class BacklogPresenter
             BacklogBoard::STAGE_PENDING_REVIEW => BacklogCommandName::REVIEW_CHECK->value . ' or ' . BacklogCommandName::REVIEW_APPROVE->value,
             BacklogBoard::STAGE_REVIEWING => BacklogCommandName::REVIEW_CANCEL->value . ' or ' . BacklogCommandName::REVIEW_CHECK->value . ' or ' . BacklogCommandName::REVIEW_APPROVE->value,
             BacklogBoard::STAGE_REJECTED => BacklogCommandName::REWORK->value,
-            BacklogBoard::STAGE_APPROVED => BacklogCommandName::ENTRY_MERGE->value,
+            BacklogBoard::STAGE_APPROVED => BacklogCommandName::MERGE->value,
             default => '-',
         };
     }
@@ -263,7 +263,7 @@ final class BacklogPresenter
             BacklogBoard::STAGE_PENDING_REVIEW => BacklogCommandName::REVIEW_CHECK->value . ' or ' . BacklogCommandName::REVIEW_APPROVE->value,
             BacklogBoard::STAGE_REVIEWING => BacklogCommandName::REVIEW_CANCEL->value . ' or ' . BacklogCommandName::REVIEW_CHECK->value . ' or ' . BacklogCommandName::REVIEW_APPROVE->value,
             BacklogBoard::STAGE_REJECTED => BacklogCommandName::REWORK->value,
-            BacklogBoard::STAGE_APPROVED => BacklogCommandName::ENTRY_MERGE->value,
+            BacklogBoard::STAGE_APPROVED => BacklogCommandName::MERGE->value,
             default => '-',
         };
     }

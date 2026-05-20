@@ -106,8 +106,8 @@ MD);
         $this->assertOutputContains($this->runBacklog([]), 'Commands:');
         $this->assertOutputContains($this->runBacklog(['status', '--help']), 'status');
         $this->assertOutputContains($this->runBacklog([BacklogCommandName::REVIEW_NEXT->value, '--help']), BacklogCommandName::REVIEW_NEXT->value);
-        $this->assertOutputContains($this->runBacklog([BacklogCommandName::WORK_START->value, '--help']), BacklogCommandName::WORK_START->value);
-        $this->assertOutputContains($this->runBacklog([BacklogCommandName::ENTRY_MERGE->value, '--help']), BacklogCommandName::ENTRY_MERGE->value);
+        $this->assertOutputContains($this->runBacklog([BacklogCommandName::START->value, '--help']), BacklogCommandName::START->value);
+        $this->assertOutputContains($this->runBacklog([BacklogCommandName::MERGE->value, '--help']), BacklogCommandName::MERGE->value);
         $this->assertOutputContains($this->runBacklog([BacklogCommandName::REVIEW_REQUEST->value, '--help']), BacklogCommandName::REVIEW_REQUEST->value);
         $this->assertOutputContains($this->runBacklog([BacklogCommandName::REVIEW_CHECK->value, '--help']), BacklogCommandName::REVIEW_CHECK->value);
         $this->assertOutputContains($this->runBacklog([BacklogCommandName::REVIEW_APPROVE->value, '--help']), BacklogCommandName::REVIEW_APPROVE->value);
@@ -117,7 +117,7 @@ MD);
         // Regression: `help` and `help <command>` must be unknown commands, not silent aliases.
         $this->assertCommandIsUnknown('help');
         $this->assertBacklogFails(
-            ['help', BacklogCommandName::WORK_START->value],
+            ['help', BacklogCommandName::START->value],
             'Unknown command: help. Run with --help for the list of available commands.',
         );
     }
@@ -136,8 +136,8 @@ MD);
             'Print the current backlog and worktree status',
         );
         $this->assertOutputContains(
-            $this->runBacklog(['--force-current-worktree', BacklogCommandName::WORK_START->value, '--help']),
-            BacklogCommandName::WORK_START->value,
+            $this->runBacklog(['--force-current-worktree', BacklogCommandName::START->value, '--help']),
+            BacklogCommandName::START->value,
         );
         $this->assertOutputContains(
             $this->runBacklog(['status', '--force-current-worktree', '--help']),
@@ -179,8 +179,8 @@ MD);
             'Unknown option(s) for command `status`: --as',
         );
         $this->assertBacklogFails(
-            [BacklogCommandName::WORK_START->value, '--unknown-flag'],
-            'Unknown option(s) for command `work-start`: --unknown-flag',
+            [BacklogCommandName::START->value, '--unknown-flag'],
+            'Unknown option(s) for command `start`: --unknown-flag',
             ['SOMANAGER_AGENT' => $this->context->agentPrimary],
         );
         $this->assertBacklogFails(
@@ -261,7 +261,7 @@ MD);
             throw new \RuntimeException('removeFirstTodoTask: no queued todo task to remove.');
         }
         $reference = $service->computeQueuedEntryReference($entries[0]);
-        $this->runBacklog([BacklogCommandName::TASK_REMOVE->value, $reference]);
+        $this->runBacklog([BacklogCommandName::ENTRY_REMOVE->value, $reference]);
     }
 
     /**
@@ -271,18 +271,18 @@ MD);
      */
     public function removeTodoTask(string $reference): void
     {
-        $this->runBacklog([BacklogCommandName::TASK_REMOVE->value, $reference]);
+        $this->runBacklog([BacklogCommandName::ENTRY_REMOVE->value, $reference]);
     }
 
     /**
-     * Asserts that `task-remove` fails with the given message.
+     * Asserts that `entry-remove` fails with the given message.
      *
-     * @param string $reference Reference passed to task-remove
+     * @param string $reference Reference passed to entry-remove
      * @param string $needle Expected substring of the failure output
      */
     public function assertTaskRemoveFails(string $reference, string $needle): void
     {
-        $this->assertBacklogFails([BacklogCommandName::TASK_REMOVE->value, $reference], $needle);
+        $this->assertBacklogFails([BacklogCommandName::ENTRY_REMOVE->value, $reference], $needle);
     }
 
     /**
@@ -296,7 +296,7 @@ MD);
     /**
      * @param string $agent Agent identifier for the worktree
      * @param ?string $target Optional explicit `<entry-ref>`
-     * @return string Command output from work-start
+     * @return string Command output from start
      */
     public function startNextFeature(string $agent, ?string $target = null): string
     {
@@ -308,7 +308,7 @@ MD);
             ));
         }
 
-        $args = [BacklogCommandName::WORK_START->value];
+        $args = [BacklogCommandName::START->value];
         if ($target !== null) {
             $args[] = $target;
         }
@@ -327,7 +327,7 @@ MD);
     }
 
     /**
-     * @param string $output work-start output to check
+     * @param string $output start output to check
      * @param string $needle String that should be present in output
      */
     public function assertFeatureStartOutputContains(string $output, string $needle): void
@@ -341,11 +341,11 @@ MD);
      */
     public function assignEntryAsManager(string $reference, string $agent): void
     {
-        $this->runBacklog([BacklogCommandName::ENTRY_ASSIGN->value, $reference, '--developer', $agent], ['SOMANAGER_ROLE' => 'manager']);
+        $this->runBacklog([BacklogCommandName::ASSIGN->value, $reference, '--agent', $agent], ['SOMANAGER_ROLE' => 'manager']);
     }
 
     /**
-     * Asserts that `entry-assign` fails with the given message.
+     * Asserts that `assign` fails with the given message.
      *
      * @param string $reference  Entry reference (`<entry-ref>`) to assign
      * @param string $agent      Developer code passed via `--developer`
@@ -354,7 +354,7 @@ MD);
      */
     public function assertAssignEntryFails(string $reference, string $agent, array $env, string $needle): void
     {
-        $this->assertBacklogFails([BacklogCommandName::ENTRY_ASSIGN->value, $reference, '--developer', $agent], $needle, $env);
+        $this->assertBacklogFails([BacklogCommandName::ASSIGN->value, $reference, '--agent', $agent], $needle, $env);
     }
 
     /**
@@ -366,7 +366,7 @@ MD);
      */
     public function unassignEntryAsManager(?string $reference, string $developer): void
     {
-        $arguments = [BacklogCommandName::ENTRY_UNASSIGN->value];
+        $arguments = [BacklogCommandName::UNASSIGN->value];
         if ($reference !== null) {
             $arguments[] = $reference;
         }
@@ -376,7 +376,7 @@ MD);
     }
 
     /**
-     * Asserts that `entry-unassign` fails with the given message when invoked under the
+     * Asserts that `unassign` fails with the given message when invoked under the
      * provided role/agent environment.
      *
      * @param ?string $reference Optional explicit reference (`<entry-ref>`).
@@ -386,7 +386,7 @@ MD);
      */
     public function assertUnassignEntryFails(?string $reference, string $developer, array $env, string $needle): void
     {
-        $arguments = [BacklogCommandName::ENTRY_UNASSIGN->value];
+        $arguments = [BacklogCommandName::UNASSIGN->value];
         if ($reference !== null) {
             $arguments[] = $reference;
         }
@@ -401,7 +401,7 @@ MD);
      */
     public function releaseEntry(string $agent, string $entryRef): void
     {
-        $this->runBacklog([BacklogCommandName::ENTRY_RELEASE->value, $entryRef], ['SOMANAGER_AGENT' => $agent]);
+        $this->runBacklog([BacklogCommandName::RELEASE->value, $entryRef], ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -410,7 +410,7 @@ MD);
      */
     public function releaseEntryAsManager(string $manager, string $entryRef): void
     {
-        $this->runBacklog([BacklogCommandName::ENTRY_RELEASE->value, $entryRef], [
+        $this->runBacklog([BacklogCommandName::RELEASE->value, $entryRef], [
             'SOMANAGER_ROLE' => 'manager',
             'SOMANAGER_AGENT' => $manager,
         ]);
@@ -423,7 +423,7 @@ MD);
      */
     public function assertReleaseEntryFails(string $agent, string $entryRef, string $needle): void
     {
-        $this->assertBacklogFails([BacklogCommandName::ENTRY_RELEASE->value, $entryRef], $needle, ['SOMANAGER_AGENT' => $agent]);
+        $this->assertBacklogFails([BacklogCommandName::RELEASE->value, $entryRef], $needle, ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -432,7 +432,7 @@ MD);
      */
     public function assertReleaseEntryAsManagerWithoutReferenceFails(string $manager, string $needle): void
     {
-        $this->assertBacklogFails([BacklogCommandName::ENTRY_RELEASE->value], $needle, [
+        $this->assertBacklogFails([BacklogCommandName::RELEASE->value], $needle, [
             'SOMANAGER_ROLE' => 'manager',
             'SOMANAGER_AGENT' => $manager,
         ]);
@@ -885,7 +885,7 @@ MD);
      */
     public function mergeTask(string $reference, ?string $expectedReviewer = null, ?string $expectedCaller = null): void
     {
-        $output = $this->runBacklog([BacklogCommandName::ENTRY_MERGE->value, $reference], ['SOMANAGER_AGENT' => self::TEST_REVIEWER_AGENT]);
+        $output = $this->runBacklog([BacklogCommandName::MERGE->value, $reference], ['SOMANAGER_AGENT' => self::TEST_REVIEWER_AGENT]);
         $this->assertOutputContains($output, 'Entry-ref: ' . $reference);
         if ($expectedReviewer !== null) {
             $this->assertOutputContains($output, 'Reviewer: ' . $expectedReviewer);
@@ -904,7 +904,7 @@ MD);
      */
     public function mergeTaskAsManager(string $manager, string $reference, string $expectedReviewer): void
     {
-        $output = $this->runBacklog([BacklogCommandName::ENTRY_MERGE->value, $reference], [
+        $output = $this->runBacklog([BacklogCommandName::MERGE->value, $reference], [
             'SOMANAGER_ROLE' => 'manager',
             'SOMANAGER_AGENT' => $manager,
         ]);
@@ -915,15 +915,15 @@ MD);
     }
 
     /**
-     * Assert entry-merge refuses to infer a task from the developer agent option.
+     * Assert merge refuses to infer a task from the developer agent option.
      *
      * @param string $agent Developer agent that owns a task
      */
     public function assertEntryMergeWithoutReferenceFails(string $agent): void
     {
         $this->assertBacklogFails(
-            [BacklogCommandName::ENTRY_MERGE->value],
-            'entry-merge requires <entry-ref>.',
+            [BacklogCommandName::MERGE->value],
+            'merge requires <entry-ref>.',
             ['SOMANAGER_AGENT' => $agent],
         );
     }
@@ -934,7 +934,7 @@ MD);
     public function assertEntryMergeRequiresReviewer(string $reference): void
     {
         $this->assertBacklogFails(
-            [BacklogCommandName::ENTRY_MERGE->value, $reference],
+            [BacklogCommandName::MERGE->value, $reference],
             'Command requires SOMANAGER_AGENT=<code>.',
             ['SOMANAGER_AGENT' => ''],
         );
@@ -946,8 +946,8 @@ MD);
     public function assertEntryMergeShortTaskReferenceFails(string $task): void
     {
         $this->assertBacklogFails(
-            [BacklogCommandName::ENTRY_MERGE->value, $task],
-            'entry-merge refuses short task reference',
+            [BacklogCommandName::MERGE->value, $task],
+            'merge refuses short task reference',
             ['SOMANAGER_AGENT' => self::TEST_REVIEWER_AGENT],
         );
     }
@@ -959,8 +959,8 @@ MD);
     public function assertEntryMergeTaskBodyFileFails(string $reference, string $bodyFile): void
     {
         $this->assertBacklogFails(
-            [BacklogCommandName::ENTRY_MERGE->value, $reference, '--body-file', $bodyFile],
-            'entry-merge accepts --body-file only for feature merges.',
+            [BacklogCommandName::MERGE->value, $reference, '--body-file', $bodyFile],
+            'merge accepts --body-file only for feature merges.',
             ['SOMANAGER_AGENT' => self::TEST_REVIEWER_AGENT],
         );
     }
@@ -1026,7 +1026,7 @@ MD);
      */
     public function renameEntry(string $agent, string $newText): void
     {
-        $this->runBacklog([BacklogCommandName::ENTRY_RENAME->value, $newText], ['SOMANAGER_AGENT' => $agent]);
+        $this->runBacklog([BacklogCommandName::RENAME->value, $newText], ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -1036,7 +1036,7 @@ MD);
      */
     public function renameEntryAsManager(string $manager, string $entryRef, string $newText): void
     {
-        $this->runBacklog([BacklogCommandName::ENTRY_RENAME->value, $entryRef, $newText], [
+        $this->runBacklog([BacklogCommandName::RENAME->value, $entryRef, $newText], [
             'SOMANAGER_ROLE' => 'manager',
             'SOMANAGER_AGENT' => $manager,
         ]);
@@ -1048,7 +1048,7 @@ MD);
      */
     public function assertRenameEntryAsManagerWithoutReferenceFails(string $manager, string $needle): void
     {
-        $this->assertBacklogFails([BacklogCommandName::ENTRY_RENAME->value], $needle, [
+        $this->assertBacklogFails([BacklogCommandName::RENAME->value], $needle, [
             'SOMANAGER_ROLE' => 'manager',
             'SOMANAGER_AGENT' => $manager,
         ]);
@@ -1062,7 +1062,7 @@ MD);
      */
     public function assertRenameEntryFails(string $agent, string $entryRef, string $newText, string $needle): void
     {
-        $this->assertBacklogFails([BacklogCommandName::ENTRY_RENAME->value, $entryRef, $newText], $needle, ['SOMANAGER_AGENT' => $agent]);
+        $this->assertBacklogFails([BacklogCommandName::RENAME->value, $entryRef, $newText], $needle, ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**
@@ -1218,7 +1218,7 @@ MD);
      */
     public function mergeFeature(string $feature, ?string $bodyFile = null): void
     {
-        $arguments = [BacklogCommandName::ENTRY_MERGE->value, $feature];
+        $arguments = [BacklogCommandName::MERGE->value, $feature];
         if ($bodyFile !== null) {
             $arguments[] = '--body-file';
             $arguments[] = $bodyFile;
@@ -1571,13 +1571,13 @@ MD);
     }
 
     /**
-     * Runs work-start with --dry-run and returns the captured output.
+     * Runs start with --dry-run and returns the captured output.
      *
      * @param list<string> $extraArguments Additional CLI arguments after --agent
      */
     public function dryRunStartNextFeature(string $agent, array $extraArguments = []): string
     {
-        $arguments = array_merge([BacklogCommandName::WORK_START->value, '--dry-run'], $extraArguments);
+        $arguments = array_merge([BacklogCommandName::START->value, '--dry-run'], $extraArguments);
 
         return $this->runBacklog($arguments, ['SOMANAGER_AGENT' => $agent]);
     }
@@ -1587,7 +1587,7 @@ MD);
      */
     public function assertWorkStartFails(string $agent, string $needle, array $extraArguments = []): void
     {
-        $arguments = array_merge([BacklogCommandName::WORK_START->value], $extraArguments);
+        $arguments = array_merge([BacklogCommandName::START->value], $extraArguments);
         $this->assertBacklogFails($arguments, $needle, ['SOMANAGER_AGENT' => $agent]);
     }
 
