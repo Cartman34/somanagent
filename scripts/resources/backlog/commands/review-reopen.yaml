@@ -1,15 +1,16 @@
-description: 'Reopen an approved entry for a new review cycle'
+description: 'Reopen an approved or rejected entry for a new review cycle'
 arguments:
   -
     name: '<entry-ref>'
     description: 'Entry reference to reopen (required: stable slug, no implicit resolution)'
 notes:
   - 'Only manager and reviewer roles may call this command (SOMANAGER_ROLE=manager or SOMANAGER_ROLE=reviewer).'
-  - 'The entry must be in the approved stage; any other stage produces an error.'
+  - 'The entry must be in the approved or rejected stage; any other stage produces an error.'
   - 'Always requires an explicit <entry-ref>: review-reopen never auto-resolves the entry from the agent code.'
-  - 'Clears any existing review notes for the entry from local/backlog-review.md.'
-  - 'Manager behavior: transitions approved → review and clears meta.reviewer.'
-  - 'Reviewer behavior: transitions approved → reviewing and sets meta.reviewer to the calling reviewer code. Non-exclusive: a different reviewer may claim an approved entry even if another reviewer was previously assigned.'
+  - 'Approved entry: existing review notes are cleared on reopen.'
+  - 'Rejected entry: existing review notes are preserved on reopen.'
+  - 'Manager behavior: transitions approved|rejected → review and clears meta.reviewer.'
+  - 'Reviewer behavior: transitions approved|rejected → reviewing and sets meta.reviewer to the calling reviewer code. Non-exclusive: a different reviewer may claim the entry even if another reviewer was previously assigned.'
 examples:
   - 'SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php review-reopen my-feature'
   - 'SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=cp-01 php scripts/backlog.php review-reopen my-feature'
