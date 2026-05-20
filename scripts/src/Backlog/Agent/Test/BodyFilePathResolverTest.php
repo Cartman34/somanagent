@@ -25,6 +25,8 @@ use Symfony\Component\Yaml\Yaml;
  */
 final class BodyFilePathResolverTest
 {
+    private const MY_FEATURE = 'my-feature';
+
     /**
      * Runs all test cases and returns the total number of failures.
      */
@@ -55,7 +57,7 @@ final class BodyFilePathResolverTest
             file_put_contents($bodyFile, 'content');
 
             $resolver = $this->makeResolver($dir . '/worktrees', $dir . '/board.md');
-            $result = $resolver->resolveForEntry($bodyFile, 'my-feature');
+            $result = $resolver->resolveForEntry($bodyFile, self::MY_FEATURE);
 
             if ($result !== $bodyFile) {
                 echo "FAIL testAbsolutePathExistsReturnedAsIs: expected '$bodyFile', got '$result'\n";
@@ -75,7 +77,7 @@ final class BodyFilePathResolverTest
             $resolver = $this->makeResolver($dir . '/worktrees', $dir . '/board.md');
             $threw = false;
             try {
-                $resolver->resolveForEntry($dir . '/missing.md', 'my-feature');
+                $resolver->resolveForEntry($dir . '/missing.md', self::MY_FEATURE);
             } catch (\RuntimeException $e) {
                 $threw = true;
                 if (!str_contains($e->getMessage(), 'does not exist')) {
@@ -107,7 +109,7 @@ final class BodyFilePathResolverTest
 
             $boardPath = $this->writeBoardWithAgent($dir, $agentCode);
             $resolver = $this->makeResolver($worktreesRoot, $boardPath);
-            $result = $resolver->resolveForEntry($bodyFile, 'my-feature');
+            $result = $resolver->resolveForEntry($bodyFile, self::MY_FEATURE);
 
             $expected = $wa . '/' . $bodyFile;
             if ($result !== $expected) {
@@ -137,7 +139,7 @@ final class BodyFilePathResolverTest
             try {
                 $boardPath = $this->writeBoardWithAgent($dir, $agentCode);
                 $resolver = $this->makeResolver($worktreesRoot, $boardPath);
-                $result = $resolver->resolveForEntry($relPath, 'my-feature');
+                $result = $resolver->resolveForEntry($relPath, self::MY_FEATURE);
 
                 if ($result !== $cwdFile) {
                     echo "FAIL testRelativePathFoundInCwdOnly: expected '$cwdFile', got '$result'\n";
@@ -174,7 +176,7 @@ final class BodyFilePathResolverTest
                 $resolver = $this->makeResolver($worktreesRoot, $boardPath);
 
                 ob_start();
-                $result = $resolver->resolveForEntry($relPath, 'my-feature');
+                $result = $resolver->resolveForEntry($relPath, self::MY_FEATURE);
                 $output = ob_get_clean() ?: '';
 
                 if ($result !== $waFile) {
@@ -210,7 +212,7 @@ final class BodyFilePathResolverTest
 
             $threw = false;
             try {
-                $resolver->resolveForEntry('local/tmp/nonexistent-' . uniqid() . '.md', 'my-feature');
+                $resolver->resolveForEntry('local/tmp/nonexistent-' . uniqid() . '.md', self::MY_FEATURE);
             } catch (\RuntimeException $e) {
                 $threw = true;
                 if (!str_contains($e->getMessage(), 'not found')) {
@@ -244,7 +246,7 @@ final class BodyFilePathResolverTest
             file_put_contents($cwdFile, 'content');
 
             try {
-                $result = $resolver->resolveForEntry($relPath, 'my-feature');
+                $result = $resolver->resolveForEntry($relPath, self::MY_FEATURE);
                 if ($result !== $cwdFile) {
                     echo "FAIL testEntryWithoutAgentFallsBackToCwdOnly: expected cwd '$cwdFile', got '$result'\n";
                     return 1;
@@ -274,7 +276,7 @@ final class BodyFilePathResolverTest
             file_put_contents($cwdFile, 'content');
 
             try {
-                $result = $resolver->resolveForEntry($relPath, 'my-feature');
+                $result = $resolver->resolveForEntry($relPath, self::MY_FEATURE);
                 if ($result !== $cwdFile) {
                     echo "FAIL testWaAbsentOnDiskFallsBackToCwdOnly: expected cwd '$cwdFile', got '$result'\n";
                     return 1;
@@ -380,7 +382,7 @@ final class BodyFilePathResolverTest
         $entry = [
             'kind' => 'feature',
             'stage' => 'development',
-            'feature' => 'my-feature',
+            'feature' => self::MY_FEATURE,
             'developer' =>$agentCode !== null ? $agentCode : 'none',
             'branch' => 'fix/my-feature',
             'base' => 'abc123def456abc1',

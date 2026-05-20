@@ -33,9 +33,11 @@ final class UserMergeCampaign implements CampaignInterface
 
     private const REVIEWER = 'test-r-um';
 
+    private const COMMAND = 'user-merge';
+
     public function getName(): string
     {
-        return 'user-merge';
+        return self::COMMAND;
     }
 
     public function run(BacklogScriptTestDriver $driver, BacklogScriptTestContext $context): void
@@ -60,7 +62,7 @@ final class UserMergeCampaign implements CampaignInterface
     private function testZeroApproved(BacklogScriptTestDriver $driver, BacklogScriptTestContext $context): void
     {
         // user-merge → "No approved entries waiting."
-        [$exitCode, $output] = $driver->runBacklogWithPipedStdin(['user-merge'], '');
+        [$exitCode, $output] = $driver->runBacklogWithPipedStdin([self::COMMAND], '');
         if ($exitCode !== 0) {
             throw new \RuntimeException(sprintf(
                 "user-merge with zero approved entries must exit 0, got %d.\n--- output ---\n%s",
@@ -106,7 +108,7 @@ final class UserMergeCampaign implements CampaignInterface
         $driver->assertContains($statusOutput, 'Approved entries waiting: 1');
 
         // --dry-run: preview shown, no merge, exit 0
-        [$exitCode, $dryOutput] = $driver->runBacklogWithPipedStdin(['user-merge', '--dry-run'], '');
+        [$exitCode, $dryOutput] = $driver->runBacklogWithPipedStdin([self::COMMAND, '--dry-run'], '');
         if ($exitCode !== 0) {
             throw new \RuntimeException(sprintf(
                 "user-merge --dry-run must exit 0, got %d.\n--- output ---\n%s",
@@ -119,7 +121,7 @@ final class UserMergeCampaign implements CampaignInterface
         if (!$context->dryRun) {
             // input n → skip, entry stays approved
             $interactiveEnv = ['BACKLOG_TEST_FORCE_INTERACTIVE' => '1'];
-            [$exitCode, $nOutput] = $driver->runBacklogWithPipedStdin(['user-merge'], "n\n", $interactiveEnv);
+            [$exitCode, $nOutput] = $driver->runBacklogWithPipedStdin([self::COMMAND], "n\n", $interactiveEnv);
             if ($exitCode !== 0) {
                 throw new \RuntimeException(sprintf(
                     "user-merge with input 'n' must exit 0, got %d.\n--- output ---\n%s",
@@ -131,7 +133,7 @@ final class UserMergeCampaign implements CampaignInterface
             $driver->assertFeatureStage($featureC, BacklogBoard::STAGE_APPROVED);
 
             // input q → quit immediately, entry stays approved
-            [$exitCode, $qOutput] = $driver->runBacklogWithPipedStdin(['user-merge'], "q\n", $interactiveEnv);
+            [$exitCode, $qOutput] = $driver->runBacklogWithPipedStdin([self::COMMAND], "q\n", $interactiveEnv);
             if ($exitCode !== 0) {
                 throw new \RuntimeException(sprintf(
                     "user-merge with input 'q' must exit 0, got %d.\n--- output ---\n%s",
@@ -185,7 +187,7 @@ final class UserMergeCampaign implements CampaignInterface
         //   → d for Phase D task (show full diff)
         //   → y for Phase D task (merge)
         [$exitCode, $mergeOutput] = $driver->runBacklogWithPipedStdin(
-            ['user-merge'],
+            [self::COMMAND],
             "n\nd\ny\n",
             $interactiveEnv,
         );

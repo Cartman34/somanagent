@@ -35,6 +35,20 @@ use SoManAgent\Script\TextSlugger;
  */
 final class EntryRebaseCommandTest
 {
+    private const NO_AGENT_FEATURE = 'no-agent-feature';
+
+    private const MY_FEATURE = 'my-feature';
+
+    private const UP_FEATURE = 'up-feature';
+
+    private const REBASED_FEATURE = 'rebased-feature';
+
+    private const CONFLICT_FEATURE = 'conflict-feature';
+
+    private const DRY_FEATURE = 'dry-feature';
+
+    private const DRY_RUN = 'dry-run';
+
     private string $tmpDir;
 
     /**
@@ -101,7 +115,7 @@ final class EntryRebaseCommandTest
     {
         $dir = $this->scratchDir('no-agent');
         $board = $dir . '/board.yaml';
-        $this->writeFeatureBoard($board, 'no-agent-feature', 'feat/no-agent-feature', 'approved', null);
+        $this->writeFeatureBoard($board, self::NO_AGENT_FEATURE, 'feat/no-agent-feature', 'approved', null);
 
         $fake = new FakeEntryRebaseService(EntryRebaseResult::upToDate('origin/main'));
         $cmd = $this->buildCommand($dir, $board, $fake);
@@ -109,7 +123,7 @@ final class EntryRebaseCommandTest
         $threw = false;
         try {
             ob_start();
-            $cmd->handle(['no-agent-feature'], []);
+            $cmd->handle([self::NO_AGENT_FEATURE], []);
             ob_end_clean();
         } catch (\RuntimeException $e) {
             ob_end_clean();
@@ -130,7 +144,7 @@ final class EntryRebaseCommandTest
         $dir = $this->scratchDir('no-worktree');
         $worktreesRoot = $dir . '/worktrees';
         $board = $dir . '/board.yaml';
-        $this->writeFeatureBoard($board, 'my-feature', 'feat/my-feature', 'approved', 'd10');
+        $this->writeFeatureBoard($board, self::MY_FEATURE, 'feat/' . self::MY_FEATURE, 'approved', 'd10');
 
         $fake = new FakeEntryRebaseService(EntryRebaseResult::upToDate('origin/main'));
         $cmd = $this->buildCommand($dir, $board, $fake, $worktreesRoot);
@@ -138,7 +152,7 @@ final class EntryRebaseCommandTest
         $threw = false;
         try {
             ob_start();
-            $cmd->handle(['my-feature'], []);
+            $cmd->handle([self::MY_FEATURE], []);
             ob_end_clean();
         } catch (\RuntimeException $e) {
             ob_end_clean();
@@ -160,7 +174,7 @@ final class EntryRebaseCommandTest
         $worktreesRoot = $dir . '/worktrees';
         mkdir($worktreesRoot . '/d10', 0755, true);
         $board = $dir . '/board.yaml';
-        $this->writeFeatureBoard($board, 'up-feature', 'feat/up-feature', 'approved', 'd10');
+        $this->writeFeatureBoard($board, self::UP_FEATURE, 'feat/' . self::UP_FEATURE, 'approved', 'd10');
 
         $fake = new FakeEntryRebaseService(EntryRebaseResult::upToDate('origin/main'));
         $cmd = $this->buildCommand($dir, $board, $fake, $worktreesRoot);
@@ -169,7 +183,7 @@ final class EntryRebaseCommandTest
         $output = '';
         try {
             ob_start();
-            $cmd->handle(['up-feature'], []);
+            $cmd->handle([self::UP_FEATURE], []);
             $output = ob_get_clean();
         } catch (\RuntimeException $e) {
             ob_get_clean();
@@ -201,7 +215,7 @@ final class EntryRebaseCommandTest
         $worktreesRoot = $dir . '/worktrees';
         mkdir($worktreesRoot . '/d10', 0755, true);
         $board = $dir . '/board.yaml';
-        $this->writeFeatureBoard($board, 'rebased-feature', 'feat/rebased-feature', 'approved', 'd10');
+        $this->writeFeatureBoard($board, self::REBASED_FEATURE, 'feat/' . self::REBASED_FEATURE, 'approved', 'd10');
 
         $fake = new FakeEntryRebaseService(EntryRebaseResult::rebased('origin/main'));
         $cmd = $this->buildCommand($dir, $board, $fake, $worktreesRoot);
@@ -209,7 +223,7 @@ final class EntryRebaseCommandTest
         $threw = false;
         try {
             ob_start();
-            $cmd->handle(['rebased-feature'], []);
+            $cmd->handle([self::REBASED_FEATURE], []);
             ob_get_clean();
         } catch (\RuntimeException $e) {
             ob_get_clean();
@@ -231,7 +245,7 @@ final class EntryRebaseCommandTest
         $worktreesRoot = $dir . '/worktrees';
         mkdir($worktreesRoot . '/d10', 0755, true);
         $board = $dir . '/board.yaml';
-        $this->writeFeatureBoard($board, 'conflict-feature', 'feat/conflict-feature', 'approved', 'd10');
+        $this->writeFeatureBoard($board, self::CONFLICT_FEATURE, 'feat/' . self::CONFLICT_FEATURE, 'approved', 'd10');
 
         $fake = new FakeEntryRebaseService(EntryRebaseResult::conflict('origin/main', ['src/Foo.php', 'src/Bar.php']));
         $cmd = $this->buildCommand($dir, $board, $fake, $worktreesRoot);
@@ -240,7 +254,7 @@ final class EntryRebaseCommandTest
         $output = '';
         try {
             ob_start();
-            $cmd->handle(['conflict-feature'], []);
+            $cmd->handle([self::CONFLICT_FEATURE], []);
             $output = ob_get_clean() ?: '';
         } catch (\RuntimeException $e) {
             $output = ob_get_clean() ?: '';
@@ -263,17 +277,17 @@ final class EntryRebaseCommandTest
 
     private function testDryRunDoesNotCallService(): int
     {
-        $dir = $this->scratchDir('dry-run');
+        $dir = $this->scratchDir(self::DRY_RUN);
         $worktreesRoot = $dir . '/worktrees';
         mkdir($worktreesRoot . '/d10', 0755, true);
         $board = $dir . '/board.yaml';
-        $this->writeFeatureBoard($board, 'dry-feature', 'feat/dry-feature', 'approved', 'd10');
+        $this->writeFeatureBoard($board, self::DRY_FEATURE, 'feat/' . self::DRY_FEATURE, 'approved', 'd10');
 
         $fake = new FakeEntryRebaseService(EntryRebaseResult::upToDate('origin/main'));
         $cmd = $this->buildCommand($dir, $board, $fake, $worktreesRoot);
 
         ob_start();
-        $cmd->handle(['dry-feature'], ['dry-run' => true]);
+        $cmd->handle([self::DRY_FEATURE], [self::DRY_RUN => true]);
         $output = ob_get_clean();
 
         if ($fake->lastCall !== null) {
@@ -281,7 +295,7 @@ final class EntryRebaseCommandTest
             return 1;
         }
 
-        if (!str_contains((string) $output, 'dry-run')) {
+        if (!str_contains((string) $output, self::DRY_RUN)) {
             echo "FAIL testDryRunDoesNotCallService: expected [dry-run] in output, got: {$output}\n";
             return 1;
         }
