@@ -88,7 +88,7 @@ final class AgentDeveloperSelectorTest
                 'kind' => 'feature',
                 'stage' => 'development',
                 'feature' => self::MY_FEATURE,
-                'developer' =>'d05',
+                'developer' => 'd05',
                 'branch' => 'feat/' . self::MY_FEATURE,
             ],
         ]);
@@ -115,7 +115,7 @@ final class AgentDeveloperSelectorTest
                 'kind' => 'feature',
                 'stage' => 'development',
                 'feature' => 'other-feature',
-                'developer' =>'d03',
+                'developer' => 'd03',
                 'branch' => 'feat/other-feature',
             ],
         ]);

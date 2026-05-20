@@ -88,7 +88,7 @@ final class BacklogPermissionService
 
         if ($actorDeveloper !== $targetDeveloper) {
             throw new RuntimeException(sprintf(
-                'Developer role can only assign itself. %s must match --agent.',
+                'Developer role can only assign itself. %s must match --developer.',
                 self::ENV_ACTIVE_AGENT,
             ));
         }
@@ -142,7 +142,7 @@ final class BacklogPermissionService
 
         if ($actorAgent !== $callerAgent) {
             throw new RuntimeException(sprintf(
-                'Developer role can only unassign itself. %s must match --agent.',
+                'Developer role can only unassign itself. %s must match --developer.',
                 self::ENV_ACTIVE_AGENT,
             ));
         }

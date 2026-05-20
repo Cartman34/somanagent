@@ -110,13 +110,13 @@ final class AgentWatchModeTest
         $featureSlug = 'review-feature';
         $fixture = $this->makeFixture('reviewer-watch');
         $this->writeBoard($fixture['boardPath'], [
-            ['kind' => 'feature', 'stage' => 'review', 'feature' => $featureSlug, 'developer' =>'d20', 'branch' => 'tech/' . $featureSlug, 'type' => 'tech'],
+            ['kind' => 'feature', 'stage' => 'review', 'feature' => $featureSlug, 'developer' => 'd20', 'branch' => 'tech/' . $featureSlug, 'type' => 'tech'],
         ]);
         $this->addWorktree($fixture['projectRoot'], $fixture['worktreesRoot'] . '/d20');
         $runner = new FakeBacklogCommandRunner();
         $runner->onReviewNext = function (string $reviewerCode, string $entryRef) use ($fixture): void {
             $this->writeBoard($fixture['boardPath'], [
-                ['kind' => 'feature', 'stage' => 'reviewing', 'feature' => $entryRef, 'developer' =>'d20', 'reviewer' => $reviewerCode, 'branch' => 'tech/' . $entryRef, 'type' => 'tech'],
+                ['kind' => 'feature', 'stage' => 'reviewing', 'feature' => $entryRef, 'developer' => 'd20', 'reviewer' => $reviewerCode, 'branch' => 'tech/' . $entryRef, 'type' => 'tech'],
             ]);
         };
         $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE);
@@ -145,14 +145,14 @@ final class AgentWatchModeTest
     private function testWatchWithoutRoleElectsReviewerForReviewOnly(): int
     {
         return $this->assertRoleElection('watch-elects-reviewer', [], [
-            ['kind' => 'feature', 'stage' => 'review', 'feature' => 'review-only', 'developer' =>'d30', 'branch' => 'tech/review-only', 'type' => 'tech'],
+            ['kind' => 'feature', 'stage' => 'review', 'feature' => 'review-only', 'developer' => 'd30', 'branch' => 'tech/review-only', 'type' => 'tech'],
         ], 'r10', 'reviewNext', 'testWatchWithoutRoleElectsReviewerForReviewOnly');
     }
 
     private function testWatchWithoutRolePrefersReviewerWhenBothExist(): int
     {
         return $this->assertRoleElection('watch-prefers-reviewer', [['feature' => 'todo-too', 'type' => 'tech', 'title' => 'Todo']], [
-            ['kind' => 'feature', 'stage' => 'review', 'feature' => 'review-wins', 'developer' =>'d31', 'branch' => 'tech/review-wins', 'type' => 'tech'],
+            ['kind' => 'feature', 'stage' => 'review', 'feature' => 'review-wins', 'developer' => 'd31', 'branch' => 'tech/review-wins', 'type' => 'tech'],
         ], 'r10', 'reviewNext', 'testWatchWithoutRolePrefersReviewerWhenBothExist');
     }
 
@@ -160,7 +160,7 @@ final class AgentWatchModeTest
     {
         $fixture = $this->makeFixture('watch-skip-live');
         $this->writeBoard($fixture['boardPath'], [
-            ['kind' => 'feature', 'stage' => 'development', 'feature' => 'taken', 'developer' =>'d40', 'branch' => 'tech/taken', 'type' => 'tech'],
+            ['kind' => 'feature', 'stage' => 'development', 'feature' => 'taken', 'developer' => 'd40', 'branch' => 'tech/taken', 'type' => 'tech'],
         ], [
             ['feature' => 'taken', 'type' => 'tech', 'title' => 'Taken'],
             ['feature' => 'free', 'type' => 'tech', 'title' => 'Free'],
