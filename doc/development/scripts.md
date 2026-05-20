@@ -218,6 +218,8 @@ Notes:
 - the script never uses `local/backlog-board.yaml` or `local/backlog-review.md` directly
 - it passes `--test-mode`, `--board-file`, and `--review-file` to `backlog.php` with campaign files under `local/tests/`
 - it passes `--worktree-dir` to `backlog.php` with isolated test worktrees under `local/tests/test-worktrees/`
+- by default it injects `SOMANAGER_GIT_OFFLINE=1` into backlog subprocesses, so `GitClient` logs and skips network commands while local Git commands still run
+- `--allow-remote` removes that offline guard for the whole run and allows real Git network operations such as push, fetch, pull, and remote branch deletion
 - `feature-review-lifecycle` is skipped unless `--allow-remote` is enabled
 - the remote campaign creates a temporary PR base branch instead of targeting `main`
 - cleanup always runs in best effort and only acts on resources recorded by the test context

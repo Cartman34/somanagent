@@ -387,7 +387,12 @@ final class BacklogCommandFactory
     public function getGitClient(): GitClient
     {
         if ($this->gitClient === null) {
-            $this->gitClient = new GitClient($this->dryRun, $this->getConsoleClient(), $this->getRetryPolicy());
+            $this->gitClient = new GitClient(
+                $this->dryRun,
+                $this->getConsoleClient(),
+                $this->getRetryPolicy(),
+                GitClient::shouldDisableNetworkFromEnvironment(),
+            );
         }
         return $this->gitClient;
     }

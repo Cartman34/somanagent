@@ -331,7 +331,12 @@ final class BacklogAgentRunner extends AbstractScriptRunner
     private function gitClient(): GitClient
     {
         if ($this->gitClient === null) {
-            $this->gitClient = new GitClient(false, $this->consoleClient(), new RetryPolicy());
+            $this->gitClient = new GitClient(
+                false,
+                $this->consoleClient(),
+                new RetryPolicy(),
+                GitClient::shouldDisableNetworkFromEnvironment(),
+            );
         }
 
         return $this->gitClient;

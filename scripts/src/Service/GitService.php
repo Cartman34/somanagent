@@ -117,10 +117,6 @@ final class GitService
      */
     public function deleteRemoteBranch(string $branch, string $remote = self::ORIGIN_REMOTE): void
     {
-        if (getenv('BACKLOG_TEST_BLOCK_REMOTE_PUSH') === '1') {
-            return;
-        }
-
         $this->git->deleteRemoteBranch($remote, $branch);
     }
 
@@ -207,11 +203,11 @@ final class GitService
      */
     public function pushBranchAndAwaitVisibility(string $branch, string $remote = self::ORIGIN_REMOTE, ?string $worktree = null): void
     {
-        if (getenv('BACKLOG_TEST_BLOCK_REMOTE_PUSH') === '1') {
+        $this->git->pushUpstream($branch, $remote, $worktree);
+        if ($this->git->isNetworkDisabled()) {
             return;
         }
 
-        $this->git->pushUpstream($branch, $remote, $worktree);
         $this->git->fetch($remote, $branch, worktree: $worktree);
         $this->waitForRemoteBranchVisibility($branch, $remote);
     }
