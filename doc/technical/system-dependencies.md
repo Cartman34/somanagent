@@ -93,6 +93,14 @@ Source: npm-global (`@google/gemini-cli`). Version: >=0.1. Scope: Prod.
 Keeps agent client sessions alive across SSH disconnects so a developer can resume work after a drop.
 Source: apt. Version: >=3.2. Scope: Dev.
 
+###### zstd — Zstandard decompression tool.
+Lets the Codex agent launcher read compressed session rollouts; without it, those rollouts are silently skipped.
+Source: apt. Version: any. Scope: Dev (optional).
+
+###### rg — Ripgrep, a fast recursive grep.
+Optional faster engine for `code-search.php`; the PHP fallback is used when ripgrep is not installed.
+Source: apt. Version: any. Scope: Dev (optional).
+
 ## Maintenance
 
 This page mirrors `scripts/resources/dependencies.yaml`, which is the authoritative manifest consumed by `php scripts/setup.php install`. When a dependency is added, removed, or has its constraint changed in the manifest, update the corresponding entry here in the same commit.
