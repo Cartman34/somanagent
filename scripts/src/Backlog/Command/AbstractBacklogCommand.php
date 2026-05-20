@@ -116,12 +116,12 @@ abstract class AbstractBacklogCommand
     /**
      * Reads the active caller role from the SOMANAGER_ROLE environment variable without throwing.
      *
-     * @return string|null 'manager', 'developer', or null when not set or invalid
+     * @return string|null 'manager', 'developer', 'reviewer', or null when not set or invalid
      */
     protected function readCallerRole(): ?string
     {
         $role = strtolower(trim((string) getenv('SOMANAGER_ROLE')));
 
-        return in_array($role, ['manager', 'developer'], true) ? $role : null;
+        return in_array($role, ['manager', 'developer', 'reviewer'], true) ? $role : null;
     }
 }

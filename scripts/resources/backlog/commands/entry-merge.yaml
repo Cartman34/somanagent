@@ -11,10 +11,11 @@ examples:
   - 'SOMANAGER_AGENT=cp-01 php scripts/backlog.php entry-merge delete-question-reply'
   - 'SOMANAGER_AGENT=cp-01 php scripts/backlog.php entry-merge onboarding/task-copy-review'
   - 'SOMANAGER_AGENT=cp-01 php scripts/backlog.php entry-merge delete-question-reply --body-file local/tmp/pr_body.md'
+  - 'SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-merge onboarding/task-copy-review'
 notes:
   - 'Relative --body-file paths for feature merges resolve first against the developer WA (from entry meta.developer), then cwd. Absolute paths are used as-is.'
-  - 'The caller agent (SOMANAGER_AGENT) identifies the reviewer performing the merge; it is never used to resolve a developer-owned task.'
+  - 'The caller agent (SOMANAGER_AGENT) is printed separately from the stored reviewer; it is never used to resolve a developer-owned task.'
   - 'A task merge must use the full <entry-ref>. A short task slug is refused even when it is unique.'
-  - 'Before merging, the command prints `Entry-ref:`, resolved type, target, merge target, and equivalent legacy command. Copy `Entry-ref:` for follow-up commands.'
+  - 'Before merging, the command prints `Entry-ref:`, stored `Reviewer:`, `Caller:`, resolved type, target, merge target, and equivalent legacy command. Copy `Entry-ref:` for follow-up commands.'
   - 'entry-merge dispatches internally based on whether the ref contains a `/`: refs with a `/` are task merges; refs without are feature merges.'
   - 'After a successful feature merge to main, the command fetches origin/main and advances local main in best-effort mode. A failure to sync local main is reported as a warning and does not interrupt the cleanup.'

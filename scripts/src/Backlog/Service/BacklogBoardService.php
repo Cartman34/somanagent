@@ -352,6 +352,54 @@ final class BacklogBoardService
         return $matches[0];
     }
 
+    /**
+     * Resolves an active feature or task by its stable <entry-ref>.
+     *
+     * A slash identifies a task (`feature/task`). A slash-less reference is first
+     * matched as a feature slug, with an ambiguity guard when the same slug also
+     * identifies one or more active tasks.
+     */
+    public function resolveActiveEntryByReference(BacklogBoard $board, string $reference, string $command): BoardEntryMatch
+    {
+        $trimmed = trim($reference);
+        if ($trimmed === '') {
+            throw new \RuntimeException(sprintf('%s requires an explicit <entry-ref>.', $command));
+        }
+
+        if (str_contains($trimmed, '/')) {
+            return $this->resolveTaskByReference($board, $trimmed, $command);
+        }
+
+        $slug = $this->normalizeFeatureSlug($trimmed);
+        $featureMatch = $this->findParentFeatureEntry($board, $slug);
+        $taskMatches = $this->findTaskEntriesByTaskSlug($board, $slug);
+
+        if ($featureMatch !== null && $taskMatches !== []) {
+            throw new \RuntimeException(sprintf(
+                'Ambiguous reference %s: matches both a feature and a task. Use a full <entry-ref> to disambiguate.',
+                $trimmed,
+            ));
+        }
+
+        if ($featureMatch !== null) {
+            return $featureMatch;
+        }
+
+        if ($taskMatches !== []) {
+            if (count($taskMatches) > 1) {
+                throw new \RuntimeException(sprintf(
+                    '%s requires a full <entry-ref> because task slug %s is not unique.',
+                    $command,
+                    $slug,
+                ));
+            }
+
+            return $taskMatches[0];
+        }
+
+        throw new \RuntimeException(sprintf('No active entry found for reference: %s', $trimmed));
+    }
+
     private function taskNotFoundMessage(BacklogBoard $board, string $providedReference, string $normalizedReference): string
     {
         $message = sprintf('Task not found: %s', $normalizedReference);

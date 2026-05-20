@@ -20,6 +20,8 @@ use SoManAgent\Script\Service\GitService;
  */
 final class BacklogEntryReleaseCommand extends AbstractBacklogCommand
 {
+    private const ROLE_MANAGER = 'manager';
+
     private BacklogWorktreeService $worktreeService;
 
     private GitService $gitService;
@@ -52,33 +54,22 @@ final class BacklogEntryReleaseCommand extends AbstractBacklogCommand
     public function handle(array $commandArgs, array $options): void
     {
         $agent = $this->requireCallerAgent();
+        $isManager = $this->readCallerRole() === self::ROLE_MANAGER;
         $board = $this->loadBoard();
         $requestedTarget = $this->boardService->sanitizeString($commandArgs[0] ?? null);
+
+        if ($isManager && $requestedTarget === null) {
+            throw new \RuntimeException('entry-release requires an explicit <entry-ref> when SOMANAGER_ROLE=manager.');
+        }
+
         if ($requestedTarget !== null) {
-            $target = $this->boardService->normalizeFeatureSlug($requestedTarget);
-            $task = $this->boardService->findTaskEntriesByAgent($board, $agent)[0] ?? null;
-            if ($task !== null) {
-                if ($task->getEntry()->getTask() === $target) {
-                    $current = $this->boardService->resolveSingleTaskForAgent($board, $agent);
-                } else {
-                    $current = $this->boardService->resolveSingleFeatureForAgent($board, $agent);
-                    if ($current->getEntry()->getFeature() !== $target) {
-                        throw new \RuntimeException(sprintf(
-                            'Agent %s has no active feature or task matching %s.',
-                            $agent,
-                            $target,
-                        ));
-                    }
-                }
-            } else {
-                $current = $this->boardService->resolveSingleFeatureForAgent($board, $agent);
-                if ($current->getEntry()->getFeature() !== $target) {
-                    throw new \RuntimeException(sprintf(
-                        'Agent %s has no active feature or task matching %s.',
-                        $agent,
-                        $target,
-                    ));
-                }
+            $current = $this->boardService->resolveActiveEntryByReference($board, $requestedTarget, BacklogCommandName::ENTRY_RELEASE->value);
+            if (!$isManager && $current->getEntry()->getDeveloper() !== $agent) {
+                throw new \RuntimeException(sprintf(
+                    'Entry %s is not assigned to caller agent %s.',
+                    $this->boardService->getEntryReference($current->getEntry()),
+                    $agent,
+                ));
             }
         } else {
             $current = $this->boardService->findTaskEntriesByAgent($board, $agent)[0] ?? $this->boardService->resolveSingleFeatureForAgent($board, $agent);

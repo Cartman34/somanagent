@@ -6,6 +6,7 @@ arguments:
 examples:
   - 'SOMANAGER_AGENT=cp-01 php scripts/backlog.php review-cancel my-feature'
   - 'SOMANAGER_AGENT=cp-01 php scripts/backlog.php review-cancel my-feature/my-task'
+  - 'SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php review-cancel my-feature/my-task'
 notes:
   - 'Moves the entry from reviewing back to review and clears the recorded reviewer.'
   - 'Always require an explicit reference: review-cancel never auto-resolves the entry from the agent code, so the mutation cannot silently retarget another claim.'

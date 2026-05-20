@@ -59,7 +59,9 @@ final class BacklogReviewCancelCommand extends AbstractBacklogCommand
         $isManager = $this->readCallerRole() === self::ROLE_MANAGER;
 
         $board = $this->loadBoard();
-        $entry = $this->resolveByReference($board, $reference);
+        $entry = $this->boardService
+            ->resolveActiveEntryByReference($board, $reference, BacklogCommandName::REVIEW_CANCEL->value)
+            ->getEntry();
 
         $stage = $this->boardService->getFeatureStage($entry);
         if ($stage !== BacklogBoard::STAGE_REVIEWING) {
@@ -90,41 +92,6 @@ final class BacklogReviewCancelCommand extends AbstractBacklogCommand
             $this->describeEntry($entry),
             $this->boardService->getStageLabel(BacklogBoard::STAGE_PENDING_REVIEW),
         ));
-    }
-
-    private function resolveByReference(BacklogBoard $board, string $reference): BoardEntry
-    {
-        if (str_contains($reference, '/')) {
-            return $this->boardService->resolveTaskByReference($board, $reference, BacklogCommandName::REVIEW_CANCEL->value)->getEntry();
-        }
-
-        $slug = $this->boardService->normalizeFeatureSlug($reference);
-        $featureMatch = $this->boardService->findParentFeatureEntry($board, $slug);
-        $taskMatches = $this->boardService->findTaskEntriesByTaskSlug($board, $slug);
-
-        if ($featureMatch !== null && $taskMatches !== []) {
-            throw new RuntimeException(sprintf(
-                'Ambiguous reference %s: matches both a feature and a task. Use a full <entry-ref> to disambiguate.',
-                $reference,
-            ));
-        }
-
-        if ($featureMatch !== null) {
-            return $featureMatch->getEntry();
-        }
-
-        if ($taskMatches !== []) {
-            if (count($taskMatches) > 1) {
-                throw new RuntimeException(sprintf(
-                    'review-cancel requires a full <entry-ref> because task slug %s is not unique.',
-                    $slug,
-                ));
-            }
-
-            return $taskMatches[0]->getEntry();
-        }
-
-        throw new RuntimeException(sprintf('No active entry found for reference: %s', $reference));
     }
 
     private function describeEntry(BoardEntry $entry): string
