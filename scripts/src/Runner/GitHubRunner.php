@@ -242,8 +242,12 @@ final class GitHubRunner extends AbstractScriptRunner
         }
 
         $prs = $this->api('GET', '/pulls?state=all&per_page=50');
-        foreach ($prs as $pr) {
-            $this->console->line("  #{$pr['number']}  {$pr['title']}  [{$pr['head']['ref']} → {$pr['base']['ref']}]");
+        if (empty($prs)) {
+            $this->console->ok('No PRs.');
+        } else {
+            foreach ($prs as $pr) {
+                $this->console->line("  #{$pr['number']}  {$pr['title']}  [{$pr['head']['ref']} → {$pr['base']['ref']}]");
+            }
         }
     }
 

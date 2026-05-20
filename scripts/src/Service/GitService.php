@@ -114,10 +114,6 @@ final class GitService
      */
     public function deleteRemoteBranch(string $branch, string $remote = self::ORIGIN_REMOTE): void
     {
-        if (getenv('BACKLOG_TEST_BLOCK_REMOTE_PUSH') === '1') {
-            return;
-        }
-
         if (!$this->git->remoteBranchExists($remote, $branch)) {
             return;
         }
