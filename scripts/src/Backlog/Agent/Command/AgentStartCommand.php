@@ -277,6 +277,7 @@ final class AgentStartCommand extends AbstractAgentCommand
             if (!$loop || $exitCode !== 0) {
                 return $exitCode;
             }
+            echo "Task done — waiting for next.\n\n";
         } while (true);
     }
 

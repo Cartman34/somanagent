@@ -68,6 +68,7 @@ final class AgentWatchModeTest
         $failed += $this->testWatchSkipsTodoAlreadyOwnedByLiveSession();
         $failed += $this->testWatchRetriesAfterContention();
         $failed += $this->testLoopRestartsAfterCleanExitAndStopsOnError();
+        $failed += $this->testLoopPrintsCompletionTransitionBetweenCycles();
         $failed += $this->testLoopWithoutWatchIsRejected();
         $failed += $this->testAsciiSpinnerWhenLocaleIsNotUtf8();
 
@@ -246,6 +247,42 @@ final class AgentWatchModeTest
         }
 
         echo "OK testLoopRestartsAfterCleanExitAndStopsOnError\n";
+        return 0;
+    }
+
+    private function testLoopPrintsCompletionTransitionBetweenCycles(): int
+    {
+        $fixture = $this->makeFixture('watch-loop-transition');
+        $this->writeBoard($fixture['boardPath'], [], [
+            ['feature' => 'cycle-one', 'type' => 'tech', 'title' => 'Cycle one'],
+        ]);
+        $claims = 0;
+        $runner = new FakeBacklogCommandRunner();
+        $runner->onWorkStart = function (string $developerCode, string $entryRef) use ($fixture, &$claims): void {
+            $claims++;
+            $feature = 'cycle-' . $claims;
+            $this->writeBoard($fixture['boardPath'], [
+                ['kind' => 'feature', 'stage' => 'development', 'feature' => $feature, 'developer' => $developerCode, 'branch' => 'tech/' . $feature, 'type' => 'tech'],
+            ]);
+        };
+        $driver = new FakeSessionDriver();
+        $driver->setExitCodeQueue([0, 7]);
+        $driver->onLaunchHook = function () use ($fixture, &$claims): void {
+            if ($claims === 1) {
+                $this->writeBoard($fixture['boardPath'], [], [
+                    ['feature' => 'cycle-two', 'type' => 'tech', 'title' => 'Cycle two'],
+                ]);
+            }
+        };
+        $cmd = $this->buildCommand($fixture, new FakeAgentClientLauncher(AgentClient::CLAUDE), $runner, $driver);
+        $output = $this->captureCommand($fixture['projectRoot'], $cmd, ['claude'], ['developer' => true, 'watch' => true, 'loop' => true, BacklogCliOption::WATCH_INTERVAL->value => '0']);
+
+        if (!str_contains($output, "Task done — waiting for next.\n\n")) {
+            echo "FAIL testLoopPrintsCompletionTransitionBetweenCycles: expected transition message, got " . json_encode($output) . "\n";
+            return 1;
+        }
+
+        echo "OK testLoopPrintsCompletionTransitionBetweenCycles\n";
         return 0;
     }
 
