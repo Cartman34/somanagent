@@ -86,3 +86,55 @@ Run `php scripts/backlog-agent.php whoami` from WP to confirm the session identi
 - use a `tech/` branch prefix for script, workflow tooling, or script documentation changes
 - when a change touches the backlog model itself, update scripts and documentation together
 - prefixed backlog tasks of the form `[feature-slug][task-slug]` create one shared `kind=feature` parent plus one local-only `kind=task` child per task; manager-side workflow changes must preserve that distinction explicitly
+
+## Task Body Convention
+
+Every backlog entry created via `entry-create --body-file=<path>` must follow the convention below. A basic developer agent must be able to execute the task without re-analysing the project from scratch; the reviewer is presumed more capable of analysis and re-verifies impact.
+
+### Formatting Rules
+
+- No blank lines anywhere in the body — blank lines break the markdown list rendering.
+- The whole body is a hierarchy of lists: `-` at root, four spaces then `-` for sub-items.
+- No free-form prose paragraphs.
+- A section with nothing to declare is omitted, not left empty.
+
+### Section Structure (in this order)
+
+- `Motivation` — why this task exists. Any arbitration between alternatives ("we chose X over Y because…") goes here, not in a separate section.
+- `État actuel` — current state of the relevant code or system.
+- `Comportement attendu` — functional contract the system must satisfy once the task is done.
+- `Périmètre` — concrete code modifications expected (files, areas, symbols touched). **Plancher rule applies.**
+- `Hors scope` — items explicitly excluded. Closed list, not extensible.
+- `Tests` — minimum tests to add or extend. **Plancher rule applies.**
+- `Doc à mettre à jour` — minimum documentation and help YAML to update. **Plancher rule applies.**
+
+### Plancher Rule And Standard Header
+
+`Périmètre`, `Tests`, and `Doc à mettre à jour` are minimum floors, not exhaustive lists. They must carry the standard header marker so the developer and reviewer know to extend by impact analysis. The exact header form is:
+
+- `Périmètre (plancher non-exhaustif — analyse d'impact obligatoire pour étendre)`
+- `Tests (plancher non-exhaustif — analyse d'impact obligatoire pour étendre)`
+- `Doc à mettre à jour (plancher non-exhaustif — analyse d'impact obligatoire pour étendre)`
+
+The developer extends each plancher section by running impact analysis (grep call-sites, follow call-graph, run existing test suite) before opening the PR. The reviewer re-runs the same analysis and rejects the PR if any detectable impact is not covered. See `agent-developer.md` and `agent-reviewer.md` for the corresponding obligations on each role.
+
+### Conformant Example
+
+```
+- Motivation
+    - Reason this task exists; arbitration between alternatives if relevant.
+- État actuel
+    - Current state of the code or system relevant to the task.
+- Comportement attendu
+    - Observable behavior 1 after the task is done.
+    - Observable behavior 2 after the task is done.
+- Périmètre (plancher non-exhaustif — analyse d'impact obligatoire pour étendre)
+    - Area 1 to modify (subsystem, files, symbols).
+    - Area 2 to modify.
+- Hors scope
+    - Explicitly excluded item (closed list).
+- Tests (plancher non-exhaustif — analyse d'impact obligatoire pour étendre)
+    - Minimum test 1.
+- Doc à mettre à jour (plancher non-exhaustif — analyse d'impact obligatoire pour étendre)
+    - Minimum doc page 1.
+```

@@ -30,6 +30,7 @@ The cross-role tooling and path rules in [`agent-workflow.md` — Tools And Path
 - manage backlog additions
 - handle PR updates, push, and merge workflow on existing feature branches
 - run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php ...` from your reviewer `WA` (the developer's `WA` you joined); the proxy relays backlog state to `WP` automatically
+- re-run the full impact analysis on every body section bearing the marker `plancher non-exhaustif — analyse d'impact obligatoire pour étendre` (typically `Périmètre`, `Tests`, `Doc à mettre à jour`; see `agent-manager.md` — Task Body Convention). A broken call-site, a broken test, or a documentation page left inconsistent that the PR did not cover is a rejection motive. The reviewer is presumed more capable of analysis than the developer agent and must assume this responsibility.
 
 ## Workspace Rules
 
