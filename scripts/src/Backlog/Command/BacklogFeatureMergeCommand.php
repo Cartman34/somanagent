@@ -122,7 +122,11 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
 
         $prNumber = $this->pullRequestService->findPrNumberByBranch($branch);
         if ($prNumber === null) {
-            throw new \RuntimeException("No open PR found for branch {$branch}.");
+            // Retry case: the PR may have been merged in a previous partial run.
+            $prNumber = $this->pullRequestService->findPrNumberByBranchAnyState($branch);
+            if ($prNumber === null) {
+                throw new \RuntimeException("No PR found for branch {$branch}. Create a pull request before merging.");
+            }
         }
 
         if ($bodyFile !== null) {
@@ -130,30 +134,37 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
             $title = $this->pullRequestService->buildPrTitle($tag, $entry->getText());
             $this->pullRequestService->createOrUpdatePr($branch, $title, $this->bodyFilePathResolver->resolveForEntry($bodyFile, $feature));
         }
-        $this->pullRequestService->mergePr($prNumber);
-        $this->gitService->syncMainBranchAfterMerge();
 
         $dependencyUpdate = $entry->getExtraMetadata()[BacklogEntryMetaKey::DEPENDENCY_UPDATE->value] ?? '';
 
+        // GitHub merge — idempotent: no-op when PR is already merged.
+        $this->pullRequestService->mergePr($prNumber);
+        $this->gitService->syncMainBranchAfterMerge();
+
+        // Local cleanup — all idempotent, before board persistence so a retry can resume here.
+        $cleaned = $this->worktreeService->cleanupManagedWorktreesForBranch($branch, $board);
+        $this->gitService->deleteRemoteBranch($branch);
+        $this->gitService->deleteLocalBranch($branch);
+
+        $warnings = [];
+        if ($dependencyUpdate !== '') {
+            $warnings = $this->worktreeService->installProjectDependencies($dependencyUpdate);
+        }
+
+        // Board and review persistence — last mutations so a crash before this point leaves
+        // the entry in approved stage and the command can be retried safely.
         $this->boardService->deleteFeature($board, $feature);
         $review->clearReview($feature);
         $this->saveBoard($board, BacklogCommandName::FEATURE_MERGE->value);
         $this->saveReviewFile($review, BacklogCommandName::FEATURE_MERGE->value);
-
-        $cleaned = $this->worktreeService->cleanupManagedWorktreesForBranch($branch, $board);
-        $this->gitService->deleteRemoteBranch($branch);
-        $this->gitService->deleteLocalBranch($branch);
 
         $this->presenter->displaySuccess(sprintf('Merged feature %s', $feature));
         if ($cleaned > 0) {
             $this->presenter->displayLine(sprintf('Cleaned %d abandoned managed worktree%s.', $cleaned, $cleaned > 1 ? 's' : ''));
         }
 
-        if ($dependencyUpdate !== '') {
-            $warnings = $this->worktreeService->installProjectDependencies($dependencyUpdate);
-            foreach ($warnings as $warning) {
-                $this->presenter->displayLine('⚠ ' . $warning);
-            }
+        foreach ($warnings as $warning) {
+            $this->presenter->displayLine('⚠ ' . $warning);
         }
 
         $this->sessionStopper->stopSessions($devCode, $reviewerCode);

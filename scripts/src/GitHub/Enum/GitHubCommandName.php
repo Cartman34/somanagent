@@ -12,10 +12,12 @@ namespace SoManAgent\Script\GitHub\Enum;
  */
 enum GitHubCommandName: string
 {
-    case PR_CREATE = 'pr-create';
-    case PR_MERGE  = 'pr-merge';
-    case PR_CLOSE  = 'pr-close';
-    case PR_EDIT   = 'pr-edit';
-    case PR_LIST   = 'pr-list';
-    case PR_VIEW   = 'pr-view';
+    case PR_CREATE     = 'pr-create';
+    case PR_MERGE      = 'pr-merge';
+    case PR_CLOSE      = 'pr-close';
+    case PR_EDIT       = 'pr-edit';
+    case PR_LIST       = 'pr-list';
+    case PR_LIST_ALL   = 'pr-list-all';
+    case PR_VIEW       = 'pr-view';
+    case PR_VIEW_STATE = 'pr-view-state';
 }

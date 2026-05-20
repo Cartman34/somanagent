@@ -19,3 +19,4 @@ notes:
   - 'Before merging, the command prints `Entry-ref:`, stored `Reviewer:`, `Caller:`, resolved type, target, merge target, and equivalent legacy command. Copy `Entry-ref:` for follow-up commands.'
   - 'merge dispatches internally based on whether the ref contains a `/`: refs with a `/` are task merges; refs without are feature merges.'
   - 'After a successful feature merge to main, the command fetches origin/main and advances local main in best-effort mode. A failure to sync local main is reported as a warning and does not interrupt the cleanup.'
+  - 'Feature merges are retry-safe: if the command fails during local cleanup (worktree, branch deletion) after the GitHub PR has been merged, re-running merge resumes exactly where it stopped. The board entry remains in approved stage until all cleanup steps complete successfully.'

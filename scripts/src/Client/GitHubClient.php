@@ -14,7 +14,7 @@ use SoManAgent\Script\RetryPolicy;
 /**
  * GitHub platform client backed by the local github.php project script.
  */
-final class GitHubClient
+final class GitHubClient implements GitHubClientInterface
 {
     private const NETWORK_ERROR_NEEDLES = [
         'GitHub API transport error:',
@@ -184,6 +184,27 @@ final class GitHubClient
     public function listPrs(): string
     {
         return $this->capture(GitHubCommandName::PR_LIST->value);
+    }
+
+    /**
+     * Lists pull requests of all states (open, closed, merged).
+     *
+     * @return string The output of the pr-list-all command
+     */
+    public function listAllPrs(): string
+    {
+        return $this->capture(GitHubCommandName::PR_LIST_ALL->value);
+    }
+
+    /**
+     * Returns the state of a pull request: "merged", "open", or "closed".
+     *
+     * @param int $prNumber Pull request number on GitHub
+     * @return string "merged" when already merged, "open" when open, "closed" when closed but not merged
+     */
+    public function getPrState(int $prNumber): string
+    {
+        return trim($this->capture(sprintf('%s %d', GitHubCommandName::PR_VIEW_STATE->value, $prNumber)));
     }
 
     private function isRetryableNetworkError(string $output): bool

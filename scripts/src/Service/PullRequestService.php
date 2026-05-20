@@ -9,7 +9,7 @@ namespace SoManAgent\Script\Service;
 
 use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Enum\PullRequestTag;
-use SoManAgent\Script\Client\GitHubClient;
+use SoManAgent\Script\Client\GitHubClientInterface;
 use SoManAgent\Script\RetryHelper;
 use SoManAgent\Script\RetryPolicy;
 
@@ -18,7 +18,7 @@ use SoManAgent\Script\RetryPolicy;
  */
 final class PullRequestService
 {
-    private GitHubClient $github;
+    private GitHubClientInterface $github;
 
     private GitService $gitService;
 
@@ -27,12 +27,12 @@ final class PullRequestService
     /**
      * Constructor.
      *
-     * @param GitHubClient $github GitHub client for PR API calls
+     * @param GitHubClientInterface $github GitHub client for PR API calls
      * @param GitService $gitService Git service for local operations and pushes
      * @param RetryPolicy $retryPolicy Retry policy for network-dependent calls
      */
     public function __construct(
-        GitHubClient $github,
+        GitHubClientInterface $github,
         GitService $gitService,
         RetryPolicy $retryPolicy
     ) {
@@ -73,12 +73,27 @@ final class PullRequestService
     }
 
     /**
-     * Merge a PR by number.
+     * Merge a PR by number. Idempotent: if the PR is already merged, this is a no-op.
+     *
+     * - PR state "merged": no-op, returns without error.
+     * - PR state "open": merges the PR.
+     * - PR state "closed" (not merged): throws a RuntimeException.
      *
      * @param int $prNumber Pull request number on GitHub
+     * @throws \RuntimeException When the PR is closed but not merged
      */
     public function mergePr(int $prNumber): void
     {
+        $state = $this->github->getPrState($prNumber);
+        if ($state === 'merged') {
+            return;
+        }
+        if ($state === 'closed') {
+            throw new \RuntimeException(sprintf(
+                'PR #%d is closed (not merged) and cannot be merged.',
+                $prNumber,
+            ));
+        }
         $this->github->mergePr($prNumber);
     }
 
@@ -106,6 +121,33 @@ final class PullRequestService
         }
 
         $output = $this->github->listPrs();
+        foreach (explode("\n", trim($output)) as $line) {
+            if (preg_match('/^\s*#(\d+)\s+.*\[(.+?) → (.+?)\]$/u', $line, $matches) === 1) {
+                if ($matches[2] === $branch) {
+                    return (int) $matches[1];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Find a PR number for a source branch regardless of its state (open, closed, or merged).
+     *
+     * Use this as a fallback when findPrNumberByBranch returns null, to detect a PR
+     * that was already merged in a previous (partial) run.
+     *
+     * @param string $branch Source branch to look up
+     * @return int|null PR number when found, null when no PR of any state matches the branch
+     */
+    public function findPrNumberByBranchAnyState(string $branch): ?int
+    {
+        if ($branch === '') {
+            return null;
+        }
+
+        $output = $this->github->listAllPrs();
         foreach (explode("\n", trim($output)) as $line) {
             if (preg_match('/^\s*#(\d+)\s+.*\[(.+?) → (.+?)\]$/u', $line, $matches) === 1) {
                 if ($matches[2] === $branch) {
