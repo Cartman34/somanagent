@@ -120,21 +120,23 @@ The developer extends each plancher section by running impact analysis (grep cal
 
 ### Conformant Example
 
+Task bodies are written in French by project convention; the example below uses French throughout, consistent with how the standard plancher headers are phrased.
+
 ```
 - Motivation
-    - Reason this task exists; arbitration between alternatives if relevant.
+    - Raison d'être de la tâche ; arbitrage entre alternatives si pertinent.
 - État actuel
-    - Current state of the code or system relevant to the task.
+    - Description factuelle de l'état du code ou du système avant la tâche.
 - Comportement attendu
-    - Observable behavior 1 after the task is done.
-    - Observable behavior 2 after the task is done.
+    - Comportement observable 1 une fois la tâche livrée.
+    - Comportement observable 2 une fois la tâche livrée.
 - Périmètre (plancher non-exhaustif — analyse d'impact obligatoire pour étendre)
-    - Area 1 to modify (subsystem, files, symbols).
-    - Area 2 to modify.
+    - Zone 1 à modifier (sous-système, fichiers, symboles).
+    - Zone 2 à modifier.
 - Hors scope
-    - Explicitly excluded item (closed list).
+    - Élément explicitement exclu (liste fermée).
 - Tests (plancher non-exhaustif — analyse d'impact obligatoire pour étendre)
-    - Minimum test 1.
+    - Test minimal 1.
 - Doc à mettre à jour (plancher non-exhaustif — analyse d'impact obligatoire pour étendre)
-    - Minimum doc page 1.
+    - Page de doc minimale 1.
 ```
