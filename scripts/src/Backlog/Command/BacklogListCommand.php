@@ -305,7 +305,7 @@ final class BacklogListCommand extends AbstractBacklogCommand
     private function getStageLabel(string $stage): string
     {
         if ($stage === self::PSEUDO_STAGE_TODO) {
-            return 'Queued';
+            return 'Todo';
         }
 
         return $this->boardService->getStageLabel($stage);

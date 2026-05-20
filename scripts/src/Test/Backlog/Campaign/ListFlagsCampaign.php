@@ -53,14 +53,14 @@ final class ListFlagsCampaign implements CampaignInterface
 
         // No filter: shows both todo and active stages
         $allOutput = $driver->runBacklog(['list']);
-        $driver->assertContains($allOutput, '[Queued]');
+        $driver->assertContains($allOutput, '[Todo]');
         $driver->assertContains($allOutput, '[In development]');
 
         // Single stage: --stage=development
         $devOutput = $driver->runBacklog(['list', '--stage=development']);
         $driver->assertContains($devOutput, $feature . ' kind=feature');
-        if (str_contains($devOutput, '[Queued]')) {
-            throw new \RuntimeException('list --stage=development must not show the Queued section');
+        if (str_contains($devOutput, '[Todo]')) {
+            throw new \RuntimeException('list --stage=development must not show the Todo section');
         }
 
         // Single stage: --stage=todo shows only queued, not active
