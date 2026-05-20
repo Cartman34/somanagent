@@ -386,7 +386,7 @@ final class AgentContextBuilderTest
                 'kind' => 'feature',
                 'stage' => 'development',
                 'feature' => $feature,
-                'agent' => $agent,
+                'developer' =>$agent,
                 'branch' => 'feat/' . $feature,
                 'base' => 'abc123def456',
                 'pr' => 'none',
@@ -402,7 +402,7 @@ final class AgentContextBuilderTest
                 'kind' => 'feature',
                 'stage' => 'review',
                 'feature' => $feature,
-                'agent' => $agent,
+                'developer' =>$agent,
                 'branch' => 'feat/' . $feature,
                 'base' => 'abc123def456',
                 'pr' => 'none',
@@ -418,7 +418,7 @@ final class AgentContextBuilderTest
                 'kind' => 'feature',
                 'stage' => 'reviewing',
                 'feature' => $feature,
-                'agent' => $agent,
+                'developer' =>$agent,
                 'reviewer' => $reviewer,
                 'branch' => 'feat/' . $feature,
                 'base' => 'abc123def456',
@@ -433,7 +433,7 @@ final class AgentContextBuilderTest
      */
     private function boardYaml(array $activeEntries): string
     {
-        $order = ['kind', 'stage', 'feature', 'task', 'agent', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type'];
+        $order = ['kind', 'stage', 'feature', 'task', 'developer', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type'];
         $active = [];
         foreach ($activeEntries as $entry) {
             $item = [];

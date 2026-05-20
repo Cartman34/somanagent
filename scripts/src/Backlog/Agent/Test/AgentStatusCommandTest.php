@@ -81,7 +81,7 @@ final class AgentStatusCommandTest
                 'kind' => 'feature',
                 'stage' => 'development',
                 'feature' => 'payments-feature',
-                'agent' => 'd01',
+                'developer' => 'd01',
                 'branch' => 'feat/payments-feature',
                 'type' => 'feat',
             ],
@@ -155,7 +155,7 @@ final class AgentStatusCommandTest
                 'kind' => 'feature',
                 'stage' => 'reviewing',
                 'feature' => 'crypto-feature',
-                'agent' => 'd04',
+                'developer' => 'd04',
                 'reviewer' => 'r01',
                 'branch' => 'feat/crypto-feature',
                 'type' => 'feat',
@@ -410,7 +410,7 @@ final class AgentStatusCommandTest
      */
     private function writeBoard(string $path, array $activeEntries): void
     {
-        $order = ['kind', 'stage', 'feature', 'task', 'agent', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type'];
+        $order = ['kind', 'stage', 'feature', 'task', 'developer', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type'];
         $active = [];
         foreach ($activeEntries as $entry) {
             $item = [];

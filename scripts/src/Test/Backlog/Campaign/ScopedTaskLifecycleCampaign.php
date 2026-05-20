@@ -129,7 +129,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->mergeTask($taskARef);
 
         // After task merge, parent must keep no agent (no auto-assignment).
-        $driver->assertStatusContains($context->scopedFeature, 'Agent: none');
+        $driver->assertStatusContains($context->scopedFeature, 'Developer: none');
 
         $driver->createTodoTask(sprintf('[%s][%s] Implement test child task B', $context->scopedFeature, $context->childB));
         $driver->startNextFeature($context->agentPrimary);
@@ -252,8 +252,8 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
             "    stage: reviewing\n    feature: {$guardFeature}",
         );
         $driver->replaceBoardText(
-            "    agent: {$context->agentSecondary}\n    branch: tech/{$guardFeature}",
-            "    agent: {$context->agentSecondary}\n    reviewer: test-r99\n    branch: tech/{$guardFeature}",
+            "    developer: {$context->agentSecondary}\n    branch: tech/{$guardFeature}",
+            "    developer: {$context->agentSecondary}\n    reviewer: test-r99\n    branch: tech/{$guardFeature}",
         );
         $driver->assertFeatureStage($guardFeature, BacklogBoard::STAGE_REVIEWING);
         $driver->createTodoTask(sprintf('[%s][%s] Task D for reviewing revert guard', $guardFeature, $guardTaskD));
@@ -321,7 +321,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         // one between `feature:` and `branch:` (which is unique to the feature meta block).
         $driver->replaceBoardText(
             sprintf("    feature: %s\n    branch:", $feature),
-            sprintf("    feature: %s\n    agent: %s\n    branch:", $feature, $context->agentSecondary),
+            sprintf("    feature: %s\n    developer: %s\n    branch:", $feature, $context->agentSecondary),
         );
 
         $driver->requestTaskReview($context->agentPrimary);
@@ -329,7 +329,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->mergeTask($taskRef);
 
         // The pre-existing assignment on the parent must survive the task merge.
-        $driver->assertStatusContains($feature, 'Agent: ' . $context->agentSecondary);
+        $driver->assertStatusContains($feature, 'Developer: ' . $context->agentSecondary);
 
         $driver->closeFeature($feature);
     }
@@ -419,7 +419,10 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         );
 
         // Cleanup so the next campaign starts from a clean board.
+        // agentPrimary's scoped task must be released first; this also removes the parent feature container.
+        $driver->releaseEntry($context->agentPrimary, $ambSlug);
         $driver->releaseEntry($context->agentSecondary, $ambSlug);
+        $driver->removeFirstTodoTask();
         $driver->removeFirstTodoTask();
     }
 
@@ -483,7 +486,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->mergeTask($taskDep2Ref);
 
         // Union: feature must now carry both scopes
-        $driver->assertBoardContains('dependency-update: composer-app,npm-frontend');
+        $driver->assertBoardContains("dependency-update: 'composer-app,npm-frontend'");
 
         // Cleanup
         $driver->closeFeature($feature);
@@ -508,8 +511,8 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->createTodoTask(sprintf('[%s][%s] Task for entry-unassign coverage', $featureSlug, $taskSlug));
         $driver->startNextFeature($context->agentPrimary);
         $driver->replaceBoardText(
-            '    agent: ' . $context->agentPrimary . "\n",
-            "    agent: none\n",
+            '    developer: ' . $context->agentPrimary . "\n",
+            "    developer: none\n",
         );
         $driver->removeManagedWorktree($context->agentPrimary);
         $driver->assignEntryAsManager($taskRef, $context->agentSecondary);

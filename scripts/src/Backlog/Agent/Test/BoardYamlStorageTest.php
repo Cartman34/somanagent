@@ -230,7 +230,7 @@ final class BoardYamlStorageTest
         $storage->save($board);
         $raw = (string) file_get_contents($path);
 
-        if (str_contains($raw, 'agent:')
+        if (str_contains($raw, 'developer:')
             || str_contains($raw, 'reviewer:')
             || str_contains($raw, 'task:')
             || str_contains($raw, 'pr:')) {

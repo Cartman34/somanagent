@@ -247,19 +247,19 @@ Validate entry assignment and unassignment permissions.
 3. Refresh the same assignment:
    - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-assign test-assign-feature --agent d01`
 4. Try to assign to another agent while the entry is already assigned:
-   - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-assign test-assign-feature --agent d02`
+   - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-assign test-assign-feature --developer d02`
 5. Unassign it with manager role:
-   - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-unassign test-assign-feature --agent m01`
+   - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-unassign test-assign-feature --developer m01`
 6. Assign the unassigned entry with manager role:
-   - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-assign test-assign-feature --agent d02`
+   - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-assign test-assign-feature --developer d02`
 7. Inspect:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php status --agent d02`
 8. Unassign with manager role:
-   - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-unassign test-assign-feature --agent m01`
+   - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-unassign test-assign-feature --developer m01`
 9. Unassign a child task with manager role using `<entry-ref>`:
-   - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-unassign test-assign-feature/cleanup --agent m01`
-10. Unassign the caller agent's single active entry without an explicit reference:
-   - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-unassign --agent d02`
+   - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-unassign test-assign-feature/cleanup --developer m01`
+10. Unassign the caller developer's single active entry without an explicit reference:
+   - `SOMANAGER_ROLE=manager SOMANAGER_AGENT=m01 php scripts/backlog.php entry-unassign --developer d02`
 
 ### Expected checks
 
@@ -337,7 +337,7 @@ Validate local child task review commands (reject, rework, approve). Demonstrate
 ### Expected checks
 
 - stage transitions follow `development → review → rejected → development → review → approved`
-- `list --stage=review` prints the entry with line `- test-scoped-feature/test-child-a kind=task agent=d01` while it waits in review
+- `list --stage=review` prints the entry with line `- test-scoped-feature/test-child-a kind=task developer=d01` while it waits in review
 - `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=r01 php scripts/backlog.php review-next test-scoped-feature/test-child-a` claims the named entry, moves it to `reviewing`, and refuses with `is already in Reviewing` when any other reviewer targets it before review-cancel runs
 - review notes are written to `local/backlog-review.md` on rejection
 - review notes are cleared on approval
@@ -367,9 +367,9 @@ Validate local merge of one approved child task into its parent feature.
 ### Expected checks
 
 - step 1: `status test-scoped-feature/test-child-a` prints `[Task]` section with the task details
-- step 2: `list` shows the task as `- test-scoped-feature/test-child-a kind=task agent=d01` and the parent as `- test-scoped-feature kind=feature agent=none`
+- step 2: `list` shows the task as `- test-scoped-feature/test-child-a kind=task developer=d01` and the parent as `- test-scoped-feature kind=feature developer=none`
 - after step 3: child task active entry disappears
-- after step 3: parent feature remains active with **no agent** (`agent=none`) — task merge does not auto-assign the parent
+- after step 3: parent feature remains active with **no developer** (`developer=none`) — task merge does not auto-assign the parent
 - parent contribution block still records the merged child content
 - child task worktree cleanup follows documented behavior
 
@@ -383,7 +383,7 @@ Validate that after merging task A, `work-start` picks up the next queued scoped
 
 1. Create the second scoped child task — write `[feat][test-scoped-feature][test-child-b] Implement test child task B` to `local/tests/test-child-b.md`, then:
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php entry-create --body-file=local/tests/test-child-b.md`
-2. Confirm the agent has no active entry (parent feature has `agent=none` after task A merge):
+2. Confirm the developer has no active entry (parent feature has `developer=none` after task A merge):
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php status --agent d01`
 3. Pick up task B (`work-start` allows this since d01 has no active entry):
    - `SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php work-start`

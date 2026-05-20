@@ -157,7 +157,7 @@ final class AgentListCommandTest
                 'kind' => 'feature',
                 'stage' => 'development',
                 'feature' => self::FEATURE_SLUG,
-                'agent' => 'd01',
+                'developer' => 'd01',
                 'branch' => 'feat/some-feature',
                 'type' => 'feat',
             ],
@@ -185,7 +185,7 @@ final class AgentListCommandTest
                 'kind' => 'feature',
                 'stage' => 'reviewing',
                 'feature' => 'review-feature',
-                'agent' => 'd02',
+                'developer' => 'd02',
                 'reviewer' => 'r01',
                 'branch' => 'feat/review-feature',
                 'type' => 'feat',
@@ -437,7 +437,7 @@ final class AgentListCommandTest
      */
     private function writeBoard(string $path, array $activeEntries): void
     {
-        $order = ['kind', 'stage', 'feature', 'task', 'agent', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type'];
+        $order = ['kind', 'stage', 'feature', 'task', 'developer', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type'];
         $active = [];
         foreach ($activeEntries as $entry) {
             $item = [];

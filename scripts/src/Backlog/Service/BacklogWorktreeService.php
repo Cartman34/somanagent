@@ -392,7 +392,7 @@ final class BacklogWorktreeService
                 $action = WorktreeAction::MANUAL_PRUNE;
             } elseif ($branch !== null && isset($activeEntriesByBranch[$branch])) {
                 $feature = $activeEntriesByBranch[$branch]->getFeature();
-                $agent = $activeEntriesByBranch[$branch]->getAgent();
+                $agent = $activeEntriesByBranch[$branch]->getDeveloper();
                 $dirty = $this->git->hasLocalChanges($path);
 
                 if ($agent === '') {

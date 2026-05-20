@@ -14,16 +14,16 @@ final class ActiveEntryReference
 {
     private string $feature;
 
-    private string $agent;
+    private string $developer;
 
     /**
-     * @param string $feature Feature slug
-     * @param string $agent   Agent code
+     * @param string $feature   Feature slug
+     * @param string $developer Developer code
      */
-    public function __construct(string $feature, string $agent)
+    public function __construct(string $feature, string $developer)
     {
         $this->feature = $feature;
-        $this->agent = $agent;
+        $this->developer = $developer;
     }
 
     /**
@@ -37,8 +37,8 @@ final class ActiveEntryReference
     /**
      * @return string
      */
-    public function getAgent(): string
+    public function getDeveloper(): string
     {
-        return $this->agent;
+        return $this->developer;
     }
 }

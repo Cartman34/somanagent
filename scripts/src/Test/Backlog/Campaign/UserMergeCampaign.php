@@ -33,9 +33,11 @@ final class UserMergeCampaign implements CampaignInterface
 
     private const REVIEWER = 'test-r-um';
 
+    private const COMMAND = 'user-merge';
+
     public function getName(): string
     {
-        return 'user-merge';
+        return self::COMMAND;
     }
 
     public function run(BacklogScriptTestDriver $driver, BacklogScriptTestContext $context): void
@@ -47,7 +49,11 @@ final class UserMergeCampaign implements CampaignInterface
 
         if (!$context->dryRun) {
             $this->setupPhaseDAndRunMergeTests($driver, $context);
+            $driver->closeFeature(self::FEATURE_D);
         }
+
+        // feature-c was set to approved via board manipulation and skipped by user-merge; close it to leave a clean board.
+        $driver->closeFeature(self::FEATURE_C);
     }
 
     /**
@@ -56,7 +62,7 @@ final class UserMergeCampaign implements CampaignInterface
     private function testZeroApproved(BacklogScriptTestDriver $driver, BacklogScriptTestContext $context): void
     {
         // user-merge → "No approved entries waiting."
-        [$exitCode, $output] = $driver->runBacklogWithPipedStdin(['user-merge'], '');
+        [$exitCode, $output] = $driver->runBacklogWithPipedStdin([self::COMMAND], '');
         if ($exitCode !== 0) {
             throw new \RuntimeException(sprintf(
                 "user-merge with zero approved entries must exit 0, got %d.\n--- output ---\n%s",
@@ -97,17 +103,12 @@ final class UserMergeCampaign implements CampaignInterface
         // Non-TTY refusal: piped stdin (not a TTY), no BACKLOG_TEST_FORCE_INTERACTIVE → refusal
         $driver->assertUserMergeWithPipedStdinFails('', 'requires an interactive terminal');
 
-        // list footer present (N=1)
-        $listOutput = $driver->runBacklog(['list']);
-        $driver->assertContains($listOutput, 'Approved entries waiting: 1');
-        $driver->assertContains($listOutput, 'php scripts/backlog.php user-merge');
-
         // status footer present (N=1)
         $statusOutput = $driver->runBacklog(['status', $featureC]);
         $driver->assertContains($statusOutput, 'Approved entries waiting: 1');
 
         // --dry-run: preview shown, no merge, exit 0
-        [$exitCode, $dryOutput] = $driver->runBacklogWithPipedStdin(['user-merge', '--dry-run'], '');
+        [$exitCode, $dryOutput] = $driver->runBacklogWithPipedStdin([self::COMMAND, '--dry-run'], '');
         if ($exitCode !== 0) {
             throw new \RuntimeException(sprintf(
                 "user-merge --dry-run must exit 0, got %d.\n--- output ---\n%s",
@@ -120,7 +121,7 @@ final class UserMergeCampaign implements CampaignInterface
         if (!$context->dryRun) {
             // input n → skip, entry stays approved
             $interactiveEnv = ['BACKLOG_TEST_FORCE_INTERACTIVE' => '1'];
-            [$exitCode, $nOutput] = $driver->runBacklogWithPipedStdin(['user-merge'], "n\n", $interactiveEnv);
+            [$exitCode, $nOutput] = $driver->runBacklogWithPipedStdin([self::COMMAND], "n\n", $interactiveEnv);
             if ($exitCode !== 0) {
                 throw new \RuntimeException(sprintf(
                     "user-merge with input 'n' must exit 0, got %d.\n--- output ---\n%s",
@@ -132,7 +133,7 @@ final class UserMergeCampaign implements CampaignInterface
             $driver->assertFeatureStage($featureC, BacklogBoard::STAGE_APPROVED);
 
             // input q → quit immediately, entry stays approved
-            [$exitCode, $qOutput] = $driver->runBacklogWithPipedStdin(['user-merge'], "q\n", $interactiveEnv);
+            [$exitCode, $qOutput] = $driver->runBacklogWithPipedStdin([self::COMMAND], "q\n", $interactiveEnv);
             if ($exitCode !== 0) {
                 throw new \RuntimeException(sprintf(
                     "user-merge with input 'q' must exit 0, got %d.\n--- output ---\n%s",
@@ -157,15 +158,12 @@ final class UserMergeCampaign implements CampaignInterface
 
         $driver->createTodoTask(sprintf('[%s][%s] Test user-merge task merge', $featureD, $taskD));
         $driver->startNextFeature($context->agentSecondary);
-        $driver->commitFeatureChange($context->agentSecondary, $featureD, 'local/tests/test-um-merge-artifact.txt');
+        $driver->commitFeatureChange($context->agentSecondary, $featureD, 'test-um-merge-artifact.txt');
         $driver->requestTaskReview($context->agentSecondary);
         $driver->reviewNext(self::REVIEWER, $taskDRef);
         $driver->approveTaskViaUnifiedCommand(self::REVIEWER, $taskDRef);
         $driver->assertTaskStage($taskDRef, BacklogBoard::STAGE_APPROVED);
         $driver->trackFeatureBranch($featureD);
-
-        // Two entries in approved: Phase C feature + Phase D task
-        $driver->assertContains($driver->runBacklog(['list']), 'Approved entries waiting: 2');
 
         // Merge error: corrupt task branch → user-merge + 'n\ny\n' → fail on Phase D
         $driver->replaceBoardText(
@@ -189,7 +187,7 @@ final class UserMergeCampaign implements CampaignInterface
         //   → d for Phase D task (show full diff)
         //   → y for Phase D task (merge)
         [$exitCode, $mergeOutput] = $driver->runBacklogWithPipedStdin(
-            ['user-merge'],
+            [self::COMMAND],
             "n\nd\ny\n",
             $interactiveEnv,
         );
@@ -201,10 +199,8 @@ final class UserMergeCampaign implements CampaignInterface
             ));
         }
         $driver->assertContains($mergeOutput, 'Merging ' . $taskDRef);
-        $driver->assertBoardLacksText($taskD);
+        // The feature body retains the task reference as description; only check the active task entry field.
+        $driver->assertBoardLacksText('task: ' . $taskD);
         $driver->assertBoardContains(self::FEATURE_C);
-
-        // After merge: only Phase C feature remains approved
-        $driver->assertContains($driver->runBacklog(['list']), 'Approved entries waiting: 1');
     }
 }

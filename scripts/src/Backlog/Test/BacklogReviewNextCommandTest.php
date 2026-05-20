@@ -241,7 +241,7 @@ final class BacklogReviewNextCommandTest
             'kind' => 'feature',
             'stage' => 'review',
             'feature' => $feature,
-            'agent' => $agent,
+            'developer' =>$agent,
             'branch' => 'tech/' . $feature,
             'base' => 'abc123',
             'pr' => 'none',

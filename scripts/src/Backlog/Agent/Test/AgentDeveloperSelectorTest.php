@@ -20,6 +20,12 @@ use Symfony\Component\Yaml\Yaml;
  */
 final class AgentDeveloperSelectorTest
 {
+    private const MY_FEATURE = 'my-feature';
+
+    private const ALPHA_FEATURE = 'alpha-feature';
+
+    private const BETA_FEATURE = 'beta-feature';
+
     private string $tmpDir;
 
     /**
@@ -81,9 +87,9 @@ final class AgentDeveloperSelectorTest
             [
                 'kind' => 'feature',
                 'stage' => 'development',
-                'feature' => 'my-feature',
-                'agent' => 'd05',
-                'branch' => 'feat/my-feature',
+                'feature' => self::MY_FEATURE,
+                'developer' => 'd05',
+                'branch' => 'feat/' . self::MY_FEATURE,
             ],
         ]);
         $selector = $this->makeSelector();
@@ -94,7 +100,7 @@ final class AgentDeveloperSelectorTest
             echo "FAIL testFindOwnedActiveEntryReturnsMatchWhenAssigned: expected a match, got null\n";
             return 1;
         }
-        if ($match->getEntry()->getFeature() !== 'my-feature') {
+        if ($match->getEntry()->getFeature() !== self::MY_FEATURE) {
             echo "FAIL testFindOwnedActiveEntryReturnsMatchWhenAssigned: unexpected feature '{$match->getEntry()->getFeature()}'\n";
             return 1;
         }
@@ -109,7 +115,7 @@ final class AgentDeveloperSelectorTest
                 'kind' => 'feature',
                 'stage' => 'development',
                 'feature' => 'other-feature',
-                'agent' => 'd03',
+                'developer' => 'd03',
                 'branch' => 'feat/other-feature',
             ],
         ]);
@@ -128,15 +134,15 @@ final class AgentDeveloperSelectorTest
     private function testSelectFirstQueuedReturnsRefOfFirstEntry(): int
     {
         $board = $this->makeBoard([
-            ['feature' => 'alpha-feature', 'type' => 'feat', 'title' => 'First queued task'],
-            ['feature' => 'beta-feature', 'type' => 'feat', 'title' => 'Second queued task'],
+            ['feature' => self::ALPHA_FEATURE, 'type' => 'feat', 'title' => 'First queued task'],
+            ['feature' => self::BETA_FEATURE, 'type' => 'feat', 'title' => 'Second queued task'],
         ], []);
         $selector = $this->makeSelector();
 
         $ref = $selector->selectFirstQueued($board, 'd05');
 
-        if ($ref !== 'alpha-feature') {
-            echo "FAIL testSelectFirstQueuedReturnsRefOfFirstEntry: expected 'alpha-feature', got '{$ref}'\n";
+        if ($ref !== self::ALPHA_FEATURE) {
+            echo "FAIL testSelectFirstQueuedReturnsRefOfFirstEntry: expected '" . self::ALPHA_FEATURE . "', got '{$ref}'\n";
             return 1;
         }
         echo "OK testSelectFirstQueuedReturnsRefOfFirstEntry\n";
@@ -166,14 +172,14 @@ final class AgentDeveloperSelectorTest
     private function testSelectFirstQueuedReturnsFeatureSlugRef(): int
     {
         $board = $this->makeBoard([
-            ['feature' => 'my-feature', 'type' => 'feat', 'title' => 'Plain feature task'],
+            ['feature' => self::MY_FEATURE, 'type' => 'feat', 'title' => 'Plain feature task'],
         ], []);
         $selector = $this->makeSelector();
 
         $ref = $selector->selectFirstQueued($board, 'd05');
 
-        if ($ref !== 'my-feature') {
-            echo "FAIL testSelectFirstQueuedReturnsFeatureSlugRef: expected 'my-feature', got '{$ref}'\n";
+        if ($ref !== self::MY_FEATURE) {
+            echo "FAIL testSelectFirstQueuedReturnsFeatureSlugRef: expected '" . self::MY_FEATURE . "', got '{$ref}'\n";
             return 1;
         }
         echo "OK testSelectFirstQueuedReturnsFeatureSlugRef\n";
@@ -200,8 +206,8 @@ final class AgentDeveloperSelectorTest
     private function testPickSkipsNotReservableAndReturnsSecond(): int
     {
         $board = $this->makeBoard([
-            ['feature' => 'alpha-feature', 'type' => 'feat', 'title' => 'First entry'],
-            ['feature' => 'beta-feature', 'type' => 'feat', 'title' => 'Second entry'],
+            ['feature' => self::ALPHA_FEATURE, 'type' => 'feat', 'title' => 'First entry'],
+            ['feature' => self::BETA_FEATURE, 'type' => 'feat', 'title' => 'Second entry'],
         ], []);
         $selector = $this->makeSelector();
 
@@ -210,14 +216,14 @@ final class AgentDeveloperSelectorTest
         $runner->onWorkStart = static function (string $devCode, string $ref) use (&$callCount): void {
             $callCount++;
             if ($callCount === 1) {
-                throw new EntryNotReservableException($ref, 'No queued task found for reference: alpha-feature');
+                throw new EntryNotReservableException($ref, 'No queued task found for reference: ' . self::ALPHA_FEATURE);
             }
         };
 
         $ref = $selector->pick($board, 'd05', $runner);
 
-        if ($ref !== 'beta-feature') {
-            echo "FAIL testPickSkipsNotReservableAndReturnsSecond: expected 'beta-feature', got '{$ref}'\n";
+        if ($ref !== self::BETA_FEATURE) {
+            echo "FAIL testPickSkipsNotReservableAndReturnsSecond: expected '" . self::BETA_FEATURE . "', got '{$ref}'\n";
             return 1;
         }
         if ($callCount !== 2) {
@@ -225,7 +231,7 @@ final class AgentDeveloperSelectorTest
             return 1;
         }
         $refs = array_column(array_filter($runner->calls, static fn ($c) => $c['method'] === 'workStart'), 'entryRef');
-        if ($refs !== ['alpha-feature', 'beta-feature']) {
+        if ($refs !== [self::ALPHA_FEATURE, self::BETA_FEATURE]) {
             echo "FAIL testPickSkipsNotReservableAndReturnsSecond: wrong call order: " . implode(', ', $refs) . "\n";
             return 1;
         }
@@ -237,8 +243,8 @@ final class AgentDeveloperSelectorTest
     private function testPickReturnsNullWhenAllNotReservable(): int
     {
         $board = $this->makeBoard([
-            ['feature' => 'alpha-feature', 'type' => 'feat', 'title' => 'First entry'],
-            ['feature' => 'beta-feature', 'type' => 'feat', 'title' => 'Second entry'],
+            ['feature' => self::ALPHA_FEATURE, 'type' => 'feat', 'title' => 'First entry'],
+            ['feature' => self::BETA_FEATURE, 'type' => 'feat', 'title' => 'Second entry'],
         ], []);
         $selector = $this->makeSelector();
 
@@ -270,8 +276,8 @@ final class AgentDeveloperSelectorTest
     private function testPickPropagatesUnexpectedException(): int
     {
         $board = $this->makeBoard([
-            ['feature' => 'alpha-feature', 'type' => 'feat', 'title' => 'First entry'],
-            ['feature' => 'beta-feature', 'type' => 'feat', 'title' => 'Second entry'],
+            ['feature' => self::ALPHA_FEATURE, 'type' => 'feat', 'title' => 'First entry'],
+            ['feature' => self::BETA_FEATURE, 'type' => 'feat', 'title' => 'Second entry'],
         ], []);
         $selector = $this->makeSelector();
 
@@ -318,7 +324,7 @@ final class AgentDeveloperSelectorTest
     {
         $boardPath = $this->tmpDir . '/board-' . uniqid('', true) . '.yaml';
 
-        $order = ['kind', 'stage', 'feature', 'task', 'agent', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type'];
+        $order = ['kind', 'stage', 'feature', 'task', 'developer', 'reviewer', 'branch', 'feature-branch', 'base', 'pr', 'blocked', 'type'];
         $todo = array_map(static function (array $e): array {
             $item = ['feature' => $e['feature']];
             if (array_key_exists('task', $e)) {

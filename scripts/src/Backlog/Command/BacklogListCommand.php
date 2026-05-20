@@ -242,7 +242,7 @@ final class BacklogListCommand extends AbstractBacklogCommand
                     'stage' => $stage,
                     'ref' => $ref,
                     'kind' => $this->boardService->getEntryKind($entry),
-                    'agent' => $entry->getDeveloper() ?? BacklogMetaValue::NONE->value,
+                    'developer' => $entry->getDeveloper() ?? BacklogMetaValue::NONE->value,
                     'pr' => $this->describePr($entry),
                     'reviewer' => $entry->getReviewer() ?? BacklogMetaValue::NONE->value,
                     'title' => $entry->getText(),
@@ -267,7 +267,7 @@ final class BacklogListCommand extends AbstractBacklogCommand
         $ref = $this->getEntryRef($entry, $stage);
         $parts = [
             'kind=' . $this->boardService->getEntryKind($entry),
-            'agent=' . ($entry->getDeveloper() ?? BacklogMetaValue::NONE->value),
+            'developer=' . ($entry->getDeveloper() ?? BacklogMetaValue::NONE->value),
             'pr=' . $this->describePr($entry),
             'reviewer=' . ($entry->getReviewer() ?? BacklogMetaValue::NONE->value),
             'title=' . $entry->getText(),
