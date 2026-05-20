@@ -1754,7 +1754,7 @@ MD);
     {
         $parts = [];
         if (!$this->context->allowRemote) {
-            $parts[] = 'BACKLOG_TEST_BLOCK_REMOTE_PUSH=1';
+            $parts[] = 'SOMANAGER_GIT_OFFLINE=1';
         }
         foreach ($env as $key => $value) {
             $parts[] = sprintf('%s=%s', $key, escapeshellarg($value));

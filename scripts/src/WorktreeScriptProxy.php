@@ -190,7 +190,12 @@ final class WorktreeScriptProxy
         $app = Application::getInstance();
         $consoleClient = new ConsoleClient('', false, $app, fn(string $message) => null);
 
-        return new GitClient(false, $consoleClient, new RetryPolicy(0, 0));
+        return new GitClient(
+            false,
+            $consoleClient,
+            new RetryPolicy(0, 0),
+            GitClient::shouldDisableNetworkFromEnvironment(),
+        );
     }
 
     private static function resolve(string $base, string $path): ?string

@@ -12,6 +12,10 @@ use SoManAgent\Script\RetryPolicy;
 
 /**
  * Git command client for local and remote repository operations.
+ *
+ * Set `$networkDisabled` to true to leave local Git commands enabled while
+ * turning network commands into logged no-ops. Script factories derive this
+ * flag from the truthy `SOMANAGER_GIT_OFFLINE` environment variable.
  */
 final class GitClient
 {
@@ -25,24 +29,40 @@ final class GitClient
     ];
 
     private bool $dryRun;
+    private bool $networkDisabled;
     private ConsoleClient $console;
     private RetryPolicy $retryPolicy;
 
     /**
      * Initializes the Git client with console and retry policy.
      *
-     * @param bool $dryRun If true, commands are logged but not executed
+     * @param bool $dryRun If true, all mutation commands are logged but not executed
      * @param ConsoleClient $console Console client for command execution
      * @param RetryPolicy $retryPolicy Retry policy for network operations
+     * @param bool $networkDisabled If true, only network commands are logged but not executed
      */
     public function __construct(
         bool $dryRun,
         ConsoleClient $console,
         RetryPolicy $retryPolicy,
+        bool $networkDisabled = false,
     ) {
         $this->dryRun = $dryRun;
+        $this->networkDisabled = $networkDisabled;
         $this->console = $console;
         $this->retryPolicy = $retryPolicy;
+    }
+
+    public static function shouldDisableNetworkFromEnvironment(): bool
+    {
+        $value = getenv('SOMANAGER_GIT_OFFLINE');
+
+        return is_string($value) && self::isTruthyEnvironmentValue($value);
+    }
+
+    public function isNetworkDisabled(): bool
+    {
+        return $this->networkDisabled;
     }
 
     /**
@@ -93,8 +113,8 @@ final class GitClient
      * Runs a network Git mutation command with retry handling.
      *
      * Use this for network commands that can change local refs, remote refs, or
-     * worktree state, such as fetch, pull, and push. In dry-run mode the command
-     * is logged but not executed.
+     * worktree state, such as fetch, pull, and push. In dry-run or network
+     * disabled mode the command is logged but not executed.
      */
     public function runNetwork(string $command): void
     {
@@ -680,6 +700,12 @@ final class GitClient
             return [0, ''];
         }
 
+        if ($this->networkDisabled) {
+            $this->console->logVerbose('[git-offline] Skip git network command: ' . $command);
+
+            return [0, ''];
+        }
+
         $result = $this->networkRetryHelper()->run(
             fn(): array => $this->console->captureWithExitCode($command),
             fn(array $result): bool => $result[0] !== 0 && $this->isRetryableNetworkError($result[1]),
@@ -706,6 +732,32 @@ final class GitClient
         }
 
         return false;
+    }
+
+    private static function isTruthyEnvironmentValue(string $value): bool
+    {
+        $normalized = strtolower(trim($value));
+        if ($normalized === '') {
+            return false;
+        }
+
+        if ($normalized === '0') {
+            return false;
+        }
+
+        if ($normalized === 'false') {
+            return false;
+        }
+
+        if ($normalized === 'no') {
+            return false;
+        }
+
+        if ($normalized === 'off') {
+            return false;
+        }
+
+        return true;
     }
 
     private function networkRetryHelper(): RetryHelper
