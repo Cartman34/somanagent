@@ -57,7 +57,7 @@ final class BacklogEntryRenameCommand extends AbstractBacklogCommand
             if ($newText === null || $newText === '') {
                 throw new \RuntimeException('rename requires a new text as argument.');
             }
-            $current = $this->boardService->resolveActiveEntryByReference($board, $reference, BacklogCommandName::ENTRY_RENAME->value);
+            $current = $this->boardService->resolveActiveEntryByReference($board, $reference, BacklogCommandName::RENAME->value);
         } else {
             [$current, $newText] = $this->resolveCallerEntryAndText($board, $agent, $commandArgs);
         }
@@ -129,7 +129,7 @@ final class BacklogEntryRenameCommand extends AbstractBacklogCommand
     private function findActiveEntryByReferenceIfPresent(BacklogBoard $board, string $reference): ?BoardEntryMatch
     {
         try {
-            return $this->boardService->resolveActiveEntryByReference($board, $reference, BacklogCommandName::ENTRY_RENAME->value);
+            return $this->boardService->resolveActiveEntryByReference($board, $reference, BacklogCommandName::RENAME->value);
         } catch (\RuntimeException $exception) {
             if (str_starts_with($exception->getMessage(), 'No active entry found for reference:')) {
                 return null;

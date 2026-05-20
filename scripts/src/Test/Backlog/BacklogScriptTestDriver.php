@@ -410,7 +410,7 @@ MD);
      */
     public function releaseEntryAsManager(string $manager, string $entryRef): void
     {
-        $this->runBacklog([BacklogCommandName::ENTRY_RELEASE->value, $entryRef], [
+        $this->runBacklog([BacklogCommandName::RELEASE->value, $entryRef], [
             'SOMANAGER_ROLE' => 'manager',
             'SOMANAGER_AGENT' => $manager,
         ]);
@@ -432,7 +432,7 @@ MD);
      */
     public function assertReleaseEntryAsManagerWithoutReferenceFails(string $manager, string $needle): void
     {
-        $this->assertBacklogFails([BacklogCommandName::ENTRY_RELEASE->value], $needle, [
+        $this->assertBacklogFails([BacklogCommandName::RELEASE->value], $needle, [
             'SOMANAGER_ROLE' => 'manager',
             'SOMANAGER_AGENT' => $manager,
         ]);

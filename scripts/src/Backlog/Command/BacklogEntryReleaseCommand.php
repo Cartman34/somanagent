@@ -63,7 +63,7 @@ final class BacklogEntryReleaseCommand extends AbstractBacklogCommand
         }
 
         if ($requestedTarget !== null) {
-            $current = $this->boardService->resolveActiveEntryByReference($board, $requestedTarget, BacklogCommandName::ENTRY_RELEASE->value);
+            $current = $this->boardService->resolveActiveEntryByReference($board, $requestedTarget, BacklogCommandName::RELEASE->value);
             if (!$isManager && $current->getEntry()->getDeveloper() !== $agent) {
                 throw new \RuntimeException(sprintf(
                     'Entry %s is not assigned to caller agent %s.',
