@@ -19,16 +19,27 @@ final class GitClientTest
 {
     private string $originalCwd;
 
+    /**
+     * Saves the current working directory so tests can restore it after chdir calls.
+     */
     public function __construct()
     {
         $this->originalCwd = (string) getcwd();
     }
 
+    /**
+     * Restores the working directory to prevent test isolation leaks.
+     */
     public function __destruct()
     {
         chdir($this->originalCwd);
     }
 
+    /**
+     * Runs all GitClient unit tests and returns the number of failures.
+     *
+     * @return int Number of test failures (0 means all passed)
+     */
     public function run(): int
     {
         $failed = 0;

@@ -53,6 +53,11 @@ final class GitClient
         $this->retryPolicy = $retryPolicy;
     }
 
+    /**
+     * Returns true when the SOMANAGER_GIT_OFFLINE environment variable is set to a truthy value.
+     *
+     * @return bool True if network operations should be disabled
+     */
     public static function shouldDisableNetworkFromEnvironment(): bool
     {
         $value = getenv('SOMANAGER_GIT_OFFLINE');
@@ -60,6 +65,11 @@ final class GitClient
         return is_string($value) && self::isTruthyEnvironmentValue($value);
     }
 
+    /**
+     * Returns true when network commands are disabled on this client instance.
+     *
+     * @return bool True if network operations are disabled
+     */
     public function isNetworkDisabled(): bool
     {
         return $this->networkDisabled;
