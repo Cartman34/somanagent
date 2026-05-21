@@ -7,9 +7,8 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Service;
 
-use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Enum\PullRequestTag;
-use SoManAgent\Script\Client\GitHubClient;
+use SoManAgent\Script\Client\GitHubClientInterface;
 use SoManAgent\Script\RetryHelper;
 use SoManAgent\Script\RetryPolicy;
 
@@ -18,7 +17,7 @@ use SoManAgent\Script\RetryPolicy;
  */
 final class PullRequestService
 {
-    private GitHubClient $github;
+    private GitHubClientInterface $github;
 
     private GitService $gitService;
 
@@ -27,12 +26,12 @@ final class PullRequestService
     /**
      * Constructor.
      *
-     * @param GitHubClient $github GitHub client for PR API calls
+     * @param GitHubClientInterface $github GitHub client for PR API calls
      * @param GitService $gitService Git service for local operations and pushes
      * @param RetryPolicy $retryPolicy Retry policy for network-dependent calls
      */
     public function __construct(
-        GitHubClient $github,
+        GitHubClientInterface $github,
         GitService $gitService,
         RetryPolicy $retryPolicy
     ) {
@@ -73,12 +72,27 @@ final class PullRequestService
     }
 
     /**
-     * Merge a PR by number.
+     * Merge a PR by number. Idempotent: if the PR is already merged, this is a no-op.
+     *
+     * - PR state "merged": no-op, returns without error.
+     * - PR state "open": merges the PR.
+     * - PR state "closed" (not merged): throws a RuntimeException.
      *
      * @param int $prNumber Pull request number on GitHub
+     * @throws \RuntimeException When the PR is closed but not merged
      */
     public function mergePr(int $prNumber): void
     {
+        $state = $this->github->getPrState($prNumber);
+        if ($state === 'merged') {
+            return;
+        }
+        if ($state === 'closed') {
+            throw new \RuntimeException(sprintf(
+                'PR #%d is closed (not merged) and cannot be merged.',
+                $prNumber,
+            ));
+        }
         $this->github->mergePr($prNumber);
     }
 

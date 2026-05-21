@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Runner;
 
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\GitHub\Enum\GitHubCommandName;
 use SoManAgent\Script\Service\GitService;
 
@@ -56,12 +57,13 @@ final class GitHubRunner extends AbstractScriptRunner
 
         try {
             match ($command) {
-                GitHubCommandName::PR_CREATE->value => $this->handleCreate($positional, $flags),
-                GitHubCommandName::PR_MERGE->value  => $this->handleMerge($positional, $flags),
-                GitHubCommandName::PR_CLOSE->value  => $this->handleClose($positional),
-                GitHubCommandName::PR_EDIT->value   => $this->handleEdit($positional, $flags),
-                GitHubCommandName::PR_LIST->value   => $this->handleList(),
-                GitHubCommandName::PR_VIEW->value   => $this->handleView($positional),
+                GitHubCommandName::PR_CREATE->value     => $this->handleCreate($positional, $flags),
+                GitHubCommandName::PR_MERGE->value      => $this->handleMerge($positional, $flags),
+                GitHubCommandName::PR_CLOSE->value      => $this->handleClose($positional),
+                GitHubCommandName::PR_EDIT->value       => $this->handleEdit($positional, $flags),
+                GitHubCommandName::PR_LIST->value       => $this->handleList(),
+                GitHubCommandName::PR_VIEW->value       => $this->handleView($positional),
+                GitHubCommandName::PR_VIEW_STATE->value => $this->handleViewState($positional),
                 default                             => throw new \RuntimeException(sprintf(
                     'Unknown command: %s. Available: %s',
                     $command,
@@ -84,7 +86,7 @@ final class GitHubRunner extends AbstractScriptRunner
         $title    = $this->getSingleOption($flags, 'title');
         $head     = $this->getSingleOption($flags, 'head');
         $base     = $this->getSingleOption($flags, 'base') ?? GitService::MAIN_BRANCH;
-        $bodyFile = $this->getSingleOption($flags, 'body-file');
+        $bodyFile = $this->getSingleOption($flags, BacklogCliOption::BODY_FILE->value);
 
         if (is_string($bodyFile)) {
             $body = $this->readBodyFile($bodyFile);
@@ -183,7 +185,7 @@ final class GitHubRunner extends AbstractScriptRunner
             $patch['title'] = $title;
         }
 
-        $bodyFile = $this->getSingleOption($flags, 'body-file');
+        $bodyFile = $this->getSingleOption($flags, BacklogCliOption::BODY_FILE->value);
         $body = $this->getSingleOption($flags, 'body');
 
         if (is_string($bodyFile)) {
@@ -250,6 +252,30 @@ final class GitHubRunner extends AbstractScriptRunner
         $this->console->line("Branch : {$pr['head']['ref']} → {$pr['base']['ref']}");
         $this->console->line("URL    : {$pr['html_url']}");
         $this->console->line("Body   :\n{$pr['body']}");
+    }
+
+    /**
+     * @param list<string> $args
+     */
+    private function handleViewState(array $args): void
+    {
+        $number = (int) array_shift($args);
+        if (!$number) {
+            throw new \RuntimeException('PR number is required.');
+        }
+        if ($this->dryRun) {
+            $this->console->ok(sprintf('Dry-run: would view state of PR #%d.', $number));
+
+            return;
+        }
+        $pr = $this->api('GET', "/pulls/{$number}");
+        if (($pr['merged'] ?? false) === true) {
+            $this->console->line('merged');
+        } elseif (($pr['state'] ?? '') === 'open') {
+            $this->console->line('open');
+        } else {
+            $this->console->line('closed');
+        }
     }
 
     /**

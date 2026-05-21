@@ -1119,6 +1119,19 @@ MD);
     }
 
     /**
+     * Overwrites the backlog board file with the given text.
+     *
+     * Use this to restore a previously saved board snapshot, e.g. to simulate a crash
+     * that left the board in an earlier state before a retry.
+     *
+     * @param string $text Full board YAML content to write
+     */
+    public function setBoardText(string $text): void
+    {
+        $this->writeFile($this->context->boardPath, $text);
+    }
+
+    /**
      * @param string $agent Agent requesting the review
      */
     public function requestFeatureReview(string $agent): void

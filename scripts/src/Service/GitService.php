@@ -94,29 +94,30 @@ final class GitService
     }
 
     /**
-     * Delete a local branch.
+     * Delete a local branch (force). No-op when the branch does not exist.
      *
      * @param string $branch Branch name to delete
-     * @param bool $force Force deletion (default: true)
      */
-    public function deleteLocalBranch(string $branch, bool $force = true): void
+    public function deleteLocalBranch(string $branch): void
     {
-        if ($force) {
-            $this->git->deleteLocalBranch($branch);
-        } else {
-            // Simplified for now, we only use force in the project
-            $this->git->deleteLocalBranch($branch);
+        if (!$this->git->localBranchExists($branch)) {
+            return;
         }
+        $this->git->deleteLocalBranch($branch);
     }
 
     /**
-     * Delete a remote branch.
+     * Delete a remote branch. No-op when the branch does not exist on the remote.
      *
      * @param string $branch Branch name to delete
      * @param string $remote Remote name (default: origin)
      */
     public function deleteRemoteBranch(string $branch, string $remote = self::ORIGIN_REMOTE): void
     {
+        if (!$this->git->remoteBranchExists($remote, $branch)) {
+            return;
+        }
+
         $this->git->deleteRemoteBranch($remote, $branch);
     }
 

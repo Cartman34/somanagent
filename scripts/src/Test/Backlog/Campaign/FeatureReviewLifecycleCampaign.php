@@ -157,6 +157,18 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $driver->blockFeature($context->agentPrimary, $context->fixFeature);
         $driver->assertStatusContains($context->fixFeature, 'Blocker: blocked');
         $driver->unblockFeature($context->agentPrimary, $context->fixFeature);
+
+        // Save the board state at approved stage to simulate a retry after a partial failure.
+        $boardSnapshotBeforeMerge = $driver->getBoardText();
+
+        $driver->mergeFeature($context->fixFeature);
+        $driver->assertActiveFeatureMissing($context->fixFeature);
+
+        // Idempotent retry scenario: restore the board to approved stage (simulates a crash
+        // that happened after the GitHub PR was merged but before the board was saved).
+        // The retry must complete without error and clear the board entry.
+        $driver->setBoardText($boardSnapshotBeforeMerge);
+        $driver->assertActiveFeatureExists($context->fixFeature);
         $driver->mergeFeature($context->fixFeature);
         $driver->assertActiveFeatureMissing($context->fixFeature);
     }
