@@ -62,7 +62,6 @@ final class GitHubRunner extends AbstractScriptRunner
                 GitHubCommandName::PR_CLOSE->value      => $this->handleClose($positional),
                 GitHubCommandName::PR_EDIT->value       => $this->handleEdit($positional, $flags),
                 GitHubCommandName::PR_LIST->value       => $this->handleList(),
-                GitHubCommandName::PR_LIST_ALL->value   => $this->handleListAll(),
                 GitHubCommandName::PR_VIEW->value       => $this->handleView($positional),
                 GitHubCommandName::PR_VIEW_STATE->value => $this->handleViewState($positional),
                 default                             => throw new \RuntimeException(sprintf(
@@ -226,24 +225,6 @@ final class GitHubRunner extends AbstractScriptRunner
         $prs = $this->api('GET', '/pulls?state=open&per_page=20');
         if (empty($prs)) {
             $this->console->ok('No open PRs.');
-        } else {
-            foreach ($prs as $pr) {
-                $this->console->line("  #{$pr['number']}  {$pr['title']}  [{$pr['head']['ref']} → {$pr['base']['ref']}]");
-            }
-        }
-    }
-
-    private function handleListAll(): void
-    {
-        if ($this->dryRun) {
-            $this->console->ok('Dry-run: would list all PRs.');
-
-            return;
-        }
-
-        $prs = $this->api('GET', '/pulls?state=all&per_page=50');
-        if (empty($prs)) {
-            $this->console->ok('No PRs.');
         } else {
             foreach ($prs as $pr) {
                 $this->console->line("  #{$pr['number']}  {$pr['title']}  [{$pr['head']['ref']} → {$pr['base']['ref']}]");

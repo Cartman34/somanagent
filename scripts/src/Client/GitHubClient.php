@@ -187,16 +187,6 @@ final class GitHubClient implements GitHubClientInterface
     }
 
     /**
-     * Lists pull requests of all states (open, closed, merged).
-     *
-     * @return string The output of the pr-list-all command
-     */
-    public function listAllPrs(): string
-    {
-        return $this->capture(GitHubCommandName::PR_LIST_ALL->value);
-    }
-
-    /**
      * Returns the state of a pull request: "merged", "open", or "closed".
      *
      * @param int $prNumber Pull request number on GitHub

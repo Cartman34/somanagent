@@ -7,7 +7,6 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Service;
 
-use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Enum\PullRequestTag;
 use SoManAgent\Script\Client\GitHubClientInterface;
 use SoManAgent\Script\RetryHelper;
@@ -121,33 +120,6 @@ final class PullRequestService
         }
 
         $output = $this->github->listPrs();
-        foreach (explode("\n", trim($output)) as $line) {
-            if (preg_match('/^\s*#(\d+)\s+.*\[(.+?) → (.+?)\]$/u', $line, $matches) === 1) {
-                if ($matches[2] === $branch) {
-                    return (int) $matches[1];
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Find a PR number for a source branch regardless of its state (open, closed, or merged).
-     *
-     * Use this as a fallback when findPrNumberByBranch returns null, to detect a PR
-     * that was already merged in a previous (partial) run.
-     *
-     * @param string $branch Source branch to look up
-     * @return int|null PR number when found, null when no PR of any state matches the branch
-     */
-    public function findPrNumberByBranchAnyState(string $branch): ?int
-    {
-        if ($branch === '') {
-            return null;
-        }
-
-        $output = $this->github->listAllPrs();
         foreach (explode("\n", trim($output)) as $line) {
             if (preg_match('/^\s*#(\d+)\s+.*\[(.+?) → (.+?)\]$/u', $line, $matches) === 1) {
                 if ($matches[2] === $branch) {

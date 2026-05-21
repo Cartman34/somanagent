@@ -120,13 +120,10 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
             throw new \RuntimeException("Feature {$feature} has no branch metadata.");
         }
 
-        $prNumber = $this->pullRequestService->findPrNumberByBranch($branch);
+        $prNumberRaw = $entry->getPr();
+        $prNumber = $prNumberRaw !== null ? (int) $prNumberRaw : null;
         if ($prNumber === null) {
-            // Retry case: the PR may have been merged in a previous partial run.
-            $prNumber = $this->pullRequestService->findPrNumberByBranchAnyState($branch);
-            if ($prNumber === null) {
-                throw new \RuntimeException("No PR found for branch {$branch}. Create a pull request before merging.");
-            }
+            throw new \RuntimeException("No PR found for feature {$feature}. Create a pull request before merging.");
         }
 
         if ($bodyFile !== null) {

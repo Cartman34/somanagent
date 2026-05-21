@@ -43,8 +43,4 @@ interface GitHubClientInterface
      */
     public function listPrs(): string;
 
-    /**
-     * Returns PRs of all states (open, closed, merged) in the same text format as pr-list.
-     */
-    public function listAllPrs(): string;
 }

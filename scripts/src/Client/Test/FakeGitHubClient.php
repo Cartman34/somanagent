@@ -66,14 +66,6 @@ final class FakeGitHubClient implements GitHubClientInterface
     }
 
     /**
-     * Returns an empty string (no real API calls in tests).
-     */
-    public function listAllPrs(): string
-    {
-        return '';
-    }
-
-    /**
      * @return array{0: int, 1: string}
      */
     public function createPr(string $title, string $headBranch, string $baseBranch, string $bodyFilePath): array
