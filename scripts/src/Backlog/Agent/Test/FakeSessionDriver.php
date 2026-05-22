@@ -37,6 +37,18 @@ final class FakeSessionDriver implements SessionDriverInterface
     public array $killedCodes = [];
 
     /**
+     * Prompts recorded by injectPrompt(), keyed sequentially.
+     *
+     * @var list<array{session: AgentSession, text: string}>
+     */
+    public array $injectedPrompts = [];
+
+    /**
+     * Return value for injectPrompt(). Default true (injection succeeds).
+     */
+    public bool $injectPromptResult = true;
+
+    /**
      * Whether the fake driver allows resume when isAlive() returns true.
      */
     private bool $allowsResumeWhileAlive = false;
@@ -217,5 +229,17 @@ final class FakeSessionDriver implements SessionDriverInterface
     public function driverName(): string
     {
         return 'fake';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * Records the call and returns injectPromptResult.
+     */
+    public function injectPrompt(AgentSession $session, string $text): bool
+    {
+        $this->injectedPrompts[] = ['session' => $session, 'text' => $text];
+
+        return $this->injectPromptResult;
     }
 }

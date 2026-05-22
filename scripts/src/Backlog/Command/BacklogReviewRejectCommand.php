@@ -77,7 +77,6 @@ final class BacklogReviewRejectCommand extends AbstractBacklogCommand
 
             $reviewKey = $this->boardService->getTaskReviewKey($entry);
             $entry->setStage(BacklogBoard::STAGE_REJECTED);
-            $entry->setReviewer(null);
             $review->setReview($reviewKey, $this->reviewBodyFormatter->fromFile($this->bodyFilePathResolver->resolveForEntry($bodyFile, $reference)));
             $this->saveBoard($board, BacklogCommandName::REVIEW_REJECT->value);
             $this->saveReviewFile($review, BacklogCommandName::REVIEW_REJECT->value);
@@ -107,7 +106,6 @@ final class BacklogReviewRejectCommand extends AbstractBacklogCommand
         $this->assertStageAllowsReviewMutation($entry, 'rejected');
 
         $entry->setStage(BacklogBoard::STAGE_REJECTED);
-        $entry->setReviewer(null);
         $review->setReview($slug, $this->reviewBodyFormatter->fromFile($this->bodyFilePathResolver->resolveForEntry($bodyFile, $slug)));
         $this->saveBoard($board, BacklogCommandName::REVIEW_REJECT->value);
         $this->saveReviewFile($review, BacklogCommandName::REVIEW_REJECT->value);

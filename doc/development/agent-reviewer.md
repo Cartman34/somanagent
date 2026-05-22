@@ -194,6 +194,7 @@ Also check:
 3. Use the stable `<entry-ref>` for the target feature or child task entry.
 4. Short task references are refused; use `<entry-ref>`.
 5. `--body-file` is required for both feature and task rejections.
+6. `review-reject` preserves `meta.reviewer` in the `rejected` entry. When the developer resubmits with `review-request`, the reviewer's live tmux session is notified automatically if the review-resume feature is enabled.
 
 ### `review-amend`
 

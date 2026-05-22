@@ -17,8 +17,9 @@ use SoManAgent\Script\Backlog\Storage\BoardYamlStorage;
  *
  * Covers the YAML round-trip contract of the backlog board storage:
  * empty board, active entry full/partial fields, todo entry shapes,
- * body lines, extra metadata, blocked flag, field ordering, and
- * the initialContent() helper used by the runner bootstrap.
+ * body lines, extra metadata, blocked flag, field ordering,
+ * the initialContent() helper used by the runner bootstrap,
+ * and the optional config.review_resume.enabled block.
  */
 final class BoardYamlStorageTest
 {
@@ -65,6 +66,9 @@ final class BoardYamlStorageTest
         $failed += $this->testExtraMetadataRoundTrip();
         $failed += $this->testBlockedFlagRoundTrip();
         $failed += $this->testActiveFieldOrderingPreserved();
+        $failed += $this->testConfigAbsentRoundTrip();
+        $failed += $this->testConfigReviewResumeEnabledRoundTrip();
+        $failed += $this->testConfigReviewResumeDisabledRoundTrip();
 
         return $failed;
     }
@@ -323,6 +327,91 @@ final class BoardYamlStorageTest
             return 1;
         }
         echo "OK testBlockedFlagRoundTrip\n";
+        return 0;
+    }
+
+    private function testConfigAbsentRoundTrip(): int
+    {
+        $path = $this->tmpDir . '/config-absent-' . uniqid('', true) . '.yaml';
+        file_put_contents($path, BoardYamlStorage::initialContent());
+
+        $storage = new BoardYamlStorage();
+        $board = $storage->load($path);
+
+        if ($board->getReviewResumeEnabled() !== null) {
+            echo "FAIL testConfigAbsentRoundTrip: expected null when config is absent\n";
+            return 1;
+        }
+
+        $storage->save($board);
+        $raw = (string) file_get_contents($path);
+
+        if (str_contains($raw, 'config:')) {
+            echo "FAIL testConfigAbsentRoundTrip: config block should not appear when absent:\n{$raw}\n";
+            return 1;
+        }
+
+        $reloaded = $storage->load($path);
+        if ($reloaded->getReviewResumeEnabled() !== null) {
+            echo "FAIL testConfigAbsentRoundTrip: round-trip did not preserve null\n";
+            return 1;
+        }
+
+        echo "OK testConfigAbsentRoundTrip\n";
+        return 0;
+    }
+
+    private function testConfigReviewResumeEnabledRoundTrip(): int
+    {
+        $path = $this->tmpDir . '/config-enabled-' . uniqid('', true) . '.yaml';
+        file_put_contents($path, BoardYamlStorage::initialContent());
+
+        $storage = new BoardYamlStorage();
+        $board = $storage->load($path);
+        $board->setReviewResumeEnabled(true);
+
+        $storage->save($board);
+        $raw = (string) file_get_contents($path);
+
+        if (!str_contains($raw, 'review_resume:') || !str_contains($raw, 'enabled: true')) {
+            echo "FAIL testConfigReviewResumeEnabledRoundTrip: config block missing or wrong in YAML:\n{$raw}\n";
+            return 1;
+        }
+
+        $reloaded = $storage->load($path);
+        if ($reloaded->getReviewResumeEnabled() !== true) {
+            echo "FAIL testConfigReviewResumeEnabledRoundTrip: round-trip did not preserve enabled=true\n";
+            return 1;
+        }
+
+        echo "OK testConfigReviewResumeEnabledRoundTrip\n";
+        return 0;
+    }
+
+    private function testConfigReviewResumeDisabledRoundTrip(): int
+    {
+        $path = $this->tmpDir . '/config-disabled-' . uniqid('', true) . '.yaml';
+        file_put_contents($path, BoardYamlStorage::initialContent());
+
+        $storage = new BoardYamlStorage();
+        $board = $storage->load($path);
+        $board->setReviewResumeEnabled(false);
+
+        $storage->save($board);
+        $raw = (string) file_get_contents($path);
+
+        if (!str_contains($raw, 'review_resume:') || !str_contains($raw, 'enabled: false')) {
+            echo "FAIL testConfigReviewResumeDisabledRoundTrip: config block missing or wrong in YAML:\n{$raw}\n";
+            return 1;
+        }
+
+        $reloaded = $storage->load($path);
+        if ($reloaded->getReviewResumeEnabled() !== false) {
+            echo "FAIL testConfigReviewResumeDisabledRoundTrip: round-trip did not preserve enabled=false\n";
+            return 1;
+        }
+
+        echo "OK testConfigReviewResumeDisabledRoundTrip\n";
         return 0;
     }
 

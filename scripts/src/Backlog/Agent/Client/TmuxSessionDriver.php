@@ -263,6 +263,29 @@ final class TmuxSessionDriver implements SessionDriverInterface
     }
 
     /**
+     * {@inheritdoc}
+     *
+     * Sends the text to the active pane of session->tmuxSession using `tmux send-keys`.
+     * Returns false when tmuxSession is null (session was not created by this driver).
+     */
+    public function injectPrompt(AgentSession $session, string $text): bool
+    {
+        $tmuxSession = $session->tmuxSession;
+
+        if ($tmuxSession === null || $tmuxSession === '') {
+            return false;
+        }
+
+        $command = sprintf(
+            'tmux send-keys -t %s %s Enter',
+            escapeshellarg($tmuxSession),
+            escapeshellarg($text),
+        );
+
+        return $this->shellRunner->succeeds($command);
+    }
+
+    /**
      * Returns the tmux session name for the given agent code.
      */
     private function sessionName(string $agentCode): string
