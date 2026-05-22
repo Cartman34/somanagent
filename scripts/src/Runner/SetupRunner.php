@@ -984,7 +984,7 @@ final class SetupRunner extends AbstractScriptRunner
      * Reads and writes per-dep overrides stored in the lockfile.
      * V1 exposes only on_uninstall_pre_existing (values: keep | restore).
      *
-     * @param list<string> $parsedArgs Remaining positional arguments after 'dep-config'
+     * @param list<string> $parsedArgs Remaining positional arguments after the subcommand
      * @param array<string, bool|string|array<bool|string>> $options
      */
     private function runDepConfig(array $parsedArgs, array $options): int

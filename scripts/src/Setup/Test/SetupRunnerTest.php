@@ -188,7 +188,7 @@ final class SetupRunnerTest
             }
 
             if (!str_contains($output, self::OPT_DRY_RUN)) {
-                echo "FAIL testInstallDryRunWithEmptyLockfile: expected 'dry-run' in output\nOutput: {$output}\n";
+                echo "FAIL testInstallDryRunWithEmptyLockfile: expected dry-run marker in output\nOutput: {$output}\n";
                 return 1;
             }
         } finally {
@@ -479,7 +479,7 @@ final class SetupRunnerTest
             }
 
             if (!str_contains($output, self::OPT_DRY_RUN)) {
-                echo "FAIL testUpdateDryRunWithEmptyManifest: expected 'dry-run' in output\n";
+                echo "FAIL testUpdateDryRunWithEmptyManifest: expected dry-run marker in output\n";
                 return 1;
             }
         } finally {
@@ -748,7 +748,7 @@ final class SetupRunnerTest
         }
 
         if (!str_contains($output, self::OPT_DRY_RUN)) {
-            echo "FAIL testResetDryRun: expected 'dry-run' in output\nOutput: {$output}\n";
+            echo "FAIL testResetDryRun: expected dry-run marker in output\nOutput: {$output}\n";
             return 1;
         }
 
