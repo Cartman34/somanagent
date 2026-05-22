@@ -74,8 +74,8 @@ final class ReviewResumeNotifierTest
         $failed += $this->testSessionOverrideOffOverridesBoardOn();
         $failed += $this->testInjectionFailureDoesNotThrow();
         $failed += $this->testInjectedPromptContainsEntryRef();
-        $failed += $this->testFeatureLifecycleRejectedThenResubmittedWithReviewerKept();
-        $failed += $this->testTaskLifecycleRejectedThenResubmittedWithReviewerKept();
+        $failed += $this->testFeatureEntrySetStagePreservesReviewer();
+        $failed += $this->testTaskEntrySetStagePreservesReviewer();
 
         return $failed;
     }
@@ -339,47 +339,43 @@ final class ReviewResumeNotifierTest
         return 0;
     }
 
-    private function testFeatureLifecycleRejectedThenResubmittedWithReviewerKept(): int
+    /**
+     * Model-level: BoardEntry.setStage() does not clear reviewer regardless of stage.
+     * Command-level coverage (BacklogReviewRejectCommand preserves reviewer) is in BacklogReviewRejectCommandTest.
+     */
+    private function testFeatureEntrySetStagePreservesReviewer(): int
     {
         $entry = $this->featureEntry(reviewer: self::REVIEWER_CODE);
 
-        $entry->setStage(BacklogBoard::STAGE_REJECTED);
-
-        if ($entry->getReviewer() !== self::REVIEWER_CODE) {
-            echo "FAIL testFeatureLifecycleRejectedThenResubmittedWithReviewerKept: reviewer cleared after reject stage simulation\n";
-            return 1;
+        foreach ([BacklogBoard::STAGE_REJECTED, BacklogBoard::STAGE_PENDING_REVIEW] as $stage) {
+            $entry->setStage($stage);
+            if ($entry->getReviewer() !== self::REVIEWER_CODE) {
+                echo "FAIL testFeatureEntrySetStagePreservesReviewer: reviewer cleared after setStage({$stage})\n";
+                return 1;
+            }
         }
 
-        $entry->setStage(BacklogBoard::STAGE_PENDING_REVIEW);
-
-        if ($entry->getReviewer() !== self::REVIEWER_CODE) {
-            echo "FAIL testFeatureLifecycleRejectedThenResubmittedWithReviewerKept: reviewer lost after resubmit stage simulation\n";
-            return 1;
-        }
-
-        echo "OK testFeatureLifecycleRejectedThenResubmittedWithReviewerKept\n";
+        echo "OK testFeatureEntrySetStagePreservesReviewer\n";
         return 0;
     }
 
-    private function testTaskLifecycleRejectedThenResubmittedWithReviewerKept(): int
+    /**
+     * Model-level: BoardEntry.setStage() does not clear reviewer regardless of stage.
+     * Command-level coverage (BacklogReviewRejectCommand preserves reviewer) is in BacklogReviewRejectCommandTest.
+     */
+    private function testTaskEntrySetStagePreservesReviewer(): int
     {
         $entry = $this->taskEntry(reviewer: self::REVIEWER_CODE);
 
-        $entry->setStage(BacklogBoard::STAGE_REJECTED);
-
-        if ($entry->getReviewer() !== self::REVIEWER_CODE) {
-            echo "FAIL testTaskLifecycleRejectedThenResubmittedWithReviewerKept: reviewer cleared after reject stage simulation\n";
-            return 1;
+        foreach ([BacklogBoard::STAGE_REJECTED, BacklogBoard::STAGE_PENDING_REVIEW] as $stage) {
+            $entry->setStage($stage);
+            if ($entry->getReviewer() !== self::REVIEWER_CODE) {
+                echo "FAIL testTaskEntrySetStagePreservesReviewer: reviewer cleared after setStage({$stage})\n";
+                return 1;
+            }
         }
 
-        $entry->setStage(BacklogBoard::STAGE_PENDING_REVIEW);
-
-        if ($entry->getReviewer() !== self::REVIEWER_CODE) {
-            echo "FAIL testTaskLifecycleRejectedThenResubmittedWithReviewerKept: reviewer lost after resubmit stage simulation\n";
-            return 1;
-        }
-
-        echo "OK testTaskLifecycleRejectedThenResubmittedWithReviewerKept\n";
+        echo "OK testTaskEntrySetStagePreservesReviewer\n";
         return 0;
     }
 

@@ -47,6 +47,7 @@ use SoManAgent\Script\Backlog\Agent\Test\WorktreeScriptProxyTest;
 use SoManAgent\Script\Backlog\Test\BacklogCommitGateCommandTest;
 use SoManAgent\Script\Backlog\Test\BacklogPreCommitHookTest;
 use SoManAgent\Script\Backlog\Test\BacklogReviewApproveCommandTest;
+use SoManAgent\Script\Backlog\Test\BacklogReviewRejectCommandTest;
 use SoManAgent\Script\Backlog\Test\BacklogReviewNextCommandTest;
 use SoManAgent\Script\Backlog\Test\BacklogWorktreeServiceTest;
 use SoManAgent\Script\Backlog\Test\PostMergeSessionStopperTest;
@@ -84,6 +85,7 @@ $suites = [
     'BacklogCommitGateCommandTest' => static fn(): int => (new BacklogCommitGateCommandTest())->run(),
     'BacklogPreCommitHookTest' => static fn(): int => (new BacklogPreCommitHookTest())->run(),
     'BacklogReviewApproveCommandTest' => static fn(): int => (new BacklogReviewApproveCommandTest())->run(),
+    'BacklogReviewRejectCommandTest' => static fn(): int => (new BacklogReviewRejectCommandTest())->run(),
     'BacklogReviewNextCommandTest' => static fn(): int => (new BacklogReviewNextCommandTest())->run(),
     'PostMergeSessionStopperTest' => static fn(): int => (new PostMergeSessionStopperTest())->run(),
     'ReviewResumeNotifierTest' => static fn(): int => (new ReviewResumeNotifierTest())->run(),

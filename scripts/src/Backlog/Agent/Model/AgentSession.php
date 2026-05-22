@@ -68,7 +68,7 @@ final class AgentSession
      */
     public function toArray(): array
     {
-        return [
+        $data = [
             'client' => $this->client->value,
             'role' => $this->role->value,
             'pid' => $this->pid,
@@ -78,8 +78,13 @@ final class AgentSession
             'started_at' => $this->startedAt->format(\DateTimeInterface::ATOM),
             'last_seen_at' => $this->lastSeenAt->format(\DateTimeInterface::ATOM),
             'session_id' => $this->sessionId,
-            'review_resume' => $this->reviewResume,
         ];
+
+        if ($this->reviewResume !== null) {
+            $data['review_resume'] = $this->reviewResume;
+        }
+
+        return $data;
     }
 
     /**
