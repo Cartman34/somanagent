@@ -28,6 +28,7 @@ final class TmuxSessionDriverTest
     private const TMUX_KILL_SESSION = 'kill-session';
     private const TMUX_SET_OPTION = 'set-option';
     private const TMUX_HISTORY_LIMIT = 'history-limit';
+    private const TMUX_SEND_KEYS = 'send-keys';
 
     /**
      * Runs all test cases and returns the total number of failures.
@@ -633,7 +634,7 @@ final class TmuxSessionDriverTest
             return 1;
         }
 
-        $sendCalls = array_filter($runner->calledCommands, fn(string $c): bool => str_contains($c, 'send-keys'));
+        $sendCalls = array_filter($runner->calledCommands, fn(string $c): bool => str_contains($c, self::TMUX_SEND_KEYS));
         if ($sendCalls === []) {
             echo "FAIL testInjectPromptCallsSendKeys: tmux send-keys was not called\n";
             return 1;
@@ -674,7 +675,7 @@ final class TmuxSessionDriverTest
             return 1;
         }
 
-        $sendCalls = array_filter($runner->calledCommands, fn(string $c): bool => str_contains($c, 'send-keys'));
+        $sendCalls = array_filter($runner->calledCommands, fn(string $c): bool => str_contains($c, self::TMUX_SEND_KEYS));
         if ($sendCalls !== []) {
             echo "FAIL testInjectPromptReturnsFalseWhenTmuxSessionNull: send-keys was called despite null tmuxSession\n";
             return 1;

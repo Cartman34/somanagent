@@ -184,23 +184,4 @@ final class AgentSession
         );
     }
 
-    /**
-     * Returns a copy of this session with the review_resume flag updated.
-     */
-    public function withReviewResume(?bool $reviewResume): self
-    {
-        return new self(
-            code: $this->code,
-            client: $this->client,
-            role: $this->role,
-            pid: $this->pid,
-            worktree: $this->worktree,
-            startedAt: $this->startedAt,
-            lastSeenAt: $this->lastSeenAt,
-            sessionId: $this->sessionId,
-            clientPid: $this->clientPid,
-            tmuxSession: $this->tmuxSession,
-            reviewResume: $reviewResume,
-        );
-    }
 }

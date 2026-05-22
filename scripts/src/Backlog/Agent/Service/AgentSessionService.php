@@ -240,19 +240,6 @@ final class AgentSessionService
     }
 
     /**
-     * Updates the review_resume flag for the given agent code.
-     */
-    public function updateReviewResume(string $code, ?bool $reviewResume): void
-    {
-        $sessions = $this->load();
-        if (!isset($sessions[$code])) {
-            return;
-        }
-        $sessions[$code] = $sessions[$code]->withReviewResume($reviewResume);
-        $this->save($sessions);
-    }
-
-    /**
      * Appends one line to the launch log at local/tmp/agent-launches.log.
      *
      * Called once per client launch (start or resume), right after the driver reports the

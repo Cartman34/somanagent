@@ -32,6 +32,8 @@ final class ReviewResumeNotifierTest
 
     private const FEATURE_SLUG = 'my-feature';
 
+    private const TASK_SLUG = 'my-task';
+
     private const WORKTREES_ROOT = '/fake/worktrees';
 
     private string $tmpDir;
@@ -437,10 +439,10 @@ final class ReviewResumeNotifierTest
 
     private function taskEntry(?string $reviewer): BoardEntry
     {
-        $entry = new BoardEntry('my-task');
+        $entry = new BoardEntry(self::TASK_SLUG);
         $entry->setKind(BacklogBoardService::ENTRY_KIND_TASK);
         $entry->setFeature(self::FEATURE_SLUG);
-        $entry->setTask('my-task');
+        $entry->setTask(self::TASK_SLUG);
         $entry->setStage(BacklogBoard::STAGE_PENDING_REVIEW);
         $entry->setDeveloper(self::DEVELOPER_CODE);
         $entry->setReviewer($reviewer);
