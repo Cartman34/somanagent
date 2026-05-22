@@ -1,6 +1,6 @@
 description: 'Run the mechanical review on the active entry without submitting it for review'
 examples:
-  - 'SOMANAGER_AGENT=d10 php scripts/backlog.php submit-check'
+  - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=d10 php scripts/backlog.php submit-check'
 notes:
   - 'The entry must be in development stage. No rebase is performed; the stage is never changed.'
   - 'Runs the same mechanical review script used by review-request against the currently recorded base.'
