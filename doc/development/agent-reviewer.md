@@ -64,7 +64,7 @@ php scripts/backlog-agent.php start <client> --reviewer --watch
 
 Claims still go through `review-next <entry-ref>`, so the backlog lock and stage revalidation remain owned by `backlog.php`. If another reviewer claims the entry first, watch suppresses that contention and retries on the next tick.
 
-`--loop` may be combined with `--watch`. After a clean client exit, the launcher returns to watching with no role/code state preserved from the previous cycle. A non-zero client exit stops the loop and returns the error.
+`--loop` implies `--watch`. After a clean client exit, the launcher returns to watching with no role/code state preserved from the previous cycle. A non-zero client exit stops the loop and returns the error.
 
 ## Read Only When Needed
 

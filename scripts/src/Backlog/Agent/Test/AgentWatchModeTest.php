@@ -69,7 +69,8 @@ final class AgentWatchModeTest
         $failed += $this->testWatchRetriesAfterContention();
         $failed += $this->testLoopRestartsAfterCleanExitAndStopsOnError();
         $failed += $this->testLoopPrintsCompletionTransitionBetweenCycles();
-        $failed += $this->testLoopWithoutWatchIsRejected();
+        $failed += $this->testLoopWithoutWatchEnablesWatch();
+        $failed += $this->testLoopWithoutWatchUsesWatchConstraints();
         $failed += $this->testAsciiSpinnerWhenLocaleIsNotUtf8();
 
         return $failed;
@@ -286,22 +287,62 @@ final class AgentWatchModeTest
         return 0;
     }
 
-    private function testLoopWithoutWatchIsRejected(): int
+    private function testLoopWithoutWatchEnablesWatch(): int
     {
-        $fixture = $this->makeFixture('loop-rejected');
-        $cmd = $this->buildCommand($fixture, new FakeAgentClientLauncher(AgentClient::CLAUDE), new FakeBacklogCommandRunner(), new FakeSessionDriver());
-        $threw = false;
-        try {
-            $cmd->handle(['claude'], ['developer' => true, 'loop' => true, 'code' => 'd70']);
-        } catch (\RuntimeException $e) {
-            $threw = str_contains($e->getMessage(), '--loop requires --watch');
+        $featureSlug = 'loop-implies-watch';
+        $fixture = $this->makeFixture($featureSlug);
+        $this->writeBoard($fixture['boardPath'], [], [
+            ['feature' => $featureSlug, 'type' => 'tech', 'title' => 'Loop implies watch'],
+        ]);
+        $runner = new FakeBacklogCommandRunner();
+        $runner->onWorkStart = function (string $developerCode, string $entryRef) use ($fixture): void {
+            $this->writeBoard($fixture['boardPath'], [
+                ['kind' => 'feature', 'stage' => 'development', 'feature' => $entryRef, 'developer' => $developerCode, 'branch' => 'tech/' . $entryRef, 'type' => 'tech'],
+            ]);
+        };
+        $driver = new FakeSessionDriver();
+        $driver->setExitCodeQueue([7]);
+        $cmd = $this->buildCommand($fixture, new FakeAgentClientLauncher(AgentClient::CLAUDE), $runner, $driver);
+
+        $result = $this->runCommand($fixture['projectRoot'], $cmd, ['claude'], ['developer' => true, 'loop' => true, BacklogCliOption::WATCH_INTERVAL->value => '0', 'code' => 'd70']);
+        if ($result !== 7 || $driver->lastLaunchCall === null || $driver->lastLaunchCall['agentCode'] !== 'd70') {
+            echo "FAIL testLoopWithoutWatchEnablesWatch: expected d70 launch and non-zero loop stop, result {$result}\n";
+            return 1;
         }
-        if (!$threw) {
-            echo "FAIL testLoopWithoutWatchIsRejected: expected rejection\n";
+        if (($runner->calls[0]['method'] ?? '') !== 'workStart' || ($runner->calls[0]['entryRef'] ?? '') !== $featureSlug) {
+            echo "FAIL testLoopWithoutWatchEnablesWatch: expected workStart({$featureSlug})\n";
             return 1;
         }
 
-        echo "OK testLoopWithoutWatchIsRejected\n";
+        echo "OK testLoopWithoutWatchEnablesWatch\n";
+        return 0;
+    }
+
+    private function testLoopWithoutWatchUsesWatchConstraints(): int
+    {
+        $fixture = $this->makeFixture('loop-watch-constraints');
+        $cmd = $this->buildCommand($fixture, new FakeAgentClientLauncher(AgentClient::CLAUDE), new FakeBacklogCommandRunner(), new FakeSessionDriver());
+
+        $managerRejected = false;
+        try {
+            $cmd->handle(['claude'], ['manager' => true, 'loop' => true]);
+        } catch (\RuntimeException $e) {
+            $managerRejected = str_contains($e->getMessage(), '--watch is only supported for developer and reviewer launches.');
+        }
+
+        $codeWithoutRoleRejected = false;
+        try {
+            $cmd->handle(['claude'], ['loop' => true, 'code' => 'd70']);
+        } catch (\RuntimeException $e) {
+            $codeWithoutRoleRejected = str_contains($e->getMessage(), '--code requires an explicit role when --watch is used.');
+        }
+
+        if (!$managerRejected || !$codeWithoutRoleRejected) {
+            echo "FAIL testLoopWithoutWatchUsesWatchConstraints: expected watch constraints to apply\n";
+            return 1;
+        }
+
+        echo "OK testLoopWithoutWatchUsesWatchConstraints\n";
         return 0;
     }
 
