@@ -93,6 +93,7 @@ final class BacklogWorktreeService
         $created = false;
 
         if (!$exists) {
+            $this->enforceWorktreeLimit();
             $this->git->addWorktreeDetach($path);
             $created = true;
             if ($this->dryRun) {
@@ -637,6 +638,27 @@ final class BacklogWorktreeService
             $lines,
         );
         echo "Open the file with Read for full details.\n";
+    }
+
+    /**
+     * Throws when the number of existing managed worktrees meets or exceeds the configured limit.
+     */
+    private function enforceWorktreeLimit(): void
+    {
+        $config = new BacklogConfig($this->projectRoot);
+        $limit = $config->getMaxConcurrentWorktrees();
+        $count = count(array_filter(
+            $this->fetchGitWorktreeBlocks(),
+            fn(array $w): bool => $this->checkIsManagedAgentWorktree($w['path']),
+        ));
+
+        if ($count >= $limit) {
+            throw new \RuntimeException(sprintf(
+                'Worktree limit reached (%d/%d configured). Remove an existing developer worktree before assigning a new one.',
+                $count,
+                $limit,
+            ));
+        }
     }
 
     private function ensureWorktreeRuntimeState(string $worktree, bool $created): void

@@ -1079,10 +1079,8 @@ final class SetupRunnerTest
         if ($manifestDeps === null) {
             // Minimal manifest with one dep (apt, to avoid network queries)
             $manifest = "defaults:\n  on_existing_below_min: upgrade\n  on_uninstall_pre_existing: keep\nhost:\n  system:\n    test-dep:\n      constraint: '>=1.0'\n      installer: apt\n      package: test-package\n      sources: [default]\n";
-        } elseif ($manifestDeps === []) {
-            $manifest = "defaults:\n  on_existing_below_min: upgrade\n  on_uninstall_pre_existing: keep\nhost: {}\n";
         } else {
-            $manifest = "defaults:\n  on_existing_below_min: upgrade\n  on_uninstall_pre_existing: keep\nhost:\n  system:\n    test-dep:\n      constraint: '>=1.0'\n      installer: apt\n      package: test-package\n      sources: [default]\n";
+            $manifest = "defaults:\n  on_existing_below_min: upgrade\n  on_uninstall_pre_existing: keep\nhost: {}\n";
         }
 
         file_put_contents($resourcesDir . '/dependencies.yaml', $manifest);
