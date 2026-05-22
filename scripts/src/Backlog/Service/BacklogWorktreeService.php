@@ -489,10 +489,6 @@ final class BacklogWorktreeService
      */
     public function removeDeveloperWorktree(string $developerCode): void
     {
-        if ($developerCode === '') {
-            return;
-        }
-
         $path = $this->worktreesRoot . '/' . $developerCode;
         if (!$this->fs->checkPathExists($path)) {
             return;
