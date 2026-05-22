@@ -1,0 +1,9 @@
+# Backlog local configuration.
+# This file is the committed template — do not edit it to store local values.
+# Edit local/backlog/config.yaml (gitignored) instead.
+# To materialize local/backlog/config.yaml from this template:
+#   php scripts/setup.php install
+
+backlog:
+  # Maximum number of developer worktrees that may be active simultaneously.
+  max_concurrent_worktrees: 5

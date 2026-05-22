@@ -35,7 +35,7 @@ php scripts/server.php start
 ### Step details
 
 - `setup.php update` queries each source declared in `scripts/resources/dependencies.yaml` (apt-cache, npm view, GitHub releases) and writes the resolved versions to `scripts/resources/dependencies.lock`.
-- `setup.php install` reads the lockfile and installs or upgrades host dependencies (PHP 8.4+ and extensions, Docker Engine + Compose plugin, git, tmux, AI clients `claude`/`codex`/`opencode`/`gemini`), then runs project-level steps (Composer, npm, Doctrine migrations via host PHP CLI).
+- `setup.php install` reads the lockfile and installs or upgrades host dependencies (PHP 8.4+ and extensions, Docker Engine + Compose plugin, git, tmux, AI clients `claude`/`codex`/`opencode`/`gemini`), then runs project-level steps (Composer, npm, Doctrine migrations via host PHP CLI). It also materializes `local/backlog/config.yaml` from `scripts/resources/backlog/config.yaml.dist` if the local file does not yet exist.
 - `server.php start` brings up Docker Compose services (`db`, `redis`, `php`, `worker`, `nginx`, `node`, `mercure`).
 
 ### Lockfile is local-only on this project

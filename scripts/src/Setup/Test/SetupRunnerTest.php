@@ -23,6 +23,11 @@ namespace SoManAgent\Script\Setup\Test;
  */
 final class SetupRunnerTest
 {
+    private const OPT_DRY_RUN = 'dry-run';
+    private const CMD_DEP_CONFIG = 'dep-config';
+    private const TEST_DEP_KEY = 'test-dep';
+    private const TEST_DEP_NONEXISTENT = 'nonexistent-dep';
+
     private string $projectRoot;
 
     /**
@@ -46,7 +51,10 @@ final class SetupRunnerTest
         $failed += $this->testInstallCommandHelp();
         $failed += $this->testInstallPreviewOnlyWithEmptyLockfile();
         $failed += $this->testInstallCreatesLocalWorkingDirectories();
+        $failed += $this->testInstallCreatesBacklogConfig();
+        $failed += $this->testInstallDoesNotOverwriteExistingBacklogConfig();
         $failed += $this->testInstallDryRunWithEmptyLockfile();
+        $failed += $this->testInstallDryRunAnnouncesBacklogConfig();
         $failed += $this->testMutualExclusionFlags();
         $failed += $this->testUnknownSubcommandError();
         $failed += $this->testMissingLockfileError();
@@ -56,6 +64,7 @@ final class SetupRunnerTest
         $failed += $this->testUpdateCommandHelp();
         $failed += $this->testUpdatePreviewOnlyWithEmptyManifest();
         $failed += $this->testUpdateDryRunWithEmptyManifest();
+        $failed += $this->testUpdateDryRunAnnouncesBacklogConfig();
         $failed += $this->testUpdateMutualExclusionFlags();
 
         // verify
@@ -178,8 +187,8 @@ final class SetupRunnerTest
                 return 1;
             }
 
-            if (!str_contains($output, 'dry-run')) {
-                echo "FAIL testInstallDryRunWithEmptyLockfile: expected 'dry-run' in output\nOutput: {$output}\n";
+            if (!str_contains($output, self::OPT_DRY_RUN)) {
+                echo "FAIL testInstallDryRunWithEmptyLockfile: expected dry-run marker in output\nOutput: {$output}\n";
                 return 1;
             }
         } finally {
@@ -220,6 +229,87 @@ final class SetupRunnerTest
         }
 
         echo "OK testInstallCreatesLocalWorkingDirectories\n";
+        return 0;
+    }
+
+    private function testInstallCreatesBacklogConfig(): int
+    {
+        $tmpDir = $this->setUpTempProjectWithInitializedLockfile();
+
+        try {
+            // Exit may be non-zero when Docker is unavailable (ProjectDepsInstaller);
+            // LocalConfigBootstrap runs before that step so the file must still be created.
+            $this->run_(
+                ['install', '--force'],
+                ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
+            );
+
+            if (!is_file($tmpDir . '/local/backlog/config.yaml')) {
+                echo "FAIL testInstallCreatesBacklogConfig: missing local/backlog/config.yaml\n";
+                return 1;
+            }
+        } finally {
+            $this->removeLocalWorkingDirectories($tmpDir);
+            $this->removeTempProjectResources($tmpDir);
+        }
+
+        echo "OK testInstallCreatesBacklogConfig\n";
+        return 0;
+    }
+
+    private function testInstallDoesNotOverwriteExistingBacklogConfig(): int
+    {
+        $tmpDir = $this->setUpTempProjectWithInitializedLockfile();
+        $localConfigPath = $tmpDir . '/local/backlog/config.yaml';
+
+        try {
+            mkdir($tmpDir . '/local/backlog', 0o755, true);
+            file_put_contents($localConfigPath, "# existing\n");
+
+            // Exit may be non-zero when Docker is unavailable; we only check idempotency.
+            $this->run_(
+                ['install', '--force'],
+                ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
+            );
+
+            $contents = (string) file_get_contents($localConfigPath);
+            if ($contents !== "# existing\n") {
+                echo "FAIL testInstallDoesNotOverwriteExistingBacklogConfig: local config was overwritten\n";
+                return 1;
+            }
+        } finally {
+            $this->removeLocalWorkingDirectories($tmpDir);
+            $this->removeTempProjectResources($tmpDir);
+        }
+
+        echo "OK testInstallDoesNotOverwriteExistingBacklogConfig\n";
+        return 0;
+    }
+
+    private function testInstallDryRunAnnouncesBacklogConfig(): int
+    {
+        $tmpDir = $this->setUpTempProjectWithInitializedLockfile();
+
+        try {
+            [$output, $exit] = $this->run_(
+                ['install', '--dry-run'],
+                ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
+            );
+
+            if ($exit !== 0) {
+                echo "FAIL testInstallDryRunAnnouncesBacklogConfig: expected exit 0, got {$exit}\nOutput: {$output}\n";
+                return 1;
+            }
+
+            if (!str_contains($output, 'local/backlog/config.yaml')) {
+                echo "FAIL testInstallDryRunAnnouncesBacklogConfig: expected 'local/backlog/config.yaml' in dry-run output\nOutput: {$output}\n";
+                return 1;
+            }
+        } finally {
+            $this->removeTempProject($tmpDir);
+        }
+
+        echo "OK testInstallDryRunAnnouncesBacklogConfig\n";
         return 0;
     }
 
@@ -390,8 +480,8 @@ final class SetupRunnerTest
                 return 1;
             }
 
-            if (!str_contains($output, 'dry-run')) {
-                echo "FAIL testUpdateDryRunWithEmptyManifest: expected 'dry-run' in output\n";
+            if (!str_contains($output, self::OPT_DRY_RUN)) {
+                echo "FAIL testUpdateDryRunWithEmptyManifest: expected dry-run marker in output\n";
                 return 1;
             }
         } finally {
@@ -399,6 +489,33 @@ final class SetupRunnerTest
         }
 
         echo "OK testUpdateDryRunWithEmptyManifest\n";
+        return 0;
+    }
+
+    private function testUpdateDryRunAnnouncesBacklogConfig(): int
+    {
+        $tmpDir = $this->setUpTempProject([]);
+
+        try {
+            [$output, $exit] = $this->run_(
+                ['update', '--dry-run'],
+                ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
+            );
+
+            if ($exit !== 0) {
+                echo "FAIL testUpdateDryRunAnnouncesBacklogConfig: expected exit 0, got {$exit}\nOutput: {$output}\n";
+                return 1;
+            }
+
+            if (!str_contains($output, 'local/backlog/config.yaml')) {
+                echo "FAIL testUpdateDryRunAnnouncesBacklogConfig: expected 'local/backlog/config.yaml' in dry-run output\nOutput: {$output}\n";
+                return 1;
+            }
+        } finally {
+            $this->removeTempProject($tmpDir);
+        }
+
+        echo "OK testUpdateDryRunAnnouncesBacklogConfig\n";
         return 0;
     }
 
@@ -632,8 +749,8 @@ final class SetupRunnerTest
             return 1;
         }
 
-        if (!str_contains($output, 'dry-run')) {
-            echo "FAIL testResetDryRun: expected 'dry-run' in output\nOutput: {$output}\n";
+        if (!str_contains($output, self::OPT_DRY_RUN)) {
+            echo "FAIL testResetDryRun: expected dry-run marker in output\nOutput: {$output}\n";
             return 1;
         }
 
@@ -714,7 +831,7 @@ final class SetupRunnerTest
 
     private function testDepConfigCommandHelp(): int
     {
-        [$output, $exit] = $this->run_(['help', 'dep-config']);
+        [$output, $exit] = $this->run_(['help', self::CMD_DEP_CONFIG]);
 
         if ($exit !== 0) {
             echo "FAIL testDepConfigCommandHelp: expected exit 0, got {$exit}\n";
@@ -732,7 +849,7 @@ final class SetupRunnerTest
 
     private function testDepConfigInvalidAction(): int
     {
-        [$output, $exit] = $this->run_(['dep-config', 'bad-action', 'git']);
+        [$output, $exit] = $this->run_([self::CMD_DEP_CONFIG, 'bad-action', 'git']);
 
         if ($exit === 0) {
             echo "FAIL testDepConfigInvalidAction: expected non-zero exit\n";
@@ -754,7 +871,7 @@ final class SetupRunnerTest
 
         try {
             [$output, $exit] = $this->run_(
-                ['dep-config', 'get', 'nonexistent-dep'],
+                [self::CMD_DEP_CONFIG, 'get', self::TEST_DEP_NONEXISTENT],
                 ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
             );
 
@@ -763,7 +880,7 @@ final class SetupRunnerTest
                 return 1;
             }
 
-            if (!str_contains($output, 'nonexistent-dep')) {
+            if (!str_contains($output, self::TEST_DEP_NONEXISTENT)) {
                 echo "FAIL testDepConfigUnknownDep: expected dep key in error output\nOutput: {$output}\n";
                 return 1;
             }
@@ -781,7 +898,7 @@ final class SetupRunnerTest
 
         try {
             [$output, $exit] = $this->run_(
-                ['dep-config', 'get', 'test-dep', 'bad_property'],
+                [self::CMD_DEP_CONFIG, 'get', self::TEST_DEP_KEY, 'bad_property'],
                 ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
             );
 
@@ -809,7 +926,7 @@ final class SetupRunnerTest
         try {
             // set
             [, $setExit] = $this->run_(
-                ['dep-config', 'set', 'test-dep', 'on_uninstall_pre_existing', 'restore'],
+                [self::CMD_DEP_CONFIG, 'set', self::TEST_DEP_KEY, 'on_uninstall_pre_existing', 'restore'],
                 ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
             );
             if ($setExit !== 0) {
@@ -819,7 +936,7 @@ final class SetupRunnerTest
 
             // get — should show the value
             [$getOutput, $getExit] = $this->run_(
-                ['dep-config', 'get', 'test-dep', 'on_uninstall_pre_existing'],
+                [self::CMD_DEP_CONFIG, 'get', self::TEST_DEP_KEY, 'on_uninstall_pre_existing'],
                 ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
             );
             if ($getExit !== 0 || !str_contains($getOutput, 'restore')) {
@@ -829,7 +946,7 @@ final class SetupRunnerTest
 
             // unset
             [, $unsetExit] = $this->run_(
-                ['dep-config', 'unset', 'test-dep', 'on_uninstall_pre_existing'],
+                [self::CMD_DEP_CONFIG, 'unset', self::TEST_DEP_KEY, 'on_uninstall_pre_existing'],
                 ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
             );
             if ($unsetExit !== 0) {
@@ -839,7 +956,7 @@ final class SetupRunnerTest
 
             // get again — should show "no override set"
             [$get2Output, $get2Exit] = $this->run_(
-                ['dep-config', 'get', 'test-dep', 'on_uninstall_pre_existing'],
+                [self::CMD_DEP_CONFIG, 'get', self::TEST_DEP_KEY, 'on_uninstall_pre_existing'],
                 ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
             );
             if ($get2Exit !== 0 || !str_contains($get2Output, 'no override')) {
@@ -861,11 +978,11 @@ final class SetupRunnerTest
         try {
             // Set twice — second should be no-op
             $this->run_(
-                ['dep-config', 'set', 'test-dep', 'on_uninstall_pre_existing', 'keep'],
+                [self::CMD_DEP_CONFIG, 'set', self::TEST_DEP_KEY, 'on_uninstall_pre_existing', 'keep'],
                 ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
             );
             [$output, $exit] = $this->run_(
-                ['dep-config', 'set', 'test-dep', 'on_uninstall_pre_existing', 'keep'],
+                [self::CMD_DEP_CONFIG, 'set', self::TEST_DEP_KEY, 'on_uninstall_pre_existing', 'keep'],
                 ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
             );
 
@@ -893,7 +1010,7 @@ final class SetupRunnerTest
         try {
             // Unset a property that isn't set — should be a no-op (exit 0)
             [$output, $exit] = $this->run_(
-                ['dep-config', 'unset', 'test-dep', 'on_uninstall_pre_existing'],
+                [self::CMD_DEP_CONFIG, 'unset', self::TEST_DEP_KEY, 'on_uninstall_pre_existing'],
                 ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
             );
 
@@ -929,13 +1046,17 @@ final class SetupRunnerTest
     {
         $tmpDir = $this->testOutputRoot() . '/setup_test_init_' . uniqid();
         $resourcesDir = $tmpDir . '/scripts/resources';
-        mkdir($resourcesDir, 0o755, true);
+        mkdir($resourcesDir . '/backlog', 0o755, true);
 
         $manifest = "defaults:\n  on_existing_below_min: upgrade\n  on_uninstall_pre_existing: keep\nhost: {}\n";
         file_put_contents($resourcesDir . '/dependencies.yaml', $manifest);
         file_put_contents(
             $resourcesDir . '/dependencies.lock',
             "generated_at: '2026-01-01T00:00:00+00:00'\nmanifest_hash: abc123\nhost: {}\n",
+        );
+        copy(
+            $this->projectRoot . '/scripts/resources/backlog/config.yaml.dist',
+            $resourcesDir . '/backlog/config.yaml.dist',
         );
 
         return $tmpDir;
@@ -953,19 +1074,21 @@ final class SetupRunnerTest
     {
         $tmpDir = $this->testOutputRoot() . '/setup_test_' . uniqid();
         $resourcesDir = $tmpDir . '/scripts/resources';
-        mkdir($resourcesDir, 0o755, true);
+        mkdir($resourcesDir . '/backlog', 0o755, true);
 
         if ($manifestDeps === null) {
             // Minimal manifest with one dep (apt, to avoid network queries)
             $manifest = "defaults:\n  on_existing_below_min: upgrade\n  on_uninstall_pre_existing: keep\nhost:\n  system:\n    test-dep:\n      constraint: '>=1.0'\n      installer: apt\n      package: test-package\n      sources: [default]\n";
-        } elseif ($manifestDeps === []) {
-            $manifest = "defaults:\n  on_existing_below_min: upgrade\n  on_uninstall_pre_existing: keep\nhost: {}\n";
         } else {
-            $manifest = "defaults:\n  on_existing_below_min: upgrade\n  on_uninstall_pre_existing: keep\nhost:\n  system:\n    test-dep:\n      constraint: '>=1.0'\n      installer: apt\n      package: test-package\n      sources: [default]\n";
+            $manifest = "defaults:\n  on_existing_below_min: upgrade\n  on_uninstall_pre_existing: keep\nhost: {}\n";
         }
 
         file_put_contents($resourcesDir . '/dependencies.yaml', $manifest);
         file_put_contents($resourcesDir . '/dependencies.lock', "generated_at: ~\nmanifest_hash: ~\nhost: {}\n");
+        copy(
+            $this->projectRoot . '/scripts/resources/backlog/config.yaml.dist',
+            $resourcesDir . '/backlog/config.yaml.dist',
+        );
 
         return $tmpDir;
     }
@@ -979,13 +1102,17 @@ final class SetupRunnerTest
     {
         $tmpDir = $this->testOutputRoot() . '/setup_test_depconf_' . uniqid();
         $resourcesDir = $tmpDir . '/scripts/resources';
-        mkdir($resourcesDir, 0o755, true);
+        mkdir($resourcesDir . '/backlog', 0o755, true);
 
         $manifest = "defaults:\n  on_existing_below_min: upgrade\n  on_uninstall_pre_existing: keep\nhost:\n  system:\n    test-dep:\n      constraint: '>=1.0'\n      installer: apt\n      package: test-package\n      sources: [default]\n";
         file_put_contents($resourcesDir . '/dependencies.yaml', $manifest);
 
         $lockfile = "generated_at: '2026-01-01T00:00:00+00:00'\nmanifest_hash: abc123\nhost:\n  system:\n    test-dep:\n      version: '1.0.0'\n      installer: apt\n      package: test-package\n      source: default\n      pre_existing: false\n      previous_version: ~\n      side_effects: ~\n      resolved_at: '2026-01-01T00:00:00+00:00'\n";
         file_put_contents($resourcesDir . '/dependencies.lock', $lockfile);
+        copy(
+            $this->projectRoot . '/scripts/resources/backlog/config.yaml.dist',
+            $resourcesDir . '/backlog/config.yaml.dist',
+        );
 
         return $tmpDir;
     }
@@ -996,9 +1123,22 @@ final class SetupRunnerTest
     private function removeTempProject(string $tmpDir): void
     {
         $this->removeLocalWorkingDirectories($tmpDir);
+        $this->removeTempProjectResources($tmpDir);
+    }
+
+    /**
+     * Removes scripts/resources files and the project root directory.
+     *
+     * Does not touch local/. Call removeLocalWorkingDirectories() separately
+     * when the test creates or triggers creation of local/ directories.
+     */
+    private function removeTempProjectResources(string $tmpDir): void
+    {
         $resourcesDir = $tmpDir . '/scripts/resources';
         @unlink($resourcesDir . '/dependencies.yaml');
         @unlink($resourcesDir . '/dependencies.lock');
+        @unlink($resourcesDir . '/backlog/config.yaml.dist');
+        @rmdir($resourcesDir . '/backlog');
         @rmdir($resourcesDir);
         @rmdir($tmpDir . '/scripts');
         @rmdir($tmpDir);
@@ -1008,8 +1148,10 @@ final class SetupRunnerTest
     {
         @unlink($tmpDir . '/local/tmp/.gitkeep');
         @unlink($tmpDir . '/local/tests/.gitkeep');
+        @unlink($tmpDir . '/local/backlog/config.yaml');
         @rmdir($tmpDir . '/local/tmp');
         @rmdir($tmpDir . '/local/tests');
+        @rmdir($tmpDir . '/local/backlog');
         @rmdir($tmpDir . '/local');
     }
 
