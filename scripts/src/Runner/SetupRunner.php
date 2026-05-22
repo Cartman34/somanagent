@@ -9,6 +9,7 @@ namespace SoManAgent\Script\Runner;
 
 use SoManAgent\Script\Client\FilesystemClient;
 use SoManAgent\Script\DevEnv\InstallPlan;
+use SoManAgent\Script\Setup\LocalConfigBootstrap;
 use SoManAgent\Script\DevEnv\InstallPlanner;
 use SoManAgent\Script\DevEnv\Installer\ClientsInstaller;
 use SoManAgent\Script\DevEnv\Installer\DockerInstaller;
@@ -195,6 +196,8 @@ final class SetupRunner extends AbstractScriptRunner
             return 0;
         }
 
+        LocalConfigBootstrap::materialize($root, $this->dryRun, $this->console);
+
         if ($this->dryRun) {
             $preview->renderSimulatedCommands($plan, $installers);
             $this->renderProjectStepsDryRun();
@@ -276,6 +279,8 @@ final class SetupRunner extends AbstractScriptRunner
         if ($this->previewOnly) {
             return 0;
         }
+
+        LocalConfigBootstrap::materialize($root, $this->dryRun, $this->console);
 
         if ($this->dryRun) {
             $preview->renderSimulatedCommands($plan, $installers);

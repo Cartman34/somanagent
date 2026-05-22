@@ -12,6 +12,7 @@ examples:
   - 'php scripts/setup.php install --dry-run'
   - 'php scripts/setup.php install --force'
 notes:
+  - 'Materializes local/backlog/config.yaml from scripts/resources/backlog/config.yaml.dist if absent. Idempotent: never overwrites an existing local config.'
   - 'Requires an initialized lockfile (scripts/resources/dependencies.lock). Run setup.php update first to generate it — absent or sentinel lockfiles (generated_at: ~) are both rejected.'
   - '--preview-only and --dry-run are mutually exclusive.'
   - 'Idempotent: running install after convergence is a no-op (all deps already at target version).'
