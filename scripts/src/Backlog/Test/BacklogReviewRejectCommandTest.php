@@ -9,6 +9,7 @@ namespace SoManAgent\Script\Backlog\Test;
 
 use SoManAgent\Script\Application;
 use SoManAgent\Script\Backlog\Command\BacklogReviewRejectCommand;
+use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
@@ -97,7 +98,7 @@ final class BacklogReviewRejectCommandTest
         try {
             $this->withEnv(['SOMANAGER_AGENT' => self::REVIEWER_CODE], function () use ($projectRoot, $boardPath, $reviewPath, $bodyFile): void {
                 $command = $this->makeCommand($projectRoot, $boardPath, $reviewPath);
-                $command->handle([self::FEATURE_SLUG], ['body-file' => $bodyFile]);
+                $command->handle([self::FEATURE_SLUG], [BacklogCliOption::BODY_FILE->value => $bodyFile]);
             });
         } catch (\Throwable $e) {
             $threw = true;
@@ -172,7 +173,7 @@ final class BacklogReviewRejectCommandTest
         try {
             $this->withEnv(['SOMANAGER_AGENT' => self::REVIEWER_CODE], function () use ($projectRoot, $boardPath, $reviewPath, $bodyFile, $taskRef): void {
                 $command = $this->makeCommand($projectRoot, $boardPath, $reviewPath);
-                $command->handle([$taskRef], ['body-file' => $bodyFile]);
+                $command->handle([$taskRef], [BacklogCliOption::BODY_FILE->value => $bodyFile]);
             });
         } catch (\Throwable $e) {
             $threw = true;
