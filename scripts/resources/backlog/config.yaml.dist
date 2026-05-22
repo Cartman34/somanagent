@@ -7,3 +7,10 @@
 backlog:
   # Maximum number of developer worktrees that may be active simultaneously.
   max_concurrent_worktrees: 5
+
+workflow:
+  # End-of-cycle submit policy for developer sessions.
+  # user  — developer stops after a successful submit-check and waits for the operator to send `submit`.
+  # agent — developer runs review-request automatically after a successful submit-check.
+  # Fallback when absent or unknown: user.
+  submit: agent

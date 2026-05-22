@@ -31,6 +31,7 @@ use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Enum\SubmitMode;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Service\BacklogConfig;
 use SoManAgent\Script\Backlog\Service\SubmitModeResolver;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Model\BoardEntryMatch;
@@ -145,7 +146,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         $this->shellRunner = $shellRunner;
         $this->backlogCommandRunner = $backlogCommandRunner;
         $this->entryRebaseService = $entryRebaseService;
-        $this->submitModeResolver = new SubmitModeResolver();
+        $this->submitModeResolver = new SubmitModeResolver(new BacklogConfig($this->projectRoot));
         $this->modelResolver = $modelResolver;
         $this->launchPromptResolver = $launchPromptResolver ?? new AgentLaunchPromptResolver(
             dirname(__DIR__, 4) . '/resources/backlog-agent/launch-prompts.yaml',

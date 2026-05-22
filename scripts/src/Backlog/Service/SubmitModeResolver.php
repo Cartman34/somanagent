@@ -14,11 +14,18 @@ use SoManAgent\Script\Backlog\Enum\SubmitMode;
  *
  * Priority (highest first):
  *   1. Per-session override from agent-sessions.json (`--submit-mode` CLI flag)
- *   2. Project-level config file (`workflow.submit`)  — TODO: implement after config system rebase
+ *   2. Project-level config file (`workflow.submit` in local/backlog/config.yaml)
  *   3. Hardcoded fallback: SubmitMode::USER
  */
 final class SubmitModeResolver
 {
+    /**
+     * @param BacklogConfig|null $config Project config reader; null disables config-file resolution.
+     */
+    public function __construct(private readonly ?BacklogConfig $config = null)
+    {
+    }
+
     /**
      * Returns the effective submit mode.
      *
@@ -30,7 +37,9 @@ final class SubmitModeResolver
             return $sessionOverride;
         }
 
-        // TODO: read workflow.submit from the project config file once the config system is available.
+        if ($this->config !== null) {
+            return $this->config->getWorkflowSubmit();
+        }
 
         return SubmitMode::USER;
     }

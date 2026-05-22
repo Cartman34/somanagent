@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Service;
 
+use SoManAgent\Script\Backlog\Enum\SubmitMode;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -43,6 +44,29 @@ final class BacklogConfig
     public function getMaxConcurrentWorktrees(): int
     {
         return (int) ($this->load()['backlog']['max_concurrent_worktrees'] ?? self::FALLBACK_MAX_CONCURRENT_WORKTREES);
+    }
+
+    /**
+     * Returns the project-level submit policy.
+     *
+     * Fallback is SubmitMode::USER when the config is absent, unreadable, or carries an unknown value.
+     */
+    public function getWorkflowSubmit(): SubmitMode
+    {
+        try {
+            $raw = $this->load()['workflow']['submit'] ?? null;
+        } catch (\RuntimeException) {
+            return SubmitMode::USER;
+        }
+
+        if ($raw !== null) {
+            $mode = SubmitMode::tryFrom((string) $raw);
+            if ($mode !== null) {
+                return $mode;
+            }
+        }
+
+        return SubmitMode::USER;
     }
 
     /**
