@@ -80,7 +80,7 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
      * Performs the feature merge in a fixed, retry-safe sequence:
      *   1. mergePr          — idempotent: no-op when PR already merged
      *   2. syncMain         — pull main after merge
-     *   3. removeDeveloperWorktree — force-removes the developer WA; board-state independent
+     *   3. removeWorktreeForBranch — removes the worktree checked out on the feature branch; board-state independent
      *   4. deleteRemoteBranch
      *   5. deleteLocalBranch
      *   6. installProjectDependencies — optional, skipped when meta absent
