@@ -10,6 +10,7 @@ namespace SoManAgent\Script\Backlog\Agent\Service;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
+use SoManAgent\Script\Backlog\Enum\SubmitMode;
 
 /**
  * Reads and writes the agent sessions registry at local/tmp/agent-sessions.json (WP only).
@@ -174,6 +175,7 @@ final class AgentSessionService
             clientPid: $session->clientPid,
             tmuxSession: $session->tmuxSession,
             reviewResume: $session->reviewResume,
+            submitMode: $session->submitMode,
         );
         $this->save($sessions);
     }
@@ -213,6 +215,7 @@ final class AgentSessionService
      * Creates a new session entry from raw parameters.
      *
      * @param bool|null $reviewResume Override for the review-resume notification feature (null = default)
+     * @param SubmitMode|null $submitMode Per-session submit policy override (null = use project config or fallback)
      */
     public function create(
         string $code,
@@ -221,6 +224,7 @@ final class AgentSessionService
         int $pid,
         string $worktree,
         ?bool $reviewResume = null,
+        ?SubmitMode $submitMode = null,
     ): AgentSession {
         $now = new \DateTimeImmutable();
         $session = new AgentSession(
@@ -233,6 +237,7 @@ final class AgentSessionService
             lastSeenAt: $now,
             sessionId: null,
             reviewResume: $reviewResume,
+            submitMode: $submitMode,
         );
         $this->add($session);
 

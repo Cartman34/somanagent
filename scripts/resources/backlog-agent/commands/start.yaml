@@ -37,6 +37,8 @@ options:
     description: 'Reviewer: proceed even when another reviewer session is active in the target WA'
   - name: '--review-resume=<on|off|default>'
     description: 'Reviewer: whether to auto-notify the reviewer session after review-request (on=always, off=never, default=use board config). Persisted in agent-sessions.json for the lifetime of the session.'
+  - name: '--submit-mode=<user|agent|default>'
+    description: 'Developer: submit policy override (user=wait for operator submit after submit-check, agent=run review-request automatically after a successful submit-check, default=use project config). Persisted in agent-sessions.json for the lifetime of the session.'
 examples:
   - 'php scripts/backlog-agent.php start claude --developer'
   - 'php scripts/backlog-agent.php start codex --watch'
@@ -66,6 +68,7 @@ notes:
   - 'Reviewer — comportement par stage : todo → refus ; development → refus (pas encore soumis) ; review → auto-pick + prompt "Démarre la review…" ; reviewing (entrée déjà possédée) → reprise + prompt "Reprends la review en cours…" ; rejected → refus (le dev doit retravailler) ; approved → refus (merge manuel via user-merge) ; done → refus.'
   - 'Reviewer: the active list is iterated in order and review-next is attempted for each review-stage entry whose developer WA is not already claimed by a running reviewer session. If a candidate was concurrently claimed by another reviewer, the launcher moves silently to the next one (retry bounded by list length). If the reviewer already owns a reviewing entry, that entry is reused instead.'
   - 'After a developer auto-pick or reviewer auto-claim, the role launch prompt from scripts/resources/backlog-agent/launch-prompts.yaml is sent as the initial user message. The prompt depends on the active stage — see launch-prompts.yaml for the full mapping.'
+  - '--submit-mode controls the end-of-cycle policy injected into the developer context. user (default): the developer stops after a successful submit-check and waits for the operator to send submit. agent: the developer runs review-request immediately after a successful submit-check without operator confirmation. default resolves to the project config value, falling back to user when the config is absent.'
   - 'Manager: no auto-pick; runs directly in WP without a WA.'
   - 'Session driver is selected by BACKLOG_AGENT_SESSION_DRIVER=tmux|direct (default: tmux).'
   - 'With the tmux driver, agent sessions use the Sowapps status-line and show the agent code on the right.'

@@ -38,6 +38,7 @@ use SoManAgent\Script\Backlog\Command\BacklogReviewRequestCommand;
 use SoManAgent\Script\Backlog\Command\BacklogStatusCommand;
 use SoManAgent\Script\Backlog\Command\BacklogEntryCreateCommand;
 use SoManAgent\Script\Backlog\Command\BacklogTaskRemoveCommand;
+use SoManAgent\Script\Backlog\Command\BacklogSubmitCheckCommand;
 use SoManAgent\Script\Backlog\Command\BacklogWorktreeCleanCommand;
 use SoManAgent\Script\Backlog\Command\BacklogWorktreeListCommand;
 use SoManAgent\Script\Backlog\Command\BacklogWorktreeRestoreCommand;
@@ -182,6 +183,7 @@ final class BacklogCommandFactory
             BacklogCommandName::USER_MERGE->value => BacklogUserMergeCommand::class,
             BacklogCommandName::REBASE->value => BacklogEntryRebaseCommand::class,
             BacklogCommandName::PRECOMMIT_CHECK->value => BacklogCommitGateCommand::class,
+            BacklogCommandName::SUBMIT_CHECK->value => BacklogSubmitCheckCommand::class,
         ];
 
         $class = $map[$commandName] ?? null;

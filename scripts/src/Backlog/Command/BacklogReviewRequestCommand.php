@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Enum\BacklogEntryMetaKey;
 use SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
@@ -91,7 +92,17 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
 
         $taskWorktree = $this->worktreeService->prepareFeatureAgentWorktree($entry);
         $newBase = $this->rebaseTaskBeforeReview($entry, $taskWorktree);
-        $this->worktreeService->runReviewScript($taskWorktree, $newBase);
+        $reviewException = null;
+        try {
+            $this->worktreeService->runReviewScript($taskWorktree, $newBase);
+        } catch (\RuntimeException $e) {
+            $reviewException = $e;
+        }
+        $this->clearSubmitReady($entry);
+        if ($reviewException !== null) {
+            $this->saveBoard($board, BacklogCommandName::REVIEW_REQUEST->value);
+            throw $reviewException;
+        }
 
         $entry->setBase($newBase);
         $entry->setStage(BacklogBoard::STAGE_PENDING_REVIEW);
@@ -135,7 +146,17 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
 
         $worktree = $this->worktreeService->prepareFeatureAgentWorktree($entry);
         $newBase = $this->rebaseFeatureBeforeReview($worktree);
-        $this->worktreeService->runReviewScript($worktree, $newBase);
+        $reviewException = null;
+        try {
+            $this->worktreeService->runReviewScript($worktree, $newBase);
+        } catch (\RuntimeException $e) {
+            $reviewException = $e;
+        }
+        $this->clearSubmitReady($entry);
+        if ($reviewException !== null) {
+            $this->saveBoard($board, BacklogCommandName::REVIEW_REQUEST->value);
+            throw $reviewException;
+        }
 
         $entry->setBase($newBase);
         $entry->setStage(BacklogBoard::STAGE_PENDING_REVIEW);
@@ -148,6 +169,20 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
         ));
 
         $this->reviewResumeNotifier->notify($board, $entry);
+    }
+
+    /**
+     * Removes the `submit-ready` metadata key from the entry.
+     *
+     * Called unconditionally before throwing on review failure and before transitioning on success.
+     */
+    private function clearSubmitReady(BoardEntry $entry): void
+    {
+        $extra = $entry->getExtraMetadata();
+        if (array_key_exists(BacklogEntryMetaKey::SUBMIT_READY->value, $extra)) {
+            unset($extra[BacklogEntryMetaKey::SUBMIT_READY->value]);
+            $entry->setExtraMetadata($extra);
+        }
     }
 
     /**

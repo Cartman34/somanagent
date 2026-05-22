@@ -114,6 +114,7 @@ MD);
         $this->assertOutputContains($this->runBacklog([BacklogCommandName::REVIEW_REJECT->value, '--help']), BacklogCommandName::REVIEW_REJECT->value);
         $this->assertOutputContains($this->runBacklog([BacklogCommandName::REVIEW_AMEND->value, '--help']), BacklogCommandName::REVIEW_AMEND->value);
         $this->assertOutputContains($this->runBacklog([BacklogCommandName::USER_MERGE->value, '--help']), BacklogCommandName::USER_MERGE->value);
+        $this->assertOutputContains($this->runBacklog([BacklogCommandName::SUBMIT_CHECK->value, '--help']), BacklogCommandName::SUBMIT_CHECK->value);
         // Regression: `help` and `help <command>` must be unknown commands, not silent aliases.
         $this->assertCommandIsUnknown('help');
         $this->assertBacklogFails(
@@ -1137,6 +1138,24 @@ MD);
     public function requestFeatureReview(string $agent): void
     {
         $this->runBacklog([BacklogCommandName::REVIEW_REQUEST->value], ['SOMANAGER_AGENT' => $agent]);
+    }
+
+    /**
+     * @param string $agent Developer agent running the pre-submit mechanical check
+     * @return string Command output
+     */
+    public function submitCheck(string $agent): string
+    {
+        return $this->runBacklog([BacklogCommandName::SUBMIT_CHECK->value], ['SOMANAGER_AGENT' => $agent]);
+    }
+
+    /**
+     * @param string $agent Developer agent running the pre-submit mechanical check
+     * @param string $needle Expected error message substring
+     */
+    public function assertSubmitCheckFails(string $agent, string $needle): void
+    {
+        $this->assertBacklogFails([BacklogCommandName::SUBMIT_CHECK->value], $needle, ['SOMANAGER_AGENT' => $agent]);
     }
 
     /**

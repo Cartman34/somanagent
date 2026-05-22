@@ -22,6 +22,7 @@ Rules:
 - The backlog board is a YAML file with three top-level keys: `version` (currently `1`), `todo` (queued priorities), and `active` (features and child tasks with workflow state in `stage`).
 - A queued entry under `todo` carries the keys `feature`, optional `task`, optional `type`, optional `developer`, `title`, and optional `body`.
 - An active entry under `active` carries the meta fields (`kind`, `stage`, `feature`, `task`, `developer`, `reviewer`, `branch`, `feature-branch`, `base`, `pr`, `blocked`, `type`), followed by `title`, optional `body`, and any extra metadata.
+- The extra metadata key `submit-ready: yes` is written by `submit-check` when the mechanical review passes, and cleared by `review-request` unconditionally. It is informational only; `review-request` does not require it to be present.
 - Local backlog files are not edited manually.
 - If a needed backlog transition or backlog mutation is not covered by an existing command, stop and ask the user before proceeding.
 

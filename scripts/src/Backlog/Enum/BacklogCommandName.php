@@ -45,6 +45,7 @@ enum BacklogCommandName: string
     case USER_MERGE = 'user-merge';
     case REBASE = 'rebase';
     case PRECOMMIT_CHECK = 'precommit-check';
+    case SUBMIT_CHECK = 'submit-check';
 
     /**
      * Returns true when this command mutates board, review, worktree, or associated state.

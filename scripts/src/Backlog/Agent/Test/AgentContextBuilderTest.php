@@ -10,6 +10,8 @@ namespace SoManAgent\Script\Backlog\Agent\Test;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
 use SoManAgent\Script\Backlog\BacklogPaths;
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Enum\SubmitMode;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Client\FilesystemClient;
 use SoManAgent\Script\TextSlugger;
@@ -60,6 +62,8 @@ final class AgentContextBuilderTest
         $failed += $this->testManagerContextWorkingDirectoryRule();
         $failed += $this->testDeveloperContextWithActiveEntryHasWorkflow();
         $failed += $this->testReviewerContextWithActiveEntryHasWorkflow();
+        $failed += $this->testDeveloperWorkflowSubmitModeUserWaitsForOperator();
+        $failed += $this->testDeveloperWorkflowSubmitModeAgentAutoReviewRequest();
 
         return $failed;
     }
@@ -368,6 +372,72 @@ final class AgentContextBuilderTest
         }
 
         echo "OK testReviewerContextWithActiveEntryHasWorkflow\n";
+        return 0;
+    }
+
+    private function testDeveloperWorkflowSubmitModeUserWaitsForOperator(): int
+    {
+        $projectRoot = $this->tmpDir . '/proj-submit-user-' . uniqid('', true);
+        mkdir(BacklogPaths::directory($projectRoot), 0755, true);
+        mkdir($projectRoot . '/doc/development', 0755, true);
+
+        $boardPath = BacklogPaths::boardPath($projectRoot);
+        file_put_contents($boardPath, $this->boardWithFeatureAtDevelopment(self::FEATURE_SLUG, 'd01'));
+
+        $worktree = $projectRoot . '/wt';
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $builder = new AgentContextBuilder($projectRoot, $boardPath, $boardService);
+
+        $path = $builder->build($worktree, 'd01', AgentRole::DEVELOPER, SubmitMode::USER);
+        $content = (string) file_get_contents($path);
+
+        $this->rmdir($projectRoot);
+
+        if (!str_contains($content, 'wait for the operator')) {
+            echo "FAIL testDeveloperWorkflowSubmitModeUserWaitsForOperator: operator-wait instruction not found\n";
+            return 1;
+        }
+        if (str_contains($content, BacklogCommandName::REVIEW_REQUEST->value) && str_contains($content, 'immediately')) {
+            echo "FAIL testDeveloperWorkflowSubmitModeUserWaitsForOperator: auto-review-request instruction must not appear in user mode\n";
+            return 1;
+        }
+
+        echo "OK testDeveloperWorkflowSubmitModeUserWaitsForOperator\n";
+        return 0;
+    }
+
+    private function testDeveloperWorkflowSubmitModeAgentAutoReviewRequest(): int
+    {
+        $projectRoot = $this->tmpDir . '/proj-submit-agent-' . uniqid('', true);
+        mkdir(BacklogPaths::directory($projectRoot), 0755, true);
+        mkdir($projectRoot . '/doc/development', 0755, true);
+
+        $boardPath = BacklogPaths::boardPath($projectRoot);
+        file_put_contents($boardPath, $this->boardWithFeatureAtDevelopment(self::FEATURE_SLUG, 'd01'));
+
+        $worktree = $projectRoot . '/wt';
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $builder = new AgentContextBuilder($projectRoot, $boardPath, $boardService);
+
+        $path = $builder->build($worktree, 'd01', AgentRole::DEVELOPER, SubmitMode::AGENT);
+        $content = (string) file_get_contents($path);
+
+        $this->rmdir($projectRoot);
+
+        if (!str_contains($content, BacklogCommandName::REVIEW_REQUEST->value)) {
+            echo "FAIL testDeveloperWorkflowSubmitModeAgentAutoReviewRequest: review-request instruction not found\n";
+            return 1;
+        }
+        if (!str_contains($content, 'immediately')) {
+            echo "FAIL testDeveloperWorkflowSubmitModeAgentAutoReviewRequest: 'immediately' keyword not found in agent-mode instruction\n";
+            return 1;
+        }
+        if (str_contains($content, 'wait for the operator')) {
+            echo "FAIL testDeveloperWorkflowSubmitModeAgentAutoReviewRequest: operator-wait instruction must not appear in agent mode\n";
+            return 1;
+        }
+
+        echo "OK testDeveloperWorkflowSubmitModeAgentAutoReviewRequest\n";
         return 0;
     }
 

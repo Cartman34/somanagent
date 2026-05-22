@@ -29,7 +29,10 @@ use SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
 use SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
+use SoManAgent\Script\Backlog\Enum\SubmitMode;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use SoManAgent\Script\Backlog\Service\BacklogConfig;
+use SoManAgent\Script\Backlog\Service\SubmitModeResolver;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Model\BoardEntryMatch;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
@@ -71,6 +74,7 @@ final class AgentStartCommand extends AbstractAgentCommand
     private ?AgentModelResolver $modelResolver;
     private AgentLaunchPromptResolver $launchPromptResolver;
     private EntryRebaseService $entryRebaseService;
+    private SubmitModeResolver $submitModeResolver;
     private bool $watchStopRequested = false;
 
     /**
@@ -142,6 +146,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         $this->shellRunner = $shellRunner;
         $this->backlogCommandRunner = $backlogCommandRunner;
         $this->entryRebaseService = $entryRebaseService;
+        $this->submitModeResolver = new SubmitModeResolver(new BacklogConfig($this->projectRoot));
         $this->modelResolver = $modelResolver;
         $this->launchPromptResolver = $launchPromptResolver ?? new AgentLaunchPromptResolver(
             dirname(__DIR__, 4) . '/resources/backlog-agent/launch-prompts.yaml',
@@ -172,6 +177,7 @@ final class AgentStartCommand extends AbstractAgentCommand
             ['name' => '--developer=<dXX>', 'description' => 'Reviewer: target the active entry assigned to this developer code'],
             ['name' => '--force', 'description' => 'Reviewer: proceed even when another reviewer session is active in the target WA'],
             ['name' => '--review-resume=<on|off|default>', 'description' => 'Reviewer: whether to auto-notify after review-request (on/off/default; default uses board config)'],
+            ['name' => '--submit-mode=<user|agent|default>', 'description' => 'Developer: submit policy override (user=wait for operator submit, agent=auto review-request after submit-check, default=use project config)'],
         ];
     }
 
@@ -208,6 +214,13 @@ final class AgentStartCommand extends AbstractAgentCommand
             'off' => false,
             'default', null => null,
             default => throw new \RuntimeException("--review-resume must be 'on', 'off', or 'default'."),
+        };
+        $submitModeRaw = $this->getSingleOption($options, 'submit-mode');
+        $submitMode = match ($submitModeRaw) {
+            'user' => SubmitMode::USER,
+            'agent' => SubmitMode::AGENT,
+            'default', null => null,
+            default => throw new \RuntimeException("--submit-mode must be 'user', 'agent', or 'default'."),
         };
 
         if ($role === AgentRole::MANAGER && $watch) {
@@ -277,6 +290,7 @@ final class AgentStartCommand extends AbstractAgentCommand
                 $originalCwd,
                 $watchClaimedRef,
                 $reviewResume,
+                $submitMode,
             );
 
             if (!$loop || $exitCode !== 0) {
@@ -303,6 +317,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         false|string $originalCwd,
         ?string $watchClaimedRef = null,
         ?bool $reviewResume = null,
+        ?SubmitMode $submitMode = null,
     ): int {
         // Resolve existing session entry and dispatch: attach live, clean ghost, or proceed to create.
         $existingSession = $this->sessionService->get($code);
@@ -430,7 +445,8 @@ final class AgentStartCommand extends AbstractAgentCommand
         }
 
         try {
-            $contextFilePath = $this->contextBuilder->build($worktree, $code, $role);
+            $effectiveSubmitMode = $this->submitModeResolver->resolve($submitMode);
+            $contextFilePath = $this->contextBuilder->build($worktree, $code, $role, $effectiveSubmitMode);
 
             $launcher->prepareWorktree($worktree, $contextFilePath);
 
@@ -447,7 +463,7 @@ final class AgentStartCommand extends AbstractAgentCommand
                 $initialPrompt,
             );
 
-            $this->sessionService->create($code, $client, $role, (int) getmypid(), $worktree, $reviewResume);
+            $this->sessionService->create($code, $client, $role, (int) getmypid(), $worktree, $reviewResume, $submitMode);
         } catch (\Throwable $e) {
             $this->rollbackReviewTransition($takenEntryRef, $takenReviewerCode);
             $this->rollbackWorkStart($takenWorkStartRef, $takenWorkStartDevCode);

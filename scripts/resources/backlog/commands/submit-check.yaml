@@ -1,0 +1,11 @@
+description: 'Run the mechanical review on the active entry without submitting it for review'
+examples:
+  - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=d10 php scripts/backlog.php submit-check'
+notes:
+  - 'The entry must be in development stage. No rebase is performed; the stage is never changed.'
+  - 'Runs the same mechanical review script used by review-request against the currently recorded base.'
+  - 'On success: writes submit-ready: yes to the entry metadata and reports the pointer to the saved report.'
+  - 'On failure: clears submit-ready from the entry metadata, reports the pointer, then exits non-zero.'
+  - 'The full report is saved to local/backlog-review-result.txt in the WA. Open it with Read for details.'
+  - 'submit-check does not prevent review-request from running: review-request is the authority for the transition to review and always reruns its own checks regardless of submit-ready.'
+  - 'review-request clears submit-ready after its own check, whether it succeeds or fails.'

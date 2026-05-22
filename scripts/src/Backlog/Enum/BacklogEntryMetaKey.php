@@ -14,4 +14,5 @@ enum BacklogEntryMetaKey: string
 {
     case DATABASE = 'database';
     case DEPENDENCY_UPDATE = 'dependency-update';
+    case SUBMIT_READY = 'submit-ready';
 }

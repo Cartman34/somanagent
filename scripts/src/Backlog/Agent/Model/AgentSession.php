@@ -10,6 +10,7 @@ namespace SoManAgent\Script\Backlog\Agent\Model;
 use SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use SoManAgent\Script\Backlog\Enum\SubmitMode;
 
 /**
  * Represents one live or stale agent session entry from agent-sessions.json.
@@ -28,6 +29,7 @@ final class AgentSession
      * @param int|null $clientPid Actual AI client process PID when known; null when the launcher cannot determine it
      * @param string|null $tmuxSession Name of the tmux session (e.g. somanagent-d01) when driver=tmux; null when driver=direct
      * @param bool|null $reviewResume Whether the review-resume notification is on (true), off (false), or default/absent (null)
+     * @param SubmitMode|null $submitMode Per-session submit policy override (null = use project config or fallback)
      */
     public function __construct(
         public readonly string $code,
@@ -41,6 +43,7 @@ final class AgentSession
         public readonly ?int $clientPid = null,
         public readonly ?string $tmuxSession = null,
         public readonly ?bool $reviewResume = null,
+        public readonly ?SubmitMode $submitMode = null,
     ) {}
 
     /**
@@ -84,6 +87,10 @@ final class AgentSession
             $data['review_resume'] = $this->reviewResume;
         }
 
+        if ($this->submitMode !== null) {
+            $data['submit_mode'] = $this->submitMode->value;
+        }
+
         return $data;
     }
 
@@ -93,6 +100,7 @@ final class AgentSession
     public static function fromArray(string $code, array $data): self
     {
         $reviewResume = $data['review_resume'] ?? null;
+        $submitModeRaw = isset($data['submit_mode']) ? (string) $data['submit_mode'] : null;
 
         return new self(
             code: $code,
@@ -106,6 +114,7 @@ final class AgentSession
             clientPid: isset($data['client_pid']) ? (int) $data['client_pid'] : null,
             tmuxSession: isset($data['tmux_session']) ? (string) $data['tmux_session'] : null,
             reviewResume: is_bool($reviewResume) ? $reviewResume : null,
+            submitMode: $submitModeRaw !== null ? SubmitMode::tryFrom($submitModeRaw) : null,
         );
     }
 
@@ -126,6 +135,7 @@ final class AgentSession
             clientPid: $this->clientPid,
             tmuxSession: $this->tmuxSession,
             reviewResume: $this->reviewResume,
+            submitMode: $this->submitMode,
         );
     }
 
@@ -146,6 +156,7 @@ final class AgentSession
             clientPid: $this->clientPid,
             tmuxSession: $this->tmuxSession,
             reviewResume: $this->reviewResume,
+            submitMode: $this->submitMode,
         );
     }
 
@@ -166,6 +177,7 @@ final class AgentSession
             clientPid: $clientPid,
             tmuxSession: $this->tmuxSession,
             reviewResume: $this->reviewResume,
+            submitMode: $this->submitMode,
         );
     }
 
@@ -186,7 +198,9 @@ final class AgentSession
             clientPid: $this->clientPid,
             tmuxSession: $tmuxSession,
             reviewResume: $this->reviewResume,
+            submitMode: $this->submitMode,
         );
     }
 
 }
+

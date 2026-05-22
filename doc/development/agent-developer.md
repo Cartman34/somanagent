@@ -29,6 +29,7 @@ The cross-role tooling and path rules in [`agent-workflow.md` — Tools And Path
 - `worktree-list`
 - `worktree-clean`
 - `worktree-restore`
+- `submit-check`
 
 ## Responsibilities
 
@@ -80,6 +81,8 @@ php scripts/backlog-agent.php start <client> --developer [--code=<dXX>]
 ```
 
 Default model profile is `balanced+medium`. The operator may override it with `--tier=economy|balanced|premium`, `--effort=low|medium|high`, or `--model=<raw-name>`.
+
+**Submit mode:** `--submit-mode=user|agent|default` controls the end-of-cycle behavior injected into the generated context. `user` (default): the agent stops after a successful `submit-check` and waits for the operator to send `submit`. `agent`: the agent runs `review-request` automatically after a successful `submit-check` without operator confirmation. `default` defers to the project config value, falling back to `user` when the config is absent. The override is persisted in `local/tmp/agent-sessions.json` for the lifetime of the session.
 
 **Auto-pick at start:** when the developer has no active entry, `start` automatically calls `start` on the first queued task and injects that entry into the generated context. If the entry was concurrently claimed by another agent between the read and the mutation, `start` silently moves to the next candidate in the todo list — the retry is bounded by the list length and never blocks. If the developer already has an active entry (e.g. after a session disconnect), `start` resumes that entry without consuming anything from the todo queue.
 
@@ -314,6 +317,20 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 7. If the mechanical review fails, the pointer is printed before the command error is raised, and the complete report remains available at the printed absolute path.
 8. If the rebase fails (typically a conflict), the rebase is aborted, the command stops with a recovery hint, the entry stays in `development`, and the mechanical review is not run. The worktree is left clean by the abort. Update the branch manually in the worktree (rebase or merge onto the target and resolve the conflicts), then rerun `review-request`.
 9. After a successful transition to `review`, if the board has `config.review_resume.enabled: true` (or the reviewer session was started with `--review-resume=on`) and the entry has a registered reviewer with a live tmux session, `review-request` injects a prompt into that session to resume the review. This notification is best-effort and never causes `review-request` to fail.
+10. `review-request` always clears the `submit-ready` metadata key from the entry, whether the mechanical review passes or fails.
+
+### `submit-check`
+
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php submit-check`.
+2. The entry must be in `development` stage. The command refuses any other stage.
+3. No rebase is performed. The stage is never changed.
+4. The command runs the mechanical review script against the currently recorded `base` commit and saves the full report to `local/backlog-review-result.txt` in the WA. Open that file with Read for details.
+5. On success: writes `submit-ready: yes` to the entry metadata.
+6. On failure: clears `submit-ready` from the entry metadata, then exits non-zero.
+7. The end-of-cycle behavior after a successful `submit-check` depends on the effective submit policy (session override `--submit-mode` → project config → fallback `user`):
+   - `user` (default): stop and wait for the operator to send `submit`.
+   - `agent`: immediately run `review-request` without operator confirmation.
+8. `submit-check` does not gate `review-request`: `review-request` can be called directly at any time and always reruns its own mechanical check.
 
 ## Rules
 
