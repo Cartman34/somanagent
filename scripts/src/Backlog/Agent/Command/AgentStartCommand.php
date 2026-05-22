@@ -166,7 +166,7 @@ final class AgentStartCommand extends AbstractAgentCommand
             ['name' => '--force-new', 'description' => 'Drop a live session and create a fresh one (developer only)'],
             ['name' => '--watch', 'description' => 'Wait for an eligible developer or reviewer entry before launching'],
             ['name' => '--watch-interval=<sec>', 'description' => 'Polling interval for --watch, in seconds (default: 2)'],
-            ['name' => '--loop', 'description' => 'With --watch, return to watching after a clean client exit'],
+            ['name' => '--loop', 'description' => 'Enable watch mode and return to watching after a clean client exit'],
             ['name' => '--feature=<slug>', 'description' => 'Reviewer: target the feature entry at stage=review with this slug'],
             ['name' => '--task=<feature/task>', 'description' => 'Reviewer: target the task entry at stage=review with this reference'],
             ['name' => '--developer=<dXX>', 'description' => 'Reviewer: target the active entry assigned to this developer code'],
@@ -193,18 +193,14 @@ final class AgentStartCommand extends AbstractAgentCommand
             ));
         }
 
-        $watch = isset($options[BacklogCliOption::WATCH->value]);
         $loop = isset($options[BacklogCliOption::LOOP->value]);
+        $watch = $loop || isset($options[BacklogCliOption::WATCH->value]);
         $role = $this->resolveRole($options, $watch);
         $reset = isset($options[BacklogCliOption::RESET->value]);
         $forceNew = isset($options[BacklogCliOption::FORCE_NEW->value]);
         $tierOverride = $this->getSingleOption($options, 'tier');
         $effortOverride = $this->getSingleOption($options, 'effort');
         $modelOverride = $this->getSingleOption($options, 'model');
-
-        if ($loop && !$watch) {
-            throw new \RuntimeException('--loop requires --watch.');
-        }
 
         if ($role === AgentRole::MANAGER && $watch) {
             throw new \RuntimeException('--watch is only supported for developer and reviewer launches.');
