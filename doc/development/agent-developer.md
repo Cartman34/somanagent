@@ -313,6 +313,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 6. The command does not print the full mechanical review report on stdout. It prints a short pointer with the global PASS/FAIL status, the saved report path `local/backlog-review-result.txt` relative to the WA, and the report length. Open that file with the client Read tool for details.
 7. If the mechanical review fails, the pointer is printed before the command error is raised, and the complete report remains available at `local/backlog-review-result.txt`.
 8. If the rebase fails (typically a conflict), the rebase is aborted, the command stops with a recovery hint, the entry stays in `development`, and the mechanical review is not run. The worktree is left clean by the abort. Update the branch manually in the worktree (rebase or merge onto the target and resolve the conflicts), then rerun `review-request`.
+9. After a successful transition to `review`, if the board has `config.review_resume.enabled: true` (or the reviewer session was started with `--review-resume=on`) and the entry has a registered reviewer with a live tmux session, `review-request` injects a prompt into that session to resume the review. This notification is best-effort and never causes `review-request` to fail.
 
 ## Rules
 

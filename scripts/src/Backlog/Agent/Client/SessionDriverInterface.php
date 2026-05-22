@@ -155,4 +155,20 @@ interface SessionDriverInterface
      * For DirectSessionDriver: 'direct'.
      */
     public function driverName(): string;
+
+    /**
+     * Injects a text prompt into the session's active pane as if the user typed it.
+     *
+     * For TmuxSessionDriver: uses `tmux send-keys` targeting session->tmuxSession.
+     * Returns false when session->tmuxSession is null or the send-keys command fails.
+     * For DirectSessionDriver: always returns false (no interactive pane concept).
+     *
+     * This method must never throw; it returns false on any failure so that callers
+     * can silently skip the notification and proceed with the main workflow.
+     *
+     * @param AgentSession $session Session to inject into
+     * @param string $text Text to send (without a trailing newline; Enter is appended)
+     * @return bool true when the injection command succeeded, false otherwise
+     */
+    public function injectPrompt(AgentSession $session, string $text): bool;
 }

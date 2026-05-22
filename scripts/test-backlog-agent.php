@@ -47,9 +47,11 @@ use SoManAgent\Script\Backlog\Agent\Test\WorktreeScriptProxyTest;
 use SoManAgent\Script\Backlog\Test\BacklogCommitGateCommandTest;
 use SoManAgent\Script\Backlog\Test\BacklogPreCommitHookTest;
 use SoManAgent\Script\Backlog\Test\BacklogReviewApproveCommandTest;
+use SoManAgent\Script\Backlog\Test\BacklogReviewRejectCommandTest;
 use SoManAgent\Script\Backlog\Test\BacklogReviewNextCommandTest;
 use SoManAgent\Script\Backlog\Test\BacklogWorktreeServiceTest;
 use SoManAgent\Script\Backlog\Test\PostMergeSessionStopperTest;
+use SoManAgent\Script\Backlog\Test\ReviewResumeNotifierTest;
 use SoManAgent\Script\Client\Test\GitClientTest;
 use SoManAgent\Script\Console;
 
@@ -83,8 +85,10 @@ $suites = [
     'BacklogCommitGateCommandTest' => static fn(): int => (new BacklogCommitGateCommandTest())->run(),
     'BacklogPreCommitHookTest' => static fn(): int => (new BacklogPreCommitHookTest())->run(),
     'BacklogReviewApproveCommandTest' => static fn(): int => (new BacklogReviewApproveCommandTest())->run(),
+    'BacklogReviewRejectCommandTest' => static fn(): int => (new BacklogReviewRejectCommandTest())->run(),
     'BacklogReviewNextCommandTest' => static fn(): int => (new BacklogReviewNextCommandTest())->run(),
     'PostMergeSessionStopperTest' => static fn(): int => (new PostMergeSessionStopperTest())->run(),
+    'ReviewResumeNotifierTest' => static fn(): int => (new ReviewResumeNotifierTest())->run(),
     'GitClientTest' => static fn(): int => (new GitClientTest())->run(),
     'WorktreeScriptProxyTest' => static fn(): int => (new WorktreeScriptProxyTest())->run(),
     'ClaudeAgentLauncherTest' => static fn(): int => (new ClaudeAgentLauncherTest())->run(),

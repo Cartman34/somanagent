@@ -27,6 +27,15 @@ final class BacklogBoard
     private array $taskSections = [];
 
     /**
+     * Board-level default for the review-resume notification feature.
+     *
+     * null  = absent from YAML config (treated as disabled)
+     * true  = enabled by board config
+     * false = explicitly disabled by board config
+     */
+    private ?bool $reviewResumeEnabled = null;
+
+    /**
      * @param string $path
      */
     public function __construct(string $path)
@@ -59,5 +68,22 @@ final class BacklogBoard
     public function setEntries(string $section, array $entries): void
     {
         $this->taskSections[$section] = $entries;
+    }
+
+    /**
+     * @return ?bool
+     */
+    public function getReviewResumeEnabled(): ?bool
+    {
+        return $this->reviewResumeEnabled;
+    }
+
+    /**
+     * @param ?bool $reviewResumeEnabled
+     * @return void
+     */
+    public function setReviewResumeEnabled(?bool $reviewResumeEnabled): void
+    {
+        $this->reviewResumeEnabled = $reviewResumeEnabled;
     }
 }

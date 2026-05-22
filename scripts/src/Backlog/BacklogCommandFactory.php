@@ -42,6 +42,7 @@ use SoManAgent\Script\Backlog\Command\BacklogWorktreeCleanCommand;
 use SoManAgent\Script\Backlog\Command\BacklogWorktreeListCommand;
 use SoManAgent\Script\Backlog\Command\BacklogWorktreeRestoreCommand;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use SoManAgent\Script\Backlog\Service\BacklogPermissionService;
@@ -58,6 +59,7 @@ use SoManAgent\Script\Client\GitHubClient;
 use SoManAgent\Script\Client\ProjectScriptClient;
 use SoManAgent\Script\Console;
 use SoManAgent\Script\Backlog\Service\EntryRebaseService;
+use SoManAgent\Script\Backlog\Service\ReviewResumeNotifier;
 use SoManAgent\Script\Service\GitService;
 use SoManAgent\Script\Service\PullRequestService;
 use SoManAgent\Script\TextSlugger;
@@ -100,6 +102,8 @@ final class BacklogCommandFactory
     private ?BodyFilePathResolver $bodyFilePathResolver = null;
     private ?EntryRebaseService $entryRebaseService = null;
     private ?PostMergeSessionStopper $postMergeSessionStopper = null;
+    private ?ReviewResumeNotifier $reviewResumeNotifier = null;
+    private SessionDriverInterface $sessionDriver;
 
     /**
      * Constructor.
@@ -109,8 +113,10 @@ final class BacklogCommandFactory
      * @param bool $dryRun Whether to run in dry-run mode
      * @param bool $verbose Whether to enable verbose logging
      * @param string $projectRoot The project root path
+     * @param string $worktreesRoot Absolute path to the managed worktrees directory
      * @param string $boardPath The board path
      * @param string $reviewFilePath The review file path
+     * @param SessionDriverInterface $sessionDriver Session driver for reviewer notification
      */
     public function __construct(
         Application $app,
@@ -120,7 +126,8 @@ final class BacklogCommandFactory
         string $projectRoot,
         string $worktreesRoot,
         string $boardPath,
-        string $reviewFilePath
+        string $reviewFilePath,
+        SessionDriverInterface $sessionDriver,
     ) {
         $this->app = $app;
         $this->console = $console;
@@ -130,6 +137,7 @@ final class BacklogCommandFactory
         $this->worktreesRoot = $worktreesRoot;
         $this->boardPath = $boardPath;
         $this->reviewFilePath = $reviewFilePath;
+        $this->sessionDriver = $sessionDriver;
     }
 
     /**
@@ -224,6 +232,7 @@ final class BacklogCommandFactory
                 BacklogFeatureTaskMergeCommand::class => $this->getFeatureTaskMergeCommand(),
                 EntryRebaseService::class => $this->getEntryRebaseService(),
                 PostMergeSessionStopper::class => $this->getPostMergeSessionStopper(),
+                ReviewResumeNotifier::class => $this->getReviewResumeNotifier(),
                 self::class => $this,
                 default => throw new \RuntimeException('Unable to inject ' . $type->getName()),
             };
@@ -543,5 +552,19 @@ final class BacklogCommandFactory
         }
 
         return $this->postMergeSessionStopper;
+    }
+
+    private function getReviewResumeNotifier(): ReviewResumeNotifier
+    {
+        if ($this->reviewResumeNotifier === null) {
+            $this->reviewResumeNotifier = new ReviewResumeNotifier(
+                $this->getAgentSessionService(),
+                $this->sessionDriver,
+                $this->getBoardService(),
+                $this->worktreesRoot,
+            );
+        }
+
+        return $this->reviewResumeNotifier;
     }
 }

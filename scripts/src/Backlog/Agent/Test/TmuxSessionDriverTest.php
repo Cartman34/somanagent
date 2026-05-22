@@ -28,6 +28,7 @@ final class TmuxSessionDriverTest
     private const TMUX_KILL_SESSION = 'kill-session';
     private const TMUX_SET_OPTION = 'set-option';
     private const TMUX_HISTORY_LIMIT = 'history-limit';
+    private const TMUX_SEND_KEYS = 'send-keys';
 
     /**
      * Runs all test cases and returns the total number of failures.
@@ -58,6 +59,9 @@ final class TmuxSessionDriverTest
         $failed += $this->testListLiveSessionsFiltersPrefix();
         $failed += $this->testListLiveSessionsReturnsEmptyWhenNoOutput();
         $failed += $this->testKillCallsKillSession();
+        $failed += $this->testInjectPromptCallsSendKeys();
+        $failed += $this->testInjectPromptReturnsFalseWhenTmuxSessionNull();
+        $failed += $this->testInjectPromptReturnsFalseWhenSendKeysFails();
 
         return $failed;
     }
@@ -610,6 +614,96 @@ final class TmuxSessionDriverTest
             return 1;
         }
         echo "OK testKillCallsKillSession\n";
+        return 0;
+    }
+
+    /**
+     * injectPrompt() must call `tmux send-keys -t <session> <text> Enter` and return true.
+     */
+    private function testInjectPromptCallsSendKeys(): int
+    {
+        $runner = new RecordingProcessRunner();
+
+        $driver = new TmuxSessionDriver($runner, Console::getInstance());
+        $session = $this->makeSession('d01', tmuxSession: self::SESSION_D01);
+
+        $result = $driver->injectPrompt($session, 'hello world');
+
+        if (!$result) {
+            echo "FAIL testInjectPromptCallsSendKeys: expected true return\n";
+            return 1;
+        }
+
+        $sendCalls = array_filter($runner->calledCommands, fn(string $c): bool => str_contains($c, self::TMUX_SEND_KEYS));
+        if ($sendCalls === []) {
+            echo "FAIL testInjectPromptCallsSendKeys: tmux send-keys was not called\n";
+            return 1;
+        }
+
+        $cmd = reset($sendCalls);
+        if (!str_contains($cmd, self::SESSION_D01)) {
+            echo "FAIL testInjectPromptCallsSendKeys: send-keys did not target " . self::SESSION_D01 . ": {$cmd}\n";
+            return 1;
+        }
+        if (!str_contains($cmd, 'hello world')) {
+            echo "FAIL testInjectPromptCallsSendKeys: send-keys did not include prompt text: {$cmd}\n";
+            return 1;
+        }
+        if (!str_contains($cmd, 'Enter')) {
+            echo "FAIL testInjectPromptCallsSendKeys: send-keys did not include Enter: {$cmd}\n";
+            return 1;
+        }
+
+        echo "OK testInjectPromptCallsSendKeys\n";
+        return 0;
+    }
+
+    /**
+     * injectPrompt() must return false without calling tmux when tmuxSession is null.
+     */
+    private function testInjectPromptReturnsFalseWhenTmuxSessionNull(): int
+    {
+        $runner = new RecordingProcessRunner();
+
+        $driver = new TmuxSessionDriver($runner, Console::getInstance());
+        $session = $this->makeSession('d01', tmuxSession: null);
+
+        $result = $driver->injectPrompt($session, 'hello');
+
+        if ($result) {
+            echo "FAIL testInjectPromptReturnsFalseWhenTmuxSessionNull: expected false\n";
+            return 1;
+        }
+
+        $sendCalls = array_filter($runner->calledCommands, fn(string $c): bool => str_contains($c, self::TMUX_SEND_KEYS));
+        if ($sendCalls !== []) {
+            echo "FAIL testInjectPromptReturnsFalseWhenTmuxSessionNull: send-keys was called despite null tmuxSession\n";
+            return 1;
+        }
+
+        echo "OK testInjectPromptReturnsFalseWhenTmuxSessionNull\n";
+        return 0;
+    }
+
+    /**
+     * injectPrompt() must return false when the tmux send-keys command fails.
+     */
+    private function testInjectPromptReturnsFalseWhenSendKeysFails(): int
+    {
+        $runner = new FakeProcessRunner();
+        $runner->succeedsResult = false;
+
+        $driver = new TmuxSessionDriver($runner, Console::getInstance());
+        $session = $this->makeSession('d01', tmuxSession: self::SESSION_D01);
+
+        $result = $driver->injectPrompt($session, 'hello');
+
+        if ($result) {
+            echo "FAIL testInjectPromptReturnsFalseWhenSendKeysFails: expected false when send-keys fails\n";
+            return 1;
+        }
+
+        echo "OK testInjectPromptReturnsFalseWhenSendKeysFails\n";
         return 0;
     }
 

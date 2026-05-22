@@ -186,6 +186,16 @@ final class DirectSessionDriver implements SessionDriverInterface
     /**
      * {@inheritdoc}
      *
+     * The direct driver has no interactive pane concept — always returns false.
+     */
+    public function injectPrompt(AgentSession $session, string $text): bool
+    {
+        return false;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * Checks session->clientPid first, then session->pid via ProcessSignaler.
      */
     public function isAlive(AgentSession $session): bool

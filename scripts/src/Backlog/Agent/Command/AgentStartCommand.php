@@ -171,6 +171,7 @@ final class AgentStartCommand extends AbstractAgentCommand
             ['name' => '--task=<feature/task>', 'description' => 'Reviewer: target the task entry at stage=review with this reference'],
             ['name' => '--developer=<dXX>', 'description' => 'Reviewer: target the active entry assigned to this developer code'],
             ['name' => '--force', 'description' => 'Reviewer: proceed even when another reviewer session is active in the target WA'],
+            ['name' => '--review-resume=<on|off|default>', 'description' => 'Reviewer: whether to auto-notify after review-request (on/off/default; default uses board config)'],
         ];
     }
 
@@ -201,6 +202,13 @@ final class AgentStartCommand extends AbstractAgentCommand
         $tierOverride = $this->getSingleOption($options, 'tier');
         $effortOverride = $this->getSingleOption($options, 'effort');
         $modelOverride = $this->getSingleOption($options, 'model');
+        $reviewResumeRaw = $this->getSingleOption($options, 'review-resume');
+        $reviewResume = match ($reviewResumeRaw) {
+            'on' => true,
+            'off' => false,
+            'default', null => null,
+            default => throw new \RuntimeException("--review-resume must be 'on', 'off', or 'default'."),
+        };
 
         if ($role === AgentRole::MANAGER && $watch) {
             throw new \RuntimeException('--watch is only supported for developer and reviewer launches.');
@@ -268,6 +276,7 @@ final class AgentStartCommand extends AbstractAgentCommand
                 $resolvedModel,
                 $originalCwd,
                 $watchClaimedRef,
+                $reviewResume,
             );
 
             if (!$loop || $exitCode !== 0) {
@@ -293,6 +302,7 @@ final class AgentStartCommand extends AbstractAgentCommand
         ?ResolvedModel $resolvedModel,
         false|string $originalCwd,
         ?string $watchClaimedRef = null,
+        ?bool $reviewResume = null,
     ): int {
         // Resolve existing session entry and dispatch: attach live, clean ghost, or proceed to create.
         $existingSession = $this->sessionService->get($code);
@@ -437,7 +447,7 @@ final class AgentStartCommand extends AbstractAgentCommand
                 $initialPrompt,
             );
 
-            $this->sessionService->create($code, $client, $role, (int) getmypid(), $worktree);
+            $this->sessionService->create($code, $client, $role, (int) getmypid(), $worktree, $reviewResume);
         } catch (\Throwable $e) {
             $this->rollbackReviewTransition($takenEntryRef, $takenReviewerCode);
             $this->rollbackWorkStart($takenWorkStartRef, $takenWorkStartDevCode);

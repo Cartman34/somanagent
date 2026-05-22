@@ -66,6 +66,7 @@ final class BoardYamlStorage
 
         $board->setEntries(BacklogBoard::SECTION_TODO, $this->loadTodoEntries($data['todo'] ?? []));
         $board->setEntries(BacklogBoard::SECTION_ACTIVE, $this->loadActiveEntries($data['active'] ?? []));
+        $board->setReviewResumeEnabled($this->loadReviewResumeEnabled($data['config'] ?? null));
 
         return $board;
     }
@@ -77,9 +78,15 @@ final class BoardYamlStorage
     {
         $data = [
             'version' => self::VERSION,
-            'todo' => $this->dumpTodoEntries($board->getEntries(BacklogBoard::SECTION_TODO)),
-            'active' => $this->dumpActiveEntries($board->getEntries(BacklogBoard::SECTION_ACTIVE)),
         ];
+
+        $config = $this->dumpConfig($board);
+        if ($config !== null) {
+            $data['config'] = $config;
+        }
+
+        $data['todo'] = $this->dumpTodoEntries($board->getEntries(BacklogBoard::SECTION_TODO));
+        $data['active'] = $this->dumpActiveEntries($board->getEntries(BacklogBoard::SECTION_ACTIVE));
 
         $yaml = self::compactNestedListMappings(
             Yaml::dump($data, 4, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE),
@@ -288,6 +295,45 @@ final class BoardYamlStorage
         );
 
         return implode("\n", $stripped) . "\n";
+    }
+
+    /**
+     * Extracts `config.review_resume.enabled` from the raw YAML config block.
+     *
+     * Returns null when the key is absent (treated as disabled by the notifier).
+     *
+     * @param mixed $config Raw value from YAML key `config`
+     */
+    private function loadReviewResumeEnabled(mixed $config): ?bool
+    {
+        if (!is_array($config)) {
+            return null;
+        }
+        $reviewResume = $config['review_resume'] ?? null;
+        if (!is_array($reviewResume)) {
+            return null;
+        }
+        $enabled = $reviewResume['enabled'] ?? null;
+        if (!is_bool($enabled)) {
+            return null;
+        }
+
+        return $enabled;
+    }
+
+    /**
+     * Builds the `config` block for YAML output, or returns null when all config values are absent.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function dumpConfig(BacklogBoard $board): ?array
+    {
+        $enabled = $board->getReviewResumeEnabled();
+        if ($enabled === null) {
+            return null;
+        }
+
+        return ['review_resume' => ['enabled' => $enabled]];
     }
 
     private function str(mixed $value): ?string

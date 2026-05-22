@@ -27,6 +27,7 @@ final class AgentSession
      * @param string|null $sessionId Optional client-specific session identifier
      * @param int|null $clientPid Actual AI client process PID when known; null when the launcher cannot determine it
      * @param string|null $tmuxSession Name of the tmux session (e.g. somanagent-d01) when driver=tmux; null when driver=direct
+     * @param bool|null $reviewResume Whether the review-resume notification is on (true), off (false), or default/absent (null)
      */
     public function __construct(
         public readonly string $code,
@@ -39,6 +40,7 @@ final class AgentSession
         public readonly ?string $sessionId,
         public readonly ?int $clientPid = null,
         public readonly ?string $tmuxSession = null,
+        public readonly ?bool $reviewResume = null,
     ) {}
 
     /**
@@ -66,7 +68,7 @@ final class AgentSession
      */
     public function toArray(): array
     {
-        return [
+        $data = [
             'client' => $this->client->value,
             'role' => $this->role->value,
             'pid' => $this->pid,
@@ -77,6 +79,12 @@ final class AgentSession
             'last_seen_at' => $this->lastSeenAt->format(\DateTimeInterface::ATOM),
             'session_id' => $this->sessionId,
         ];
+
+        if ($this->reviewResume !== null) {
+            $data['review_resume'] = $this->reviewResume;
+        }
+
+        return $data;
     }
 
     /**
@@ -84,6 +92,8 @@ final class AgentSession
      */
     public static function fromArray(string $code, array $data): self
     {
+        $reviewResume = $data['review_resume'] ?? null;
+
         return new self(
             code: $code,
             client: AgentClient::from((string) ($data['client'] ?? '')),
@@ -95,6 +105,7 @@ final class AgentSession
             sessionId: isset($data['session_id']) ? (string) $data['session_id'] : null,
             clientPid: isset($data['client_pid']) ? (int) $data['client_pid'] : null,
             tmuxSession: isset($data['tmux_session']) ? (string) $data['tmux_session'] : null,
+            reviewResume: is_bool($reviewResume) ? $reviewResume : null,
         );
     }
 
@@ -114,6 +125,7 @@ final class AgentSession
             sessionId: $this->sessionId,
             clientPid: $this->clientPid,
             tmuxSession: $this->tmuxSession,
+            reviewResume: $this->reviewResume,
         );
     }
 
@@ -133,6 +145,7 @@ final class AgentSession
             sessionId: $sessionId,
             clientPid: $this->clientPid,
             tmuxSession: $this->tmuxSession,
+            reviewResume: $this->reviewResume,
         );
     }
 
@@ -152,6 +165,7 @@ final class AgentSession
             sessionId: $this->sessionId,
             clientPid: $clientPid,
             tmuxSession: $this->tmuxSession,
+            reviewResume: $this->reviewResume,
         );
     }
 
@@ -171,6 +185,8 @@ final class AgentSession
             sessionId: $this->sessionId,
             clientPid: $this->clientPid,
             tmuxSession: $tmuxSession,
+            reviewResume: $this->reviewResume,
         );
     }
+
 }

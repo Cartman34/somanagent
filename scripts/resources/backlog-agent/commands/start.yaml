@@ -35,6 +35,8 @@ options:
     description: 'Reviewer: target the active entry assigned to this developer code'
   - name: '--force'
     description: 'Reviewer: proceed even when another reviewer session is active in the target WA'
+  - name: '--review-resume=<on|off|default>'
+    description: 'Reviewer: whether to auto-notify the reviewer session after review-request (on=always, off=never, default=use board config). Persisted in agent-sessions.json for the lifetime of the session.'
 examples:
   - 'php scripts/backlog-agent.php start claude --developer'
   - 'php scripts/backlog-agent.php start codex --watch'

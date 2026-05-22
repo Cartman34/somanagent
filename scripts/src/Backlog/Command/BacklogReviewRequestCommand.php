@@ -14,6 +14,7 @@ use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
+use SoManAgent\Script\Backlog\Service\ReviewResumeNotifier;
 use SoManAgent\Script\Service\GitService;
 
 /**
@@ -31,6 +32,8 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
 
     private GitService $gitService;
 
+    private ReviewResumeNotifier $reviewResumeNotifier;
+
     /**
      * @param BacklogPresenter $presenter
      * @param bool $dryRun
@@ -38,6 +41,7 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
      * @param BacklogBoardService $boardService
      * @param BacklogWorktreeService $worktreeService
      * @param GitService $gitService
+     * @param ReviewResumeNotifier $reviewResumeNotifier
      */
     public function __construct(
         BacklogPresenter $presenter,
@@ -45,11 +49,13 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
         string $projectRoot,
         BacklogBoardService $boardService,
         BacklogWorktreeService $worktreeService,
-        GitService $gitService
+        GitService $gitService,
+        ReviewResumeNotifier $reviewResumeNotifier,
     ) {
         parent::__construct($presenter, $dryRun, $projectRoot, $boardService);
         $this->worktreeService = $worktreeService;
         $this->gitService = $gitService;
+        $this->reviewResumeNotifier = $reviewResumeNotifier;
     }
 
     /**
@@ -98,6 +104,8 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
             $this->boardService->getTaskReviewKey($entry),
             $this->boardService->getStageLabel(BacklogBoard::STAGE_PENDING_REVIEW),
         ));
+
+        $this->reviewResumeNotifier->notify($board, $entry);
     }
 
     private function handleFeature(string $agent, BacklogBoard $board, BoardEntry $entry): void
@@ -138,6 +146,8 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
             $feature,
             $this->boardService->getStageLabel(BacklogBoard::STAGE_PENDING_REVIEW),
         ));
+
+        $this->reviewResumeNotifier->notify($board, $entry);
     }
 
     /**

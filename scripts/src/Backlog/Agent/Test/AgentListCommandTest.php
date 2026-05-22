@@ -389,6 +389,14 @@ final class AgentListCommandTest
             {
                 return 'fake';
             }
+
+            /**
+             * {@inheritdoc}
+             */
+            public function injectPrompt(AgentSession $session, string $text): bool
+            {
+                return false;
+            }
         };
     }
 

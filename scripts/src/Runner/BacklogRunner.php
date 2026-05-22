@@ -7,6 +7,10 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Runner;
 
+use SoManAgent\Script\Backlog\Agent\Client\DirectSessionDriver;
+use SoManAgent\Script\Backlog\Agent\Client\ShellProcessRunner;
+use SoManAgent\Script\Backlog\Agent\Client\SystemInteractiveProcessRunner;
+use SoManAgent\Script\Backlog\Agent\Client\TmuxSessionDriver;
 use SoManAgent\Script\Backlog\BacklogCommandFactory;
 use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
@@ -221,6 +225,16 @@ final class BacklogRunner extends AbstractScriptRunner
     private function commandFactory(): BacklogCommandFactory
     {
         if ($this->commandFactory === null) {
+            $driverName = (string) (getenv('BACKLOG_AGENT_SESSION_DRIVER') ?: 'tmux');
+            $sessionDriver = match ($driverName) {
+                'direct' => new DirectSessionDriver(
+                    new SystemInteractiveProcessRunner(),
+                    new \SoManAgent\Script\Backlog\Agent\Client\PosixProcessSignaler(),
+                    $this->console,
+                ),
+                default => new TmuxSessionDriver(new ShellProcessRunner(), $this->console),
+            };
+
             $this->commandFactory = new BacklogCommandFactory(
                 $this->app,
                 $this->console,
@@ -229,7 +243,8 @@ final class BacklogRunner extends AbstractScriptRunner
                 $this->projectRoot,
                 $this->resolvedWorktreesRoot(),
                 $this->boardPath(),
-                $this->reviewFilePath()
+                $this->reviewFilePath(),
+                $sessionDriver,
             );
         }
 

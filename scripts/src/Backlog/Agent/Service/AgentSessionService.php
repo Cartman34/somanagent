@@ -173,6 +173,7 @@ final class AgentSessionService
             sessionId: $session->sessionId,
             clientPid: $session->clientPid,
             tmuxSession: $session->tmuxSession,
+            reviewResume: $session->reviewResume,
         );
         $this->save($sessions);
     }
@@ -210,6 +211,8 @@ final class AgentSessionService
 
     /**
      * Creates a new session entry from raw parameters.
+     *
+     * @param bool|null $reviewResume Override for the review-resume notification feature (null = default)
      */
     public function create(
         string $code,
@@ -217,6 +220,7 @@ final class AgentSessionService
         AgentRole $role,
         int $pid,
         string $worktree,
+        ?bool $reviewResume = null,
     ): AgentSession {
         $now = new \DateTimeImmutable();
         $session = new AgentSession(
@@ -228,6 +232,7 @@ final class AgentSessionService
             startedAt: $now,
             lastSeenAt: $now,
             sessionId: null,
+            reviewResume: $reviewResume,
         );
         $this->add($session);
 
