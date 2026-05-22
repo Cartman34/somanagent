@@ -16,6 +16,9 @@ use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
  * Feature review lifecycle campaign
  *
  * Tests the complete workflow of feature reviews including reject, rework, approve, block, and merge.
+ * The merge scenario exercises the real-worktree path: the developer's worktree is present on disk
+ * at approved stage, and the test asserts that the merge removes the worktree, deletes the local
+ * branch, and clears the board entry.
  */
 final class FeatureReviewLifecycleCampaign implements CampaignInterface
 {
@@ -158,10 +161,19 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $driver->assertStatusContains($context->fixFeature, 'Blocker: blocked');
         $driver->unblockFeature($context->agentPrimary, $context->fixFeature);
 
+        // At approved stage the developer worktree is still present on disk; the merge must remove it.
+        $driver->assertManagedWorktreeExists($context->agentPrimary);
+
         // Save the board state at approved stage to simulate a retry after a partial failure.
         $boardSnapshotBeforeMerge = $driver->getBoardText();
 
         $driver->mergeFeature($context->fixFeature);
+        // (a) merge completed without error (mergeFeature throws on failure)
+        // (b) developer worktree removed from disk
+        $driver->assertManagedWorktreeGone($context->agentPrimary);
+        // (c) local feature branch deleted
+        $driver->assertLocalBranchGone('fix/' . $context->fixFeature);
+        // (d) entry no longer in the board
         $driver->assertActiveFeatureMissing($context->fixFeature);
 
         // Idempotent retry scenario: restore the board to approved stage (simulates a crash

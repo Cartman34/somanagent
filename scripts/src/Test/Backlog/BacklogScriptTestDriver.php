@@ -1613,6 +1613,55 @@ MD);
     }
 
     /**
+     * Asserts that the agent's managed worktree directory exists on disk.
+     *
+     * @param string $agent Agent code
+     */
+    public function assertManagedWorktreeExists(string $agent): void
+    {
+        if (!is_dir($this->managedWorktreePath($agent))) {
+            throw new \RuntimeException(sprintf(
+                'Expected developer worktree to exist on disk for agent %s: %s',
+                $agent,
+                $this->relativePath($this->managedWorktreePath($agent)),
+            ));
+        }
+    }
+
+    /**
+     * Asserts that the agent's managed worktree directory no longer exists on disk.
+     *
+     * @param string $agent Agent code
+     */
+    public function assertManagedWorktreeGone(string $agent): void
+    {
+        if (is_dir($this->managedWorktreePath($agent))) {
+            throw new \RuntimeException(sprintf(
+                'Expected developer worktree to be deleted after merge, but still exists: %s',
+                $this->relativePath($this->managedWorktreePath($agent)),
+            ));
+        }
+    }
+
+    /**
+     * Asserts that the given local branch no longer exists in the git repository.
+     *
+     * @param string $branch Local branch name
+     */
+    public function assertLocalBranchGone(string $branch): void
+    {
+        [, $output] = $this->consoleClient->captureWithExitCode(
+            sprintf('git branch --list %s', escapeshellarg($branch)),
+        );
+        if (trim($output) !== '') {
+            throw new \RuntimeException(sprintf(
+                'Expected local branch %s to be deleted after merge, but it still exists.',
+                $branch,
+            ));
+        }
+    }
+
+    /**
      * @param list<string> $needles
      */
     public function assertOutputContainsAll(string $output, array $needles): void
