@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Test\Backlog\Campaign;
 
+use SoManAgent\Script\Backlog\BacklogPaths;
 use SoManAgent\Script\Backlog\Command\BacklogReviewNotesCommand;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
@@ -86,7 +87,10 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $driver->assertContains($reviewCheckOutput, 'Entry-ref: ' . $taskARef);
         $driver->assertContains($reviewCheckOutput, 'Branch: feat/' . $context->scopedFeature . '--' . $context->childA);
         $driver->assertContains($reviewCheckOutput, 'Mechanical review status: PASS');
-        $driver->assertContains($reviewCheckOutput, 'Review report saved to local/backlog-review-result.txt');
+        $driver->assertContains(
+            $reviewCheckOutput,
+            'Review report saved to ' . BacklogPaths::reviewResultPath($driver->managedWorktreePath($context->agentPrimary)),
+        );
         $driver->assertReviewRejectFails($context->agentSecondary, $taskARef, $invalidRejectBody, 'Review body items must be plain findings');
         $driver->rejectReviewViaUnifiedCommand($context->agentSecondary, $taskARef, $rejectBody);
         $driver->assertReviewContains($taskARef);

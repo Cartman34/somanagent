@@ -164,7 +164,7 @@ Rules:
 3. The script runs the mechanical review for the matching entry kind.
 4. Short task references (bare task slug without the parent feature) are refused; use `<entry-ref>`.
 5. The caller context identifies the reviewer and is required.
-6. The command does not print the full mechanical review report on stdout. It prints a short pointer with the global PASS/FAIL status, the saved report path `local/backlog-review-result.txt` relative to the WA, and the report length. Open that file with the client Read tool for details.
+6. The command does not print the full mechanical review report on stdout. It prints a short pointer with the global PASS/FAIL status, the saved report absolute path in the WA, and the report length. Open that file with the client Read tool for details.
 7. If the mechanical review fails, the pointer is printed before the command error is raised, and the entry is automatically rejected with a standard message.
 
 **Blocker vs nit classification.** A finding is a **blocker** whenever it concerns anything the task description, body, or declared scope explicitly calls for. The size of the gap does not matter — "the task says X, the code does not deliver X" is always a blocker, never a nit. A nit is reserved for observations outside the declared scope: proposed code improvements (minor refactor, readability tweak, potential factorization), marginal naming refinement, local style inconsistency, optional optimization, alternative phrasing of a comment. When in doubt, lean toward blocker; reclassifying a scope item as a nit lets the requested work ship incomplete.
