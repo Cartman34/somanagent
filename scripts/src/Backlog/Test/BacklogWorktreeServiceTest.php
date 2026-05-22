@@ -47,6 +47,8 @@ final class BacklogWorktreeServiceTest
         $failed += $this->testRunReviewScriptPersistsFullOutputAndPrintsPointerBeforeFailure();
         $failed += $this->testCleanupAbandonedWorktreeChdirsToProjectRootWhenCwdIsInside();
         $failed += $this->testCleanupAbandonedWorktreeLeavesCwdUnchangedWhenOutside();
+        $failed += $this->testRemoveDeveloperWorktreeDestroysWorktreeWhenPresent();
+        $failed += $this->testRemoveDeveloperWorktreeIsNoopWhenAbsent();
 
         return $failed;
     }
@@ -325,6 +327,57 @@ final class BacklogWorktreeServiceTest
         }
 
         echo "OK testCleanupAbandonedWorktreeLeavesCwdUnchangedWhenOutside\n";
+        return 0;
+    }
+
+    private function testRemoveDeveloperWorktreeDestroysWorktreeWhenPresent(): int
+    {
+        $agent = 'test-d10-remove-dev-' . $this->uniqueToken();
+        $worktreesRoot = $this->projectRoot . '/local/tests/worktree-service';
+        $worktree = $worktreesRoot . '/' . $agent;
+
+        $this->runCommand(sprintf(
+            'git -C %s worktree add --detach %s',
+            escapeshellarg($this->projectRoot),
+            escapeshellarg($worktree),
+        ));
+
+        try {
+            $service = $this->createService($worktreesRoot);
+            $service->removeDeveloperWorktree($agent);
+
+            if (file_exists($worktree)) {
+                echo "FAIL testRemoveDeveloperWorktreeDestroysWorktreeWhenPresent: worktree path still exists after removal\n";
+                return 1;
+            }
+        } finally {
+            $this->pruneLinkedWorktreeIfExists($worktree);
+        }
+
+        echo "OK testRemoveDeveloperWorktreeDestroysWorktreeWhenPresent\n";
+        return 0;
+    }
+
+    private function testRemoveDeveloperWorktreeIsNoopWhenAbsent(): int
+    {
+        $agent = 'test-d10-remove-dev-absent-' . $this->uniqueToken();
+        $worktreesRoot = $this->projectRoot . '/local/tests/worktree-service';
+        $worktree = $worktreesRoot . '/' . $agent;
+
+        try {
+            $service = $this->createService($worktreesRoot);
+            $service->removeDeveloperWorktree($agent);
+
+            if (file_exists($worktree)) {
+                echo "FAIL testRemoveDeveloperWorktreeIsNoopWhenAbsent: worktree path appeared unexpectedly\n";
+                return 1;
+            }
+        } catch (\Throwable $e) {
+            echo "FAIL testRemoveDeveloperWorktreeIsNoopWhenAbsent: unexpected exception: {$e->getMessage()}\n";
+            return 1;
+        }
+
+        echo "OK testRemoveDeveloperWorktreeIsNoopWhenAbsent\n";
         return 0;
     }
 

@@ -477,6 +477,31 @@ final class BacklogWorktreeService
     }
 
     /**
+     * Removes the developer agent worktree unconditionally.
+     *
+     * Idempotent: if the worktree path does not exist, returns silently.
+     * Unlike {@see cleanupManagedWorktreesForBranch}, this method does not consult
+     * the board or {@see classifyWorktrees} — it targets the developer path directly,
+     * making it safe to call during feature-merge regardless of board state.
+     *
+     * @param string $developerCode The developer agent code (e.g. 'd10')
+     * @return void
+     */
+    public function removeDeveloperWorktree(string $developerCode): void
+    {
+        if ($developerCode === '') {
+            return;
+        }
+
+        $path = $this->worktreesRoot . '/' . $developerCode;
+        if (!$this->fs->checkPathExists($path)) {
+            return;
+        }
+
+        $this->removeSafeWorktree($path);
+    }
+
+    /**
      * @param string $branch The branch name
      * @param BacklogBoard $board The backlog board
      * @return int The number of cleaned worktrees
