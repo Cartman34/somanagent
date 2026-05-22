@@ -593,10 +593,10 @@ final class BacklogWorktreeService
             : '';
         [$code, $output] = $this->scripts->captureWithExitCode(AppScript::REVIEW, $arguments, projectRoot: $worktree);
 
-        $resultPath = $worktree . '/' . BacklogPaths::REVIEW_RESULT;
+        $resultPath = BacklogPaths::reviewResultPath($worktree);
         $this->fs->makeDirectory(dirname($resultPath));
         $this->fs->writeFilePath($resultPath, $output);
-        $this->displayReviewResultPointer($output, $code === 0);
+        $this->displayReviewResultPointer($output, $code === 0, $resultPath);
 
         if ($code !== 0) {
             throw new \RuntimeException("Review script failed with exit code {$code}.");
@@ -609,7 +609,7 @@ final class BacklogWorktreeService
      */
     public function loadReviewResult(string $worktree): ?string
     {
-        $path = $worktree . '/' . BacklogPaths::REVIEW_RESULT;
+        $path = BacklogPaths::reviewResultPath($worktree);
 
         return $this->fs->isFile($path) ? $this->fs->getFileContents($path) : null;
     }
@@ -619,9 +619,10 @@ final class BacklogWorktreeService
      *
      * @param string $output The saved review output
      * @param bool $passed Whether the mechanical review passed
+     * @param string $resultPath Absolute path to the saved review output
      * @return void
      */
-    public function displayReviewResultPointer(string $output, bool $passed): void
+    public function displayReviewResultPointer(string $output, bool $passed, string $resultPath): void
     {
         $status = $passed ? 'PASS' : 'FAIL';
         $bytes = strlen($output);
@@ -633,7 +634,7 @@ final class BacklogWorktreeService
         echo "Mechanical review status: {$status}\n";
         echo sprintf(
             "Review report saved to %s (%d bytes, %d lines).\n",
-            BacklogPaths::REVIEW_RESULT,
+            $resultPath,
             $bytes,
             $lines,
         );

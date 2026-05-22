@@ -11,5 +11,5 @@ notes:
   - 'Short task references (bare task slug without the parent feature) are refused; use <entry-ref>.'
   - 'The entry must be in the review or reviewing stage.'
   - 'Before mechanical results, the command prints `Entry-ref:` and `Branch:`; copy `Entry-ref:` for follow-up commands.'
-  - 'The command does not print the full mechanical review report on stdout. It prints a short pointer with the global PASS/FAIL status, the saved report path (local/backlog-review-result.txt relative to the WA), and the report length. Open that file with the Read tool for details.'
+  - 'The command does not print the full mechanical review report on stdout. It prints a short pointer with the global PASS/FAIL status, the saved report absolute path in the WA, and the report length. Open that file with the Read tool for details.'
   - 'On mechanical review failure, the pointer is printed before the command error is raised, and the entry is automatically rejected with generated review notes.'

@@ -77,8 +77,8 @@ final class BacklogWorktreeServiceTest
                 echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerOnSuccess: PASS status missing\n";
                 return 1;
             }
-            if (!str_contains($stdout, 'Review report saved to ' . BacklogPaths::REVIEW_RESULT)) {
-                echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerOnSuccess: pointer missing\n";
+            if (!str_contains($stdout, 'Review report saved to ' . $resultPath)) {
+                echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerOnSuccess: absolute pointer missing\n";
                 return 1;
             }
             if (str_contains($stdout, 'FULL-REPORT-START') || str_contains($stdout, 'FULL-REPORT-END')) {
@@ -130,8 +130,8 @@ final class BacklogWorktreeServiceTest
                 echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerBeforeFailure: FAIL status missing before exception\n";
                 return 1;
             }
-            if (!str_contains($stdout, 'Review report saved to ' . BacklogPaths::REVIEW_RESULT)) {
-                echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerBeforeFailure: pointer missing before exception\n";
+            if (!str_contains($stdout, 'Review report saved to ' . $resultPath)) {
+                echo "FAIL testRunReviewScriptPersistsFullOutputAndPrintsPointerBeforeFailure: absolute pointer missing before exception\n";
                 return 1;
             }
             if (str_contains($stdout, 'FAIL-REPORT-START') || str_contains($stdout, 'FAIL-REPORT-END')) {

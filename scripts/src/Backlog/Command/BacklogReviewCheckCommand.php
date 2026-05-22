@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Backlog\Command;
 
+use SoManAgent\Script\Backlog\BacklogPaths;
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
@@ -133,7 +134,11 @@ final class BacklogReviewCheckCommand extends AbstractBacklogCommand
         $savedResult = $this->worktreeService->loadReviewResult($reviewWorktree);
 
         if ($savedResult !== null) {
-            $this->worktreeService->displayReviewResultPointer($savedResult, true);
+            $this->worktreeService->displayReviewResultPointer(
+                $savedResult,
+                true,
+                BacklogPaths::reviewResultPath($reviewWorktree),
+            );
             $this->presenter->displaySuccess(sprintf('Mechanical review passed for %s', $label));
 
             return;
