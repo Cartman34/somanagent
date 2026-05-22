@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Agent\Service;
 
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use SoManAgent\Script\Backlog\Enum\SubmitMode;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 
@@ -47,8 +48,10 @@ final class AgentContextBuilder
 
     /**
      * Generates and writes the context file; returns its absolute path.
+     *
+     * @param SubmitMode $submitMode Effective submit policy resolved before this call (see SubmitModeResolver)
      */
-    public function build(string $worktree, string $code, AgentRole $role): string
+    public function build(string $worktree, string $code, AgentRole $role, SubmitMode $submitMode = SubmitMode::USER): string
     {
         $contextFilePath = $worktree . '/local/agent-context.md';
 
@@ -57,13 +60,13 @@ final class AgentContextBuilder
             mkdir($dir, 0755, true);
         }
 
-        $content = $this->render($worktree, $code, $role);
+        $content = $this->render($worktree, $code, $role, $submitMode);
         file_put_contents($contextFilePath, $content);
 
         return $contextFilePath;
     }
 
-    private function render(string $worktree, string $code, AgentRole $role): string
+    private function render(string $worktree, string $code, AgentRole $role, SubmitMode $submitMode): string
     {
         $date = (new \DateTimeImmutable())->format('Y-m-d');
         $sections = [];
@@ -126,7 +129,7 @@ final class AgentContextBuilder
         // 6. Workflow (only when an active entry exists)
         if ($keywordToRemove !== null) {
             if ($role === AgentRole::DEVELOPER) {
-                $sections[] = $this->renderDeveloperWorkflow();
+                $sections[] = $this->renderDeveloperWorkflow($submitMode);
             } elseif ($role === AgentRole::REVIEWER) {
                 $sections[] = $this->renderReviewerWorkflow();
             }
@@ -344,8 +347,12 @@ final class AgentContextBuilder
     /**
      * Returns the inline Workflow section injected into developer context when an entry is active.
      */
-    private function renderDeveloperWorkflow(): string
+    private function renderDeveloperWorkflow(SubmitMode $submitMode): string
     {
+        $endOfCycleInstruction = $submitMode === SubmitMode::AGENT
+            ? 'Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php submit-check`. If it fails, fix the findings, commit, and rerun submit-check until it passes. If it passes, immediately run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php review-request` without waiting for the operator.'
+            : 'Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php submit-check`. If it fails, fix the findings, commit, and rerun submit-check until it passes. If it passes, stop and wait for the operator to send `submit`.';
+
         return implode("\n", [
             '## Workflow',
             '',
@@ -357,6 +364,7 @@ final class AgentContextBuilder
             '4. `WA`: run `git add .`.',
             '5. `WA`: run `git commit -m "[<feature-slug>] ..."` using the canonical feature slug from the branch name.',
             '6. Report a brief self-challenge summary to the user: dimensions checked, issues found, fixes applied.',
+            '7. ' . $endOfCycleInstruction,
             '',
             'Available keywords afterward: `submit`, `rework`, `cleanup` — `next` intentionally absent.',
         ]);

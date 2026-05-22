@@ -39,11 +39,21 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $driver->commitFeatureChange($context->agentPrimary, $context->fixFeature, 'test-feature-review-lifecycle.txt');
         $driver->createRemoteTestBaseBranch();
 
+        // submit-check in development stage: succeeds, writes submit-ready: yes, stage unchanged
+        $submitCheckOutput = $driver->submitCheck($context->agentPrimary);
+        $driver->assertContains($submitCheckOutput, 'passed submit-check');
+        $driver->assertBoardContains('submit-ready: yes');
+        $driver->assertFeatureStage($context->fixFeature, BacklogBoard::STAGE_IN_PROGRESS);
+
         $rejectBody = $driver->createBodyFile('test-feature-review-reject.md', ['1. Reject feature review for workflow coverage.']);
         $invalidRejectBody = $driver->createBodyFile('test-feature-review-invalid.md', ['### Revue de la feature']);
         $approveBody = $driver->createBodyFile('test-feature-review-approve.md', ['1. Approve feature review for workflow coverage.']);
 
         $driver->requestFeatureReview($context->agentPrimary);
+        // review-request clears submit-ready unconditionally
+        $driver->assertBoardLacksText('submit-ready:');
+        // submit-check refuses a non-development stage entry
+        $driver->assertSubmitCheckFails($context->agentPrimary, 'submit-check requires stage=development');
 
         // list --stage=review exposes the stable reference for entries waiting in review
         $reviewListOutput = $driver->reviewList();
@@ -144,7 +154,13 @@ final class FeatureReviewLifecycleCampaign implements CampaignInterface
         $driver->assertReviewAmendFails($context->agentSecondary, 'unknown-feature-slug', $amendedBody, 'Feature not found:');
 
         $driver->rework($context->agentPrimary, $context->fixFeature);
+        // submit-check after rework: entry is back in development, submit-ready can be written again
+        $driver->submitCheck($context->agentPrimary);
+        $driver->assertBoardContains('submit-ready: yes');
+        $driver->assertFeatureStage($context->fixFeature, BacklogBoard::STAGE_IN_PROGRESS);
         $driver->requestFeatureReview($context->agentPrimary);
+        // review-request clears submit-ready even after a rework cycle
+        $driver->assertBoardLacksText('submit-ready:');
 
         // review-amend: non-rejected entry (now in review stage) is refused
         $driver->assertReviewAmendFails($context->agentSecondary, $context->fixFeature, $amendedBody, 'must be in');

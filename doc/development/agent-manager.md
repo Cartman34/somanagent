@@ -90,6 +90,21 @@ The launcher spawns the AI client via the active **session driver** and records 
 
 Run `php scripts/backlog-agent.php whoami` from WP to confirm the session identity.
 
+## Workflow Configuration
+
+The project-level workflow config controls automatic agent behaviors that span multiple sessions.
+
+### `workflow.submit`
+
+Controls the default end-of-cycle submit policy for all developer sessions.
+
+| Value | Behavior |
+|---|---|
+| `user` | Developer stops after a successful `submit-check` and waits for the operator to send `submit` (default when absent) |
+| `agent` | Developer runs `review-request` automatically after a successful `submit-check` without operator confirmation |
+
+The config is read from the project config file. When absent, unreadable, or carrying an unknown value, the fallback is `user`. The operator can override the project config for a single session with `--submit-mode=user|agent|default` on `php scripts/backlog-agent.php start`.
+
 ## Guidance
 
 - use `doc/development/agent-workflow.md` for the shared backlog model and state transitions
