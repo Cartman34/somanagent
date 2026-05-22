@@ -23,6 +23,11 @@ namespace SoManAgent\Script\Setup\Test;
  */
 final class SetupRunnerTest
 {
+    private const OPT_DRY_RUN = 'dry-run';
+    private const CMD_DEP_CONFIG = 'dep-config';
+    private const TEST_DEP_KEY = 'test-dep';
+    private const TEST_DEP_NONEXISTENT = 'nonexistent-dep';
+
     private string $projectRoot;
 
     /**
@@ -182,7 +187,7 @@ final class SetupRunnerTest
                 return 1;
             }
 
-            if (!str_contains($output, 'dry-run')) {
+            if (!str_contains($output, self::OPT_DRY_RUN)) {
                 echo "FAIL testInstallDryRunWithEmptyLockfile: expected 'dry-run' in output\nOutput: {$output}\n";
                 return 1;
             }
@@ -473,7 +478,7 @@ final class SetupRunnerTest
                 return 1;
             }
 
-            if (!str_contains($output, 'dry-run')) {
+            if (!str_contains($output, self::OPT_DRY_RUN)) {
                 echo "FAIL testUpdateDryRunWithEmptyManifest: expected 'dry-run' in output\n";
                 return 1;
             }
@@ -742,7 +747,7 @@ final class SetupRunnerTest
             return 1;
         }
 
-        if (!str_contains($output, 'dry-run')) {
+        if (!str_contains($output, self::OPT_DRY_RUN)) {
             echo "FAIL testResetDryRun: expected 'dry-run' in output\nOutput: {$output}\n";
             return 1;
         }
@@ -824,7 +829,7 @@ final class SetupRunnerTest
 
     private function testDepConfigCommandHelp(): int
     {
-        [$output, $exit] = $this->run_(['help', 'dep-config']);
+        [$output, $exit] = $this->run_(['help', self::CMD_DEP_CONFIG]);
 
         if ($exit !== 0) {
             echo "FAIL testDepConfigCommandHelp: expected exit 0, got {$exit}\n";
@@ -842,7 +847,7 @@ final class SetupRunnerTest
 
     private function testDepConfigInvalidAction(): int
     {
-        [$output, $exit] = $this->run_(['dep-config', 'bad-action', 'git']);
+        [$output, $exit] = $this->run_([self::CMD_DEP_CONFIG, 'bad-action', 'git']);
 
         if ($exit === 0) {
             echo "FAIL testDepConfigInvalidAction: expected non-zero exit\n";
@@ -864,7 +869,7 @@ final class SetupRunnerTest
 
         try {
             [$output, $exit] = $this->run_(
-                ['dep-config', 'get', 'nonexistent-dep'],
+                [self::CMD_DEP_CONFIG, 'get', self::TEST_DEP_NONEXISTENT],
                 ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
             );
 
@@ -873,7 +878,7 @@ final class SetupRunnerTest
                 return 1;
             }
 
-            if (!str_contains($output, 'nonexistent-dep')) {
+            if (!str_contains($output, self::TEST_DEP_NONEXISTENT)) {
                 echo "FAIL testDepConfigUnknownDep: expected dep key in error output\nOutput: {$output}\n";
                 return 1;
             }
@@ -891,7 +896,7 @@ final class SetupRunnerTest
 
         try {
             [$output, $exit] = $this->run_(
-                ['dep-config', 'get', 'test-dep', 'bad_property'],
+                [self::CMD_DEP_CONFIG, 'get', self::TEST_DEP_KEY, 'bad_property'],
                 ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
             );
 
@@ -919,7 +924,7 @@ final class SetupRunnerTest
         try {
             // set
             [, $setExit] = $this->run_(
-                ['dep-config', 'set', 'test-dep', 'on_uninstall_pre_existing', 'restore'],
+                [self::CMD_DEP_CONFIG, 'set', self::TEST_DEP_KEY, 'on_uninstall_pre_existing', 'restore'],
                 ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
             );
             if ($setExit !== 0) {
@@ -929,7 +934,7 @@ final class SetupRunnerTest
 
             // get — should show the value
             [$getOutput, $getExit] = $this->run_(
-                ['dep-config', 'get', 'test-dep', 'on_uninstall_pre_existing'],
+                [self::CMD_DEP_CONFIG, 'get', self::TEST_DEP_KEY, 'on_uninstall_pre_existing'],
                 ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
             );
             if ($getExit !== 0 || !str_contains($getOutput, 'restore')) {
@@ -939,7 +944,7 @@ final class SetupRunnerTest
 
             // unset
             [, $unsetExit] = $this->run_(
-                ['dep-config', 'unset', 'test-dep', 'on_uninstall_pre_existing'],
+                [self::CMD_DEP_CONFIG, 'unset', self::TEST_DEP_KEY, 'on_uninstall_pre_existing'],
                 ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
             );
             if ($unsetExit !== 0) {
@@ -949,7 +954,7 @@ final class SetupRunnerTest
 
             // get again — should show "no override set"
             [$get2Output, $get2Exit] = $this->run_(
-                ['dep-config', 'get', 'test-dep', 'on_uninstall_pre_existing'],
+                [self::CMD_DEP_CONFIG, 'get', self::TEST_DEP_KEY, 'on_uninstall_pre_existing'],
                 ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
             );
             if ($get2Exit !== 0 || !str_contains($get2Output, 'no override')) {
@@ -971,11 +976,11 @@ final class SetupRunnerTest
         try {
             // Set twice — second should be no-op
             $this->run_(
-                ['dep-config', 'set', 'test-dep', 'on_uninstall_pre_existing', 'keep'],
+                [self::CMD_DEP_CONFIG, 'set', self::TEST_DEP_KEY, 'on_uninstall_pre_existing', 'keep'],
                 ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
             );
             [$output, $exit] = $this->run_(
-                ['dep-config', 'set', 'test-dep', 'on_uninstall_pre_existing', 'keep'],
+                [self::CMD_DEP_CONFIG, 'set', self::TEST_DEP_KEY, 'on_uninstall_pre_existing', 'keep'],
                 ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
             );
 
@@ -1003,7 +1008,7 @@ final class SetupRunnerTest
         try {
             // Unset a property that isn't set — should be a no-op (exit 0)
             [$output, $exit] = $this->run_(
-                ['dep-config', 'unset', 'test-dep', 'on_uninstall_pre_existing'],
+                [self::CMD_DEP_CONFIG, 'unset', self::TEST_DEP_KEY, 'on_uninstall_pre_existing'],
                 ['SOMANAGER_PROJECT_ROOT' => $tmpDir],
             );
 

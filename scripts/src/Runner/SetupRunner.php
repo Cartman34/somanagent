@@ -61,6 +61,10 @@ final class SetupRunner extends AbstractScriptRunner
     private const MANIFEST_PATH = 'scripts/resources/dependencies.yaml';
     private const LOCK_PATH = 'scripts/resources/dependencies.lock';
 
+    private const OPT_DRY_RUN = 'dry-run';
+    private const OPT_PREVIEW_ONLY = 'preview-only';
+    private const CMD_DEP_CONFIG = 'dep-config';
+
     /**
      * Allowed per-dep override property names (v1).
      *
@@ -117,18 +121,18 @@ final class SetupRunner extends AbstractScriptRunner
             return 0;
         }
 
-        if (!isset($options['dry-run'])) {
+        if (!isset($options[self::OPT_DRY_RUN])) {
             LocalWorkingDirectories::ensure($this->resolveRoot(), new FilesystemClient());
         }
 
         return match ($subcommand) {
-            'install'    => $this->runInstall($options),
-            'update'     => $this->runUpdate($options),
-            'verify'     => $this->runVerify(),
-            'uninstall'  => $this->runUninstall($options),
-            'reset'      => $this->runReset($options),
-            'status'     => $this->runStatus(),
-            'dep-config' => $this->runDepConfig($parsedArgs, $options),
+            'install'              => $this->runInstall($options),
+            'update'               => $this->runUpdate($options),
+            'verify'               => $this->runVerify(),
+            'uninstall'            => $this->runUninstall($options),
+            'reset'                => $this->runReset($options),
+            'status'               => $this->runStatus(),
+            self::CMD_DEP_CONFIG   => $this->runDepConfig($parsedArgs, $options),
             default      => throw new \RuntimeException(
                 sprintf(
                     "Unknown subcommand: '%s'. Run 'php scripts/setup.php help' for available commands.",
@@ -158,8 +162,8 @@ final class SetupRunner extends AbstractScriptRunner
      */
     private function runInstall(array $options): int
     {
-        $this->previewOnly = isset($options['preview-only']);
-        $this->dryRun = isset($options['dry-run']);
+        $this->previewOnly = isset($options[self::OPT_PREVIEW_ONLY]);
+        $this->dryRun = isset($options[self::OPT_DRY_RUN]);
         $this->force = isset($options['force']);
 
         if ($this->previewOnly && $this->dryRun) {
@@ -238,8 +242,8 @@ final class SetupRunner extends AbstractScriptRunner
      */
     private function runUpdate(array $options): int
     {
-        $this->previewOnly = isset($options['preview-only']);
-        $this->dryRun = isset($options['dry-run']);
+        $this->previewOnly = isset($options[self::OPT_PREVIEW_ONLY]);
+        $this->dryRun = isset($options[self::OPT_DRY_RUN]);
         $this->force = isset($options['force']);
 
         if ($this->previewOnly && $this->dryRun) {
@@ -410,8 +414,8 @@ final class SetupRunner extends AbstractScriptRunner
      */
     private function runUninstall(array $options): int
     {
-        $this->previewOnly = isset($options['preview-only']);
-        $this->dryRun = isset($options['dry-run']);
+        $this->previewOnly = isset($options[self::OPT_PREVIEW_ONLY]);
+        $this->dryRun = isset($options[self::OPT_DRY_RUN]);
         $this->force = isset($options['force']);
         $restoreFlag = isset($options['restore']);
         $keepFlag = isset($options['keep']);
@@ -769,8 +773,8 @@ final class SetupRunner extends AbstractScriptRunner
      */
     private function runReset(array $options): int
     {
-        $this->previewOnly = isset($options['preview-only']);
-        $this->dryRun = isset($options['dry-run']);
+        $this->previewOnly = isset($options[self::OPT_PREVIEW_ONLY]);
+        $this->dryRun = isset($options[self::OPT_DRY_RUN]);
         $this->force = isset($options['force']);
         $keepVolumes = isset($options['keep-volumes']);
 
