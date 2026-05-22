@@ -47,8 +47,8 @@ final class BacklogWorktreeServiceTest
         $failed += $this->testRunReviewScriptPersistsFullOutputAndPrintsPointerBeforeFailure();
         $failed += $this->testCleanupAbandonedWorktreeChdirsToProjectRootWhenCwdIsInside();
         $failed += $this->testCleanupAbandonedWorktreeLeavesCwdUnchangedWhenOutside();
-        $failed += $this->testRemoveDeveloperWorktreeDestroysWorktreeWhenPresent();
-        $failed += $this->testRemoveDeveloperWorktreeIsNoopWhenAbsent();
+        $failed += $this->testRemoveWorktreeForBranchDestroysWorktreeWhenPresent();
+        $failed += $this->testRemoveWorktreeForBranchIsNoopWhenAbsent();
 
         return $failed;
     }
@@ -330,54 +330,56 @@ final class BacklogWorktreeServiceTest
         return 0;
     }
 
-    private function testRemoveDeveloperWorktreeDestroysWorktreeWhenPresent(): int
+    private function testRemoveWorktreeForBranchDestroysWorktreeWhenPresent(): int
     {
-        $agent = 'test-d10-remove-dev-' . $this->uniqueToken();
+        $token = $this->uniqueToken();
+        $branch = 'test/remove-wt-branch-' . $token;
         $worktreesRoot = $this->projectRoot . '/local/tests/worktree-service';
-        $worktree = $worktreesRoot . '/' . $agent;
+        $worktree = $worktreesRoot . '/test-d10-remove-branch-' . $token;
 
+        // Create the branch without checking it out, then add a dedicated worktree for it.
         $this->runCommand(sprintf(
-            'git -C %s worktree add --detach %s',
+            'git -C %s branch %s',
             escapeshellarg($this->projectRoot),
-            escapeshellarg($worktree),
+            escapeshellarg($branch),
         ));
-
         try {
+            $this->runCommand(sprintf(
+                'git -C %s worktree add %s %s',
+                escapeshellarg($this->projectRoot),
+                escapeshellarg($worktree),
+                escapeshellarg($branch),
+            ));
+
             $service = $this->createService($worktreesRoot);
-            $service->removeDeveloperWorktree($agent);
+            $service->removeWorktreeForBranch($branch);
 
             if (file_exists($worktree)) {
-                echo "FAIL testRemoveDeveloperWorktreeDestroysWorktreeWhenPresent: worktree path still exists after removal\n";
+                echo "FAIL testRemoveWorktreeForBranchDestroysWorktreeWhenPresent: worktree path still exists after removal\n";
                 return 1;
             }
         } finally {
             $this->pruneLinkedWorktreeIfExists($worktree);
+            exec(sprintf('git -C %s branch -D %s 2>&1', escapeshellarg($this->projectRoot), escapeshellarg($branch)));
         }
 
-        echo "OK testRemoveDeveloperWorktreeDestroysWorktreeWhenPresent\n";
+        echo "OK testRemoveWorktreeForBranchDestroysWorktreeWhenPresent\n";
         return 0;
     }
 
-    private function testRemoveDeveloperWorktreeIsNoopWhenAbsent(): int
+    private function testRemoveWorktreeForBranchIsNoopWhenAbsent(): int
     {
-        $agent = 'test-d10-remove-dev-absent-' . $this->uniqueToken();
-        $worktreesRoot = $this->projectRoot . '/local/tests/worktree-service';
-        $worktree = $worktreesRoot . '/' . $agent;
+        $branch = 'test/remove-wt-no-worktree-' . $this->uniqueToken();
 
         try {
-            $service = $this->createService($worktreesRoot);
-            $service->removeDeveloperWorktree($agent);
-
-            if (file_exists($worktree)) {
-                echo "FAIL testRemoveDeveloperWorktreeIsNoopWhenAbsent: worktree path appeared unexpectedly\n";
-                return 1;
-            }
+            $service = $this->createService($this->projectRoot . '/local/tests/worktree-service');
+            $service->removeWorktreeForBranch($branch);
         } catch (\Throwable $e) {
-            echo "FAIL testRemoveDeveloperWorktreeIsNoopWhenAbsent: unexpected exception: {$e->getMessage()}\n";
+            echo "FAIL testRemoveWorktreeForBranchIsNoopWhenAbsent: unexpected exception: {$e->getMessage()}\n";
             return 1;
         }
 
-        echo "OK testRemoveDeveloperWorktreeIsNoopWhenAbsent\n";
+        echo "OK testRemoveWorktreeForBranchIsNoopWhenAbsent\n";
         return 0;
     }
 

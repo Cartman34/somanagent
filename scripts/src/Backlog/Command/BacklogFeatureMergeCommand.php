@@ -150,10 +150,7 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         $this->gitService->syncMainBranchAfterMerge();
 
         // Local cleanup — all idempotent, before board persistence so a retry can resume here.
-        if ($devCode === null) {
-            throw new \RuntimeException("Feature {$feature} has no developer assigned and cannot be merged.");
-        }
-        $this->worktreeService->removeDeveloperWorktree($devCode);
+        $this->worktreeService->removeWorktreeForBranch($branch);
         $this->gitService->deleteRemoteBranch($branch);
         $this->gitService->deleteLocalBranch($branch);
 
