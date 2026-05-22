@@ -249,7 +249,8 @@ final class SetupRunnerTest
                 return 1;
             }
         } finally {
-            $this->removeTempProject($tmpDir);
+            $this->removeLocalWorkingDirectories($tmpDir);
+            $this->removeTempProjectResources($tmpDir);
         }
 
         echo "OK testInstallCreatesBacklogConfig\n";
@@ -277,7 +278,8 @@ final class SetupRunnerTest
                 return 1;
             }
         } finally {
-            $this->removeTempProject($tmpDir);
+            $this->removeLocalWorkingDirectories($tmpDir);
+            $this->removeTempProjectResources($tmpDir);
         }
 
         echo "OK testInstallDoesNotOverwriteExistingBacklogConfig\n";
@@ -1123,6 +1125,17 @@ final class SetupRunnerTest
     private function removeTempProject(string $tmpDir): void
     {
         $this->removeLocalWorkingDirectories($tmpDir);
+        $this->removeTempProjectResources($tmpDir);
+    }
+
+    /**
+     * Removes scripts/resources files and the project root directory.
+     *
+     * Does not touch local/. Call removeLocalWorkingDirectories() separately
+     * when the test creates or triggers creation of local/ directories.
+     */
+    private function removeTempProjectResources(string $tmpDir): void
+    {
         $resourcesDir = $tmpDir . '/scripts/resources';
         @unlink($resourcesDir . '/dependencies.yaml');
         @unlink($resourcesDir . '/dependencies.lock');

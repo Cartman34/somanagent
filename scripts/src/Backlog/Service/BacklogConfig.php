@@ -48,22 +48,12 @@ final class BacklogConfig
     /**
      * @return array<mixed>
      *
-     * @throws \RuntimeException When the dist template or local config is missing.
+     * @throws \RuntimeException When the local config is missing or invalid.
      */
     private function load(): array
     {
         if ($this->data !== null) {
             return $this->data;
-        }
-
-        $distPath = $this->projectRoot . '/' . self::DIST_PATH;
-        if (!is_file($distPath)) {
-            throw new \RuntimeException(
-                sprintf(
-                    "Backlog config template not found: '%s'. The repository may be corrupted.",
-                    self::DIST_PATH,
-                ),
-            );
         }
 
         $localPath = $this->projectRoot . '/' . self::LOCAL_PATH;

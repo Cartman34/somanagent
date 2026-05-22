@@ -39,7 +39,6 @@ final class BacklogConfigTest
         $failed += $this->testReadsLocalConfig();
         $failed += $this->testErrorWhenLocalAbsent();
         $failed += $this->testFallbackWhenKeyMissing();
-        $failed += $this->testErrorWhenDistAbsent();
 
         return $failed;
     }
@@ -118,45 +117,6 @@ final class BacklogConfigTest
         return 0;
     }
 
-    private function testErrorWhenDistAbsent(): int
-    {
-        // Temp project with no dist file
-        $tmpDir = $this->testOutputRoot() . '/backlog_config_test_nodist_' . uniqid();
-        $localDir = $tmpDir . '/local/backlog';
-        mkdir($localDir, 0o755, true);
-        file_put_contents($localDir . '/config.yaml', "backlog: {}\n");
-
-        try {
-            $config = new BacklogConfig($tmpDir);
-            $thrown = false;
-            $message = '';
-
-            try {
-                $config->getMaxConcurrentWorktrees();
-            } catch (\RuntimeException $e) {
-                $thrown = true;
-                $message = $e->getMessage();
-            }
-
-            if (!$thrown) {
-                echo "FAIL testErrorWhenDistAbsent: expected RuntimeException\n";
-                return 1;
-            }
-
-            if (!str_contains($message, 'corrupted')) {
-                echo "FAIL testErrorWhenDistAbsent: expected 'corrupted' in error message\nMessage: {$message}\n";
-                return 1;
-            }
-        } finally {
-            @unlink($localDir . '/config.yaml');
-            @rmdir($localDir);
-            @rmdir($tmpDir . '/local');
-            @rmdir($tmpDir);
-        }
-
-        echo "OK testErrorWhenDistAbsent\n";
-        return 0;
-    }
 
     // -------------------------------------------------------------------------
     // Helpers
