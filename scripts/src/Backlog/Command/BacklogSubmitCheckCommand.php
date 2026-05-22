@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Enum\BacklogEntryMetaKey;
 use SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
@@ -86,9 +87,9 @@ final class BacklogSubmitCheckCommand extends AbstractBacklogCommand
 
         $extra = $entry->getExtraMetadata();
         if ($passed) {
-            $extra['submit-ready'] = BacklogMetaValue::YES->value;
+            $extra[BacklogEntryMetaKey::SUBMIT_READY->value] = BacklogMetaValue::YES->value;
         } else {
-            unset($extra['submit-ready']);
+            unset($extra[BacklogEntryMetaKey::SUBMIT_READY->value]);
         }
         $entry->setExtraMetadata($extra);
 

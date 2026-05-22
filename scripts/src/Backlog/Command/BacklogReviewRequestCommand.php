@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace SoManAgent\Script\Backlog\Command;
 
 use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use SoManAgent\Script\Backlog\Enum\BacklogEntryMetaKey;
 use SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
@@ -178,8 +179,8 @@ final class BacklogReviewRequestCommand extends AbstractBacklogCommand
     private function clearSubmitReady(BoardEntry $entry): void
     {
         $extra = $entry->getExtraMetadata();
-        if (array_key_exists('submit-ready', $extra)) {
-            unset($extra['submit-ready']);
+        if (array_key_exists(BacklogEntryMetaKey::SUBMIT_READY->value, $extra)) {
+            unset($extra[BacklogEntryMetaKey::SUBMIT_READY->value]);
             $entry->setExtraMetadata($extra);
         }
     }

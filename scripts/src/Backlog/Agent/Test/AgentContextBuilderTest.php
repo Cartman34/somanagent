@@ -10,6 +10,7 @@ namespace SoManAgent\Script\Backlog\Agent\Test;
 use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
 use SoManAgent\Script\Backlog\BacklogPaths;
+use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Enum\SubmitMode;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use SoManAgent\Script\Client\FilesystemClient;
@@ -396,7 +397,7 @@ final class AgentContextBuilderTest
             echo "FAIL testDeveloperWorkflowSubmitModeUserWaitsForOperator: operator-wait instruction not found\n";
             return 1;
         }
-        if (str_contains($content, 'review-request') && str_contains($content, 'immediately')) {
+        if (str_contains($content, BacklogCommandName::REVIEW_REQUEST->value) && str_contains($content, 'immediately')) {
             echo "FAIL testDeveloperWorkflowSubmitModeUserWaitsForOperator: auto-review-request instruction must not appear in user mode\n";
             return 1;
         }
@@ -423,7 +424,7 @@ final class AgentContextBuilderTest
 
         $this->rmdir($projectRoot);
 
-        if (!str_contains($content, 'review-request')) {
+        if (!str_contains($content, BacklogCommandName::REVIEW_REQUEST->value)) {
             echo "FAIL testDeveloperWorkflowSubmitModeAgentAutoReviewRequest: review-request instruction not found\n";
             return 1;
         }
