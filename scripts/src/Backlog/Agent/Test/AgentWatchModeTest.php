@@ -290,7 +290,7 @@ final class AgentWatchModeTest
     private function testLoopWithoutWatchEnablesWatch(): int
     {
         $featureSlug = 'loop-implies-watch';
-        $fixture = $this->makeFixture('loop-implies-watch');
+        $fixture = $this->makeFixture($featureSlug);
         $this->writeBoard($fixture['boardPath'], [], [
             ['feature' => $featureSlug, 'type' => 'tech', 'title' => 'Loop implies watch'],
         ]);
