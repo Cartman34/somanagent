@@ -77,6 +77,17 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
     }
 
     /**
+     * Performs the feature merge in a fixed, retry-safe sequence:
+     *   1. mergePr          — idempotent: no-op when PR already merged
+     *   2. syncMain         — pull main after merge
+     *   3. removeWorktreeForBranch — removes the worktree checked out on the feature branch; board-state independent
+     *   4. deleteRemoteBranch
+     *   5. deleteLocalBranch
+     *   6. installProjectDependencies — optional, skipped when meta absent
+     *   7. deleteFeature + clearReview + saveBoard + saveReviewFile — board last so a crash
+     *      before this point leaves the entry in approved and the command can be retried
+     *   8. stopSessions
+     *
      * @param list<string> $commandArgs
      * @param array<string, bool|string> $options
      * @return void
@@ -139,7 +150,7 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         $this->gitService->syncMainBranchAfterMerge();
 
         // Local cleanup — all idempotent, before board persistence so a retry can resume here.
-        $cleaned = $this->worktreeService->cleanupManagedWorktreesForBranch($branch, $board);
+        $this->worktreeService->removeWorktreeForBranch($branch);
         $this->gitService->deleteRemoteBranch($branch);
         $this->gitService->deleteLocalBranch($branch);
 
@@ -156,9 +167,6 @@ final class BacklogFeatureMergeCommand extends AbstractBacklogCommand
         $this->saveReviewFile($review, BacklogCommandName::FEATURE_MERGE->value);
 
         $this->presenter->displaySuccess(sprintf('Merged feature %s', $feature));
-        if ($cleaned > 0) {
-            $this->presenter->displayLine(sprintf('Cleaned %d abandoned managed worktree%s.', $cleaned, $cleaned > 1 ? 's' : ''));
-        }
 
         foreach ($warnings as $warning) {
             $this->presenter->displayLine('⚠ ' . $warning);

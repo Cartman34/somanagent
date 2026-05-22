@@ -47,6 +47,8 @@ final class BacklogWorktreeServiceTest
         $failed += $this->testRunReviewScriptPersistsFullOutputAndPrintsPointerBeforeFailure();
         $failed += $this->testCleanupAbandonedWorktreeChdirsToProjectRootWhenCwdIsInside();
         $failed += $this->testCleanupAbandonedWorktreeLeavesCwdUnchangedWhenOutside();
+        $failed += $this->testRemoveWorktreeForBranchDestroysWorktreeWhenPresent();
+        $failed += $this->testRemoveWorktreeForBranchIsNoopWhenAbsent();
 
         return $failed;
     }
@@ -325,6 +327,59 @@ final class BacklogWorktreeServiceTest
         }
 
         echo "OK testCleanupAbandonedWorktreeLeavesCwdUnchangedWhenOutside\n";
+        return 0;
+    }
+
+    private function testRemoveWorktreeForBranchDestroysWorktreeWhenPresent(): int
+    {
+        $token = $this->uniqueToken();
+        $branch = 'test/remove-wt-branch-' . $token;
+        $worktreesRoot = $this->projectRoot . '/local/tests/worktree-service';
+        $worktree = $worktreesRoot . '/test-d10-remove-branch-' . $token;
+
+        // Create the branch without checking it out, then add a dedicated worktree for it.
+        $this->runCommand(sprintf(
+            'git -C %s branch %s',
+            escapeshellarg($this->projectRoot),
+            escapeshellarg($branch),
+        ));
+        try {
+            $this->runCommand(sprintf(
+                'git -C %s worktree add %s %s',
+                escapeshellarg($this->projectRoot),
+                escapeshellarg($worktree),
+                escapeshellarg($branch),
+            ));
+
+            $service = $this->createService($worktreesRoot);
+            $service->removeWorktreeForBranch($branch);
+
+            if (file_exists($worktree)) {
+                echo "FAIL testRemoveWorktreeForBranchDestroysWorktreeWhenPresent: worktree path still exists after removal\n";
+                return 1;
+            }
+        } finally {
+            $this->pruneLinkedWorktreeIfExists($worktree);
+            exec(sprintf('git -C %s branch -D %s 2>&1', escapeshellarg($this->projectRoot), escapeshellarg($branch)));
+        }
+
+        echo "OK testRemoveWorktreeForBranchDestroysWorktreeWhenPresent\n";
+        return 0;
+    }
+
+    private function testRemoveWorktreeForBranchIsNoopWhenAbsent(): int
+    {
+        $branch = 'test/remove-wt-no-worktree-' . $this->uniqueToken();
+
+        try {
+            $service = $this->createService($this->projectRoot . '/local/tests/worktree-service');
+            $service->removeWorktreeForBranch($branch);
+        } catch (\Throwable $e) {
+            echo "FAIL testRemoveWorktreeForBranchIsNoopWhenAbsent: unexpected exception: {$e->getMessage()}\n";
+            return 1;
+        }
+
+        echo "OK testRemoveWorktreeForBranchIsNoopWhenAbsent\n";
         return 0;
     }
 

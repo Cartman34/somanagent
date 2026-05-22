@@ -477,6 +477,27 @@ final class BacklogWorktreeService
     }
 
     /**
+     * Removes the worktree that has the given branch checked out, if any.
+     *
+     * Idempotent: if no managed worktree is currently on that branch, returns silently.
+     * Unlike {@see cleanupManagedWorktreesForBranch}, this method does not consult
+     * the board or {@see classifyWorktrees} — it matches by branch name only,
+     * making it safe to call during feature-merge regardless of board state.
+     *
+     * @param string $branch The feature branch name
+     * @return void
+     */
+    public function removeWorktreeForBranch(string $branch): void
+    {
+        $path = $this->findWorktreePathForBranch($branch);
+        if ($path === null) {
+            return;
+        }
+
+        $this->removeSafeWorktree($path);
+    }
+
+    /**
      * @param string $branch The branch name
      * @param BacklogBoard $board The backlog board
      * @return int The number of cleaned worktrees
