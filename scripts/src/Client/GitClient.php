@@ -17,7 +17,7 @@ use Sowapps\SoManAgent\Script\RetryPolicy;
  * turning network commands into logged no-ops. Script factories derive this
  * flag from the truthy `SOMANAGER_GIT_OFFLINE` environment variable.
  */
-final class GitClient
+final class GitClient implements GitClientInterface
 {
     private const NETWORK_ERROR_NEEDLES = [
         'fatal: unable to access',

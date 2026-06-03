@@ -18,7 +18,7 @@ use Sowapps\SoManAgent\Script\Service\GitService;
  * and the agent launcher ({@see \Sowapps\SoManAgent\Script\Backlog\Agent\Command\AgentStartCommand}) in
  * automatic mode when a developer has an approved entry.
  */
-class EntryRebaseService
+class EntryRebaseService implements EntryRebaseServiceInterface
 {
     private BacklogBoardService $boardService;
 

@@ -12,7 +12,7 @@ use Sowapps\SoManAgent\Script\Application;
 /**
  * Low-level command execution client shared by higher-level transport clients.
  */
-final class ConsoleClient
+final class ConsoleClient implements ConsoleClientInterface
 {
     private string $projectRoot;
     private bool $dryRun;
