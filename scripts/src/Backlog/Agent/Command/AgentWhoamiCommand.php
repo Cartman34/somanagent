@@ -9,7 +9,6 @@ namespace Sowapps\SoManAgent\Script\Backlog\Agent\Command;
 
 use Sowapps\SoManAgent\Script\Console;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AbstractAgentCommand;
 /**
  * Displays context information for the current agent session.
  *

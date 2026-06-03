@@ -9,7 +9,6 @@ namespace Sowapps\SoManAgent\Entity;
 
 use Sowapps\SoManAgent\Repository\ModuleRepository;
 use Sowapps\SoManAgent\Enum\ModuleStatus;
-use Sowapps\SoManAgent\Entity\Project;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 

@@ -9,6 +9,6 @@
 
 require_once __DIR__ . '/../src/bootstrap.php';
 
-use SoManAgent\Script\Runner\ApiRoutesRunner;
+use Sowapps\SoManAgent\Script\Runner\ApiRoutesRunner;
 
 (new ApiRoutesRunner())->handle($argv);

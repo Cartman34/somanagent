@@ -9,7 +9,6 @@ namespace Sowapps\SoManAgent\Script\Test\Backlog\Campaign;
 
 use Sowapps\SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
 use Sowapps\SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
-use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\CampaignInterface;
 /**
  * Pending migration campaign.
  */

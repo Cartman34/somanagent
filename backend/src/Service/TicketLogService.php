@@ -12,7 +12,6 @@ use Sowapps\SoManAgent\Entity\Ticket;
 use Sowapps\SoManAgent\Entity\TicketTask;
 use Sowapps\SoManAgent\Entity\TicketLog;
 use Sowapps\SoManAgent\Enum\ClarificationQuestionNecessity;
-use Sowapps\SoManAgent\Service\EntityService;
 /**
  * Manages ticket log entries: creation of events, replies, and system messages.
  */

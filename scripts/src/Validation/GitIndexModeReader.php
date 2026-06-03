@@ -7,8 +7,6 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Validation;
 
-use Sowapps\SoManAgent\Script\Validation\IndexModeReader;
-
 /**
  * Reads file modes recorded in the git index (`100755` vs `100644`).
  *

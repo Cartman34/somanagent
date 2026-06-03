@@ -15,7 +15,6 @@ use Sowapps\SoManAgent\Dto\Input\Chat\SendChatMessageDto;
 use Sowapps\SoManAgent\Dto\Input\Chat\ReplyChatMessageDto;
 use Sowapps\SoManAgent\Dto\Input\Chat\UpdateChatMessageDto;
 use Sowapps\SoManAgent\Entity\ChatMessage;
-use Sowapps\SoManAgent\Controller\AbstractApiController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;

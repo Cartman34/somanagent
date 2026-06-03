@@ -9,7 +9,6 @@ namespace Sowapps\SoManAgent\Script\Backlog\Agent\Client;
 
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Exception\ClientNotInstalledException;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncher;
 /**
  * Maps AgentClient enum values to their concrete AgentClientLauncher.
  *

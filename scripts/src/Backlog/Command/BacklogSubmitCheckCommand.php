@@ -14,7 +14,6 @@ use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogEntryMetaKey;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
-use Sowapps\SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
 /**
  * Runs the mechanical review check on the developer's active entry without changing its stage.
  *

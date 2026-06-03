@@ -38,7 +38,6 @@ use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntryMatch;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\WaOccupantChoice;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AbstractAgentCommand;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncher;
 /**
  * Starts or re-attaches an AI agent session in a dedicated worktree.

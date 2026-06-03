@@ -15,7 +15,6 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableExceptio
 use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 /**
  * Selects the target backlog entry for a reviewer session launch.
  *

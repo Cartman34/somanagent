@@ -11,7 +11,6 @@ use Sowapps\SoManAgent\Script\DevEnv\Model\LockEntry;
 use Sowapps\SoManAgent\Script\Application;
 use Sowapps\SoManAgent\Script\Console;
 use Sowapps\SoManAgent\Script\DevEnv\PlannedDep;
-use Sowapps\SoManAgent\Script\DevEnv\Installer\InstallerInterface;
 
 /**
  * Installs AI CLI clients via npm (globally) or from GitHub releases.

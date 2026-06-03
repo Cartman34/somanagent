@@ -11,7 +11,6 @@ use Sowapps\SoManAgent\Script\Client\GitHubClientInterface;
 use Sowapps\SoManAgent\Script\RetryPolicy;
 use Sowapps\SoManAgent\Script\Backlog\Enum\PullRequestTag;
 use Sowapps\SoManAgent\Script\RetryHelper;
-use Sowapps\SoManAgent\Script\Service\GitService;
 /**
  * Service for orchestrating Pull Request lifecycles.
  */

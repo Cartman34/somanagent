@@ -11,10 +11,6 @@ use Sowapps\SoManAgent\Script\DevEnv\Model\Manifest;
 use Sowapps\SoManAgent\Script\DevEnv\Model\Lockfile;
 use Sowapps\SoManAgent\Script\DevEnv\Model\LockEntry;
 use Sowapps\SoManAgent\Script\DevEnv\Model\Dependency;
-use Sowapps\SoManAgent\Script\DevEnv\VersionConstraint;
-use Sowapps\SoManAgent\Script\DevEnv\StateInspector;
-use Sowapps\SoManAgent\Script\DevEnv\InstallPlan;
-use Sowapps\SoManAgent\Script\DevEnv\PlannedDep;
 /**
  * Builds an InstallPlan from a lockfile, a manifest, and the current system state.
  *

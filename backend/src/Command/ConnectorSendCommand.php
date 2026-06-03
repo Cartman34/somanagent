@@ -32,7 +32,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 final class ConnectorSendCommand extends Command
 {
-    private const OPT_WORKING_DIRECTORY = self::OPT_WORKING_DIRECTORY;
+    private const OPT_WORKING_DIRECTORY = 'working-directory';
 
     /**
      * Wires the connector registry and the optional agent configuration source.

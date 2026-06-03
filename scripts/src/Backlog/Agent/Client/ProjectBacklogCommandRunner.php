@@ -10,7 +10,6 @@ namespace Sowapps\SoManAgent\Script\Backlog\Agent\Client;
 use Sowapps\SoManAgent\Script\Client\ProjectScriptClient;
 use Sowapps\SoManAgent\Script\Client\AppScript;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\BacklogCommandRunner;
 /**
  * Delegates reviewer workflow transitions to backlog.php via ProjectScriptClient.
  *

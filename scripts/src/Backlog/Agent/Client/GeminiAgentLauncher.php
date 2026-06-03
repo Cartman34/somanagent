@@ -12,9 +12,6 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Model\ResolvedModel;
 use Sowapps\SoManAgent\Script\Backlog\BacklogPaths;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Model\SessionInfo;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\AbstractAgentClientLauncher;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ProcessRunner;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ShellProcessRunner;
 /**
  * Launcher implementation for the Gemini CLI.
  *

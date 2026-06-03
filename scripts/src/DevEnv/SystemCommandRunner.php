@@ -7,8 +7,6 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\DevEnv;
 
-use Sowapps\SoManAgent\Script\DevEnv\CommandRunnerInterface;
-
 /**
  * Production implementation of CommandRunnerInterface that runs real shell commands.
  *

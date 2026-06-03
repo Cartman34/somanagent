@@ -12,8 +12,6 @@ use Sowapps\SoManAgent\ValueObject\AgentConnectorCatalog;
 use Sowapps\SoManAgent\ValueObject\AgentModelAdvisory;
 use Sowapps\SoManAgent\ValueObject\AgentModelInfo;
 use Sowapps\SoManAgent\Port\ConnectorInterface;
-use Sowapps\SoManAgent\Service\ConnectorRegistry;
-use Sowapps\SoManAgent\Service\AgentModelRecommendationPolicyResolver;
 use Sowapps\SoManAgent\ValueObject\AgentModelPricing;
 use Sowapps\SoManAgent\ValueObject\AgentModelCapabilities;
 use Psr\Cache\CacheItemPoolInterface;

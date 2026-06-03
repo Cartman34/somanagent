@@ -15,7 +15,6 @@ use Sowapps\SoManAgent\Entity\TicketTask;
 use Sowapps\SoManAgent\Entity\WorkflowStep;
 use Sowapps\SoManAgent\Entity\TokenUsage;
 use Sowapps\SoManAgent\Entity\Project;
-use Sowapps\SoManAgent\Service\EntityService;
 /**
  * Tracks and reports token consumption for agents, projects, tickets, and workflow steps.
  */

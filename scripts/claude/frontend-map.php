@@ -9,6 +9,6 @@
 
 require_once __DIR__ . '/../src/bootstrap.php';
 
-use SoManAgent\Script\Runner\FrontendMapRunner;
+use Sowapps\SoManAgent\Script\Runner\FrontendMapRunner;
 
 (new FrontendMapRunner())->handle($argv);

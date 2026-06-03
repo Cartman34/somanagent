@@ -7,8 +7,6 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\ValueObject;
 
-use Sowapps\SoManAgent\ValueObject\ConnectorHealthCheckResult;
-
 /**
  * Typed fixed collection for the shared connector health checks.
  */

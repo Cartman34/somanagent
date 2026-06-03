@@ -16,7 +16,6 @@ use Sowapps\SoManAgent\Entity\TokenUsage;
 use Sowapps\SoManAgent\Entity\AgentTaskExecution;
 use Sowapps\SoManAgent\Entity\AgentTaskExecutionAttempt;
 use Sowapps\SoManAgent\Enum\AuditAction;
-use Sowapps\SoManAgent\Service\AuditService;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**

@@ -11,7 +11,6 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeProcessSignaler;
 /**
  * Unit tests for AgentSessionService.
  */

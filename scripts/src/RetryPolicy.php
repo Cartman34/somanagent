@@ -7,8 +7,6 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script;
 
-use Sowapps\SoManAgent\Script\RetryHelper;
-
 /**
  * Retry configuration for script operations that use RetryHelper.
  */

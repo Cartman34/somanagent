@@ -8,8 +8,6 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Entity;
 
 use Sowapps\SoManAgent\Repository\WorkflowStepActionRepository;
-use Sowapps\SoManAgent\Entity\WorkflowStep;
-use Sowapps\SoManAgent\Entity\AgentAction;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 

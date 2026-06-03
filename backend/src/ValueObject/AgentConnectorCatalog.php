@@ -8,8 +8,6 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\ValueObject;
 
 use Sowapps\SoManAgent\Enum\ConnectorType;
-use Sowapps\SoManAgent\ValueObject\AgentModelInfo;
-use Sowapps\SoManAgent\ValueObject\AgentModelAdvisory;
 /**
  * Immutable connector catalog view exposed to the API and CLI.
  */

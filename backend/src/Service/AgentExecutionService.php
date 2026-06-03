@@ -23,12 +23,6 @@ use Sowapps\SoManAgent\Enum\ClarificationQuestionNecessity;
 use Sowapps\SoManAgent\Entity\Ticket;
 use Sowapps\SoManAgent\Entity\Skill;
 use Sowapps\SoManAgent\Entity\TicketTaskDependency;
-use Sowapps\SoManAgent\Service\ConnectorRegistry;
-use Sowapps\SoManAgent\Service\TicketTaskService;
-use Sowapps\SoManAgent\Service\TicketLogService;
-use Sowapps\SoManAgent\Service\AgentContextBuilder;
-use Sowapps\SoManAgent\Service\PlanningOutputParser;
-use Sowapps\SoManAgent\Service\VcsRepositoryUrlService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 

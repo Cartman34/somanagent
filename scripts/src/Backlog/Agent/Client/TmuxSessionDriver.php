@@ -11,8 +11,6 @@ use Sowapps\SoManAgent\Script\Console;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ProcessRunner;
 /**
  * Session driver backed by tmux.
  *

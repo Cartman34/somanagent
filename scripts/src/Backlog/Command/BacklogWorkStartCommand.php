@@ -19,7 +19,6 @@ use Sowapps\SoManAgent\Script\Backlog\Model\WorkStartPlan;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
 use Sowapps\SoManAgent\Script\Backlog\Model\ManagedWorktree;
-use Sowapps\SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
 
 /**
  * Unified command for starting work on the next queued backlog task.

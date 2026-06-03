@@ -8,7 +8,6 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\ValueObject;
 
 use Sowapps\SoManAgent\Enum\ConnectorType;
-use Sowapps\SoManAgent\ValueObject\ConnectorHealthChecks;
 /**
  * Aggregated health report returned by one connector.
  */

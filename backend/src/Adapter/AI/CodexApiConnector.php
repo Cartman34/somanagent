@@ -14,8 +14,6 @@ use Sowapps\SoManAgent\ValueObject\ConnectorResponse;
 use Sowapps\SoManAgent\ValueObject\ConnectorAuthStatus;
 use Sowapps\SoManAgent\Enum\ConnectorType;
 use Sowapps\SoManAgent\ValueObject\ConnectorHealthCheckResult;
-use Sowapps\SoManAgent\Adapter\AI\AbstractConnector;
-use Sowapps\SoManAgent\Adapter\AI\OpenAiModelDiscoveryTrait;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 

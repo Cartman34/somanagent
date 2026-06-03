@@ -10,8 +10,6 @@ namespace Sowapps\SoManAgent\Service;
 use Sowapps\SoManAgent\Repository\LogOccurrenceRepository;
 use Sowapps\SoManAgent\Entity\LogEvent;
 use Sowapps\SoManAgent\Entity\LogOccurrence;
-use Sowapps\SoManAgent\Service\EntityService;
-use Sowapps\SoManAgent\Service\RequestCorrelationService;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Symfony\Component\Uid\Uuid;
 

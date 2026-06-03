@@ -13,8 +13,6 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Client\InteractiveProcessRunner;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\DirectSessionDriver;
 use Sowapps\SoManAgent\Script\Console;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeInteractiveProcessRunner;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeProcessSignaler;
 /**
  * Unit tests for DirectSessionDriver.
  *

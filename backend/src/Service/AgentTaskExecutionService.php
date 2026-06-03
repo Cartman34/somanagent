@@ -16,8 +16,6 @@ use Sowapps\SoManAgent\Entity\AgentTaskExecution;
 use Sowapps\SoManAgent\Entity\AgentTaskExecutionAttempt;
 use Sowapps\SoManAgent\Enum\TaskExecutionAttemptStatus;
 use Sowapps\SoManAgent\Enum\TaskExecutionStatus;
-use Sowapps\SoManAgent\Service\EntityService;
-use Sowapps\SoManAgent\Service\RealtimeUpdateService;
 use Symfony\Component\Uid\Uuid;
 
 /**

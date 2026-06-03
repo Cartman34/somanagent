@@ -17,7 +17,6 @@ use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogEntryMetaKey;
-use Sowapps\SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
 /**
  * Unified review-request command: submits the agent's single active entry (task or feature) for review.
  *

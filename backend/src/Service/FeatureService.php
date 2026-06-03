@@ -13,7 +13,6 @@ use Sowapps\SoManAgent\Dto\Input\Feature\CreateFeatureDto;
 use Sowapps\SoManAgent\Entity\Feature;
 use Sowapps\SoManAgent\Enum\AuditAction;
 use Sowapps\SoManAgent\Dto\Input\Feature\UpdateFeatureDto;
-use Sowapps\SoManAgent\Service\EntityService;
 use Symfony\Component\Uid\Uuid;
 
 /**

@@ -12,7 +12,6 @@ use Sowapps\SoManAgent\Entity\Agent;
 use Sowapps\SoManAgent\Entity\TicketLog;
 use Sowapps\SoManAgent\Entity\Project;
 use Sowapps\SoManAgent\Entity\ChatMessage;
-use Sowapps\SoManAgent\Service\TicketTaskService;
 /**
  * Builds the context payload sent to an agent: project info, ticket, task, role, skill, and conversation history.
  */

@@ -9,10 +9,6 @@ namespace Sowapps\SoManAgent\Entity;
 
 use Sowapps\SoManAgent\Repository\ProjectRepository;
 use Sowapps\SoManAgent\Enum\DispatchMode;
-use Sowapps\SoManAgent\Entity\Team;
-use Sowapps\SoManAgent\Entity\Workflow;
-use Sowapps\SoManAgent\Entity\Role;
-use Sowapps\SoManAgent\Entity\Module;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;

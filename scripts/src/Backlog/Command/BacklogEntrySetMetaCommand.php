@@ -12,8 +12,7 @@ use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
-use Sowapps\SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
-use SoManAgent\Script\Backlog\Model\BoardEntry;
+use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
 
 /**
  * Sets or clears a named extra-metadata key on an active entry identified by its entry-ref.
@@ -147,7 +146,7 @@ final class BacklogEntrySetMetaCommand extends AbstractBacklogCommand
     private function resolveActiveEntry(
         BacklogBoard $board,
         string $entryRef,
-    ): \Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry {
+    ): BoardEntry {
         if (str_contains($entryRef, '/')) {
             return $this->boardService->resolveTaskByReference($board, $entryRef, BacklogCommandName::ENTRY_SET_META->value)->getEntry();
         }

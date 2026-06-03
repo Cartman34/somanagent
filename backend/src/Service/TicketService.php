@@ -23,10 +23,6 @@ use Sowapps\SoManAgent\Enum\TaskPriority;
 use Sowapps\SoManAgent\Enum\TaskStatus;
 use Sowapps\SoManAgent\Entity\TicketTask;
 use Sowapps\SoManAgent\Entity\Feature;
-use Sowapps\SoManAgent\Service\EntityService;
-use Sowapps\SoManAgent\Service\TicketTaskService;
-use Sowapps\SoManAgent\Service\TicketLogService;
-use Sowapps\SoManAgent\Service\RealtimeUpdateService;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Symfony\Component\Uid\Uuid;
 

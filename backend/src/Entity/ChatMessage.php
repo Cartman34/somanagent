@@ -9,8 +9,6 @@ namespace Sowapps\SoManAgent\Entity;
 
 use Sowapps\SoManAgent\Repository\ChatMessageRepository;
 use Sowapps\SoManAgent\Enum\ChatAuthor;
-use Sowapps\SoManAgent\Entity\Project;
-use Sowapps\SoManAgent\Entity\Agent;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 

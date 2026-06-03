@@ -7,10 +7,6 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script;
 
-use Sowapps\SoManAgent\Script\Console;
-use Sowapps\SoManAgent\Script\AuthSyncSupport;
-use Sowapps\SoManAgent\Script\Application;
-
 /**
  * Manages OpenCode CLI provider credentials with WSL as the source of truth and Docker as a synchronized runtime copy.
  */

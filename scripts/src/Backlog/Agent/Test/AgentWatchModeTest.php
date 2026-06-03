@@ -28,12 +28,6 @@ use Sowapps\SoManAgent\Script\Client\ConsoleClient;
 use Sowapps\SoManAgent\Script\Client\GitClient;
 use Sowapps\SoManAgent\Script\RetryPolicy;
 use Sowapps\SoManAgent\Script\Client\ProjectScriptClient;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeBacklogCommandRunner;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeAgentClientLauncher;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeSessionDriver;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeProcessSignaler;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeProcessRunner;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Test\NullEntryRebaseService;
 use Symfony\Component\Yaml\Yaml;
 
 /**

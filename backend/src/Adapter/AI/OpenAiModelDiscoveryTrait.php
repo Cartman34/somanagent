@@ -15,7 +15,7 @@ use GuzzleHttp\Client;
  */
 trait OpenAiModelDiscoveryTrait
 {
-    private const MODEL_FAMILY_GPT5 = self::MODEL_FAMILY_GPT5;
+    private const MODEL_FAMILY_GPT5 = 'gpt-5';
     /**
      * Retrieves the OpenAI model catalog and converts the supported entries into normalized descriptors.
      *

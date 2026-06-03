@@ -14,7 +14,6 @@ use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
-use Sowapps\SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
 /**
  * Command for releasing an active feature or task back to the todo section.
  */

@@ -12,7 +12,6 @@ use Sowapps\SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\BacklogPaths;
 use Sowapps\SoManAgent\Script\Backlog\Command\BacklogReviewNotesCommand;
-use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\CampaignInterface;
 /**
  * Feature review lifecycle campaign
  *

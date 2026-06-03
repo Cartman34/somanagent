@@ -11,7 +11,6 @@ use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPermissionService;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
-use Sowapps\SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
 /**
  * Guards git commits in managed worktrees: exits 0 when the active entry is in development stage,
  * exits non-zero with a descriptive message otherwise. Called by the pre-commit hook only.

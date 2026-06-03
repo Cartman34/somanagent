@@ -15,7 +15,6 @@ use Sowapps\SoManAgent\Enum\AuditAction;
 use Sowapps\SoManAgent\Enum\SkillSource;
 use Sowapps\SoManAgent\Dto\Input\Skill\CreateSkillDto;
 use Sowapps\SoManAgent\Dto\Input\Skill\UpdateSkillContentDto;
-use Sowapps\SoManAgent\Service\EntityService;
 use Symfony\Component\Uid\Uuid;
 
 /**

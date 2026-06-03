@@ -37,7 +37,6 @@ use Sowapps\SoManAgent\Entity\TicketTask;
 use Sowapps\SoManAgent\Entity\AgentTaskExecutionAttempt;
 use Sowapps\SoManAgent\Entity\TicketLog;
 use Sowapps\SoManAgent\Enum\TaskStatus;
-use Sowapps\SoManAgent\Controller\AbstractApiController;
 use Sowapps\SoManAgent\Entity\Project;
 use Sowapps\SoManAgent\Entity\Ticket;
 use Symfony\Component\HttpFoundation\JsonResponse;

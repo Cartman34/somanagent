@@ -7,9 +7,6 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
-use Sowapps\SoManAgent\Script\Runner\AbstractScriptRunner;
-use Sowapps\SoManAgent\Script\Runner\DoctrineRunner;
-
 /**
  * Database script runner.
  *

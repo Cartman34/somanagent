@@ -10,7 +10,6 @@ namespace Sowapps\SoManAgent\Script\Backlog\Command;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use Sowapps\SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
 /**
  * Command for cleaning abandoned managed worktrees.
  */

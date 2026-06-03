@@ -14,7 +14,6 @@ use Sowapps\SoManAgent\Entity\Team;
 use Sowapps\SoManAgent\Enum\AuditAction;
 use Sowapps\SoManAgent\Dto\Input\Team\UpdateTeamDto;
 use Sowapps\SoManAgent\Entity\Agent;
-use Sowapps\SoManAgent\Service\EntityService;
 use Symfony\Component\Uid\Uuid;
 
 /**

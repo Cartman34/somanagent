@@ -11,7 +11,6 @@ use Sowapps\SoManAgent\Service\WorkflowService;
 use Sowapps\SoManAgent\Service\ApiErrorPayloadFactory;
 use Sowapps\SoManAgent\Dto\Input\Workflow\CreateWorkflowDto;
 use Sowapps\SoManAgent\Dto\Input\Workflow\UpdateWorkflowDto;
-use Sowapps\SoManAgent\Controller\AbstractApiController;
 use Sowapps\SoManAgent\Entity\Workflow;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;

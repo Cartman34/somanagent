@@ -7,10 +7,6 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\DevEnv;
 
-use Sowapps\SoManAgent\Script\DevEnv\SourceQuerierInterface;
-use Sowapps\SoManAgent\Script\DevEnv\CommandRunnerInterface;
-use Sowapps\SoManAgent\Script\DevEnv\HttpFetcherInterface;
-
 /**
  * Queries available package versions from real system sources.
  *

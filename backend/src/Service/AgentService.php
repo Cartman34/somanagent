@@ -16,7 +16,6 @@ use Sowapps\SoManAgent\Dto\Input\Agent\UpdateAgentDto;
 use Sowapps\SoManAgent\Enum\ConnectorType;
 use Sowapps\SoManAgent\ValueObject\ConnectorConfig;
 use Sowapps\SoManAgent\Exception\ValidationException;
-use Sowapps\SoManAgent\Service\EntityService;
 use Symfony\Component\Uid\Uuid;
 
 /**

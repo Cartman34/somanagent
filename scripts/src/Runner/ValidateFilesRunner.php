@@ -10,7 +10,6 @@ namespace Sowapps\SoManAgent\Script\Runner;
 use Sowapps\SoManAgent\Script\Validation\ScriptExecBitValidator;
 use Sowapps\SoManAgent\Script\Validation\GitIndexModeReader;
 use Sowapps\SoManAgent\Script\Validation\OpenApiConsistencyValidator;
-use Sowapps\SoManAgent\Script\Runner\AbstractScriptRunner;
 /**
  * Validate files script runner.
  *

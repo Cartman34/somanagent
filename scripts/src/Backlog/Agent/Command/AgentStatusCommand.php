@@ -13,7 +13,6 @@ use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AbstractAgentCommand;
 /**
  * Displays session details for one code, or a summary table for all codes.
  *

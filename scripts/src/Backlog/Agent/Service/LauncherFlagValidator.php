@@ -9,8 +9,6 @@ namespace Sowapps\SoManAgent\Script\Backlog\Agent\Service;
 
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ProcessRunner;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncher;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Service\LauncherFlagReport;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Service\LauncherFlagCheck;
 /**
  * Detects upstream CLI flag removals before they break a real agent launch.
  *

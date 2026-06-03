@@ -8,8 +8,6 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\ValueObject;
 
 use Sowapps\SoManAgent\Enum\ConnectorType;
-use Sowapps\SoManAgent\ValueObject\ConnectorHealthReport;
-use Sowapps\SoManAgent\ValueObject\ConnectorAuthStatus;
 /**
  * Runtime descriptor for one registered connector.
  */

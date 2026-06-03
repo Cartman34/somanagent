@@ -7,8 +7,6 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\DevEnv\Model;
 
-use Sowapps\SoManAgent\Script\DevEnv\Model\SideEffects;
-
 /**
  * Represents a single resolved dependency entry in the lockfile.
  */

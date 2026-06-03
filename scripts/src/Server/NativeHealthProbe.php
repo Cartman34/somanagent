@@ -7,9 +7,6 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Server;
 
-use Sowapps\SoManAgent\Script\Server\HealthProbeInterface;
-use Sowapps\SoManAgent\Script\Server\HealthCheckResult;
-
 /**
  * Native PHP implementation of server health probes.
  *

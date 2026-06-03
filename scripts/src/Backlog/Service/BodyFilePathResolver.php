@@ -9,8 +9,6 @@ namespace Sowapps\SoManAgent\Script\Backlog\Service;
 
 use Sowapps\SoManAgent\Script\Console;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
-use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 /**
  * Resolves --body-file paths for backlog commands running inside a worktree-proxied subprocess.
  *

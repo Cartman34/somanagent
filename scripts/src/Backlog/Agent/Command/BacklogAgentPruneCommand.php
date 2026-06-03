@@ -13,7 +13,6 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AbstractAgentCommand;
 /**
  * Removes invalid or orphan entries from local/tmp/agent-sessions.json, and kills driver-side
  * sessions that have no corresponding registry entry.

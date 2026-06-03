@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\Backlog\Agent\Model;
 
 /**
- * Outcome of {@see \SoManAgent\Script\Backlog\Agent\Service\AgentLaunchPromptResolver::resolveStageDecision()}.
+ * Outcome of {@see \Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentLaunchPromptResolver::resolveStageDecision()}.
  *
  * Three mutually exclusive states:
  * - prompt   : launch the agent with an optional natural-language initial message

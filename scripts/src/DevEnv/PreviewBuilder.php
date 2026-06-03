@@ -9,8 +9,6 @@ namespace Sowapps\SoManAgent\Script\DevEnv;
 
 use Sowapps\SoManAgent\Script\DevEnv\Installer\InstallerInterface;
 use Sowapps\SoManAgent\Script\Console;
-use Sowapps\SoManAgent\Script\DevEnv\InstallPlan;
-use Sowapps\SoManAgent\Script\DevEnv\PlannedDep;
 /**
  * Renders an InstallPlan as human-readable output.
  *

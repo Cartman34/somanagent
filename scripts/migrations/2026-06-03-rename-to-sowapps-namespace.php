@@ -18,6 +18,10 @@
  * - Applies targeted substitutions in Symfony config YAML and entry-point PHP files.
  * - Updates config/phpstan-baseline.neon and ValidateBackendTestsRunner.php patterns.
  * - Builds a FQCN → FQCN map from PHP sources and runs Rector RenameClassRector.
+ *   Note: RenameClassRector (Rector 2.x) renames class references but does NOT update
+ *   namespace declarations of the renamed class's own file. Steps 8b, 9b, 9c patch
+ *   this gap: 8b removes same-namespace use imports added by Rector, 9b/9c fix
+ *   namespace declarations that Rector missed (scripts/src and root App namespace).
  * - Runs a post-Rector pass to replace remaining App\ in DQL string literals.
  * - Idempotent: each step checks whether the target state is already in place.
  */
@@ -199,7 +203,8 @@ return RectorConfig::configure()
         '{$backendAutoload}',
         '{$scriptsAutoload}',
     ])
-    ->withImportNames(importNames: true, importDocBlockNames: true, importShortClasses: false, removeUnusedImports: true)
+    // importNames disabled: adding use statements for same-namespace classes causes redundant imports.
+    // Namespace declarations that Rector misses are handled by post-Rector passes 9b and 9c.
     ->withConfiguredRule(RenameClassRector::class, [
 {$entriesStr}
     ]);
@@ -439,19 +444,87 @@ if ($fullMap === []) {
     echo "\n";
 }
 
+// ─── Step 8b: Remove same-namespace use imports introduced by Rector ──────────
+// RenameClassRector adds `use` statements for every class reference it rewrites,
+// including classes already resolved by the current namespace declaration (redundant).
+// This pass removes `use <current-ns>\ClassName;` lines where <current-ns> matches
+// the file's own namespace declaration.
+
+echo "[8b/9] Remove same-namespace redundant use imports\n";
+
+$dirsToClean = ['backend/src', 'backend/tests', 'scripts/src'];
+$cleanedTotal = 0;
+
+foreach ($dirsToClean as $cleanDir) {
+    $absDir = $projectRoot . '/' . $cleanDir;
+    if (!is_dir($absDir)) {
+        continue;
+    }
+    $iter = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($absDir, FilesystemIterator::SKIP_DOTS)
+    );
+    foreach ($iter as $file) {
+        if (!$file instanceof SplFileInfo || !$file->isFile() || $file->getExtension() !== 'php') {
+            continue;
+        }
+        $content = file_get_contents($file->getPathname());
+        if ($content === false) {
+            continue;
+        }
+        if (!preg_match('/^namespace\s+([\w\\\\]+);/m', $content, $nsMatch)) {
+            continue;
+        }
+        $ns = $nsMatch[1];
+        $escapedNs = preg_quote($ns, '/');
+        // Remove `use <same-namespace>\ClassName;` lines (direct children only, no sub-namespace)
+        $updated = preg_replace('/^use ' . $escapedNs . '\\\\(\w+);\n?/m', '', $content);
+        if ($updated === null || $updated === $content) {
+            continue;
+        }
+        // Collapse triple (or more) blank lines into at most two
+        $updated = preg_replace('/\n{3,}/', "\n\n", $updated);
+        writeTmpAndRename($file->getPathname(), $updated, $file->getPathname());
+        $cleanedTotal++;
+    }
+}
+
+if ($cleanedTotal > 0) {
+    echo "  removed same-namespace imports in {$cleanedTotal} PHP file(s)\n\n";
+} else {
+    echo "  skip (no redundant same-namespace imports found)\n\n";
+}
+
 // ─── Step 9: Post-Rector passes ───────────────────────────────────────────────
 
 echo "[9/9] Post-Rector passes\n";
 
 // 9a — remaining App\ in DQL string literals (backend only)
-$modified = postRectorStringPass(
-    ['backend/src', 'backend/tests'],
-    'App\\',
-    'Sowapps\\SoManAgent\\',
-    $projectRoot
-);
-if ($modified > 0) {
-    echo "  9a: replaced remaining App\\ in {$modified} PHP file(s)\n";
+// Uses a negative lookbehind for word characters to avoid matching class-name prefixes that end in "App" (e.g. BackendApp\).
+$modified9a = 0;
+foreach (['backend/src', 'backend/tests'] as $dir9a) {
+    $abs9a = $projectRoot . '/' . $dir9a;
+    if (!is_dir($abs9a)) {
+        continue;
+    }
+    $iter9a = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($abs9a, FilesystemIterator::SKIP_DOTS));
+    foreach ($iter9a as $file9a) {
+        if (!$file9a instanceof SplFileInfo || !$file9a->isFile() || $file9a->getExtension() !== 'php') {
+            continue;
+        }
+        $content9a = file_get_contents($file9a->getPathname());
+        if ($content9a === false || !preg_match('/(?<![A-Za-z0-9_])App\\\\/', $content9a)) {
+            continue;
+        }
+        $updated9a = preg_replace('/(?<![A-Za-z0-9_])App\\\\/', 'Sowapps\\SoManAgent\\', $content9a);
+        if ($updated9a === null || $updated9a === $content9a) {
+            continue;
+        }
+        writeTmpAndRename($file9a->getPathname(), $updated9a, $file9a->getPathname());
+        $modified9a++;
+    }
+}
+if ($modified9a > 0) {
+    echo "  9a: replaced remaining App\\ in {$modified9a} PHP file(s)\n";
 } else {
     echo "  9a: skip (no remaining App\\ found)\n";
 }
@@ -482,9 +555,13 @@ if ($modified > 0) {
     echo "  9c: skip (root App namespace already correct)\n";
 }
 
-// 9d — top-level scripts/*.php entrypoints (not in scripts/src/, not processed by Rector or steps 9a–9c)
+// 9d — top-level scripts/*.php and scripts/claude/*.php entrypoints
+// (not in scripts/src/, not processed by Rector or steps 9a–9c)
 // Uses a negative lookbehind for \ to avoid re-expanding already-migrated Sowapps\SoManAgent\Script\ references.
-$topLevelScripts = glob($projectRoot . '/scripts/*.php') ?: [];
+$topLevelScripts = array_merge(
+    glob($projectRoot . '/scripts/*.php') ?: [],
+    glob($projectRoot . '/scripts/claude/*.php') ?: []
+);
 $modified9d = 0;
 foreach ($topLevelScripts as $scriptPath) {
     $content = file_get_contents($scriptPath);

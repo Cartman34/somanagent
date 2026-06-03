@@ -8,8 +8,6 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Entity;
 
 use Sowapps\SoManAgent\Repository\TicketLogRepository;
-use Sowapps\SoManAgent\Entity\Ticket;
-use Sowapps\SoManAgent\Entity\TicketTask;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 

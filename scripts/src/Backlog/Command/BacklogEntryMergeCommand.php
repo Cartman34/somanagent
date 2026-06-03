@@ -14,9 +14,6 @@ use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntryMatch;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
-use Sowapps\SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
-use Sowapps\SoManAgent\Script\Backlog\Command\BacklogFeatureMergeCommand;
-use Sowapps\SoManAgent\Script\Backlog\Command\BacklogFeatureTaskMergeCommand;
 /**
  * Command for resolving and merging one backlog entry.
  */

@@ -8,7 +8,6 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Entity;
 
 use Sowapps\SoManAgent\Repository\LogOccurrenceRepository;
-use Sowapps\SoManAgent\Entity\LogEvent;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 

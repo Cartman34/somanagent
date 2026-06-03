@@ -14,7 +14,6 @@ use Sowapps\SoManAgent\ValueObject\ConnectorResponse;
 use Sowapps\SoManAgent\ValueObject\ConnectorAuthStatus;
 use Sowapps\SoManAgent\Enum\ConnectorType;
 use Sowapps\SoManAgent\ValueObject\ConnectorHealthCheckResult;
-use Sowapps\SoManAgent\Adapter\AI\AbstractConnector;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 

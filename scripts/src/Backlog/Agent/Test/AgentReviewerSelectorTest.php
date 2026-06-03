@@ -15,7 +15,6 @@ use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use Sowapps\SoManAgent\Script\TextSlugger;
 use Sowapps\SoManAgent\Script\Client\FilesystemClient;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeBacklogCommandRunner;
 use Symfony\Component\Yaml\Yaml;
 
 /**

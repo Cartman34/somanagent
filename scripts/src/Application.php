@@ -9,9 +9,6 @@ namespace Sowapps\SoManAgent\Script;
 
 use Sowapps\SoManAgent\Script\Exception\WslRequiredException;
 use Sowapps\SoManAgent\Script\Exception\PhpNotAvailableException;
-use Sowapps\SoManAgent\Script\ShellRunnerInterface;
-use Sowapps\SoManAgent\Script\Console;
-use Sowapps\SoManAgent\Script\Environment;
 /**
  * Main application entry point for SoManAgent CLI scripts.
  *

@@ -11,7 +11,6 @@ use Sowapps\SoManAgent\Script\Console;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AbstractAgentCommand;
 /**
  * Stops a live agent session, cleans up a stale entry, or kills an orphan driver session.
  *

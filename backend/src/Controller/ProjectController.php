@@ -15,7 +15,6 @@ use Sowapps\SoManAgent\Dto\Input\Project\CreateProjectDto;
 use Sowapps\SoManAgent\Dto\Input\Project\UpdateProjectDto;
 use Sowapps\SoManAgent\Dto\Input\Project\CreateModuleDto;
 use Sowapps\SoManAgent\Dto\Input\Project\UpdateModuleDto;
-use Sowapps\SoManAgent\Controller\AbstractApiController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;

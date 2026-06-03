@@ -14,7 +14,6 @@ use Sowapps\SoManAgent\Script\DevEnv\StateInspector;
 use Sowapps\SoManAgent\Script\DevEnv\InstallPlanner;
 use Sowapps\SoManAgent\Script\DevEnv\PlannedDep;
 use Sowapps\SoManAgent\Script\DevEnv\Model\LockEntry;
-use Sowapps\SoManAgent\Script\DevEnv\Test\FakeCommandRunner;
 /**
  * Unit tests for InstallPlanner.
  */

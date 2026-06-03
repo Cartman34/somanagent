@@ -8,8 +8,6 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\DevEnv\Test;
 
 use Sowapps\SoManAgent\Script\DevEnv\SystemSourceQuerier;
-use Sowapps\SoManAgent\Script\DevEnv\Test\FakeCommandRunner;
-use Sowapps\SoManAgent\Script\DevEnv\Test\FakeHttpFetcher;
 /**
  * Unit tests for SystemSourceQuerier source routing.
  *

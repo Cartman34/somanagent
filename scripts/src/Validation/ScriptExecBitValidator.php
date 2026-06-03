@@ -7,8 +7,6 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Validation;
 
-use Sowapps\SoManAgent\Script\Validation\IndexModeReader;
-
 /**
  * Validates that runnable scripts under `scripts/` carry the exec bit when they declare a shebang.
  *

@@ -16,7 +16,6 @@ use Sowapps\SoManAgent\ValueObject\ConnectorHealthCheckResult;
 use Sowapps\SoManAgent\ValueObject\AgentModelInfo;
 use Sowapps\SoManAgent\ValueObject\AgentModelPricing;
 use Sowapps\SoManAgent\ValueObject\AgentModelCapabilities;
-use Sowapps\SoManAgent\Adapter\AI\AbstractConnector;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 

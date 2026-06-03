@@ -21,7 +21,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 #[AsCommand(name: 'somanagent:health', description: 'Checks the health of AI and VCS connectors')]
 class HealthCheckCommand extends Command
 {
-    private const OPT_NO_PROMPT_TEST = self::OPT_NO_PROMPT_TEST;
+    private const OPT_NO_PROMPT_TEST = 'no-prompt-test';
 
     /**
      * Initializes the command with the connector registry.

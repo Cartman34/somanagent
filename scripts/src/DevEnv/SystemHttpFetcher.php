@@ -7,8 +7,6 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\DevEnv;
 
-use Sowapps\SoManAgent\Script\DevEnv\HttpFetcherInterface;
-
 /**
  * Production implementation of HttpFetcherInterface using file_get_contents.
  *

@@ -7,8 +7,6 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\ValueObject;
 
-use Sowapps\SoManAgent\ValueObject\Prompt;
-
 /**
  * Normalized connector request containing prompt payload and execution context.
  */

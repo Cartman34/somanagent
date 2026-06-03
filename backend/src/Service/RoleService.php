@@ -13,7 +13,6 @@ use Sowapps\SoManAgent\Dto\Input\Role\CreateRoleDto;
 use Sowapps\SoManAgent\Entity\Role;
 use Sowapps\SoManAgent\Enum\AuditAction;
 use Sowapps\SoManAgent\Dto\Input\Role\UpdateRoleDto;
-use Sowapps\SoManAgent\Service\EntityService;
 use Symfony\Component\Uid\Uuid;
 
 /**

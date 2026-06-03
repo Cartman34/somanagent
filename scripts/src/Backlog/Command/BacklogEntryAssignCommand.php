@@ -16,7 +16,6 @@ use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntryMatch;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
-use Sowapps\SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
 use RuntimeException;
 
 /**

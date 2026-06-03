@@ -9,7 +9,6 @@ namespace Sowapps\SoManAgent\Script\Runner;
 
 use Sowapps\SoManAgent\Script\Console;
 use Sowapps\SoManAgent\Script\Application;
-use Sowapps\SoManAgent\Script\Runner\DockerComposeServiceRunner;
 /**
  * Runs Doctrine commands (migrations, fixtures) and psql commands.
  */

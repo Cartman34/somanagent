@@ -7,9 +7,6 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\ValueObject;
 
-use Sowapps\SoManAgent\ValueObject\AgentModelPricing;
-use Sowapps\SoManAgent\ValueObject\AgentModelCapabilities;
-
 /**
  * Normalized model descriptor returned by any agent connector.
  */

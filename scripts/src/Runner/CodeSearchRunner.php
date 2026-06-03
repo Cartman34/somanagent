@@ -7,8 +7,6 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
-use Sowapps\SoManAgent\Script\Runner\AbstractScriptRunner;
-
 /**
  * Searches a term across backend PHP, frontend TS/TSX, scripts PHP, doc Markdown, and YAML resource files.
  */

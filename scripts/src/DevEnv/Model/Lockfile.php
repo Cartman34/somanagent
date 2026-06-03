@@ -7,8 +7,6 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\DevEnv\Model;
 
-use Sowapps\SoManAgent\Script\DevEnv\Model\LockEntry;
-
 /**
  * Represents the complete resolved lockfile.
  *

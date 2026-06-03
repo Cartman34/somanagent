@@ -18,7 +18,6 @@ use Sowapps\SoManAgent\Exception\ValidationException;
 use Sowapps\SoManAgent\Entity\AgentTaskExecution;
 use Sowapps\SoManAgent\Enum\ConnectorType;
 use Sowapps\SoManAgent\Entity\AgentTaskExecutionAttempt;
-use Sowapps\SoManAgent\Controller\AbstractApiController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;

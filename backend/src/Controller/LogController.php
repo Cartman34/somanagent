@@ -13,7 +13,6 @@ use Sowapps\SoManAgent\Service\ApiErrorPayloadFactory;
 use Sowapps\SoManAgent\Service\LogMessageRenderer;
 use Sowapps\SoManAgent\Entity\LogOccurrence;
 use Sowapps\SoManAgent\Entity\LogEvent;
-use Sowapps\SoManAgent\Controller\AbstractApiController;
 use Sowapps\SoManAgent\Service\LogService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;

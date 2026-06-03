@@ -22,8 +22,6 @@ use Sowapps\SoManAgent\Script\Client\AppScript;
 use Sowapps\SoManAgent\Script\Backlog\BacklogPaths;
 use Sowapps\SoManAgent\Script\LocalWorkingDirectories;
 use Sowapps\SoManAgent\Script\Backlog\Model\ActiveEntryReference;
-use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use Sowapps\SoManAgent\Script\Backlog\Service\BacklogConfig;
 /**
  * Handles managed backlog worktrees and local git orchestration.
  */

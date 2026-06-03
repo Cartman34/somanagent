@@ -8,7 +8,6 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\Runner;
 
 use Sowapps\SoManAgent\Script\ClaudeAuthManager;
-use Sowapps\SoManAgent\Script\Runner\AbstractScriptRunner;
 /**
  * Claude auth management script runner.
  *

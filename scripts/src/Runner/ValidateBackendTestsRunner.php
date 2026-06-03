@@ -7,8 +7,6 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
-use Sowapps\SoManAgent\Script\Runner\AbstractScriptRunner;
-
 /**
  * Runs targeted PHPUnit checks for modified backend services when a dedicated test exists.
  */

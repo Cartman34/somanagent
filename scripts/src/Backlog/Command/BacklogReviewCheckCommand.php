@@ -18,7 +18,6 @@ use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\BacklogPaths;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogScopeService;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogConfig;
-use Sowapps\SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
 /**
  * Reviewer command that runs the mechanical review for a feature or task.
  *

@@ -11,7 +11,6 @@ use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
-use Sowapps\SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
 /**
  * Command for restoring an agent worktree.
  */

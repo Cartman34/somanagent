@@ -7,8 +7,6 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
-use Sowapps\SoManAgent\Script\Runner\AbstractScriptRunner;
-
 /**
  * Outputs a compact schema of all Doctrine entities by parsing #[ORM\...] attributes.
  */

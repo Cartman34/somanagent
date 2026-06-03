@@ -6,7 +6,7 @@
  *
  * Normal mode:
  * - load scripts/vendor/autoload.php
- * - make the SoManAgent\Script\* classes available to the entrypoint
+ * - make the Sowapps\SoManAgent\Script\* classes available to the entrypoint
  *
  * Recovery mode:
  * - on a fresh checkout, scripts/vendor/autoload.php may be missing

@@ -17,7 +17,6 @@ use Sowapps\SoManAgent\Script\Client\FilesystemClient;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use Sowapps\SoManAgent\Script\Console;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeEntryRebaseService;
 
 /**
  * Unit tests for {@see BacklogEntryRebaseCommand}.

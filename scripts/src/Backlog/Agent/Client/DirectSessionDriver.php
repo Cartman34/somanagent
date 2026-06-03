@@ -11,9 +11,6 @@ use Sowapps\SoManAgent\Script\Console;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\InteractiveProcessRunner;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
 /**
  * Session driver backed by proc_open — the pre-tmux behaviour.
  *

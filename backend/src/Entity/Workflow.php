@@ -10,7 +10,6 @@ namespace Sowapps\SoManAgent\Entity;
 use Sowapps\SoManAgent\Repository\WorkflowRepository;
 use Sowapps\SoManAgent\Enum\WorkflowTrigger;
 use Sowapps\SoManAgent\Enum\WorkflowStatus;
-use Sowapps\SoManAgent\Entity\WorkflowStep;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;

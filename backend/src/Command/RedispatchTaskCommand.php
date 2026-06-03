@@ -30,7 +30,7 @@ use Symfony\Component\Uid\Uuid;
 )]
 final class RedispatchTaskCommand extends Command
 {
-    private const ARG_TASK_ID = self::ARG_TASK_ID;
+    private const ARG_TASK_ID = 'task-id';
 
     /**
      * Initializes the command with services used to resolve and redispatch tasks.

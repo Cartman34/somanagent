@@ -12,7 +12,6 @@ use Sowapps\SoManAgent\Service\ApiErrorPayloadFactory;
 use Sowapps\SoManAgent\Dto\Input\Skill\ImportSkillDto;
 use Sowapps\SoManAgent\Dto\Input\Skill\CreateSkillDto;
 use Sowapps\SoManAgent\Dto\Input\Skill\UpdateSkillContentDto;
-use Sowapps\SoManAgent\Controller\AbstractApiController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;

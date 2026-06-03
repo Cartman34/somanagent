@@ -14,7 +14,6 @@ use Sowapps\SoManAgent\ValueObject\ConnectorResponse;
 use Sowapps\SoManAgent\ValueObject\ConnectorAuthStatus;
 use Sowapps\SoManAgent\Enum\ConnectorType;
 use Sowapps\SoManAgent\ValueObject\ConnectorHealthCheckResult;
-use Sowapps\SoManAgent\Adapter\AI\AbstractConnector;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
@@ -26,7 +25,7 @@ class ClaudeApiConnector extends AbstractConnector
     private const API_URL = 'https://api.anthropic.com/v1/messages';
     private const API_VERSION = '2023-06-01';
     private const DEFAULT_HEALTH_MODEL = 'claude-sonnet-4-5';
-    private const HEADER_API_KEY = self::HEADER_API_KEY;
+    private const HEADER_API_KEY = 'x-api-key';
 
     private Client $http;
 

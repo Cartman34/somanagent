@@ -12,7 +12,6 @@ use Sowapps\SoManAgent\Script\Application;
 use Sowapps\SoManAgent\Script\Console;
 use Sowapps\SoManAgent\Script\DevEnv\PlannedDep;
 use Sowapps\SoManAgent\Script\DevEnv\Model\SideEffects;
-use Sowapps\SoManAgent\Script\DevEnv\Installer\InstallerInterface;
 
 /**
  * Installs Docker Engine and Compose plugin via the official docker.com apt repository.

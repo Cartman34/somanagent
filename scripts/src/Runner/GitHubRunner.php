@@ -10,7 +10,6 @@ namespace Sowapps\SoManAgent\Script\Runner;
 use Sowapps\SoManAgent\Script\GitHub\Enum\GitHubCommandName;
 use Sowapps\SoManAgent\Script\Service\GitService;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
-use Sowapps\SoManAgent\Script\Runner\AbstractScriptRunner;
 /**
  * GitHub CLI helper script runner.
  *

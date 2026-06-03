@@ -19,7 +19,6 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ShellProcessRunner;
 use Sowapps\SoManAgent\Script\Service\CommandHelpService;
 use Sowapps\SoManAgent\Script\Backlog\Storage\BoardYamlStorage;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogMigrationGuard;
-use Sowapps\SoManAgent\Script\Runner\AbstractScriptRunner;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\PosixProcessSignaler;
 /**
  * Local backlog workflow orchestrator.

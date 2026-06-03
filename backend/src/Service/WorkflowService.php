@@ -14,7 +14,6 @@ use Sowapps\SoManAgent\Enum\AuditAction;
 use Sowapps\SoManAgent\Entity\WorkflowStep;
 use Sowapps\SoManAgent\Entity\WorkflowStepAction;
 use Sowapps\SoManAgent\Dto\Input\Workflow\UpdateWorkflowDto;
-use Sowapps\SoManAgent\Service\EntityService;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Translation\TranslatorInterface;
 

@@ -14,7 +14,6 @@ use Sowapps\SoManAgent\Entity\Ticket;
 use Sowapps\SoManAgent\Entity\TicketTask;
 use Sowapps\SoManAgent\Entity\TicketLog;
 use Sowapps\SoManAgent\Entity\AgentTaskExecution;
-use Sowapps\SoManAgent\Service\RealtimeTopicFactory;
 use Psr\Log\LoggerInterface;
 
 /**
