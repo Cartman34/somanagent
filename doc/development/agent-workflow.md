@@ -20,8 +20,8 @@ Rules:
 
 - Files under `local/` are local-only and must not be committed.
 - The backlog board is a YAML file with three top-level keys: `version` (currently `1`), `todo` (queued priorities), and `active` (features and child tasks with workflow state in `stage`).
-- A queued entry under `todo` carries the keys `feature`, optional `task`, optional `type`, optional `developer`, `title`, and optional `body`.
-- An active entry under `active` carries the meta fields (`kind`, `stage`, `feature`, `task`, `developer`, `reviewer`, `branch`, `feature-branch`, `base`, `pr`, `blocked`, `type`), followed by `title`, optional `body`, and any extra metadata.
+- A queued entry under `todo` carries the keys `feature`, optional `task`, optional `type`, optional `developer`, optional `scope`, `title`, and optional `body`.
+- An active entry under `active` carries the meta fields (`kind`, `stage`, `feature`, `task`, `developer`, `reviewer`, `branch`, `feature-branch`, `base`, `pr`, `blocked`, `scope`, `type`), followed by `title`, optional `body`, and any extra metadata.
 - The extra metadata key `submit-ready: yes` is written by `submit-check` when the mechanical review passes, and cleared by `review-request` unconditionally. It is informational only; `review-request` does not require it to be present.
 - Local backlog files are not edited manually.
 - If a needed backlog transition or backlog mutation is not covered by an existing command, stop and ask the user before proceeding.
@@ -69,12 +69,13 @@ Rules:
 8. `<type>` is `feat` or `fix` on the branch.
 9. Every developer commit on a feature branch must start with `[<slug>]`.
 10. Review and approval must be scoped from the recorded `base` commit, not from the current `main`.
-11. Active workflow state is stored in `stage` with one of:
+11. The optional meta field `scope` records the declared scope name for the entry. Absence of `scope` is equivalent to ALL (unrestricted). A child task without `scope` inherits its parent feature's `scope` for both mechanical review and validation purposes. The name `ALL` is reserved and cannot be used as a scope name. Scope names are declared in `local/backlog/config.yaml` under the `scopes:` key and map to a list of directory prefixes.
+12. Active workflow state is stored in `stage` with one of:
    `development`, `review`, `reviewing`, `rejected`, `approved`.
    `reviewing` is set automatically by `backlog-agent.php start --reviewer` when a reviewer session takes a `review`-stage entry; the field `reviewer` records the reviewer agent code (e.g. `r01`).
    `reviewing` entries are visible to `list`, `status --code=<rXX>`, and `whoami` and are reported as `[reviewing] <feature>[/<task>]`.
-12. The `meta:` block is absent from queued tasks that have never been taken.
-13. Inside one active entry, `meta:` is always the final block. The entry ends on the next blank line, next root `- ...`, or next section title.
+13. The `meta:` block is absent from queued tasks that have never been taken.
+14. Inside one active entry, `meta:` is always the final block. The entry ends on the next blank line, next root `- ...`, or next section title.
 
 ## Agent Code Rules
 

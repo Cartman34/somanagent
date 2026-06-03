@@ -47,7 +47,7 @@ final class BoardYamlStorage
 
     private const KNOWN_ACTIVE_FIELDS = [
         'kind', 'stage', 'feature', 'task', 'developer', 'reviewer',
-        'branch', self::FIELD_FEATURE_BRANCH, 'base', 'pr', 'blocked', 'type', 'title', 'body',
+        'branch', self::FIELD_FEATURE_BRANCH, 'base', 'pr', 'blocked', 'scope', 'type', 'title', 'body',
     ];
 
     /**
@@ -134,8 +134,9 @@ final class BoardYamlStorage
             $entry = new BoardEntry((string) ($item['title'] ?? ''));
             $entry->setFeature($this->str($item['feature'] ?? null));
             $entry->setTask($this->str($item['task'] ?? null));
-            $entry->setType($this->str($item['type'] ?? null));
             $entry->setDeveloper($this->str($item['developer'] ?? null));
+            $entry->setScope($this->str($item['scope'] ?? null));
+            $entry->setType($this->str($item['type'] ?? null));
             $entry->setExtraLines($this->loadBodyLines($item['body'] ?? null));
             $entries[] = $entry;
         }
@@ -166,6 +167,7 @@ final class BoardYamlStorage
             $entry->setBase($this->str($item['base'] ?? null));
             $entry->setPr($this->str($item['pr'] ?? null));
             $entry->setBlocked(($item['blocked'] ?? null) === BacklogMetaValue::YES->value);
+            $entry->setScope($this->str($item['scope'] ?? null));
             $entry->setType($this->str($item['type'] ?? null));
             $entry->setExtraLines($this->loadBodyLines($item['body'] ?? null));
 
@@ -196,6 +198,9 @@ final class BoardYamlStorage
             }
             if ($entry->getDeveloper() !== null) {
                 $item['developer'] = $entry->getDeveloper();
+            }
+            if ($entry->getScope() !== null) {
+                $item['scope'] = $entry->getScope();
             }
             if ($entry->getType() !== null) {
                 $item['type'] = $entry->getType();
@@ -241,6 +246,10 @@ final class BoardYamlStorage
 
             if ($entry->checkIsBlocked()) {
                 $item['blocked'] = BacklogMetaValue::YES->value;
+            }
+
+            if ($entry->getScope() !== null) {
+                $item['scope'] = $entry->getScope();
             }
 
             if ($entry->getType() !== null) {

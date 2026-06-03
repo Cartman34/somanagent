@@ -39,6 +39,9 @@ final class BacklogConfigTest
         $failed += $this->testReadsLocalConfig();
         $failed += $this->testErrorWhenLocalAbsent();
         $failed += $this->testFallbackWhenKeyMissing();
+        $failed += $this->testGetScopesReturnsDeclaredScopes();
+        $failed += $this->testGetScopesReturnsEmptyWhenAbsent();
+        $failed += $this->testGetScopesNormalizesTrailingSlash();
 
         return $failed;
     }
@@ -114,6 +117,73 @@ final class BacklogConfigTest
         }
 
         echo "OK testFallbackWhenKeyMissing\n";
+        return 0;
+    }
+
+    private function testGetScopesReturnsDeclaredScopes(): int
+    {
+        $yaml = "scopes:\n  scripts:\n    - scripts/\n  backend:\n    - backend/src/\n    - backend/tests/\n";
+        $tmpDir = $this->setUpTempProject($yaml);
+
+        try {
+            $config = new BacklogConfig($tmpDir);
+            $scopes = $config->getScopes();
+
+            if (!array_key_exists('scripts', $scopes) || $scopes['scripts'] !== ['scripts/']) {
+                echo "FAIL testGetScopesReturnsDeclaredScopes: scripts scope mismatch: " . var_export($scopes, true) . "\n";
+                return 1;
+            }
+            if (!array_key_exists('backend', $scopes) || $scopes['backend'] !== ['backend/src/', 'backend/tests/']) {
+                echo "FAIL testGetScopesReturnsDeclaredScopes: backend scope mismatch: " . var_export($scopes, true) . "\n";
+                return 1;
+            }
+        } finally {
+            $this->removeTempProject($tmpDir);
+        }
+
+        echo "OK testGetScopesReturnsDeclaredScopes\n";
+        return 0;
+    }
+
+    private function testGetScopesReturnsEmptyWhenAbsent(): int
+    {
+        $tmpDir = $this->setUpTempProject("backlog: {}\n");
+
+        try {
+            $config = new BacklogConfig($tmpDir);
+            $scopes = $config->getScopes();
+
+            if ($scopes !== []) {
+                echo "FAIL testGetScopesReturnsEmptyWhenAbsent: expected [], got " . var_export($scopes, true) . "\n";
+                return 1;
+            }
+        } finally {
+            $this->removeTempProject($tmpDir);
+        }
+
+        echo "OK testGetScopesReturnsEmptyWhenAbsent\n";
+        return 0;
+    }
+
+    private function testGetScopesNormalizesTrailingSlash(): int
+    {
+        // Dirs without trailing slash must be normalized to have one
+        $yaml = "scopes:\n  myScope:\n    - scripts\n    - doc/development\n";
+        $tmpDir = $this->setUpTempProject($yaml);
+
+        try {
+            $config = new BacklogConfig($tmpDir);
+            $scopes = $config->getScopes();
+
+            if ($scopes['myScope'] !== ['scripts/', 'doc/development/']) {
+                echo "FAIL testGetScopesNormalizesTrailingSlash: expected normalized dirs, got " . var_export($scopes['myScope'], true) . "\n";
+                return 1;
+            }
+        } finally {
+            $this->removeTempProject($tmpDir);
+        }
+
+        echo "OK testGetScopesNormalizesTrailingSlash\n";
         return 0;
     }
 

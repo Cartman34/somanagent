@@ -579,18 +579,24 @@ final class BacklogWorktreeService
     /**
      * @param string $worktree The worktree path
      * @param string|null $base The base branch for review
+     * @param list<string>|null $scopeDirs Scope directories to enforce, or null for ALL (unrestricted)
      * @return void
      */
-    public function runReviewScript(string $worktree, ?string $base = null): void
+    public function runReviewScript(string $worktree, ?string $base = null, ?array $scopeDirs = null): void
     {
         $this->logVerbose(($this->dryRun ? '[dry-run] Would run review in ' : 'Run review in ') . $this->git->toRelativeProjectPath($worktree));
         if ($this->dryRun) {
             return;
         }
 
-        $arguments = $base !== null && $base !== ''
-            ? sprintf('--base=%s', escapeshellarg($base))
-            : '';
+        $parts = [];
+        if ($base !== null && $base !== '') {
+            $parts[] = sprintf('--base=%s', escapeshellarg($base));
+        }
+        foreach ($scopeDirs ?? [] as $dir) {
+            $parts[] = sprintf('--scope-dir=%s', escapeshellarg($dir));
+        }
+        $arguments = implode(' ', $parts);
         [$code, $output] = $this->scripts->captureWithExitCode(AppScript::REVIEW, $arguments, projectRoot: $worktree);
 
         $resultPath = BacklogPaths::reviewResultPath($worktree);

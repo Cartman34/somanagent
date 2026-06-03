@@ -21,6 +21,7 @@ final class BoardEntry
     public const META_KIND = 'kind';
     public const META_PR = 'pr';
     public const META_REVIEWER = 'reviewer';
+    public const META_SCOPE = 'scope';
     public const META_STAGE = 'stage';
     public const META_TASK = 'task';
     public const META_TYPE = 'type';
@@ -79,6 +80,11 @@ final class BoardEntry
      * Child task slug when the entry is a scoped task.
      */
     private ?string $task = null;
+
+    /**
+     * Named scope restricting the files this entry may touch, or null when the entry is unrestricted (ALL).
+     */
+    private ?string $scope = null;
 
     /**
      * Branch/task type recorded for the entry, such as feat, fix, or tech.
@@ -333,6 +339,23 @@ final class BoardEntry
     public function setTask(?string $task): void
     {
         $this->task = $task;
+    }
+
+    /**
+     * @return ?string
+     */
+    public function getScope(): ?string
+    {
+        return $this->scope;
+    }
+
+    /**
+     * @param ?string $scope
+     * @return void
+     */
+    public function setScope(?string $scope): void
+    {
+        $this->scope = $scope === '' ? null : $scope;
     }
 
     /**

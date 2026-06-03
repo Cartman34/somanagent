@@ -47,6 +47,45 @@ final class BacklogConfig
     }
 
     /**
+     * Returns the named scope map defined in the local config.
+     *
+     * Each key is a scope name (never `ALL`); each value is a list of directory prefixes
+     * ending with `/`. Returns an empty array when the `scopes:` section is absent or
+     * the local config file is missing.
+     *
+     * @return array<string, list<string>>
+     */
+    public function getScopes(): array
+    {
+        try {
+            $raw = $this->load()['scopes'] ?? null;
+        } catch (\RuntimeException) {
+            return [];
+        }
+
+        if (!is_array($raw)) {
+            return [];
+        }
+
+        $scopes = [];
+        foreach ($raw as $name => $dirs) {
+            if (!is_string($name) || $name === '' || !is_array($dirs)) {
+                continue;
+            }
+            $normalized = [];
+            foreach ($dirs as $dir) {
+                if (!is_string($dir) || trim($dir) === '') {
+                    continue;
+                }
+                $normalized[] = rtrim(trim($dir), '/') . '/';
+            }
+            $scopes[$name] = $normalized;
+        }
+
+        return $scopes;
+    }
+
+    /**
      * Returns the project-level submit policy.
      *
      * Fallback is SubmitMode::USER when the config is absent, unreadable, or carries an unknown value.

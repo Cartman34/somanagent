@@ -41,6 +41,7 @@ enum BacklogCliOption: string
     case REVIEW_FILE = 'review-file';
     case REVIEWER = 'reviewer';
     case RUNNING = 'running';
+    case SCOPE = 'scope';
     case TASK = 'task';
     case TEST_MODE = 'test-mode';
     case TYPE = 'type';

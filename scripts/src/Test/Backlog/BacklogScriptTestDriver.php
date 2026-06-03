@@ -1487,6 +1487,7 @@ MD);
      * @param string|null $type Branch type: feat, fix, or tech. When null, defaults to 'feat' since
      *                          --type is now mandatory on the CLI.
      * @param string $name File name for the temporary body file
+     * @param string|null $scope Optional scope name passed as --scope=<name>
      */
     public function createTodoTaskFromBodyFile(
         string $feature,
@@ -1495,6 +1496,7 @@ MD);
         ?string $task,
         ?string $type,
         string $name,
+        ?string $scope = null,
     ): string {
         $allLines = array_merge([$titleLine], $bodyLines);
         $path = $this->createBodyFile($name, $allLines);
@@ -1504,9 +1506,69 @@ MD);
         if ($task !== null) {
             $args[] = '--task=' . $task;
         }
+        if ($scope !== null) {
+            $args[] = '--scope=' . $scope;
+        }
         $this->runBacklog($args);
 
         return $path;
+    }
+
+    /**
+     * Asserts that entry-create fails with the expected error message.
+     *
+     * @param string $feature Feature slug
+     * @param string|null $task Task slug (optional)
+     * @param string|null $scope Scope name (optional)
+     * @param string $titleLine Title for the body file
+     * @param string $needle Expected substring of the failure output
+     */
+    public function assertEntryCreateFails(string $feature, ?string $task, ?string $scope, string $titleLine, string $needle): void
+    {
+        $name = 'entry-create-fail-' . substr(md5($feature . $task . $scope . $titleLine), 0, 8) . '.md';
+        $path = $this->createBodyFile($name, [$titleLine]);
+        $relative = $this->relativePath($path);
+
+        $args = [BacklogCommandName::ENTRY_CREATE->value, '--feature=' . $feature, '--type=tech', '--body-file=' . $relative];
+        if ($task !== null) {
+            $args[] = '--task=' . $task;
+        }
+        if ($scope !== null) {
+            $args[] = '--scope=' . $scope;
+        }
+        $this->assertBacklogFails($args, $needle);
+    }
+
+    /**
+     * Writes a temporary local backlog config for scope testing, saving the previous content.
+     *
+     * Call restoreLocalConfig() after the test to put the original config back.
+     */
+    public function writeTestLocalConfig(string $content): void
+    {
+        $path = $this->context->projectRoot . '/' . \SoManAgent\Script\Backlog\Service\BacklogConfig::LOCAL_PATH;
+        $backupPath = $path . '.test-backup';
+
+        if (is_file($path)) {
+            copy($path, $backupPath);
+        }
+
+        $this->writeFile($path, $content);
+    }
+
+    /**
+     * Restores the local backlog config saved by writeTestLocalConfig.
+     */
+    public function restoreLocalConfig(): void
+    {
+        $path = $this->context->projectRoot . '/' . \SoManAgent\Script\Backlog\Service\BacklogConfig::LOCAL_PATH;
+        $backupPath = $path . '.test-backup';
+
+        if (is_file($backupPath)) {
+            rename($backupPath, $path);
+        } elseif (is_file($path)) {
+            unlink($path);
+        }
     }
 
     /**
