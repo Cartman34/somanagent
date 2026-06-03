@@ -117,14 +117,15 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
             return; // parent is ALL → any subset is valid
         }
 
-        $parentScopeDirs = (new BacklogScopeService())->resolveScopeDirs($parentScopeName, $scopes);
-        $taskScopeDirs = (new BacklogScopeService())->resolveScopeDirs($scopeName, $scopes);
+        $scopeService = new BacklogScopeService();
+        $parentScopeDirs = $scopeService->resolveScopeDirs($parentScopeName, $scopes);
+        $taskScopeDirs = $scopeService->resolveScopeDirs($scopeName, $scopes);
 
         if ($parentScopeDirs === null || $taskScopeDirs === null) {
             return;
         }
 
-        if (!(new BacklogScopeService())->isTaskScopeWithinFeatureScope($taskScopeDirs, $parentScopeDirs)) {
+        if (!$scopeService->isTaskScopeWithinFeatureScope($taskScopeDirs, $parentScopeDirs)) {
             throw new \RuntimeException(sprintf(
                 'Task scope "%s" (dirs: %s) exceeds parent feature scope "%s" (dirs: %s).',
                 $scopeName,
