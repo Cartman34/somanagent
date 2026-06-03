@@ -16,6 +16,9 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class ModuleRepository extends ServiceEntityRepository
 {
+    /**
+     * Registers Module as the managed entity class.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Module::class);

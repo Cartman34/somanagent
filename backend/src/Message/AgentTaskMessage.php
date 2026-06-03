@@ -8,11 +8,14 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Message;
 
 /**
- * Message dispatché quand une tâche doit être exécutée par un agent.
- * Traité de façon asynchrone par AgentTaskHandler via Redis.
+ * Message dispatched when a task must be executed by an agent.
+ * Processed asynchronously by AgentTaskHandler via Redis.
  */
 final class AgentTaskMessage
 {
+    /**
+     * Carries all identifiers needed by AgentTaskHandler to locate and execute the task.
+     */
     public function __construct(
         public readonly string $ticketTaskId,
         public readonly string $agentId,

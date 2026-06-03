@@ -27,6 +27,9 @@ final class ManagedWorktree
 
     private WorktreeAction $action;
 
+    /**
+     * Records all metadata for a backlog-managed worktree.
+     */
     public function __construct(
         string $path,
         ?string $branch,
@@ -43,31 +46,49 @@ final class ManagedWorktree
         $this->action = $action;
     }
 
+    /**
+     * Returns the absolute path to the worktree directory.
+     */
     public function getPath(): string
     {
         return $this->path;
     }
 
+    /**
+     * Returns the checked-out branch name, or null if the worktree is in detached-HEAD state.
+     */
     public function getBranch(): ?string
     {
         return $this->branch;
     }
 
+    /**
+     * Returns the feature slug associated with this worktree, or null if unassigned.
+     */
     public function getFeature(): ?string
     {
         return $this->feature;
     }
 
+    /**
+     * Returns the agent code occupying this worktree, or null if unoccupied.
+     */
     public function getAgent(): ?string
     {
         return $this->agent;
     }
 
+    /**
+     * Returns the current lifecycle state of the worktree.
+     */
     public function getState(): WorktreeState
     {
         return $this->state;
     }
 
+    /**
+     * Returns the recommended action for this worktree.
+     */
     public function getAction(): WorktreeAction
     {
         return $this->action;

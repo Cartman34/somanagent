@@ -20,6 +20,9 @@ final class ExternalWorktree
 
     private WorktreeAction $action;
 
+    /**
+     * Records the path, branch, and recommended action for the external worktree.
+     */
     public function __construct(
         string $path,
         ?string $branch,
@@ -30,16 +33,25 @@ final class ExternalWorktree
         $this->action = $action;
     }
 
+    /**
+     * Returns the absolute path to the worktree directory.
+     */
     public function getPath(): string
     {
         return $this->path;
     }
 
+    /**
+     * Returns the checked-out branch name, or null if the worktree is in detached-HEAD state.
+     */
     public function getBranch(): ?string
     {
         return $this->branch;
     }
 
+    /**
+     * Returns the recommended action for this worktree.
+     */
     public function getAction(): WorktreeAction
     {
         return $this->action;

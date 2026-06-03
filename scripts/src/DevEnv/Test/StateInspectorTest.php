@@ -15,6 +15,9 @@ use Sowapps\SoManAgent\Script\DevEnv\Test\FakeCommandRunner;
  */
 final class StateInspectorTest
 {
+    private const INSTALLER_NPM_GLOBAL = 'npm-global';
+    private const CMD_DPKG_QUERY       = 'dpkg-query';
+
     /**
      * Runs all test cases and returns the total number of failures.
      * @api
@@ -78,7 +81,7 @@ final class StateInspectorTest
             '{"dependencies":{"@anthropic-ai/claude-code":{"version":"1.0.62"}}}',
         );
 
-        $dep = new Dependency('claude', 'clients', '>=1.0', 'npm-global', '@anthropic-ai/claude-code', ['npm']);
+        $dep = new Dependency('claude', 'clients', '>=1.0', self::INSTALLER_NPM_GLOBAL, '@anthropic-ai/claude-code', ['npm']);
         $inspector = new StateInspector($runner);
 
         $version = $inspector->getInstalledVersion($dep);
@@ -99,7 +102,7 @@ final class StateInspectorTest
             '{"dependencies":{}}',
         );
 
-        $dep = new Dependency('codex', 'clients', '>=0.1', 'npm-global', '@openai/codex', ['npm']);
+        $dep = new Dependency('codex', 'clients', '>=0.1', self::INSTALLER_NPM_GLOBAL, '@openai/codex', ['npm']);
         $inspector = new StateInspector($runner);
 
         $version = $inspector->getInstalledVersion($dep);
@@ -133,7 +136,7 @@ final class StateInspectorTest
     private function testCachePreventsDoubleQuery(): int
     {
         $runner = new FakeCommandRunner();
-        $runner->setOutput("dpkg-query", '2.39.2');
+        $runner->setOutput(self::CMD_DPKG_QUERY, '2.39.2');
 
         $dep = new Dependency('git', 'system', '>=2.30', 'apt', 'git', ['default']);
         $inspector = new StateInspector($runner);
@@ -153,7 +156,7 @@ final class StateInspectorTest
     private function testClearCacheAllowsRedetection(): int
     {
         $runner = new FakeCommandRunner();
-        $runner->setOutput("dpkg-query", '2.39.2');
+        $runner->setOutput(self::CMD_DPKG_QUERY, '2.39.2');
 
         $dep = new Dependency('git', 'system', '>=2.30', 'apt', 'git', ['default']);
         $inspector = new StateInspector($runner);

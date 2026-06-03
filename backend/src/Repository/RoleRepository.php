@@ -16,6 +16,9 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class RoleRepository extends ServiceEntityRepository
 {
+    /**
+     * Registers Role as the managed entity class.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Role::class);

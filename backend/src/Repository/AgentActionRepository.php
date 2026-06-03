@@ -16,16 +16,25 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 final class AgentActionRepository extends ServiceEntityRepository
 {
+    /**
+     * Registers AgentAction as the managed entity class.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, AgentAction::class);
     }
 
+    /**
+     * Returns the active action matching the given key, or null if none found.
+     */
     public function findOneByKey(string $key): ?AgentAction
     {
         return $this->findOneBy(['key' => $key]);
     }
 
+    /**
+     * Returns the oldest active action assigned to the given role slug, or null if none found.
+     */
     public function findOneActiveByRoleSlug(string $roleSlug): ?AgentAction
     {
         return $this->createQueryBuilder('aa')
@@ -39,6 +48,9 @@ final class AgentActionRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    /**
+     * Returns the oldest active action matching the optional role and skill slugs, or null if none found.
+     */
     public function findOneActiveByRoleAndSkill(?string $roleSlug, ?string $skillSlug): ?AgentAction
     {
         $qb = $this->createQueryBuilder('aa')

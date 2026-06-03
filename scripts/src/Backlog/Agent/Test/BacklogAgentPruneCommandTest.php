@@ -14,6 +14,7 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeSessionDriver;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeProcessSignaler;
 /**
  * Unit tests for BacklogAgentPruneCommand.
@@ -288,7 +289,7 @@ final class BacklogAgentPruneCommandTest
      */
     private function testDryRunPreservesEntries(): int
     {
-        $dir = $this->mkSubDir('dry-run');
+        $dir = $this->mkSubDir(BacklogCliOption::DRY_RUN->value);
         $service = new AgentSessionService($dir);
         $service->add($this->makeSession('d06', clientPid: null, tmuxSession: null, worktree: $dir));
         $service->add($this->makeSession('d07', clientPid: 7777, tmuxSession: null, worktree: $dir));
@@ -299,7 +300,7 @@ final class BacklogAgentPruneCommandTest
         $cmd = new BacklogAgentPruneCommand(Console::getInstance(), $service, $driver, new FakeProcessSignaler());
 
         ob_start();
-        $cmd->handle([], ['dry-run' => true]);
+        $cmd->handle([], [BacklogCliOption::DRY_RUN->value => true]);
         $output = (string) ob_get_clean();
 
         if (!$service->has('d06') || !$service->has('d07')) {

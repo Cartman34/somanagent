@@ -31,40 +31,50 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class SeedWebTeamCommand extends Command
 {
+    private const ROLE_PRODUCT_OWNER  = 'product-owner';
+    private const ROLE_SCRUM_MASTER   = 'scrum-master';
+    private const ROLE_LEAD_TECH      = 'lead-tech';
+    private const ROLE_DEV_PHP        = 'dev-php';
+    private const ROLE_DEV_FRONTEND   = 'dev-frontend';
+    private const ROLE_QA_TESTER      = 'qa-tester';
+    private const ROLE_UI_UX_DESIGNER = 'ui-ux-designer';
+    private const ROLE_TECH_WRITER    = 'tech-writer';
+    private const ROLE_DEVOPS         = 'devops';
+
     private const ROLES = [
-        ['slug' => 'product-owner',   'name' => 'Product Owner',      'description' => 'Defines user stories, prioritizes the backlog, and accepts deliveries.'],
-        ['slug' => 'scrum-master',    'name' => 'Scrum Master',       'description' => 'Facilitates agile ceremonies and removes blockers.'],
-        ['slug' => 'lead-tech',       'name' => 'Lead Tech',          'description' => 'Handles technical architecture, code review, and mentoring.'],
-        ['slug' => 'dev-php',         'name' => 'PHP Developer',      'description' => 'Builds the PHP/Symfony backend.'],
-        ['slug' => 'dev-frontend',    'name' => 'Frontend Developer', 'description' => 'Builds React, TypeScript, and CSS interfaces.'],
-        ['slug' => 'qa-tester',       'name' => 'QA Tester',          'description' => 'Runs functional tests, reports issues, and validates releases.'],
-        ['slug' => 'ui-ux-designer',  'name' => 'UI/UX Designer',     'description' => 'Produces mockups, design system assets, and user experience guidance.'],
-        ['slug' => 'tech-writer',     'name' => 'Technical Writer',   'description' => 'Writes technical and functional documentation.'],
-        ['slug' => 'devops',          'name' => 'DevOps',             'description' => 'Owns CI/CD, infrastructure, monitoring, and deployments.'],
+        ['slug' => self::ROLE_PRODUCT_OWNER,  'name' => 'Product Owner',      'description' => 'Defines user stories, prioritizes the backlog, and accepts deliveries.'],
+        ['slug' => self::ROLE_SCRUM_MASTER,   'name' => 'Scrum Master',       'description' => 'Facilitates agile ceremonies and removes blockers.'],
+        ['slug' => self::ROLE_LEAD_TECH,      'name' => 'Lead Tech',          'description' => 'Handles technical architecture, code review, and mentoring.'],
+        ['slug' => self::ROLE_DEV_PHP,        'name' => 'PHP Developer',      'description' => 'Builds the PHP/Symfony backend.'],
+        ['slug' => self::ROLE_DEV_FRONTEND,   'name' => 'Frontend Developer', 'description' => 'Builds React, TypeScript, and CSS interfaces.'],
+        ['slug' => self::ROLE_QA_TESTER,      'name' => 'QA Tester',          'description' => 'Runs functional tests, reports issues, and validates releases.'],
+        ['slug' => self::ROLE_UI_UX_DESIGNER, 'name' => 'UI/UX Designer',     'description' => 'Produces mockups, design system assets, and user experience guidance.'],
+        ['slug' => self::ROLE_TECH_WRITER,    'name' => 'Technical Writer',   'description' => 'Writes technical and functional documentation.'],
+        ['slug' => self::ROLE_DEVOPS,         'name' => 'DevOps',             'description' => 'Owns CI/CD, infrastructure, monitoring, and deployments.'],
     ];
 
     private const AGENTS = [
-        ['name' => 'PO - Alice',     'slug' => 'product-owner',  'description' => 'Product Owner agent. Writes user stories and prioritizes the backlog.'],
-        ['name' => 'Scrum - Bob',    'slug' => 'scrum-master',   'description' => 'Scrum Master agent. Facilitates the team and keeps work synchronized.'],
-        ['name' => 'Lead - Clara',   'slug' => 'lead-tech',      'description' => 'Lead Tech agent. Reviews architecture and code decisions.'],
-        ['name' => 'PHP - David',    'slug' => 'dev-php',        'description' => 'PHP developer agent. Implements backend features.'],
-        ['name' => 'Front - Emma',   'slug' => 'dev-frontend',   'description' => 'Frontend developer agent. Implements React interfaces.'],
-        ['name' => 'QA - Felix',     'slug' => 'qa-tester',      'description' => 'QA agent. Writes and executes tests, then reports issues.'],
-        ['name' => 'Design - Grace', 'slug' => 'ui-ux-designer', 'description' => 'UI/UX designer agent. Produces mockups and design system assets.'],
-        ['name' => 'Doc - Hugo',     'slug' => 'tech-writer',    'description' => 'Technical writer agent. Produces technical documentation.'],
-        ['name' => 'DevOps - Iris',  'slug' => 'devops',         'description' => 'DevOps agent. Manages infrastructure and deployments.'],
+        ['name' => 'PO - Alice',     'slug' => self::ROLE_PRODUCT_OWNER,  'description' => 'Product Owner agent. Writes user stories and prioritizes the backlog.'],
+        ['name' => 'Scrum - Bob',    'slug' => self::ROLE_SCRUM_MASTER,   'description' => 'Scrum Master agent. Facilitates the team and keeps work synchronized.'],
+        ['name' => 'Lead - Clara',   'slug' => self::ROLE_LEAD_TECH,      'description' => 'Lead Tech agent. Reviews architecture and code decisions.'],
+        ['name' => 'PHP - David',    'slug' => self::ROLE_DEV_PHP,        'description' => 'PHP developer agent. Implements backend features.'],
+        ['name' => 'Front - Emma',   'slug' => self::ROLE_DEV_FRONTEND,   'description' => 'Frontend developer agent. Implements React interfaces.'],
+        ['name' => 'QA - Felix',     'slug' => self::ROLE_QA_TESTER,      'description' => 'QA agent. Writes and executes tests, then reports issues.'],
+        ['name' => 'Design - Grace', 'slug' => self::ROLE_UI_UX_DESIGNER, 'description' => 'UI/UX designer agent. Produces mockups and design system assets.'],
+        ['name' => 'Doc - Hugo',     'slug' => self::ROLE_TECH_WRITER,    'description' => 'Technical writer agent. Produces technical documentation.'],
+        ['name' => 'DevOps - Iris',  'slug' => self::ROLE_DEVOPS,         'description' => 'DevOps agent. Manages infrastructure and deployments.'],
     ];
 
     private const ACTIONS = [
-        ['key' => 'product.specify', 'label' => 'Product specification', 'role' => 'product-owner', 'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task', 'rewrite_ticket', 'complete_ticket']],
-        ['key' => 'tech.plan', 'label' => 'Technical planning', 'role' => 'lead-tech', 'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task', 'replace_planning_tasks', 'create_subtasks', 'prepare_branch', 'update_ticket_progress']],
-        ['key' => 'design.ui_mockup', 'label' => 'UI mockup', 'role' => 'ui-ux-designer', 'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task']],
-        ['key' => 'dev.backend.implement', 'label' => 'Backend implementation', 'role' => 'dev-php', 'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task']],
-        ['key' => 'dev.frontend.implement', 'label' => 'Frontend implementation', 'role' => 'dev-frontend', 'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task']],
-        ['key' => 'review.code', 'label' => 'Code review', 'role' => 'lead-tech', 'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task']],
-        ['key' => 'qa.validate', 'label' => 'QA validation', 'role' => 'qa-tester', 'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task']],
-        ['key' => 'docs.write', 'label' => 'Documentation writing', 'role' => 'tech-writer', 'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task']],
-        ['key' => 'ops.configure', 'label' => 'Infrastructure configuration', 'role' => 'devops', 'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task']],
+        ['key' => 'product.specify', 'label' => 'Product specification', 'role' => self::ROLE_PRODUCT_OWNER,  'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task', 'rewrite_ticket', 'complete_ticket']],
+        ['key' => 'tech.plan', 'label' => 'Technical planning', 'role' => self::ROLE_LEAD_TECH,       'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task', 'replace_planning_tasks', 'create_subtasks', 'prepare_branch', 'update_ticket_progress']],
+        ['key' => 'design.ui_mockup', 'label' => 'UI mockup', 'role' => self::ROLE_UI_UX_DESIGNER,   'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task']],
+        ['key' => 'dev.backend.implement', 'label' => 'Backend implementation', 'role' => self::ROLE_DEV_PHP,  'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task']],
+        ['key' => 'dev.frontend.implement', 'label' => 'Frontend implementation', 'role' => self::ROLE_DEV_FRONTEND, 'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task']],
+        ['key' => 'review.code', 'label' => 'Code review', 'role' => self::ROLE_LEAD_TECH,            'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task']],
+        ['key' => 'qa.validate', 'label' => 'QA validation', 'role' => self::ROLE_QA_TESTER,          'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task']],
+        ['key' => 'docs.write', 'label' => 'Documentation writing', 'role' => self::ROLE_TECH_WRITER, 'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task']],
+        ['key' => 'ops.configure', 'label' => 'Infrastructure configuration', 'role' => self::ROLE_DEVOPS, 'skill' => null, 'effects' => ['log_agent_response', 'ask_clarification', 'complete_current_task']],
     ];
 
     /**

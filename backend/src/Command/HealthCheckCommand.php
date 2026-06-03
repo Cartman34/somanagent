@@ -21,6 +21,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 #[AsCommand(name: 'somanagent:health', description: 'Checks the health of AI and VCS connectors')]
 class HealthCheckCommand extends Command
 {
+    private const OPT_NO_PROMPT_TEST = self::OPT_NO_PROMPT_TEST;
+
     /**
      * Initializes the command with the connector registry.
      */
@@ -34,7 +36,7 @@ class HealthCheckCommand extends Command
      */
     protected function configure(): void
     {
-        $this->addOption('no-prompt-test', null, InputOption::VALUE_NONE, 'Skip real prompt execution and use the cached result instead');
+        $this->addOption(self::OPT_NO_PROMPT_TEST, null, InputOption::VALUE_NONE, 'Skip real prompt execution and use the cached result instead');
     }
 
     /**
@@ -45,7 +47,7 @@ class HealthCheckCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io   = new SymfonyStyle($input, $output);
-        $deep = !$input->getOption('no-prompt-test');
+        $deep = !$input->getOption(self::OPT_NO_PROMPT_TEST);
         $io->title('SoManAgent — Connector Health' . ($deep ? '' : ' (prompt test skipped)'));
 
         $descriptors = $this->registry->describeAll($deep);

@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\ValueObject;
 
 /**
- * Résultat parsé de la sortie JSON du skill tech-planning.
+ * Parsed result of the JSON output from the tech-planning skill.
  */
 final class PlanningOutput
 {

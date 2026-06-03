@@ -16,6 +16,9 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class SkillRepository extends ServiceEntityRepository
 {
+    /**
+     * Registers Skill as the managed entity class.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Skill::class);

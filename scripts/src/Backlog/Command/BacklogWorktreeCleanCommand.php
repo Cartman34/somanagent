@@ -18,6 +18,9 @@ final class BacklogWorktreeCleanCommand extends AbstractBacklogCommand
 {
     private BacklogWorktreeService $worktreeService;
 
+    /**
+     * Injects the worktree service alongside the parent dependencies.
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
@@ -29,6 +32,12 @@ final class BacklogWorktreeCleanCommand extends AbstractBacklogCommand
         $this->worktreeService = $worktreeService;
     }
 
+    /**
+     * Removes abandoned managed worktrees and reports the result.
+     *
+     * @param array<string> $commandArgs
+     * @param array<string, mixed> $options
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $board = $this->loadBoard();

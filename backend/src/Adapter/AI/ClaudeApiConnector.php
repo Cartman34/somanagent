@@ -26,6 +26,7 @@ class ClaudeApiConnector extends AbstractConnector
     private const API_URL = 'https://api.anthropic.com/v1/messages';
     private const API_VERSION = '2023-06-01';
     private const DEFAULT_HEALTH_MODEL = 'claude-sonnet-4-5';
+    private const HEADER_API_KEY = self::HEADER_API_KEY;
 
     private Client $http;
 
@@ -54,7 +55,7 @@ class ClaudeApiConnector extends AbstractConnector
 
         $response = $this->http->post(self::API_URL, [
             'headers' => [
-                'x-api-key'         => $this->apiKey,
+                self::HEADER_API_KEY         => $this->apiKey,
                 'anthropic-version' => self::API_VERSION,
                 'content-type'      => 'application/json',
             ],
@@ -119,7 +120,7 @@ class ClaudeApiConnector extends AbstractConnector
 
         try {
             $this->http->get('https://api.anthropic.com', [
-                'headers' => ['x-api-key' => $this->apiKey],
+                'headers' => [self::HEADER_API_KEY => $this->apiKey],
                 'timeout' => 5,
             ]);
 

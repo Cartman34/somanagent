@@ -14,6 +14,9 @@ use Sowapps\SoManAgent\Script\RetryHelper;
  */
 final class RetryPolicy
 {
+    /**
+     * Sets the retry count, initial delay (in microseconds), and backoff factor.
+     */
     public function __construct(
         private readonly int $retryCount = 3,
         private readonly int $initialDelayMicroseconds = 500000,
@@ -21,6 +24,9 @@ final class RetryPolicy
     ) {
     }
 
+    /**
+     * Returns a new RetryHelper configured from this policy.
+     */
     public function createHelper(): RetryHelper
     {
         return new RetryHelper(
@@ -30,6 +36,9 @@ final class RetryPolicy
         );
     }
 
+    /**
+     * Returns the maximum number of retry attempts.
+     */
     public function getRetryCount(): int
     {
         return $this->retryCount;

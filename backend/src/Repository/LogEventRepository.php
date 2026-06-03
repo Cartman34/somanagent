@@ -17,6 +17,9 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class LogEventRepository extends ServiceEntityRepository
 {
+    /**
+     * Registers LogEvent as the managed entity class.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, LogEvent::class);

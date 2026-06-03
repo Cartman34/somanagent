@@ -19,6 +19,9 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 final class WorkflowStepActionRepository extends ServiceEntityRepository
 {
+    /**
+     * Registers WorkflowStepAction as the managed entity class.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, WorkflowStepAction::class);
@@ -40,6 +43,9 @@ final class WorkflowStepActionRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Returns the unique step-action for the given workflow and agent action, or null if zero or multiple are found.
+     */
     public function findUniqueByWorkflowAndAction(Workflow $workflow, AgentAction $action): ?WorkflowStepAction
     {
         $matches = $this->findByWorkflowAndAction($workflow, $action);

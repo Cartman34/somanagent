@@ -16,6 +16,9 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class TeamRepository extends ServiceEntityRepository
 {
+    /**
+     * Registers Team as the managed entity class.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Team::class);

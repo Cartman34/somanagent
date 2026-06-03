@@ -125,8 +125,9 @@ final class EntryRebaseServiceTest
     private function testCleanRebase(): int
     {
         // Feature branch is behind main → rebase succeeds cleanly and branch is pushed.
-        $root = $this->scratchDir('clean-rebase');
-        $worktree = $root . '/worktrees/clean-rebase';
+        $featureSlug = 'clean-rebase';
+        $root = $this->scratchDir($featureSlug);
+        $worktree = $root . '/worktrees/' . $featureSlug;
         $this->initRepoWithOrigin($root);
         $this->commit($root, 'file.txt', 'initial', 'init');
         $this->runShell("git -C {$root} push origin main");
@@ -149,7 +150,7 @@ final class EntryRebaseServiceTest
 
         $entry = new BoardEntry('Feature');
         $entry->setKind('feature');
-        $entry->setFeature('clean-rebase');
+        $entry->setFeature($featureSlug);
         $entry->setBranch('feat/clean-rebase');
 
         $previousCwd = getcwd();

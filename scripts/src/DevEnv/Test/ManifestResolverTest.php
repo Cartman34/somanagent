@@ -17,6 +17,8 @@ use Sowapps\SoManAgent\Script\DevEnv\Test\FakeSourceQuerier;
  */
 final class ManifestResolverTest
 {
+    private const INSTALLER_NPM_GLOBAL = 'npm-global';
+
     private \DateTimeImmutable $now;
 
     /**
@@ -238,7 +240,7 @@ final class ManifestResolverTest
     private function testPreservesPerDepOverrides(): int
     {
         $querier = new FakeSourceQuerier();
-        $querier->setVersions('npm-global', 'npm', '@anthropic-ai/claude-code', ['1.0.62']);
+        $querier->setVersions(self::INSTALLER_NPM_GLOBAL, 'npm', '@anthropic-ai/claude-code', ['1.0.62']);
 
         $manifest = (new ManifestParser())->parse(<<<YAML
         host:
@@ -254,7 +256,7 @@ final class ManifestResolverTest
             key: 'claude',
             section: 'clients',
             version: '1.0.0',
-            installer: 'npm-global',
+            installer: self::INSTALLER_NPM_GLOBAL,
             package: '@anthropic-ai/claude-code',
             source: 'npm',
             preExisting: false,

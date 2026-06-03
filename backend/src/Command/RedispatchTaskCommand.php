@@ -30,6 +30,8 @@ use Symfony\Component\Uid\Uuid;
 )]
 final class RedispatchTaskCommand extends Command
 {
+    private const ARG_TASK_ID = self::ARG_TASK_ID;
+
     /**
      * Initializes the command with services used to resolve and redispatch tasks.
      */
@@ -47,7 +49,7 @@ final class RedispatchTaskCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addArgument('task-id', InputArgument::OPTIONAL, 'ID of the task to redispatch')
+            ->addArgument(self::ARG_TASK_ID, InputArgument::OPTIONAL, 'ID of the task to redispatch')
             ->addOption('title', null, InputOption::VALUE_REQUIRED, 'Searches for a task by title')
             ->addOption('latest', null, InputOption::VALUE_NONE, 'Targets the most recent task')
             ->addOption('agent', null, InputOption::VALUE_REQUIRED, 'Forces a specific agent ID')
@@ -65,7 +67,7 @@ final class RedispatchTaskCommand extends Command
             return Command::FAILURE;
         }
 
-        $taskId = $input->getArgument('task-id');
+        $taskId = $input->getArgument(self::ARG_TASK_ID);
         $title = $input->getOption('title');
         $latest = (bool) $input->getOption('latest');
         $agentId = $input->getOption('agent');

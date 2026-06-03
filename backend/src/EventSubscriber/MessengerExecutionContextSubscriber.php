@@ -20,8 +20,16 @@ use Symfony\Component\Messenger\Stamp\RedeliveryStamp;
  */
 final class MessengerExecutionContextSubscriber implements EventSubscriberInterface
 {
+    /**
+     * Injects the execution context shared with message handlers.
+     */
     public function __construct(private readonly MessengerExecutionContext $executionContext) {}
 
+    /**
+     * Returns the Messenger event classes this subscriber listens to.
+     *
+     * @return array<class-string, string>
+     */
     public static function getSubscribedEvents(): array
     {
         return [

@@ -16,6 +16,9 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class WorkflowRepository extends ServiceEntityRepository
 {
+    /**
+     * Registers Workflow as the managed entity class.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Workflow::class);

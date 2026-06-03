@@ -5,14 +5,16 @@
 
 declare(strict_types=1);
 
-/**
- * Thrown when PHP is not available inside WSL, preventing the
- * transparent WSL redirect from working.
- */
 namespace Sowapps\SoManAgent\Script\Exception;
 
+/**
+ * Thrown when PHP is not available inside WSL, preventing the transparent WSL redirect from working.
+ */
 final class PhpNotAvailableException extends \RuntimeException
 {
+    /**
+     * Builds the exception with a standard remediation message.
+     */
     public function __construct()
     {
         parent::__construct(

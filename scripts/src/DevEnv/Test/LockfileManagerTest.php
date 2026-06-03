@@ -17,6 +17,9 @@ use Sowapps\SoManAgent\Script\DevEnv\Model\SideEffects;
  */
 final class LockfileManagerTest
 {
+    private const INSTALLER_NPM_GLOBAL = 'npm-global';
+    private const KEY_DOCKER_ENGINE    = 'docker-engine';
+
     private string $tmpDir;
 
     /**
@@ -120,7 +123,7 @@ final class LockfileManagerTest
             key: 'claude',
             section: 'clients',
             version: '1.0.62',
-            installer: 'npm-global',
+            installer: self::INSTALLER_NPM_GLOBAL,
             package: '@anthropic-ai/claude-code',
             source: 'npm',
             preExisting: true,
@@ -157,7 +160,7 @@ final class LockfileManagerTest
     {
         $now = new \DateTimeImmutable('2026-05-15T10:00:00+00:00');
         $entry = new LockEntry(
-            key: 'docker-engine',
+            key: self::KEY_DOCKER_ENGINE,
             section: 'docker',
             version: '24.0.7',
             installer: 'apt',
@@ -171,14 +174,14 @@ final class LockfileManagerTest
             ),
             resolvedAt: $now,
         );
-        $lockfile = new Lockfile($now, null, ['docker-engine' => $entry]);
+        $lockfile = new Lockfile($now, null, [self::KEY_DOCKER_ENGINE => $entry]);
 
         $path = $this->tmpDir . '/test-sideeffects.lock';
         $manager = new LockfileManager();
         $manager->write($path, $lockfile);
         $loaded = $manager->read($path);
 
-        $loaded_entry = $loaded->get('docker-engine');
+        $loaded_entry = $loaded->get(self::KEY_DOCKER_ENGINE);
         if ($loaded_entry === null) {
             echo "FAIL testSideEffectsRoundTrip: entry missing\n";
             return 1;
@@ -207,7 +210,7 @@ final class LockfileManagerTest
             key: 'claude',
             section: 'clients',
             version: '1.0.62',
-            installer: 'npm-global',
+            installer: self::INSTALLER_NPM_GLOBAL,
             package: '@anthropic-ai/claude-code',
             source: 'npm',
             preExisting: true,
