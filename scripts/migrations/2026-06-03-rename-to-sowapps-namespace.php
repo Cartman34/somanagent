@@ -360,6 +360,7 @@ echo "\n";
 echo "[5/9] PHP entry points\n";
 replaceInFile('backend/bin/console', 'use App\\Kernel;', 'use Sowapps\\SoManAgent\\Kernel;', 'bin/console use App\Kernel', $projectRoot);
 replaceInFile('backend/public/index.php', 'use App\\Kernel;', 'use Sowapps\\SoManAgent\\Kernel;', 'public/index.php use App\Kernel', $projectRoot);
+replaceInFile('backend/.env.test', "KERNEL_CLASS='App\\Kernel'", "KERNEL_CLASS='Sowapps\\SoManAgent\\Kernel'", 'backend/.env.test KERNEL_CLASS', $projectRoot);
 echo "\n";
 
 // ─── Step 6: PHPStan baseline ─────────────────────────────────────────────────
