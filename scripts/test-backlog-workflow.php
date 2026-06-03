@@ -11,6 +11,6 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Runner\TestBacklogWorkflowRunner;
+use Sowapps\SoManAgent\Script\Runner\TestBacklogWorkflowRunner;
 
 (new TestBacklogWorkflowRunner())->handle($argv);

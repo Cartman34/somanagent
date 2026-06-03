@@ -13,6 +13,6 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Runner\ServerRunner;
+use Sowapps\SoManAgent\Script\Runner\ServerRunner;
 
 (new ServerRunner())->handle($argv);

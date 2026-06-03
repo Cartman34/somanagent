@@ -9,6 +9,6 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Runner\HealthRunner;
+use Sowapps\SoManAgent\Script\Runner\HealthRunner;
 
 (new HealthRunner())->handle($argv);

@@ -8,7 +8,7 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Backlog\Test\BacklogScopeServiceTest;
+use Sowapps\SoManAgent\Script\Backlog\Test\BacklogScopeServiceTest;
 
 $test = new BacklogScopeServiceTest();
 $failed = $test->run();

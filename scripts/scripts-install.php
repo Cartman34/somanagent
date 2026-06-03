@@ -8,7 +8,7 @@
  * - this file must stay standalone and must not use the scripts runner stack
  * - do not move this file under scripts/src/Runner/
  * - do not require scripts/src/bootstrap.php here
- * - do not import SoManAgent\Script\... classes here
+ * - do not import Sowapps\SoManAgent\Script\... classes here
  * - this script exists because scripts/src/bootstrap.php normally depends on
  *   scripts/vendor/autoload.php, which may be missing on a fresh checkout
  */

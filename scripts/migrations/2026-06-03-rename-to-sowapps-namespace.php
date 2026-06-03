@@ -477,9 +477,31 @@ $modified = postRectorStringPass(
     $projectRoot
 );
 if ($modified > 0) {
-    echo "  9c: updated root App namespace declaration in {$modified} PHP file(s)\n\n";
+    echo "  9c: updated root App namespace declaration in {$modified} PHP file(s)\n";
 } else {
-    echo "  9c: skip (root App namespace already correct)\n\n";
+    echo "  9c: skip (root App namespace already correct)\n";
+}
+
+// 9d — top-level scripts/*.php entrypoints (not in scripts/src/, not processed by Rector or steps 9a–9c)
+// Uses a negative lookbehind for \ to avoid re-expanding already-migrated Sowapps\SoManAgent\Script\ references.
+$topLevelScripts = glob($projectRoot . '/scripts/*.php') ?: [];
+$modified9d = 0;
+foreach ($topLevelScripts as $scriptPath) {
+    $content = file_get_contents($scriptPath);
+    if ($content === false) {
+        continue;
+    }
+    $updated = preg_replace('/(?<!\\\\)SoManAgent\\\\Script\\\\/', 'Sowapps\\\\SoManAgent\\\\Script\\\\', $content);
+    if ($updated === null || $updated === $content) {
+        continue;
+    }
+    writeTmpAndRename($scriptPath, $updated, $scriptPath);
+    $modified9d++;
+}
+if ($modified9d > 0) {
+    echo "  9d: updated top-level scripts in {$modified9d} file(s)\n\n";
+} else {
+    echo "  9d: skip (top-level scripts already correct)\n\n";
 }
 
 // ─── Mark applied ─────────────────────────────────────────────────────────────

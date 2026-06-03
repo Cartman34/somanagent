@@ -10,6 +10,6 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Runner\PhpUnitRunner;
+use Sowapps\SoManAgent\Script\Runner\PhpUnitRunner;
 
 (new PhpUnitRunner())->handle($argv);

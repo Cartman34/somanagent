@@ -13,6 +13,6 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Runner\CodeSearchRunner;
+use Sowapps\SoManAgent\Script\Runner\CodeSearchRunner;
 
 (new CodeSearchRunner())->handle($argv);

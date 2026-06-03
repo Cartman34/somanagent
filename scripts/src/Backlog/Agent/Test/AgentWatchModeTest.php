@@ -11,6 +11,7 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use Sowapps\SoManAgent\Script\Backlog\BacklogPaths;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AgentStartCommand;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogConfig;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use Sowapps\SoManAgent\Script\TextSlugger;
 use Sowapps\SoManAgent\Script\Client\FilesystemClient;
@@ -437,6 +438,7 @@ final class AgentWatchModeTest
         mkdir($projectRoot . '/backend/vendor', 0755, true);
         mkdir($projectRoot . '/frontend/node_modules', 0755, true);
         file_put_contents($projectRoot . '/.env', "DATABASE_URL=sqlite:///%kernel.project_dir%/var/test.db\n");
+        file_put_contents($projectRoot . '/' . BacklogConfig::LOCAL_PATH, "backlog:\n  max_concurrent_worktrees: 5\n");
         file_put_contents($projectRoot . '/scripts/vendor/autoload.php', "<?php\n");
         file_put_contents($projectRoot . '/backend/vendor/autoload.php', "<?php\n");
         file_put_contents($projectRoot . '/frontend/node_modules/.keep', '');

@@ -8,8 +8,8 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Console;
-use SoManAgent\Script\Server\Test\ServerRunnerTest;
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\Server\Test\ServerRunnerTest;
 
 $console = Console::getInstance();
 

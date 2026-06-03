@@ -8,7 +8,7 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Setup\Test\SetupRunnerTest;
+use Sowapps\SoManAgent\Script\Setup\Test\SetupRunnerTest;
 
 $test = new SetupRunnerTest();
 $failed = $test->run();

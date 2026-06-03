@@ -9,6 +9,6 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Runner\ConsoleRunner;
+use Sowapps\SoManAgent\Script\Runner\ConsoleRunner;
 
 (new ConsoleRunner())->handle($argv);

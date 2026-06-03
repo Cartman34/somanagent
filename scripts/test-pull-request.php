@@ -10,8 +10,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Console;
-use SoManAgent\Script\Service\Test\PullRequestMergePrTest;
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\Service\Test\PullRequestMergePrTest;
 
 $console = Console::getInstance();
 

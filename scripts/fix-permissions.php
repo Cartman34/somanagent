@@ -9,6 +9,6 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Runner\FixPermissionsRunner;
+use Sowapps\SoManAgent\Script\Runner\FixPermissionsRunner;
 
 (new FixPermissionsRunner())->handle($argv);

@@ -19,6 +19,7 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogConfig;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AgentStartCommand;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentDeveloperSelector;
@@ -2076,6 +2077,7 @@ final class AgentStartCommandTest
         mkdir($projectRoot . '/backend/vendor', 0755, true);
         mkdir($projectRoot . '/frontend/node_modules', 0755, true);
         file_put_contents($projectRoot . '/.env', "DATABASE_URL=sqlite:///%kernel.project_dir%/var/test.db\n");
+        file_put_contents($projectRoot . '/' . BacklogConfig::LOCAL_PATH, "backlog:\n  max_concurrent_worktrees: 5\n");
         file_put_contents($projectRoot . '/scripts/vendor/autoload.php', "<?php\n");
         file_put_contents($projectRoot . '/backend/vendor/autoload.php', "<?php\n");
         file_put_contents($projectRoot . '/frontend/node_modules/.keep', '');
