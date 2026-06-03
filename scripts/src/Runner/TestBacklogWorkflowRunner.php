@@ -46,7 +46,9 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
         return self::NAME;
     }
 
-    /** @var array<string, CampaignInterface>|null */
+    /**
+     * @var array<string, CampaignInterface>|null
+     */
     private ?array $campaigns = null;
 
     protected function getDescription(): string
@@ -249,7 +251,9 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
             return;
         }
 
-        /** @var array<string, string|null> $staleWorktrees path => branch|null */
+        /**
+         * @var array<string, string|null> $staleWorktrees path => branch|null
+         */
         $staleWorktrees = [];
         $currentPath = null;
         $currentBranch = null;

@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\Backlog\Service;
 
 use Sowapps\SoManAgent\Script\Backlog\Enum\SubmitMode;
+
 /**
  * Resolves the effective submit policy for a developer session.
  *

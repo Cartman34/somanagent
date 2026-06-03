@@ -19,7 +19,9 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Client\InteractiveProcessResult;
  */
 final class FakeInteractiveProcessRunner implements InteractiveProcessRunner
 {
-    /** @var array{bin: string, args: list<string>, cwd: string, env: array<string, string>}|null */
+    /**
+     * @var array{bin: string, args: list<string>, cwd: string, env: array<string, string>}|null
+     */
     public ?array $lastCall = null;
 
     private int $nextExitCode = 0;

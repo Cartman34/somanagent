@@ -26,7 +26,9 @@ final class CodeRefactoRunner extends AbstractScriptRunner
     private const SCOPE_BACKEND = 'backend';
     private const SCOPE_SCRIPTS = 'scripts';
 
-    /** @var array<string, array{directories: list<string>}> */
+    /**
+     * @var array<string, array{directories: list<string>}>
+     */
     private const SCOPES = [
         self::SCOPE_BACKEND => ['directories' => ['backend/src']],
         self::SCOPE_SCRIPTS => ['directories' => ['scripts/src']],

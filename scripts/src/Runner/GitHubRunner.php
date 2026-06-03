@@ -10,6 +10,7 @@ namespace Sowapps\SoManAgent\Script\Runner;
 use Sowapps\SoManAgent\Script\GitHub\Enum\GitHubCommandName;
 use Sowapps\SoManAgent\Script\Service\GitService;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
+
 /**
  * GitHub CLI helper script runner.
  *
@@ -363,7 +364,9 @@ final class GitHubRunner extends AbstractScriptRunner
 
             throw new \RuntimeException("GitHub API error {$code}: {$message}");
         }
-        /** @var array<string, mixed> $data */
+        /**
+         * @var array<string, mixed> $data
+         */
         return $data;
     }
 

@@ -13,6 +13,7 @@ use Sowapps\SoManAgent\Script\Console;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+
 /**
  * Unit tests for AgentStopCommand.
  *

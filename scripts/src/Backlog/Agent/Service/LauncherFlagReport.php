@@ -26,7 +26,9 @@ final class LauncherFlagReport
         public readonly string $client,
         public readonly bool $skipped,
         public readonly array $checks,
-    ) {}
+    )
+    {
+    }
 
     /**
      * Returns true when at least one declared flag is missing from the binary help.

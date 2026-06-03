@@ -14,7 +14,9 @@ use Sowapps\SoManAgent\Script\Client\FilesystemClientInterface;
  */
 final class LocalWorkingDirectories
 {
-    /** @var list<string> */
+    /**
+     * @var list<string>
+     */
     private const DIRECTORIES = [
         'local/tmp',
         'local/tests',

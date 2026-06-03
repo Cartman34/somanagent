@@ -17,7 +17,9 @@ final class BacklogMutationLock
 {
     private const POLL_INTERVAL_US = 200_000;
 
-    /** @var resource|false */
+    /**
+     * @var resource|false
+     */
     private $handle = false;
 
     /**

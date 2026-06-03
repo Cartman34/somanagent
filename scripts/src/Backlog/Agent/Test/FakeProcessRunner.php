@@ -24,13 +24,19 @@ final class FakeProcessRunner implements ProcessRunner
      */
     public array $succeedsQueue = [];
 
-    /** @var array<string, string|null> Keyed by "$command|$cwd" or bare "$command" */
+    /**
+     * @var array<string, string|null> Keyed by "$command|$cwd" or bare "$command"
+     */
     public array $outputMap = [];
 
-    /** @var list<string> Commands passed to succeeds(), in invocation order */
+    /**
+     * @var list<string> Commands passed to succeeds(), in invocation order
+     */
     public array $succeedsCalls = [];
 
-    /** @var list<string> Commands passed to output(), in invocation order */
+    /**
+     * @var list<string> Commands passed to output(), in invocation order
+     */
     public array $outputCalls = [];
 
     /**

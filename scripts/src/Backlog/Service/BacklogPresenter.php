@@ -17,6 +17,7 @@ use Sowapps\SoManAgent\Script\Backlog\Enum\WorktreeState;
 use Sowapps\SoManAgent\Script\Backlog\Enum\WorktreeAction;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+
 /**
  * Handles all visual presentation logic for backlog commands.
  */

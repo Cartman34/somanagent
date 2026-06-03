@@ -21,19 +21,29 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
  */
 final class FakeSessionDriver implements SessionDriverInterface
 {
-    /** @var array<string, bool> Keyed by agent code */
+    /**
+     * @var array<string, bool> Keyed by agent code
+     */
     private array $aliveByCode = [];
 
-    /** @var array<string, bool> Keyed by agent code */
+    /**
+     * @var array<string, bool> Keyed by agent code
+     */
     private array $attachedByCode = [];
 
-    /** @var array<string, bool> Codes that sessionExists() should return true for */
+    /**
+     * @var array<string, bool> Codes that sessionExists() should return true for
+     */
     private array $existingByCode = [];
 
-    /** @var list<string> Codes returned by listLiveSessions() */
+    /**
+     * @var list<string> Codes returned by listLiveSessions()
+     */
     private array $liveSessionCodes = [];
 
-    /** @var list<string> Agent codes passed to kill(), in invocation order */
+    /**
+     * @var list<string> Agent codes passed to kill(), in invocation order
+     */
     public array $killedCodes = [];
 
     /**
@@ -56,17 +66,25 @@ final class FakeSessionDriver implements SessionDriverInterface
     private bool $dependencyCheckPasses = true;
 
     private int $nextExitCode = 0;
-    /** @var list<int> */
+    /**
+     * @var list<int>
+     */
     private array $exitCodeQueue = [];
     private int $nextClientPid = 12345;
 
-    /** @var array{agentCode: string, bin: string, args: list<string>, cwd: string}|null */
+    /**
+     * @var array{agentCode: string, bin: string, args: list<string>, cwd: string}|null
+     */
     public ?array $lastLaunchCall = null;
 
-    /** @var array{agentCode: string, bin: string, args: list<string>, cwd: string}|null */
+    /**
+     * @var array{agentCode: string, bin: string, args: list<string>, cwd: string}|null
+     */
     public ?array $lastResumeCall = null;
 
-    /** @var AgentSession|null */
+    /**
+     * @var AgentSession|null
+     */
     public ?AgentSession $lastStoppedSession = null;
 
     /**

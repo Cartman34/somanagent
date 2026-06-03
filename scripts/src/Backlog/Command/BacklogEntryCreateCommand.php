@@ -17,6 +17,7 @@ use Sowapps\SoManAgent\Script\Backlog\Service\BacklogScopeService;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogConfig;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogTaskType;
+
 /**
  * Inserts a new backlog entry into the todo section.
  *

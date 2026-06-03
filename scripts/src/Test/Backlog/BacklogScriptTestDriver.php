@@ -20,6 +20,7 @@ use Sowapps\SoManAgent\Script\GitHub\Enum\GitHubCommandName;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogConfig;
 use Symfony\Component\Yaml\Yaml;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
+
 /**
  * Test driver for backlog script workflow testing
  *
@@ -344,7 +345,7 @@ MD);
      */
     public function assignEntryAsManager(string $reference, string $agent): void
     {
-        $this->runBacklog([BacklogCommandName::ASSIGN->value, $reference, '--agent', $agent], ['SOMANAGER_ROLE' => 'manager']);
+        $this->runBacklog([BacklogCommandName::ASSIGN->value, $reference, '--developer', $agent], ['SOMANAGER_ROLE' => 'manager']);
     }
 
     /**
@@ -357,7 +358,7 @@ MD);
      */
     public function assertAssignEntryFails(string $reference, string $agent, array $env, string $needle): void
     {
-        $this->assertBacklogFails([BacklogCommandName::ASSIGN->value, $reference, '--agent', $agent], $needle, $env);
+        $this->assertBacklogFails([BacklogCommandName::ASSIGN->value, $reference, '--developer', $agent], $needle, $env);
     }
 
     /**

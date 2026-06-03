@@ -11,6 +11,7 @@ use Sowapps\SoManAgent\Script\DevEnv\Model\Manifest;
 use Sowapps\SoManAgent\Script\DevEnv\Model\Lockfile;
 use Sowapps\SoManAgent\Script\DevEnv\Model\Dependency;
 use Sowapps\SoManAgent\Script\DevEnv\Model\LockEntry;
+
 /**
  * Resolves manifest constraints to exact versions and produces a lockfile.
  *

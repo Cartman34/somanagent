@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\DevEnv;
 
 use Sowapps\SoManAgent\Script\DevEnv\Model\Dependency;
+
 /**
  * Detects the installed versions of dependencies on the current system.
  *

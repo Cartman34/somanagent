@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\Runner;
 
 use Sowapps\SoManAgent\Script\WorktreeScriptProxy;
+
 /**
  * Migrate script runner.
  *

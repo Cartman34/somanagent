@@ -10,6 +10,7 @@ namespace Sowapps\SoManAgent\Script\Runner;
 use Sowapps\SoManAgent\Script\Validation\GitIndexModeReader;
 use Sowapps\SoManAgent\Script\Validation\ScriptExecBitValidator;
 use Sowapps\SoManAgent\Script\Validation\ExecBitFixer;
+
 /**
  * Repairs the exec bit on shebang-bearing scripts under `scripts/`.
  *

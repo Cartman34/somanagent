@@ -23,5 +23,7 @@ final class LauncherFlagCheck
     public function __construct(
         public readonly string $flag,
         public readonly bool $present,
-    ) {}
+    )
+    {
+    }
 }

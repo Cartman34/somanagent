@@ -13,6 +13,7 @@ use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+
 /**
  * Displays session details for one code, or a summary table for all codes.
  *
@@ -174,7 +175,9 @@ final class AgentStatusCommand extends AbstractAgentCommand
 
         $headers = ['code', 'role', 'client', 'pid', 'worktree', 'started_at', 'last_seen_at', 'current'];
 
-        /** @var array<string, int> $widths */
+        /**
+         * @var array<string, int> $widths
+         */
         $widths = [];
         foreach ($headers as $h) {
             $widths[$h] = strlen($h);

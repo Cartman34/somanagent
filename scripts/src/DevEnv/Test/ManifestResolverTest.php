@@ -11,6 +11,7 @@ use Sowapps\SoManAgent\Script\DevEnv\ManifestParser;
 use Sowapps\SoManAgent\Script\DevEnv\ManifestResolver;
 use Sowapps\SoManAgent\Script\DevEnv\Model\Lockfile;
 use Sowapps\SoManAgent\Script\DevEnv\Model\LockEntry;
+
 /**
  * Unit tests for ManifestResolver.
  */

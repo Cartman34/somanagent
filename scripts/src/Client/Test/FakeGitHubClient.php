@@ -16,7 +16,9 @@ use Sowapps\SoManAgent\Script\Client\GitHubClientInterface;
  */
 final class FakeGitHubClient implements GitHubClientInterface
 {
-    /** @var array<int, string> prNumber → state ("merged"|"open"|"closed") */
+    /**
+     * @var array<int, string> prNumber → state ("merged"|"open"|"closed")
+     */
     private array $prStates = [];
 
     private int $mergeCallCount = 0;

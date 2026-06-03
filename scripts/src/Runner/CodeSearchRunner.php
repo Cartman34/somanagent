@@ -30,7 +30,9 @@ final class CodeSearchRunner extends AbstractScriptRunner
     private const SCOPE_DOC = 'doc';
     private const SCOPE_RESOURCES = 'resources';
 
-    /** @var array<string, array<int, array{path: string, exts: array<int, string>, globs: array<int, string>, recursive?: bool}>> */
+    /**
+     * @var array<string, array<int, array{path: string, exts: array<int, string>, globs: array<int, string>, recursive?: bool}>>
+     */
     private const SCOPE_DIRECTORIES = [
         self::SCOPE_ALL => [
             ['path' => 'backend/src', 'exts' => ['php'], 'globs' => ['*.php']],

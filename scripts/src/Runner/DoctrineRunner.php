@@ -9,6 +9,7 @@ namespace Sowapps\SoManAgent\Script\Runner;
 
 use Sowapps\SoManAgent\Script\Console;
 use Sowapps\SoManAgent\Script\Application;
+
 /**
  * Runs Doctrine commands (migrations, fixtures) and psql commands.
  */

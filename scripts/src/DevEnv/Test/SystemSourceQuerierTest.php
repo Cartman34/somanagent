@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\DevEnv\Test;
 
 use Sowapps\SoManAgent\Script\DevEnv\SystemSourceQuerier;
+
 /**
  * Unit tests for SystemSourceQuerier source routing.
  *

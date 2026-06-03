@@ -17,10 +17,14 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
  */
 final class FakeProcessSignaler implements ProcessSignaler
 {
-    /** @var array<int, bool> */
+    /**
+     * @var array<int, bool>
+     */
     private array $alive = [];
 
-    /** @var list<array{pid: int, signal: int}> */
+    /**
+     * @var list<array{pid: int, signal: int}>
+     */
     public array $signals = [];
 
     /**

@@ -9,6 +9,7 @@ namespace Sowapps\SoManAgent\Script\Backlog\Agent\Client;
 
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Exception\ClientNotInstalledException;
+
 /**
  * Maps AgentClient enum values to their concrete AgentClientLauncher.
  *
@@ -18,7 +19,9 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Exception\ClientNotInstalledExceptio
  */
 final class AgentClientLauncherRegistry
 {
-    /** @var array<string, AgentClientLauncher> */
+    /**
+     * @var array<string, AgentClientLauncher>
+     */
     private array $launchers = [];
 
     /**

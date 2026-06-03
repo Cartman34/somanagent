@@ -10,6 +10,7 @@ namespace Sowapps\SoManAgent\Script\Test\Backlog\Campaign;
 use Sowapps\SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
 use Sowapps\SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+
 /**
  * User-merge command campaign.
  *
@@ -18,10 +19,14 @@ use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
  */
 final class UserMergeCampaign implements CampaignInterface
 {
-    /** Feature used in Phase C (stage-manipulated approved entry, no commit). */
+    /**
+     * Feature used in Phase C (stage-manipulated approved entry, no commit).
+     */
     private const FEATURE_C = 'test-um-feature-c';
 
-    /** Feature and task used in Phase D (full lifecycle, real commits). */
+    /**
+     * Feature and task used in Phase D (full lifecycle, real commits).
+     */
     private const FEATURE_D = 'test-um-feature-d';
 
     private const TASK_D = 'test-um-task-d';

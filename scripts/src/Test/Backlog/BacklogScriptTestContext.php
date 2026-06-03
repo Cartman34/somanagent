@@ -9,16 +9,24 @@ namespace Sowapps\SoManAgent\Script\Test\Backlog;
 
 final class BacklogScriptTestContext
 {
-    /** @var array<string, true> */
+    /**
+     * @var array<string, true>
+     */
     private array $localBranches = [];
 
-    /** @var array<string, true> */
+    /**
+     * @var array<string, true>
+     */
     private array $remoteBranches = [];
 
-    /** @var array<string, true> */
+    /**
+     * @var array<string, true>
+     */
     private array $tempFiles = [];
 
-    /** @var array<string, true> */
+    /**
+     * @var array<string, true>
+     */
     private array $worktrees = [];
 
     private ?int $pullRequestNumber = null;

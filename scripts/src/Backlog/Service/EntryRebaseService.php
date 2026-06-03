@@ -7,9 +7,10 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Backlog\Service;
 
-use Sowapps\SoManAgent\Script\Service\GitService;
-use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
+use Sowapps\SoManAgent\Script\Service\GitService;
+
 /**
  * Rebases an active backlog entry branch onto its canonical target branch.
  *
