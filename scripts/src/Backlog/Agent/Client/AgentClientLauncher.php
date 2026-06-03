@@ -5,12 +5,13 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Client;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Client;
 
-use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
-use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
-use SoManAgent\Script\Backlog\Agent\Model\ResolvedModel;
-use SoManAgent\Script\Backlog\Agent\Model\SessionInfo;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Model\SessionInfo;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Model\ResolvedModel;
+
 
 /**
  * Contract for all AI coding client launchers used by backlog-agent.php.

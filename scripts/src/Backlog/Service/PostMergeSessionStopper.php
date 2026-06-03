@@ -5,7 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Service;
+namespace Sowapps\SoManAgent\Script\Backlog\Service;
+
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
 
 /**
  * Stops agent sessions after a successful merge.

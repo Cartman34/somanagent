@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace App\Dto\Input\Ticket;
+namespace Sowapps\SoManAgent\Dto\Input\Ticket;
 
 /**
  * Input DTO for resuming a ticket task (no body fields required).

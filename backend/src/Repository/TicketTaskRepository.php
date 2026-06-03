@@ -5,14 +5,14 @@
 
 declare(strict_types=1);
 
-namespace App\Repository;
+namespace Sowapps\SoManAgent\Repository;
 
-use App\Entity\AgentAction;
-use App\Entity\Agent;
-use App\Entity\Ticket;
-use App\Entity\TicketTask;
-use App\Entity\WorkflowStep;
-use App\Enum\TaskStatus;
+use Sowapps\SoManAgent\Entity\Ticket;
+use Sowapps\SoManAgent\Entity\WorkflowStep;
+use Sowapps\SoManAgent\Entity\AgentAction;
+use Sowapps\SoManAgent\Entity\Agent;
+use Sowapps\SoManAgent\Enum\TaskStatus;
+use Sowapps\SoManAgent\Entity\TicketTask;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 

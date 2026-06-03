@@ -5,15 +5,16 @@
 
 declare(strict_types=1);
 
-namespace App\Adapter\AI;
+namespace Sowapps\SoManAgent\Adapter\AI;
 
-use App\Enum\ConnectorType;
-use App\ValueObject\ConnectorAuthStatus;
-use App\ValueObject\ConnectorConfig;
-use App\ValueObject\ConnectorHealthCheckResult;
-use App\ValueObject\ConnectorRequest;
-use App\ValueObject\ConnectorResponse;
-use App\ValueObject\AgentModelInfo;
+use Sowapps\SoManAgent\ValueObject\AgentModelInfo;
+use Sowapps\SoManAgent\ValueObject\ConnectorRequest;
+use Sowapps\SoManAgent\ValueObject\ConnectorConfig;
+use Sowapps\SoManAgent\ValueObject\ConnectorResponse;
+use Sowapps\SoManAgent\ValueObject\ConnectorAuthStatus;
+use Sowapps\SoManAgent\Enum\ConnectorType;
+use Sowapps\SoManAgent\ValueObject\ConnectorHealthCheckResult;
+use Sowapps\SoManAgent\Adapter\AI\AbstractConnector;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 

@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace App\Dto\Input\Project;
+namespace Sowapps\SoManAgent\Dto\Input\Project;
 
 /**
  * Input DTO for updating a project module (all fields optional).

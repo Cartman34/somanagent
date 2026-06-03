@@ -5,12 +5,13 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Service;
+namespace Sowapps\SoManAgent\Script\Backlog\Service;
 
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
-use SoManAgent\Script\Backlog\Model\BoardEntry;
-use SoManAgent\Script\Service\GitService;
-
+use Sowapps\SoManAgent\Script\Service\GitService;
+use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
+use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use Sowapps\SoManAgent\Script\Backlog\Service\EntryRebaseResult;
 /**
  * Rebases an active backlog entry branch onto its canonical target branch.
  *

@@ -5,11 +5,17 @@
 
 declare(strict_types=1);
 
-namespace App\Entity;
+namespace Sowapps\SoManAgent\Entity;
 
-use App\Enum\TaskPriority;
-use App\Enum\TaskStatus;
-use App\Repository\TicketTaskRepository;
+use Sowapps\SoManAgent\Repository\TicketTaskRepository;
+use Sowapps\SoManAgent\Enum\TaskStatus;
+use Sowapps\SoManAgent\Enum\TaskPriority;
+use Sowapps\SoManAgent\Entity\Ticket;
+use Sowapps\SoManAgent\Entity\WorkflowStep;
+use Sowapps\SoManAgent\Entity\AgentAction;
+use Sowapps\SoManAgent\Entity\Agent;
+use Sowapps\SoManAgent\Entity\Role;
+use Sowapps\SoManAgent\Entity\AgentTaskExecution;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;

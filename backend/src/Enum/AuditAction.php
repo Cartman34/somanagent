@@ -5,14 +5,14 @@
 
 declare(strict_types=1);
 
-namespace App\Enum;
+namespace Sowapps\SoManAgent\Enum;
 
 /**
  * Exhaustive list of auditable actions in the application.
  *
  * Convention: values follow the pattern `<entity>.<event>` in snake_case.
  *
- * The `entityType` field on {@see \App\Entity\AuditLog} discriminates between entity classes
+ * The `entityType` field on {@see \Sowapps\SoManAgent\Entity\AuditLog} discriminates between entity classes
  * when the same action applies to multiple types. For example, `task.created` is used for
  * both `Ticket` (entityType='Ticket') and `TicketTask` (entityType='TicketTask').
  */

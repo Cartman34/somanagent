@@ -5,11 +5,13 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script;
+namespace Sowapps\SoManAgent\Script;
 
-use SoManAgent\Script\Exception\PhpNotAvailableException;
-use SoManAgent\Script\Exception\WslRequiredException;
-
+use Sowapps\SoManAgent\Script\Exception\WslRequiredException;
+use Sowapps\SoManAgent\Script\Exception\PhpNotAvailableException;
+use Sowapps\SoManAgent\Script\ShellRunnerInterface;
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\Environment;
 /**
  * Main application entry point for SoManAgent CLI scripts.
  *
@@ -49,7 +51,7 @@ final class Application implements ShellRunnerInterface
     /**
      * Bootstrap the environment and return the singleton instance.
      *
-     * @throws WslRequiredException     WSL 2 is not installed or unavailable.
+     * @throws WslRequiredException WSL 2 is not installed or unavailable.
      * @throws PhpNotAvailableException PHP is not installed inside WSL.
      */
     public static function getInstance(): self
@@ -67,7 +69,7 @@ final class Application implements ShellRunnerInterface
      * On Linux / macOS / WSL: returns immediately.
      * On Windows: validates WSL 2 + PHP, then re-executes inside WSL (never returns).
      *
-     * @throws WslRequiredException     WSL 2 is not installed or unavailable.
+     * @throws WslRequiredException WSL 2 is not installed or unavailable.
      * @throws PhpNotAvailableException PHP is not installed inside WSL.
      */
     public function boot(): void

@@ -5,15 +5,16 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Dto\Input\Team\CreateTeamDto;
-use App\Dto\Input\Team\UpdateTeamDto;
-use App\Entity\Agent;
-use App\Entity\Team;
-use App\Enum\AuditAction;
-use App\Repository\AgentRepository;
-use App\Repository\TeamRepository;
+use Sowapps\SoManAgent\Repository\TeamRepository;
+use Sowapps\SoManAgent\Repository\AgentRepository;
+use Sowapps\SoManAgent\Dto\Input\Team\CreateTeamDto;
+use Sowapps\SoManAgent\Entity\Team;
+use Sowapps\SoManAgent\Enum\AuditAction;
+use Sowapps\SoManAgent\Dto\Input\Team\UpdateTeamDto;
+use Sowapps\SoManAgent\Entity\Agent;
+use Sowapps\SoManAgent\Service\EntityService;
 use Symfony\Component\Uid\Uuid;
 
 /**

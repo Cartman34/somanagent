@@ -5,12 +5,12 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\DevEnv\Test;
+namespace Sowapps\SoManAgent\Script\DevEnv\Test;
 
-use SoManAgent\Script\DevEnv\LockfileManager;
-use SoManAgent\Script\DevEnv\Model\LockEntry;
-use SoManAgent\Script\DevEnv\Model\Lockfile;
-use SoManAgent\Script\DevEnv\Model\SideEffects;
+use Sowapps\SoManAgent\Script\DevEnv\LockfileManager;
+use Sowapps\SoManAgent\Script\DevEnv\Model\LockEntry;
+use Sowapps\SoManAgent\Script\DevEnv\Model\Lockfile;
+use Sowapps\SoManAgent\Script\DevEnv\Model\SideEffects;
 
 /**
  * Unit tests for LockfileManager.

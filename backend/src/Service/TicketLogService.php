@@ -5,14 +5,14 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Entity\Ticket;
-use App\Entity\TicketLog;
-use App\Entity\TicketTask;
-use App\Enum\ClarificationQuestionNecessity;
-use App\Repository\TicketLogRepository;
-
+use Sowapps\SoManAgent\Repository\TicketLogRepository;
+use Sowapps\SoManAgent\Entity\Ticket;
+use Sowapps\SoManAgent\Entity\TicketTask;
+use Sowapps\SoManAgent\Entity\TicketLog;
+use Sowapps\SoManAgent\Enum\ClarificationQuestionNecessity;
+use Sowapps\SoManAgent\Service\EntityService;
 /**
  * Manages ticket log entries: creation of events, replies, and system messages.
  */

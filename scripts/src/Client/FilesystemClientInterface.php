@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Client;
+namespace Sowapps\SoManAgent\Script\Client;
 
 /**
  * Interface for low-level filesystem operations.

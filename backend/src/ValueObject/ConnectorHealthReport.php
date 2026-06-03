@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\ValueObject;
+namespace Sowapps\SoManAgent\ValueObject;
 
-use App\Enum\ConnectorType;
-
+use Sowapps\SoManAgent\Enum\ConnectorType;
+use Sowapps\SoManAgent\ValueObject\ConnectorHealthChecks;
 /**
  * Aggregated health report returned by one connector.
  */

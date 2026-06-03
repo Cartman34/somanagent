@@ -5,8 +5,11 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Service;
+namespace Sowapps\SoManAgent\Script\Service;
 
+use Sowapps\SoManAgent\Script\Service\RunnerHelp;
+use Sowapps\SoManAgent\Script\Service\CommandHelp;
+use Sowapps\SoManAgent\Script\Service\CommandParamHelp;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
 
@@ -126,7 +129,7 @@ class CommandHelpService
     /**
      * Render the full help output for one command.
      *
-     * @param  list<CommandParamHelp> $execOpts  Execution-mode options appended after command options
+     * @param list<CommandParamHelp> $execOpts Execution-mode options appended after command options
      * @throws \RuntimeException When the command YAML file does not exist or is invalid
      */
     public function renderCommandHelp(string $runnerName, string $commandName, array $execOpts = []): string

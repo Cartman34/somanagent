@@ -5,12 +5,12 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
 
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
-use SoManAgent\Script\Backlog\Model\BoardEntry;
-use SoManAgent\Script\Backlog\Service\EntryRebaseResult;
-use SoManAgent\Script\Backlog\Service\EntryRebaseService;
+use Sowapps\SoManAgent\Script\Backlog\Service\EntryRebaseService;
+use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
+use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+use Sowapps\SoManAgent\Script\Backlog\Service\EntryRebaseResult;
 
 /**
  * Null-object test double for {@see EntryRebaseService}.

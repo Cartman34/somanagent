@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Validation;
+namespace Sowapps\SoManAgent\Script\Validation;
 
-use SoManAgent\Script\Api\ControllerRouteCatalog;
+use Sowapps\SoManAgent\Script\Api\ControllerRouteCatalog;
 use Symfony\Component\Yaml\Yaml;
 
 /**

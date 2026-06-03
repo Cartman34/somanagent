@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Exception;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Exception;
 
-use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 
 /**
  * Thrown when the binary for a requested AI client is not available in PATH,

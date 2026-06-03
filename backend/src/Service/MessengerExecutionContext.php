@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
 /**
  * Stores per-message Messenger retry metadata for the current worker process.

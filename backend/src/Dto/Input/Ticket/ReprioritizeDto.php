@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Dto\Input\Ticket;
+namespace Sowapps\SoManAgent\Dto\Input\Ticket;
 
-use App\Enum\TaskPriority;
-use App\Exception\ValidationException;
+use Sowapps\SoManAgent\Enum\TaskPriority;
+use Sowapps\SoManAgent\Exception\ValidationException;
 
 /**
  * Input DTO for reprioritizing a ticket or ticket task.

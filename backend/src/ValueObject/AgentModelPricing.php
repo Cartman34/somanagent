@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace App\ValueObject;
+namespace Sowapps\SoManAgent\ValueObject;
 
 /**
  * Immutable pricing snapshot for one model when the provider exposes costs.

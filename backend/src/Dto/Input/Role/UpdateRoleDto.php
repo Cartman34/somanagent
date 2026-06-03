@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace App\Dto\Input\Role;
+namespace Sowapps\SoManAgent\Dto\Input\Role;
 
 /**
  * Input DTO for updating a role (all fields optional).

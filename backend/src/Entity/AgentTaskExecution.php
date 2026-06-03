@@ -5,11 +5,15 @@
 
 declare(strict_types=1);
 
-namespace App\Entity;
+namespace Sowapps\SoManAgent\Entity;
 
-use App\Enum\TaskExecutionStatus;
-use App\Enum\TaskExecutionTrigger;
-use App\Repository\AgentTaskExecutionRepository;
+use Sowapps\SoManAgent\Repository\AgentTaskExecutionRepository;
+use Sowapps\SoManAgent\Enum\TaskExecutionTrigger;
+use Sowapps\SoManAgent\Enum\TaskExecutionStatus;
+use Sowapps\SoManAgent\Entity\AgentAction;
+use Sowapps\SoManAgent\Entity\Agent;
+use Sowapps\SoManAgent\Entity\AgentTaskExecutionAttempt;
+use Sowapps\SoManAgent\Entity\TicketTask;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;

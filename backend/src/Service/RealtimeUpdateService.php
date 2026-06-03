@@ -5,15 +5,16 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Entity\AgentTaskExecution;
-use App\Entity\Project;
-use App\Entity\Ticket;
-use App\Entity\TicketLog;
-use App\Entity\TicketTask;
-use App\Port\RealtimePublisherPort;
-use App\ValueObject\RealtimeUpdate;
+use Sowapps\SoManAgent\Port\RealtimePublisherPort;
+use Sowapps\SoManAgent\Entity\Project;
+use Sowapps\SoManAgent\ValueObject\RealtimeUpdate;
+use Sowapps\SoManAgent\Entity\Ticket;
+use Sowapps\SoManAgent\Entity\TicketTask;
+use Sowapps\SoManAgent\Entity\TicketLog;
+use Sowapps\SoManAgent\Entity\AgentTaskExecution;
+use Sowapps\SoManAgent\Service\RealtimeTopicFactory;
 use Psr\Log\LoggerInterface;
 
 /**

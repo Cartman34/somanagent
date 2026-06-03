@@ -5,17 +5,17 @@
 
 declare(strict_types=1);
 
-namespace App\Adapter\AI;
+namespace Sowapps\SoManAgent\Adapter\AI;
 
-use App\Port\ConnectorInterface;
-use App\ValueObject\ConnectorAuthStatus;
-use App\ValueObject\ConnectorConfig;
-use App\ValueObject\ConnectorHealthCheckResult;
-use App\ValueObject\ConnectorHealthChecks;
-use App\ValueObject\ConnectorHealthReport;
-use App\ValueObject\ConnectorRequest;
-use App\ValueObject\Prompt;
-
+use Sowapps\SoManAgent\Port\ConnectorInterface;
+use Sowapps\SoManAgent\ValueObject\ConnectorConfig;
+use Sowapps\SoManAgent\ValueObject\ConnectorHealthReport;
+use Sowapps\SoManAgent\ValueObject\ConnectorHealthChecks;
+use Sowapps\SoManAgent\ValueObject\ConnectorHealthCheckResult;
+use Sowapps\SoManAgent\ValueObject\ConnectorAuthStatus;
+use Sowapps\SoManAgent\ValueObject\ConnectorRequest;
+use Sowapps\SoManAgent\ValueObject\Prompt;
+use Sowapps\SoManAgent\Enum\ConnectorType;
 /**
  * Shared connector base exposing one normalized request API and a common health battery.
  */
@@ -68,7 +68,7 @@ abstract class AbstractConnector implements ConnectorInterface
         return ConnectorRequest::fromPrompt(Prompt::create('', 'Say OK'), ConnectorRequest::DEFAULT_WORKING_DIRECTORY);
     }
 
-    abstract protected function connectorType(): \App\Enum\ConnectorType;
+    abstract protected function connectorType(): ConnectorType;
 
     abstract protected function checkRuntime(): ConnectorHealthCheckResult;
 

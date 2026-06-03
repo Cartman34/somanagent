@@ -5,13 +5,14 @@
 
 declare(strict_types=1);
 
-namespace App\Controller;
+namespace Sowapps\SoManAgent\Controller;
 
-use App\Dto\Input\Team\AddTeamAgentDto;
-use App\Dto\Input\Team\CreateTeamDto;
-use App\Dto\Input\Team\UpdateTeamDto;
-use App\Service\ApiErrorPayloadFactory;
-use App\Service\TeamService;
+use Sowapps\SoManAgent\Service\TeamService;
+use Sowapps\SoManAgent\Service\ApiErrorPayloadFactory;
+use Sowapps\SoManAgent\Dto\Input\Team\CreateTeamDto;
+use Sowapps\SoManAgent\Dto\Input\Team\UpdateTeamDto;
+use Sowapps\SoManAgent\Dto\Input\Team\AddTeamAgentDto;
+use Sowapps\SoManAgent\Controller\AbstractApiController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;

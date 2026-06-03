@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Dto\Input\Project;
+namespace Sowapps\SoManAgent\Dto\Input\Project;
 
-use App\Enum\DispatchMode;
-use App\Exception\ValidationException;
+use Sowapps\SoManAgent\Enum\DispatchMode;
+use Sowapps\SoManAgent\Exception\ValidationException;
 
 /**
  * Input DTO for updating a project (all fields optional).

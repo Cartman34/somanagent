@@ -5,9 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Entity;
+namespace Sowapps\SoManAgent\Entity;
 
-use App\Repository\TicketTaskDependencyRepository;
+use Sowapps\SoManAgent\Repository\TicketTaskDependencyRepository;
+use Sowapps\SoManAgent\Entity\TicketTask;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 

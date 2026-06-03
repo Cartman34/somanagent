@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace App\Repository;
+namespace Sowapps\SoManAgent\Repository;
 
-use App\Entity\AgentAction;
+use Sowapps\SoManAgent\Entity\AgentAction;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 

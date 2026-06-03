@@ -14,7 +14,7 @@ services:
         autowire: true
         autoconfigure: true
 
-    App\:
+    Sowapps\SoManAgent\:
         resource: '../src/'
         exclude:
             - '../src/DependencyInjection/'
@@ -24,56 +24,56 @@ services:
             - '../src/Kernel.php'
 
     # Connectors — tagged for ConnectorRegistry
-    App\Adapter\AI\ClaudeApiConnector:
+    Sowapps\SoManAgent\Adapter\AI\ClaudeApiConnector:
         arguments:
             $apiKey: '%env(CLAUDE_API_KEY)%'
         tags: ['app.connector']
 
-    App\Adapter\AI\ClaudeCliConnector:
+    Sowapps\SoManAgent\Adapter\AI\ClaudeCliConnector:
         tags: ['app.connector']
 
-    App\Adapter\AI\CodexApiConnector:
+    Sowapps\SoManAgent\Adapter\AI\CodexApiConnector:
         arguments:
             $apiKey: '%env(default:openai_api_key:OPENAI_API_KEY)%'
         tags: ['app.connector']
 
-    App\Adapter\AI\CodexCliConnector:
+    Sowapps\SoManAgent\Adapter\AI\CodexCliConnector:
         tags: ['app.connector']
 
-    App\Adapter\AI\OpenCodeCliConnector:
+    Sowapps\SoManAgent\Adapter\AI\OpenCodeCliConnector:
         tags: ['app.connector']
 
-    App\Service\ConnectorRegistry:
+    Sowapps\SoManAgent\Service\ConnectorRegistry:
         arguments:
             $connectors: !tagged_iterator app.connector
             $cache: '@cache.app'
 
-    App\Service\AgentModelCatalogService:
+    Sowapps\SoManAgent\Service\AgentModelCatalogService:
         arguments:
             $cache: '@cache.app'
 
-    App\Service\AgentModelRecommendationPolicyResolver:
+    Sowapps\SoManAgent\Service\AgentModelRecommendationPolicyResolver:
         arguments:
             $policies: '%agent_model_recommendation_policies%'
 
-    App\Command\ListAgentAdaptersCommand:
+    Sowapps\SoManAgent\Command\ListAgentAdaptersCommand:
         tags: ['console.command']
 
-    App\Command\ListAgentModelsCommand:
+    Sowapps\SoManAgent\Command\ListAgentModelsCommand:
         tags: ['console.command']
 
-    App\Port\RealtimePublisherPort: '@App\Adapter\Realtime\MercureRealtimePublisher'
+    Sowapps\SoManAgent\Port\RealtimePublisherPort: '@Sowapps\SoManAgent\Adapter\Realtime\MercureRealtimePublisher'
 
     # Paramètre skills_dir injecté dans SkillService
-    App\Service\SkillService:
+    Sowapps\SoManAgent\Service\SkillService:
         arguments:
             $skillsDir: '%skills_dir%'
 
-    App\Service\AgentTaskExecutionService:
+    Sowapps\SoManAgent\Service\AgentTaskExecutionService:
         arguments:
             $messengerAgentTaskMaxRetries: '%messenger_agent_task_max_retries%'
 
-    App\Adapter\Realtime\MercureRealtimePublisher:
+    Sowapps\SoManAgent\Adapter\Realtime\MercureRealtimePublisher:
         arguments:
             $hubUrl: '%env(MERCURE_PUBLISH_URL)%'
             $jwtSecret: '%env(MERCURE_PUBLISHER_JWT_KEY)%'

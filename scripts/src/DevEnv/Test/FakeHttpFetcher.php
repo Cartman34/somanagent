@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\DevEnv\Test;
+namespace Sowapps\SoManAgent\Script\DevEnv\Test;
 
-use SoManAgent\Script\DevEnv\HttpFetcherInterface;
+use Sowapps\SoManAgent\Script\DevEnv\HttpFetcherInterface;
 
 /**
  * Fake HTTP fetcher for unit tests.

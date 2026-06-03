@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\EventSubscriber;
+namespace Sowapps\SoManAgent\EventSubscriber;
 
-use App\Message\AgentTaskMessage;
-use App\Service\MessengerExecutionContext;
+use Sowapps\SoManAgent\Service\MessengerExecutionContext;
+use Sowapps\SoManAgent\Message\AgentTaskMessage;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Messenger\Event\WorkerMessageFailedEvent;
 use Symfony\Component\Messenger\Event\WorkerMessageHandledEvent;

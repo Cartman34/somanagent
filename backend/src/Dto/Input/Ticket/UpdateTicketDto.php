@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Dto\Input\Ticket;
+namespace Sowapps\SoManAgent\Dto\Input\Ticket;
 
-use App\Enum\TaskPriority;
-use App\Exception\ValidationException;
+use Sowapps\SoManAgent\Enum\TaskPriority;
+use Sowapps\SoManAgent\Exception\ValidationException;
 
 /**
  * Input DTO for updating a ticket (all fields optional).
@@ -18,7 +18,7 @@ final class UpdateTicketDto
     /**
      * @param ?string       $title       Updated title or null to keep current
      * @param ?string       $description Updated description
-     * @param ?TaskPriority $priority    Updated priority or null to keep current
+     * @param ?TaskPriority $priority Updated priority or null to keep current
      * @param ?string       $featureId   Updated feature UUID
      */
     public function __construct(

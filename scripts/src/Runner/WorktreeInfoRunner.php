@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Runner;
+namespace Sowapps\SoManAgent\Script\Runner;
 
-use SoManAgent\Script\WorktreeScriptProxy;
-
+use Sowapps\SoManAgent\Script\WorktreeScriptProxy;
+use Sowapps\SoManAgent\Script\Runner\AbstractScriptRunner;
 /**
  * Displays the git worktree context detected by WorktreeScriptProxy.
  */

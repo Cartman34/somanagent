@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Command;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Command;
 
 /**
  * Base class for all backlog-agent subcommands.

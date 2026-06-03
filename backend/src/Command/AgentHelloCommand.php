@@ -5,12 +5,12 @@
 
 declare(strict_types=1);
 
-namespace App\Command;
+namespace Sowapps\SoManAgent\Command;
 
-use App\Dto\Input\Chat\SendChatMessageDto;
-use App\Service\AgentService;
-use App\Service\ChatService;
-use App\Service\ProjectService;
+use Sowapps\SoManAgent\Service\ProjectService;
+use Sowapps\SoManAgent\Service\AgentService;
+use Sowapps\SoManAgent\Service\ChatService;
+use Sowapps\SoManAgent\Dto\Input\Chat\SendChatMessageDto;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;

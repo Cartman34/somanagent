@@ -5,11 +5,13 @@
 
 declare(strict_types=1);
 
-namespace App\Entity;
+namespace Sowapps\SoManAgent\Entity;
 
-use App\Enum\WorkflowStepTransitionMode;
-use App\Enum\WorkflowStepStatus;
-use App\Repository\WorkflowStepRepository;
+use Sowapps\SoManAgent\Repository\WorkflowStepRepository;
+use Sowapps\SoManAgent\Enum\WorkflowStepTransitionMode;
+use Sowapps\SoManAgent\Enum\WorkflowStepStatus;
+use Sowapps\SoManAgent\Entity\Workflow;
+use Sowapps\SoManAgent\Entity\WorkflowStepAction;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;

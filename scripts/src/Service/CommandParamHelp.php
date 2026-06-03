@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Service;
+namespace Sowapps\SoManAgent\Script\Service;
 
 /**
  * A named CLI parameter (argument or option) as displayed in command help.

@@ -5,13 +5,13 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\DevEnv\Test;
+namespace Sowapps\SoManAgent\Script\DevEnv\Test;
 
-use SoManAgent\Script\DevEnv\ManifestParser;
-use SoManAgent\Script\DevEnv\ManifestResolver;
-use SoManAgent\Script\DevEnv\Model\LockEntry;
-use SoManAgent\Script\DevEnv\Model\Lockfile;
-
+use Sowapps\SoManAgent\Script\DevEnv\ManifestParser;
+use Sowapps\SoManAgent\Script\DevEnv\ManifestResolver;
+use Sowapps\SoManAgent\Script\DevEnv\Model\Lockfile;
+use Sowapps\SoManAgent\Script\DevEnv\Model\LockEntry;
+use Sowapps\SoManAgent\Script\DevEnv\Test\FakeSourceQuerier;
 /**
  * Unit tests for ManifestResolver.
  */

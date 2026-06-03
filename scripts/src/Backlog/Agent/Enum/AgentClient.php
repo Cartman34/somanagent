@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Enum;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Enum;
 
 /**
  * AI coding client that can be launched by backlog-agent.php.

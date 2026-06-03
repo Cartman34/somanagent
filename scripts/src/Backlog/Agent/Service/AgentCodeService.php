@@ -5,12 +5,12 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Service;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Service;
 
-use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
-use SoManAgent\Script\Backlog\Service\BacklogBoardService;
-
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 /**
  * Allocates and validates agent codes (dXX / rXX / mXX).
  *

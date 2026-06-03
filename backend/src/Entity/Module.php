@@ -5,10 +5,11 @@
 
 declare(strict_types=1);
 
-namespace App\Entity;
+namespace Sowapps\SoManAgent\Entity;
 
-use App\Enum\ModuleStatus;
-use App\Repository\ModuleRepository;
+use Sowapps\SoManAgent\Repository\ModuleRepository;
+use Sowapps\SoManAgent\Enum\ModuleStatus;
+use Sowapps\SoManAgent\Entity\Project;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 

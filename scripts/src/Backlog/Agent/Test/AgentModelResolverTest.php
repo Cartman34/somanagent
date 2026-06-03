@@ -5,11 +5,11 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
 
-use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
-use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
-use SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
 
 /**
  * Unit tests for canonical tier/effort resolution into client CLI arguments.

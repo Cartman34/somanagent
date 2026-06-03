@@ -171,9 +171,11 @@ function writeRectorConfig(array $map, string $projectRoot): string
     }
     $entriesStr = implode("\n", $entries);
 
-    $backendSrc   = addslashes($projectRoot . '/backend/src');
-    $backendTests = addslashes($projectRoot . '/backend/tests');
-    $scriptsSrc   = addslashes($projectRoot . '/scripts/src');
+    $backendSrc        = addslashes($projectRoot . '/backend/src');
+    $backendTests      = addslashes($projectRoot . '/backend/tests');
+    $scriptsSrc        = addslashes($projectRoot . '/scripts/src');
+    $backendAutoload   = addslashes($projectRoot . '/backend/vendor/autoload.php');
+    $scriptsAutoload   = addslashes($projectRoot . '/scripts/vendor/autoload.php');
 
     $content = <<<PHP
 <?php
@@ -193,6 +195,11 @@ return RectorConfig::configure()
         '{$backendTests}',
         '{$scriptsSrc}',
     ])
+    ->withBootstrapFiles([
+        '{$backendAutoload}',
+        '{$scriptsAutoload}',
+    ])
+    ->withImportNames(importNames: true, importDocBlockNames: true, importShortClasses: false, removeUnusedImports: true)
     ->withConfiguredRule(RenameClassRector::class, [
 {$entriesStr}
     ]);
@@ -423,28 +430,56 @@ if ($fullMap === []) {
     unlink($rectorConfig);
     echo "  removed temp Rector config\n";
 
-    if ($rectorExit !== 0) {
+    // Rector exits 0 (no changes) or 1 (changes applied) — both are success.
+    // Exit codes >= 2 indicate a real error.
+    if ($rectorExit >= 2) {
         fwrite(STDERR, "ERROR: Rector exited with code {$rectorExit}\n");
         exit(1);
     }
     echo "\n";
 }
 
-// ─── Step 9: Post-Rector pass — remaining App\ in DQL string literals ─────────
+// ─── Step 9: Post-Rector passes ───────────────────────────────────────────────
 
-echo "[9/9] Post-Rector pass (DQL string literals and residual App\\)\n";
+echo "[9/9] Post-Rector passes\n";
 
+// 9a — remaining App\ in DQL string literals (backend only)
 $modified = postRectorStringPass(
     ['backend/src', 'backend/tests'],
     'App\\',
     'Sowapps\\SoManAgent\\',
     $projectRoot
 );
-
 if ($modified > 0) {
-    echo "  replaced remaining App\\ in {$modified} PHP file(s)\n\n";
+    echo "  9a: replaced remaining App\\ in {$modified} PHP file(s)\n";
 } else {
-    echo "  skip (no remaining App\\ found)\n\n";
+    echo "  9a: skip (no remaining App\\ found)\n";
+}
+
+// 9b — scripts namespace declarations (Rector only updates references, not definitions)
+$modified = postRectorStringPass(
+    ['scripts/src'],
+    'namespace SoManAgent\\Script',
+    'namespace Sowapps\\SoManAgent\\Script',
+    $projectRoot
+);
+if ($modified > 0) {
+    echo "  9b: updated namespace declarations in {$modified} scripts PHP file(s)\n";
+} else {
+    echo "  9b: skip (scripts namespace declarations already correct)\n";
+}
+
+// 9c — root App namespace declaration (Kernel.php: `namespace App;` has no backslash, missed by 9a)
+$modified = postRectorStringPass(
+    ['backend/src', 'backend/tests'],
+    'namespace App;',
+    'namespace Sowapps\\SoManAgent;',
+    $projectRoot
+);
+if ($modified > 0) {
+    echo "  9c: updated root App namespace declaration in {$modified} PHP file(s)\n\n";
+} else {
+    echo "  9c: skip (root App namespace already correct)\n\n";
 }
 
 // ─── Mark applied ─────────────────────────────────────────────────────────────

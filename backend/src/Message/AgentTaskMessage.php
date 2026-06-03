@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace App\Message;
+namespace Sowapps\SoManAgent\Message;
 
 /**
  * Message dispatché quand une tâche doit être exécutée par un agent.

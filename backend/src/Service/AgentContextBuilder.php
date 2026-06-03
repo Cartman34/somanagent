@@ -5,13 +5,14 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Entity\Agent;
-use App\Entity\ChatMessage;
-use App\Entity\Project;
-use App\Entity\TicketLog;
-use App\Entity\TicketTask;
+use Sowapps\SoManAgent\Entity\TicketTask;
+use Sowapps\SoManAgent\Entity\Agent;
+use Sowapps\SoManAgent\Entity\TicketLog;
+use Sowapps\SoManAgent\Entity\Project;
+use Sowapps\SoManAgent\Entity\ChatMessage;
+use Sowapps\SoManAgent\Service\TicketTaskService;
 /**
  * Builds the context payload sent to an agent: project info, ticket, task, role, skill, and conversation history.
  */

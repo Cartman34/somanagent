@@ -5,12 +5,12 @@
 
 declare(strict_types=1);
 
-namespace App\Repository;
+namespace Sowapps\SoManAgent\Repository;
 
-use App\Entity\AgentAction;
-use App\Entity\Workflow;
-use App\Entity\WorkflowStep;
-use App\Entity\WorkflowStepAction;
+use Sowapps\SoManAgent\Entity\Workflow;
+use Sowapps\SoManAgent\Entity\AgentAction;
+use Sowapps\SoManAgent\Entity\WorkflowStep;
+use Sowapps\SoManAgent\Entity\WorkflowStepAction;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 

@@ -5,7 +5,10 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Client;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Client;
+
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\InteractiveProcessRunner;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\InteractiveProcessResult;
 
 /**
  * Real InteractiveProcessRunner implementation backed by proc_open.

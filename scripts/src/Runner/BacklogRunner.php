@@ -5,21 +5,22 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Runner;
+namespace Sowapps\SoManAgent\Script\Runner;
 
-use SoManAgent\Script\Backlog\Agent\Client\DirectSessionDriver;
-use SoManAgent\Script\Backlog\Agent\Client\ShellProcessRunner;
-use SoManAgent\Script\Backlog\Agent\Client\SystemInteractiveProcessRunner;
-use SoManAgent\Script\Backlog\Agent\Client\TmuxSessionDriver;
-use SoManAgent\Script\Backlog\BacklogCommandFactory;
-use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
-use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
-use SoManAgent\Script\Backlog\Service\BacklogCliOptionValidator;
-use SoManAgent\Script\Backlog\Service\BacklogMigrationGuard;
-use SoManAgent\Script\Backlog\Service\BacklogMutationLock;
-use SoManAgent\Script\Backlog\Storage\BoardYamlStorage;
-use SoManAgent\Script\Service\CommandHelpService;
-
+use Sowapps\SoManAgent\Script\Backlog\BacklogCommandFactory;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogCliOptionValidator;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogMutationLock;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\DirectSessionDriver;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\SystemInteractiveProcessRunner;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\TmuxSessionDriver;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ShellProcessRunner;
+use Sowapps\SoManAgent\Script\Service\CommandHelpService;
+use Sowapps\SoManAgent\Script\Backlog\Storage\BoardYamlStorage;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogMigrationGuard;
+use Sowapps\SoManAgent\Script\Runner\AbstractScriptRunner;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\PosixProcessSignaler;
 /**
  * Local backlog workflow orchestrator.
  */
@@ -229,7 +230,7 @@ final class BacklogRunner extends AbstractScriptRunner
             $sessionDriver = match ($driverName) {
                 'direct' => new DirectSessionDriver(
                     new SystemInteractiveProcessRunner(),
-                    new \SoManAgent\Script\Backlog\Agent\Client\PosixProcessSignaler(),
+                    new PosixProcessSignaler(),
                     $this->console,
                 ),
                 default => new TmuxSessionDriver(new ShellProcessRunner(), $this->console),

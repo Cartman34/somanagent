@@ -5,11 +5,11 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Storage;
+namespace Sowapps\SoManAgent\Script\Backlog\Storage;
 
-use SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
-use SoManAgent\Script\Backlog\Model\BoardEntry;
+use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
 use Symfony\Component\Yaml\Yaml;
 
 /**

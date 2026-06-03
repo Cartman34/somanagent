@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Model;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Model;
 
 /**
  * Outcome of {@see \SoManAgent\Script\Backlog\Agent\Service\AgentLaunchPromptResolver::resolveStageDecision()}.

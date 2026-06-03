@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace App\Port;
+namespace Sowapps\SoManAgent\Port;
 
-use App\ValueObject\RealtimeUpdate;
+use Sowapps\SoManAgent\ValueObject\RealtimeUpdate;
 
 /**
  * Publishes application realtime updates to an external transport.

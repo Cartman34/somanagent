@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\DevEnv;
+namespace Sowapps\SoManAgent\Script\DevEnv;
 
 /**
  * Queries available package versions from a specific source.

@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
 
-use SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
 
 /**
  * In-memory ProcessSignaler used by command tests.

@@ -5,12 +5,12 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Runner;
+namespace Sowapps\SoManAgent\Script\Runner;
 
-use SoManAgent\Script\Validation\GitIndexModeReader;
-use SoManAgent\Script\Validation\OpenApiConsistencyValidator;
-use SoManAgent\Script\Validation\ScriptExecBitValidator;
-
+use Sowapps\SoManAgent\Script\Validation\ScriptExecBitValidator;
+use Sowapps\SoManAgent\Script\Validation\GitIndexModeReader;
+use Sowapps\SoManAgent\Script\Validation\OpenApiConsistencyValidator;
+use Sowapps\SoManAgent\Script\Runner\AbstractScriptRunner;
 /**
  * Validate files script runner.
  *

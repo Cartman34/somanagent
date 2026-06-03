@@ -5,18 +5,18 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Test;
 
-use SoManAgent\Script\Application;
-use SoManAgent\Script\Backlog\BacklogPaths;
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
-use SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
-use SoManAgent\Script\Client\ConsoleClient;
-use SoManAgent\Script\Client\FilesystemClient;
-use SoManAgent\Script\Client\GitClient;
-use SoManAgent\Script\Client\ProjectScriptClient;
-use SoManAgent\Script\RetryPolicy;
+use Sowapps\SoManAgent\Script\Backlog\BacklogPaths;
+use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
+use Sowapps\SoManAgent\Script\Client\ConsoleClient;
+use Sowapps\SoManAgent\Script\Application;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use Sowapps\SoManAgent\Script\Client\GitClient;
+use Sowapps\SoManAgent\Script\RetryPolicy;
+use Sowapps\SoManAgent\Script\Client\ProjectScriptClient;
+use Sowapps\SoManAgent\Script\Client\FilesystemClient;
 
 /**
  * Unit coverage for managed worktree preparation.

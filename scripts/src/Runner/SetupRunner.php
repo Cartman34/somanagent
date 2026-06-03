@@ -5,34 +5,35 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Runner;
+namespace Sowapps\SoManAgent\Script\Runner;
 
-use SoManAgent\Script\Client\FilesystemClient;
-use SoManAgent\Script\DevEnv\InstallPlan;
-use SoManAgent\Script\Setup\LocalConfigBootstrap;
-use SoManAgent\Script\DevEnv\InstallPlanner;
-use SoManAgent\Script\DevEnv\Installer\ClientsInstaller;
-use SoManAgent\Script\DevEnv\Installer\DockerInstaller;
-use SoManAgent\Script\DevEnv\Installer\InstallerInterface;
-use SoManAgent\Script\DevEnv\Installer\ProjectDepsInstaller;
-use SoManAgent\Script\DevEnv\Installer\SystemDepsInstaller;
-use SoManAgent\Script\DevEnv\LockfileManager;
-use SoManAgent\Script\DevEnv\ManifestParser;
-use SoManAgent\Script\DevEnv\ManifestResolver;
-use SoManAgent\Script\DevEnv\Model\Dependency;
-use SoManAgent\Script\DevEnv\Model\LockEntry;
-use SoManAgent\Script\DevEnv\Model\Lockfile;
-use SoManAgent\Script\DevEnv\PlannedDep;
-use SoManAgent\Script\DevEnv\PlannedUninstall;
-use SoManAgent\Script\DevEnv\PreviewBuilder;
-use SoManAgent\Script\DevEnv\StateInspector;
-use SoManAgent\Script\DevEnv\SystemCommandRunner;
-use SoManAgent\Script\DevEnv\SystemHttpFetcher;
-use SoManAgent\Script\DevEnv\SystemSourceQuerier;
-use SoManAgent\Script\DevEnv\UninstallPlan;
-use SoManAgent\Script\DevEnv\VersionConstraint;
-use SoManAgent\Script\LocalWorkingDirectories;
-
+use Sowapps\SoManAgent\Script\DevEnv\Installer\InstallerInterface;
+use Sowapps\SoManAgent\Script\LocalWorkingDirectories;
+use Sowapps\SoManAgent\Script\Client\FilesystemClient;
+use Sowapps\SoManAgent\Script\DevEnv\LockfileManager;
+use Sowapps\SoManAgent\Script\DevEnv\ManifestParser;
+use Sowapps\SoManAgent\Script\DevEnv\StateInspector;
+use Sowapps\SoManAgent\Script\DevEnv\SystemCommandRunner;
+use Sowapps\SoManAgent\Script\DevEnv\InstallPlanner;
+use Sowapps\SoManAgent\Script\DevEnv\PlannedDep;
+use Sowapps\SoManAgent\Script\DevEnv\PreviewBuilder;
+use Sowapps\SoManAgent\Script\Setup\LocalConfigBootstrap;
+use Sowapps\SoManAgent\Script\DevEnv\Installer\ProjectDepsInstaller;
+use Sowapps\SoManAgent\Script\DevEnv\ManifestResolver;
+use Sowapps\SoManAgent\Script\DevEnv\SystemSourceQuerier;
+use Sowapps\SoManAgent\Script\DevEnv\SystemHttpFetcher;
+use Sowapps\SoManAgent\Script\DevEnv\VersionConstraint;
+use Sowapps\SoManAgent\Script\DevEnv\Model\Dependency;
+use Sowapps\SoManAgent\Script\DevEnv\Model\Lockfile;
+use Sowapps\SoManAgent\Script\DevEnv\UninstallPlan;
+use Sowapps\SoManAgent\Script\DevEnv\PlannedUninstall;
+use Sowapps\SoManAgent\Script\DevEnv\Model\LockEntry;
+use Sowapps\SoManAgent\Script\DevEnv\InstallPlan;
+use Sowapps\SoManAgent\Script\DevEnv\Installer\DockerInstaller;
+use Sowapps\SoManAgent\Script\DevEnv\Installer\SystemDepsInstaller;
+use Sowapps\SoManAgent\Script\DevEnv\Installer\ClientsInstaller;
+use Sowapps\SoManAgent\Script\Runner\AbstractScriptRunner;
+use Sowapps\SoManAgent\Script\DevEnv\Model\Manifest;
 /**
  * Setup orchestrator for the SoManAgent development environment.
  *
@@ -489,7 +490,7 @@ final class SetupRunner extends AbstractScriptRunner
      */
     private function buildUninstallPlan(
         Lockfile $lockfile,
-        \SoManAgent\Script\DevEnv\Model\Manifest $manifest,
+        Manifest $manifest,
         array $depMap,
         ?string $cliOverride,
     ): UninstallPlan {
@@ -509,7 +510,7 @@ final class SetupRunner extends AbstractScriptRunner
      */
     private function resolveUninstallAction(
         LockEntry $entry,
-        \SoManAgent\Script\DevEnv\Model\Manifest $manifest,
+        Manifest $manifest,
         ?Dependency $dep,
         ?string $cliOverride,
     ): string {
@@ -1206,8 +1207,8 @@ final class SetupRunner extends AbstractScriptRunner
     /**
      * Applies all install actions and persists the updated lockfile after each installer.
      *
-     * @param list<InstallerInterface>  $installers
-     * @param \SoManAgent\Script\DevEnv\Model\Lockfile $lockfile
+     * @param list<InstallerInterface> $installers
+     * @param Lockfile $lockfile
      */
     private function applyInstall(
         InstallPlan $plan,

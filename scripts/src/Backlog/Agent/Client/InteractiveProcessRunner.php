@@ -5,7 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Client;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Client;
+
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\InteractiveProcessResult;
 
 /**
  * Launches an AI client as an interactive child process attached to the current terminal.

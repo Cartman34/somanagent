@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Dto\Input\Ticket;
+namespace Sowapps\SoManAgent\Dto\Input\Ticket;
 
-use App\Enum\TaskPriority;
-use App\Exception\ValidationException;
+use Sowapps\SoManAgent\Enum\TaskPriority;
+use Sowapps\SoManAgent\Exception\ValidationException;
 
 /**
  * Input DTO for creating a project request (user story via the request flow).
@@ -18,7 +18,7 @@ final class CreateTicketRequestDto
     /**
      * @param string       $title       Request title
      * @param string       $description Request description
-     * @param TaskPriority $priority    Request priority
+     * @param TaskPriority $priority Request priority
      */
     public function __construct(
         public readonly string $title,

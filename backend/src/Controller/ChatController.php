@@ -5,16 +5,17 @@
 
 declare(strict_types=1);
 
-namespace App\Controller;
+namespace Sowapps\SoManAgent\Controller;
 
-use App\Dto\Input\Chat\ReplyChatMessageDto;
-use App\Dto\Input\Chat\SendChatMessageDto;
-use App\Dto\Input\Chat\UpdateChatMessageDto;
-use App\Entity\ChatMessage;
-use App\Service\ApiErrorPayloadFactory;
-use App\Service\AgentService;
-use App\Service\ChatService;
-use App\Service\ProjectService;
+use Sowapps\SoManAgent\Service\ChatService;
+use Sowapps\SoManAgent\Service\ProjectService;
+use Sowapps\SoManAgent\Service\AgentService;
+use Sowapps\SoManAgent\Service\ApiErrorPayloadFactory;
+use Sowapps\SoManAgent\Dto\Input\Chat\SendChatMessageDto;
+use Sowapps\SoManAgent\Dto\Input\Chat\ReplyChatMessageDto;
+use Sowapps\SoManAgent\Dto\Input\Chat\UpdateChatMessageDto;
+use Sowapps\SoManAgent\Entity\ChatMessage;
+use Sowapps\SoManAgent\Controller\AbstractApiController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;

@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Runner;
+namespace Sowapps\SoManAgent\Script\Runner;
 
-use SoManAgent\Script\Api\ControllerRouteCatalog;
-
+use Sowapps\SoManAgent\Script\Api\ControllerRouteCatalog;
+use Sowapps\SoManAgent\Script\Runner\AbstractScriptRunner;
 /**
  * Lists all REST routes from Symfony controllers by parsing #[Route] attributes.
  */

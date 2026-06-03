@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace App\Dto\Input\Ticket;
+namespace Sowapps\SoManAgent\Dto\Input\Ticket;
 
-use App\Exception\ValidationException;
+use Sowapps\SoManAgent\Exception\ValidationException;
 
 /**
  * Input DTO for editing an existing comment.

@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Api;
+namespace Sowapps\SoManAgent\Script\Api;
 
 /**
  * Extracts REST routes from Symfony controllers by parsing #[Route] attributes.

@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Repository;
+namespace Sowapps\SoManAgent\Repository;
 
-use App\Entity\ExternalReference;
-use App\Enum\ExternalSystem;
+use Sowapps\SoManAgent\Enum\ExternalSystem;
+use Sowapps\SoManAgent\Entity\ExternalReference;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Uid\Uuid;

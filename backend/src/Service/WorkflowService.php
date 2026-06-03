@@ -5,15 +5,16 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Dto\Input\Workflow\CreateWorkflowDto;
-use App\Dto\Input\Workflow\UpdateWorkflowDto;
-use App\Entity\Workflow;
-use App\Entity\WorkflowStep;
-use App\Entity\WorkflowStepAction;
-use App\Enum\AuditAction;
-use App\Repository\WorkflowRepository;
+use Sowapps\SoManAgent\Repository\WorkflowRepository;
+use Sowapps\SoManAgent\Dto\Input\Workflow\CreateWorkflowDto;
+use Sowapps\SoManAgent\Entity\Workflow;
+use Sowapps\SoManAgent\Enum\AuditAction;
+use Sowapps\SoManAgent\Entity\WorkflowStep;
+use Sowapps\SoManAgent\Entity\WorkflowStepAction;
+use Sowapps\SoManAgent\Dto\Input\Workflow\UpdateWorkflowDto;
+use Sowapps\SoManAgent\Service\EntityService;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Translation\TranslatorInterface;
 

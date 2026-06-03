@@ -5,11 +5,11 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Runner;
+namespace Sowapps\SoManAgent\Script\Runner;
 
-use SoManAgent\Script\Application;
-use SoManAgent\Script\Console;
-
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\Application;
+use Sowapps\SoManAgent\Script\Runner\DockerComposeServiceRunner;
 /**
  * Runs Doctrine commands (migrations, fixtures) and psql commands.
  */

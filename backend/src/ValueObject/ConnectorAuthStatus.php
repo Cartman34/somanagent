@@ -5,7 +5,9 @@
 
 declare(strict_types=1);
 
-namespace App\ValueObject;
+namespace Sowapps\SoManAgent\ValueObject;
+
+use Sowapps\SoManAgent\ValueObject\ConnectorHealthCheckResult;
 
 /**
  * Normalized authentication status exposed by a connector.

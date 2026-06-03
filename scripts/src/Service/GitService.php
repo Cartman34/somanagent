@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Service;
+namespace Sowapps\SoManAgent\Script\Service;
 
-use SoManAgent\Script\Client\GitClient;
-use SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\Client\GitClient;
 
 /**
  * High-level service for git operations.

@@ -5,7 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Client;
+namespace Sowapps\SoManAgent\Script\Client;
+
+use Sowapps\SoManAgent\Script\Client\FilesystemClientInterface;
 
 /**
  * Concrete implementation of FilesystemClientInterface.

@@ -5,19 +5,22 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Test\Backlog;
+namespace Sowapps\SoManAgent\Script\Test\Backlog;
 
-use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
-use SoManAgent\Script\Backlog\Storage\BoardYamlStorage;
-use SoManAgent\Script\Client\ConsoleClient;
-use SoManAgent\Script\Client\FilesystemClient;
-use SoManAgent\Script\Console;
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
-use SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use SoManAgent\Script\GitHub\Enum\GitHubCommandName;
-use SoManAgent\Script\TextSlugger;
-use SoManAgent\Script\Service\GitService;
-
+use Sowapps\SoManAgent\Script\Client\ConsoleClient;
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\Backlog\Storage\BoardYamlStorage;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+use Sowapps\SoManAgent\Script\Service\GitService;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use Sowapps\SoManAgent\Script\TextSlugger;
+use Sowapps\SoManAgent\Script\Client\FilesystemClient;
+use Sowapps\SoManAgent\Script\GitHub\Enum\GitHubCommandName;
+use Sowapps\SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogConfig;
+use Symfony\Component\Yaml\Yaml;
+use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
 /**
  * Test driver for backlog script workflow testing
  *
@@ -1546,7 +1549,7 @@ MD);
      */
     public function writeTestLocalConfig(string $content): void
     {
-        $path = $this->context->projectRoot . '/' . \SoManAgent\Script\Backlog\Service\BacklogConfig::LOCAL_PATH;
+        $path = $this->context->projectRoot . '/' . BacklogConfig::LOCAL_PATH;
         $backupPath = $path . '.test-backup';
 
         if (is_file($path)) {
@@ -1561,7 +1564,7 @@ MD);
      */
     public function restoreLocalConfig(): void
     {
-        $path = $this->context->projectRoot . '/' . \SoManAgent\Script\Backlog\Service\BacklogConfig::LOCAL_PATH;
+        $path = $this->context->projectRoot . '/' . BacklogConfig::LOCAL_PATH;
         $backupPath = $path . '.test-backup';
 
         if (is_file($backupPath)) {
@@ -1583,8 +1586,8 @@ MD);
      */
     public function renameTodoEntry(string $oldFeature, string $newFeature, string $oldTitle, string $newTitle): void
     {
-        $oldDump = \Symfony\Component\Yaml\Yaml::dump($oldTitle);
-        $newDump = \Symfony\Component\Yaml\Yaml::dump($newTitle);
+        $oldDump = Yaml::dump($oldTitle);
+        $newDump = Yaml::dump($newTitle);
         $contents = (string) file_get_contents($this->context->boardPath);
         // Match `feature: <old>\n    <intermediate lines like type:/task:/agent:>\n    title: <old>` (non-greedy)
         // so the rename works regardless of which optional fields sit between feature and title.
@@ -1989,7 +1992,7 @@ MD);
         return $this->boardService()->loadBoard($this->context->boardPath);
     }
 
-    private function requireFeatureEntry(string $feature): \SoManAgent\Script\Backlog\Model\BoardEntry
+    private function requireFeatureEntry(string $feature): BoardEntry
     {
         $match = $this->boardService()->findParentFeatureEntry($this->board(), $feature);
         if ($match === null) {

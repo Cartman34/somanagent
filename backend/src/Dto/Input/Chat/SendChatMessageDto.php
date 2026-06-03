@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace App\Dto\Input\Chat;
+namespace Sowapps\SoManAgent\Dto\Input\Chat;
 
-use App\Exception\ValidationException;
+use Sowapps\SoManAgent\Exception\ValidationException;
 
 /**
  * Input DTO for sending a chat message.

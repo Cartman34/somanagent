@@ -5,11 +5,12 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script;
+namespace Sowapps\SoManAgent\Script;
 
-use SoManAgent\Script\Client\ConsoleClient;
-use SoManAgent\Script\Client\GitClient;
-
+use Sowapps\SoManAgent\Script\Client\GitClient;
+use Sowapps\SoManAgent\Script\Client\ConsoleClient;
+use Sowapps\SoManAgent\Script\Application;
+use Sowapps\SoManAgent\Script\RetryPolicy;
 /**
  * Detects whether the current script runs inside a git linked worktree
  * and transparently proxies execution to the equivalent script in the main worktree.

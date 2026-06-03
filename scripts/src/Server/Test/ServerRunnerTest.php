@@ -5,11 +5,11 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Server\Test;
+namespace Sowapps\SoManAgent\Script\Server\Test;
 
-use SoManAgent\Script\Runner\ServerRunner;
-use SoManAgent\Script\Server\HealthCheckResult;
-use SoManAgent\Script\Server\HealthProbeInterface;
+use Sowapps\SoManAgent\Script\Server\HealthCheckResult;
+use Sowapps\SoManAgent\Script\Runner\ServerRunner;
+use Sowapps\SoManAgent\Script\Server\HealthProbeInterface;
 
 /**
  * Integration tests for scripts/server.php.

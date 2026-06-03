@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Test\Backlog;
+namespace Sowapps\SoManAgent\Script\Test\Backlog;
 
 final class BacklogScriptTestContext
 {

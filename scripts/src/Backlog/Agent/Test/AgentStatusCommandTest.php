@@ -5,18 +5,18 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
 
-use SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
-use SoManAgent\Script\Backlog\Agent\Command\AgentStatusCommand;
-use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
-use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
-use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
-use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
-use SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use SoManAgent\Script\Client\FilesystemClient;
-use SoManAgent\Script\Console;
-use SoManAgent\Script\TextSlugger;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AgentStatusCommand;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use Sowapps\SoManAgent\Script\TextSlugger;
+use Sowapps\SoManAgent\Script\Client\FilesystemClient;
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use Symfony\Component\Yaml\Yaml;
 
 /**

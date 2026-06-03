@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Controller;
+namespace Sowapps\SoManAgent\Controller;
 
-use App\Exception\ValidationException;
-use App\Service\ApiErrorPayloadFactory;
+use Sowapps\SoManAgent\Service\ApiErrorPayloadFactory;
+use Sowapps\SoManAgent\Exception\ValidationException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;

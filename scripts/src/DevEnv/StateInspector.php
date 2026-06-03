@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\DevEnv;
+namespace Sowapps\SoManAgent\Script\DevEnv;
 
-use SoManAgent\Script\DevEnv\Model\Dependency;
-
+use Sowapps\SoManAgent\Script\DevEnv\Model\Dependency;
+use Sowapps\SoManAgent\Script\DevEnv\CommandRunnerInterface;
 /**
  * Detects the installed versions of dependencies on the current system.
  *

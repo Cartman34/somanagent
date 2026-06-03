@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace App\Enum;
+namespace Sowapps\SoManAgent\Enum;
 
 /**
  * Trigger mode determining how a workflow starts.

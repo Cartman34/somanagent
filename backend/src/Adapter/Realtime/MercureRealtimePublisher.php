@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Adapter\Realtime;
+namespace Sowapps\SoManAgent\Adapter\Realtime;
 
-use App\Port\RealtimePublisherPort;
-use App\ValueObject\RealtimeUpdate;
+use Sowapps\SoManAgent\Port\RealtimePublisherPort;
+use Sowapps\SoManAgent\ValueObject\RealtimeUpdate;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 

@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Setup\Test;
+namespace Sowapps\SoManAgent\Script\Setup\Test;
 
 /**
  * Subprocess integration tests for scripts/setup.php.

@@ -5,25 +5,30 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Entity\Agent;
-use App\Entity\AgentAction;
-use App\Entity\AgentTaskExecutionAttempt;
-use App\Entity\Skill;
-use App\Entity\Ticket;
-use App\Entity\TicketLog;
-use App\Entity\TicketTask;
-use App\Entity\TicketTaskDependency;
-use App\Entity\TokenUsage;
-use App\Enum\ClarificationQuestionNecessity;
-use App\Enum\TaskStatus;
-use App\Adapter\VCS\MockVcsAdapter;
-use App\Repository\AgentActionRepository;
-use App\Repository\SkillRepository;
-use App\Repository\TicketLogRepository;
-use App\ValueObject\ConnectorRequest;
-use App\ValueObject\Prompt;
+use Sowapps\SoManAgent\Repository\SkillRepository;
+use Sowapps\SoManAgent\Repository\AgentActionRepository;
+use Sowapps\SoManAgent\Repository\TicketLogRepository;
+use Sowapps\SoManAgent\Adapter\VCS\MockVcsAdapter;
+use Sowapps\SoManAgent\Entity\TicketTask;
+use Sowapps\SoManAgent\Entity\Agent;
+use Sowapps\SoManAgent\Entity\AgentTaskExecutionAttempt;
+use Sowapps\SoManAgent\ValueObject\ConnectorRequest;
+use Sowapps\SoManAgent\Entity\TokenUsage;
+use Sowapps\SoManAgent\Enum\TaskStatus;
+use Sowapps\SoManAgent\Entity\TicketLog;
+use Sowapps\SoManAgent\ValueObject\Prompt;
+use Sowapps\SoManAgent\Enum\ClarificationQuestionNecessity;
+use Sowapps\SoManAgent\Entity\Ticket;
+use Sowapps\SoManAgent\Entity\Skill;
+use Sowapps\SoManAgent\Entity\TicketTaskDependency;
+use Sowapps\SoManAgent\Service\ConnectorRegistry;
+use Sowapps\SoManAgent\Service\TicketTaskService;
+use Sowapps\SoManAgent\Service\TicketLogService;
+use Sowapps\SoManAgent\Service\AgentContextBuilder;
+use Sowapps\SoManAgent\Service\PlanningOutputParser;
+use Sowapps\SoManAgent\Service\VcsRepositoryUrlService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 

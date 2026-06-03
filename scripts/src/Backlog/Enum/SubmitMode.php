@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Enum;
+namespace Sowapps\SoManAgent\Script\Backlog\Enum;
 
 /**
  * Effective submit policy controlling whether the developer agent waits for a human `submit` or

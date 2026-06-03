@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script;
+namespace Sowapps\SoManAgent\Script;
 
-use SoManAgent\Script\Client\FilesystemClientInterface;
+use Sowapps\SoManAgent\Script\Client\FilesystemClientInterface;
 
 /**
  * Ensures local-only working directories exist with tracked keep files.

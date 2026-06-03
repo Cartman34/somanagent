@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace App\Adapter\VCS;
+namespace Sowapps\SoManAgent\Adapter\VCS;
 
-use App\Port\VCSPort;
+use Sowapps\SoManAgent\Port\VCSPort;
 
 /**
  * Local mock adapter used to simulate VCS operations before real provider wiring exists.

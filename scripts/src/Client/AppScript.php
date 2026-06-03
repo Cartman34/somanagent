@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Client;
+namespace Sowapps\SoManAgent\Script\Client;
 
 /**
  * Known project script entry-points used by ProjectScriptClient to build shell commands.

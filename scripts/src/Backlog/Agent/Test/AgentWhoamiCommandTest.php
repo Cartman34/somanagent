@@ -5,13 +5,13 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
 
-use SoManAgent\Script\Backlog\Agent\Command\AgentWhoamiCommand;
-use SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use SoManAgent\Script\Client\FilesystemClient;
-use SoManAgent\Script\Console;
-use SoManAgent\Script\TextSlugger;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AgentWhoamiCommand;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use Sowapps\SoManAgent\Script\TextSlugger;
+use Sowapps\SoManAgent\Script\Client\FilesystemClient;
+use Sowapps\SoManAgent\Script\Console;
 use Symfony\Component\Yaml\Yaml;
 
 /**

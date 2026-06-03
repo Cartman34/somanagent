@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Service;
+namespace Sowapps\SoManAgent\Script\Backlog\Service;
 
 /**
  * Validates and resolves entry scopes.

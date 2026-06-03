@@ -5,40 +5,41 @@
 
 declare(strict_types=1);
 
-namespace App\Controller;
+namespace Sowapps\SoManAgent\Controller;
 
-use App\Dto\Input\Ticket\ChangeStatusDto;
-use App\Dto\Input\Ticket\CreateCommentDto;
-use App\Dto\Input\Ticket\CreateTicketDto;
-use App\Dto\Input\Ticket\CreateTicketRequestDto;
-use App\Dto\Input\Ticket\CreateTicketTaskDto;
-use App\Dto\Input\Ticket\ExecuteTicketTaskDto;
-use App\Dto\Input\Ticket\ReprioritizeDto;
-use App\Dto\Input\Ticket\ResumeTicketTaskDto;
-use App\Dto\Input\Ticket\UpdateCommentDto;
-use App\Dto\Input\Ticket\UpdateProgressDto;
-use App\Dto\Input\Ticket\UpdateTicketDto;
-use App\Dto\Input\Ticket\UpdateTicketTaskDto;
-use App\Entity\AgentTaskExecution;
-use App\Entity\AgentTaskExecutionAttempt;
-use App\Entity\Ticket;
-use App\Entity\TicketLog;
-use App\Entity\TicketTask;
-use App\Enum\TaskExecutionTrigger;
-use App\Enum\TaskPriority;
-use App\Enum\TaskStatus;
-use App\Enum\TaskType;
-use App\Repository\AgentRepository;
-use App\Repository\AgentTaskExecutionRepository;
-use App\Repository\TicketLogRepository;
-use App\Repository\TicketTaskDependencyRepository;
-use App\Service\ApiErrorPayloadFactory;
-use App\Service\ProjectService;
-use App\Service\TicketLogService;
-use App\Service\TicketService;
-use App\Service\TicketTaskService;
-use App\Service\TokenUsageService;
-use App\Service\VcsRepositoryUrlService;
+use Sowapps\SoManAgent\Service\TicketService;
+use Sowapps\SoManAgent\Service\TicketTaskService;
+use Sowapps\SoManAgent\Service\TicketLogService;
+use Sowapps\SoManAgent\Service\ProjectService;
+use Sowapps\SoManAgent\Repository\AgentRepository;
+use Sowapps\SoManAgent\Repository\AgentTaskExecutionRepository;
+use Sowapps\SoManAgent\Repository\TicketLogRepository;
+use Sowapps\SoManAgent\Repository\TicketTaskDependencyRepository;
+use Sowapps\SoManAgent\Service\TokenUsageService;
+use Sowapps\SoManAgent\Service\VcsRepositoryUrlService;
+use Sowapps\SoManAgent\Service\ApiErrorPayloadFactory;
+use Sowapps\SoManAgent\Dto\Input\Ticket\CreateTicketDto;
+use Sowapps\SoManAgent\Enum\TaskType;
+use Sowapps\SoManAgent\Dto\Input\Ticket\CreateTicketTaskDto;
+use Sowapps\SoManAgent\Dto\Input\Ticket\CreateTicketRequestDto;
+use Sowapps\SoManAgent\Dto\Input\Ticket\UpdateTicketDto;
+use Sowapps\SoManAgent\Dto\Input\Ticket\UpdateTicketTaskDto;
+use Sowapps\SoManAgent\Dto\Input\Ticket\ChangeStatusDto;
+use Sowapps\SoManAgent\Dto\Input\Ticket\UpdateProgressDto;
+use Sowapps\SoManAgent\Dto\Input\Ticket\ReprioritizeDto;
+use Sowapps\SoManAgent\Dto\Input\Ticket\CreateCommentDto;
+use Sowapps\SoManAgent\Dto\Input\Ticket\UpdateCommentDto;
+use Sowapps\SoManAgent\Dto\Input\Ticket\ResumeTicketTaskDto;
+use Sowapps\SoManAgent\Dto\Input\Ticket\ExecuteTicketTaskDto;
+use Sowapps\SoManAgent\Enum\TaskExecutionTrigger;
+use Sowapps\SoManAgent\Entity\AgentTaskExecution;
+use Sowapps\SoManAgent\Entity\TicketTask;
+use Sowapps\SoManAgent\Entity\AgentTaskExecutionAttempt;
+use Sowapps\SoManAgent\Entity\TicketLog;
+use Sowapps\SoManAgent\Enum\TaskStatus;
+use Sowapps\SoManAgent\Controller\AbstractApiController;
+use Sowapps\SoManAgent\Entity\Project;
+use Sowapps\SoManAgent\Entity\Ticket;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -963,7 +964,7 @@ class TicketController extends AbstractApiController
         ];
     }
 
-    private function requireProjectTeamForProgress(\App\Entity\Project $project): ?JsonResponse
+    private function requireProjectTeamForProgress(Project $project): ?JsonResponse
     {
         if ($project->getTeam() !== null) {
             return null;

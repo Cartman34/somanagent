@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\DevEnv;
+namespace Sowapps\SoManAgent\Script\DevEnv;
 
-use SoManAgent\Script\DevEnv\Model\LockEntry;
+use Sowapps\SoManAgent\Script\DevEnv\Model\LockEntry;
 
 /**
  * Represents the planned uninstall action for a single dependency.

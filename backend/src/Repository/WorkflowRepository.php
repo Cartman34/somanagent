@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace App\Repository;
+namespace Sowapps\SoManAgent\Repository;
 
-use App\Entity\Workflow;
+use Sowapps\SoManAgent\Entity\Workflow;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -29,10 +29,10 @@ class WorkflowRepository extends ServiceEntityRepository
         $result = $this->getEntityManager()
             ->createQueryBuilder()
             ->select('1')
-            ->from('App\Entity\WorkflowStep', 'ws')
-            ->leftJoin('App\Entity\Ticket', 't', 'WITH', 't.workflowStep = ws')
-            ->leftJoin('App\Entity\TicketTask', 'tt', 'WITH', 'tt.workflowStep = ws')
-            ->leftJoin('App\Entity\TokenUsage', 'tu', 'WITH', 'tu.workflowStep = ws')
+            ->from('Sowapps\SoManAgent\Entity\WorkflowStep', 'ws')
+            ->leftJoin('Sowapps\SoManAgent\Entity\Ticket', 't', 'WITH', 't.workflowStep = ws')
+            ->leftJoin('Sowapps\SoManAgent\Entity\TicketTask', 'tt', 'WITH', 'tt.workflowStep = ws')
+            ->leftJoin('Sowapps\SoManAgent\Entity\TokenUsage', 'tu', 'WITH', 'tu.workflowStep = ws')
             ->where('ws.workflow = :workflow')
             ->andWhere('t.id IS NOT NULL OR tt.id IS NOT NULL OR tu.id IS NOT NULL')
             ->setParameter('workflow', $workflow)
@@ -51,7 +51,7 @@ class WorkflowRepository extends ServiceEntityRepository
         $result = $this->getEntityManager()
             ->createQueryBuilder()
             ->select('1')
-            ->from('App\Entity\Project', 'p')
+            ->from('Sowapps\SoManAgent\Entity\Project', 'p')
             ->where('p.workflow = :workflow')
             ->setParameter('workflow', $workflow)
             ->setMaxResults(1)

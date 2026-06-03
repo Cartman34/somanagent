@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Dto\Input\Ticket;
+namespace Sowapps\SoManAgent\Dto\Input\Ticket;
 
-use App\Enum\TaskPriority;
-use App\Exception\ValidationException;
+use Sowapps\SoManAgent\Enum\TaskPriority;
+use Sowapps\SoManAgent\Exception\ValidationException;
 
 /**
  * Input DTO for creating a ticket task.
@@ -18,7 +18,7 @@ final class CreateTicketTaskDto
     /**
      * @param string       $title           Task title
      * @param string       $actionKey       Agent action key
-     * @param TaskPriority $priority        Task priority
+     * @param TaskPriority $priority Task priority
      * @param ?string      $description     Optional description
      * @param ?string      $parentTaskId    Optional parent task UUID
      * @param ?string      $assignedAgentId Optional assigned agent UUID

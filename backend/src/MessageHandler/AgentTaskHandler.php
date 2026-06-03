@@ -5,16 +5,16 @@
 
 declare(strict_types=1);
 
-namespace App\MessageHandler;
+namespace Sowapps\SoManAgent\MessageHandler;
 
-use App\Message\AgentTaskMessage;
-use App\Repository\AgentRepository;
-use App\Repository\TicketTaskRepository;
-use App\Service\AgentExecutionService;
-use App\Service\AgentTaskExecutionService;
-use App\Service\LogService;
-use App\Service\MessengerExecutionContext;
-use App\Service\TicketTaskService;
+use Sowapps\SoManAgent\Repository\AgentRepository;
+use Sowapps\SoManAgent\Repository\TicketTaskRepository;
+use Sowapps\SoManAgent\Service\AgentExecutionService;
+use Sowapps\SoManAgent\Service\TicketTaskService;
+use Sowapps\SoManAgent\Service\AgentTaskExecutionService;
+use Sowapps\SoManAgent\Service\LogService;
+use Sowapps\SoManAgent\Service\MessengerExecutionContext;
+use Sowapps\SoManAgent\Message\AgentTaskMessage;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Uid\Uuid;

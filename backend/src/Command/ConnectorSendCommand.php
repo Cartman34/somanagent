@@ -5,16 +5,16 @@
 
 declare(strict_types=1);
 
-namespace App\Command;
+namespace Sowapps\SoManAgent\Command;
 
-use App\Entity\Agent;
-use App\Enum\ConnectorType;
-use App\Port\ConnectorInterface;
-use App\Service\AgentService;
-use App\Service\ConnectorRegistry;
-use App\ValueObject\ConnectorConfig;
-use App\ValueObject\ConnectorRequest;
-use App\ValueObject\Prompt;
+use Sowapps\SoManAgent\Service\ConnectorRegistry;
+use Sowapps\SoManAgent\Service\AgentService;
+use Sowapps\SoManAgent\ValueObject\ConnectorRequest;
+use Sowapps\SoManAgent\Enum\ConnectorType;
+use Sowapps\SoManAgent\Entity\Agent;
+use Sowapps\SoManAgent\ValueObject\ConnectorConfig;
+use Sowapps\SoManAgent\Port\ConnectorInterface;
+use Sowapps\SoManAgent\ValueObject\Prompt;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;

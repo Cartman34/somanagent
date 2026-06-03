@@ -5,11 +5,12 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\DevEnv\Test;
+namespace Sowapps\SoManAgent\Script\DevEnv\Test;
 
-use SoManAgent\Script\Console;
-use SoManAgent\Script\DevEnv\Installer\ProjectDepsInstaller;
-
+use Sowapps\SoManAgent\Script\DevEnv\Installer\ProjectDepsInstaller;
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\DevEnv\Test\FakeCommandRunner;
+use Sowapps\SoManAgent\Script\DevEnv\Test\FakeShellRunner;
 /**
  * Unit tests for ProjectDepsInstaller.
  *

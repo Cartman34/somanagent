@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace App\Enum;
+namespace Sowapps\SoManAgent\Enum;
 
 /**
  * Qualifies how necessary a clarification question is for the current task execution.

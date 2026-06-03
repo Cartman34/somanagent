@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Repository;
+namespace Sowapps\SoManAgent\Repository;
 
-use App\Entity\AgentTaskExecution;
-use App\Entity\AgentTaskExecutionAttempt;
+use Sowapps\SoManAgent\Entity\AgentTaskExecution;
+use Sowapps\SoManAgent\Entity\AgentTaskExecutionAttempt;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 

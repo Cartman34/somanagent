@@ -5,21 +5,21 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Test;
 
-use SoManAgent\Script\Application;
-use SoManAgent\Script\Backlog\Command\BacklogReviewApproveCommand;
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
-use SoManAgent\Script\Backlog\Model\BoardEntry;
-use SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use SoManAgent\Script\Backlog\Service\BacklogPresenter;
-use SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
-use SoManAgent\Script\Client\ConsoleClient;
-use SoManAgent\Script\Client\FilesystemClient;
-use SoManAgent\Script\Console;
-use SoManAgent\Script\Service\GitService;
-use SoManAgent\Script\Service\PullRequestService;
-use SoManAgent\Script\TextSlugger;
+use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogReviewApproveCommand;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use Sowapps\SoManAgent\Script\TextSlugger;
+use Sowapps\SoManAgent\Script\Client\FilesystemClient;
+use Sowapps\SoManAgent\Script\Service\GitService;
+use Sowapps\SoManAgent\Script\Service\PullRequestService;
+use Sowapps\SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\Client\ConsoleClient;
+use Sowapps\SoManAgent\Script\Application;
 use Symfony\Component\Yaml\Yaml;
 
 /**

@@ -5,12 +5,12 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Model;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Model;
 
-use SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
-use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
-use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
-use SoManAgent\Script\Backlog\Enum\SubmitMode;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use Sowapps\SoManAgent\Script\Backlog\Enum\SubmitMode;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
 
 /**
  * Represents one live or stale agent session entry from agent-sessions.json.

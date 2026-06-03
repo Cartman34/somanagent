@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Model;
+namespace Sowapps\SoManAgent\Script\Backlog\Model;
 
-use SoManAgent\Script\Backlog\Enum\WorktreeAction;
+use Sowapps\SoManAgent\Script\Backlog\Enum\WorktreeAction;
 
 /**
  * Data object for a worktree not managed by a backlog agent.

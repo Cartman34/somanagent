@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Model;
+namespace Sowapps\SoManAgent\Script\Backlog\Model;
 
 /**
  * Data container for reviewer findings in the local review file (DTO).

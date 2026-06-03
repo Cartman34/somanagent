@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
 /**
  * Builds canonical Mercure topics used across the application.

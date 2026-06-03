@@ -5,7 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Client;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Client;
+
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncher;
 
 /**
  * Provides default no-op implementations of optional AgentClientLauncher hooks.

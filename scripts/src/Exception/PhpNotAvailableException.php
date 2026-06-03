@@ -9,7 +9,7 @@ declare(strict_types=1);
  * Thrown when PHP is not available inside WSL, preventing the
  * transparent WSL redirect from working.
  */
-namespace SoManAgent\Script\Exception;
+namespace Sowapps\SoManAgent\Script\Exception;
 
 final class PhpNotAvailableException extends \RuntimeException
 {

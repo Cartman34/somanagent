@@ -5,11 +5,13 @@
 
 declare(strict_types=1);
 
-namespace App\Entity;
+namespace Sowapps\SoManAgent\Entity;
 
-use App\Enum\ConnectorType;
-use App\Repository\AgentRepository;
-use App\ValueObject\ConnectorConfig;
+use Sowapps\SoManAgent\Repository\AgentRepository;
+use Sowapps\SoManAgent\Enum\ConnectorType;
+use Sowapps\SoManAgent\ValueObject\ConnectorConfig;
+use Sowapps\SoManAgent\Entity\Role;
+use Sowapps\SoManAgent\Entity\Team;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;

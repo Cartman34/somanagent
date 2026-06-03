@@ -5,40 +5,41 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Command;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Command;
 
-use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
-use SoManAgent\Script\Backlog\Agent\Client\BacklogCommandRunner;
-use SoManAgent\Script\Backlog\Agent\Client\ProcessRunner;
-use SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
-use SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
-use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
-use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
-use SoManAgent\Script\Backlog\Agent\Enum\WaOccupantChoice;
-use SoManAgent\Script\Backlog\Agent\Exception\ActiveSessionException;
-use SoManAgent\Script\Backlog\Agent\Exception\ClientNotInstalledException;
-use SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException;
-use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
-use SoManAgent\Script\Backlog\Agent\Model\ResolvedModel;
-use SoManAgent\Script\Backlog\Agent\Model\ReviewerPickOutcome;
-use SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
-use SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
-use SoManAgent\Script\Backlog\Agent\Service\AgentDeveloperSelector;
-use SoManAgent\Script\Backlog\Agent\Service\AgentLaunchPromptResolver;
-use SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
-use SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
-use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
-use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
-use SoManAgent\Script\Backlog\Enum\SubmitMode;
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
-use SoManAgent\Script\Backlog\Service\BacklogConfig;
-use SoManAgent\Script\Backlog\Service\SubmitModeResolver;
-use SoManAgent\Script\Backlog\Model\BoardEntry;
-use SoManAgent\Script\Backlog\Model\BoardEntryMatch;
-use SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
-use SoManAgent\Script\Backlog\Service\EntryRebaseService;
-
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentDeveloperSelector;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ProcessRunner;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\BacklogCommandRunner;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentLaunchPromptResolver;
+use Sowapps\SoManAgent\Script\Backlog\Service\EntryRebaseService;
+use Sowapps\SoManAgent\Script\Backlog\Service\SubmitModeResolver;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogConfig;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
+use Sowapps\SoManAgent\Script\Backlog\Enum\SubmitMode;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Exception\ClientNotInstalledException;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Model\ResolvedModel;
+use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Exception\ActiveSessionException;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Model\ReviewerPickOutcome;
+use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntryMatch;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\WaOccupantChoice;
+use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AbstractAgentCommand;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncher;
 /**
  * Starts or re-attaches an AI agent session in a dedicated worktree.
  *
@@ -84,7 +85,7 @@ final class AgentStartCommand extends AbstractAgentCommand
      *
      * When null, the production stdin-based prompter is used. Inject a fake in tests.
      *
-     * @var (callable(AgentSession, BoardEntry, bool): WaOccupantChoice)|null
+     * @var callable(AgentSession, BoardEntry, bool):WaOccupantChoice|null
      */
     private $waConflictPrompter;
 
@@ -107,7 +108,7 @@ final class AgentStartCommand extends AbstractAgentCommand
      * @param EntryRebaseService $entryRebaseService Handles approved-entry rebase before developer session launch; use NullEntryRebaseService in tests that do not exercise the approved path
      * @param AgentModelResolver|null $modelResolver Resolves role/client model tier and effort into CLI args
      * @param AgentLaunchPromptResolver|null $launchPromptResolver Resolves role-specific initial prompts for auto-picked entries; defaults to the bundled scripts resource
-     * @param (callable(AgentSession, BoardEntry, bool): WaOccupantChoice)|null $waConflictPrompter Override for the interactive WA-occupant conflict prompt; when null the production stdin prompter is used
+     * @param callable(AgentSession, BoardEntry, bool):WaOccupantChoice|null $waConflictPrompter Override for the interactive WA-occupant conflict prompt; when null the production stdin prompter is used
      */
     public function __construct(
         string $projectRoot,
@@ -307,7 +308,7 @@ final class AgentStartCommand extends AbstractAgentCommand
      */
     private function launchCycle(
         AgentClient $client,
-        \SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncher $launcher,
+        AgentClientLauncher $launcher,
         AgentRole $role,
         string $code,
         array $options,

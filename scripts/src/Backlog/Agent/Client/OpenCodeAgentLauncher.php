@@ -5,14 +5,16 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Client;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Client;
 
-use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
-use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
-use SoManAgent\Script\Backlog\Agent\Model\ResolvedModel;
-use SoManAgent\Script\Backlog\Agent\Model\SessionInfo;
-use SoManAgent\Script\Backlog\BacklogPaths;
-
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
+use Sowapps\SoManAgent\Script\Backlog\BacklogPaths;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Model\ResolvedModel;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Model\SessionInfo;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\AbstractAgentClientLauncher;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ProcessRunner;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ShellProcessRunner;
 /**
  * Launcher implementation for OpenCode.
  *

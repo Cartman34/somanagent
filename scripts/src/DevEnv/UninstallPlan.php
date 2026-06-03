@@ -5,7 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\DevEnv;
+namespace Sowapps\SoManAgent\Script\DevEnv;
+
+use Sowapps\SoManAgent\Script\DevEnv\PlannedUninstall;
 
 /**
  * Holds the complete uninstall plan for all lockfile dependencies.

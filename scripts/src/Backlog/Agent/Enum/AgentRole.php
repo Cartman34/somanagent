@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Enum;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Enum;
 
 /**
  * Role of an agent session launched by backlog-agent.php.

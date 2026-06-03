@@ -5,13 +5,13 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Command;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Command;
 
-use SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
-use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
-use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
-use SoManAgent\Script\Console;
-
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AbstractAgentCommand;
 /**
  * Stops a live agent session, cleans up a stale entry, or kills an orphan driver session.
  *

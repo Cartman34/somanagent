@@ -5,20 +5,20 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Command;
+namespace Sowapps\SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
-use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
-use SoManAgent\Script\Backlog\Enum\BacklogEntryMetaKey;
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
-use SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use SoManAgent\Script\Backlog\Service\BacklogPresenter;
-use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
-use SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
-use SoManAgent\Script\Backlog\Service\PostMergeSessionStopper;
-use SoManAgent\Script\Service\GitService;
-use SoManAgent\Script\Service\PullRequestService;
-
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
+use Sowapps\SoManAgent\Script\Service\GitService;
+use Sowapps\SoManAgent\Script\Service\PullRequestService;
+use Sowapps\SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
+use Sowapps\SoManAgent\Script\Backlog\Service\PostMergeSessionStopper;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogEntryMetaKey;
+use Sowapps\SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
 /**
  * Command for merging a feature into the base branch.
  */

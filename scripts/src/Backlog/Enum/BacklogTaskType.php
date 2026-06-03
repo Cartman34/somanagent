@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Enum;
+namespace Sowapps\SoManAgent\Script\Backlog\Enum;
 
 /**
  * Canonical task types recognized as queued task prefixes and as Git branch prefixes.

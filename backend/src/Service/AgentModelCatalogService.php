@@ -5,13 +5,17 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Enum\ConnectorType;
-use App\Port\ConnectorInterface;
-use App\ValueObject\AgentConnectorCatalog;
-use App\ValueObject\AgentModelInfo;
-use App\ValueObject\AgentModelAdvisory;
+use Sowapps\SoManAgent\Enum\ConnectorType;
+use Sowapps\SoManAgent\ValueObject\AgentConnectorCatalog;
+use Sowapps\SoManAgent\ValueObject\AgentModelAdvisory;
+use Sowapps\SoManAgent\ValueObject\AgentModelInfo;
+use Sowapps\SoManAgent\Port\ConnectorInterface;
+use Sowapps\SoManAgent\Service\ConnectorRegistry;
+use Sowapps\SoManAgent\Service\AgentModelRecommendationPolicyResolver;
+use Sowapps\SoManAgent\ValueObject\AgentModelPricing;
+use Sowapps\SoManAgent\ValueObject\AgentModelCapabilities;
 use Psr\Cache\CacheItemPoolInterface;
 
 /**
@@ -243,8 +247,8 @@ class AgentModelCatalogService
                 maxOutputTokens: is_int($rawModel['maxOutputTokens'] ?? null) ? $rawModel['maxOutputTokens'] : null,
                 status: is_string($rawModel['status'] ?? null) ? $rawModel['status'] : null,
                 releaseDate: is_string($rawModel['releaseDate'] ?? null) ? $rawModel['releaseDate'] : null,
-                pricing: is_array($rawModel['pricing'] ?? null) ? \App\ValueObject\AgentModelPricing::fromArray($rawModel['pricing']) : null,
-                capabilities: is_array($rawModel['capabilities'] ?? null) ? \App\ValueObject\AgentModelCapabilities::fromArray($rawModel['capabilities']) : null,
+                pricing: is_array($rawModel['pricing'] ?? null) ? AgentModelPricing::fromArray($rawModel['pricing']) : null,
+                capabilities: is_array($rawModel['capabilities'] ?? null) ? AgentModelCapabilities::fromArray($rawModel['capabilities']) : null,
                 metadata: is_array($rawModel['metadata'] ?? null) ? $rawModel['metadata'] : [],
             );
         }

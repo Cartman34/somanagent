@@ -5,12 +5,12 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Service;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Service;
 
-use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
-use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
-use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
-use SoManAgent\Script\Backlog\Enum\SubmitMode;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use Sowapps\SoManAgent\Script\Backlog\Enum\SubmitMode;
 
 /**
  * Reads and writes the agent sessions registry at local/tmp/agent-sessions.json (WP only).

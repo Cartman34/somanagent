@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Enum;
+namespace Sowapps\SoManAgent\Script\Backlog\Enum;
 
 /**
  * Stable metadata key names used in backlog board entries.

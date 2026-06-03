@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Dto\Input\Feature;
+namespace Sowapps\SoManAgent\Dto\Input\Feature;
 
-use App\Enum\FeatureStatus;
-use App\Exception\ValidationException;
+use Sowapps\SoManAgent\Enum\FeatureStatus;
+use Sowapps\SoManAgent\Exception\ValidationException;
 
 /**
  * Input DTO for updating a feature (all fields optional).
@@ -18,7 +18,7 @@ final class UpdateFeatureDto
     /**
      * @param ?string        $name        Updated name or null to keep current
      * @param ?string        $description Updated description or null to keep current
-     * @param ?FeatureStatus $status      Updated status or null to keep current
+     * @param ?FeatureStatus $status Updated status or null to keep current
      */
     public function __construct(
         public readonly ?string $name,

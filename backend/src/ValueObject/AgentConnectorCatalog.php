@@ -5,10 +5,11 @@
 
 declare(strict_types=1);
 
-namespace App\ValueObject;
+namespace Sowapps\SoManAgent\ValueObject;
 
-use App\Enum\ConnectorType;
-
+use Sowapps\SoManAgent\Enum\ConnectorType;
+use Sowapps\SoManAgent\ValueObject\AgentModelInfo;
+use Sowapps\SoManAgent\ValueObject\AgentModelAdvisory;
 /**
  * Immutable connector catalog view exposed to the API and CLI.
  */
@@ -17,7 +18,7 @@ final readonly class AgentConnectorCatalog
     /**
      * Builds the immutable connector catalog view exposed by the API and CLI layers.
      *
-     * @param AgentModelInfo[]     $models
+     * @param AgentModelInfo[] $models
      * @param AgentModelAdvisory[] $advisories
      */
     public function __construct(

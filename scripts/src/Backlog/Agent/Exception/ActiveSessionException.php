@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Exception;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Exception;
 
-use SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
-use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
 
 /**
  * Thrown when a start command targets a code that already has an active session.

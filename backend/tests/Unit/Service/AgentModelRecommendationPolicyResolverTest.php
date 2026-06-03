@@ -5,12 +5,12 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Unit\Service;
+namespace Sowapps\SoManAgent\Tests\Unit\Service;
 
-use App\Enum\ConnectorType;
-use App\Service\AgentModelRecommendationPolicyResolver;
-use App\Tests\Support\LocalUnitTestCase;
-use App\ValueObject\AgentModelInfo;
+use Sowapps\SoManAgent\Tests\Support\LocalUnitTestCase;
+use Sowapps\SoManAgent\Service\AgentModelRecommendationPolicyResolver;
+use Sowapps\SoManAgent\Enum\ConnectorType;
+use Sowapps\SoManAgent\ValueObject\AgentModelInfo;
 
 /**
  * Covers the recommendation policy matching used to pick one default model per connector.

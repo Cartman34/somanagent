@@ -5,19 +5,19 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
 
-use SoManAgent\Script\Application;
-use SoManAgent\Script\Backlog\Command\BacklogEntryRebaseCommand;
-use SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use SoManAgent\Script\Backlog\Service\BacklogPresenter;
-use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
-use SoManAgent\Script\Backlog\Service\EntryRebaseResult;
-use SoManAgent\Script\Client\ConsoleClient;
-use SoManAgent\Script\Client\FilesystemClient;
-use SoManAgent\Script\Console;
-use SoManAgent\Script\RetryPolicy;
-use SoManAgent\Script\TextSlugger;
+use Sowapps\SoManAgent\Script\Backlog\Service\EntryRebaseResult;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogEntryRebaseCommand;
+use Sowapps\SoManAgent\Script\Application;
+use Sowapps\SoManAgent\Script\Client\ConsoleClient;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use Sowapps\SoManAgent\Script\TextSlugger;
+use Sowapps\SoManAgent\Script\Client\FilesystemClient;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeEntryRebaseService;
 
 /**
  * Unit tests for {@see BacklogEntryRebaseCommand}.

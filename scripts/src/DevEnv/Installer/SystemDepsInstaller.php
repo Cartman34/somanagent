@@ -5,13 +5,14 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\DevEnv\Installer;
+namespace Sowapps\SoManAgent\Script\DevEnv\Installer;
 
-use SoManAgent\Script\Application;
-use SoManAgent\Script\Console;
-use SoManAgent\Script\DevEnv\Model\LockEntry;
-use SoManAgent\Script\DevEnv\Model\SideEffects;
-use SoManAgent\Script\DevEnv\PlannedDep;
+use Sowapps\SoManAgent\Script\DevEnv\Model\LockEntry;
+use Sowapps\SoManAgent\Script\Application;
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\DevEnv\PlannedDep;
+use Sowapps\SoManAgent\Script\DevEnv\Model\SideEffects;
+use Sowapps\SoManAgent\Script\DevEnv\Installer\InstallerInterface;
 
 /**
  * Installs host-level system dependencies via apt.
@@ -24,7 +25,7 @@ final class SystemDepsInstaller implements InstallerInterface
 {
     /**
      * @param Application $app Command runner
-     * @param Console     $console Output helper
+     * @param Console $console Output helper
      */
     public function __construct(
         private readonly Application $app,

@@ -5,13 +5,13 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Service;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Service;
 
-use SoManAgent\Script\Backlog\Agent\Client\BacklogCommandRunner;
-use SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException;
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
-use SoManAgent\Script\Backlog\Model\BoardEntryMatch;
-use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntryMatch;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\BacklogCommandRunner;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException;
 
 /**
  * Selects the target backlog entry for a developer session launch.

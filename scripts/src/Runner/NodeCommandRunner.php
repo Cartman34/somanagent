@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Runner;
+namespace Sowapps\SoManAgent\Script\Runner;
 
-use SoManAgent\Script\Application;
-
+use Sowapps\SoManAgent\Script\Application;
+use Sowapps\SoManAgent\Script\Runner\DockerComposeServiceRunner;
 /**
  * Resolves reusable developer commands for the Node container.
  */

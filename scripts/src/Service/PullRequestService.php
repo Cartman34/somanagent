@@ -5,13 +5,13 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Service;
+namespace Sowapps\SoManAgent\Script\Service;
 
-use SoManAgent\Script\Backlog\Enum\PullRequestTag;
-use SoManAgent\Script\Client\GitHubClientInterface;
-use SoManAgent\Script\RetryHelper;
-use SoManAgent\Script\RetryPolicy;
-
+use Sowapps\SoManAgent\Script\Client\GitHubClientInterface;
+use Sowapps\SoManAgent\Script\RetryPolicy;
+use Sowapps\SoManAgent\Script\Backlog\Enum\PullRequestTag;
+use Sowapps\SoManAgent\Script\RetryHelper;
+use Sowapps\SoManAgent\Script\Service\GitService;
 /**
  * Service for orchestrating Pull Request lifecycles.
  */

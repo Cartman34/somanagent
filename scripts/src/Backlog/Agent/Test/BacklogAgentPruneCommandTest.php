@@ -5,15 +5,16 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
 
-use SoManAgent\Script\Backlog\Agent\Command\BacklogAgentPruneCommand;
-use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
-use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
-use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
-use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
-use SoManAgent\Script\Console;
-
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Command\BacklogAgentPruneCommand;
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeSessionDriver;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeProcessSignaler;
 /**
  * Unit tests for BacklogAgentPruneCommand.
  *

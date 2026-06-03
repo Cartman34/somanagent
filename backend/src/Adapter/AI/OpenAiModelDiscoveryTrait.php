@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace App\Adapter\AI;
+namespace Sowapps\SoManAgent\Adapter\AI;
 
-use App\ValueObject\AgentModelInfo;
+use Sowapps\SoManAgent\ValueObject\AgentModelInfo;
 use GuzzleHttp\Client;
 
 /**

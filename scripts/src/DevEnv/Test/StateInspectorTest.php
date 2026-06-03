@@ -5,11 +5,11 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\DevEnv\Test;
+namespace Sowapps\SoManAgent\Script\DevEnv\Test;
 
-use SoManAgent\Script\DevEnv\Model\Dependency;
-use SoManAgent\Script\DevEnv\StateInspector;
-
+use Sowapps\SoManAgent\Script\DevEnv\Model\Dependency;
+use Sowapps\SoManAgent\Script\DevEnv\StateInspector;
+use Sowapps\SoManAgent\Script\DevEnv\Test\FakeCommandRunner;
 /**
  * Unit tests for StateInspector.
  */

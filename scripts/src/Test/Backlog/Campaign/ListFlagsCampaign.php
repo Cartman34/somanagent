@@ -5,11 +5,11 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Test\Backlog\Campaign;
+namespace Sowapps\SoManAgent\Script\Test\Backlog\Campaign;
 
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
-use SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
-use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
+use Sowapps\SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
+use Sowapps\SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
+use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\CampaignInterface;
 
 /**
  * Tests for the unified `list` command: --stage, --no-stage, --format, --flat,

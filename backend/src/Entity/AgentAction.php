@@ -5,9 +5,11 @@
 
 declare(strict_types=1);
 
-namespace App\Entity;
+namespace Sowapps\SoManAgent\Entity;
 
-use App\Repository\AgentActionRepository;
+use Sowapps\SoManAgent\Repository\AgentActionRepository;
+use Sowapps\SoManAgent\Entity\Role;
+use Sowapps\SoManAgent\Entity\Skill;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 

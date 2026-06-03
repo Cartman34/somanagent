@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\DevEnv\Model;
+namespace Sowapps\SoManAgent\Script\DevEnv\Model;
 
 /**
  * Resources created as a side effect of installing a dependency.

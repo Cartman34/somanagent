@@ -5,11 +5,12 @@
 
 declare(strict_types=1);
 
-namespace App\Controller;
+namespace Sowapps\SoManAgent\Controller;
 
-use App\Service\ApiErrorPayloadFactory;
-use App\Service\AgentService;
-use App\Service\TokenUsageService;
+use Sowapps\SoManAgent\Service\TokenUsageService;
+use Sowapps\SoManAgent\Service\AgentService;
+use Sowapps\SoManAgent\Service\ApiErrorPayloadFactory;
+use Sowapps\SoManAgent\Controller\AbstractApiController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;

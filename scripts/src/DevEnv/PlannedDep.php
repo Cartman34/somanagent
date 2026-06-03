@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\DevEnv;
+namespace Sowapps\SoManAgent\Script\DevEnv;
 
-use SoManAgent\Script\DevEnv\Model\LockEntry;
+use Sowapps\SoManAgent\Script\DevEnv\Model\LockEntry;
 
 /**
  * Represents the planned install action for a single dependency.
@@ -23,7 +23,7 @@ final class PlannedDep
     public const ACTION_CONFIRM = 'confirm';
 
     /**
-     * @param LockEntry        $entry            Target lock entry (version to install)
+     * @param LockEntry $entry Target lock entry (version to install)
      * @param string           $action           One of the ACTION_* constants
      * @param string|null      $installedVersion Currently installed version, or null when not installed
      * @param string|null      $blockReason      Human-readable reason when action=blocked

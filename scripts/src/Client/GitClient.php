@@ -5,11 +5,11 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Client;
+namespace Sowapps\SoManAgent\Script\Client;
 
-use SoManAgent\Script\RetryHelper;
-use SoManAgent\Script\RetryPolicy;
-
+use Sowapps\SoManAgent\Script\RetryPolicy;
+use Sowapps\SoManAgent\Script\RetryHelper;
+use Sowapps\SoManAgent\Script\Client\ConsoleClient;
 /**
  * Git command client for local and remote repository operations.
  *

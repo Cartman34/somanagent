@@ -5,18 +5,19 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Command;
+namespace Sowapps\SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
-use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
-use SoManAgent\Script\Backlog\Model\BoardEntry;
-use SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use SoManAgent\Script\Backlog\Service\BacklogConfig;
-use SoManAgent\Script\Backlog\Service\BacklogPresenter;
-use SoManAgent\Script\Backlog\Service\BacklogScopeService;
-use SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
-
+use Sowapps\SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogScopeService;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogConfig;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
+use Sowapps\SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogTaskType;
 /**
  * Inserts a new backlog entry into the todo section.
  *
@@ -227,7 +228,7 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
         if ($typeRaw === null) {
             throw new \RuntimeException(sprintf(
                 'entry-create requires --type=<%s>.',
-                \SoManAgent\Script\Backlog\Enum\BacklogTaskType::tokenList(),
+                BacklogTaskType::tokenList(),
             ));
         }
         if (!is_string($typeRaw)) {
@@ -236,15 +237,15 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
         if (trim($typeRaw) === '') {
             throw new \RuntimeException(sprintf(
                 'entry-create requires --type=<%s>.',
-                \SoManAgent\Script\Backlog\Enum\BacklogTaskType::tokenList(),
+                BacklogTaskType::tokenList(),
             ));
         }
-        $taskType = \SoManAgent\Script\Backlog\Enum\BacklogTaskType::tryFromToken(trim($typeRaw));
+        $taskType = BacklogTaskType::tryFromToken(trim($typeRaw));
         if ($taskType === null) {
             throw new \RuntimeException(sprintf(
                 'Unknown --type=%s. Supported types: %s.',
                 trim($typeRaw),
-                \SoManAgent\Script\Backlog\Enum\BacklogTaskType::tokenList(),
+                BacklogTaskType::tokenList(),
             ));
         }
         $type = $taskType->value;

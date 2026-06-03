@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace App\ValueObject;
+namespace Sowapps\SoManAgent\ValueObject;
 
 /**
  * Final prompt sent to an agent, built by assembling the skill content and the task context.

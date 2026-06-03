@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\DevEnv\Model;
+namespace Sowapps\SoManAgent\Script\DevEnv\Model;
 
 /**
  * Represents a single dependency entry from the manifest.

@@ -5,19 +5,19 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Service;
+namespace Sowapps\SoManAgent\Script\Backlog\Service;
 
-use SoManAgent\Script\Backlog\Model\BoardEntry;
-use SoManAgent\Script\Backlog\Model\WorktreeClassification;
-use SoManAgent\Script\Backlog\Model\ManagedWorktree;
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
-use SoManAgent\Script\Backlog\Enum\WorktreeState;
-use SoManAgent\Script\Backlog\Enum\WorktreeAction;
-use SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
-use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
-use SoManAgent\Script\Client\ConsoleClient;
-use SoManAgent\Script\Console;
-
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\Client\ConsoleClient;
+use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
+use Sowapps\SoManAgent\Script\Backlog\Model\WorktreeClassification;
+use Sowapps\SoManAgent\Script\Backlog\Model\ManagedWorktree;
+use Sowapps\SoManAgent\Script\Backlog\Enum\WorktreeState;
+use Sowapps\SoManAgent\Script\Backlog\Enum\WorktreeAction;
+use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
 /**
  * Handles all visual presentation logic for backlog commands.
  */

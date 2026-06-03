@@ -5,7 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script;
+namespace Sowapps\SoManAgent\Script;
+
+use Sowapps\SoManAgent\Script\Environment;
 
 /**
  * Terminal output helper used by all SoManAgent scripts.

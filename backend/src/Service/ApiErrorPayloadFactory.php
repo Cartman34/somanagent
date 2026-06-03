@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Exception\ValidationException;
+use Sowapps\SoManAgent\Exception\ValidationException;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**

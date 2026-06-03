@@ -5,10 +5,11 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\DevEnv\Installer;
+namespace Sowapps\SoManAgent\Script\DevEnv\Installer;
 
-use SoManAgent\Script\DevEnv\Model\LockEntry;
-use SoManAgent\Script\DevEnv\PlannedDep;
+use Sowapps\SoManAgent\Script\DevEnv\Model\LockEntry;
+use Sowapps\SoManAgent\Script\DevEnv\PlannedDep;
+
 
 /**
  * Contract for a dependency installer module.

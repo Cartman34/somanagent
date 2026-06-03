@@ -5,14 +5,15 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Dto\Input\Role\CreateRoleDto;
-use App\Dto\Input\Role\UpdateRoleDto;
-use App\Entity\Role;
-use App\Enum\AuditAction;
-use App\Repository\RoleRepository;
-use App\Repository\SkillRepository;
+use Sowapps\SoManAgent\Repository\RoleRepository;
+use Sowapps\SoManAgent\Repository\SkillRepository;
+use Sowapps\SoManAgent\Dto\Input\Role\CreateRoleDto;
+use Sowapps\SoManAgent\Entity\Role;
+use Sowapps\SoManAgent\Enum\AuditAction;
+use Sowapps\SoManAgent\Dto\Input\Role\UpdateRoleDto;
+use Sowapps\SoManAgent\Service\EntityService;
 use Symfony\Component\Uid\Uuid;
 
 /**

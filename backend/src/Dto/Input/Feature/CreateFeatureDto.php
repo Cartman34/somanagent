@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace App\Dto\Input\Feature;
+namespace Sowapps\SoManAgent\Dto\Input\Feature;
 
-use App\Exception\ValidationException;
+use Sowapps\SoManAgent\Exception\ValidationException;
 
 /**
  * Input DTO for creating a feature.

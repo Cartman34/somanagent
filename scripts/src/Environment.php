@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script;
+namespace Sowapps\SoManAgent\Script;
 
 /**
  * Detects the current runtime environment (Windows, WSL, Linux, macOS)

@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Entity;
+namespace Sowapps\SoManAgent\Entity;
 
-use App\Enum\AuditAction;
-use App\Repository\AuditLogRepository;
+use Sowapps\SoManAgent\Repository\AuditLogRepository;
+use Sowapps\SoManAgent\Enum\AuditAction;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 
@@ -16,10 +16,10 @@ use Symfony\Component\Uid\Uuid;
  * Immutable cross-cutting audit record for application-level actions.
  *
  * Captures who did what to which entity. Distinct from:
- * - {@see \App\Entity\TicketLog}: narrative history scoped to a ticket
+ * - {@see \Sowapps\SoManAgent\Entity\TicketLog}: narrative history scoped to a ticket
  * - LogEvent / LogOccurrence: runtime monitoring (Monolog)
  *
- * Write via {@see \App\Service\AuditService::log()} only — never instantiate directly outside tests.
+ * Write via {@see \Sowapps\SoManAgent\Service\AuditService::log()} only — never instantiate directly outside tests.
  */
 #[ORM\Entity(repositoryClass: AuditLogRepository::class)]
 #[ORM\Table(name: 'audit_log')]

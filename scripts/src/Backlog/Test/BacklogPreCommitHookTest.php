@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Test;
 
 /**
  * Integration tests for the managed worktree pre-commit hook.

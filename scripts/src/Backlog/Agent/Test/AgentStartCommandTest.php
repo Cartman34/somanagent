@@ -5,40 +5,46 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
 
-use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncher;
-use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
-use SoManAgent\Script\Backlog\Agent\Command\AgentStartCommand;
-use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
-use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
-use SoManAgent\Script\Backlog\Agent\Enum\WaOccupantChoice;
-use SoManAgent\Script\Backlog\Agent\Exception\ActiveSessionException;
-use SoManAgent\Script\Backlog\Agent\Exception\ClientNotInstalledException;
-use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
-use SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
-use SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
-use SoManAgent\Script\Backlog\Agent\Service\AgentDeveloperSelector;
-use SoManAgent\Script\Backlog\Agent\Service\AgentLaunchPromptResolver;
-use SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
-use SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
-use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
-use SoManAgent\Script\Backlog\BacklogPaths;
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
-use SoManAgent\Script\Backlog\Model\BoardEntry;
-use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Exception\ClientNotInstalledException;
+use Sowapps\SoManAgent\Script\Backlog\BacklogPaths;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use Sowapps\SoManAgent\Script\TextSlugger;
+use Sowapps\SoManAgent\Script\Client\FilesystemClient;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AgentStartCommand;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentDeveloperSelector;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Exception\ActiveSessionException;
+use Sowapps\SoManAgent\Script\Backlog\Service\EntryRebaseResult;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncher;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentLaunchPromptResolver;
+use Sowapps\SoManAgent\Script\Application;
+use Sowapps\SoManAgent\Script\Client\ConsoleClient;
+use Sowapps\SoManAgent\Script\Client\GitClient;
+use Sowapps\SoManAgent\Script\RetryPolicy;
+use Sowapps\SoManAgent\Script\Client\ProjectScriptClient;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
+use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\WaOccupantChoice;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeAgentClientLauncher;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeSessionDriver;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeBacklogCommandRunner;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeProcessSignaler;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeProcessRunner;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\NullEntryRebaseService;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeEntryRebaseService;
 use Symfony\Component\Yaml\Yaml;
-use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
-use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
-use SoManAgent\Script\Backlog\Service\EntryRebaseResult;
-use SoManAgent\Script\Backlog\Service\EntryRebaseService;
-use SoManAgent\Script\Application;
-use SoManAgent\Script\Client\ConsoleClient;
-use SoManAgent\Script\Client\FilesystemClient;
-use SoManAgent\Script\Client\GitClient;
-use SoManAgent\Script\Client\ProjectScriptClient;
-use SoManAgent\Script\RetryPolicy;
-use SoManAgent\Script\TextSlugger;
 
 /**
  * Command-level tests for {@see AgentStartCommand}.

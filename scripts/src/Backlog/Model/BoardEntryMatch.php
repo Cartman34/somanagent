@@ -5,7 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Model;
+namespace Sowapps\SoManAgent\Script\Backlog\Model;
+
+use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
 
 /**
  * Locates one board entry inside a managed backlog section.

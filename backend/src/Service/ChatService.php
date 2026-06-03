@@ -5,18 +5,24 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Entity\Agent;
-use App\Entity\ChatMessage;
-use App\Entity\Project;
-use App\Entity\TokenUsage;
-use App\Enum\AuditAction;
-use App\Enum\ChatAuthor;
-use App\Repository\ChatMessageRepository;
+use Sowapps\SoManAgent\Repository\ChatMessageRepository;
+use Sowapps\SoManAgent\Entity\Project;
+use Sowapps\SoManAgent\Entity\ChatMessage;
+use Sowapps\SoManAgent\Enum\ChatAuthor;
+use Sowapps\SoManAgent\ValueObject\Prompt;
+use Sowapps\SoManAgent\ValueObject\ConnectorRequest;
+use Sowapps\SoManAgent\Entity\TokenUsage;
+use Sowapps\SoManAgent\Enum\AuditAction;
+use Sowapps\SoManAgent\Service\EntityService;
+use Sowapps\SoManAgent\Service\ConnectorRegistry;
+use Sowapps\SoManAgent\Service\AgentContextBuilder;
+use Sowapps\SoManAgent\Dto\Input\Chat\SendChatMessageDto;
+use Sowapps\SoManAgent\Dto\Input\Chat\ReplyChatMessageDto;
+use Sowapps\SoManAgent\Dto\Input\Chat\UpdateChatMessageDto;
+use Sowapps\SoManAgent\Entity\Agent;
 use Symfony\Component\Uid\Uuid;
-use App\ValueObject\ConnectorRequest;
-use App\ValueObject\Prompt;
 
 /**
  * Manages chat conversations within a project, including agent interactions and message persistence.
@@ -52,7 +58,7 @@ class ChatService
     /**
      * @return array{human: ChatMessage, agent: ChatMessage}
      */
-    public function sendAndReceive(Project $project, Agent $agent, \App\Dto\Input\Chat\SendChatMessageDto $dto): array
+    public function sendAndReceive(Project $project, Agent $agent, SendChatMessageDto $dto): array
     {
         $exchangeId = (string) Uuid::v7();
         $config     = $agent->getConnectorConfig();
@@ -142,7 +148,7 @@ class ChatService
         ?string    $exchangeId       = null,
         bool       $isError          = false,
         ?array     $metadata         = null,
-        ?\Symfony\Component\Uid\Uuid $replyToMessageId = null,
+        ?Uuid $replyToMessageId = null,
     ): ChatMessage {
         $message = new ChatMessage($project, $agent, $author, $content, $exchangeId, $isError, $metadata);
         if ($replyToMessageId !== null) {
@@ -177,7 +183,7 @@ class ChatService
      *
      * @throws \InvalidArgumentException When the parent message is not found.
      */
-    public function reply(Project $project, Agent $agent, \App\Dto\Input\Chat\ReplyChatMessageDto $dto): ChatMessage
+    public function reply(Project $project, Agent $agent, ReplyChatMessageDto $dto): ChatMessage
     {
         $parentMessage = $this->chatMessageRepository->find($dto->replyToMessageId);
         if ($parentMessage === null) {
@@ -202,7 +208,7 @@ class ChatService
     /**
      * Edits one human-authored chat message while keeping a minimal edit trace in metadata.
      */
-    public function editHumanMessage(Project $project, Agent $agent, string $messageId, \App\Dto\Input\Chat\UpdateChatMessageDto $dto): ChatMessage
+    public function editHumanMessage(Project $project, Agent $agent, string $messageId, UpdateChatMessageDto $dto): ChatMessage
     {
         $message = $this->chatMessageRepository->find($messageId);
         if (

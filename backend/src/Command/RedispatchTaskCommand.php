@@ -5,13 +5,13 @@
 
 declare(strict_types=1);
 
-namespace App\Command;
+namespace Sowapps\SoManAgent\Command;
 
-use App\Entity\Agent;
-use App\Enum\TaskExecutionTrigger;
-use App\Repository\AgentRepository;
-use App\Repository\TicketTaskRepository;
-use App\Service\TicketTaskService;
+use Sowapps\SoManAgent\Service\TicketTaskService;
+use Sowapps\SoManAgent\Repository\AgentRepository;
+use Sowapps\SoManAgent\Repository\TicketTaskRepository;
+use Sowapps\SoManAgent\Enum\TaskExecutionTrigger;
+use Sowapps\SoManAgent\Entity\TicketTask;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -113,7 +113,7 @@ final class RedispatchTaskCommand extends Command
     /**
      * Resolves a task from exactly one selector mode and reports errors through the console.
      */
-    private function resolveTask(?string $taskId, ?string $title, bool $latest, SymfonyStyle $io): ?\App\Entity\TicketTask
+    private function resolveTask(?string $taskId, ?string $title, bool $latest, SymfonyStyle $io): ?TicketTask
     {
         $modeCount = (int) ($taskId !== null) + (int) ($title !== null) + (int) $latest;
         if ($modeCount !== 1) {

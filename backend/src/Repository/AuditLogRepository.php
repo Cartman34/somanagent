@@ -5,12 +5,12 @@
 
 declare(strict_types=1);
 
-namespace App\Repository;
+namespace Sowapps\SoManAgent\Repository;
 
-use App\Entity\AuditLog;
-use App\Entity\Project;
-use App\Entity\TicketTask;
-use App\Enum\AuditAction;
+use Sowapps\SoManAgent\Entity\Project;
+use Sowapps\SoManAgent\Entity\TicketTask;
+use Sowapps\SoManAgent\Enum\AuditAction;
+use Sowapps\SoManAgent\Entity\AuditLog;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -90,12 +90,12 @@ class AuditLogRepository extends ServiceEntityRepository
     private function buildProjectQuery(Project $project): QueryBuilder
     {
         $ticketIds = $this->getEntityManager()
-            ->createQuery('SELECT t.id FROM App\Entity\Ticket t WHERE t.project = :project')
+            ->createQuery('SELECT t.id FROM Sowapps\SoManAgent\Entity\Ticket t WHERE t.project = :project')
             ->setParameter('project', $project)
             ->getSingleColumnResult();
 
         $ticketTaskIds = $this->getEntityManager()
-            ->createQuery('SELECT tt.id FROM App\Entity\TicketTask tt JOIN tt.ticket t WHERE t.project = :project')
+            ->createQuery('SELECT tt.id FROM Sowapps\SoManAgent\Entity\TicketTask tt JOIN tt.ticket t WHERE t.project = :project')
             ->setParameter('project', $project)
             ->getSingleColumnResult();
 

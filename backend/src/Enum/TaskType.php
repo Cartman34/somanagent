@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace App\Enum;
+namespace Sowapps\SoManAgent\Enum;
 
 /**
  * Type of work a ticket represents: user story, bug, or generic task.

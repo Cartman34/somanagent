@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Client;
+namespace Sowapps\SoManAgent\Script\Client;
 
 /**
  * Contract for GitHub pull request operations used by PullRequestService.

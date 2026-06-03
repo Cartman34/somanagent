@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog;
+namespace Sowapps\SoManAgent\Script\Backlog;
 
 /**
  * Single source of truth for all backlog file and directory paths, relative to the project root.

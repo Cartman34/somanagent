@@ -5,23 +5,27 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Dto\Input\Project\CreateModuleDto;
-use App\Dto\Input\Project\CreateProjectDto;
-use App\Dto\Input\Project\UpdateModuleDto;
-use App\Dto\Input\Project\UpdateProjectDto;
-use App\Entity\Module;
-use App\Entity\Project;
-use App\Entity\Role;
-use App\Enum\AuditAction;
-use App\Enum\DispatchMode;
-use App\Repository\ModuleRepository;
-use App\Repository\ProjectRepository;
-use App\Repository\RoleRepository;
-use App\Repository\TeamRepository;
-use App\Repository\TicketRepository;
-use App\Repository\WorkflowRepository;
+use Sowapps\SoManAgent\Repository\ProjectRepository;
+use Sowapps\SoManAgent\Repository\ModuleRepository;
+use Sowapps\SoManAgent\Repository\RoleRepository;
+use Sowapps\SoManAgent\Repository\TeamRepository;
+use Sowapps\SoManAgent\Repository\TicketRepository;
+use Sowapps\SoManAgent\Repository\WorkflowRepository;
+use Sowapps\SoManAgent\Dto\Input\Project\CreateProjectDto;
+use Sowapps\SoManAgent\Entity\Project;
+use Sowapps\SoManAgent\Enum\AuditAction;
+use Sowapps\SoManAgent\Dto\Input\Project\UpdateProjectDto;
+use Sowapps\SoManAgent\Enum\DispatchMode;
+use Sowapps\SoManAgent\Dto\Input\Project\CreateModuleDto;
+use Sowapps\SoManAgent\Entity\Module;
+use Sowapps\SoManAgent\Dto\Input\Project\UpdateModuleDto;
+use Sowapps\SoManAgent\Entity\Role;
+use Sowapps\SoManAgent\Service\EntityService;
+use Sowapps\SoManAgent\Service\TicketTaskService;
+use Sowapps\SoManAgent\Service\RealtimeUpdateService;
+use Sowapps\SoManAgent\Entity\Workflow;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -215,7 +219,7 @@ class ProjectService
         return $role;
     }
 
-    private function resolveAssignableWorkflow(?Project $project, string $workflowId): ?\App\Entity\Workflow
+    private function resolveAssignableWorkflow(?Project $project, string $workflowId): ?Workflow
     {
         $workflow = $this->workflowRepository->find(Uuid::fromString($workflowId));
         if ($workflow === null) {

@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Entity\LogEvent;
-use App\Entity\LogOccurrence;
+use Sowapps\SoManAgent\Entity\LogEvent;
+use Sowapps\SoManAgent\Entity\LogOccurrence;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**

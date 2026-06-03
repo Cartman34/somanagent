@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Runner;
+namespace Sowapps\SoManAgent\Script\Runner;
 
-use SoManAgent\Script\ClaudeAuthManager;
-
+use Sowapps\SoManAgent\Script\ClaudeAuthManager;
+use Sowapps\SoManAgent\Script\Runner\AbstractScriptRunner;
 /**
  * Claude auth management script runner.
  *

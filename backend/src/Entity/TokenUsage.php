@@ -5,9 +5,13 @@
 
 declare(strict_types=1);
 
-namespace App\Entity;
+namespace Sowapps\SoManAgent\Entity;
 
-use App\Repository\TokenUsageRepository;
+use Sowapps\SoManAgent\Repository\TokenUsageRepository;
+use Sowapps\SoManAgent\Entity\Agent;
+use Sowapps\SoManAgent\Entity\Ticket;
+use Sowapps\SoManAgent\Entity\TicketTask;
+use Sowapps\SoManAgent\Entity\WorkflowStep;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 

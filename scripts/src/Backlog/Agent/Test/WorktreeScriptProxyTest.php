@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
 
-use SoManAgent\Script\WorktreeScriptProxy;
+use Sowapps\SoManAgent\Script\WorktreeScriptProxy;
 
 /**
  * Unit tests for WorktreeScriptProxy.

@@ -5,12 +5,12 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Runner;
+namespace Sowapps\SoManAgent\Script\Runner;
 
-use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
-use SoManAgent\Script\GitHub\Enum\GitHubCommandName;
-use SoManAgent\Script\Service\GitService;
-
+use Sowapps\SoManAgent\Script\GitHub\Enum\GitHubCommandName;
+use Sowapps\SoManAgent\Script\Service\GitService;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
+use Sowapps\SoManAgent\Script\Runner\AbstractScriptRunner;
 /**
  * GitHub CLI helper script runner.
  *

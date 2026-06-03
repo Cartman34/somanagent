@@ -5,16 +5,18 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Command;
+namespace Sowapps\SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
-use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
-use SoManAgent\Script\Backlog\Model\BoardEntry;
-use SoManAgent\Script\Backlog\Model\BoardEntryMatch;
-use SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use SoManAgent\Script\Backlog\Service\BacklogPresenter;
-
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntryMatch;
+use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
+use Sowapps\SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogFeatureMergeCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogFeatureTaskMergeCommand;
 /**
  * Command for resolving and merging one backlog entry.
  */

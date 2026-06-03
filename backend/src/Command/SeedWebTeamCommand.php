@@ -5,15 +5,15 @@
 
 declare(strict_types=1);
 
-namespace App\Command;
+namespace Sowapps\SoManAgent\Command;
 
-use App\Entity\Agent;
-use App\Entity\AgentAction;
-use App\Entity\Role;
-use App\Entity\Skill;
-use App\Entity\Team;
-use App\Enum\ConnectorType;
-use App\ValueObject\ConnectorConfig;
+use Sowapps\SoManAgent\Entity\Role;
+use Sowapps\SoManAgent\Entity\Skill;
+use Sowapps\SoManAgent\Entity\Team;
+use Sowapps\SoManAgent\ValueObject\ConnectorConfig;
+use Sowapps\SoManAgent\Entity\Agent;
+use Sowapps\SoManAgent\Enum\ConnectorType;
+use Sowapps\SoManAgent\Entity\AgentAction;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;

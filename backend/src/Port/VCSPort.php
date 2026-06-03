@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace App\Port;
+namespace Sowapps\SoManAgent\Port;
 
 /**
  * Hexagonal port for version control system operations (branches, PRs, diffs).

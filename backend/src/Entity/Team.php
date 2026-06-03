@@ -5,9 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Entity;
+namespace Sowapps\SoManAgent\Entity;
 
-use App\Repository\TeamRepository;
+use Sowapps\SoManAgent\Repository\TeamRepository;
+use Sowapps\SoManAgent\Entity\Agent;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;

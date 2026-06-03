@@ -5,21 +5,21 @@
 
 declare(strict_types=1);
 
-namespace App\DataFixtures;
+namespace Sowapps\SoManAgent\DataFixtures;
 
-use App\Entity\Agent;
-use App\Entity\AgentAction;
-use App\Entity\Role;
-use App\Entity\Skill;
-use App\Entity\Team;
-use App\Entity\Workflow;
-use App\Entity\WorkflowStep;
-use App\Entity\WorkflowStepAction;
-use App\Enum\ConnectorType;
-use App\Enum\SkillSource;
-use App\Enum\WorkflowStepTransitionMode;
-use App\Enum\WorkflowTrigger;
-use App\ValueObject\ConnectorConfig;
+use Sowapps\SoManAgent\Entity\Skill;
+use Sowapps\SoManAgent\Enum\SkillSource;
+use Sowapps\SoManAgent\Entity\Role;
+use Sowapps\SoManAgent\Entity\AgentAction;
+use Sowapps\SoManAgent\ValueObject\ConnectorConfig;
+use Sowapps\SoManAgent\Entity\Agent;
+use Sowapps\SoManAgent\Enum\ConnectorType;
+use Sowapps\SoManAgent\Entity\Team;
+use Sowapps\SoManAgent\Entity\Workflow;
+use Sowapps\SoManAgent\Enum\WorkflowTrigger;
+use Sowapps\SoManAgent\Enum\WorkflowStepTransitionMode;
+use Sowapps\SoManAgent\Entity\WorkflowStep;
+use Sowapps\SoManAgent\Entity\WorkflowStepAction;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Contracts\Translation\TranslatorInterface;

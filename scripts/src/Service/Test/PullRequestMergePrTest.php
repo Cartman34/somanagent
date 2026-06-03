@@ -5,12 +5,12 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Service\Test;
+namespace Sowapps\SoManAgent\Script\Service\Test;
 
-use SoManAgent\Script\Client\Test\FakeGitHubClient;
-use SoManAgent\Script\RetryPolicy;
-use SoManAgent\Script\Service\GitService;
-use SoManAgent\Script\Service\PullRequestService;
+use Sowapps\SoManAgent\Script\Client\Test\FakeGitHubClient;
+use Sowapps\SoManAgent\Script\Service\PullRequestService;
+use Sowapps\SoManAgent\Script\Service\GitService;
+use Sowapps\SoManAgent\Script\RetryPolicy;
 
 /**
  * Unit tests for PullRequestService::mergePr idempotence.

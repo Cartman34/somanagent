@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
 
-use SoManAgent\Script\Backlog\Agent\Client\BacklogCommandRunner;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\BacklogCommandRunner;
 
 /**
  * Recording stub for BacklogCommandRunner.

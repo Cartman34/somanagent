@@ -5,14 +5,14 @@
 
 declare(strict_types=1);
 
-namespace App\Controller;
+namespace Sowapps\SoManAgent\Controller;
 
-use App\Enum\ConnectorType;
-use App\Service\ConnectorRegistry;
-use App\Service\LogService;
-use App\ValueObject\ConnectorConfig;
-use App\ValueObject\ConnectorRequest;
-use App\ValueObject\Prompt;
+use Sowapps\SoManAgent\Service\ConnectorRegistry;
+use Sowapps\SoManAgent\Service\LogService;
+use Sowapps\SoManAgent\Enum\ConnectorType;
+use Sowapps\SoManAgent\ValueObject\ConnectorRequest;
+use Sowapps\SoManAgent\ValueObject\Prompt;
+use Sowapps\SoManAgent\ValueObject\ConnectorConfig;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;

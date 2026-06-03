@@ -5,10 +5,12 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Runner;
+namespace Sowapps\SoManAgent\Script\Runner;
 
-use SoManAgent\Script\WorktreeScriptProxy;
-
+use Sowapps\SoManAgent\Script\WorktreeScriptProxy;
+use Sowapps\SoManAgent\Script\Runner\AbstractScriptRunner;
+use Sowapps\SoManAgent\Script\Runner\MigrateGenerateService;
+use Sowapps\SoManAgent\Script\Runner\DoctrineRunner;
 /**
  * Migrate script runner.
  *

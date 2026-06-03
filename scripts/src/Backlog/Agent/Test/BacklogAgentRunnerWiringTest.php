@@ -5,11 +5,12 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
 
-use SoManAgent\Script\Backlog\Agent\Command\AgentStartCommand;
-use SoManAgent\Script\Backlog\Agent\Runner\BacklogAgentRunner;
-use SoManAgent\Script\Backlog\Service\EntryRebaseService;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AbstractAgentCommand;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Runner\BacklogAgentRunner;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AgentStartCommand;
+use Sowapps\SoManAgent\Script\Backlog\Service\EntryRebaseService;
 
 /**
  * Runner-level wiring tests for {@see BacklogAgentRunner}.
@@ -43,7 +44,7 @@ final class BacklogAgentRunnerWiringTest
         $commandsMethod = new \ReflectionMethod($runner, 'commands');
         $commandsMethod->setAccessible(true);
 
-        /** @var array<string, \SoManAgent\Script\Backlog\Agent\Command\AbstractAgentCommand> $commands */
+        /** @var array<string, AbstractAgentCommand> $commands */
         $commands = $commandsMethod->invoke($runner);
 
         $startCommand = $commands['start'] ?? null;

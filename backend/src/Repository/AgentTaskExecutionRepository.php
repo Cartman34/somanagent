@@ -5,11 +5,11 @@
 
 declare(strict_types=1);
 
-namespace App\Repository;
+namespace Sowapps\SoManAgent\Repository;
 
-use App\Entity\AgentTaskExecution;
-use App\Entity\TicketTask;
-use App\Enum\TaskExecutionStatus;
+use Sowapps\SoManAgent\Entity\TicketTask;
+use Sowapps\SoManAgent\Enum\TaskExecutionStatus;
+use Sowapps\SoManAgent\Entity\AgentTaskExecution;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 

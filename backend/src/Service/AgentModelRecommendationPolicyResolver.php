@@ -5,10 +5,11 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Enum\ConnectorType;
-use App\ValueObject\AgentModelInfo;
+use Sowapps\SoManAgent\ValueObject\AgentModelInfo;
+use Sowapps\SoManAgent\Enum\ConnectorType;
+
 
 /**
  * Resolves the recommended model for a connector from configuration-driven preference policies.

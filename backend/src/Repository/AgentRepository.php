@@ -5,10 +5,11 @@
 
 declare(strict_types=1);
 
-namespace App\Repository;
+namespace Sowapps\SoManAgent\Repository;
 
-use App\Entity\Agent;
-use App\Entity\Team;
+use Sowapps\SoManAgent\Entity\Team;
+use Sowapps\SoManAgent\Enum\TaskStatus;
+use Sowapps\SoManAgent\Entity\Agent;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -65,7 +66,7 @@ class AgentRepository extends ServiceEntityRepository
      * Used by runtime services to scope agent selection to the project's team.
      *
      * @param string $roleSlug Role slug to filter by
-     * @param Team   $team     Team to scope agent search to
+     * @param Team $team Team to scope agent search to
      * @return Agent[]
      */
     public function findActiveByRoleSlugAndTeam(string $roleSlug, Team $team): array
@@ -133,11 +134,11 @@ class AgentRepository extends ServiceEntityRepository
     {
         return (int) $this->getEntityManager()
             ->createQuery(
-                'SELECT COUNT(t.id) FROM App\Entity\TicketTask t
+                'SELECT COUNT(t.id) FROM Sowapps\SoManAgent\Entity\TicketTask t
                  WHERE t.assignedAgent = :agent AND t.status = :status'
             )
             ->setParameter('agent', $agent)
-            ->setParameter('status', \App\Enum\TaskStatus::InProgress)
+            ->setParameter('status', TaskStatus::InProgress)
             ->getSingleScalarResult();
     }
 
@@ -159,7 +160,7 @@ class AgentRepository extends ServiceEntityRepository
         $signal = $this->getEntityManager()
             ->createQuery(
                 'SELECT l.action AS action, l.createdAt AS createdAt
-                 FROM App\Entity\TicketLog l
+                 FROM Sowapps\SoManAgent\Entity\TicketLog l
                  LEFT JOIN l.ticketTask t
                  LEFT JOIN l.ticket ticket
                  WHERE (t.assignedAgent = :agent AND l.action IN (:actions))

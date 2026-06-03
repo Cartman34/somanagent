@@ -5,12 +5,14 @@
 
 declare(strict_types=1);
 
-namespace App\Controller;
+namespace Sowapps\SoManAgent\Controller;
 
-use App\Dto\Input\Workflow\CreateWorkflowDto;
-use App\Dto\Input\Workflow\UpdateWorkflowDto;
-use App\Service\ApiErrorPayloadFactory;
-use App\Service\WorkflowService;
+use Sowapps\SoManAgent\Service\WorkflowService;
+use Sowapps\SoManAgent\Service\ApiErrorPayloadFactory;
+use Sowapps\SoManAgent\Dto\Input\Workflow\CreateWorkflowDto;
+use Sowapps\SoManAgent\Dto\Input\Workflow\UpdateWorkflowDto;
+use Sowapps\SoManAgent\Controller\AbstractApiController;
+use Sowapps\SoManAgent\Entity\Workflow;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -180,7 +182,7 @@ class WorkflowController extends AbstractApiController
     /**
      * @return array<string, mixed>
      */
-    private function buildWorkflowPayload(\App\Entity\Workflow $workflow, bool $withSteps): array
+    private function buildWorkflowPayload(Workflow $workflow, bool $withSteps): array
     {
         $payload = [
             'id' => (string) $workflow->getId(),

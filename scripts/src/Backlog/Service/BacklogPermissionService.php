@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Service;
+namespace Sowapps\SoManAgent\Script\Backlog\Service;
 
+use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
 use RuntimeException;
-use SoManAgent\Script\Backlog\Model\BoardEntry;
 
 /**
  * Handles role-based permissions and workflow restrictions.
@@ -71,7 +71,7 @@ final class BacklogPermissionService
      * @param ?string $actorDeveloper Caller developer code when actorRole is developer
      * @param string $targetDeveloper Developer code passed via --developer
      * @param string $entryRef       Human-readable entry reference for error messages
-     * @param BoardEntry $entry      Resolved active backlog entry to assign
+     * @param BoardEntry $entry Resolved active backlog entry to assign
      */
     public function assertCanAssignEntry(
         string $actorRole,
@@ -99,7 +99,7 @@ final class BacklogPermissionService
     /**
      * Refuses assignment only when the entry is assigned to another real agent.
      *
-     * @param BoardEntry $entry      Resolved active backlog entry to assign
+     * @param BoardEntry $entry Resolved active backlog entry to assign
      * @param string $entryRef       Human-readable entry reference for error messages
      * @param string $targetDeveloper Developer code passed via --developer
      */

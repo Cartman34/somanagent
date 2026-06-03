@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Runner;
+namespace Sowapps\SoManAgent\Script\Runner;
 
-use SoManAgent\Script\OpenCodeAuthManager;
-
+use Sowapps\SoManAgent\Script\OpenCodeAuthManager;
+use Sowapps\SoManAgent\Script\Runner\AbstractScriptRunner;
 /**
  * OpenCode auth management script runner.
  *

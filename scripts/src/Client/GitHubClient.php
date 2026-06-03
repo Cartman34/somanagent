@@ -5,12 +5,14 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Client;
+namespace Sowapps\SoManAgent\Script\Client;
 
-use SoManAgent\Script\GitHub\Enum\GitHubCommandName;
-use SoManAgent\Script\RetryHelper;
-use SoManAgent\Script\RetryPolicy;
-
+use Sowapps\SoManAgent\Script\RetryPolicy;
+use Sowapps\SoManAgent\Script\GitHub\Enum\GitHubCommandName;
+use Sowapps\SoManAgent\Script\RetryHelper;
+use Sowapps\SoManAgent\Script\Client\GitHubClientInterface;
+use Sowapps\SoManAgent\Script\Client\ProjectScriptClient;
+use Sowapps\SoManAgent\Script\Client\AppScript;
 /**
  * GitHub platform client backed by the local github.php project script.
  */

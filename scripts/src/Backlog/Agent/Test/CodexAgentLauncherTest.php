@@ -5,13 +5,13 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
 
-use SoManAgent\Script\Backlog\Agent\Client\CodexAgentLauncher;
-use SoManAgent\Script\Backlog\Agent\Client\ProcessRunner;
-use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
-use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
-use SoManAgent\Script\Backlog\BacklogPaths;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\CodexAgentLauncher;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use Sowapps\SoManAgent\Script\Backlog\BacklogPaths;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ProcessRunner;
 
 /**
  * Unit tests for CodexAgentLauncher hooks.

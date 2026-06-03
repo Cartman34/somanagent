@@ -5,19 +5,20 @@
 
 declare(strict_types=1);
 
-namespace App\Controller;
+namespace Sowapps\SoManAgent\Controller;
 
-use App\Dto\Input\Agent\CreateAgentDto;
-use App\Dto\Input\Agent\UpdateAgentDto;
-use App\Entity\AgentTaskExecution;
-use App\Entity\AgentTaskExecutionAttempt;
-use App\Enum\ConnectorType;
-use App\Exception\ValidationException;
-use App\Repository\AgentRepository;
-use App\Repository\AgentTaskExecutionRepository;
-use App\Service\AgentModelCatalogService;
-use App\Service\AgentService;
-use App\Service\ApiErrorPayloadFactory;
+use Sowapps\SoManAgent\Service\AgentService;
+use Sowapps\SoManAgent\Repository\AgentRepository;
+use Sowapps\SoManAgent\Repository\AgentTaskExecutionRepository;
+use Sowapps\SoManAgent\Service\AgentModelCatalogService;
+use Sowapps\SoManAgent\Service\ApiErrorPayloadFactory;
+use Sowapps\SoManAgent\Dto\Input\Agent\CreateAgentDto;
+use Sowapps\SoManAgent\Dto\Input\Agent\UpdateAgentDto;
+use Sowapps\SoManAgent\Exception\ValidationException;
+use Sowapps\SoManAgent\Entity\AgentTaskExecution;
+use Sowapps\SoManAgent\Enum\ConnectorType;
+use Sowapps\SoManAgent\Entity\AgentTaskExecutionAttempt;
+use Sowapps\SoManAgent\Controller\AbstractApiController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;

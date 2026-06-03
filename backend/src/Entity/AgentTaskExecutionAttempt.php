@@ -5,10 +5,12 @@
 
 declare(strict_types=1);
 
-namespace App\Entity;
+namespace Sowapps\SoManAgent\Entity;
 
-use App\Enum\TaskExecutionAttemptStatus;
-use App\Repository\AgentTaskExecutionAttemptRepository;
+use Sowapps\SoManAgent\Repository\AgentTaskExecutionAttemptRepository;
+use Sowapps\SoManAgent\Enum\TaskExecutionAttemptStatus;
+use Sowapps\SoManAgent\Entity\AgentTaskExecution;
+use Sowapps\SoManAgent\Entity\Agent;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 

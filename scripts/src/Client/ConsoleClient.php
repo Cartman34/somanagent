@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Client;
+namespace Sowapps\SoManAgent\Script\Client;
 
-use SoManAgent\Script\Application;
+use Sowapps\SoManAgent\Script\Application;
 
 /**
  * Low-level command execution client shared by higher-level transport clients.
