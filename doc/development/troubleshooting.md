@@ -41,7 +41,7 @@ This sets `core.hooksPath = scripts/githooks` in the WP git config. All linked w
 
 - Dedicated backend service tests follow the mapping `backend/src/Service/...` -> `backend/tests/Unit/Service/...Test.php`
 - Local WSL validation only covers isolated unit tests under `backend/tests/Unit/`
-- Those tests must extend `App\Tests\Support\LocalUnitTestCase`
+- Those tests must extend `Sowapps\SoManAgent\Tests\Support\LocalUnitTestCase`
 - They must not boot Symfony, hit DB/Redis, or make a real external HTTP/API call
 - Run one targeted local test with `php backend/vendor/bin/phpunit --configuration backend/phpunit.dist.xml <test-file>`
 - Run the review-scope validator with `php scripts/validate-backend-tests.php <file> [file...]`

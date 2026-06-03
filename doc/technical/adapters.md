@@ -25,11 +25,11 @@ interface AgentPort
 
 ```yaml
 # services.yaml
-App\Adapter\AI\ClaudeApiAdapter:
+Sowapps\SoManAgent\Adapter\AI\ClaudeApiAdapter:
     arguments: { $apiKey: '%env(CLAUDE_API_KEY)%' }
     tags: ['app.agent_adapter']
 
-App\Adapter\AI\ClaudeCliAdapter:
+Sowapps\SoManAgent\Adapter\AI\ClaudeCliAdapter:
     tags: ['app.agent_adapter']
 ```
 

@@ -639,7 +639,7 @@ Rules:
 - `--all` runs the `local-unit` testsuite only
 - the dedicated mapping preserves subdirectories under `Service/`
 - local unit tests must live under `backend/tests/Unit/`
-- local unit tests must extend `App\Tests\Support\LocalUnitTestCase`
+- local unit tests must extend `Sowapps\SoManAgent\Tests\Support\LocalUnitTestCase`
 - local unit tests must not boot the Symfony kernel, access DB/Redis, or instantiate real external HTTP/API clients
 - a missing dedicated test is reported but does not fail validation
 - an existing dedicated test must pass with no PHPUnit warning, notice, or deprecation
