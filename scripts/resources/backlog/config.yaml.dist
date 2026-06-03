@@ -14,3 +14,21 @@ workflow:
   # agent — developer runs review-request automatically after a successful submit-check.
   # Fallback when absent or unknown: user.
   submit: agent
+
+# Scope definitions restrict which directories a backlog entry may touch.
+# Each key is a scope name used in entry-create --scope=<name>.
+# Each value is a list of directory prefixes (relative to the project root).
+# A file is in scope when its path starts with at least one listed prefix.
+# Absence of a scope (no --scope on entry-create) is equivalent to ALL (unrestricted).
+# The name ALL is reserved and must not appear here.
+#
+# scopes:
+#   scripts:
+#     - scripts/
+#   backend:
+#     - backend/
+#   frontend:
+#     - frontend/
+#   scripts-and-doc:
+#     - scripts/
+#     - doc/

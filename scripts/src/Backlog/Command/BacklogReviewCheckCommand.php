@@ -12,8 +12,10 @@ use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Backlog\Service\BacklogConfig;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use SoManAgent\Script\Backlog\Service\BacklogReviewBodyFormatter;
+use SoManAgent\Script\Backlog\Service\BacklogScopeService;
 use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 use SoManAgent\Script\Client\FilesystemClientInterface;
 
@@ -75,7 +77,8 @@ final class BacklogReviewCheckCommand extends AbstractBacklogCommand
             $this->assertStageAllowsCheck($entry);
 
             $reviewKey = $this->boardService->getTaskReviewKey($entry);
-            $this->runMechanicalCheck($board, $entry, $reviewKey, sprintf('task %s', $reviewKey));
+            $scopeDirs = $this->resolveEffectiveScopeDirs($board, $entry);
+            $this->runMechanicalCheck($board, $entry, $reviewKey, sprintf('task %s', $reviewKey), $scopeDirs);
 
             return;
         }
@@ -95,7 +98,8 @@ final class BacklogReviewCheckCommand extends AbstractBacklogCommand
         $entry = $match->getEntry();
         $this->assertStageAllowsCheck($entry);
 
-        $this->runMechanicalCheck($board, $entry, $slug, sprintf('feature %s', $slug));
+        $scopeDirs = $this->resolveEffectiveScopeDirs($board, $entry);
+        $this->runMechanicalCheck($board, $entry, $slug, sprintf('feature %s', $slug), $scopeDirs);
     }
 
     /**
@@ -123,8 +127,10 @@ final class BacklogReviewCheckCommand extends AbstractBacklogCommand
     /**
      * Runs the mechanical review for the given entry, displaying any saved result first. On failure
      * the entry is auto-rejected with a synthetic body.
+     *
+     * @param list<string>|null $scopeDirs Resolved scope directories, or null for ALL (unrestricted).
      */
-    private function runMechanicalCheck(BacklogBoard $board, BoardEntry $entry, string $reviewKey, string $label): void
+    private function runMechanicalCheck(BacklogBoard $board, BoardEntry $entry, string $reviewKey, string $label, ?array $scopeDirs): void
     {
         $this->presenter->displayLine('[Review check]');
         $this->presenter->displayLine('Entry-ref: ' . $this->boardService->getEntryReference($entry));
@@ -145,7 +151,7 @@ final class BacklogReviewCheckCommand extends AbstractBacklogCommand
         }
 
         try {
-            $this->worktreeService->runReviewScript($reviewWorktree, $entry->getBase());
+            $this->worktreeService->runReviewScript($reviewWorktree, $entry->getBase(), $scopeDirs);
         } catch (\RuntimeException $exception) {
             $this->autoRejectAfterMechanicalFailure($board, $entry, $reviewKey);
 
@@ -153,6 +159,42 @@ final class BacklogReviewCheckCommand extends AbstractBacklogCommand
         }
 
         $this->presenter->displaySuccess(sprintf('Mechanical review passed for %s', $label));
+    }
+
+    /**
+     * Resolves the effective scope directory list for the given entry.
+     *
+     * For a task entry, the effective scope is the task's own scope if set, else the parent feature's scope.
+     * Returns null when the effective scope is ALL (unrestricted).
+     *
+     * @return list<string>|null
+     */
+    private function resolveEffectiveScopeDirs(BacklogBoard $board, BoardEntry $entry): ?array
+    {
+        $scopeService = new BacklogScopeService();
+        $config = new BacklogConfig($this->projectRoot);
+        $scopes = $config->getScopes();
+
+        if ($scopes === []) {
+            return null;
+        }
+
+        $entryScopeName = $entry->getScope();
+        $parentScopeName = null;
+
+        if ($this->boardService->checkIsTaskEntry($entry)) {
+            $feature = $entry->getFeature();
+            if ($feature !== null) {
+                $parentMatch = $this->boardService->findParentFeatureEntry($board, $feature);
+                if ($parentMatch !== null) {
+                    $parentScopeName = $parentMatch->getEntry()->getScope();
+                }
+            }
+        }
+
+        $effectiveScopeName = $scopeService->resolveEffectiveScopeName($entryScopeName, $parentScopeName);
+
+        return $scopeService->resolveScopeDirs($effectiveScopeName, $scopes);
     }
 
     /**

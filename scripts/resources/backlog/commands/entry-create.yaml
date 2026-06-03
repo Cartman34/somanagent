@@ -7,6 +7,9 @@ options:
     name: '--task'
     description: 'Task slug for scoped child tasks (optional; omit for plain feature entries)'
   -
+    name: '--scope'
+    description: 'Named scope restricting the files this entry may touch (optional; must be declared in local/backlog/config.yaml under scopes:; ALL is reserved and rejected)'
+  -
     name: '--type'
     description: 'Branch type: feat, fix, or tech (required; stored as entry metadata and used by start to choose the branch prefix)'
   -
@@ -21,6 +24,7 @@ options:
 examples:
   - 'php scripts/backlog.php entry-create --feature=my-feature --type=feat --body-file=local/tmp/new-task.md'
   - 'php scripts/backlog.php entry-create --feature=my-feature --task=my-task --type=tech --body-file=local/tmp/new-task.md'
+  - 'php scripts/backlog.php entry-create --feature=my-feature --task=my-task --type=tech --scope=scripts --body-file=local/tmp/new-task.md'
   - 'php scripts/backlog.php entry-create --feature=my-feature --type=fix --body-file=local/tmp/new-task.md --position=start'
   - 'php scripts/backlog.php entry-create --feature=my-feature --type=feat --body-file=local/tmp/new-task.md --position=index --index=2'
 notes:
@@ -31,3 +35,5 @@ notes:
   - 'Legacy bracket prefixes ([type][feature-slug][task-slug]) in the title are rejected: the command exits with a message pointing back to the CLI options. There is no auto-extraction or tolerance.'
   - 'Body markdown: bullet lists (nested, any depth) and inline formatting only (bold, italic, inline code). Long content goes to local/specs/<feature>-spec.md, referenced from a bullet.'
   - '`--index` values are advisory: out-of-range values clamp to start or end and emit a warning; passing `--position=index` without `--index` is rejected.'
+  - 'Optional `--scope=<name>` restricts the files the entry may touch. The name must be declared in `local/backlog/config.yaml` under `scopes:` and must not equal ALL (reserved). For child tasks, the scope must be a subset of the parent feature scope when the parent has an explicit scope.'
+  - 'Scope absence (no --scope) is equivalent to scope ALL (unrestricted). Entries with no scope do not carry a `scope:` field in the board. Scope names declared in config are project-specific; see `scripts/resources/backlog/config.yaml.dist` for the format.'

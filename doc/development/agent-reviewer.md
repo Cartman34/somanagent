@@ -75,19 +75,21 @@ Claims still go through `review-next <entry-ref>`, so the backlog lock and stage
 
 ### `entry-create`
 
-1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --feature=<slug> --type=<feat|fix|tech> --body-file=<path> [--task=<slug>] [--position=<start|index|end>] [--index=<n>]`.
+1. Run `SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --feature=<slug> --type=<feat|fix|tech> --body-file=<path> [--task=<slug>] [--scope=<name>] [--position=<start|index|end>] [--index=<n>]`.
 2. By default the script appends the entry to the end of the `todo:` section in `local/backlog-board.yaml`.
 3. `--position=start` inserts at the start of `todo:`.
 4. `--position=index --index=<n>` inserts at the requested 1-based position and clamps out-of-range values to the start or the end.
 5. **Required:** `--feature=<slug>` declares the feature slug; `--type=<feat|fix|tech>` declares the branch type (no default); `--body-file=<path>` provides the title (first non-empty line) and body. Inline positional text is rejected. **Scoped child tasks** also require `--task=<slug>`.
 6. The body file is a normal markdown file (typically under `local/tmp/`). First non-empty line = title; subsequent lines become body bullets, preserving nesting hierarchy. **Legacy bracket prefixes in the title (`[type][feature-slug][task-slug]`) are rejected outright** — the command exits with a message pointing back to the CLI options. Keep test execution outputs under `local/tests/`, not `local/tmp/`.
 7. Do not edit `local/backlog-board.yaml` manually.
+8. The optional `--scope=<name>` restricts the files this entry may touch. The name `ALL` is reserved and rejected. For child tasks, the scope must be a subset of the parent feature scope; violation is rejected immediately. See `agent-manager.md — scopes` for how to declare scopes in config.
 
 Examples:
 
 ```bash
 SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --feature=my-feature --type=feat --body-file=local/tmp/new-feature-task.md
 SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --feature=my-feature --task=my-task --type=tech --body-file=local/tmp/new-task.md
+SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewer> php scripts/backlog.php entry-create --feature=my-feature --task=my-task --type=tech --scope=scripts --body-file=local/tmp/new-task.md
 ```
 
 Rules:
@@ -166,6 +168,7 @@ Rules:
 5. The caller context identifies the reviewer and is required.
 6. The command does not print the full mechanical review report on stdout. It prints a short pointer with the global PASS/FAIL status, the saved report absolute path in the WA, and the report length. Open that file with the client Read tool for details.
 7. If the mechanical review fails, the pointer is printed before the command error is raised, and the entry is automatically rejected with a standard message.
+8. When the entry (or its parent feature, via inheritance) carries a declared `scope:`, the mechanical review additionally checks that every file touched by the branch (added, modified, deleted, renamed — both sides — mode-changed) is within the scope's configured directory prefixes. Violations appear under `=== Branch scope check ===` in the report. Any violation is a blocker and causes the check to fail.
 
 **Blocker vs nit classification.** A finding is a **blocker** whenever it concerns anything the task description, body, or declared scope explicitly calls for. The size of the gap does not matter — "the task says X, the code does not deliver X" is always a blocker, never a nit. A nit is reserved for observations outside the declared scope: proposed code improvements (minor refactor, readability tweak, potential factorization), marginal naming refinement, local style inconsistency, optional optimization, alternative phrasing of a comment. When in doubt, lean toward blocker; reclassifying a scope item as a nit lets the requested work ship incomplete.
 

@@ -12,7 +12,9 @@ use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use SoManAgent\Script\Backlog\Model\BacklogBoard;
 use SoManAgent\Script\Backlog\Model\BoardEntry;
 use SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use SoManAgent\Script\Backlog\Service\BacklogConfig;
 use SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use SoManAgent\Script\Backlog\Service\BacklogScopeService;
 use SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
 
 /**
@@ -58,6 +60,7 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
         $entry = $this->buildEntryFromInput($commandArgs, $options);
 
         $board = $this->loadBoard();
+        $this->validateScope($entry, $board);
         $this->revertParentIfInReview($board, $entry);
         $entries = $board->getEntries(BacklogBoard::SECTION_TODO);
         $position = $this->resolveEntryCreatePosition($options, count($entries));
@@ -66,6 +69,92 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
         $this->saveBoard($board, BacklogCommandName::ENTRY_CREATE->value);
 
         $this->presenter->displaySuccess(sprintf('Added entry to the todo section at position %d', $position + 1));
+    }
+
+    /**
+     * Validates the scope field of the new entry against the config and, for child tasks, against the parent feature scope.
+     *
+     * Throws when the scope is the reserved ALL literal, when it is not declared in the config,
+     * or when a child task's scope directories are not fully within the parent feature's scope directories.
+     */
+    private function validateScope(BoardEntry $entry, BacklogBoard $board): void
+    {
+        $scopeName = $entry->getScope();
+        if ($scopeName === null) {
+            return;
+        }
+
+        if (strtoupper($scopeName) === BacklogScopeService::RESERVED_ALL) {
+            throw new \RuntimeException(sprintf(
+                'entry-create --scope=%s is reserved and cannot be used as a scope name.',
+                $scopeName,
+            ));
+        }
+
+        $config = new BacklogConfig($this->projectRoot);
+        $scopes = $config->getScopes();
+
+        if (!array_key_exists($scopeName, $scopes)) {
+            throw new \RuntimeException(sprintf(
+                'Unknown --scope=%s. Declared scopes: %s.',
+                $scopeName,
+                $scopes !== [] ? implode(', ', array_keys($scopes)) : '(none)',
+            ));
+        }
+
+        // For child tasks: the task scope must be a subset of the parent feature scope.
+        if ($entry->getTask() === null) {
+            return;
+        }
+
+        $feature = $entry->getFeature();
+        if ($feature === null) {
+            return;
+        }
+
+        $parentScopeName = $this->resolveParentFeatureScopeName($board, $feature);
+        if ($parentScopeName === null) {
+            return; // parent is ALL → any subset is valid
+        }
+
+        $parentScopeDirs = (new BacklogScopeService())->resolveScopeDirs($parentScopeName, $scopes);
+        $taskScopeDirs = (new BacklogScopeService())->resolveScopeDirs($scopeName, $scopes);
+
+        if ($parentScopeDirs === null || $taskScopeDirs === null) {
+            return;
+        }
+
+        if (!(new BacklogScopeService())->isTaskScopeWithinFeatureScope($taskScopeDirs, $parentScopeDirs)) {
+            throw new \RuntimeException(sprintf(
+                'Task scope "%s" (dirs: %s) exceeds parent feature scope "%s" (dirs: %s).',
+                $scopeName,
+                implode(', ', $taskScopeDirs),
+                $parentScopeName,
+                implode(', ', $parentScopeDirs),
+            ));
+        }
+    }
+
+    /**
+     * Finds the scope name of the parent feature entry, or null when the feature has no scope (ALL).
+     *
+     * Searches active entries first, then todo entries.
+     */
+    private function resolveParentFeatureScopeName(BacklogBoard $board, string $feature): ?string
+    {
+        foreach ($board->getEntries(BacklogBoard::SECTION_ACTIVE) as $entry) {
+            if ($entry->getFeature() === $feature && $entry->getTask() === null) {
+                return $entry->getScope();
+            }
+        }
+
+        foreach ($board->getEntries(BacklogBoard::SECTION_TODO) as $entry) {
+            if ($entry->getFeature() === $feature && $entry->getTask() === null) {
+                return $entry->getScope();
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -189,9 +278,19 @@ final class BacklogEntryCreateCommand extends AbstractBacklogCommand
             $bodyLines,
         );
 
+        $scopeRaw = $options[BacklogCliOption::SCOPE->value] ?? null;
+        $scope = null;
+        if ($scopeRaw !== null) {
+            if (!is_string($scopeRaw) || trim($scopeRaw) === '') {
+                throw new \RuntimeException('Option --scope requires a non-empty name when provided.');
+            }
+            $scope = trim($scopeRaw);
+        }
+
         $entry = new BoardEntry($title, $extraLines);
         $entry->setFeature($feature);
         $entry->setTask($task);
+        $entry->setScope($scope);
         $entry->setType($type);
 
         return $entry;

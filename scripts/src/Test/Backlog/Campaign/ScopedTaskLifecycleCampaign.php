@@ -173,6 +173,7 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         $this->assertEntryUnassignForTaskAndAmbiguity($driver, $context);
         $this->assertReviewNotesAmbiguityAndMissingReference($driver, $context);
         $this->assertDependencyUpdatePropagation($driver, $context);
+        $this->assertScopeCreateValidation($driver, $context);
     }
 
     /**
@@ -549,6 +550,78 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         // Cleanup
         $driver->closeFeature($feature);
         $driver->assertActiveFeatureMissing($feature);
+    }
+
+    /**
+     * Validates entry-create scope rules:
+     *   - --scope=ALL is rejected (reserved name)
+     *   - --scope=<unknown> is rejected when no scopes are declared in config
+     *   - child task without --scope inherits parent feature scope (no scope field in board)
+     *   - child task --scope exceeding feature scope is rejected when config declares scopes
+     */
+    private function assertScopeCreateValidation(
+        BacklogScriptTestDriver $driver,
+        BacklogScriptTestContext $context,
+    ): void {
+        // ALL is reserved regardless of the config.
+        $driver->assertEntryCreateFails(
+            'test-scope-all',
+            null,
+            'ALL',
+            'Feature with reserved ALL scope must be rejected',
+            'reserved',
+        );
+        $driver->assertEntryCreateFails(
+            'test-scope-all-lower',
+            null,
+            'all',
+            'Feature with lowercase all scope must be rejected',
+            'reserved',
+        );
+
+        // An unknown scope is rejected when the config has no declared scopes (or the name is absent).
+        $driver->assertEntryCreateFails(
+            'test-scope-unknown',
+            null,
+            'no-such-scope',
+            'Feature with unknown scope must be rejected',
+            'Unknown --scope=no-such-scope',
+        );
+
+        // With declared scopes in the config, run cross-scope validation.
+        $scopeConfigContent = "backlog:\n  max_concurrent_worktrees: 5\nscopes:\n  test-scripts:\n    - scripts/\n  test-frontend:\n    - frontend/\n";
+        $driver->writeTestLocalConfig($scopeConfigContent);
+
+        try {
+            // Feature container with scope test-scripts
+            $featureSlug = 'test-scope-inherit-feature';
+            $driver->createTodoTaskFromBodyFile($featureSlug, 'Feature container for scope inheritance test', [], null, 'tech', 'scope-inherit-feature.md', 'test-scripts');
+            $driver->assertBoardContains('scope: test-scripts');
+
+            // Child task without --scope inherits feature scope (no explicit scope field on task todo entry)
+            $taskNoScopeSlug = 'test-scope-inherit-task';
+            $driver->createTodoTaskFromBodyFile($featureSlug, 'Child task inherits scope (no explicit scope)', [], $taskNoScopeSlug, 'tech', 'scope-inherit-task.md');
+
+            // Child task with the same scope as the feature is accepted
+            $taskSameScopeSlug = 'test-scope-same-task';
+            $driver->createTodoTaskFromBodyFile($featureSlug, 'Child task with same scope as feature', [], $taskSameScopeSlug, 'tech', 'scope-same-task.md', 'test-scripts');
+
+            // Child task with a scope that exceeds the feature scope is rejected
+            $driver->assertEntryCreateFails(
+                $featureSlug,
+                'test-scope-exceed-task',
+                'test-frontend',
+                'Child task with scope exceeding feature scope must be rejected',
+                'exceeds parent feature scope',
+            );
+
+            // Cleanup
+            $driver->removeTodoTask($featureSlug . '/' . $taskSameScopeSlug);
+            $driver->removeTodoTask($featureSlug . '/' . $taskNoScopeSlug);
+            $driver->removeTodoTask($featureSlug);
+        } finally {
+            $driver->restoreLocalConfig();
+        }
     }
 
     /**

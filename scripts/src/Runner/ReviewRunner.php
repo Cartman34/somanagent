@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace SoManAgent\Script\Runner;
 
+use SoManAgent\Script\Backlog\Service\BacklogScopeService;
+
 /**
  * Review script runner.
  *
@@ -40,6 +42,7 @@ final class ReviewRunner extends AbstractScriptRunner
     {
         return [
             ['name' => '--base', 'description' => 'Also review files changed between this git base ref and HEAD'],
+            ['name' => '--scope-dir', 'description' => 'Restrict the branch diff to this directory prefix (repeatable; omit for no restriction)'],
         ];
     }
 
@@ -49,6 +52,7 @@ final class ReviewRunner extends AbstractScriptRunner
     public function run(array $args): int
     {
         $base = $this->parseBaseOption($args);
+        $scopeDirs = $this->parseScopeDirOption($args);
         $baseCommit = $base !== null ? $this->resolveBaseCommit($base) : null;
         [$modifiedFiles, $untrackedFiles] = $this->collectGitStatusFiles();
         $committedFiles = $base !== null ? $this->collectCommittedFiles($base) : [];
@@ -114,12 +118,22 @@ final class ReviewRunner extends AbstractScriptRunner
         $this->printList($reusedLiterals);
         echo "\n";
 
+        $scopeViolations = [];
+        if ($scopeDirs !== null) {
+            $branchFiles = $this->collectAllBranchFiles($base);
+            $scopeViolations = (new BacklogScopeService())->collectScopeViolations($branchFiles, $scopeDirs);
+            echo "=== Branch scope check (allowed dirs: " . implode(', ', $scopeDirs) . ") ===\n";
+            $this->printList($scopeViolations);
+            echo "\n";
+        }
+
         $hasBlockers = $frenchHits !== [] || $missingPhpdoc !== [] || $missingJsdoc !== []
             || $validateExitCode !== 0
             || $translationExitCode !== 0
             || $backendTestsExitCode !== 0
             || $phpstanExitCode !== 0
-            || $reusedLiterals !== [];
+            || $reusedLiterals !== []
+            || $scopeViolations !== [];
 
         return $hasBlockers ? 1 : 0;
     }
@@ -146,12 +160,108 @@ final class ReviewRunner extends AbstractScriptRunner
                 continue;
             }
 
+            if (str_starts_with($arg, '--scope-dir=') || $arg === '--scope-dir') {
+                continue; // consumed by parseScopeDirOption
+            }
+
             throw new \RuntimeException("Unknown review argument: {$arg}");
         }
 
         $base = trim((string) $base);
 
         return $base !== '' ? $base : null;
+    }
+
+    /**
+     * Parses all `--scope-dir=<dir>` occurrences from the argument list.
+     *
+     * Returns null when no `--scope-dir` argument is present (ALL — no restriction),
+     * or a non-empty list of normalized directory prefixes (each ending with `/`).
+     *
+     * @param array<string> $args
+     * @return list<string>|null
+     */
+    private function parseScopeDirOption(array $args): ?array
+    {
+        $dirs = [];
+
+        while ($args !== []) {
+            $arg = array_shift($args);
+
+            if (str_starts_with($arg, '--scope-dir=')) {
+                $dirs[] = rtrim(substr($arg, strlen('--scope-dir=')), '/') . '/';
+                continue;
+            }
+
+            if ($arg === '--scope-dir') {
+                $next = array_shift($args);
+                if ($next !== null) {
+                    $dirs[] = rtrim($next, '/') . '/';
+                }
+            }
+        }
+
+        return $dirs !== [] ? $dirs : null;
+    }
+
+    /**
+     * Collects all files touched by the branch, including both sides of renames and deleted files.
+     *
+     * For the scope check we must include deleted files (which are absent from `filterExistingFiles`)
+     * and both the old and new path of any rename/copy.
+     *
+     * @return list<string>
+     */
+    private function collectAllBranchFiles(?string $base): array
+    {
+        $files = [];
+
+        // Working-tree changes: both sides of renames
+        [, $statusLines] = $this->runCommand('git status --porcelain');
+        foreach ($statusLines as $line) {
+            if (strlen($line) < 4) {
+                continue;
+            }
+            $path = trim(substr($line, 3));
+            $path = trim($path, '"');
+            if (str_contains($path, ' -> ')) {
+                $source = trim(substr($path, 0, strpos($path, ' -> ')), '"');
+                $dest = trim(substr($path, strrpos($path, ' -> ') + 4), '"');
+                $files[] = $source;
+                $files[] = $dest;
+            } else {
+                $files[] = $path;
+            }
+        }
+
+        // Committed changes since base: all filters including delete and mode-change, both sides of renames
+        if ($base !== null && $base !== '') {
+            [$code, $lines] = $this->runCommand(sprintf(
+                'git diff --name-status --diff-filter=ACDMRT %s..HEAD',
+                escapeshellarg($base),
+            ));
+            if ($code === 0) {
+                foreach ($lines as $line) {
+                    if (trim($line) === '') {
+                        continue;
+                    }
+                    $parts = explode("\t", $line);
+                    $status = $parts[0] ?? '';
+                    if (str_starts_with($status, 'R') || str_starts_with($status, 'C')) {
+                        if (isset($parts[1]) && $parts[1] !== '') {
+                            $files[] = $parts[1];
+                        }
+                        if (isset($parts[2]) && $parts[2] !== '') {
+                            $files[] = $parts[2];
+                        }
+                    } elseif (isset($parts[1]) && $parts[1] !== '') {
+                        $files[] = $parts[1];
+                    }
+                }
+            }
+        }
+
+        return array_values(array_unique(array_filter($files, static fn(string $f): bool => $f !== '')));
     }
 
     /**
