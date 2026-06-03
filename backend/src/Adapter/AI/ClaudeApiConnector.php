@@ -5,15 +5,15 @@
 
 declare(strict_types=1);
 
-namespace App\Adapter\AI;
+namespace Sowapps\SoManAgent\Adapter\AI;
 
-use App\Enum\ConnectorType;
-use App\ValueObject\ConnectorAuthStatus;
-use App\ValueObject\ConnectorConfig;
-use App\ValueObject\ConnectorHealthCheckResult;
-use App\ValueObject\ConnectorRequest;
-use App\ValueObject\ConnectorResponse;
-use App\ValueObject\AgentModelInfo;
+use Sowapps\SoManAgent\ValueObject\AgentModelInfo;
+use Sowapps\SoManAgent\ValueObject\ConnectorRequest;
+use Sowapps\SoManAgent\ValueObject\ConnectorConfig;
+use Sowapps\SoManAgent\ValueObject\ConnectorResponse;
+use Sowapps\SoManAgent\ValueObject\ConnectorAuthStatus;
+use Sowapps\SoManAgent\Enum\ConnectorType;
+use Sowapps\SoManAgent\ValueObject\ConnectorHealthCheckResult;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
@@ -25,6 +25,7 @@ class ClaudeApiConnector extends AbstractConnector
     private const API_URL = 'https://api.anthropic.com/v1/messages';
     private const API_VERSION = '2023-06-01';
     private const DEFAULT_HEALTH_MODEL = 'claude-sonnet-4-5';
+    private const HEADER_API_KEY = 'x-api-key';
 
     private Client $http;
 
@@ -53,7 +54,7 @@ class ClaudeApiConnector extends AbstractConnector
 
         $response = $this->http->post(self::API_URL, [
             'headers' => [
-                'x-api-key'         => $this->apiKey,
+                self::HEADER_API_KEY         => $this->apiKey,
                 'anthropic-version' => self::API_VERSION,
                 'content-type'      => 'application/json',
             ],
@@ -118,7 +119,7 @@ class ClaudeApiConnector extends AbstractConnector
 
         try {
             $this->http->get('https://api.anthropic.com', [
-                'headers' => ['x-api-key' => $this->apiKey],
+                'headers' => [self::HEADER_API_KEY => $this->apiKey],
                 'timeout' => 5,
             ]);
 

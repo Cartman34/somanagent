@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Server;
+namespace Sowapps\SoManAgent\Script\Server;
 
 /**
  * Provides read-only health probes for services managed by scripts/server.php.

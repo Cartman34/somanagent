@@ -5,17 +5,21 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Runner;
+namespace Sowapps\SoManAgent\Script\Runner;
 
-use SoManAgent\Script\Application;
-
+use Sowapps\SoManAgent\Script\Application;
 /**
  * Resolves reusable developer commands for the Node container.
  */
 final class NodeCommandRunner
 {
+    private const CMD_TYPE_CHECK = 'type-check';
+
     private DockerComposeServiceRunner $runner;
 
+    /**
+     * Initialises the runner targeting the Node Docker Compose service.
+     */
     public function __construct(Application $app)
     {
         $this->runner = new DockerComposeServiceRunner($app, 'node');
@@ -33,7 +37,7 @@ final class NodeCommandRunner
         }
 
         return match ($args[0]) {
-            'type-check' => $this->runner->run(['npm', 'run', 'type-check']),
+            self::CMD_TYPE_CHECK => $this->runner->run(['npm', 'run', self::CMD_TYPE_CHECK]),
             'build' => $this->runner->run(['npm', 'run', 'build']),
             'lint' => $this->runner->run(['npm', 'run', 'lint']),
             'test' => $this->runner->run(['npm', 'test']),

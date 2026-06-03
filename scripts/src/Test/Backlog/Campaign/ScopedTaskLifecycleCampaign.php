@@ -5,14 +5,13 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Test\Backlog\Campaign;
+namespace Sowapps\SoManAgent\Script\Test\Backlog\Campaign;
 
-use SoManAgent\Script\Backlog\BacklogPaths;
-use SoManAgent\Script\Backlog\Command\BacklogReviewNotesCommand;
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
-use SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
-use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
-
+use Sowapps\SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
+use Sowapps\SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
+use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+use Sowapps\SoManAgent\Script\Backlog\BacklogPaths;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogReviewNotesCommand;
 /**
  * Scoped task lifecycle campaign
  *

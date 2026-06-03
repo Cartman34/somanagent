@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Client;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Client;
 
 /**
  * Outcome of an interactive process run: the exit code and the identifiers needed by `stop` later.

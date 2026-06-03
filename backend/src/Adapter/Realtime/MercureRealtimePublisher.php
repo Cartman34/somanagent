@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Adapter\Realtime;
+namespace Sowapps\SoManAgent\Adapter\Realtime;
 
-use App\Port\RealtimePublisherPort;
-use App\ValueObject\RealtimeUpdate;
+use Sowapps\SoManAgent\Port\RealtimePublisherPort;
+use Sowapps\SoManAgent\ValueObject\RealtimeUpdate;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -19,12 +19,20 @@ final class MercureRealtimePublisher implements RealtimePublisherPort
 {
     private const JWT_ALGORITHM = 'HS256';
 
+    /**
+     * Initialises the publisher with the HTTP client and Mercure hub credentials.
+     */
     public function __construct(
         private readonly HttpClientInterface $httpClient,
         private readonly string $hubUrl,
         private readonly string $jwtSecret,
     ) {}
 
+    /**
+     * Publishes a realtime update to the configured Mercure hub.
+     *
+     * @throws \RuntimeException when the HTTP request to the hub fails
+     */
     public function publish(RealtimeUpdate $update): void
     {
         $payload = [];

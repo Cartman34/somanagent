@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Entity\AuditLog;
-use App\Enum\AuditAction;
+use Sowapps\SoManAgent\Enum\AuditAction;
+use Sowapps\SoManAgent\Entity\AuditLog;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**

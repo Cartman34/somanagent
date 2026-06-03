@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Test;
 
-use SoManAgent\Script\Backlog\Service\BacklogScopeService;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogScopeService;
 
 /**
  * Unit tests for BacklogScopeService.

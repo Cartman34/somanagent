@@ -9,6 +9,6 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Runner\ValidateFilesRunner;
+use Sowapps\SoManAgent\Script\Runner\ValidateFilesRunner;
 
 (new ValidateFilesRunner())->handle($argv);

@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Dto\Input\Ticket;
+namespace Sowapps\SoManAgent\Dto\Input\Ticket;
 
-use App\Enum\TaskStatus;
-use App\Exception\ValidationException;
+use Sowapps\SoManAgent\Enum\TaskStatus;
+use Sowapps\SoManAgent\Exception\ValidationException;
 
 /**
  * Input DTO for changing the status of a ticket or ticket task.

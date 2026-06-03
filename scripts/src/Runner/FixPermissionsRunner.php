@@ -5,12 +5,11 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Runner;
+namespace Sowapps\SoManAgent\Script\Runner;
 
-use SoManAgent\Script\Validation\ExecBitFixer;
-use SoManAgent\Script\Validation\GitIndexModeReader;
-use SoManAgent\Script\Validation\ScriptExecBitValidator;
-
+use Sowapps\SoManAgent\Script\Validation\GitIndexModeReader;
+use Sowapps\SoManAgent\Script\Validation\ScriptExecBitValidator;
+use Sowapps\SoManAgent\Script\Validation\ExecBitFixer;
 /**
  * Repairs the exec bit on shebang-bearing scripts under `scripts/`.
  *

@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace App\Entity;
+namespace Sowapps\SoManAgent\Entity;
 
-use App\Repository\WorkflowStepActionRepository;
+use Sowapps\SoManAgent\Repository\WorkflowStepActionRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 

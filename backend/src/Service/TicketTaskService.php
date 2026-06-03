@@ -5,32 +5,33 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Dto\Input\Ticket\CreateTicketTaskDto;
-use App\Dto\Input\Ticket\UpdateTicketTaskDto;
-use App\Entity\Agent;
-use App\Entity\AgentAction;
-use App\Entity\Ticket;
-use App\Entity\TicketTask;
-use App\Entity\TicketTaskDependency;
-use App\Entity\WorkflowStep;
-use App\Entity\WorkflowStepAction;
-use App\Enum\AuditAction;
-use App\Enum\DispatchMode;
-use App\Enum\TaskExecutionTrigger;
-use App\Enum\TaskPriority;
-use App\Enum\TaskStatus;
-use App\Enum\WorkflowStepTransitionMode;
-use App\Message\AgentTaskMessage;
-use App\Repository\AgentActionRepository;
-use App\Repository\AgentRepository;
-use App\Repository\AgentTaskExecutionRepository;
-use App\Repository\AuditLogRepository;
-use App\Repository\TicketTaskDependencyRepository;
-use App\Repository\TicketTaskRepository;
-use App\Repository\WorkflowStepActionRepository;
-use App\Repository\WorkflowStepRepository;
+use Sowapps\SoManAgent\Repository\TicketTaskRepository;
+use Sowapps\SoManAgent\Repository\TicketTaskDependencyRepository;
+use Sowapps\SoManAgent\Repository\AgentTaskExecutionRepository;
+use Sowapps\SoManAgent\Repository\AuditLogRepository;
+use Sowapps\SoManAgent\Repository\AgentActionRepository;
+use Sowapps\SoManAgent\Repository\AgentRepository;
+use Sowapps\SoManAgent\Repository\WorkflowStepActionRepository;
+use Sowapps\SoManAgent\Repository\WorkflowStepRepository;
+use Sowapps\SoManAgent\Entity\Ticket;
+use Sowapps\SoManAgent\Dto\Input\Ticket\CreateTicketTaskDto;
+use Sowapps\SoManAgent\Entity\TicketTask;
+use Sowapps\SoManAgent\Enum\AuditAction;
+use Sowapps\SoManAgent\Dto\Input\Ticket\UpdateTicketTaskDto;
+use Sowapps\SoManAgent\Enum\TaskExecutionTrigger;
+use Sowapps\SoManAgent\Enum\TaskStatus;
+use Sowapps\SoManAgent\Message\AgentTaskMessage;
+use Sowapps\SoManAgent\Entity\WorkflowStep;
+use Sowapps\SoManAgent\Enum\DispatchMode;
+use Sowapps\SoManAgent\Enum\TaskPriority;
+use Sowapps\SoManAgent\Entity\TicketTaskDependency;
+use Sowapps\SoManAgent\Entity\WorkflowStepAction;
+use Sowapps\SoManAgent\Entity\AgentAction;
+use Sowapps\SoManAgent\Enum\WorkflowStepTransitionMode;
+use Sowapps\SoManAgent\Entity\AgentTaskExecutionAttempt;
+use Sowapps\SoManAgent\Entity\Agent;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -314,7 +315,7 @@ final class TicketTaskService
      *
      * @param array<string, mixed> $resourceSnapshot
      */
-    public function captureExecutionResourceSnapshot(\App\Entity\AgentTaskExecutionAttempt $attempt, array $resourceSnapshot): void
+    public function captureExecutionResourceSnapshot(AgentTaskExecutionAttempt $attempt, array $resourceSnapshot): void
     {
         $this->agentTaskExecutionService->captureResourceSnapshot($attempt, $resourceSnapshot);
     }
@@ -656,7 +657,7 @@ final class TicketTaskService
     /**
      * Resolves the workflow step that matches the given action within the ticket's workflow.
      */
-    public function resolveWorkflowStepForAction(Ticket $ticket, AgentAction $action): ?\App\Entity\WorkflowStep
+    public function resolveWorkflowStepForAction(Ticket $ticket, AgentAction $action): ?WorkflowStep
     {
         $workflow = $ticket->getProject()->getWorkflow();
         if ($workflow === null) {

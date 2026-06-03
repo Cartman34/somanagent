@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace App\Dto\Input\Ticket;
+namespace Sowapps\SoManAgent\Dto\Input\Ticket;
 
 /**
  * Input DTO for updating the progress of a ticket task.

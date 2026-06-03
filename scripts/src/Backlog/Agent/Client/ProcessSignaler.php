@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Client;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Client;
 
 /**
  * Abstraction over POSIX process signaling so AgentStopCommand can be tested without spawning real processes.

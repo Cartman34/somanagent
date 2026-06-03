@@ -5,18 +5,19 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\DevEnv\Test;
+namespace Sowapps\SoManAgent\Script\DevEnv\Test;
 
-use SoManAgent\Script\DevEnv\ManifestParser;
-use SoManAgent\Script\DevEnv\ManifestResolver;
-use SoManAgent\Script\DevEnv\Model\LockEntry;
-use SoManAgent\Script\DevEnv\Model\Lockfile;
-
+use Sowapps\SoManAgent\Script\DevEnv\ManifestParser;
+use Sowapps\SoManAgent\Script\DevEnv\ManifestResolver;
+use Sowapps\SoManAgent\Script\DevEnv\Model\Lockfile;
+use Sowapps\SoManAgent\Script\DevEnv\Model\LockEntry;
 /**
  * Unit tests for ManifestResolver.
  */
 final class ManifestResolverTest
 {
+    private const INSTALLER_NPM_GLOBAL = 'npm-global';
+
     private \DateTimeImmutable $now;
 
     /**
@@ -238,7 +239,7 @@ final class ManifestResolverTest
     private function testPreservesPerDepOverrides(): int
     {
         $querier = new FakeSourceQuerier();
-        $querier->setVersions('npm-global', 'npm', '@anthropic-ai/claude-code', ['1.0.62']);
+        $querier->setVersions(self::INSTALLER_NPM_GLOBAL, 'npm', '@anthropic-ai/claude-code', ['1.0.62']);
 
         $manifest = (new ManifestParser())->parse(<<<YAML
         host:
@@ -254,7 +255,7 @@ final class ManifestResolverTest
             key: 'claude',
             section: 'clients',
             version: '1.0.0',
-            installer: 'npm-global',
+            installer: self::INSTALLER_NPM_GLOBAL,
             package: '@anthropic-ai/claude-code',
             source: 'npm',
             preExisting: false,

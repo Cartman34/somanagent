@@ -5,12 +5,12 @@
 
 declare(strict_types=1);
 
-namespace App\Repository;
+namespace Sowapps\SoManAgent\Repository;
 
-use App\Entity\AgentAction;
-use App\Entity\Workflow;
-use App\Entity\WorkflowStep;
-use App\Entity\WorkflowStepAction;
+use Sowapps\SoManAgent\Entity\Workflow;
+use Sowapps\SoManAgent\Entity\AgentAction;
+use Sowapps\SoManAgent\Entity\WorkflowStep;
+use Sowapps\SoManAgent\Entity\WorkflowStepAction;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -19,6 +19,9 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 final class WorkflowStepActionRepository extends ServiceEntityRepository
 {
+    /**
+     * Registers WorkflowStepAction as the managed entity class.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, WorkflowStepAction::class);
@@ -40,6 +43,9 @@ final class WorkflowStepActionRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Returns the unique step-action for the given workflow and agent action, or null if zero or multiple are found.
+     */
     public function findUniqueByWorkflowAndAction(Workflow $workflow, AgentAction $action): ?WorkflowStepAction
     {
         $matches = $this->findByWorkflowAndAction($workflow, $action);

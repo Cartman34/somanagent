@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
 /**
  * Resolves supported repository URLs and derives provider-specific web links.

@@ -11,6 +11,6 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Runner\NodeRunner;
+use Sowapps\SoManAgent\Script\Runner\NodeRunner;
 
 (new NodeRunner())->handle($argv);

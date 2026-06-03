@@ -5,13 +5,13 @@
 
 declare(strict_types=1);
 
-namespace App\Controller;
+namespace Sowapps\SoManAgent\Controller;
 
-use App\Dto\Input\Role\AddRoleSkillDto;
-use App\Dto\Input\Role\CreateRoleDto;
-use App\Dto\Input\Role\UpdateRoleDto;
-use App\Service\ApiErrorPayloadFactory;
-use App\Service\RoleService;
+use Sowapps\SoManAgent\Service\RoleService;
+use Sowapps\SoManAgent\Service\ApiErrorPayloadFactory;
+use Sowapps\SoManAgent\Dto\Input\Role\CreateRoleDto;
+use Sowapps\SoManAgent\Dto\Input\Role\UpdateRoleDto;
+use Sowapps\SoManAgent\Dto\Input\Role\AddRoleSkillDto;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;

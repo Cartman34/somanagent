@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Repository;
+namespace Sowapps\SoManAgent\Repository;
 
-use App\Entity\Project;
-use App\Entity\Ticket;
+use Sowapps\SoManAgent\Entity\Project;
+use Sowapps\SoManAgent\Entity\Ticket;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 

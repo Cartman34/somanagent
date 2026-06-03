@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Client;
+namespace Sowapps\SoManAgent\Script\Client;
 
-use SoManAgent\Script\Application;
+use Sowapps\SoManAgent\Script\Application;
 
 /**
  * Low-level command execution client shared by higher-level transport clients.
@@ -21,6 +21,9 @@ final class ConsoleClient
     /** @var callable(string): void */
     private $verboseLogger;
 
+    /**
+     * @param callable(string): void $verboseLogger
+     */
     public function __construct(string $projectRoot, bool $dryRun, Application $app, callable $verboseLogger)
     {
         $this->projectRoot = $projectRoot;
@@ -29,11 +32,17 @@ final class ConsoleClient
         $this->verboseLogger = $verboseLogger;
     }
 
+    /**
+     * Sends a message to the verbose logger.
+     */
     public function logVerbose(string $message): void
     {
         ($this->verboseLogger)($message);
     }
 
+    /**
+     * Runs a shell command via the application runner, throwing on non-zero exit.
+     */
     public function run(string $command): void
     {
         $this->logVerbose(($this->dryRun ? '[dry-run] Would run: ' : 'Run: ') . $command);
@@ -47,6 +56,9 @@ final class ConsoleClient
         }
     }
 
+    /**
+     * Runs a shell command and returns its combined stdout/stderr output, throwing on non-zero exit.
+     */
     public function capture(string $command): string
     {
         $output = [];
@@ -76,6 +88,9 @@ final class ConsoleClient
         return [$code, implode("\n", $output)];
     }
 
+    /**
+     * Returns true when the command exits with code 0, false otherwise.
+     */
     public function succeeds(string $command): bool
     {
         $output = [];
@@ -85,6 +100,9 @@ final class ConsoleClient
         return $code === 0;
     }
 
+    /**
+     * Converts an absolute path to a path relative to the project root, or returns it unchanged if outside.
+     */
     public function toRelativeProjectPath(string $path): string
     {
         $normalizedRoot = rtrim(str_replace('\\', '/', $this->projectRoot), '/');

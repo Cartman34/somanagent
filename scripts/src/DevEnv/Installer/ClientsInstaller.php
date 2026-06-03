@@ -5,12 +5,12 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\DevEnv\Installer;
+namespace Sowapps\SoManAgent\Script\DevEnv\Installer;
 
-use SoManAgent\Script\Application;
-use SoManAgent\Script\Console;
-use SoManAgent\Script\DevEnv\Model\LockEntry;
-use SoManAgent\Script\DevEnv\PlannedDep;
+use Sowapps\SoManAgent\Script\DevEnv\Model\LockEntry;
+use Sowapps\SoManAgent\Script\Application;
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\DevEnv\PlannedDep;
 
 /**
  * Installs AI CLI clients via npm (globally) or from GitHub releases.
@@ -23,9 +23,12 @@ use SoManAgent\Script\DevEnv\PlannedDep;
  */
 final class ClientsInstaller implements InstallerInterface
 {
+    private const INSTALLER_NPM_GLOBAL     = 'npm-global';
+    private const INSTALLER_GITHUB_RELEASE = 'github-release';
+
     /**
-     * @param Application $app     Command runner
-     * @param Console     $console Output helper
+     * @param Application $app Command runner
+     * @param Console $console Output helper
      */
     public function __construct(
         private readonly Application $app,
@@ -38,7 +41,7 @@ final class ClientsInstaller implements InstallerInterface
      */
     public function supports(PlannedDep $dep): bool
     {
-        return in_array($dep->entry->installer, ['npm-global', 'github-release'], true);
+        return in_array($dep->entry->installer, [self::INSTALLER_NPM_GLOBAL, self::INSTALLER_GITHUB_RELEASE], true);
     }
 
     /**
@@ -57,11 +60,11 @@ final class ClientsInstaller implements InstallerInterface
             }
 
             $commands[] = match ($dep->entry->installer) {
-                'npm-global' => sprintf(
+                self::INSTALLER_NPM_GLOBAL => sprintf(
                     'npm install -g %s',
                     escapeshellarg($dep->entry->package . '@' . $dep->entry->version),
                 ),
-                'github-release' => sprintf(
+                self::INSTALLER_GITHUB_RELEASE => sprintf(
                     '# install %s %s from %s',
                     $dep->entry->package,
                     $dep->entry->version,
@@ -93,8 +96,8 @@ final class ClientsInstaller implements InstallerInterface
             $this->console->info(sprintf('Installing %s (%s)', $dep->entry->key, $dep->entry->version));
 
             match ($dep->entry->installer) {
-                'npm-global'     => $this->installNpm($dep),
-                'github-release' => $this->installGitHubRelease($dep),
+                self::INSTALLER_NPM_GLOBAL     => $this->installNpm($dep),
+                self::INSTALLER_GITHUB_RELEASE => $this->installGitHubRelease($dep),
                 default          => throw new \RuntimeException(
                     sprintf('Unsupported installer: %s', $dep->entry->installer),
                 ),

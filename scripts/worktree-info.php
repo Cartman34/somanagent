@@ -8,6 +8,6 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Runner\WorktreeInfoRunner;
+use Sowapps\SoManAgent\Script\Runner\WorktreeInfoRunner;
 
 (new WorktreeInfoRunner())->handle($argv);

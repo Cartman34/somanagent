@@ -5,11 +5,11 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Test\Backlog\Campaign;
+namespace Sowapps\SoManAgent\Script\Test\Backlog\Campaign;
 
-use SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
-use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
-
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use Sowapps\SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
+use Sowapps\SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
 /**
  * Board format normalization campaign.
  *
@@ -37,7 +37,7 @@ final class BoardFormatNormalizationCampaign implements CampaignInterface
 
         // Scenario 2 — plain feature entry round-trips with expected YAML shape.
         $bodyFile = $driver->createBodyFile('norm-plain.md', ['Plain feature title']);
-        $driver->runBacklog(['entry-create', '--feature=norm-plain', '--type=feat', "--body-file={$bodyFile}"]);
+        $driver->runBacklog([BacklogCommandName::ENTRY_CREATE->value, '--feature=norm-plain', '--type=feat', "--body-file={$bodyFile}"]);
         $driver->assertBoardContains('version: 1');
         $driver->assertBoardTodoBlock([
             '  - feature: norm-plain',
@@ -52,7 +52,7 @@ final class BoardFormatNormalizationCampaign implements CampaignInterface
         // Scenario 3 — scoped entry with all optional fields round-trips correctly.
         $driver->resetArtifacts();
         $bodyFile = $driver->createBodyFile('norm-scoped.md', ['Scoped entry title']);
-        $driver->runBacklog(['entry-create', '--feature=norm-feature', '--task=norm-task', '--type=feat', "--body-file={$bodyFile}"]);
+        $driver->runBacklog([BacklogCommandName::ENTRY_CREATE->value, '--feature=norm-feature', '--task=norm-task', '--type=feat', "--body-file={$bodyFile}"]);
         $driver->assertBoardTodoBlock([
             '  - feature: norm-feature',
             '    task: norm-task',
@@ -68,7 +68,7 @@ final class BoardFormatNormalizationCampaign implements CampaignInterface
             '  - Sub-item alpha',
             '  - Sub-item beta',
         ]);
-        $driver->runBacklog(['entry-create', '--feature=norm-body', '--task=norm-body-task', '--type=tech', "--body-file={$bodyFile}"]);
+        $driver->runBacklog([BacklogCommandName::ENTRY_CREATE->value, '--feature=norm-body', '--task=norm-body-task', '--type=tech', "--body-file={$bodyFile}"]);
         $driver->assertBoardTodoBlock([
             '  - feature: norm-body',
             '    task: norm-body-task',
@@ -84,9 +84,9 @@ final class BoardFormatNormalizationCampaign implements CampaignInterface
         $fileA = $driver->createBodyFile('norm-order-a.md', ['Order entry A']);
         $fileB = $driver->createBodyFile('norm-order-b.md', ['Order entry B']);
         $fileC = $driver->createBodyFile('norm-order-c.md', ['Order entry C']);
-        $driver->runBacklog(['entry-create', '--feature=norm-order-a', '--type=feat', "--body-file={$fileA}"]);
-        $driver->runBacklog(['entry-create', '--feature=norm-order-b', '--type=feat', "--body-file={$fileB}"]);
-        $driver->runBacklog(['entry-create', '--feature=norm-order-c', '--type=feat', "--body-file={$fileC}"]);
+        $driver->runBacklog([BacklogCommandName::ENTRY_CREATE->value, '--feature=norm-order-a', '--type=feat', "--body-file={$fileA}"]);
+        $driver->runBacklog([BacklogCommandName::ENTRY_CREATE->value, '--feature=norm-order-b', '--type=feat', "--body-file={$fileB}"]);
+        $driver->runBacklog([BacklogCommandName::ENTRY_CREATE->value, '--feature=norm-order-c', '--type=feat', "--body-file={$fileC}"]);
         $boardText = $driver->getBoardText();
         $posA = strpos($boardText, 'feature: norm-order-a');
         $posB = strpos($boardText, 'feature: norm-order-b');

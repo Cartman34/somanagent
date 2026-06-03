@@ -5,14 +5,16 @@
 
 declare(strict_types=1);
 
-/**
- * Thrown when the scripts are run on Windows but WSL 2 is not installed
- * or not accessible via the `wsl` command.
- */
-namespace SoManAgent\Script\Exception;
+namespace Sowapps\SoManAgent\Script\Exception;
 
+/**
+ * Thrown when the scripts are run on Windows but WSL 2 is not installed or not accessible via the `wsl` command.
+ */
 final class WslRequiredException extends \RuntimeException
 {
+    /**
+     * Builds the exception with a standard remediation message.
+     */
     public function __construct()
     {
         parent::__construct(

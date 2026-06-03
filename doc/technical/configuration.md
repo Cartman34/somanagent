@@ -195,7 +195,7 @@ Manages dependency injection. Key points:
 - AI connectors are tagged `app.connector` for `ConnectorRegistry`
 
 ### `config/packages/doctrine.yaml`
-- Doctrine mapping on `src/Entity/` (prefix `App\Entity`)
+- Doctrine mapping on `src/Entity/` (prefix `Sowapps\SoManAgent\Entity`)
 - `uuid` type mapped to `Symfony\Bridge\Doctrine\Types\UuidType`
 - `server_version: '16'` for PostgreSQL 16
 

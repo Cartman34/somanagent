@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Entity;
+namespace Sowapps\SoManAgent\Entity;
 
-use App\Enum\ChatAuthor;
-use App\Repository\ChatMessageRepository;
+use Sowapps\SoManAgent\Repository\ChatMessageRepository;
+use Sowapps\SoManAgent\Enum\ChatAuthor;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 

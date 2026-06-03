@@ -16,7 +16,7 @@ framework:
 
         routing:
             # Les messages d'exécution agent passent tous par le transport async
-            App\Message\AgentTaskMessage: async
+            Sowapps\SoManAgent\Message\AgentTaskMessage: async
 
 when@test:
     framework:

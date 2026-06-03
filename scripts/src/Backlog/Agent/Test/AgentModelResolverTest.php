@@ -5,17 +5,19 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
 
-use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
-use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
-use SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
 
 /**
  * Unit tests for canonical tier/effort resolution into client CLI arguments.
  */
 final class AgentModelResolverTest
 {
+    private const MODEL_RAW = 'raw-model';
+
     /**
      * Runs every test case and returns the cumulative number of failures.
      */
@@ -69,8 +71,8 @@ final class AgentModelResolverTest
 
     private function testModelOverrideKeepsResolvedEffortForSupportedClients(): int
     {
-        $resolved = $this->resolver()->resolve(AgentClient::CLAUDE, AgentRole::DEVELOPER, null, 'high', 'raw-model');
-        $expected = ['--model', 'raw-model', '--effort', 'high'];
+        $resolved = $this->resolver()->resolve(AgentClient::CLAUDE, AgentRole::DEVELOPER, null, 'high', self::MODEL_RAW);
+        $expected = ['--model', self::MODEL_RAW, '--effort', 'high'];
 
         if ($resolved->cliArgs !== $expected) {
             echo "FAIL testModelOverrideKeepsResolvedEffortForSupportedClients: expected " . json_encode($expected)
@@ -86,7 +88,7 @@ final class AgentModelResolverTest
     {
         $threw = false;
         try {
-            $this->resolver()->resolve(AgentClient::CLAUDE, AgentRole::DEVELOPER, 'economy', null, 'raw-model');
+            $this->resolver()->resolve(AgentClient::CLAUDE, AgentRole::DEVELOPER, 'economy', null, self::MODEL_RAW);
         } catch (\RuntimeException $e) {
             $threw = str_contains($e->getMessage(), '--tier and --model are mutually exclusive');
         }

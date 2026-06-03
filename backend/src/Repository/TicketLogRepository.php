@@ -5,11 +5,12 @@
 
 declare(strict_types=1);
 
-namespace App\Repository;
+namespace Sowapps\SoManAgent\Repository;
 
-use App\Entity\Ticket;
-use App\Entity\TicketTask;
-use App\Entity\TicketLog;
+use Sowapps\SoManAgent\Entity\Ticket;
+use Sowapps\SoManAgent\Entity\TicketTask;
+use Symfony\Component\Uid\Uuid;
+use Sowapps\SoManAgent\Entity\TicketLog;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -47,7 +48,7 @@ final class TicketLogRepository extends ServiceEntityRepository
      */
     public function findOneByTicketAndId(Ticket $ticket, string $id): ?TicketLog
     {
-        return $this->findOneBy(['ticket' => $ticket, 'id' => \Symfony\Component\Uid\Uuid::fromString($id)]);
+        return $this->findOneBy(['ticket' => $ticket, 'id' => Uuid::fromString($id)]);
     }
 
     /**

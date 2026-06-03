@@ -16,6 +16,7 @@ Each migration script is responsible for appending its own filename to `local/ba
 | 2026-05-17 | backlog-yaml | Convert `local/backlog-board.md` (markdown + pseudo-YAML meta) to the new structured `local/backlog-board.yaml` format. Source `.md` is preserved; operator removes it manually once satisfied. | All known WAs have been regenerated against the YAML board and no operator needs to migrate a leftover `.md` board anymore. | active |
 | 2026-05-18 | backlog-dir | Move `local/backlog-board.yaml` → `local/backlog/backlog-board.yaml` and `local/backlog-review.md` → `local/backlog/backlog-review.md`. Lock path also moved to `local/backlog/backlog.lock`. | All WPs have been migrated and no backlog.php version expecting the old paths is still in use. | active |
 | 2026-05-19 | rename-agent-to-developer | Rename the `agent:` key to `developer:` in the `todo` and `active` sections of `local/backlog/backlog-board.yaml`. | All WPs have been migrated and no backlog.php version writing the `agent:` key is still in use. | active |
+| 2026-06-03 | rename-to-sowapps-namespace | Rename PHP namespaces `App\*` → `Sowapps\SoManAgent\*` (backend + tests) and `SoManAgent\Script\*` → `Sowapps\SoManAgent\Script\*` (scripts/src). Updates composer.json, Symfony config, PHPStan baseline, and string patterns referencing old namespaces. | All known WAs and WPs have been migrated and no agent session still runs against the old namespace structure. | active |
 
 ## Historical renames (no data migration)
 

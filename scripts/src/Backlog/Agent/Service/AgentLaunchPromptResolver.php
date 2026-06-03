@@ -5,11 +5,11 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Service;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Service;
 
-use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
-use SoManAgent\Script\Backlog\Agent\Model\LaunchDecision;
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Model\LaunchDecision;
+use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Symfony\Component\Yaml\Yaml;
 
 /**

@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace App\Dto\Input\Skill;
+namespace Sowapps\SoManAgent\Dto\Input\Skill;
 
-use App\Exception\ValidationException;
+use Sowapps\SoManAgent\Exception\ValidationException;
 
 /**
  * Input DTO for creating a custom skill.

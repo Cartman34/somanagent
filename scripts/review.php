@@ -8,6 +8,6 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Runner\ReviewRunner;
+use Sowapps\SoManAgent\Script\Runner\ReviewRunner;
 
 (new ReviewRunner())->handle($argv);

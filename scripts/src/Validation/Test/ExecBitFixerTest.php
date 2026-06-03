@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Validation\Test;
+namespace Sowapps\SoManAgent\Script\Validation\Test;
 
-use SoManAgent\Script\Validation\ExecBitFixer;
+use Sowapps\SoManAgent\Script\Validation\ExecBitFixer;
 
 /**
  * Unit tests for ExecBitFixer.

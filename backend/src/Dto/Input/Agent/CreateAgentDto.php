@@ -5,11 +5,11 @@
 
 declare(strict_types=1);
 
-namespace App\Dto\Input\Agent;
+namespace Sowapps\SoManAgent\Dto\Input\Agent;
 
-use App\Enum\ConnectorType;
-use App\Exception\ValidationException;
-use App\ValueObject\ConnectorConfig;
+use Sowapps\SoManAgent\Enum\ConnectorType;
+use Sowapps\SoManAgent\ValueObject\ConnectorConfig;
+use Sowapps\SoManAgent\Exception\ValidationException;
 
 /**
  * Input DTO for creating an agent.
@@ -18,8 +18,8 @@ final class CreateAgentDto
 {
     /**
      * @param string         $name        Agent display name
-     * @param ConnectorType  $connector   Connector type
-     * @param ConnectorConfig $config     Connector configuration
+     * @param ConnectorType $connector Connector type
+     * @param ConnectorConfig $config Connector configuration
      * @param ?string        $description Optional description
      * @param ?string        $roleId      Optional role UUID
      */

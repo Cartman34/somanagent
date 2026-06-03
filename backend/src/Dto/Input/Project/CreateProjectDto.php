@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Dto\Input\Project;
+namespace Sowapps\SoManAgent\Dto\Input\Project;
 
-use App\Enum\DispatchMode;
-use App\Exception\ValidationException;
+use Sowapps\SoManAgent\Enum\DispatchMode;
+use Sowapps\SoManAgent\Exception\ValidationException;
 
 /**
  * Input DTO for creating a project.
@@ -21,7 +21,7 @@ final class CreateProjectDto
      * @param string       $workflowId           Workflow UUID
      * @param ?string      $description          Optional description
      * @param ?string      $repositoryUrl        Optional repository URL
-     * @param DispatchMode $dispatchMode         Task dispatch mode
+     * @param DispatchMode $dispatchMode Task dispatch mode
      * @param ?string      $defaultTicketRoleId  Optional default role UUID for tickets
      */
     public function __construct(

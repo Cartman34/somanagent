@@ -5,11 +5,11 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Server\Test;
+namespace Sowapps\SoManAgent\Script\Server\Test;
 
-use SoManAgent\Script\Runner\ServerRunner;
-use SoManAgent\Script\Server\HealthCheckResult;
-use SoManAgent\Script\Server\HealthProbeInterface;
+use Sowapps\SoManAgent\Script\Server\HealthCheckResult;
+use Sowapps\SoManAgent\Script\Runner\ServerRunner;
+use Sowapps\SoManAgent\Script\Server\HealthProbeInterface;
 
 /**
  * Integration tests for scripts/server.php.
@@ -83,14 +83,15 @@ final class ServerRunnerTest
 
     private function testUnknownSubcommandFails(): int
     {
-        [$exit, $stdout, $stderr] = $this->runScript(['bogus-command']);
+        $unknownSubcommand = 'bogus-command';
+        [$exit, $stdout, $stderr] = $this->runScript([$unknownSubcommand]);
         if ($exit === 0) {
             echo "FAIL testUnknownSubcommandFails: expected non-zero exit\n";
 
             return 1;
         }
         $output = $stdout . "\n" . $stderr;
-        if (!str_contains($output, "Unknown subcommand: 'bogus-command'")) {
+        if (!str_contains($output, "Unknown subcommand: '{$unknownSubcommand}'")) {
             echo "FAIL testUnknownSubcommandFails: unexpected output: {$output}\n";
 
             return 1;

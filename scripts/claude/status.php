@@ -8,6 +8,6 @@
 
 require_once __DIR__ . '/../src/bootstrap.php';
 
-use SoManAgent\Script\Runner\StatusRunner;
+use Sowapps\SoManAgent\Script\Runner\StatusRunner;
 
 (new StatusRunner())->handle($argv);

@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace App\Repository;
+namespace Sowapps\SoManAgent\Repository;
 
-use App\Entity\Module;
+use Sowapps\SoManAgent\Entity\Module;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -16,6 +16,9 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class ModuleRepository extends ServiceEntityRepository
 {
+    /**
+     * Registers Module as the managed entity class.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Module::class);

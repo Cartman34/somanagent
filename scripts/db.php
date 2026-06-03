@@ -12,6 +12,6 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Runner\DbRunner;
+use Sowapps\SoManAgent\Script\Runner\DbRunner;
 
 (new DbRunner())->handle($argv);

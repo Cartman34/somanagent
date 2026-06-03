@@ -5,17 +5,17 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Entity\AgentTaskExecution;
-use App\Entity\AgentTaskExecutionAttempt;
-use App\Entity\AuditLog;
-use App\Entity\ChatMessage;
-use App\Entity\LogEvent;
-use App\Entity\LogOccurrence;
-use App\Entity\TicketLog;
-use App\Entity\TokenUsage;
-use App\Enum\AuditAction;
+use Sowapps\SoManAgent\Entity\AuditLog;
+use Sowapps\SoManAgent\Entity\LogEvent;
+use Sowapps\SoManAgent\Entity\LogOccurrence;
+use Sowapps\SoManAgent\Entity\TicketLog;
+use Sowapps\SoManAgent\Entity\ChatMessage;
+use Sowapps\SoManAgent\Entity\TokenUsage;
+use Sowapps\SoManAgent\Entity\AgentTaskExecution;
+use Sowapps\SoManAgent\Entity\AgentTaskExecutionAttempt;
+use Sowapps\SoManAgent\Enum\AuditAction;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -57,7 +57,7 @@ final class EntityService
 
     /**
      * @param EntityManagerInterface $em    Doctrine entity manager.
-     * @param AuditService           $audit Audit writer; called after each mutating operation.
+     * @param AuditService $audit Audit writer; called after each mutating operation.
      */
     public function __construct(
         private readonly EntityManagerInterface $em,
@@ -142,7 +142,7 @@ final class EntityService
     }
 
     /**
-     * Derives the entity type label from the short class name (e.g. 'App\Entity\Project' → 'Project').
+     * Derives the entity type label from the short class name (e.g. 'Sowapps\SoManAgent\Entity\Project' → 'Project').
      */
     private function extractType(object $entity): string
     {

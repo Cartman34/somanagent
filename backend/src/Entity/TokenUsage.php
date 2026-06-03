@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace App\Entity;
+namespace Sowapps\SoManAgent\Entity;
 
-use App\Repository\TokenUsageRepository;
+use Sowapps\SoManAgent\Repository\TokenUsageRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 

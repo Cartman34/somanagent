@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Validation\Test\Fixture;
+namespace Sowapps\SoManAgent\Script\Validation\Test\Fixture;
 
 /**
  * Fixture: public method with no callers.

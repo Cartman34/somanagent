@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script;
+namespace Sowapps\SoManAgent\Script;
 
 /**
  * Provides the common filesystem and shell helpers used by CLI auth sync managers.

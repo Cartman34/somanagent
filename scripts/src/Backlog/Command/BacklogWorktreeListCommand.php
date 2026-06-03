@@ -5,12 +5,11 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Command;
+namespace Sowapps\SoManAgent\Script\Backlog\Command;
 
-use SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use SoManAgent\Script\Backlog\Service\BacklogPresenter;
-use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
-
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
 /**
  * Command for listing managed and external worktrees.
  */
@@ -18,6 +17,9 @@ final class BacklogWorktreeListCommand extends AbstractBacklogCommand
 {
     private BacklogWorktreeService $worktreeService;
 
+    /**
+     * Injects the worktree service alongside the parent dependencies.
+     */
     public function __construct(
         BacklogPresenter $presenter,
         bool $dryRun,
@@ -29,6 +31,12 @@ final class BacklogWorktreeListCommand extends AbstractBacklogCommand
         $this->worktreeService = $worktreeService;
     }
 
+    /**
+     * Classifies all known worktrees and displays the result.
+     *
+     * @param array<string> $commandArgs
+     * @param array<string, mixed> $options
+     */
     public function handle(array $commandArgs, array $options): void
     {
         $board = $this->loadBoard();

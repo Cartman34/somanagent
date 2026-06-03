@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Server;
+namespace Sowapps\SoManAgent\Script\Server;
 
 /**
  * Native PHP implementation of server health probes.

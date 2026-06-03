@@ -5,23 +5,23 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Runner;
+namespace Sowapps\SoManAgent\Script\Runner;
 
-use SoManAgent\Script\Client\ConsoleClient;
-use SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
-use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
-use SoManAgent\Script\Test\Backlog\Campaign\BoardFormatNormalizationCampaign;
-use SoManAgent\Script\Test\Backlog\Campaign\CampaignInterface;
-use SoManAgent\Script\Test\Backlog\Campaign\FeatureReviewLifecycleCampaign;
-use SoManAgent\Script\Test\Backlog\Campaign\HelpCampaign;
-use SoManAgent\Script\Test\Backlog\Campaign\ListFlagsCampaign;
-use SoManAgent\Script\Test\Backlog\Campaign\MutationLockCampaign;
-use SoManAgent\Script\Test\Backlog\Campaign\PendingMigrationCampaign;
-use SoManAgent\Script\Test\Backlog\Campaign\ScopedTaskLifecycleCampaign;
-use SoManAgent\Script\Test\Backlog\Campaign\TaskCreateFormatsCampaign;
-use SoManAgent\Script\Test\Backlog\Campaign\TodoAndPlainFeatureLifecycleCampaign;
-use SoManAgent\Script\Test\Backlog\Campaign\UserMergeCampaign;
-use SoManAgent\Script\Test\Backlog\Campaign\WorkStartTypePrefixCampaign;
+use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\CampaignInterface;
+use Sowapps\SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
+use Sowapps\SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
+use Sowapps\SoManAgent\Script\Client\ConsoleClient;
+use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\HelpCampaign;
+use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\BoardFormatNormalizationCampaign;
+use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\TaskCreateFormatsCampaign;
+use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\WorkStartTypePrefixCampaign;
+use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\TodoAndPlainFeatureLifecycleCampaign;
+use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\ScopedTaskLifecycleCampaign;
+use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\MutationLockCampaign;
+use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\PendingMigrationCampaign;
+use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\FeatureReviewLifecycleCampaign;
+use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\UserMergeCampaign;
+use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\ListFlagsCampaign;
 
 /**
  * Runs sequential validation campaigns to test the backlog workflow script.

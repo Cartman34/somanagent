@@ -5,17 +5,17 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Dto\Input\Agent\CreateAgentDto;
-use App\Dto\Input\Agent\UpdateAgentDto;
-use App\Entity\Agent;
-use App\Enum\AuditAction;
-use App\Enum\ConnectorType;
-use App\Exception\ValidationException;
-use App\Repository\AgentRepository;
-use App\Repository\RoleRepository;
-use App\ValueObject\ConnectorConfig;
+use Sowapps\SoManAgent\Repository\AgentRepository;
+use Sowapps\SoManAgent\Repository\RoleRepository;
+use Sowapps\SoManAgent\Dto\Input\Agent\CreateAgentDto;
+use Sowapps\SoManAgent\Entity\Agent;
+use Sowapps\SoManAgent\Enum\AuditAction;
+use Sowapps\SoManAgent\Dto\Input\Agent\UpdateAgentDto;
+use Sowapps\SoManAgent\Enum\ConnectorType;
+use Sowapps\SoManAgent\ValueObject\ConnectorConfig;
+use Sowapps\SoManAgent\Exception\ValidationException;
 use Symfony\Component\Uid\Uuid;
 
 /**

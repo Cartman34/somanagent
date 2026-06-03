@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Command;
+namespace Sowapps\SoManAgent\Command;
 
-use App\Enum\ConnectorType;
-use App\Service\AgentService;
+use Sowapps\SoManAgent\Service\AgentService;
+use Sowapps\SoManAgent\Enum\ConnectorType;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;

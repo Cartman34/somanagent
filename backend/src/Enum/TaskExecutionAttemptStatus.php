@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace App\Enum;
+namespace Sowapps\SoManAgent\Enum;
 
 /**
  * Result of a single execution attempt within a task execution.

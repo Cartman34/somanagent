@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Entity;
+namespace Sowapps\SoManAgent\Entity;
 
-use App\Enum\FeatureStatus;
-use App\Repository\FeatureRepository;
+use Sowapps\SoManAgent\Repository\FeatureRepository;
+use Sowapps\SoManAgent\Enum\FeatureStatus;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 

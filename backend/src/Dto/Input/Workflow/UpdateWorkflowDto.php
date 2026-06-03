@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Dto\Input\Workflow;
+namespace Sowapps\SoManAgent\Dto\Input\Workflow;
 
-use App\Enum\WorkflowTrigger;
-use App\Exception\ValidationException;
+use Sowapps\SoManAgent\Enum\WorkflowTrigger;
+use Sowapps\SoManAgent\Exception\ValidationException;
 
 /**
  * Input DTO for updating a workflow (all fields optional).
@@ -17,7 +17,7 @@ final class UpdateWorkflowDto
 {
     /**
      * @param ?string          $name        Updated name or null to keep current
-     * @param ?WorkflowTrigger $trigger     Updated trigger or null to keep current
+     * @param ?WorkflowTrigger $trigger Updated trigger or null to keep current
      * @param ?string          $description Updated description or null to keep current
      */
     public function __construct(

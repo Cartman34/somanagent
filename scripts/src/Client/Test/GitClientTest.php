@@ -5,12 +5,12 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Client\Test;
+namespace Sowapps\SoManAgent\Script\Client\Test;
 
-use SoManAgent\Script\Application;
-use SoManAgent\Script\Client\ConsoleClient;
-use SoManAgent\Script\Client\GitClient;
-use SoManAgent\Script\RetryPolicy;
+use Sowapps\SoManAgent\Script\Client\ConsoleClient;
+use Sowapps\SoManAgent\Script\Application;
+use Sowapps\SoManAgent\Script\Client\GitClient;
+use Sowapps\SoManAgent\Script\RetryPolicy;
 
 /**
  * Unit tests for {@see GitClient}.

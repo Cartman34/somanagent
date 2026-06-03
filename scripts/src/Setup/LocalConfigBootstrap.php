@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Setup;
+namespace Sowapps\SoManAgent\Script\Setup;
 
-use SoManAgent\Script\Backlog\Service\BacklogConfig;
-use SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogConfig;
 
 /**
  * Materializes local config files from their committed .dist templates.

@@ -5,12 +5,12 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Service;
+namespace Sowapps\SoManAgent\Script\Backlog\Service;
 
+use Sowapps\SoManAgent\Script\Service\CommandHelpService;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
+use Sowapps\SoManAgent\Script\Service\CommandParamHelp;
 use RuntimeException;
-use SoManAgent\Script\Backlog\Enum\BacklogCliOption;
-use SoManAgent\Script\Service\CommandHelpService;
-use SoManAgent\Script\Service\CommandParamHelp;
 
 /**
  * Strict CLI option validator for scripts/backlog.php.

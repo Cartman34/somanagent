@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\DevEnv;
+namespace Sowapps\SoManAgent\Script\DevEnv;
 
 /**
  * Queries available package versions from real system sources.
@@ -28,7 +28,7 @@ final class SystemSourceQuerier implements SourceQuerierInterface
 {
     /**
      * @param CommandRunnerInterface $commandRunner Runner for shell commands (apt-cache, npm, dpkg, lsb_release)
-     * @param HttpFetcherInterface   $httpFetcher   Fetcher for HTTP requests (Packages.gz, GitHub API)
+     * @param HttpFetcherInterface $httpFetcher Fetcher for HTTP requests (Packages.gz, GitHub API)
      */
     public function __construct(
         private readonly CommandRunnerInterface $commandRunner,

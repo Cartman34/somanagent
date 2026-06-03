@@ -5,13 +5,13 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Enum\ConnectorType;
-use App\Port\ConnectorInterface;
-use App\ValueObject\ConnectorDescriptor;
-use App\ValueObject\ConnectorHealthChecks;
-use App\ValueObject\ConnectorHealthReport;
+use Sowapps\SoManAgent\Enum\ConnectorType;
+use Sowapps\SoManAgent\Port\ConnectorInterface;
+use Sowapps\SoManAgent\ValueObject\ConnectorHealthReport;
+use Sowapps\SoManAgent\ValueObject\ConnectorHealthChecks;
+use Sowapps\SoManAgent\ValueObject\ConnectorDescriptor;
 use Psr\Cache\CacheItemPoolInterface;
 
 /**

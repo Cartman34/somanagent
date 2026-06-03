@@ -11,6 +11,6 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Runner\PhpstanRunner;
+use Sowapps\SoManAgent\Script\Runner\PhpstanRunner;
 
 (new PhpstanRunner())->handle($argv);

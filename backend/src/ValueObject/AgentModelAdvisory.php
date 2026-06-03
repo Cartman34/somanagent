@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace App\ValueObject;
+namespace Sowapps\SoManAgent\ValueObject;
 
 /**
  * Immutable advisory emitted when evaluating connector model selection.

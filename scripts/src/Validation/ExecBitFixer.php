@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Validation;
+namespace Sowapps\SoManAgent\Script\Validation;
 
 /**
  * Filesystem repair counterpart of {@see ScriptExecBitValidator}.

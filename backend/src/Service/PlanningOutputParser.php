@@ -5,11 +5,11 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Enum\TaskPriority;
-use App\ValueObject\PlanningOutput;
-use App\ValueObject\PlanningTask;
+use Sowapps\SoManAgent\ValueObject\PlanningOutput;
+use Sowapps\SoManAgent\Enum\TaskPriority;
+use Sowapps\SoManAgent\ValueObject\PlanningTask;
 
 /**
  * Parses the structured JSON output produced by the tech-planning skill.

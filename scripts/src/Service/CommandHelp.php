@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Service;
+namespace Sowapps\SoManAgent\Script\Service;
 
 /**
  * Typed container for per-command YAML help data — read from {scriptResources}/commands/{name}.yaml.

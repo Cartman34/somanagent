@@ -5,14 +5,14 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Dto\Input\Feature\CreateFeatureDto;
-use App\Dto\Input\Feature\UpdateFeatureDto;
-use App\Entity\Feature;
-use App\Entity\Project;
-use App\Enum\AuditAction;
-use App\Repository\FeatureRepository;
+use Sowapps\SoManAgent\Repository\FeatureRepository;
+use Sowapps\SoManAgent\Entity\Project;
+use Sowapps\SoManAgent\Dto\Input\Feature\CreateFeatureDto;
+use Sowapps\SoManAgent\Entity\Feature;
+use Sowapps\SoManAgent\Enum\AuditAction;
+use Sowapps\SoManAgent\Dto\Input\Feature\UpdateFeatureDto;
 use Symfony\Component\Uid\Uuid;
 
 /**

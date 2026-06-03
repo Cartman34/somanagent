@@ -5,14 +5,14 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Runner;
+namespace Sowapps\SoManAgent\Script\Runner;
 
-use SoManAgent\Script\Application;
-use SoManAgent\Script\Console;
-use SoManAgent\Script\Service\CommandHelp;
-use SoManAgent\Script\Service\CommandHelpService;
-use SoManAgent\Script\Service\CommandParamHelp;
-use SoManAgent\Script\Service\RunnerHelp;
+use Sowapps\SoManAgent\Script\Application;
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\Service\CommandHelpService;
+use Sowapps\SoManAgent\Script\Service\RunnerHelp;
+use Sowapps\SoManAgent\Script\Service\CommandParamHelp;
+use Sowapps\SoManAgent\Script\Service\CommandHelp;
 
 /**
  * Abstract base class for all SoManAgent CLI scripts.

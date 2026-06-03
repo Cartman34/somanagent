@@ -5,10 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Service;
+namespace Sowapps\SoManAgent\Script\Backlog\Service;
 
-use SoManAgent\Script\Backlog\Enum\SubmitMode;
-
+use Sowapps\SoManAgent\Script\Backlog\Enum\SubmitMode;
 /**
  * Resolves the effective submit policy for a developer session.
  *

@@ -5,13 +5,13 @@
 
 declare(strict_types=1);
 
-namespace App\Command;
+namespace Sowapps\SoManAgent\Command;
 
-use App\Entity\Agent;
-use App\Enum\TaskExecutionTrigger;
-use App\Repository\AgentRepository;
-use App\Repository\TicketTaskRepository;
-use App\Service\TicketTaskService;
+use Sowapps\SoManAgent\Service\TicketTaskService;
+use Sowapps\SoManAgent\Repository\AgentRepository;
+use Sowapps\SoManAgent\Repository\TicketTaskRepository;
+use Sowapps\SoManAgent\Enum\TaskExecutionTrigger;
+use Sowapps\SoManAgent\Entity\TicketTask;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -30,6 +30,8 @@ use Symfony\Component\Uid\Uuid;
 )]
 final class RedispatchTaskCommand extends Command
 {
+    private const ARG_TASK_ID = 'task-id';
+
     /**
      * Initializes the command with services used to resolve and redispatch tasks.
      */
@@ -47,7 +49,7 @@ final class RedispatchTaskCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addArgument('task-id', InputArgument::OPTIONAL, 'ID of the task to redispatch')
+            ->addArgument(self::ARG_TASK_ID, InputArgument::OPTIONAL, 'ID of the task to redispatch')
             ->addOption('title', null, InputOption::VALUE_REQUIRED, 'Searches for a task by title')
             ->addOption('latest', null, InputOption::VALUE_NONE, 'Targets the most recent task')
             ->addOption('agent', null, InputOption::VALUE_REQUIRED, 'Forces a specific agent ID')
@@ -65,7 +67,7 @@ final class RedispatchTaskCommand extends Command
             return Command::FAILURE;
         }
 
-        $taskId = $input->getArgument('task-id');
+        $taskId = $input->getArgument(self::ARG_TASK_ID);
         $title = $input->getOption('title');
         $latest = (bool) $input->getOption('latest');
         $agentId = $input->getOption('agent');
@@ -113,7 +115,7 @@ final class RedispatchTaskCommand extends Command
     /**
      * Resolves a task from exactly one selector mode and reports errors through the console.
      */
-    private function resolveTask(?string $taskId, ?string $title, bool $latest, SymfonyStyle $io): ?\App\Entity\TicketTask
+    private function resolveTask(?string $taskId, ?string $title, bool $latest, SymfonyStyle $io): ?TicketTask
     {
         $modeCount = (int) ($taskId !== null) + (int) ($title !== null) + (int) $latest;
         if ($modeCount !== 1) {

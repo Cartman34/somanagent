@@ -5,14 +5,15 @@
 
 declare(strict_types=1);
 
-namespace App\Controller;
+namespace Sowapps\SoManAgent\Controller;
 
-use App\Entity\LogEvent;
-use App\Entity\LogOccurrence;
-use App\Repository\LogEventRepository;
-use App\Repository\LogOccurrenceRepository;
-use App\Service\ApiErrorPayloadFactory;
-use App\Service\LogMessageRenderer;
+use Sowapps\SoManAgent\Repository\LogOccurrenceRepository;
+use Sowapps\SoManAgent\Repository\LogEventRepository;
+use Sowapps\SoManAgent\Service\ApiErrorPayloadFactory;
+use Sowapps\SoManAgent\Service\LogMessageRenderer;
+use Sowapps\SoManAgent\Entity\LogOccurrence;
+use Sowapps\SoManAgent\Entity\LogEvent;
+use Sowapps\SoManAgent\Service\LogService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
@@ -29,7 +30,7 @@ final class LogController extends AbstractApiController
     public function __construct(
         private readonly LogOccurrenceRepository $occurrenceRepository,
         private readonly LogEventRepository $eventRepository,
-        private readonly \App\Service\LogService $logService,
+        private readonly LogService $logService,
         ApiErrorPayloadFactory $apiErrorPayloadFactory,
         private readonly LogMessageRenderer $logMessageRenderer,
     ) {

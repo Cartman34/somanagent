@@ -9,6 +9,6 @@
 
 require_once __DIR__ . '/../src/bootstrap.php';
 
-use SoManAgent\Script\Runner\DbSchemaRunner;
+use Sowapps\SoManAgent\Script\Runner\DbSchemaRunner;
 
 (new DbSchemaRunner())->handle($argv);

@@ -5,17 +5,16 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Service;
+namespace Sowapps\SoManAgent\Script\Backlog\Service;
 
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
-use SoManAgent\Script\Backlog\Model\BoardEntry;
-use SoManAgent\Script\Service\GitService;
-
+use Sowapps\SoManAgent\Script\Service\GitService;
+use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
+use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 /**
  * Rebases an active backlog entry branch onto its canonical target branch.
  *
- * Reused by both the CLI command {@see \SoManAgent\Script\Backlog\Command\BacklogEntryRebaseCommand}
- * and the agent launcher ({@see \SoManAgent\Script\Backlog\Agent\Command\AgentStartCommand}) in
+ * Reused by both the CLI command {@see \Sowapps\SoManAgent\Script\Backlog\Command\BacklogEntryRebaseCommand}
+ * and the agent launcher ({@see \Sowapps\SoManAgent\Script\Backlog\Agent\Command\AgentStartCommand}) in
  * automatic mode when a developer has an approved entry.
  */
 class EntryRebaseService

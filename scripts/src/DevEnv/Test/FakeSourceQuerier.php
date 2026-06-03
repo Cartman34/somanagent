@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\DevEnv\Test;
+namespace Sowapps\SoManAgent\Script\DevEnv\Test;
 
-use SoManAgent\Script\DevEnv\SourceQuerierInterface;
+use Sowapps\SoManAgent\Script\DevEnv\SourceQuerierInterface;
 
 /**
  * Fake source querier for unit tests.

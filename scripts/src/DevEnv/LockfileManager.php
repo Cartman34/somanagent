@@ -5,11 +5,11 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\DevEnv;
+namespace Sowapps\SoManAgent\Script\DevEnv;
 
-use SoManAgent\Script\DevEnv\Model\LockEntry;
-use SoManAgent\Script\DevEnv\Model\Lockfile;
-use SoManAgent\Script\DevEnv\Model\SideEffects;
+use Sowapps\SoManAgent\Script\DevEnv\Model\Lockfile;
+use Sowapps\SoManAgent\Script\DevEnv\Model\LockEntry;
+use Sowapps\SoManAgent\Script\DevEnv\Model\SideEffects;
 use Symfony\Component\Yaml\Yaml;
 
 /**

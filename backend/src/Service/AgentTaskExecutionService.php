@@ -5,17 +5,17 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Entity\Agent;
-use App\Entity\AgentTaskExecution;
-use App\Entity\AgentTaskExecutionAttempt;
-use App\Entity\TicketTask;
-use App\Enum\TaskExecutionAttemptStatus;
-use App\Enum\TaskExecutionStatus;
-use App\Enum\TaskExecutionTrigger;
-use App\Repository\AgentTaskExecutionAttemptRepository;
-use App\Repository\AgentTaskExecutionRepository;
+use Sowapps\SoManAgent\Repository\AgentTaskExecutionRepository;
+use Sowapps\SoManAgent\Repository\AgentTaskExecutionAttemptRepository;
+use Sowapps\SoManAgent\Entity\TicketTask;
+use Sowapps\SoManAgent\Entity\Agent;
+use Sowapps\SoManAgent\Enum\TaskExecutionTrigger;
+use Sowapps\SoManAgent\Entity\AgentTaskExecution;
+use Sowapps\SoManAgent\Entity\AgentTaskExecutionAttempt;
+use Sowapps\SoManAgent\Enum\TaskExecutionAttemptStatus;
+use Sowapps\SoManAgent\Enum\TaskExecutionStatus;
 use Symfony\Component\Uid\Uuid;
 
 /**

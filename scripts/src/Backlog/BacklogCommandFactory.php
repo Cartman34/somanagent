@@ -5,67 +5,67 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog;
+namespace Sowapps\SoManAgent\Script\Backlog;
 
-use SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
-use SoManAgent\Script\Backlog\Command\BacklogBaseUpdateCommand;
-use SoManAgent\Script\Backlog\Command\BacklogCommitGateCommand;
-use SoManAgent\Script\Backlog\Command\BacklogEntryAssignCommand;
-use SoManAgent\Script\Backlog\Command\BacklogFeatureBlockCommand;
-use SoManAgent\Script\Backlog\Command\BacklogFeatureCloseCommand;
-use SoManAgent\Script\Backlog\Command\BacklogEntryRebaseCommand;
-use SoManAgent\Script\Backlog\Command\BacklogUserMergeCommand;
-use SoManAgent\Script\Backlog\Command\BacklogListCommand;
-use SoManAgent\Script\Backlog\Command\BacklogFeatureMergeCommand;
-use SoManAgent\Script\Backlog\Command\BacklogEntryReleaseCommand;
-use SoManAgent\Script\Backlog\Command\BacklogEntryMergeCommand;
-use SoManAgent\Script\Backlog\Command\BacklogEntryRenameCommand;
-use SoManAgent\Script\Backlog\Command\BacklogEntrySetMetaCommand;
-use SoManAgent\Script\Backlog\Command\BacklogReworkCommand;
-use SoManAgent\Script\Backlog\Command\BacklogWorkStartCommand;
-use SoManAgent\Script\Backlog\Command\BacklogFeatureTaskMergeCommand;
-use SoManAgent\Script\Backlog\Command\BacklogEntryUnassignCommand;
-use SoManAgent\Script\Backlog\Command\BacklogFeatureUnblockCommand;
-use SoManAgent\Script\Backlog\Command\BacklogReviewApproveCommand;
-use SoManAgent\Script\Backlog\Command\BacklogReviewCancelCommand;
-use SoManAgent\Script\Backlog\Command\BacklogReviewCheckCommand;
-use SoManAgent\Script\Backlog\Command\BacklogReviewNextCommand;
-use SoManAgent\Script\Backlog\Command\BacklogReviewNotesCommand;
-use SoManAgent\Script\Backlog\Command\BacklogReviewAmendCommand;
-use SoManAgent\Script\Backlog\Command\BacklogReviewRejectCommand;
-use SoManAgent\Script\Backlog\Command\BacklogReviewReopenCommand;
-use SoManAgent\Script\Backlog\Command\BacklogReviewRequestCommand;
-use SoManAgent\Script\Backlog\Command\BacklogStatusCommand;
-use SoManAgent\Script\Backlog\Command\BacklogEntryCreateCommand;
-use SoManAgent\Script\Backlog\Command\BacklogTaskRemoveCommand;
-use SoManAgent\Script\Backlog\Command\BacklogSubmitCheckCommand;
-use SoManAgent\Script\Backlog\Command\BacklogWorktreeCleanCommand;
-use SoManAgent\Script\Backlog\Command\BacklogWorktreeListCommand;
-use SoManAgent\Script\Backlog\Command\BacklogWorktreeRestoreCommand;
-use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
-use SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
-use SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
-use SoManAgent\Script\Backlog\Service\BacklogPermissionService;
-use SoManAgent\Script\Backlog\Service\BacklogPresenter;
-use SoManAgent\Script\Backlog\Service\BacklogReviewBodyFormatter;
-use SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
-use SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
-use SoManAgent\Script\Backlog\Service\PostMergeSessionStopper;
-use SoManAgent\Script\Client\ConsoleClient;
-use SoManAgent\Script\Client\FilesystemClient;
-use SoManAgent\Script\Client\FilesystemClientInterface;
-use SoManAgent\Script\Client\GitClient;
-use SoManAgent\Script\Client\GitHubClient;
-use SoManAgent\Script\Client\ProjectScriptClient;
-use SoManAgent\Script\Console;
-use SoManAgent\Script\Backlog\Service\EntryRebaseService;
-use SoManAgent\Script\Backlog\Service\ReviewResumeNotifier;
-use SoManAgent\Script\Service\GitService;
-use SoManAgent\Script\Service\PullRequestService;
-use SoManAgent\Script\TextSlugger;
-use SoManAgent\Script\Application;
-use SoManAgent\Script\RetryPolicy;
+use Sowapps\SoManAgent\Script\Application;
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPermissionService;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogReviewBodyFormatter;
+use Sowapps\SoManAgent\Script\Service\GitService;
+use Sowapps\SoManAgent\Script\Service\PullRequestService;
+use Sowapps\SoManAgent\Script\Client\ConsoleClient;
+use Sowapps\SoManAgent\Script\Client\GitClient;
+use Sowapps\SoManAgent\Script\Client\GitHubClient;
+use Sowapps\SoManAgent\Script\Client\ProjectScriptClient;
+use Sowapps\SoManAgent\Script\TextSlugger;
+use Sowapps\SoManAgent\Script\Client\FilesystemClientInterface;
+use Sowapps\SoManAgent\Script\RetryPolicy;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogFeatureMergeCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogFeatureTaskMergeCommand;
+use Sowapps\SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
+use Sowapps\SoManAgent\Script\Backlog\Service\EntryRebaseService;
+use Sowapps\SoManAgent\Script\Backlog\Service\PostMergeSessionStopper;
+use Sowapps\SoManAgent\Script\Backlog\Service\ReviewResumeNotifier;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
+use Sowapps\SoManAgent\Script\Backlog\Command\AbstractBacklogCommand;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogBaseUpdateCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogStatusCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogWorktreeListCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogWorktreeCleanCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogWorktreeRestoreCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogEntryCreateCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogTaskRemoveCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogReviewRequestCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogReworkCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogEntryMergeCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogEntryRenameCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogEntrySetMetaCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogReviewCancelCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogReviewCheckCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogReviewApproveCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogReviewRejectCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogReviewAmendCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogReviewReopenCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogReviewNextCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogReviewNotesCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogWorkStartCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogEntryReleaseCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogEntryAssignCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogEntryUnassignCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogFeatureBlockCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogFeatureUnblockCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogListCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogFeatureCloseCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogUserMergeCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogEntryRebaseCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogCommitGateCommand;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogSubmitCheckCommand;
+use Sowapps\SoManAgent\Script\Client\FilesystemClient;
 
 /**
  * Factory for creating backlog commands with their specific dependencies.
@@ -194,7 +194,7 @@ final class BacklogCommandFactory
         // Use reflection or a consistent factory method to inject only needed dependencies
         $reflection = new \ReflectionClass($class);
         $constructor = $reflection->getConstructor();
-        
+
         if ($constructor === null) {
             throw new \RuntimeException(sprintf(
                 'Command class %s must define its own constructor to support dependency injection.',
@@ -258,7 +258,6 @@ final class BacklogCommandFactory
     }
 
     /* --- Lazy Loading Getters --- */
-
     /**
      * Get the board service.
      *

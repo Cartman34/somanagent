@@ -5,24 +5,23 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Service;
+namespace Sowapps\SoManAgent\Script\Backlog\Service;
 
-use SoManAgent\Script\Backlog\BacklogPaths;
-use SoManAgent\Script\Backlog\Enum\WorktreeAction;
-use SoManAgent\Script\Backlog\Enum\WorktreeState;
-use SoManAgent\Script\Backlog\Model\ActiveEntryReference;
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
-use SoManAgent\Script\Backlog\Model\BoardEntry;
-use SoManAgent\Script\Backlog\Model\ExternalWorktree;
-use SoManAgent\Script\Backlog\Model\ManagedWorktree;
-use SoManAgent\Script\Backlog\Model\WorktreeClassification;
-use SoManAgent\Script\Client\AppScript;
-use SoManAgent\Script\Client\ConsoleClient;
-use SoManAgent\Script\Client\FilesystemClientInterface;
-use SoManAgent\Script\Client\GitClient;
-use SoManAgent\Script\Client\ProjectScriptClient;
-use SoManAgent\Script\LocalWorkingDirectories;
-
+use Sowapps\SoManAgent\Script\Client\ConsoleClient;
+use Sowapps\SoManAgent\Script\Client\GitClient;
+use Sowapps\SoManAgent\Script\Client\ProjectScriptClient;
+use Sowapps\SoManAgent\Script\Client\FilesystemClientInterface;
+use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
+use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+use Sowapps\SoManAgent\Script\Backlog\Model\WorktreeClassification;
+use Sowapps\SoManAgent\Script\Backlog\Model\ExternalWorktree;
+use Sowapps\SoManAgent\Script\Backlog\Enum\WorktreeAction;
+use Sowapps\SoManAgent\Script\Backlog\Enum\WorktreeState;
+use Sowapps\SoManAgent\Script\Backlog\Model\ManagedWorktree;
+use Sowapps\SoManAgent\Script\Client\AppScript;
+use Sowapps\SoManAgent\Script\Backlog\BacklogPaths;
+use Sowapps\SoManAgent\Script\LocalWorkingDirectories;
+use Sowapps\SoManAgent\Script\Backlog\Model\ActiveEntryReference;
 /**
  * Handles managed backlog worktrees and local git orchestration.
  */

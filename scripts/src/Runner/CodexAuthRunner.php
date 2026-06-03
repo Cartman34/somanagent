@@ -5,10 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Runner;
+namespace Sowapps\SoManAgent\Script\Runner;
 
-use SoManAgent\Script\CodexAuthManager;
-
+use Sowapps\SoManAgent\Script\CodexAuthManager;
 /**
  * Codex auth management script runner.
  *

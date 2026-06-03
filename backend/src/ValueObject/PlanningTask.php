@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace App\ValueObject;
+namespace Sowapps\SoManAgent\ValueObject;
 
-use App\Enum\TaskPriority;
+use Sowapps\SoManAgent\Enum\TaskPriority;
 
 /**
  * A single task extracted from the lead-tech planning output.

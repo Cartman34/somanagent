@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Runner;
+namespace Sowapps\SoManAgent\Script\Runner;
 
 /**
  * Runs targeted PHPUnit checks for modified backend services when a dedicated test exists.
@@ -26,13 +26,13 @@ final class ValidateBackendTestsRunner extends AbstractScriptRunner
      * @var array<string, string>
      */
     private const FORBIDDEN_PATTERNS = [
-        'Local unit tests must extend App\\Tests\\Support\\LocalUnitTestCase.' => '/extends\s+LocalUnitTestCase\b/',
+        'Local unit tests must extend Sowapps\\SoManAgent\\Tests\\Support\\LocalUnitTestCase.' => '/extends\s+LocalUnitTestCase\b/',
         'Symfony kernel boot is forbidden in local unit tests.' => '/\b(KernelTestCase|WebTestCase|bootKernel\s*\(|createClient\s*\()\b/',
         'Database access is forbidden in local unit tests.' => '/Doctrine\\\\ORM\\\\EntityManagerInterface|Doctrine\\\\Persistence\\\\ManagerRegistry|Doctrine\\\\DBAL\\\\Connection|\bnew\s+PDO\s*\(/',
         'Redis access is forbidden in local unit tests.' => '/Predis\\\\|use\s+Redis\b|\bnew\s+Redis\s*\(/',
         'Real HTTP clients are forbidden in local unit tests.' => '/GuzzleHttp\\\\Client|Symfony\\\\Component\\\\HttpClient\\\\|HttpClient::create\s*\(|curl_(init|exec|multi_exec)\s*\(/',
         'Direct remote URL reads are forbidden in local unit tests.' => '/file_get_contents\s*\(\s*[\'"]https?:\/\//',
-        'External AI/VCS adapters are forbidden in local unit tests.' => '/App\\\\Adapter\\\\AI\\\\|App\\\\Adapter\\\\VCS\\\\(GitHubAdapter|GitLabAdapter|ClaudeApiConnector|ClaudeCliConnector|CodexApiConnector|CodexCliConnector|OpenCodeCliConnector)\b/',
+        'External AI/VCS adapters are forbidden in local unit tests.' => '/Sowapps\\\\SoManAgent\\\\Adapter\\\\AI\\\\|Sowapps\\\\SoManAgent\\\\Adapter\\\\VCS\\\\(GitHubAdapter|GitLabAdapter|ClaudeApiConnector|ClaudeCliConnector|CodexApiConnector|CodexCliConnector|OpenCodeCliConnector)\b/',
     ];
 
     protected function getDescription(): string
@@ -232,7 +232,7 @@ final class ValidateBackendTestsRunner extends AbstractScriptRunner
             }
 
             foreach (self::FORBIDDEN_PATTERNS as $message => $pattern) {
-                if ($message === 'Local unit tests must extend App\\Tests\\Support\\LocalUnitTestCase.') {
+                if ($message === 'Local unit tests must extend Sowapps\\SoManAgent\\Tests\\Support\\LocalUnitTestCase.') {
                     if (preg_match($pattern, $content) === 1) {
                         continue;
                     }

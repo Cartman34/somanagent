@@ -12,6 +12,6 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Runner\CodeRefactoRunner;
+use Sowapps\SoManAgent\Script\Runner\CodeRefactoRunner;
 
 (new CodeRefactoRunner())->handle($argv);

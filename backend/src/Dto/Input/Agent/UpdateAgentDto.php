@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Dto\Input\Agent;
+namespace Sowapps\SoManAgent\Dto\Input\Agent;
 
-use App\Enum\ConnectorType;
-use App\Exception\ValidationException;
+use Sowapps\SoManAgent\Enum\ConnectorType;
+use Sowapps\SoManAgent\Exception\ValidationException;
 
 /**
  * Input DTO for updating an agent (all fields optional).

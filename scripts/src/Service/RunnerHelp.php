@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Service;
+namespace Sowapps\SoManAgent\Script\Service;
 
 /**
  * Typed container for runner-level YAML help data — read from {scriptResources}/help.yaml.

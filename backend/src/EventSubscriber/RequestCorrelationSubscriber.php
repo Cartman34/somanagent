@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace App\EventSubscriber;
+namespace Sowapps\SoManAgent\EventSubscriber;
 
-use App\Service\RequestCorrelationService;
+use Sowapps\SoManAgent\Service\RequestCorrelationService;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;

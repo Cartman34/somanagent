@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script;
+namespace Sowapps\SoManAgent\Script;
 
 /**
  * Manages Claude CLI authentication with WSL as the source of truth and Docker as a synchronized runtime copy.

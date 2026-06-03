@@ -5,11 +5,10 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Test\Backlog\Campaign;
+namespace Sowapps\SoManAgent\Script\Test\Backlog\Campaign;
 
-use SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
-use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
-
+use Sowapps\SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
+use Sowapps\SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
 /**
  * Todo and plain feature lifecycle campaign
  *

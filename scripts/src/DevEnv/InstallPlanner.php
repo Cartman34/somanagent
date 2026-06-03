@@ -5,13 +5,12 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\DevEnv;
+namespace Sowapps\SoManAgent\Script\DevEnv;
 
-use SoManAgent\Script\DevEnv\Model\Dependency;
-use SoManAgent\Script\DevEnv\Model\LockEntry;
-use SoManAgent\Script\DevEnv\Model\Lockfile;
-use SoManAgent\Script\DevEnv\Model\Manifest;
-
+use Sowapps\SoManAgent\Script\DevEnv\Model\Manifest;
+use Sowapps\SoManAgent\Script\DevEnv\Model\Lockfile;
+use Sowapps\SoManAgent\Script\DevEnv\Model\LockEntry;
+use Sowapps\SoManAgent\Script\DevEnv\Model\Dependency;
 /**
  * Builds an InstallPlan from a lockfile, a manifest, and the current system state.
  *
@@ -36,8 +35,8 @@ final class InstallPlanner
     /**
      * Builds and returns the complete install plan.
      *
-     * @param Manifest       $manifest  Manifest with policies
-     * @param \SoManAgent\Script\DevEnv\Model\Lockfile $lockfile  Lockfile with target versions
+     * @param Manifest $manifest Manifest with policies
+     * @param Lockfile $lockfile Lockfile with target versions
      * @param StateInspector $inspector Current system state detector
      */
     public function plan(Manifest $manifest, Lockfile $lockfile, StateInspector $inspector): InstallPlan

@@ -5,10 +5,9 @@
 
 declare(strict_types=1);
 
-namespace App\ValueObject;
+namespace Sowapps\SoManAgent\ValueObject;
 
-use App\Enum\ConnectorType;
-
+use Sowapps\SoManAgent\Enum\ConnectorType;
 /**
  * Runtime descriptor for one registered connector.
  */

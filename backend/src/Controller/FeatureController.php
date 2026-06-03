@@ -5,13 +5,13 @@
 
 declare(strict_types=1);
 
-namespace App\Controller;
+namespace Sowapps\SoManAgent\Controller;
 
-use App\Dto\Input\Feature\CreateFeatureDto;
-use App\Dto\Input\Feature\UpdateFeatureDto;
-use App\Service\ApiErrorPayloadFactory;
-use App\Service\FeatureService;
-use App\Service\ProjectService;
+use Sowapps\SoManAgent\Service\FeatureService;
+use Sowapps\SoManAgent\Service\ProjectService;
+use Sowapps\SoManAgent\Service\ApiErrorPayloadFactory;
+use Sowapps\SoManAgent\Dto\Input\Feature\CreateFeatureDto;
+use Sowapps\SoManAgent\Dto\Input\Feature\UpdateFeatureDto;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;

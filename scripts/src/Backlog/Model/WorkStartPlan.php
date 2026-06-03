@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Model;
+namespace Sowapps\SoManAgent\Script\Backlog\Model;
 
-use SoManAgent\Script\Backlog\Enum\BacklogTaskType;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogTaskType;
 
 /**
  * Immutable plan describing the resolved interpretation of a queued task before any

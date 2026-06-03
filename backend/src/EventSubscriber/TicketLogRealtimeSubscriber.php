@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\EventSubscriber;
+namespace Sowapps\SoManAgent\EventSubscriber;
 
-use App\Entity\TicketLog;
-use App\Service\RealtimeUpdateService;
+use Sowapps\SoManAgent\Service\RealtimeUpdateService;
+use Sowapps\SoManAgent\Entity\TicketLog;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
 use Doctrine\ORM\Event\PostPersistEventArgs;
 use Doctrine\ORM\Event\PostUpdateEventArgs;

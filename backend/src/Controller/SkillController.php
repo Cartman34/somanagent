@@ -5,13 +5,13 @@
 
 declare(strict_types=1);
 
-namespace App\Controller;
+namespace Sowapps\SoManAgent\Controller;
 
-use App\Dto\Input\Skill\CreateSkillDto;
-use App\Dto\Input\Skill\ImportSkillDto;
-use App\Dto\Input\Skill\UpdateSkillContentDto;
-use App\Service\ApiErrorPayloadFactory;
-use App\Service\SkillService;
+use Sowapps\SoManAgent\Service\SkillService;
+use Sowapps\SoManAgent\Service\ApiErrorPayloadFactory;
+use Sowapps\SoManAgent\Dto\Input\Skill\ImportSkillDto;
+use Sowapps\SoManAgent\Dto\Input\Skill\CreateSkillDto;
+use Sowapps\SoManAgent\Dto\Input\Skill\UpdateSkillContentDto;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;

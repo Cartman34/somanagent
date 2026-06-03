@@ -5,16 +5,16 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Adapter\Skill\SkillsShAdapter;
-use App\Dto\Input\Skill\CreateSkillDto;
-use App\Dto\Input\Skill\ImportSkillDto;
-use App\Dto\Input\Skill\UpdateSkillContentDto;
-use App\Entity\Skill;
-use App\Enum\AuditAction;
-use App\Enum\SkillSource;
-use App\Repository\SkillRepository;
+use Sowapps\SoManAgent\Adapter\Skill\SkillsShAdapter;
+use Sowapps\SoManAgent\Repository\SkillRepository;
+use Sowapps\SoManAgent\Dto\Input\Skill\ImportSkillDto;
+use Sowapps\SoManAgent\Entity\Skill;
+use Sowapps\SoManAgent\Enum\AuditAction;
+use Sowapps\SoManAgent\Enum\SkillSource;
+use Sowapps\SoManAgent\Dto\Input\Skill\CreateSkillDto;
+use Sowapps\SoManAgent\Dto\Input\Skill\UpdateSkillContentDto;
 use Symfony\Component\Uid\Uuid;
 
 /**

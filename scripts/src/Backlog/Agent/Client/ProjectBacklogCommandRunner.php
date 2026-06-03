@@ -5,12 +5,11 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Client;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Client;
 
-use SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException;
-use SoManAgent\Script\Client\AppScript;
-use SoManAgent\Script\Client\ProjectScriptClient;
-
+use Sowapps\SoManAgent\Script\Client\ProjectScriptClient;
+use Sowapps\SoManAgent\Script\Client\AppScript;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException;
 /**
  * Delegates reviewer workflow transitions to backlog.php via ProjectScriptClient.
  *

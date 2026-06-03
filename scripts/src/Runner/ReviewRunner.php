@@ -5,10 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Runner;
+namespace Sowapps\SoManAgent\Script\Runner;
 
-use SoManAgent\Script\Backlog\Service\BacklogScopeService;
-
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogScopeService;
 /**
  * Review script runner.
  *

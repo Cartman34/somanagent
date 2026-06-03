@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace App\Adapter\Skill;
+namespace Sowapps\SoManAgent\Adapter\Skill;
 
-use App\Port\SkillPort;
+use Sowapps\SoManAgent\Port\SkillPort;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 

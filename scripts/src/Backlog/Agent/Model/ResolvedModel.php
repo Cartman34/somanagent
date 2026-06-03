@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Model;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Model;
 
 /**
  * Resolved model configuration passed to an agent client launcher.

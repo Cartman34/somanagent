@@ -5,18 +5,18 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Test;
 
-use SoManAgent\Script\Application;
-use SoManAgent\Script\Backlog\Command\BacklogCommitGateCommand;
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
-use SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use SoManAgent\Script\Backlog\Service\BacklogPermissionService;
-use SoManAgent\Script\Backlog\Service\BacklogPresenter;
-use SoManAgent\Script\Client\ConsoleClient;
-use SoManAgent\Script\Client\FilesystemClient;
-use SoManAgent\Script\Console;
-use SoManAgent\Script\TextSlugger;
+use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+use Sowapps\SoManAgent\Script\Backlog\Command\BacklogCommitGateCommand;
+use Sowapps\SoManAgent\Script\Application;
+use Sowapps\SoManAgent\Script\Client\ConsoleClient;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use Sowapps\SoManAgent\Script\TextSlugger;
+use Sowapps\SoManAgent\Script\Client\FilesystemClient;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPermissionService;
 
 /**
  * Unit tests for BacklogCommitGateCommand — verifies that commits are allowed in development

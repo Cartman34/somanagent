@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Repository;
+namespace Sowapps\SoManAgent\Repository;
 
-use App\Entity\AgentTaskExecution;
-use App\Entity\AgentTaskExecutionAttempt;
+use Sowapps\SoManAgent\Entity\AgentTaskExecution;
+use Sowapps\SoManAgent\Entity\AgentTaskExecutionAttempt;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -17,11 +17,17 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 final class AgentTaskExecutionAttemptRepository extends ServiceEntityRepository
 {
+    /**
+     * Registers AgentTaskExecutionAttempt as the managed entity class.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, AgentTaskExecutionAttempt::class);
     }
 
+    /**
+     * Returns the attempt matching the given execution and attempt number, or null if none found.
+     */
     public function findOneByExecutionAndAttemptNumber(AgentTaskExecution $execution, int $attemptNumber): ?AgentTaskExecutionAttempt
     {
         return $this->findOneBy([

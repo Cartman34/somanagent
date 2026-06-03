@@ -5,16 +5,16 @@
 
 declare(strict_types=1);
 
-namespace App\Command;
+namespace Sowapps\SoManAgent\Command;
 
-use App\Entity\Agent;
-use App\Enum\ConnectorType;
-use App\Port\ConnectorInterface;
-use App\Service\AgentService;
-use App\Service\ConnectorRegistry;
-use App\ValueObject\ConnectorConfig;
-use App\ValueObject\ConnectorRequest;
-use App\ValueObject\Prompt;
+use Sowapps\SoManAgent\Service\ConnectorRegistry;
+use Sowapps\SoManAgent\Service\AgentService;
+use Sowapps\SoManAgent\ValueObject\ConnectorRequest;
+use Sowapps\SoManAgent\Enum\ConnectorType;
+use Sowapps\SoManAgent\Entity\Agent;
+use Sowapps\SoManAgent\ValueObject\ConnectorConfig;
+use Sowapps\SoManAgent\Port\ConnectorInterface;
+use Sowapps\SoManAgent\ValueObject\Prompt;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -32,6 +32,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 final class ConnectorSendCommand extends Command
 {
+    private const OPT_WORKING_DIRECTORY = 'working-directory';
+
     /**
      * Wires the connector registry and the optional agent configuration source.
      */
@@ -49,7 +51,7 @@ final class ConnectorSendCommand extends Command
             ->addOption('message', null, InputOption::VALUE_REQUIRED, 'Message to send')
             ->addOption('agent', null, InputOption::VALUE_REQUIRED, 'Optional agent UUID used only as a configuration source')
             ->addOption('model', null, InputOption::VALUE_REQUIRED, 'Model override')
-            ->addOption('working-directory', null, InputOption::VALUE_REQUIRED, 'Working directory passed to the connector', ConnectorRequest::DEFAULT_WORKING_DIRECTORY)
+            ->addOption(self::OPT_WORKING_DIRECTORY, null, InputOption::VALUE_REQUIRED, 'Working directory passed to the connector', ConnectorRequest::DEFAULT_WORKING_DIRECTORY)
             ->addOption('raw', null, InputOption::VALUE_NONE, 'Outputs the raw connector response instead of the normalized content; incompatible with --conversation and --test')
             ->addOption('conversation', null, InputOption::VALUE_NONE, 'Starts a local interactive conversation loop')
             ->addOption('test', null, InputOption::VALUE_NONE, 'Runs the generic "Say OK" connection test');
@@ -74,7 +76,7 @@ final class ConnectorSendCommand extends Command
         }
 
         $config = $this->resolveConfig($input, $agent instanceof Agent ? $agent : null);
-        $workingDirectory = (string) $input->getOption('working-directory');
+        $workingDirectory = (string) $input->getOption(self::OPT_WORKING_DIRECTORY);
         $raw = (bool) $input->getOption('raw');
 
         if ($raw && (bool) $input->getOption('conversation')) {

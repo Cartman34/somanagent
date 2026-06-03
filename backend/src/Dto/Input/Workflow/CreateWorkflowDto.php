@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Dto\Input\Workflow;
+namespace Sowapps\SoManAgent\Dto\Input\Workflow;
 
-use App\Enum\WorkflowTrigger;
-use App\Exception\ValidationException;
+use Sowapps\SoManAgent\Enum\WorkflowTrigger;
+use Sowapps\SoManAgent\Exception\ValidationException;
 
 /**
  * Input DTO for creating a workflow.
@@ -17,7 +17,7 @@ final class CreateWorkflowDto
 {
     /**
      * @param string          $name        Workflow display name
-     * @param WorkflowTrigger $trigger     Activation trigger
+     * @param WorkflowTrigger $trigger Activation trigger
      * @param ?string         $description Optional description
      */
     public function __construct(

@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace App\Entity;
+namespace Sowapps\SoManAgent\Entity;
 
-use App\Enum\SkillSource;
-use App\Repository\SkillRepository;
+use Sowapps\SoManAgent\Repository\SkillRepository;
+use Sowapps\SoManAgent\Enum\SkillSource;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Uid\Uuid;

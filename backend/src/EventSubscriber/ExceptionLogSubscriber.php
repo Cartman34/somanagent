@@ -5,10 +5,11 @@
 
 declare(strict_types=1);
 
-namespace App\EventSubscriber;
+namespace Sowapps\SoManAgent\EventSubscriber;
 
-use App\Service\LogService;
-use App\Service\RequestCorrelationService;
+use Sowapps\SoManAgent\Service\LogService;
+use Sowapps\SoManAgent\Service\RequestCorrelationService;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -72,21 +73,21 @@ final class ExceptionLogSubscriber implements EventSubscriberInterface
         }
     }
 
-    private function resolveProjectId(\Symfony\Component\HttpFoundation\Request $request): ?string
+    private function resolveProjectId(Request $request): ?string
     {
         $projectId = $request->attributes->get('projectId');
 
         return is_string($projectId) && $projectId !== '' ? $projectId : null;
     }
 
-    private function resolveAgentId(\Symfony\Component\HttpFoundation\Request $request): ?string
+    private function resolveAgentId(Request $request): ?string
     {
         $agentId = $request->attributes->get('agentId');
 
         return is_string($agentId) && $agentId !== '' ? $agentId : null;
     }
 
-    private function resolveTaskId(\Symfony\Component\HttpFoundation\Request $request): ?string
+    private function resolveTaskId(Request $request): ?string
     {
         $taskId = $request->attributes->get('taskId');
         if (is_string($taskId) && $taskId !== '') {

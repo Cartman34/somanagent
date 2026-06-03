@@ -9,6 +9,6 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Runner\ValidateBackendTestsRunner;
+use Sowapps\SoManAgent\Script\Runner\ValidateBackendTestsRunner;
 
 (new ValidateBackendTestsRunner())->handle($argv);

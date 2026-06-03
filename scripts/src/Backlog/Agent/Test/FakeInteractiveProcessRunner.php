@@ -5,10 +5,10 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
 
-use SoManAgent\Script\Backlog\Agent\Client\InteractiveProcessResult;
-use SoManAgent\Script\Backlog\Agent\Client\InteractiveProcessRunner;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\InteractiveProcessRunner;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\InteractiveProcessResult;
 
 /**
  * In-memory InteractiveProcessRunner used by command tests.

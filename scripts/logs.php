@@ -10,6 +10,6 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Runner\LogsRunner;
+use Sowapps\SoManAgent\Script\Runner\LogsRunner;
 
 (new LogsRunner())->handle($argv);

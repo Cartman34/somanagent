@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Validation;
+namespace Sowapps\SoManAgent\Script\Validation;
 
 /**
  * Contract for resolving the persisted exec-bit state of a file (git index mode by default).

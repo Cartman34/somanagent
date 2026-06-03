@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace App\Dto\Input\Team;
+namespace Sowapps\SoManAgent\Dto\Input\Team;
 
 /**
  * Input DTO for updating a team (all fields optional).

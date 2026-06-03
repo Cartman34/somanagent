@@ -5,11 +5,10 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Command;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Command;
 
-use SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use SoManAgent\Script\Console;
-
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
 /**
  * Displays context information for the current agent session.
  *

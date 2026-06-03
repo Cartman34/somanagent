@@ -5,15 +5,16 @@
 
 declare(strict_types=1);
 
-namespace App\Port;
+namespace Sowapps\SoManAgent\Port;
 
-use App\Enum\ConnectorType;
-use App\ValueObject\ConnectorAuthStatus;
-use App\ValueObject\ConnectorConfig;
-use App\ValueObject\ConnectorHealthReport;
-use App\ValueObject\ConnectorRequest;
-use App\ValueObject\ConnectorResponse;
-use App\ValueObject\AgentModelInfo;
+use Sowapps\SoManAgent\ValueObject\AgentModelInfo;
+use Sowapps\SoManAgent\ValueObject\ConnectorRequest;
+use Sowapps\SoManAgent\ValueObject\ConnectorConfig;
+use Sowapps\SoManAgent\ValueObject\ConnectorResponse;
+use Sowapps\SoManAgent\ValueObject\ConnectorHealthReport;
+use Sowapps\SoManAgent\ValueObject\ConnectorAuthStatus;
+use Sowapps\SoManAgent\Enum\ConnectorType;
+
 
 /**
  * Hexagonal contract for low-level AI connectors.

@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace App\ValueObject;
+namespace Sowapps\SoManAgent\ValueObject;
 
 /**
  * Normalized model descriptor returned by any agent connector.

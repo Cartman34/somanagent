@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Exception;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Exception;
 
 /**
  * Thrown when a backlog entry cannot be reserved because it was already claimed,

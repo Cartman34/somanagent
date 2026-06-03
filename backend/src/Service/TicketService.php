@@ -5,25 +5,24 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Dto\Input\Ticket\CreateTicketDto;
-use App\Dto\Input\Ticket\CreateTicketRequestDto;
-use App\Dto\Input\Ticket\UpdateTicketDto;
-use App\Entity\Feature;
-use App\Entity\Project;
-use App\Entity\Ticket;
-use App\Entity\TicketTask;
-use App\Entity\WorkflowStep;
-use App\Entity\WorkflowStepAction;
-use App\Enum\AuditAction;
-use App\Enum\TaskPriority;
-use App\Enum\TaskStatus;
-use App\Enum\TaskType;
-use App\Repository\FeatureRepository;
-use App\Repository\TicketRepository;
-use App\Repository\WorkflowStepActionRepository;
-use App\Repository\WorkflowStepRepository;
+use Sowapps\SoManAgent\Entity\WorkflowStep;
+use Sowapps\SoManAgent\Repository\TicketRepository;
+use Sowapps\SoManAgent\Repository\FeatureRepository;
+use Sowapps\SoManAgent\Repository\WorkflowStepRepository;
+use Sowapps\SoManAgent\Repository\WorkflowStepActionRepository;
+use Sowapps\SoManAgent\Entity\Project;
+use Sowapps\SoManAgent\Dto\Input\Ticket\CreateTicketDto;
+use Sowapps\SoManAgent\Entity\Ticket;
+use Sowapps\SoManAgent\Enum\TaskType;
+use Sowapps\SoManAgent\Enum\AuditAction;
+use Sowapps\SoManAgent\Dto\Input\Ticket\CreateTicketRequestDto;
+use Sowapps\SoManAgent\Dto\Input\Ticket\UpdateTicketDto;
+use Sowapps\SoManAgent\Enum\TaskPriority;
+use Sowapps\SoManAgent\Enum\TaskStatus;
+use Sowapps\SoManAgent\Entity\TicketTask;
+use Sowapps\SoManAgent\Entity\Feature;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Symfony\Component\Uid\Uuid;
 

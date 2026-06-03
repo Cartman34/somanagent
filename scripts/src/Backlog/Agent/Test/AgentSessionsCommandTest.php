@@ -5,18 +5,17 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
 
-use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncher;
-use SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
-use SoManAgent\Script\Backlog\Agent\Command\AgentSessionsCommand;
-use SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
-use SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
-use SoManAgent\Script\Backlog\Agent\Model\AgentSession;
-use SoManAgent\Script\Backlog\Agent\Model\SessionInfo;
-use SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
-use SoManAgent\Script\Console;
-
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Model\SessionInfo;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncher;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AgentSessionsCommand;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
+use Sowapps\SoManAgent\Script\Console;
 /**
  * Command-level tests for {@see AgentSessionsCommand}.
  *
@@ -161,16 +160,18 @@ final class AgentSessionsCommandTest
 
         $past = new \DateTimeImmutable('2026-04-01T12:34:00+00:00');
         $more = new \DateTimeImmutable('2026-04-02T08:00:00+00:00');
+        $sessionA = 'sess-abc';
+        $sessionB = 'sess-def';
         $launcher = new FakeAgentClientLauncher(AgentClient::CLAUDE, [
-            new SessionInfo('sess-abc', $past, $past, 12, 'Initial prompt'),
-            new SessionInfo('sess-def', $more, $more, 5, 'Resumed prompt'),
+            new SessionInfo($sessionA, $past, $past, 12, 'Initial prompt'),
+            new SessionInfo($sessionB, $more, $more, 5, 'Resumed prompt'),
         ]);
 
         $cmd = $this->buildCommand($service, $launcher);
 
         $output = $this->captureHandle($cmd, ['code' => 'd01']);
 
-        foreach (['Past sessions for d01 (client: claude)', 'sess-abc', 'sess-def', 'Initial prompt', 'Resumed prompt'] as $needle) {
+        foreach (['Past sessions for d01 (client: claude)', $sessionA, $sessionB, 'Initial prompt', 'Resumed prompt'] as $needle) {
             if (!str_contains($output, $needle)) {
                 echo "FAIL testRendersTableFromLauncherSessions: missing '{$needle}' in output\n{$output}\n";
                 return 1;

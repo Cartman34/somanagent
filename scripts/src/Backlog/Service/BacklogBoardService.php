@@ -5,18 +5,18 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Service;
+namespace Sowapps\SoManAgent\Script\Backlog\Service;
 
-use SoManAgent\Script\Backlog\Model\BacklogBoard;
-use SoManAgent\Script\Backlog\Model\BacklogReviewFile;
-use SoManAgent\Script\Backlog\Model\BoardEntry;
-use SoManAgent\Script\Backlog\Model\BoardEntryMatch;
-use SoManAgent\Script\Backlog\Enum\BacklogCommandName;
-use SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
-use SoManAgent\Script\Backlog\Enum\BacklogTaskType;
-use SoManAgent\Script\Backlog\Storage\BoardYamlStorage;
-use SoManAgent\Script\Client\FilesystemClientInterface;
-use SoManAgent\Script\TextSlugger;
+use Sowapps\SoManAgent\Script\TextSlugger;
+use Sowapps\SoManAgent\Script\Client\FilesystemClientInterface;
+use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+use Sowapps\SoManAgent\Script\Backlog\Storage\BoardYamlStorage;
+use Sowapps\SoManAgent\Script\Backlog\Model\BacklogReviewFile;
+use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
+use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntryMatch;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogTaskType;
+
 
 /**
  * Service for orchestrating Backlog Board operations and entry resolution.
@@ -48,7 +48,6 @@ final class BacklogBoardService
     }
 
     /* --- Board Persistence Operations --- */
-
     /**
      * Loads and parses a backlog board from a YAML file.
      *
@@ -74,7 +73,6 @@ final class BacklogBoardService
     }
 
     /* --- Review File Persistence Operations --- */
-
     /**
      * Loads and parses a backlog review file.
      * @return BacklogReviewFile
@@ -242,10 +240,9 @@ final class BacklogBoardService
     }
 
     /* --- Entry Resolution (from Board) --- */
-
     /**
      * Resolves a feature entry by its slug, throwing if not found.
-     * @param BacklogBoard $board, string $feature
+     * @param BacklogBoard $board , string $feature
      * @return BoardEntryMatch
      */
     public function resolveFeature(BacklogBoard $board, string $feature): BoardEntryMatch
@@ -291,7 +288,7 @@ final class BacklogBoardService
 
     /**
      * Finds a parent feature entry in the active section.
-     * @param BacklogBoard $board, string $feature
+     * @param BacklogBoard $board , string $feature
      * @return ?BoardEntryMatch
      */
     public function findParentFeatureEntry(BacklogBoard $board, string $feature): ?BoardEntryMatch
@@ -312,7 +309,7 @@ final class BacklogBoardService
 
     /**
      * Resolves a task entry from a reference string (<entry-ref> or bare task slug).
-     * @param BacklogBoard $board, string $reference, string $command
+     * @param BacklogBoard $board , string $reference, string $command
      * @return BoardEntryMatch
      */
     public function resolveTaskByReference(BacklogBoard $board, string $reference, string $command): BoardEntryMatch
@@ -588,7 +585,7 @@ final class BacklogBoardService
 
     /**
      * Resolves the single active task for an agent, throwing on none or multiple.
-     * @param BacklogBoard $board, string $agent
+     * @param BacklogBoard $board , string $agent
      * @return BoardEntryMatch
      */
     public function resolveSingleTaskForAgent(BacklogBoard $board, string $agent): BoardEntryMatch
@@ -623,7 +620,7 @@ final class BacklogBoardService
 
     /**
      * Resolves the single active feature for an agent, throwing on none or multiple.
-     * @param BacklogBoard $board, string $agent
+     * @param BacklogBoard $board , string $agent
      * @return BoardEntryMatch
      */
     public function resolveSingleFeatureForAgent(BacklogBoard $board, string $agent): BoardEntryMatch
@@ -892,7 +889,6 @@ final class BacklogBoardService
     }
 
     /* --- Mutations & Complex Logic --- */
-
     /**
      * Extracts an optional task type prefix from anywhere in the leading bracket sequence.
      *
@@ -983,7 +979,7 @@ final class BacklogBoardService
 
     /**
      * Removes an entry from the active section at the specified index.
-     * @param BacklogBoard $board, int $index
+     * @param BacklogBoard $board , int $index
      */
     public function removeActiveEntryAt(BacklogBoard $board, int $index): void
     {
@@ -994,7 +990,7 @@ final class BacklogBoardService
 
     /**
      * Deletes a feature and all its associated entries from the board.
-     * @param BacklogBoard $board, string $feature
+     * @param BacklogBoard $board , string $feature
      */
     public function deleteFeature(BacklogBoard $board, string $feature): void
     {
@@ -1011,7 +1007,7 @@ final class BacklogBoardService
     /**
      * Clears agent reservations from TODO entries, optionally filtered by feature.
      *
-     * @param BacklogBoard $board, string $agent, ?string $feature
+     * @param BacklogBoard $board , string $agent, ?string $feature
      */
     public function clearAgentReservations(BacklogBoard $board, string $agent, ?string $feature = null): void
     {
@@ -1034,7 +1030,7 @@ final class BacklogBoardService
 
     /**
      * Adds a task entry as a contribution block to a feature entry.
-     * @param BoardEntry $featureEntry, BoardEntry $taskEntry
+     * @param BoardEntry $featureEntry , BoardEntry $taskEntry
      */
     public function appendTaskContribution(BoardEntry $featureEntry, BoardEntry $taskEntry): void
     {
@@ -1076,7 +1072,7 @@ final class BacklogBoardService
 
     /**
      * Removes a task contribution from a feature entry, returning true if removed and others remain.
-     * @param BoardEntry $featureEntry, BoardEntry $taskEntry
+     * @param BoardEntry $featureEntry , BoardEntry $taskEntry
      * @return bool
      */
     public function removeTaskContribution(BoardEntry $featureEntry, BoardEntry $taskEntry): bool
@@ -1105,10 +1101,9 @@ final class BacklogBoardService
     }
 
     /* --- Validations & Helpers --- */
-
     /**
      * Throws if the feature has any active task branches.
-     * @param BacklogBoard $board, string $feature, string $command
+     * @param BacklogBoard $board , string $feature, string $command
      */
     public function assertNoActiveTasksForFeature(BacklogBoard $board, string $feature, string $command): void
     {
@@ -1306,7 +1301,7 @@ final class BacklogBoardService
 
     /**
      * Throws if the feature has any queued (not yet started) child tasks.
-     * @param BacklogBoard $board, string $feature, string $command
+     * @param BacklogBoard $board , string $feature, string $command
      */
     public function assertNoQueuedTasksForFeature(BacklogBoard $board, string $feature, string $command): void
     {

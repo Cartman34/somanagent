@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Enum;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Enum;
 
 /**
  * Operator choice when a reviewer auto-picker finds a developer WA already occupied by an existing live reviewer session.

@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Model;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Model;
 
 /**
  * Summarises one past CLI session for a worktree, returned by AgentClientLauncher::listSessions().

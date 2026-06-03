@@ -5,17 +5,16 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace Sowapps\SoManAgent\Service;
 
-use App\Entity\Agent;
-use App\Entity\Project;
-use App\Entity\Ticket;
-use App\Entity\TicketTask;
-use App\Entity\TokenUsage;
-use App\Entity\WorkflowStep;
-use App\Repository\AgentRepository;
-use App\Repository\TokenUsageRepository;
-
+use Sowapps\SoManAgent\Repository\TokenUsageRepository;
+use Sowapps\SoManAgent\Repository\AgentRepository;
+use Sowapps\SoManAgent\Entity\Agent;
+use Sowapps\SoManAgent\Entity\Ticket;
+use Sowapps\SoManAgent\Entity\TicketTask;
+use Sowapps\SoManAgent\Entity\WorkflowStep;
+use Sowapps\SoManAgent\Entity\TokenUsage;
+use Sowapps\SoManAgent\Entity\Project;
 /**
  * Tracks and reports token consumption for agents, projects, tickets, and workflow steps.
  */

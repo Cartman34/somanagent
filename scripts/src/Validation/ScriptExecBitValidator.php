@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Validation;
+namespace Sowapps\SoManAgent\Script\Validation;
 
 /**
  * Validates that runnable scripts under `scripts/` carry the exec bit when they declare a shebang.

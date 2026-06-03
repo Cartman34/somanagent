@@ -5,11 +5,11 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Test\Backlog\Campaign;
+namespace Sowapps\SoManAgent\Script\Test\Backlog\Campaign;
 
-use SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
-use SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
-
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+use Sowapps\SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
+use Sowapps\SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
 /**
  * Task creation formats campaign.
  *
@@ -31,7 +31,7 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
         foreach (['feat', 'fix', 'tech'] as $type) {
             $slug = sprintf('test-%s-single', $type);
             $bodyFile = $driver->createBodyFile("entry-create-{$type}-single.md", [sprintf('Single-line %s task', $type)]);
-            $driver->runBacklog(['entry-create', "--feature={$slug}", "--type={$type}", "--body-file={$bodyFile}"]);
+            $driver->runBacklog([BacklogCommandName::ENTRY_CREATE->value, "--feature={$slug}", "--type={$type}", "--body-file={$bodyFile}"]);
             $driver->assertBoardTodoBlock([
                 "  - feature: {$slug}",
                 "    type: {$type}",
@@ -42,7 +42,7 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
 
         // Scoped feature/task entry with explicit type.
         $bodyFile = $driver->createBodyFile('entry-create-scoped.md', ['Scoped task title']);
-        $driver->runBacklog(['entry-create', '--feature=scope-feature', '--task=scope-task', '--type=feat', "--body-file={$bodyFile}"]);
+        $driver->runBacklog([BacklogCommandName::ENTRY_CREATE->value, '--feature=scope-feature', '--task=scope-task', '--type=feat', "--body-file={$bodyFile}"]);
         $driver->assertBoardTodoBlock([
             '  - feature: scope-feature',
             '    task: scope-task',
@@ -53,7 +53,7 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
 
         // Type stored when feature has the same slug as the type keyword.
         $bodyFile = $driver->createBodyFile('entry-create-type-leading.md', ['Type-leading scoped feature']);
-        $driver->runBacklog(['entry-create', '--feature=backlog-entry-types', '--type=tech', "--body-file={$bodyFile}"]);
+        $driver->runBacklog([BacklogCommandName::ENTRY_CREATE->value, '--feature=backlog-entry-types', '--type=tech', "--body-file={$bodyFile}"]);
         $driver->assertBoardTodoBlock([
             '  - feature: backlog-entry-types',
             '    type: tech',
@@ -63,7 +63,7 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
 
         // Scoped task with type.
         $bodyFile = $driver->createBodyFile('entry-create-scoped-type.md', ['Type-leading scoped child task']);
-        $driver->runBacklog(['entry-create', '--feature=backlog-entry-types', '--task=child-task', '--type=tech', "--body-file={$bodyFile}"]);
+        $driver->runBacklog([BacklogCommandName::ENTRY_CREATE->value, '--feature=backlog-entry-types', '--task=child-task', '--type=tech', "--body-file={$bodyFile}"]);
         $driver->assertBoardTodoBlock([
             '  - feature: backlog-entry-types',
             '    task: child-task',
@@ -79,7 +79,7 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
             '  - Sub-task two',
             '  - Sub-task three',
         ]);
-        $driver->runBacklog(['entry-create', '--feature=body-file-feature', '--task=body-file-task', '--type=tech', "--body-file={$multilineBodyFile}"]);
+        $driver->runBacklog([BacklogCommandName::ENTRY_CREATE->value, '--feature=body-file-feature', '--task=body-file-task', '--type=tech', "--body-file={$multilineBodyFile}"]);
         $driver->assertBoardTodoBlock([
             '  - feature: body-file-feature',
             '    task: body-file-task',
@@ -140,7 +140,7 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
         $driver->createTodoTask('[clamp-low] Task to anchor the queue for clamp coverage');
         $clampZeroFile = $driver->createBodyFile('entry-create-clamp-zero.md', ['Insert with --index=0 should clamp to start']);
         $clampLowOutput = $driver->runBacklog([
-            'entry-create',
+            BacklogCommandName::ENTRY_CREATE->value,
             '--feature=clamp-zero',
             '--type=feat',
             "--body-file={$clampZeroFile}",
@@ -154,7 +154,7 @@ final class TaskCreateFormatsCampaign implements CampaignInterface
         $driver->assertTodoContains('Insert with --index=0 should clamp to start');
         $clampHighFile = $driver->createBodyFile('entry-create-clamp-high.md', ['Insert with --index=99 should clamp to end']);
         $clampHighOutput = $driver->runBacklog([
-            'entry-create',
+            BacklogCommandName::ENTRY_CREATE->value,
             '--feature=clamp-high',
             '--type=feat',
             "--body-file={$clampHighFile}",

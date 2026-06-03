@@ -5,12 +5,12 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\DevEnv\Installer;
+namespace Sowapps\SoManAgent\Script\DevEnv\Installer;
 
-use SoManAgent\Script\Console;
-use SoManAgent\Script\DevEnv\CommandRunnerInterface;
-use SoManAgent\Script\DevEnv\SystemCommandRunner;
-use SoManAgent\Script\ShellRunnerInterface;
+use Sowapps\SoManAgent\Script\ShellRunnerInterface;
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\DevEnv\CommandRunnerInterface;
+use Sowapps\SoManAgent\Script\DevEnv\SystemCommandRunner;
 
 /**
  * Runs project-level setup steps, mixing container-based and host-based execution.
@@ -27,10 +27,10 @@ use SoManAgent\Script\ShellRunnerInterface;
 final class ProjectDepsInstaller
 {
     /**
-     * @param ShellRunnerInterface    $shell        Runs shell commands (passthru-style)
-     * @param Console                 $console      Output helper
+     * @param ShellRunnerInterface $shell Runs shell commands (passthru-style)
+     * @param Console $console Output helper
      * @param string                  $backendRoot  Absolute path to the backend/ directory
-     * @param CommandRunnerInterface  $dockerRunner Docker state queries (output-capture style)
+     * @param CommandRunnerInterface $dockerRunner Docker state queries (output-capture style)
      */
     public function __construct(
         private readonly ShellRunnerInterface $shell,

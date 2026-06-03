@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace App\Repository;
+namespace Sowapps\SoManAgent\Repository;
 
-use App\Entity\LogEvent;
+use Sowapps\SoManAgent\Entity\LogEvent;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -17,6 +17,9 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class LogEventRepository extends ServiceEntityRepository
 {
+    /**
+     * Registers LogEvent as the managed entity class.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, LogEvent::class);

@@ -9,15 +9,15 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Console;
-use SoManAgent\Script\DevEnv\Test\InstallPlannerTest;
-use SoManAgent\Script\DevEnv\Test\LockfileManagerTest;
-use SoManAgent\Script\DevEnv\Test\ManifestParserTest;
-use SoManAgent\Script\DevEnv\Test\ManifestResolverTest;
-use SoManAgent\Script\DevEnv\Test\ProjectDepsInstallerTest;
-use SoManAgent\Script\DevEnv\Test\StateInspectorTest;
-use SoManAgent\Script\DevEnv\Test\SystemSourceQuerierTest;
-use SoManAgent\Script\DevEnv\Test\VersionConstraintTest;
+use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\DevEnv\Test\InstallPlannerTest;
+use Sowapps\SoManAgent\Script\DevEnv\Test\LockfileManagerTest;
+use Sowapps\SoManAgent\Script\DevEnv\Test\ManifestParserTest;
+use Sowapps\SoManAgent\Script\DevEnv\Test\ManifestResolverTest;
+use Sowapps\SoManAgent\Script\DevEnv\Test\ProjectDepsInstallerTest;
+use Sowapps\SoManAgent\Script\DevEnv\Test\StateInspectorTest;
+use Sowapps\SoManAgent\Script\DevEnv\Test\SystemSourceQuerierTest;
+use Sowapps\SoManAgent\Script\DevEnv\Test\VersionConstraintTest;
 
 $console = Console::getInstance();
 

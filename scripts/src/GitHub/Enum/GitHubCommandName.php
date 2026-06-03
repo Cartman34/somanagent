@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\GitHub\Enum;
+namespace Sowapps\SoManAgent\Script\GitHub\Enum;
 
 /**
  * Stable command names recognized by scripts/github.php for pull-request operations.

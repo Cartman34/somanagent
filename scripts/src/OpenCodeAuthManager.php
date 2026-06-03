@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script;
+namespace Sowapps\SoManAgent\Script;
 
 /**
  * Manages OpenCode CLI provider credentials with WSL as the source of truth and Docker as a synchronized runtime copy.

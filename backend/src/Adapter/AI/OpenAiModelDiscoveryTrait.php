@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace App\Adapter\AI;
+namespace Sowapps\SoManAgent\Adapter\AI;
 
-use App\ValueObject\AgentModelInfo;
+use Sowapps\SoManAgent\ValueObject\AgentModelInfo;
 use GuzzleHttp\Client;
 
 /**
@@ -15,6 +15,7 @@ use GuzzleHttp\Client;
  */
 trait OpenAiModelDiscoveryTrait
 {
+    private const MODEL_FAMILY_GPT5 = 'gpt-5';
     /**
      * Retrieves the OpenAI model catalog and converts the supported entries into normalized descriptors.
      *
@@ -72,7 +73,7 @@ trait OpenAiModelDiscoveryTrait
         $modelId = strtolower($modelId);
 
         return str_contains($modelId, 'codex')
-            || str_contains($modelId, 'gpt-5')
+            || str_contains($modelId, self::MODEL_FAMILY_GPT5)
             || str_contains($modelId, 'o3')
             || str_contains($modelId, 'o4')
             || str_contains($modelId, 'gpt-4.1');
@@ -85,7 +86,7 @@ trait OpenAiModelDiscoveryTrait
     {
         $normalizedModelId = strtolower($modelId);
 
-        foreach (['codex', 'gpt-5', 'gpt-4.1', 'o4', 'o3'] as $family) {
+        foreach (['codex', self::MODEL_FAMILY_GPT5, 'gpt-4.1', 'o4', 'o3'] as $family) {
             if (str_contains($normalizedModelId, $family)) {
                 return $family;
             }
@@ -105,7 +106,7 @@ trait OpenAiModelDiscoveryTrait
             return 'Coding-focused OpenAI model.';
         }
 
-        if (str_contains($normalizedModelId, 'gpt-5')) {
+        if (str_contains($normalizedModelId, self::MODEL_FAMILY_GPT5)) {
             return 'Reasoning-capable OpenAI model suited for coding workflows.';
         }
 

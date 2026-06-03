@@ -5,7 +5,9 @@
 
 declare(strict_types=1);
 
-namespace SoManAgent\Script\Backlog\Agent\Client;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Client;
+
+use Sowapps\SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException;
 
 /**
  * Delegates reviewer and developer workflow transitions to the backlog script under the global mutation lock.
@@ -22,7 +24,7 @@ interface BacklogCommandRunner
      * Equivalent to:
      *   SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=<reviewerCode> php scripts/backlog.php review-next <entryRef>
      *
-     * @throws \SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException when the entry is already
+     * @throws EntryNotReservableException when the entry is already
      *         claimed, transitioned, or not found — expected under concurrent reviewer launches
      * @throws \RuntimeException on any other failure (filesystem, registry, unexpected exit code)
      */
@@ -44,7 +46,7 @@ interface BacklogCommandRunner
      * Equivalent to:
      *   SOMANAGER_ROLE=developer SOMANAGER_AGENT=<developerCode> php scripts/backlog.php start <entryRef>
      *
-     * @throws \SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException when the entry is no longer
+     * @throws EntryNotReservableException when the entry is no longer
      *         in the todo queue — expected under concurrent developer launches
      * @throws \RuntimeException on any other failure (filesystem, registry, unexpected exit code)
      */

@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace App\ValueObject;
+namespace Sowapps\SoManAgent\ValueObject;
 
 /**
  * Normalized authentication status exposed by a connector.

@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace App\Exception;
+namespace Sowapps\SoManAgent\Exception;
 
 /**
  * Thrown when one or more input fields fail validation.

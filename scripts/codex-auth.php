@@ -10,6 +10,6 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use SoManAgent\Script\Runner\CodexAuthRunner;
+use Sowapps\SoManAgent\Script\Runner\CodexAuthRunner;
 
 (new CodexAuthRunner())->handle($argv);
