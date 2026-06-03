@@ -345,7 +345,7 @@ MD);
      */
     public function assignEntryAsManager(string $reference, string $agent): void
     {
-        $this->runBacklog([BacklogCommandName::ASSIGN->value, $reference, '--agent', $agent], ['SOMANAGER_ROLE' => 'manager']);
+        $this->runBacklog([BacklogCommandName::ASSIGN->value, $reference, '--developer', $agent], ['SOMANAGER_ROLE' => 'manager']);
     }
 
     /**
@@ -358,7 +358,7 @@ MD);
      */
     public function assertAssignEntryFails(string $reference, string $agent, array $env, string $needle): void
     {
-        $this->assertBacklogFails([BacklogCommandName::ASSIGN->value, $reference, '--agent', $agent], $needle, $env);
+        $this->assertBacklogFails([BacklogCommandName::ASSIGN->value, $reference, '--developer', $agent], $needle, $env);
     }
 
     /**
