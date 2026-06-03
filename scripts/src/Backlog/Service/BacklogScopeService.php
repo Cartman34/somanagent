@@ -93,6 +93,8 @@ final class BacklogScopeService
 
     /**
      * Returns true when the file is under at least one of the scope directories.
+     *
+     * @param list<string> $scopeDirs
      */
     private function isFileInScopeDirs(string $file, array $scopeDirs): bool
     {

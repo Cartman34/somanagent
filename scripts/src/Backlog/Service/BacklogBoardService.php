@@ -798,6 +798,7 @@ final class BacklogBoardService
         $entry->setKind($this->sanitizeString($metadata[BoardEntry::META_KIND] ?? null));
         $entry->setPr($this->sanitizeString($metadata[BoardEntry::META_PR] ?? null));
         $entry->setReviewer($this->sanitizeString($metadata[BoardEntry::META_REVIEWER] ?? null));
+        $entry->setScope($this->sanitizeString($metadata[BoardEntry::META_SCOPE] ?? null));
         $entry->setStage($this->sanitizeString($metadata[BoardEntry::META_STAGE] ?? null));
         $entry->setTask($this->sanitizeString($metadata[BoardEntry::META_TASK] ?? null));
         $entry->setType($this->sanitizeString($metadata[BoardEntry::META_TYPE] ?? null));
@@ -805,7 +806,7 @@ final class BacklogBoardService
         $knownKeys = [
             BoardEntry::META_DEVELOPER, BoardEntry::META_BASE, BoardEntry::META_BLOCKED, BoardEntry::META_BRANCH,
             BoardEntry::META_FEATURE, BoardEntry::META_FEATURE_BRANCH, BoardEntry::META_KIND,
-            BoardEntry::META_PR, BoardEntry::META_REVIEWER, BoardEntry::META_STAGE, BoardEntry::META_TASK, BoardEntry::META_TYPE,
+            BoardEntry::META_PR, BoardEntry::META_REVIEWER, BoardEntry::META_SCOPE, BoardEntry::META_STAGE, BoardEntry::META_TASK, BoardEntry::META_TYPE,
         ];
 
         $extraMetadata = array_diff_key($metadata, array_flip($knownKeys));

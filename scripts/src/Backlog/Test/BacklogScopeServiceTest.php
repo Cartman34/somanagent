@@ -19,6 +19,9 @@ final class BacklogScopeServiceTest
 {
     private BacklogScopeService $service;
 
+    /**
+     * Initializes the service under test.
+     */
     public function __construct()
     {
         $this->service = new BacklogScopeService();

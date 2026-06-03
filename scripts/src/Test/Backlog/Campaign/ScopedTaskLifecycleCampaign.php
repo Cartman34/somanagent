@@ -589,14 +589,16 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
         );
 
         // With declared scopes in the config, run cross-scope validation.
-        $scopeConfigContent = "backlog:\n  max_concurrent_worktrees: 5\nscopes:\n  test-scripts:\n    - scripts/\n  test-frontend:\n    - frontend/\n";
+        $scopeScripts = 'test-scripts';
+        $scopeFrontend = 'test-frontend';
+        $scopeConfigContent = "backlog:\n  max_concurrent_worktrees: 5\nscopes:\n  {$scopeScripts}:\n    - scripts/\n  {$scopeFrontend}:\n    - frontend/\n";
         $driver->writeTestLocalConfig($scopeConfigContent);
 
         try {
             // Feature container with scope test-scripts
             $featureSlug = 'test-scope-inherit-feature';
-            $driver->createTodoTaskFromBodyFile($featureSlug, 'Feature container for scope inheritance test', [], null, 'tech', 'scope-inherit-feature.md', 'test-scripts');
-            $driver->assertBoardContains('scope: test-scripts');
+            $driver->createTodoTaskFromBodyFile($featureSlug, 'Feature container for scope inheritance test', [], null, 'tech', 'scope-inherit-feature.md', $scopeScripts);
+            $driver->assertBoardContains('scope: ' . $scopeScripts);
 
             // Child task without --scope inherits feature scope (no explicit scope field on task todo entry)
             $taskNoScopeSlug = 'test-scope-inherit-task';
@@ -604,13 +606,13 @@ final class ScopedTaskLifecycleCampaign implements CampaignInterface
 
             // Child task with the same scope as the feature is accepted
             $taskSameScopeSlug = 'test-scope-same-task';
-            $driver->createTodoTaskFromBodyFile($featureSlug, 'Child task with same scope as feature', [], $taskSameScopeSlug, 'tech', 'scope-same-task.md', 'test-scripts');
+            $driver->createTodoTaskFromBodyFile($featureSlug, 'Child task with same scope as feature', [], $taskSameScopeSlug, 'tech', 'scope-same-task.md', $scopeScripts);
 
             // Child task with a scope that exceeds the feature scope is rejected
             $driver->assertEntryCreateFails(
                 $featureSlug,
                 'test-scope-exceed-task',
-                'test-frontend',
+                $scopeFrontend,
                 'Child task with scope exceeding feature scope must be rejected',
                 'exceeds parent feature scope',
             );

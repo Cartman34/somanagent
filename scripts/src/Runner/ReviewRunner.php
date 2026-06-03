@@ -225,8 +225,9 @@ final class ReviewRunner extends AbstractScriptRunner
             $path = trim(substr($line, 3));
             $path = trim($path, '"');
             if (str_contains($path, ' -> ')) {
-                $source = trim(substr($path, 0, strpos($path, ' -> ')), '"');
-                $dest = trim(substr($path, strrpos($path, ' -> ') + 4), '"');
+                $arrowPos = (int) strpos($path, ' -> ');
+                $source = trim(substr($path, 0, $arrowPos), '"');
+                $dest = trim(substr($path, (int) strrpos($path, ' -> ') + 4), '"');
                 $files[] = $source;
                 $files[] = $dest;
             } else {
@@ -246,7 +247,7 @@ final class ReviewRunner extends AbstractScriptRunner
                         continue;
                     }
                     $parts = explode("\t", $line);
-                    $status = $parts[0] ?? '';
+                    $status = $parts[0];
                     if (str_starts_with($status, 'R') || str_starts_with($status, 'C')) {
                         if (isset($parts[1]) && $parts[1] !== '') {
                             $files[] = $parts[1];
