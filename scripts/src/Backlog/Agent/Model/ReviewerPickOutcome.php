@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\Backlog\Agent\Model;
 
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntryMatch;
+
 /**
  * Outcome of the reviewer-mode preparation step.
  *

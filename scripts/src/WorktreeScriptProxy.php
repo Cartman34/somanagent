@@ -9,6 +9,7 @@ namespace Sowapps\SoManAgent\Script;
 
 use Sowapps\SoManAgent\Script\Client\GitClient;
 use Sowapps\SoManAgent\Script\Client\ConsoleClient;
+
 /**
  * Detects whether the current script runs inside a git linked worktree
  * and transparently proxies execution to the equivalent script in the main worktree.

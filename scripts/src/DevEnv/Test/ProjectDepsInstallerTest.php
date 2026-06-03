@@ -9,6 +9,7 @@ namespace Sowapps\SoManAgent\Script\DevEnv\Test;
 
 use Sowapps\SoManAgent\Script\DevEnv\Installer\ProjectDepsInstaller;
 use Sowapps\SoManAgent\Script\Console;
+
 /**
  * Unit tests for ProjectDepsInstaller.
  *

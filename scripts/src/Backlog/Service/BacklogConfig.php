@@ -19,16 +19,24 @@ use Symfony\Component\Yaml\Yaml;
  */
 final class BacklogConfig
 {
-    /** Path to the committed template, relative to the project root. */
+    /**
+     * Path to the committed template, relative to the project root.
+     */
     public const DIST_PATH = 'scripts/resources/backlog/config.yaml.dist';
 
-    /** Path to the local (gitignored) config, relative to the project root. */
+    /**
+     * Path to the local (gitignored) config, relative to the project root.
+     */
     public const LOCAL_PATH = 'local/backlog/config.yaml';
 
-    /** @var int Fallback used when the local config does not define this key. */
+    /**
+     * @var int Fallback used when the local config does not define this key.
+     */
     private const FALLBACK_MAX_CONCURRENT_WORKTREES = 5;
 
-    /** @var array<mixed>|null */
+    /**
+     * @var array<mixed>|null
+     */
     private ?array $data = null;
 
     /**

@@ -23,7 +23,9 @@ final class BacklogBoard
 
     private string $path;
 
-    /** @var array<string, array<BoardEntry>> */
+    /**
+     * @var array<string, array<BoardEntry>>
+     */
     private array $taskSections = [];
 
     /**

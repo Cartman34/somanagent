@@ -16,9 +16,13 @@ namespace Sowapps\SoManAgent\Script\Backlog\Enum;
  */
 enum SubmitMode: string
 {
-    /** Agent stops after submit-check and waits for the operator to send `submit`. */
+    /**
+     * Agent stops after submit-check and waits for the operator to send `submit`.
+     */
     case USER = 'user';
 
-    /** Agent runs `review-request` immediately after a successful `submit-check`. */
+    /**
+     * Agent runs `review-request` immediately after a successful `submit-check`.
+     */
     case AGENT = 'agent';
 }

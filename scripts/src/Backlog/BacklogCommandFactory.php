@@ -240,7 +240,9 @@ final class BacklogCommandFactory
             };
         }
 
-        /** @var AbstractBacklogCommand $command */
+        /**
+         * @var AbstractBacklogCommand $command
+         */
         $command = $reflection->newInstanceArgs($arguments);
         $command->setBoardPath($this->boardPath);
         $command->setReviewFilePath($this->reviewFilePath);
@@ -257,7 +259,6 @@ final class BacklogCommandFactory
         return $this->agentSessionService;
     }
 
-    /* --- Lazy Loading Getters --- */
     /**
      * Get the board service.
      *

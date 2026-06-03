@@ -25,7 +25,9 @@ final class AgentWhoamiCommandTest
 {
     private string $tmpDir;
 
-    /** @var array<string, string|false> */
+    /**
+     * @var array<string, string|false>
+     */
     private array $envBackup = [];
 
     /**

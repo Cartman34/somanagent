@@ -11,6 +11,7 @@ use Sowapps\SoManAgent\Script\Service\GitService;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
+
 /**
  * Command for interactively merging all approved backlog entries.
  *

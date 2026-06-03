@@ -18,7 +18,9 @@ final class ConsoleClient
     private bool $dryRun;
     private Application $app;
 
-    /** @var callable(string): void */
+    /**
+     * @var callable(string): void
+     */
     private $verboseLogger;
 
     /**

@@ -33,6 +33,7 @@ use Sowapps\SoManAgent\Script\DevEnv\Installer\DockerInstaller;
 use Sowapps\SoManAgent\Script\DevEnv\Installer\SystemDepsInstaller;
 use Sowapps\SoManAgent\Script\DevEnv\Installer\ClientsInstaller;
 use Sowapps\SoManAgent\Script\DevEnv\Model\Manifest;
+
 /**
  * Setup orchestrator for the SoManAgent development environment.
  *
@@ -331,13 +332,17 @@ final class SetupRunner extends AbstractScriptRunner
         $inspector = new StateInspector(new SystemCommandRunner());
         $vc = new VersionConstraint();
 
-        /** @var array<string, Dependency> $depMap */
+        /**
+         * @var array<string, Dependency> $depMap
+         */
         $depMap = [];
         foreach ($manifest->dependencies as $dep) {
             $depMap[$dep->key] = $dep;
         }
 
-        /** @var list<string> $gaps */
+        /**
+         * @var list<string> $gaps
+         */
         $gaps = [];
 
         // Check lockfile entries against system state and manifest
@@ -443,7 +448,9 @@ final class SetupRunner extends AbstractScriptRunner
             return 0;
         }
 
-        /** @var array<string, Dependency> $depMap */
+        /**
+         * @var array<string, Dependency> $depMap
+         */
         $depMap = [];
         foreach ($manifest->dependencies as $dep) {
             $depMap[$dep->key] = $dep;
@@ -856,7 +863,9 @@ final class SetupRunner extends AbstractScriptRunner
         $inspector = new StateInspector(new SystemCommandRunner());
         $vc = new VersionConstraint();
 
-        /** @var array<string, Dependency> $depMap */
+        /**
+         * @var array<string, Dependency> $depMap
+         */
         $depMap = [];
         foreach ($manifest->dependencies as $dep) {
             $depMap[$dep->key] = $dep;
@@ -952,7 +961,9 @@ final class SetupRunner extends AbstractScriptRunner
         $this->console->line('  Docker services:');
         $this->console->line();
 
-        /** @var array<int, string> $dockerLines */
+        /**
+         * @var array<int, string> $dockerLines
+         */
         $dockerLines = [];
         $dockerExit = 0;
         exec('docker compose ps 2>/dev/null', $dockerLines, $dockerExit);

@@ -20,7 +20,7 @@ use Symfony\Component\Yaml\Yaml;
  * Expected runner help YAML keys: description (required), options, examples.
  * Expected per-command YAML keys: description (required), arguments, options, examples, notes.
  */
-class CommandHelpService
+final class CommandHelpService
 {
     /**
      * @param string $resourcesBasePath Absolute path to the directory containing per-runner help YAML subdirectories

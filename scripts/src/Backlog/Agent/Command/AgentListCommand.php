@@ -14,6 +14,7 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+
 /**
  * Lists active and/or stale agent sessions.
  *
@@ -136,7 +137,9 @@ final class AgentListCommand extends AbstractAgentCommand
      */
     private function printTable(array $headers, array $rows): void
     {
-        /** @var array<string, int> $widths */
+        /**
+         * @var array<string, int> $widths
+         */
         $widths = [];
         foreach ($headers as $h) {
             $widths[$h] = strlen($h);

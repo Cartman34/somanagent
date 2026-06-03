@@ -15,6 +15,7 @@ use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
+
 /**
  * Reviewer command that replaces rejection notes on a rejected entry without changing its stage.
  *

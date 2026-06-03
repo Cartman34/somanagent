@@ -7,49 +7,49 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Backlog\Agent\Runner;
 
-use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AbstractAgentCommand;
-use Sowapps\SoManAgent\Script\Runner\AbstractScriptRunner;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentCliOptionValidator;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentLaunchPromptResolver;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
-use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
-use Sowapps\SoManAgent\Script\Client\ConsoleClient;
-use Sowapps\SoManAgent\Script\Client\GitClient;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\BacklogCommandRunner;
-use Sowapps\SoManAgent\Script\Backlog\Service\EntryRebaseService;
-use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
-use Sowapps\SoManAgent\Script\Backlog\BacklogPaths;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AgentStartCommand;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentDeveloperSelector;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ClaudeAgentLauncher;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\CodexAgentLauncher;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\DirectSessionDriver;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\GeminiAgentLauncher;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\OpenCodeAgentLauncher;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\PosixProcessSignaler;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ProjectBacklogCommandRunner;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ShellProcessRunner;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\SystemInteractiveProcessRunner;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Client\TmuxSessionDriver;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AbstractAgentCommand;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AgentListCommand;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AgentSessionsCommand;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AgentStartCommand;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AgentStatusCommand;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AgentStopCommand;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AgentWhoamiCommand;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AgentSessionsCommand;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Command\BacklogAgentPruneCommand;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ClaudeAgentLauncher;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\CodexAgentLauncher;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\OpenCodeAgentLauncher;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\GeminiAgentLauncher;
-use Sowapps\SoManAgent\Script\TextSlugger;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentCliOptionValidator;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentContextBuilder;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentDeveloperSelector;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentLaunchPromptResolver;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
+use Sowapps\SoManAgent\Script\Backlog\BacklogPaths;
+use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
+use Sowapps\SoManAgent\Script\Backlog\Service\EntryRebaseService;
+use Sowapps\SoManAgent\Script\Client\ConsoleClient;
 use Sowapps\SoManAgent\Script\Client\FilesystemClient;
+use Sowapps\SoManAgent\Script\Client\GitClient;
 use Sowapps\SoManAgent\Script\Client\ProjectScriptClient;
 use Sowapps\SoManAgent\Script\RetryPolicy;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\DirectSessionDriver;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\SystemInteractiveProcessRunner;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\TmuxSessionDriver;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\PosixProcessSignaler;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ProjectBacklogCommandRunner;
+use Sowapps\SoManAgent\Script\Runner\AbstractScriptRunner;
 use Sowapps\SoManAgent\Script\Service\GitService;
+use Sowapps\SoManAgent\Script\TextSlugger;
 
 
 /**
@@ -67,7 +67,9 @@ final class BacklogAgentRunner extends AbstractScriptRunner
 {
     private const DEFAULT_WORKTREES_DIR = '.agent-worktrees';
 
-    /** @var array<string, AbstractAgentCommand>|null */
+    /**
+     * @var array<string, AbstractAgentCommand>|null
+     */
     private ?array $commands = null;
 
     private ?AgentClientLauncherRegistry $registry = null;

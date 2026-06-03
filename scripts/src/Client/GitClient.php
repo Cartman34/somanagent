@@ -7,8 +7,9 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Client;
 
-use Sowapps\SoManAgent\Script\RetryPolicy;
 use Sowapps\SoManAgent\Script\RetryHelper;
+use Sowapps\SoManAgent\Script\RetryPolicy;
+
 /**
  * Git command client for local and remote repository operations.
  *

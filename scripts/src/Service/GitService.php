@@ -24,7 +24,9 @@ final class GitService
 
     private GitClient $git;
 
-    /** @var callable(string): void */
+    /**
+     * @var callable(string): void
+     */
     private $verboseLogger;
 
     /**

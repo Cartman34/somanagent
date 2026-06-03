@@ -1152,7 +1152,9 @@ final class BacklogBoardService
      */
     public function getFeatureContributionBlocks(BoardEntry $featureEntry): array
     {
-        /** @var list<array{task: string, text: string, extraLines: list<string>}> $blocks */
+        /**
+         * @var list<array{task: string, text: string, extraLines: list<string>}> $blocks
+         */
         $blocks = [];
         $currentIndex = null;
 

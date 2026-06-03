@@ -17,9 +17,13 @@ final readonly class HealthCheckResult
      * @param string $message User-facing diagnostic detail for the checked service.
      */
     public function __construct(
-        /** Whether the checked service is considered healthy. */
+        /**
+         * Whether the checked service is considered healthy.
+         */
         public bool $healthy,
-        /** User-facing diagnostic detail for the checked service. */
+        /**
+         * User-facing diagnostic detail for the checked service.
+         */
         public string $message,
     ) {
     }

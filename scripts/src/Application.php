@@ -9,6 +9,7 @@ namespace Sowapps\SoManAgent\Script;
 
 use Sowapps\SoManAgent\Script\Exception\WslRequiredException;
 use Sowapps\SoManAgent\Script\Exception\PhpNotAvailableException;
+
 /**
  * Main application entry point for SoManAgent CLI scripts.
  *
@@ -36,7 +37,9 @@ final class Application implements ShellRunnerInterface
 
     public readonly Console $console;
 
-    /** True when running in WSL with stdout piped to a Windows process. */
+    /**
+     * True when running in WSL with stdout piped to a Windows process.
+     */
     private readonly bool $crlfMode;
 
     private function __construct()
@@ -69,7 +72,7 @@ final class Application implements ShellRunnerInterface
      * @throws WslRequiredException WSL 2 is not installed or unavailable.
      * @throws PhpNotAvailableException PHP is not installed inside WSL.
      */
-    public function boot(): void
+    private function boot(): void
     {
         if (!Environment::needsWslRedirect()) {
             return;
@@ -150,7 +153,9 @@ final class Application implements ShellRunnerInterface
         return preg_replace('/(?<!\r)\n/', "\r\n", $text) ?? $text;
     }
 
-    /** @throws WslRequiredException */
+    /**
+     * @throws WslRequiredException
+     */
     private function assertWslAvailable(): void
     {
         if (!Environment::wslAvailable()) {
@@ -158,7 +163,9 @@ final class Application implements ShellRunnerInterface
         }
     }
 
-    /** @throws PhpNotAvailableException */
+    /**
+     * @throws PhpNotAvailableException
+     */
     private function assertPhpInWsl(): void
     {
         if (!Environment::phpAvailableInWsl()) {

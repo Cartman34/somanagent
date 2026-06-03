@@ -12,6 +12,7 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Model\ResolvedModel;
 use Sowapps\SoManAgent\Script\Backlog\BacklogPaths;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Model\SessionInfo;
+
 /**
  * Launcher implementation for the Gemini CLI.
  *
@@ -170,7 +171,9 @@ final class GeminiAgentLauncher extends AbstractAgentClientLauncher
     private function parseJsonSessions(array $data): array
     {
         // Accept both a root array and a wrapped {"sessions": [...]} envelope
-        /** @var array<mixed> $items */
+        /**
+         * @var array<mixed> $items
+         */
         $items = array_is_list($data) ? $data : ($data['sessions'] ?? $data['data'] ?? []);
         $sessions = [];
         foreach ($items as $item) {

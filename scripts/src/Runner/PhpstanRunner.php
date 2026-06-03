@@ -24,7 +24,9 @@ final class PhpstanRunner extends AbstractScriptRunner
     private const SCOPE_BACKEND = 'backend';
     private const SCOPE_SCRIPTS = 'scripts';
 
-    /** @var array<string, array{paths: list<string>}> */
+    /**
+     * @var array<string, array{paths: list<string>}>
+     */
     private const SCOPES = [
         self::SCOPE_BACKEND => ['paths' => ['backend/src', 'backend/tests']],
         self::SCOPE_SCRIPTS => ['paths' => ['scripts/src', 'scripts/test-backlog-agent.php']],

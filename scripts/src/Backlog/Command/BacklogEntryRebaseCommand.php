@@ -13,6 +13,7 @@ use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
+
 /**
  * Rebases an active entry branch onto its canonical target and pushes on success.
  *

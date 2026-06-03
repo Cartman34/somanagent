@@ -46,7 +46,9 @@ final class Console
 
     // ── Output primitives ─────────────────────────────────────────────────────
 
-    /** Print a bare line (or blank line). */
+    /**
+     * Print a bare line (or blank line).
+     */
     public function line(string $text = ''): void
     {
         echo $text . $this->eol;
@@ -54,32 +56,42 @@ final class Console
 
     // ── Semantic helpers (used by scripts) ────────────────────────────────────
 
-    /** ▶ Step heading */
+    /**
+     * ▶ Step heading
+     */
     public function step(string $label): void
     {
         $this->line();
         $this->line("▶ $label...");
     }
 
-    /** ✓ Success message */
+    /**
+     * ✓ Success message
+     */
     public function ok(string $msg): void
     {
         $this->line("  ✓ $msg");
     }
 
-    /** → Informational note */
+    /**
+     * → Informational note
+     */
     public function info(string $msg): void
     {
         $this->line("  → $msg");
     }
 
-    /** ⚠ Warning (non-fatal) */
+    /**
+     * ⚠ Warning (non-fatal)
+     */
     public function warn(string $msg): void
     {
         $this->line("  ⚠  $msg");
     }
 
-    /** ❌ Fatal error — prints message and exits. */
+    /**
+     * ❌ Fatal error — prints message and exits.
+     */
     public function fail(string $msg, int $code = 1): never
     {
         $this->line("  ❌ $msg");

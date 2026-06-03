@@ -16,7 +16,9 @@ final class TextSlugger
 
     private int $maxLength;
 
-    /** @var non-empty-string */
+    /**
+     * @var non-empty-string
+     */
     private string $separator;
 
     /**
@@ -33,7 +35,9 @@ final class TextSlugger
 
         $this->maxWords = $maxWords;
         $this->maxLength = $maxLength;
-        /** @var non-empty-string $separator */
+        /**
+         * @var non-empty-string $separator
+         */
         $this->separator = $separator;
     }
 

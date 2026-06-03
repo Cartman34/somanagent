@@ -25,5 +25,7 @@ final class SessionInfo
         public readonly ?\DateTimeImmutable $lastMessageAt,
         public readonly ?int $messageCount,
         public readonly ?string $firstPromptExcerpt,
-    ) {}
+    )
+    {
+    }
 }

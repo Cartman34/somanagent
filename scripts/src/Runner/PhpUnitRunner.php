@@ -16,7 +16,9 @@ final class PhpUnitRunner extends AbstractScriptRunner
 {
     private const SCOPE_BACKEND = 'backend';
 
-    /** @var array<string, array{bin: string, config: string}> */
+    /**
+     * @var array<string, array{bin: string, config: string}>
+     */
     private const SCOPES = [
         self::SCOPE_BACKEND => [
             'bin' => 'backend/vendor/bin/phpunit',

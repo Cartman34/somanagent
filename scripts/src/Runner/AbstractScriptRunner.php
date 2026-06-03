@@ -9,10 +9,10 @@ namespace Sowapps\SoManAgent\Script\Runner;
 
 use Sowapps\SoManAgent\Script\Application;
 use Sowapps\SoManAgent\Script\Console;
-use Sowapps\SoManAgent\Script\Service\CommandHelpService;
-use Sowapps\SoManAgent\Script\Service\RunnerHelp;
-use Sowapps\SoManAgent\Script\Service\CommandParamHelp;
 use Sowapps\SoManAgent\Script\Service\CommandHelp;
+use Sowapps\SoManAgent\Script\Service\CommandHelpService;
+use Sowapps\SoManAgent\Script\Service\CommandParamHelp;
+use Sowapps\SoManAgent\Script\Service\RunnerHelp;
 
 /**
  * Abstract base class for all SoManAgent CLI scripts.

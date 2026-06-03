@@ -12,6 +12,7 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Model\SessionInfo;
+
 /**
  * Lists past CLI sessions for the worktree bound to an agent code.
  *
@@ -102,7 +103,9 @@ final class AgentSessionsCommand extends AbstractAgentCommand
             'first_prompt' => $s->firstPromptExcerpt ?? '—',
         ], $sessions);
 
-        /** @var array<string, int> $widths */
+        /**
+         * @var array<string, int> $widths
+         */
         $widths = [];
         foreach ($headers as $h) {
             $widths[$h] = strlen($h);

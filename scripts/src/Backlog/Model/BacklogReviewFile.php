@@ -20,10 +20,14 @@ final class BacklogReviewFile
 
     private string $header;
 
-    /** @var array<string, array<string>> */
+    /**
+     * @var array<string, array<string>>
+     */
     private array $sections = [];
 
-    /** @var array<string, array<string>> */
+    /**
+     * @var array<string, array<string>>
+     */
     private array $reviews = [];
 
     /**

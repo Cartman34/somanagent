@@ -18,6 +18,7 @@ use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogEntryMetaKey;
+
 /**
  * Command for merging a feature into the base branch.
  */

@@ -12,10 +12,14 @@ namespace Sowapps\SoManAgent\Script\Backlog\Model;
  */
 final class WorktreeClassification
 {
-    /** @var array<int, ManagedWorktree> */
+    /**
+     * @var array<int, ManagedWorktree>
+     */
     private array $managed;
 
-    /** @var array<int, ExternalWorktree> */
+    /**
+     * @var array<int, ExternalWorktree>
+     */
     private array $external;
 
     /**

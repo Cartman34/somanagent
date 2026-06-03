@@ -9,6 +9,7 @@ namespace Sowapps\SoManAgent\Script\DevEnv\Test;
 
 use Sowapps\SoManAgent\Script\DevEnv\Model\Dependency;
 use Sowapps\SoManAgent\Script\DevEnv\StateInspector;
+
 /**
  * Unit tests for StateInspector.
  */

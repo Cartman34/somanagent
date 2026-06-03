@@ -44,7 +44,9 @@ final class BacklogAgentRunnerWiringTest
         $commandsMethod = new \ReflectionMethod($runner, 'commands');
         $commandsMethod->setAccessible(true);
 
-        /** @var array<string, AbstractAgentCommand> $commands */
+        /**
+         * @var array<string, AbstractAgentCommand> $commands
+         */
         $commands = $commandsMethod->invoke($runner);
 
         $startCommand = $commands['start'] ?? null;

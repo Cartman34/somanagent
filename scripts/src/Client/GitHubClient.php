@@ -7,9 +7,10 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Client;
 
-use Sowapps\SoManAgent\Script\RetryPolicy;
 use Sowapps\SoManAgent\Script\GitHub\Enum\GitHubCommandName;
 use Sowapps\SoManAgent\Script\RetryHelper;
+use Sowapps\SoManAgent\Script\RetryPolicy;
+
 /**
  * GitHub platform client backed by the local github.php project script.
  */

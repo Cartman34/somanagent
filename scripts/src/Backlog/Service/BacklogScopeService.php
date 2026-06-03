@@ -16,7 +16,9 @@ namespace Sowapps\SoManAgent\Script\Backlog\Service;
  */
 final class BacklogScopeService
 {
-    /** Reserved scope name that must never appear in the config. */
+    /**
+     * Reserved scope name that must never appear in the config.
+     */
     public const RESERVED_ALL = 'ALL';
 
     /**

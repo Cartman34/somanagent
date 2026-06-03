@@ -15,6 +15,7 @@ use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
+
 /**
  * Command for displaying the backlog status.
  */
