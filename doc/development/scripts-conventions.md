@@ -108,6 +108,12 @@ Expected author syntax:
 - If a test needs example variants that should not change with production config, put them in an explicit `resources/` or `fixtures/` directory next to the relevant test suite.
 - Avoid large inline fixture strings in test methods when a named fixture file makes the intent clearer, even if that means keeping several fixture versions.
 
+## Test Runners Location
+
+Top-level test runner scripts (`test-*.php`) live under `scripts/tests/`, not directly at the root of `scripts/`. The root of `scripts/` is reserved for production-running entrypoints (`backlog.php`, `setup.php`, `github.php`, etc.).
+
+Each test runner stays thin and delegates to its dedicated class under `scripts/src/<Domain>/Test/` (per the colocated test convention).
+
 ## Throwaway Migration Scripts
 
 One-shot data or format migrations are not permanent tooling. They exist for a bounded time and must be retired once they have done their job.

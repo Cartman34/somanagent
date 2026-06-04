@@ -149,6 +149,16 @@ The use of `final` must never make unit tests harder to write or force tests to 
 
 ---
 
+## Method Visibility
+
+Public methods stay public. Do not restrict visibility to `private` or `protected` solely because no caller is currently visible inside the project.
+
+The justification for `private` or `protected` is a *positive* design reason — internal helper used only by the same class, contract-level guarantee, lazy initializer extracted from another method, etc. — not the *circumstantial* absence of external callers at a given point in time. A method that reasonably belongs to a class's API surface remains public, even when no consumer happens to call it right now.
+
+A method that is genuinely internal-only by design should be declared `private` from the start. Discovering after the fact that no caller exists is not enough to retroactively restrict visibility.
+
+---
+
 ## PHPDoc
 
 PHPDoc is required on:

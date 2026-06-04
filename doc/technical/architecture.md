@@ -84,6 +84,20 @@ src/
 └── ValueObject/     (see above)
 ```
 
+## Directory Cohesion
+
+Related classes belonging to the same domain are grouped under a folder named after that domain, rather than scattered alphabetically inside a generic parent directory.
+
+The grouping kicks in as soon as a family accumulates **three or more related classes** (e.g. a client class + its interface + a domain-specific enum or value object). At two classes (typically a class and its sole interface), the pair stays at the parent level without a sub-folder.
+
+Layout inside the cohesion folder stays flat — no further sub-hierarchy — unless there is a real need (multiple sub-domains, distinct categories like `Enum/` and `Service/` inside the same family). Examples:
+
+- `scripts/src/Client/GitHub/` holding `GitHubClient`, `GitHubClientInterface`, `GitHubCommandName`.
+- `scripts/src/Backlog/Agent/Service/` holding the agent-related services.
+- `scripts/src/Backlog/Command/` holding the backlog CLI commands.
+
+The same principle applies to both `backend/src/` and `scripts/src/` — sustained cohesion by feature/domain over alphabetical co-existence in a generic directory.
+
 ## Code Conventions
 
 See [`conventions.md`](conventions.md) for the full reference: PHPDoc, JSDoc/TSDoc, translations, entity CSS classes, author header, services, entities, ports and adapters, development command rule.
