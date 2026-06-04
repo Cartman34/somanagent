@@ -24,9 +24,9 @@ use Sowapps\SoManAgent\Script\Validation\ExecBitFixer;
  *   running this script restores it in one step.
  * - A `git diff --staged` shows a `mode change` regression and needs to be undone.
  *
- * Scope is intentionally narrow: only `scripts/*.php` entrypoints. The runner
- * never recurses, never touches anything outside `scripts/`, and never alters
- * read/write bits — only exec.
+ * Scope: `scripts/*.php` and `scripts/tests/*.php` entrypoints. The runner does
+ * not recurse further, never touches anything outside `scripts/`, and never
+ * alters read/write bits — only exec.
  */
 final class FixPermissionsRunner extends AbstractScriptRunner
 {
@@ -39,7 +39,7 @@ final class FixPermissionsRunner extends AbstractScriptRunner
 
     protected function getDescription(): string
     {
-        return 'Restore the exec bit on shebang-bearing `scripts/*.php` entrypoints, both on the filesystem and in the git index';
+        return 'Restore the exec bit on shebang-bearing `scripts/*.php` and `scripts/tests/*.php` entrypoints, both on the filesystem and in the git index';
     }
 
     protected function getOptions(): array
@@ -147,10 +147,17 @@ final class FixPermissionsRunner extends AbstractScriptRunner
      */
     private function collectScriptEntrypoints(): array
     {
-        $pattern = $this->projectRoot . '/scripts/*.php';
-        $files = glob($pattern);
-        if ($files === false) {
-            return [];
+        $patterns = [
+            $this->projectRoot . '/scripts/*.php',
+            $this->projectRoot . '/scripts/tests/*.php',
+        ];
+
+        $files = [];
+        foreach ($patterns as $pattern) {
+            $matched = glob($pattern);
+            if ($matched !== false) {
+                $files = array_merge($files, $matched);
+            }
         }
         sort($files);
 

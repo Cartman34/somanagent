@@ -145,7 +145,7 @@ One-shot data or format migrations are not permanent tooling. They exist for a b
 
 Do not resolve or instantiate classes from string variables (`new $class()`, `$class::method()`, variable-driven `call_user_func`). PHPStan cannot trace these calls, which turns every method only reachable via dynamic dispatch into a false-positive dead-code finding.
 
-Use a static dispatch map instead: a `callable(): int` (or equivalent) closure per entry, so every instantiation and method call is visible to the analyser. `scripts/test-backlog-agent.php` was refactored to follow this rule (feature `test-runner-static-dispatch`).
+Use a static dispatch map instead: a `callable(): int` (or equivalent) closure per entry, so every instantiation and method call is visible to the analyser. `scripts/tests/test-backlog-agent.php` was refactored to follow this rule (feature `test-runner-static-dispatch`).
 
 ## Dead Code Detection
 

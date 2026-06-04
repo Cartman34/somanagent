@@ -4,12 +4,12 @@
  * @author Florent HAZARD <f.hazard@sowapps.com>
  */
 // Description: Run unit tests for scripts/src/Validation classes
-// Usage: php scripts/test-validation.php
-// Usage: php scripts/test-validation.php --suite=ScriptExecBitValidatorTest
+// Usage: php scripts/tests/test-validation.php
+// Usage: php scripts/tests/test-validation.php --suite=ScriptExecBitValidatorTest
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/src/bootstrap.php';
+require_once __DIR__ . '/../src/bootstrap.php';
 
 use Sowapps\SoManAgent\Script\Console;
 use Sowapps\SoManAgent\Script\Validation\Test\ExecBitFixerTest;

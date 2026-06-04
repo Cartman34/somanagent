@@ -4,10 +4,10 @@
  * @author Florent HAZARD <f.hazard@sowapps.com>
  */
 // Description: Run unit tests for scripts/backlog-agent.php classes
-// Usage: php scripts/test-backlog-agent.php
-// Usage: php scripts/test-backlog-agent.php --suite=AgentCodeServiceTest
+// Usage: php scripts/tests/test-backlog-agent.php
+// Usage: php scripts/tests/test-backlog-agent.php --suite=AgentCodeServiceTest
 
-require_once __DIR__ . '/src/bootstrap.php';
+require_once __DIR__ . '/../src/bootstrap.php';
 
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\AgentClientLauncherRegistryTest;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\AgentCliOptionValidatorTest;

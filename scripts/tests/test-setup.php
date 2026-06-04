@@ -4,9 +4,9 @@
  * @author Florent HAZARD <f.hazard@sowapps.com>
  */
 // Description: Run subprocess integration tests for scripts/setup.php
-// Usage: php scripts/test-setup.php
+// Usage: php scripts/tests/test-setup.php
 
-require_once __DIR__ . '/src/bootstrap.php';
+require_once __DIR__ . '/../src/bootstrap.php';
 
 use Sowapps\SoManAgent\Script\Setup\Test\SetupRunnerTest;
 

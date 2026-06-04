@@ -62,7 +62,7 @@ final class BacklogScriptTestDriver
 
 ## Usage rules
 
-- Temporary test file for scripts/test-backlog-workflow.php.
+- Temporary test file for scripts/tests/test-backlog-workflow.php.
 - Do not use this file as a production review.
 
 ## Current review

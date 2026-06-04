@@ -4,9 +4,9 @@
  * @author Florent HAZARD <f.hazard@sowapps.com>
  */
 // Description: Run tests for scripts/server.php
-// Usage: php scripts/test-server.php
+// Usage: php scripts/tests/test-server.php
 
-require_once __DIR__ . '/src/bootstrap.php';
+require_once __DIR__ . '/../src/bootstrap.php';
 
 use Sowapps\SoManAgent\Script\Console;
 use Sowapps\SoManAgent\Script\Server\Test\ServerRunnerTest;
