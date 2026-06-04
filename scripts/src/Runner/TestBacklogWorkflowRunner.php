@@ -72,10 +72,10 @@ final class TestBacklogWorkflowRunner extends AbstractScriptRunner
     protected function getUsageExamples(): array
     {
         return [
-            'php scripts/test-backlog-workflow.php',
-            'php scripts/test-backlog-workflow.php --campaign scoped-task-lifecycle',
-            'php scripts/test-backlog-workflow.php --allow-integration --campaign todo-and-plain-feature-lifecycle',
-            'php scripts/test-backlog-workflow.php --allow-remote --campaign feature-review-lifecycle',
+            'php scripts/tests/test-backlog-workflow.php',
+            'php scripts/tests/test-backlog-workflow.php --campaign scoped-task-lifecycle',
+            'php scripts/tests/test-backlog-workflow.php --allow-integration --campaign todo-and-plain-feature-lifecycle',
+            'php scripts/tests/test-backlog-workflow.php --allow-remote --campaign feature-review-lifecycle',
         ];
     }
 

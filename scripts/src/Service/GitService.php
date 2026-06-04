@@ -309,8 +309,6 @@ final class GitService
     {
         if ($this->dryRun) {
             $this->logVerbose('[dry-run] Inspect workspace branch');
-
-            return $this->git->currentBranch();
         }
 
         return $this->git->currentBranch();

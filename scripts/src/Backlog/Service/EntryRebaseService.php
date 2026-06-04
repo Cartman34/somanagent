@@ -9,6 +9,7 @@ namespace Sowapps\SoManAgent\Script\Backlog\Service;
 
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
+use Sowapps\SoManAgent\Script\Backlog\Model\EntryRebaseResult;
 use Sowapps\SoManAgent\Script\Service\GitService;
 
 /**

@@ -16,7 +16,7 @@ use Sowapps\SoManAgent\Script\Service\GitService;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use Sowapps\SoManAgent\Script\TextSlugger;
 use Sowapps\SoManAgent\Script\Client\FilesystemClient;
-use Sowapps\SoManAgent\Script\GitHub\Enum\GitHubCommandName;
+use Sowapps\SoManAgent\Script\Client\GitHub\GitHubCommandName;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogConfig;
 use Symfony\Component\Yaml\Yaml;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
@@ -62,7 +62,7 @@ final class BacklogScriptTestDriver
 
 ## Usage rules
 
-- Temporary test file for scripts/test-backlog-workflow.php.
+- Temporary test file for scripts/tests/test-backlog-workflow.php.
 - Do not use this file as a production review.
 
 ## Current review

@@ -13,14 +13,13 @@ use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Enum\PullRequestTag;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 
 /**
  * Command for blocking a feature.
  */
 final class BacklogFeatureBlockCommand extends AbstractBacklogCommand
 {
-    private const ROLE_MANAGER = 'manager';
-
     private PullRequestService $pullRequestService;
 
     /**
@@ -51,7 +50,7 @@ final class BacklogFeatureBlockCommand extends AbstractBacklogCommand
     public function handle(array $commandArgs, array $options): void
     {
         $agent = $this->requireCallerAgent();
-        $isManager = $this->readCallerRole() === self::ROLE_MANAGER;
+        $isManager = $this->readCallerRole() === AgentRole::MANAGER->value;
         $requestedFeature = $this->boardService->sanitizeString($commandArgs[0] ?? null);
         if ($isManager && $requestedFeature === null) {
             throw new \RuntimeException('feature-block requires an explicit <feature> when SOMANAGER_ROLE=manager.');

@@ -13,6 +13,7 @@ use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
 use RuntimeException;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 
 /**
  * Reopens an approved or rejected entry for a new review cycle.
@@ -30,9 +31,6 @@ use RuntimeException;
  */
 final class BacklogReviewReopenCommand extends AbstractBacklogCommand
 {
-    private const ROLE_MANAGER = 'manager';
-    private const ROLE_REVIEWER = 'reviewer';
-
     /**
      * @param BacklogPresenter $presenter
      * @param bool $dryRun
@@ -57,7 +55,7 @@ final class BacklogReviewReopenCommand extends AbstractBacklogCommand
         $agent = $this->requireCallerAgent();
         $role = strtolower(trim((string) getenv('SOMANAGER_ROLE')));
 
-        if (!in_array($role, [self::ROLE_MANAGER, self::ROLE_REVIEWER], true)) {
+        if (!in_array($role, [AgentRole::MANAGER->value, AgentRole::REVIEWER->value], true)) {
             throw new RuntimeException(
                 'review-reopen requires SOMANAGER_ROLE=manager or SOMANAGER_ROLE=reviewer.'
             );
@@ -92,7 +90,7 @@ final class BacklogReviewReopenCommand extends AbstractBacklogCommand
             $review->clearReview($reviewKey);
         }
 
-        $isManager = $role === self::ROLE_MANAGER;
+        $isManager = $role === AgentRole::MANAGER->value;
         $targetStage = $isManager ? BacklogBoard::STAGE_PENDING_REVIEW : BacklogBoard::STAGE_REVIEWING;
 
         $entry->setStage($targetStage);

@@ -4,10 +4,10 @@
  * @author Florent HAZARD <f.hazard@sowapps.com>
  */
 // Description: Run unit tests for scripts/backlog-agent.php classes
-// Usage: php scripts/test-backlog-agent.php
-// Usage: php scripts/test-backlog-agent.php --suite=AgentCodeServiceTest
+// Usage: php scripts/tests/test-backlog-agent.php
+// Usage: php scripts/tests/test-backlog-agent.php --suite=AgentCodeServiceTest
 
-require_once __DIR__ . '/src/bootstrap.php';
+require_once __DIR__ . '/../src/bootstrap.php';
 
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\AgentClientLauncherRegistryTest;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\AgentCliOptionValidatorTest;
@@ -24,15 +24,15 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Test\AgentLaunchPromptResolverTest;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\AgentStartCommandManagerTest;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\AgentStartCommandTest;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\AgentWatchModeTest;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Test\EntryRebaseCommandTest;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Test\EntryRebaseServiceTest;
+use Sowapps\SoManAgent\Script\Backlog\Test\EntryRebaseCommandTest;
+use Sowapps\SoManAgent\Script\Backlog\Test\EntryRebaseServiceTest;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\AgentStatusCommandTest;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\AgentStopCommandTest;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\AgentWhoamiCommandTest;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\BacklogAgentPruneCommandTest;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Test\BacklogBoardServiceReviewingTest;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Test\BoardYamlStorageTest;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Test\BodyFilePathResolverTest;
+use Sowapps\SoManAgent\Script\Backlog\Test\BacklogBoardServiceReviewingTest;
+use Sowapps\SoManAgent\Script\Backlog\Test\BoardYamlStorageTest;
+use Sowapps\SoManAgent\Script\Backlog\Test\BodyFilePathResolverTest;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\BacklogAgentRunnerStrictOptionsTest;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\BacklogAgentRunnerWiringTest;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\ClaudeAgentLauncherTest;
@@ -43,7 +43,7 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Test\LauncherFlagValidatorTest;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\OpenCodeAgentLauncherTest;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\SystemInteractiveProcessRunnerTest;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\TmuxSessionDriverTest;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Test\WorktreeScriptProxyTest;
+use Sowapps\SoManAgent\Script\Test\WorktreeScriptProxyTest;
 use Sowapps\SoManAgent\Script\Backlog\Test\BacklogCommitGateCommandTest;
 use Sowapps\SoManAgent\Script\Backlog\Test\BacklogPreCommitHookTest;
 use Sowapps\SoManAgent\Script\Backlog\Test\BacklogReviewApproveCommandTest;

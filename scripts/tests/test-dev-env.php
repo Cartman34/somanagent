@@ -4,10 +4,10 @@
  * @author Florent HAZARD <f.hazard@sowapps.com>
  */
 // Description: Run unit tests for the DevEnv manifest/lockfile/resolver/inspector classes
-// Usage: php scripts/test-dev-env.php
-// Usage: php scripts/test-dev-env.php --suite=ManifestParserTest
+// Usage: php scripts/tests/test-dev-env.php
+// Usage: php scripts/tests/test-dev-env.php --suite=ManifestParserTest
 
-require_once __DIR__ . '/src/bootstrap.php';
+require_once __DIR__ . '/../src/bootstrap.php';
 
 use Sowapps\SoManAgent\Script\Console;
 use Sowapps\SoManAgent\Script\DevEnv\Test\InstallPlannerTest;

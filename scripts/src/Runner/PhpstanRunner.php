@@ -29,7 +29,7 @@ final class PhpstanRunner extends AbstractScriptRunner
      */
     private const SCOPES = [
         self::SCOPE_BACKEND => ['paths' => ['backend/src', 'backend/tests']],
-        self::SCOPE_SCRIPTS => ['paths' => ['scripts/src', 'scripts/test-backlog-agent.php']],
+        self::SCOPE_SCRIPTS => ['paths' => ['scripts/src', 'scripts/tests/test-backlog-agent.php']],
     ];
 
     protected function getDescription(): string

@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Client\Test;
 
-use Sowapps\SoManAgent\Script\Client\GitHubClientInterface;
+use Sowapps\SoManAgent\Script\Client\GitHub\GitHubClientInterface;
 
 /**
  * Fake GitHub client for unit testing PullRequestService.

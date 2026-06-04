@@ -14,6 +14,7 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ProcessRunner;
 
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeProcessRunner;
 /**
  * Unit tests for TmuxSessionDriver.
  *

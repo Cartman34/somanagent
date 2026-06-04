@@ -15,6 +15,8 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeProcessSignaler;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeSessionDriver;
 /**
  * Unit tests for BacklogAgentPruneCommand.
  *

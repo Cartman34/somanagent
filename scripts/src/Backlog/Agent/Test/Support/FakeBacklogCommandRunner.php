@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support;
 
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\BacklogCommandRunner;
 

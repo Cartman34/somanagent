@@ -5,13 +5,13 @@
 
 declare(strict_types=1);
 
-namespace Sowapps\SoManAgent\Script\Backlog\Service;
+namespace Sowapps\SoManAgent\Script\Backlog\Agent\Service;
 
-use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
+use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
 
 /**
  * Notifies a reviewer's live tmux session after a review-request transition.

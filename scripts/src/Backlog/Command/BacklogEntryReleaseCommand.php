@@ -14,14 +14,13 @@ use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 
 /**
  * Command for releasing an active feature or task back to the todo section.
  */
 final class BacklogEntryReleaseCommand extends AbstractBacklogCommand
 {
-    private const ROLE_MANAGER = 'manager';
-
     private BacklogWorktreeService $worktreeService;
 
     private GitService $gitService;
@@ -54,7 +53,7 @@ final class BacklogEntryReleaseCommand extends AbstractBacklogCommand
     public function handle(array $commandArgs, array $options): void
     {
         $agent = $this->requireCallerAgent();
-        $isManager = $this->readCallerRole() === self::ROLE_MANAGER;
+        $isManager = $this->readCallerRole() === AgentRole::MANAGER->value;
         $board = $this->loadBoard();
         $requestedTarget = $this->boardService->sanitizeString($commandArgs[0] ?? null);
 

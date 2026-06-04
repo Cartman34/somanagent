@@ -5,9 +5,9 @@
 
 declare(strict_types=1);
 
-namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Test;
 
-use Sowapps\SoManAgent\Script\Backlog\Service\EntryRebaseResult;
+use Sowapps\SoManAgent\Script\Backlog\Model\EntryRebaseResult;
 use Sowapps\SoManAgent\Script\Backlog\Command\BacklogEntryRebaseCommand;
 use Sowapps\SoManAgent\Script\Application;
 use Sowapps\SoManAgent\Script\Client\ConsoleClient;
@@ -18,6 +18,7 @@ use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use Sowapps\SoManAgent\Script\Console;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeEntryRebaseService;
 /**
  * Unit tests for {@see BacklogEntryRebaseCommand}.
  *

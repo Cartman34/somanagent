@@ -208,11 +208,11 @@ php scripts/worktree-info.php
 Runs reusable sequential validation campaigns for `php scripts/backlog.php` against test campaign artifacts under `local/tests/`.
 
 ```bash
-php scripts/test-backlog-workflow.php
-php scripts/test-backlog-workflow.php --campaign help
-php scripts/test-backlog-workflow.php --campaign scoped-task-lifecycle
-php scripts/test-backlog-workflow.php --allow-remote --campaign feature-review-lifecycle
-php scripts/test-backlog-workflow.php --keep-artifacts
+php scripts/tests/test-backlog-workflow.php
+php scripts/tests/test-backlog-workflow.php --campaign help
+php scripts/tests/test-backlog-workflow.php --campaign scoped-task-lifecycle
+php scripts/tests/test-backlog-workflow.php --allow-remote --campaign feature-review-lifecycle
+php scripts/tests/test-backlog-workflow.php --keep-artifacts
 ```
 
 Notes:
@@ -233,8 +233,8 @@ Notes:
 Runs unit tests for the `scripts/src/Validation/` classes (currently `ScriptExecBitValidator`). No Docker, no network.
 
 ```bash
-php scripts/test-validation.php
-php scripts/test-validation.php --suite=ScriptExecBitValidatorTest
+php scripts/tests/test-validation.php
+php scripts/tests/test-validation.php --suite=ScriptExecBitValidatorTest
 ```
 
 Notes:
@@ -247,9 +247,9 @@ Notes:
 Runs unit tests for the DevEnv manifest/lockfile/resolver/planner classes. No Docker required.
 
 ```bash
-php scripts/test-dev-env.php
-php scripts/test-dev-env.php --suite=ManifestParserTest
-php scripts/test-dev-env.php --suite=InstallPlannerTest
+php scripts/tests/test-dev-env.php
+php scripts/tests/test-dev-env.php --suite=ManifestParserTest
+php scripts/tests/test-dev-env.php --suite=InstallPlannerTest
 ```
 
 Notes:
@@ -262,7 +262,7 @@ Notes:
 Runs subprocess integration tests for `setup.php`. Spawns the script as a child process; no Docker or actual package installation required.
 
 ```bash
-php scripts/test-setup.php
+php scripts/tests/test-setup.php
 ```
 
 ---

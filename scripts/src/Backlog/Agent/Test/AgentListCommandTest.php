@@ -19,6 +19,7 @@ use Sowapps\SoManAgent\Script\Console;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use Symfony\Component\Yaml\Yaml;
 
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeProcessSignaler;
 /**
  * Command-level tests for {@see AgentListCommand}.
  *

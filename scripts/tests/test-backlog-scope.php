@@ -4,9 +4,9 @@
  * @author Florent HAZARD <f.hazard@sowapps.com>
  */
 // Description: Run unit tests for BacklogScopeService
-// Usage: php scripts/test-backlog-scope.php
+// Usage: php scripts/tests/test-backlog-scope.php
 
-require_once __DIR__ . '/src/bootstrap.php';
+require_once __DIR__ . '/../src/bootstrap.php';
 
 use Sowapps\SoManAgent\Script\Backlog\Test\BacklogScopeServiceTest;
 

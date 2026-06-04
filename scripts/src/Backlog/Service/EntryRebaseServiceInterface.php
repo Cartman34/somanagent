@@ -9,6 +9,7 @@ namespace Sowapps\SoManAgent\Script\Backlog\Service;
 
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
+use Sowapps\SoManAgent\Script\Backlog\Model\EntryRebaseResult;
 
 /**
  * Contract for rebasing an active backlog entry branch onto its canonical target branch.
