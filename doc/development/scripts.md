@@ -58,6 +58,7 @@ php scripts/help.php migrate.php
 | `validate-backend-tests.php` | PHP | Run isolated local PHPUnit checks for backend unit tests from WSL without Docker services |
 | `validate-agent-launchers.php` | PHP | Cross-check `AgentClientLauncher` CLI flags against the local binary `--help` output |
 | `fix-permissions.php` | PHP | Restore the exec bit on shebang-bearing `scripts/*.php` entrypoints |
+| `git-cleanup-branches.php` | PHP | Delete stale git branches merged into main (and, for a human operator, on the remote) |
 | `phpunit.php` | PHP | Run PHPUnit on the project scopes |
 | `phpstan.php` | PHP | Run PHPStan static analysis on backend and/or scripts PHP sources |
 | `rector.php` | PHP | Apply automated code fixes to backend and/or scripts PHP sources via Rector |

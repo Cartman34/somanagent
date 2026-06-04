@@ -98,6 +98,32 @@ final class Console
         exit($code);
     }
 
+    // ── Input ─────────────────────────────────────────────────────────────────
+
+    /**
+     * Asks the operator to confirm a destructive action by typing "yes".
+     *
+     * Prints the warning and the confirmation hint, then reads one line from
+     * STDIN. Returns true only when the operator typed "yes" (case-insensitive,
+     * surrounding whitespace ignored). Returns false when STDIN is not an
+     * interactive terminal (piped, closed, CI), so callers that need a
+     * non-interactive path must offer an explicit force flag.
+     *
+     * @param string $warning Human-readable description of what is about to happen
+     * @return bool True when the operator confirmed with "yes"
+     */
+    public function confirm(string $warning): bool
+    {
+        if (!stream_isatty(STDIN)) {
+            return false;
+        }
+
+        $this->warn($warning);
+        $this->line('  Type "yes" to continue:');
+
+        return strtolower(trim((string) fgets(STDIN))) === 'yes';
+    }
+
     // ── Introspection ─────────────────────────────────────────────────────────
 
     /**
