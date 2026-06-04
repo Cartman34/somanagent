@@ -12,6 +12,7 @@ use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntryMatch;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 
 /**
  * Renames the active entry text for the given agent.
@@ -21,8 +22,6 @@ use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntryMatch;
  */
 final class BacklogEntryRenameCommand extends AbstractBacklogCommand
 {
-    private const ROLE_MANAGER = 'manager';
-
     /**
      * @param BacklogPresenter $presenter
      * @param bool $dryRun
@@ -45,7 +44,7 @@ final class BacklogEntryRenameCommand extends AbstractBacklogCommand
     public function handle(array $commandArgs, array $options): void
     {
         $agent = $this->requireCallerAgent();
-        $isManager = $this->readCallerRole() === self::ROLE_MANAGER;
+        $isManager = $this->readCallerRole() === AgentRole::MANAGER->value;
         $board = $this->loadBoard();
 
         if ($isManager) {

@@ -16,14 +16,7 @@ use Sowapps\SoManAgent\Script\RetryPolicy;
  */
 final class GitHubClient implements GitHubClientInterface
 {
-    private const NETWORK_ERROR_NEEDLES = [
-        'GitHub API transport error:',
-        'Could not resolve host:',
-        'Connection timed out',
-        'Failed to connect',
-        'Operation timed out',
-        'Temporary failure in name resolution',
-    ];
+    use NetworkErrorDetection;
 
     private bool $dryRun;
     private ProjectScriptClient $scripts;
@@ -197,15 +190,12 @@ final class GitHubClient implements GitHubClientInterface
         return trim($this->capture(sprintf('%s %d', GitHubCommandName::PR_VIEW_STATE->value, $prNumber)));
     }
 
-    private function isRetryableNetworkError(string $output): bool
+    /**
+     * @return list<string>
+     */
+    protected function networkErrorNeedles(): array
     {
-        foreach (self::NETWORK_ERROR_NEEDLES as $needle) {
-            if (str_contains($output, $needle)) {
-                return true;
-            }
-        }
-
-        return false;
+        return ['GitHub API transport error:'];
     }
 
     private function networkRetryHelper(): RetryHelper

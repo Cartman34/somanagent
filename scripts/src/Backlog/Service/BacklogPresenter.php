@@ -89,7 +89,7 @@ final class BacklogPresenter
         $this->console->line('PR: ' . $this->describePrStatus($entry));
         $this->console->line('Summary: ' . $entry->getText());
         $this->displayEntryDetails($entry);
-        $this->console->line('Next: ' . $this->nextStepForEntry($entry, $stage));
+        $this->console->line('Next: ' . $this->nextStepForStage($stage));
         $this->console->line('Blocker: ' . ($entry->checkIsBlocked() ? 'blocked' : '-'));
     }
 
@@ -237,26 +237,7 @@ final class BacklogPresenter
         return $entry->getReviewer() ?? BacklogMetaValue::NONE->value;
     }
 
-    private function nextStepForEntry(BoardEntry $entry, string $stage): string
-    {
-        return $this->boardService->checkIsTaskEntry($entry)
-            ? $this->nextStepForTaskStage($stage)
-            : $this->nextStepForStage($stage);
-    }
-
     private function nextStepForStage(string $stage): string
-    {
-        return match ($stage) {
-            BacklogBoard::STAGE_IN_PROGRESS => BacklogCommandName::REVIEW_REQUEST->value,
-            BacklogBoard::STAGE_PENDING_REVIEW => BacklogCommandName::REVIEW_CHECK->value . ' or ' . BacklogCommandName::REVIEW_APPROVE->value,
-            BacklogBoard::STAGE_REVIEWING => BacklogCommandName::REVIEW_CANCEL->value . ' or ' . BacklogCommandName::REVIEW_CHECK->value . ' or ' . BacklogCommandName::REVIEW_APPROVE->value,
-            BacklogBoard::STAGE_REJECTED => BacklogCommandName::REWORK->value,
-            BacklogBoard::STAGE_APPROVED => BacklogCommandName::MERGE->value,
-            default => '-',
-        };
-    }
-
-    private function nextStepForTaskStage(string $stage): string
     {
         return match ($stage) {
             BacklogBoard::STAGE_IN_PROGRESS => BacklogCommandName::REVIEW_REQUEST->value,

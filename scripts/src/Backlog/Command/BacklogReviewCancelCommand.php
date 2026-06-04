@@ -13,6 +13,7 @@ use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
 use RuntimeException;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 
 /**
  * Releases a reviewing entry back to the review stage.
@@ -25,8 +26,6 @@ use RuntimeException;
  */
 final class BacklogReviewCancelCommand extends AbstractBacklogCommand
 {
-    private const ROLE_MANAGER = 'manager';
-
     /**
      * @param BacklogPresenter $presenter
      * @param bool $dryRun
@@ -56,7 +55,7 @@ final class BacklogReviewCancelCommand extends AbstractBacklogCommand
         }
         $reference = trim($rawReference);
 
-        $isManager = $this->readCallerRole() === self::ROLE_MANAGER;
+        $isManager = $this->readCallerRole() === AgentRole::MANAGER->value;
 
         $board = $this->loadBoard();
         $entry = $this->boardService

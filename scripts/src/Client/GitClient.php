@@ -19,14 +19,7 @@ use Sowapps\SoManAgent\Script\RetryPolicy;
  */
 final class GitClient implements GitClientInterface
 {
-    private const NETWORK_ERROR_NEEDLES = [
-        'fatal: unable to access',
-        'Could not resolve host:',
-        'Connection timed out',
-        'Failed to connect',
-        'Operation timed out',
-        'Temporary failure in name resolution',
-    ];
+    use NetworkErrorDetection;
 
     private bool $dryRun;
     private bool $networkDisabled;
@@ -733,15 +726,12 @@ final class GitClient implements GitClientInterface
         return $result;
     }
 
-    private function isRetryableNetworkError(string $output): bool
+    /**
+     * @return list<string>
+     */
+    protected function networkErrorNeedles(): array
     {
-        foreach (self::NETWORK_ERROR_NEEDLES as $needle) {
-            if (str_contains($output, $needle)) {
-                return true;
-            }
-        }
-
-        return false;
+        return ['fatal: unable to access'];
     }
 
     private static function isTruthyEnvironmentValue(string $value): bool
