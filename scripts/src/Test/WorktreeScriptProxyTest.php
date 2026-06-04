@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
+namespace Sowapps\SoManAgent\Script\Test;
 
 use Sowapps\SoManAgent\Script\WorktreeScriptProxy;
 

@@ -17,6 +17,7 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AgentSessionsCommand;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
 use Sowapps\SoManAgent\Script\Console;
 
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeAgentClientLauncher;
 /**
  * Command-level tests for {@see AgentSessionsCommand}.
  *

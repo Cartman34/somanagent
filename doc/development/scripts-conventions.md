@@ -108,6 +108,15 @@ Expected author syntax:
 - If a test needs example variants that should not change with production config, put them in an explicit `resources/` or `fixtures/` directory next to the relevant test suite.
 - Avoid large inline fixture strings in test methods when a named fixture file makes the intent clearer, even if that means keeping several fixture versions.
 
+## Test Class Location
+
+Two distinct test namespaces coexist, by intent:
+
+- `scripts/src/<Domain>/Test/` (e.g. `Backlog\Test`, `Backlog\Agent\Test`) holds **colocated unit tests** for the classes of that domain. A test lives next to the code it exercises: a test for `Backlog\Service\BacklogBoardService` belongs in `Backlog\Test`, not in `Backlog\Agent\Test`. Shared fakes and null implementations used by these tests live in a `Support/` subfolder (e.g. `Backlog\Agent\Test\Support`).
+- `scripts/src/Test/Backlog/` (`Test\Backlog`) holds **end-to-end campaign infrastructure** (drivers, campaigns) that drive the scripts as subprocesses.
+
+A test for a class outside any domain (e.g. a root-level `scripts/src/` class) goes in `scripts/src/Test/`, not in an unrelated domain's `Test/` folder.
+
 ## Test Runners Location
 
 Top-level test runner scripts (`test-*.php`) live under `scripts/tests/`, not directly at the root of `scripts/`. The root of `scripts/` is reserved for production-running entrypoints (`backlog.php`, `setup.php`, `github.php`, etc.).

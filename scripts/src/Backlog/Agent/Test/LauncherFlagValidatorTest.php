@@ -11,6 +11,7 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Service\LauncherFlagValidator;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ProcessRunner;
 
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeAgentClientLauncher;
 /**
  * Unit tests for LauncherFlagValidator.
  *

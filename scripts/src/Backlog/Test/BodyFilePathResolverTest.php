@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
+namespace Sowapps\SoManAgent\Script\Backlog\Test;
 
 use Sowapps\SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
 use Sowapps\SoManAgent\Script\Application;

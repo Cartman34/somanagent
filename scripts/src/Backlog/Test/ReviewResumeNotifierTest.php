@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Backlog\Test;
 
-use Sowapps\SoManAgent\Script\Backlog\Agent\Test\FakeSessionDriver;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeSessionDriver;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Service\ReviewResumeNotifier;

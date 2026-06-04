@@ -30,6 +30,12 @@ use Sowapps\SoManAgent\Script\RetryPolicy;
 use Sowapps\SoManAgent\Script\Client\ProjectScriptClient;
 use Symfony\Component\Yaml\Yaml;
 
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeAgentClientLauncher;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeBacklogCommandRunner;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeProcessRunner;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeProcessSignaler;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeSessionDriver;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\NullEntryRebaseService;
 /**
  * Command-level coverage for start --watch and --loop.
  */

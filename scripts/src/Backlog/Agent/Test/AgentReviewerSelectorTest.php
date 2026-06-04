@@ -17,6 +17,7 @@ use Sowapps\SoManAgent\Script\Client\FilesystemClient;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use Symfony\Component\Yaml\Yaml;
 
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeBacklogCommandRunner;
 /**
  * Unit tests for AgentReviewerSelector — auto-selection, owned reviewing entry, and conflict detection.
  */

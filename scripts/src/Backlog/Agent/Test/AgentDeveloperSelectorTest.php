@@ -15,6 +15,7 @@ use Sowapps\SoManAgent\Script\Client\FilesystemClient;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Symfony\Component\Yaml\Yaml;
 
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeBacklogCommandRunner;
 /**
  * Unit tests for AgentDeveloperSelector — active entry detection and first-queued selection.
  */

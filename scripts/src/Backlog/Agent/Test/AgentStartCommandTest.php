@@ -40,6 +40,13 @@ use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\WaOccupantChoice;
 use Symfony\Component\Yaml\Yaml;
 
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeAgentClientLauncher;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeBacklogCommandRunner;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeEntryRebaseService;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeProcessRunner;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeProcessSignaler;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeSessionDriver;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\NullEntryRebaseService;
 /**
  * Command-level tests for {@see AgentStartCommand}.
  *
