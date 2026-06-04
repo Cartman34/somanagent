@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Backlog\Test;
 
-use Sowapps\SoManAgent\Script\Backlog\Service\EntryRebaseResult;
+use Sowapps\SoManAgent\Script\Backlog\Model\EntryRebaseResult;
 use Sowapps\SoManAgent\Script\Backlog\Command\BacklogEntryRebaseCommand;
 use Sowapps\SoManAgent\Script\Application;
 use Sowapps\SoManAgent\Script\Client\ConsoleClient;

@@ -26,7 +26,7 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentDeveloperSelector;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Exception\ActiveSessionException;
-use Sowapps\SoManAgent\Script\Backlog\Service\EntryRebaseResult;
+use Sowapps\SoManAgent\Script\Backlog\Model\EntryRebaseResult;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncher;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentModelResolver;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentLaunchPromptResolver;

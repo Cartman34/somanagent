@@ -5,9 +5,11 @@
 
 declare(strict_types=1);
 
-namespace Sowapps\SoManAgent\Script\Client;
+namespace Sowapps\SoManAgent\Script\Client\GitHub;
 
-use Sowapps\SoManAgent\Script\GitHub\Enum\GitHubCommandName;
+use Sowapps\SoManAgent\Script\Client\AppScript;
+use Sowapps\SoManAgent\Script\Client\NetworkErrorDetection;
+use Sowapps\SoManAgent\Script\Client\ProjectScriptClient;
 use Sowapps\SoManAgent\Script\RetryHelper;
 use Sowapps\SoManAgent\Script\RetryPolicy;
 

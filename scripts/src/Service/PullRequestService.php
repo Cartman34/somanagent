@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\Service;
 
 use Sowapps\SoManAgent\Script\Backlog\Enum\PullRequestTag;
-use Sowapps\SoManAgent\Script\Client\GitHubClientInterface;
+use Sowapps\SoManAgent\Script\Client\GitHub\GitHubClientInterface;
 use Sowapps\SoManAgent\Script\RetryHelper;
 use Sowapps\SoManAgent\Script\RetryPolicy;
 

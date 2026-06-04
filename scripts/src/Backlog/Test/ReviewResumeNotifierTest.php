@@ -10,7 +10,7 @@ namespace Sowapps\SoManAgent\Script\Backlog\Test;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeSessionDriver;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
-use Sowapps\SoManAgent\Script\Backlog\Service\ReviewResumeNotifier;
+use Sowapps\SoManAgent\Script\Backlog\Agent\Service\ReviewResumeNotifier;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
