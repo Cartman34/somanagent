@@ -4,6 +4,8 @@ Single entrypoint for AI agents working on this repository.
 
 Read this file first. Open additional files only when the active task requires them.
 
+Shared cross-project rules: `scripts/toolkit/doc/AGENTS-common.md` (via the toolkit portal).
+
 ## Core Rules
 
 - Work from `~/projects/somanagent` in the WSL native filesystem, never from `/mnt/c/...`.
