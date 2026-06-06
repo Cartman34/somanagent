@@ -28,6 +28,13 @@ Read this file first. Open additional files only when the active task requires t
 - For any explicit workflow keyword from the documented process, execute the documented procedure exactly as defined. Do not substitute your own interpretation of the task state, do not short-circuit the procedure based on memory, and do not refuse the action unless the documented procedure itself fails.
 - When reporting problems, questions, or decisions to the user, number each item (1, 2, 3…) and label each solution with a letter (A, B, C…).
 
+## Communication
+
+- Keep responses short and summarized: only the information relevant to the request, no filler.
+- Do not restate context the user already has. Optimize for tokens.
+- Avoid code in responses unless the user explicitly asks for it.
+- Caveman mode: when active, reply in terse caveman-speak. Toggle off with `caveman off` (revert to the rules above), back on with `caveman on`.
+
 ## Local Source Of Truth
 
 - Pending backlog: `local/backlog-board.md`
