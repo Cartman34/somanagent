@@ -1,7 +1,25 @@
 {
     "name": "sowapps/somanagent-scripts",
     "type": "project",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../../web-toolkit",
+            "options": {
+                "symlink": true
+            }
+        },
+        {
+            "type": "path",
+            "url": "../../web-backlog",
+            "options": {
+                "symlink": true
+            }
+        }
+    ],
     "require": {
+        "sowapps/web-toolkit": "@dev",
+        "sowapps/web-backlog": "@dev",
         "symfony/yaml": "^7.2",
         "phpstan/phpstan": "^2.1",
         "phpstan/phpstan-symfony": "^2.0",
