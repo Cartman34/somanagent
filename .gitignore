@@ -16,8 +16,9 @@ backend/.env.*.local
 # === SCRIPTS ===
 scripts/vendor/
 scripts/resources/dependencies.lock
-# Toolkit portal: relative symlink to the sibling web-toolkit clone, posed locally (see AGENTS.md), not committed.
+# Portals: relative symlinks to sibling clones, posed locally (see AGENTS.md), not committed.
 scripts/toolkit
+scripts/backlog
 
 # === FRONTEND REACT ===
 frontend/node_modules/

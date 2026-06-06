@@ -5,7 +5,8 @@ Single entrypoint for AI agents working on this repository.
 Read this file first. Open additional files only when the active task requires them.
 
 Shared cross-project rules: `scripts/toolkit/doc/AGENTS-common.md` (via the toolkit portal).
-Pose the portal once (relative symlink to the sibling clone, not committed): `ln -s ../../web-toolkit/scripts/toolkit scripts/toolkit`
+Pose the portals once (relative symlinks to sibling clones, not committed):
+`ln -s ../../web-toolkit/scripts/toolkit scripts/toolkit` and `ln -s ../../web-backlog/scripts/backlog scripts/backlog`
 
 ## Core Rules
 
