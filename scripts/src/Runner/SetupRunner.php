@@ -40,7 +40,7 @@ use Sowapps\Toolkit\Runner\AbstractScriptRunner;
  *
  * Manages installation and lifecycle of host-level dependencies (apt, npm, GitHub releases)
  * using a manifest + lockfile model (similar to Composer). Help is driven by YAML resources
- * under scripts/resources/setup/.
+ * under scripts/resources/runners/setup/.
  *
  * Subcommands:
  *   install    — Install host dependencies from the lockfile (spec §4.1)

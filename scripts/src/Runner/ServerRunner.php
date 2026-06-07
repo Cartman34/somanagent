@@ -16,7 +16,7 @@ use Sowapps\Toolkit\Runner\AbstractScriptRunner;
  *
  * Manages starting, stopping, restarting, and health-checking the Docker services
  * that back the local development environment. Help is driven by YAML resources
- * under scripts/resources/server/.
+ * under scripts/resources/runners/server/.
  *
  * Docker Compose profiles:
  *   - no profile (always started): db, redis
