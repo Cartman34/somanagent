@@ -12,7 +12,7 @@ examples:
   - 'php scripts/setup.php update --dry-run'
   - 'php scripts/setup.php update --force'
 notes:
-  - 'Materializes local/backlog/config.yaml from scripts/resources/backlog/config.yaml.dist if absent (same as install). Idempotent: never overwrites an existing local config.'
+  - 'Delegates backlog config preparation to scripts/backlog/install.php (same as install). Idempotent: never overwrites an existing local config.'
   - 'Queries each source declared in the manifest (apt-cache, npm view, GitHub releases API) to resolve the highest satisfying version.'
   - 'Writes the new lockfile to scripts/resources/dependencies.lock after a successful apply.'
   - 'Idempotent: running update with an unchanged manifest produces the same lockfile with no system mutations.'
