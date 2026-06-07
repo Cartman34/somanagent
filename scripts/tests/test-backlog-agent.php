@@ -43,7 +43,6 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Test\LauncherFlagValidatorTest;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\OpenCodeAgentLauncherTest;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\SystemInteractiveProcessRunnerTest;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\TmuxSessionDriverTest;
-use Sowapps\SoManAgent\Script\Test\WorktreeScriptProxyTest;
 use Sowapps\SoManAgent\Script\Backlog\Test\BacklogCommitGateCommandTest;
 use Sowapps\SoManAgent\Script\Backlog\Test\BacklogPreCommitHookTest;
 use Sowapps\SoManAgent\Script\Backlog\Test\BacklogReviewApproveCommandTest;
@@ -90,7 +89,6 @@ $suites = [
     'PostMergeSessionStopperTest' => static fn(): int => (new PostMergeSessionStopperTest())->run(),
     'ReviewResumeNotifierTest' => static fn(): int => (new ReviewResumeNotifierTest())->run(),
     'GitClientTest' => static fn(): int => (new GitClientTest())->run(),
-    'WorktreeScriptProxyTest' => static fn(): int => (new WorktreeScriptProxyTest())->run(),
     'ClaudeAgentLauncherTest' => static fn(): int => (new ClaudeAgentLauncherTest())->run(),
     'CodexAgentLauncherTest' => static fn(): int => (new CodexAgentLauncherTest())->run(),
     'DirectSessionDriverTest' => static fn(): int => (new DirectSessionDriverTest())->run(),

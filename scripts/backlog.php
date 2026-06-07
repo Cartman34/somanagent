@@ -19,8 +19,5 @@
 require_once __DIR__ . '/src/bootstrap.php';
 
 use Sowapps\SoManAgent\Script\Runner\BacklogRunner;
-use Sowapps\SoManAgent\Script\WorktreeScriptProxy;
-
-WorktreeScriptProxy::run($argv);
 
 (new BacklogRunner())->handle($argv);

@@ -7,7 +7,6 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
-use Sowapps\SoManAgent\Script\WorktreeScriptProxy;
 use Sowapps\SoManAgent\Script\SoManAgentApplication;
 use Sowapps\Toolkit\Runner\AbstractScriptRunner;
 
@@ -60,8 +59,7 @@ final class MigrateRunner extends AbstractScriptRunner
 
         if (isset($options['generate'])) {
             $agentCode = $this->detectAgentCode();
-            $boardRoot = $this->detectBoardRoot();
-            return (new MigrateGenerateService(SoManAgentApplication::getInstance(), $agentCode, $this->projectRoot, $boardRoot))->run();
+            return (new MigrateGenerateService(SoManAgentApplication::getInstance(), $agentCode, $this->projectRoot, $this->projectRoot))->run();
         }
 
         try {
@@ -74,59 +72,15 @@ final class MigrateRunner extends AbstractScriptRunner
     }
 
     /**
-     * Resolves the agent code for the current execution context.
-     *
-     * When running inside a linked WA the agent code is extracted from the
-     * last path segment of the WA root (e.g. ".agent-worktrees/d04" → "d04").
-     * Outside a linked WA the SOMANAGER_AGENT env var is used as fallback,
-     * and "main" is returned when neither is available.
+     * Resolves the agent code, required for --generate (it names the temporary database).
      */
     private function detectAgentCode(): string
     {
-        // SOMANAGER_AGENT is checked first: without this, running
-        // "SOMANAGER_AGENT=foo php scripts/migrate.php --generate" from inside a
-        // linked WA would silently ignore the explicit agent and use the WA directory
-        // name instead, because WorktreeScriptProxy::detect sees the WA script path.
-        // WA-path detection is kept as a fallback for interactive use without the prefix.
         $fromEnv = trim((string) getenv('SOMANAGER_AGENT'));
-        if ($fromEnv !== '') {
-            return $fromEnv;
+        if ($fromEnv === '') {
+            $this->console->fail('SOMANAGER_AGENT is required for migrate --generate.');
         }
 
-        if ($this->scriptFile !== null) {
-            try {
-                $context = WorktreeScriptProxy::detect($this->scriptFile);
-                if ($context->isLinkedWorktree()) {
-                    return basename($context->getCurrentRoot());
-                }
-            } catch (\RuntimeException) {
-                // Not in git repo or path cannot be resolved — fall through
-            }
-        }
-
-        return 'main';
-    }
-
-    /**
-     * Resolves the WP (main worktree) root where the canonical backlog board lives.
-     *
-     * When running inside a linked WA, returns the main worktree root so that
-     * board reads target the live board in WP, not the WA copy.
-     * Falls back to $projectRoot when the script is not in a linked worktree.
-     */
-    private function detectBoardRoot(): string
-    {
-        if ($this->scriptFile !== null) {
-            try {
-                $context = WorktreeScriptProxy::detect($this->scriptFile);
-                if ($context->isLinkedWorktree()) {
-                    return $context->getMainRoot();
-                }
-            } catch (\RuntimeException) {
-                // Not in git repo or path cannot be resolved — fall through
-            }
-        }
-
-        return $this->projectRoot;
+        return $fromEnv;
     }
 }
