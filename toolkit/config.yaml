@@ -1,0 +1,41 @@
+# Toolkit project configuration — read by the generic toolkit runners.
+# @see scripts/toolkit/doc/maintaining/config.md
+appName: somanagent
+appLabel: 'somanagent'
+
+# Directories holding executable scripts (help, fix-permissions).
+scripts_dirs:
+  - scripts/toolkit
+
+# Filename globs whose exec bit is managed under scripts_dirs (fix-permissions).
+# Defaults to ["*.php"] when omitted.
+permissions:
+  exec_bit:
+    - "*.php"
+
+# Analysis scopes for phpstan / rector / code-refacto: name -> directories.
+analysis:
+  scripts:
+    - scripts/src
+
+# Composer roots (name -> path relative to the project root): PSR-4 source for code-refacto.
+composers:
+  scripts: scripts
+
+# Validation rules (validate-files): file pattern -> validators (cumulative).
+# Built-in toolkit validators: php-syntax, exec-bit.
+# App-specific validators are declared under `validators` (name -> FQCN).
+validations:
+  - match: "scripts/**/*.php"
+    run: [php-syntax, exec-bit]
+
+# App-specific validator registry (name -> FQCN). Built-ins need no entry here.
+# validators:
+#   openapi-consistency: App\Validation\OpenApiConsistencyValidator
+
+# Optional tool config-file overrides (binaries ship with the toolkit).
+# tools:
+#   phpstan:
+#     config: config/phpstan.neon
+#   rector:
+#     config: config/rector.php
