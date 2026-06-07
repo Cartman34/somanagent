@@ -1,3 +1,0 @@
-description: 'List open pull requests'
-examples:
-  - 'php scripts/toolkit/github.php pr-list'

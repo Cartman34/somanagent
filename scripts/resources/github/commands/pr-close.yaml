@@ -1,7 +1,0 @@
-description: 'Close a pull request'
-arguments:
-  -
-    name: '<number>'
-    description: 'Pull request number to close'
-examples:
-  - 'php scripts/toolkit/github.php pr-close 42'
