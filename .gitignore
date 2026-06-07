@@ -61,7 +61,7 @@ desktop.ini
 # === Global ===
 !.gitkeep
 
-# === Backlog (managed by scripts/backlog/install.php) ===
+# >>> backlog — managed block, do not edit between markers
 # Local backlog files — never committed: config.yaml is tuned locally (no override system yet),
 # board/review/locks/logs/migrations are per-checkout runtime.
 /backlog/config.yaml
@@ -71,3 +71,4 @@ desktop.ini
 /backlog/lock
 /backlog/log
 /backlog/migrations.applied
+# <<< backlog
