@@ -7,13 +7,13 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
-use Sowapps\SoManAgent\Script\Backlog\Agent\Service\LauncherFlagReport;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ShellProcessRunner;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ClaudeAgentLauncher;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\CodexAgentLauncher;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\OpenCodeAgentLauncher;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Client\GeminiAgentLauncher;
-use Sowapps\SoManAgent\Script\Backlog\Agent\Service\LauncherFlagValidator;
+use Sowapps\Backlog\Service\LauncherFlagReport;
+use Sowapps\Backlog\Client\ShellProcessRunner;
+use Sowapps\Backlog\Client\ClaudeAgentLauncher;
+use Sowapps\Backlog\Client\CodexAgentLauncher;
+use Sowapps\Backlog\Client\OpenCodeAgentLauncher;
+use Sowapps\Backlog\Client\GeminiAgentLauncher;
+use Sowapps\Backlog\Service\LauncherFlagValidator;
 use Sowapps\Toolkit\Runner\AbstractScriptRunner;
 
 /**

@@ -28,10 +28,12 @@ composers:
 validations:
   - match: "scripts/**/*.php"
     run: [php-syntax, exec-bit]
+  - match: "doc/technical/openapi.yaml"
+    run: [openapi-consistency]
 
 # App-specific validator registry (name -> FQCN). Built-ins need no entry here.
-# validators:
-#   openapi-consistency: App\Validation\OpenApiConsistencyValidator
+validators:
+  openapi-consistency: Sowapps\SoManAgent\Script\Validation\OpenApiConsistencyValidator
 
 # Optional tool config-file overrides (binaries ship with the toolkit).
 # tools:

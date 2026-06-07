@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
-use Sowapps\SoManAgent\Script\Backlog\Service\BacklogScopeService;
+use Sowapps\Backlog\Service\BacklogScopeService;
 use Sowapps\Toolkit\Runner\AbstractScriptRunner;
 
 /**

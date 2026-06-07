@@ -18,6 +18,6 @@
 
 require_once __DIR__ . '/src/bootstrap.php';
 
-use Sowapps\SoManAgent\Script\Runner\BacklogRunner;
+use Sowapps\Backlog\Runner\BacklogBoardRunner;
 
-(new BacklogRunner())->handle($argv);
+(new BacklogBoardRunner())->handle($argv);

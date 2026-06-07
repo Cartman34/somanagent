@@ -18,7 +18,6 @@ use Sowapps\SoManAgent\Script\DevEnv\SystemCommandRunner;
 use Sowapps\SoManAgent\Script\DevEnv\InstallPlanner;
 use Sowapps\SoManAgent\Script\DevEnv\PlannedDep;
 use Sowapps\SoManAgent\Script\DevEnv\PreviewBuilder;
-use Sowapps\SoManAgent\Script\Setup\LocalConfigBootstrap;
 use Sowapps\SoManAgent\Script\DevEnv\Installer\ProjectDepsInstaller;
 use Sowapps\SoManAgent\Script\DevEnv\ManifestResolver;
 use Sowapps\SoManAgent\Script\DevEnv\SystemSourceQuerier;
@@ -163,6 +162,22 @@ final class SetupRunner extends AbstractScriptRunner
      *
      * @param array<string, bool|string|array<bool|string>> $options
      */
+    /**
+     * Delegates backlog config preparation to the backlog package's own installer (its wrapper).
+     */
+    private function installBacklog(): void
+    {
+        if ($this->dryRun) {
+            $this->console->line('  [dry-run] Would run: php scripts/backlog/install.php');
+
+            return;
+        }
+        $this->app->runCommand('php scripts/backlog/install.php');
+    }
+
+    /**
+     * @param array<string, bool|string|array<bool|string>> $options
+     */
     private function runInstall(array $options): int
     {
         $this->previewOnly = isset($options[self::OPT_PREVIEW_ONLY]);
@@ -203,7 +218,7 @@ final class SetupRunner extends AbstractScriptRunner
             return 0;
         }
 
-        LocalConfigBootstrap::materialize($root, $this->dryRun, $this->console);
+        $this->installBacklog();
 
         if ($this->dryRun) {
             $preview->renderSimulatedCommands($plan, $installers);
@@ -287,7 +302,7 @@ final class SetupRunner extends AbstractScriptRunner
             return 0;
         }
 
-        LocalConfigBootstrap::materialize($root, $this->dryRun, $this->console);
+        $this->installBacklog();
 
         if ($this->dryRun) {
             $preview->renderSimulatedCommands($plan, $installers);

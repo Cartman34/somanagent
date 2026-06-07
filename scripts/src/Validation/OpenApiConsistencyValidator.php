@@ -8,38 +8,54 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\Validation;
 
 use Sowapps\SoManAgent\Script\Api\ControllerRouteCatalog;
+use Sowapps\Toolkit\Validation\FileValidator;
+use Sowapps\Toolkit\Validation\ValidationResult;
 use Symfony\Component\Yaml\Yaml;
 
 /**
  * Validates the consistency between controller routes and the OpenAPI specification.
+ *
+ * App-specific file validator (declared in `toolkit/config.yaml` under `validators`): the
+ * validate-files dispatcher instantiates it with the project root and runs it on the OpenAPI spec.
  *
  * The contract is intentionally spec-first:
  * - every implemented route must exist in the specification
  * - every documented operation marked as implemented must exist in the code
  * - planned operations may stay ahead of the code with `x-somanagent-implemented: false`
  */
-final class OpenApiConsistencyValidator
+final class OpenApiConsistencyValidator implements FileValidator
 {
     private const DOCUMENTED_METHODS = ['get', 'post', 'put', 'patch', 'delete'];
 
-    /**
-     * Initializes the validator with a controller route catalog.
-     */
     public function __construct(
+        private readonly string $projectRoot,
         private readonly ControllerRouteCatalog $controllerRouteCatalog = new ControllerRouteCatalog(),
     ) {}
 
     /**
-     * Validates the OpenAPI specification against the current Symfony controllers.
+     * @param list<string> $files
+     * @param array<string, bool|string> $options
+     */
+    public function validate(array $files, array $options): ValidationResult
+    {
+        $errors = $this->collectErrors();
+
+        return $errors === []
+            ? ValidationResult::ok('openapi-consistency')
+            : ValidationResult::fail('openapi-consistency', $errors);
+    }
+
+    /**
+     * Runs the spec/code consistency check.
      *
      * @return list<string> Human-readable validation errors. Empty means success.
      */
-    public function validate(string $projectRoot): array
+    private function collectErrors(): array
     {
-        require_once $projectRoot . '/backend/vendor/autoload.php';
+        require_once $this->projectRoot . '/backend/vendor/autoload.php';
 
-        $specificationPath = $projectRoot . '/doc/technical/openapi.yaml';
-        $controllerDirectory = $projectRoot . '/backend/src/Controller';
+        $specificationPath = $this->projectRoot . '/doc/technical/openapi.yaml';
+        $controllerDirectory = $this->projectRoot . '/backend/src/Controller';
 
         if (!is_file($specificationPath)) {
             return ["OpenAPI specification not found: $specificationPath"];

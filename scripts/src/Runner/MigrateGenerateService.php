@@ -9,7 +9,7 @@ namespace Sowapps\SoManAgent\Script\Runner;
 
 use Sowapps\Toolkit\Console;
 use Sowapps\SoManAgent\Script\SoManAgentApplication;
-use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
+use Sowapps\Backlog\Service\BacklogBoardService;
 use Sowapps\Toolkit\TextSlugger;
 use Sowapps\Toolkit\Client\FilesystemClient;
 
