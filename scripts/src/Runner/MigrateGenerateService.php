@@ -267,7 +267,7 @@ final class MigrateGenerateService
         }
 
         $code = $this->app->runCommand(sprintf(
-            'SOMANAGER_ROLE=developer SOMANAGER_AGENT=%s php scripts/backlog.php entry-set-meta %s %s',
+            'SOMANAGER_ROLE=developer SOMANAGER_AGENT=%s php scripts/backlog/backlog.php entry-set-meta %s %s',
             escapeshellarg($this->agentCode),
             escapeshellarg($entryRef),
             escapeshellarg('database=' . $dbName),
@@ -287,7 +287,7 @@ final class MigrateGenerateService
         }
 
         $code = $this->app->runCommand(sprintf(
-            'SOMANAGER_ROLE=developer SOMANAGER_AGENT=%s php scripts/backlog.php entry-set-meta %s %s',
+            'SOMANAGER_ROLE=developer SOMANAGER_AGENT=%s php scripts/backlog/backlog.php entry-set-meta %s %s',
             escapeshellarg($this->agentCode),
             escapeshellarg($entryRef),
             escapeshellarg('database='),

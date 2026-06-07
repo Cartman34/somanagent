@@ -4,4 +4,4 @@ arguments:
     name: '<number>'
     description: 'Pull request number to view'
 examples:
-  - 'php scripts/github.php pr-view 42'
+  - 'php scripts/toolkit/github.php pr-view 42'

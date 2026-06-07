@@ -46,7 +46,7 @@ These files are part of the project codebase and must follow explicit convention
   - `Description:`
   - one or more `Usage:`
 - Every runnable script must accept `-h` or `--help` and display its header (description + usage).
-- `php scripts/help.php` must remain accurate.
+- `php scripts/toolkit/help.php` must remain accurate.
 - `doc/development/scripts.md` must list runnable scripts that are intended for developer use.
 - Inline comments follow [`conventions.md` — Comments](../technical/conventions.md#comments). External-tool integrations and system boundaries (sandbox, locks, env vars, signals, FS outside the project) are explicit cases where a comment is essential; apply the canonical rule.
 - Deeper rules or cross-cutting standards for scripts belong in this file, not in a local `README` inside `scripts/`.
@@ -55,7 +55,7 @@ These files are part of the project codebase and must follow explicit convention
 
 - Every runnable script (any file under `scripts/` that starts with `#!`) must carry the exec bit in the git index, persisted via `git update-index --chmod=+x <file>`. Running `chmod +x` locally is not enough — the mode must be recorded in the index so it survives a fresh clone.
 - Verify the index mode with `git ls-files --stage scripts/*.php` — the leading column must read `100755` (not `100644`) for every shebang-bearing file.
-- This invariant is enforced at review time by `scripts/validate-files.php`, which reports `Script exec bit: FAIL` and prints a `git update-index --chmod=+x` recovery hint for each shebang-bearing script that lost its exec bit. Repair the regression in one step with `php scripts/fix-permissions.php`, which applies `chmod +x` and `git update-index --chmod=+x` to every shebang-bearing entrypoint missing the bit.
+- This invariant is enforced at review time by `scripts/toolkit/validate-files.php`, which reports `Script exec bit: FAIL` and prints a `git update-index --chmod=+x` recovery hint for each shebang-bearing script that lost its exec bit. Repair the regression in one step with `php scripts/toolkit/fix-permissions.php`, which applies `chmod +x` and `git update-index --chmod=+x` to every shebang-bearing entrypoint missing the bit.
 - PHP files under `scripts/` that are not runnable (libraries, generated code, fixtures) intentionally have no shebang and are skipped by the validator.
 
 Expected author syntax:
@@ -135,7 +135,7 @@ One-shot data or format migrations are not permanent tooling. They exist for a b
   - `Remove after:` an explicit condition or date for retirement (e.g. "after all WAs have been regenerated" or "after 2026-08-01")
 - Migration scripts must be idempotent: running them twice produces the same result, including on an already-migrated dataset (no-op on the second run).
 - Each migration script must mark itself as applied only after a successful execution by writing its own filename to `local/backlog/migrations.applied`. The script owns this marker update; backlog bootstrap only reads the marker.
-- `scripts/backlog.php` compares the migration filenames present under `scripts/migrations/` with `local/backlog/migrations.applied` before dispatching any command. A missing marker is seeded with the migrations known before this convention existed, so old migrations do not create a false alert; any newer unmarked script blocks all backlog commands until the operator runs it.
+- `scripts/backlog/backlog.php` compares the migration filenames present under `scripts/migrations/` with `local/backlog/migrations.applied` before dispatching any command. A missing marker is seeded with the migrations known before this convention existed, so old migrations do not create a false alert; any newer unmarked script blocks all backlog commands until the operator runs it.
 - The active registry lives in [`migrations.md`](migrations.md). Every migration is listed there with its slug, introduction date, expected removal trigger, and current status (active / applied / retired).
 - Once retired, the file is deleted and its registry entry is marked `retired` with the actual removal date; entries are kept in the registry as historical record.
 - Migration scripts are not listed in [`scripts.md`](scripts.md) — that file documents permanent tooling. `migrations.md` is the sole user-facing surface for migrations.
@@ -163,7 +163,7 @@ PHPStan runs the `tomasvotruba/unused-public` extension on every analysis pass (
 
 ```php
 /**
- * @api Called from top-level scripts (e.g. scripts/phpstan.php) outside the PHPStan analysis path.
+ * @api Called from top-level scripts (e.g. scripts/toolkit/phpstan.php) outside the PHPStan analysis path.
  */
 public function handle(array $argv): int { ... }
 ```

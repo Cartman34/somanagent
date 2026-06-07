@@ -11,8 +11,8 @@ options:
     name: '--rebase'
     description: 'Rebase merge'
 examples:
-  - 'php scripts/github.php pr-merge 42'
-  - 'php scripts/github.php pr-merge 42 --squash'
-  - 'php scripts/github.php pr-merge 42 --rebase'
+  - 'php scripts/toolkit/github.php pr-merge 42'
+  - 'php scripts/toolkit/github.php pr-merge 42 --squash'
+  - 'php scripts/toolkit/github.php pr-merge 42 --rebase'
 notes:
   - 'Default merge method is a regular merge commit'

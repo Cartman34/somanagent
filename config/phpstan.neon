@@ -5,8 +5,8 @@
 # `php scripts/scripts-install.php` is enough to get static analysis running,
 # without requiring the backend Docker environment.
 #
-# To run: php scripts/phpstan.php
-# To restrict scope: php scripts/phpstan.php --scope=backend  |  php scripts/phpstan.php --scope=scripts
+# To run: php scripts/toolkit/phpstan.php
+# To restrict scope: php scripts/toolkit/phpstan.php --scope=backend  |  php scripts/toolkit/phpstan.php --scope=scripts
 
 includes:
     - ../scripts/vendor/phpstan/phpstan-symfony/extension.neon

@@ -4,4 +4,4 @@ arguments:
     name: '<number>'
     description: 'Pull request number to close'
 examples:
-  - 'php scripts/github.php pr-close 42'
+  - 'php scripts/toolkit/github.php pr-close 42'

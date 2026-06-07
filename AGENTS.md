@@ -44,7 +44,7 @@ Pose the portals once (relative symlinks to sibling clones, not committed):
 - Pending backlog: `local/backlog-board.md`
 - Review state: `local/backlog-review.md`
 - Files under `local/` are local-only and must not be committed.
-- Never edit local backlog files manually when `php scripts/backlog.php` covers the action.
+- Never edit local backlog files manually when `php scripts/backlog/backlog.php` covers the action.
 - For detailed backlog rules and workflow behavior, read `doc/development/agent-workflow.md` when needed.
 
 ## Role Selection
@@ -63,7 +63,7 @@ Use one active role only.
 
 ## Agent Session Launcher
 
-Sessions are started by the operator using `php scripts/backlog-agent.php start <client> --developer|--reviewer|--manager`.
+Sessions are started by the operator using `php scripts/backlog/agent.php start <client> --developer|--reviewer|--manager`.
 
 When a session is active, the following environment variables are injected into the process:
 
@@ -76,7 +76,7 @@ When a session is active, the following environment variables are injected into 
 
 A context file is generated at `<WA>/local/agent-context.md` on every session start and resume. It contains the working directory, current task, allowed commands, user keywords, and backlog vocabulary. Read it when context is needed.
 
-Run `php scripts/backlog-agent.php whoami` from inside a WA to confirm the session identity.
+Run `php scripts/backlog/agent.php whoami` from inside a WA to confirm the session identity.
 
 ## Git Rules
 
@@ -84,7 +84,7 @@ Run `php scripts/backlog-agent.php whoami` from inside a WA to confirm the sessi
 - Developers do not push manually.
 - Reviewers may push existing feature branches only when the workflow requires it and no script wrapper exists yet.
 - Never amend a published commit.
-- Use `php scripts/github.php` for GitHub operations instead of `gh`.
+- Use `php scripts/toolkit/github.php` for GitHub operations instead of `gh`.
 - Use `git -C <path>` instead of `cd <path> && git ...`.
 
 For local troubleshooting and useful runtime checks, read `doc/development/troubleshooting.md` when needed.

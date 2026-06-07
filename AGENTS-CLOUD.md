@@ -228,7 +228,7 @@ Multiple agents can execute simultaneously without local resource contention.
 - Always use `git add .` unless specific file staging is needed
 - Use `git push -u origin <branch>` with no force unless explicitly requested
 - Never amend a published commit
-- Use `php scripts/github.php` for GitHub operations instead of `gh`
+- Use `php scripts/toolkit/github.php` for GitHub operations instead of `gh`
 
 ## Conventions Snapshot
 

@@ -18,14 +18,14 @@ php scripts/migrate.php          # explicit PHP interpreter
 ./scripts/migrate.php            # rely on the script's shebang (#!/usr/bin/env php)
 ```
 
-Both work because every runnable script under `scripts/` declares a `#!/usr/bin/env php` (or equivalent) shebang **and** carries the exec bit in the git index. The exec bit is enforced by `scripts/validate-files.php` at review time — see [Script Conventions / Executable Bit](scripts-conventions.md#executable-bit).
+Both work because every runnable script under `scripts/` declares a `#!/usr/bin/env php` (or equivalent) shebang **and** carries the exec bit in the git index. The exec bit is enforced by `scripts/toolkit/validate-files.php` at review time — see [Script Conventions / Executable Bit](scripts-conventions.md#executable-bit).
 
 ```bash
 # See all available scripts
-php scripts/help.php
+php scripts/toolkit/help.php
 
 # See the help for a specific script
-php scripts/help.php migrate.php
+php scripts/toolkit/help.php migrate.php
 ```
 
 ## Overview
@@ -86,8 +86,8 @@ bash scripts/check-php.sh
 Displays the list of all scripts with their description and usage examples. Automatically parses the header of each script file.
 
 ```bash
-php scripts/help.php              # list all scripts
-php scripts/help.php migrate.php  # detail for one script
+php scripts/toolkit/help.php              # list all scripts
+php scripts/toolkit/help.php migrate.php  # detail for one script
 ```
 
 ---
@@ -96,21 +96,21 @@ php scripts/help.php migrate.php  # detail for one script
 Runs the documented local backlog workflow, including feature start/review/merge and local child task submit/review/merge flows. Can be run from a `WA`: execution is automatically proxied to the equivalent script in `WP` so backlog state always lives in `WP`'s `local/`.
 
 ```bash
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php base-update my-feature
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php start --help
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php start my-feature
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php review-request
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php rename "New description"
-SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=r01 php scripts/backlog.php review-approve my-feature/my-task
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php rework my-feature/my-task
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php merge my-feature/my-task
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog.php worktree-restore --agent d01 --force
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog/backlog.php
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog/backlog.php base-update my-feature
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog/backlog.php start --help
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog/backlog.php start my-feature
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog/backlog.php review-request
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog/backlog.php rename "New description"
+SOMANAGER_ROLE=reviewer SOMANAGER_AGENT=r01 php scripts/backlog/backlog.php review-approve my-feature/my-task
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog/backlog.php rework my-feature/my-task
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog/backlog.php merge my-feature/my-task
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=d01 php scripts/backlog/backlog.php worktree-restore --agent d01 --force
 ```
 
 Notes:
-- run `SOMANAGER_ROLE=<role> SOMANAGER_AGENT=<code> php scripts/backlog.php` for the global backlog help
-- use `SOMANAGER_ROLE=<role> SOMANAGER_AGENT=<code> php scripts/backlog.php <command> --help` for one command
+- run `SOMANAGER_ROLE=<role> SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php` for the global backlog help
+- use `SOMANAGER_ROLE=<role> SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php <command> --help` for one command
 - agent commands must keep the prefix order `SOMANAGER_ROLE` then `SOMANAGER_AGENT`
 - `--agent` is used only by commands where it identifies a target or explicit lookup, not to repeat the caller
 - `base-update` refreshes the recorded Git base after a rebase; features update `origin/main` before using the merge base with it, and local child tasks default to the merge base with their parent feature branch
@@ -139,18 +139,18 @@ Subcommands:
 - `sessions` - list sessions exposed by the configured client
 
 ```bash
-php scripts/backlog-agent.php help
-php scripts/backlog-agent.php help start
-php scripts/backlog-agent.php start claude --developer --code=d04
-php scripts/backlog-agent.php start codex --developer --code=d04 --tier=economy --effort=low
-php scripts/backlog-agent.php start gemini --manager --code=m01 --model=gemini-2.5-pro
-php scripts/backlog-agent.php start codex --reviewer --code=r01
-php scripts/backlog-agent.php start opencode --manager --code=m01
-php scripts/backlog-agent.php list
-php scripts/backlog-agent.php status --code=d04
-php scripts/backlog-agent.php stop --code=d04
-php scripts/backlog-agent.php whoami
-php scripts/backlog-agent.php sessions --code=d04
+php scripts/backlog/agent.php help
+php scripts/backlog/agent.php help start
+php scripts/backlog/agent.php start claude --developer --code=d04
+php scripts/backlog/agent.php start codex --developer --code=d04 --tier=economy --effort=low
+php scripts/backlog/agent.php start gemini --manager --code=m01 --model=gemini-2.5-pro
+php scripts/backlog/agent.php start codex --reviewer --code=r01
+php scripts/backlog/agent.php start opencode --manager --code=m01
+php scripts/backlog/agent.php list
+php scripts/backlog/agent.php status --code=d04
+php scripts/backlog/agent.php stop --code=d04
+php scripts/backlog/agent.php whoami
+php scripts/backlog/agent.php sessions --code=d04
 ```
 
 Notes:
@@ -205,7 +205,7 @@ php scripts/worktree-info.php
 ---
 
 ### `test-backlog-workflow.php`
-Runs reusable sequential validation campaigns for `php scripts/backlog.php` against test campaign artifacts under `local/tests/`.
+Runs reusable sequential validation campaigns for `php scripts/backlog/backlog.php` against test campaign artifacts under `local/tests/`.
 
 ```bash
 php scripts/tests/test-backlog-workflow.php
@@ -470,14 +470,14 @@ Searches a term across `backend/src/` PHP files, `frontend/src/` TS/TSX files, `
 Uses `rg` by default when available, with the legacy PHP scanner kept as an explicit alternative via `--engine php`.
 
 ```bash
-php scripts/code-search.php UserRepository
-php scripts/code-search.php UserRepository --engine rg
-php scripts/code-search.php UserRepository --engine php
-php scripts/code-search.php AgentController --backend
-php scripts/code-search.php useAgent --frontend --context 2
-php scripts/code-search.php CodeSearchRunner --scripts
-php scripts/code-search.php SOMANAGER_AGENT --doc
-php scripts/code-search.php review-request --resources
+php scripts/toolkit/code-search.php UserRepository
+php scripts/toolkit/code-search.php UserRepository --engine rg
+php scripts/toolkit/code-search.php UserRepository --engine php
+php scripts/toolkit/code-search.php AgentController --backend
+php scripts/toolkit/code-search.php useAgent --frontend --context 2
+php scripts/toolkit/code-search.php CodeSearchRunner --scripts
+php scripts/toolkit/code-search.php SOMANAGER_AGENT --doc
+php scripts/toolkit/code-search.php review-request --resources
 ```
 
 Use this script in priority for source lookup and usage discovery instead of ad hoc `grep` commands.
@@ -488,20 +488,20 @@ Use this script in priority for source lookup and usage discovery instead of ad 
 Wraps a few common GitHub CLI/API flows used during delivery work, especially around pull requests.
 
 ```bash
-php scripts/github.php pr-list
-php scripts/github.php pr-view 42
-php scripts/github.php pr-create --title "My PR" --head <branch> --body-file local/tmp/pr_body.md
-php scripts/github.php pr-merge 42
-php scripts/github.php pr-close 42
-php scripts/github.php pr-edit 42 --title "Updated title" --body-file local/tmp/pr_body.md
-php scripts/github.php pr-merge --help
+php scripts/toolkit/github.php pr-list
+php scripts/toolkit/github.php pr-view 42
+php scripts/toolkit/github.php pr-create --title "My PR" --head <branch> --body-file local/tmp/pr_body.md
+php scripts/toolkit/github.php pr-merge 42
+php scripts/toolkit/github.php pr-close 42
+php scripts/toolkit/github.php pr-edit 42 --title "Updated title" --body-file local/tmp/pr_body.md
+php scripts/toolkit/github.php pr-merge --help
 ```
 
 Notes:
 - `--head <branch>` is required for `pr-create`
 - `--body-file <file>` is preferred over `--body` to avoid shell quoting issues; the script reads and deletes the file automatically
 - Requires `GITHUB_TOKEN` in `.env` and a detectable `origin` remote pointing to GitHub.
-- Use `php scripts/github.php <command> --help` for per-command option details (e.g. `pr-merge --help`).
+- Use `php scripts/toolkit/github.php <command> --help` for per-command option details (e.g. `pr-merge --help`).
 - For backlog tasks started from a `[feature-slug][task-slug]` prefix, the local merge between the child task branch and the parent feature branch happens before any GitHub PR flow; `github.php` is only relevant once work is promoted back to a branch meant for remote review.
 
 ---
@@ -555,7 +555,7 @@ Rules:
 - PHPDoc checks ignore unit-test support code under `backend/tests/` and backlog workflow tests under `scripts/src/Test/`
 - French strings are blocked in source files; backlog file-format labels must be written in English, for example `To do` and `Usage rules`
 
-The review flow skips container-backed validations that depend on local uncommitted environment files such as `.env`. Frontend TypeScript checking remains part of review through `php scripts/validate-files.php --with-types --review-scope ...`, which runs the local `frontend` package script instead of raw `npx tsc`.
+The review flow skips container-backed validations that depend on local uncommitted environment files such as `.env`. Frontend TypeScript checking remains part of review through `php scripts/toolkit/validate-files.php --with-types --review-scope ...`, which runs the local `frontend` package script instead of raw `npx tsc`.
 
 ```bash
 php scripts/review.php
@@ -568,17 +568,17 @@ php scripts/review.php --base=HEAD~1
 Runs PHPUnit using the dedicated configuration and binary for the requested scopes. By default all configured scopes are tested. Use `--scope=<name>` to restrict the scope.
 
 ```bash
-php scripts/phpunit.php
-php scripts/phpunit.php --scope=backend
-php scripts/phpunit.php --suite local-unit
-php scripts/phpunit.php backend/tests/Unit/Service/MyServiceTest.php
+php scripts/toolkit/phpunit.php
+php scripts/toolkit/phpunit.php --scope=backend
+php scripts/toolkit/phpunit.php --suite local-unit
+php scripts/toolkit/phpunit.php backend/tests/Unit/Service/MyServiceTest.php
 ```
 
 Notes:
 - currently available scope is `backend`
 - explicit file arguments determine their own scope; using `--scope` with files is forbidden
 - invalid or non-existent files print a warning but execution proceeds for valid files
-- the wrapper automatically injects the configuration file for the scope, but does **not** inject environment variables. If you need local test isolation, you must prefix your call (e.g., `SOMANAGENT_PHPUNIT_LOCAL=1 php scripts/phpunit.php`)
+- the wrapper automatically injects the configuration file for the scope, but does **not** inject environment variables. If you need local test isolation, you must prefix your call (e.g., `SOMANAGENT_PHPUNIT_LOCAL=1 php scripts/toolkit/phpunit.php`)
 - `--suite <name>` allows running a specific test suite defined in the scope's PHPUnit configuration
 
 ---
@@ -589,11 +589,11 @@ Runs PHPStan static analysis using `config/phpstan.neon`. By default all configu
 The PHPStan binary and all extensions (`phpstan-symfony`, `phpstan-doctrine`, `phpstan-phpunit`) are installed in `scripts/vendor` so that `php scripts/scripts-install.php` is the only prerequisite — no backend Docker environment needed.
 
 ```bash
-php scripts/phpstan.php
-php scripts/phpstan.php --scope=backend
-php scripts/phpstan.php --scope=scripts
-php scripts/phpstan.php --scope=backend --scope=scripts
-php scripts/phpstan.php backend/src/Controller/AgentController.php
+php scripts/toolkit/phpstan.php
+php scripts/toolkit/phpstan.php --scope=backend
+php scripts/toolkit/phpstan.php --scope=scripts
+php scripts/toolkit/phpstan.php --scope=backend --scope=scripts
+php scripts/toolkit/phpstan.php backend/src/Controller/AgentController.php
 ```
 
 Notes:
@@ -610,11 +610,11 @@ Runs Rector using `config/rector.php`. By default all configured scopes are proc
 The Rector binary is installed in `scripts/vendor` alongside PHPStan.
 
 ```bash
-php scripts/rector.php --dry-run
-php scripts/rector.php
-php scripts/rector.php --scope=backend --dry-run
-php scripts/rector.php --scope=scripts
-php scripts/rector.php --scope=backend --scope=scripts --dry-run
+php scripts/toolkit/rector.php --dry-run
+php scripts/toolkit/rector.php
+php scripts/toolkit/rector.php --scope=backend --dry-run
+php scripts/toolkit/rector.php --scope=scripts
+php scripts/toolkit/rector.php --scope=backend --scope=scripts --dry-run
 ```
 
 Notes:
@@ -653,9 +653,9 @@ Use `--with-types` for frontend changes instead of raw `npx tsc`; it runs the pr
 Use `--review-scope` when the command is executed from the mechanical review flow. In that mode, container-backed checks are skipped because they depend on local runtime state and uncommitted files such as `.env`, which are outside the review diff scope, but frontend TypeScript type-checking still runs through the local `frontend` package script.
 
 ```bash
-php scripts/validate-files.php backend/src/Controller/TaskController.php frontend/src/api/tickets.ts
-php scripts/validate-files.php --with-types backend/src/Service/StoryExecutionService.php
-php scripts/validate-files.php --with-types --review-scope backend/src/Service/StoryExecutionService.php
+php scripts/toolkit/validate-files.php backend/src/Controller/TaskController.php frontend/src/api/tickets.ts
+php scripts/toolkit/validate-files.php --with-types backend/src/Service/StoryExecutionService.php
+php scripts/toolkit/validate-files.php --with-types --review-scope backend/src/Service/StoryExecutionService.php
 ```
 
 ---
@@ -685,8 +685,8 @@ Crucially, both dimensions of the exec bit are checked:
 Under WSL with `core.filemode = false` a file can be executable on disk while still recorded as `100644` in the index — exactly the broken state a fresh clone would receive on another machine. This script catches and repairs that mismatch.
 
 ```bash
-php scripts/fix-permissions.php           # apply the fix
-php scripts/fix-permissions.php --dry-run # list what would be fixed without touching anything
+php scripts/toolkit/fix-permissions.php           # apply the fix
+php scripts/toolkit/fix-permissions.php --dry-run # list what would be fixed without touching anything
 ```
 
 Rules:

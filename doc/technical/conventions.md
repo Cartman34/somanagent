@@ -402,7 +402,7 @@ When a project script already exists in `scripts/`, use it in priority over dire
 
 - prefer `php scripts/console.php cache:clear` over `docker exec ... bin/console cache:clear`
 - prefer `php scripts/logs.php worker` over raw `docker logs ...`
-- prefer `php scripts/validate-files.php --with-types <files>` for review-scoped frontend changes, and `php scripts/node.php type-check` for an explicit full frontend container type-check; do not run raw `npx tsc`
+- prefer `php scripts/toolkit/validate-files.php --with-types <files>` for review-scoped frontend changes, and `php scripts/node.php type-check` for an explicit full frontend container type-check; do not run raw `npx tsc`
 - prefer `php scripts/db.php query "SELECT ..."` over a repeated `docker exec ... psql -c "SELECT ..."`
 
 Direct Docker commands remain acceptable only when no script covers the operation.

@@ -170,7 +170,7 @@ final class ValidateBackendTestsRunner extends AbstractScriptRunner
      */
     private function runPhpUnit(array $testPaths = [], bool $runAll = false): int
     {
-        $command = 'SOMANAGENT_PHPUNIT_LOCAL=1 php scripts/phpunit.php';
+        $command = 'SOMANAGENT_PHPUNIT_LOCAL=1 php scripts/toolkit/phpunit.php';
 
         if ($runAll) {
             $command .= ' --scope=backend --suite ' . escapeshellarg(self::LOCAL_TEST_SUITE);

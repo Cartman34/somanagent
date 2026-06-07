@@ -512,7 +512,7 @@ final class ReviewRunner extends AbstractScriptRunner
         }
 
         $fileArgs = implode(' ', array_map('escapeshellarg', $files));
-        [$exitCode, $lines] = $this->runCommand('php scripts/validate-files.php --with-types --review-scope ' . $fileArgs);
+        [$exitCode, $lines] = $this->runCommand('php scripts/toolkit/validate-files.php --with-types --review-scope ' . $fileArgs);
 
         foreach ($lines as $line) {
             echo $line . "\n";
@@ -552,7 +552,7 @@ final class ReviewRunner extends AbstractScriptRunner
             static fn(string $scope): string => '--scope=' . escapeshellarg($scope),
             $scopes
         ));
-        [$exitCode, $lines] = $this->runCommand('php scripts/phpstan.php ' . $scopeArgs);
+        [$exitCode, $lines] = $this->runCommand('php scripts/toolkit/phpstan.php ' . $scopeArgs);
 
         foreach ($lines as $line) {
             echo $line . "\n";

@@ -14,8 +14,8 @@ options:
     name: '--body-file'
     description: 'Path to a file for PR body (preferred; file is deleted after use)'
 examples:
-  - 'php scripts/github.php pr-edit 42 --title "Updated title"'
-  - 'php scripts/github.php pr-edit 42 --body-file local/tmp/pr_body.md'
+  - 'php scripts/toolkit/github.php pr-edit 42 --title "Updated title"'
+  - 'php scripts/toolkit/github.php pr-edit 42 --body-file local/tmp/pr_body.md'
 notes:
   - 'At least one of --title, --body, --body-file is required'
   - '--body-file is preferred over --body to avoid shell quoting issues'

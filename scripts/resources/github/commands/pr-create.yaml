@@ -16,8 +16,8 @@ options:
     name: '--body-file'
     description: 'Path to a file for PR body (preferred; file is deleted after use)'
 examples:
-  - 'php scripts/github.php pr-create --title "Fix login" --head fix/login --body "Description..."'
-  - 'php scripts/github.php pr-create --title "Fix login" --head fix/login --body-file local/tmp/pr_body.md'
+  - 'php scripts/toolkit/github.php pr-create --title "Fix login" --head fix/login --body "Description..."'
+  - 'php scripts/toolkit/github.php pr-create --title "Fix login" --head fix/login --body-file local/tmp/pr_body.md'
 notes:
   - '--title and --head are required'
   - '--body-file is preferred over --body to avoid shell quoting issues'

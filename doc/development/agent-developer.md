@@ -48,13 +48,13 @@ The cross-role tooling and path rules in [`agent-workflow.md` — Tools And Path
 - All relative paths printed by commands or shown in docs (e.g. `local/X`, `scripts/X`, `backend/X`) resolve against your `WA`, never against the `WP`. Treat any relative path as `WA`-relative.
 - If you encounter an inconsistency — an expected file is missing, a printed path does not match what you can see, a behavior contradicts the documented contract — **stop and report it to the user**. Do not guess, do not reconstruct a path from intuition, do not extrapolate to a different location. Surface the discrepancy and wait for instruction.
 - All developer steps run from your `WA`.
-- `WA`: edit code, inspect files, run local git on the active branch, commit, and run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php ...` — the proxy relays backlog state to `WP` automatically.
-- Every developer backlog command must be prefixed exactly as `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php ...`.
-- Forbidden for `Developer`: `php scripts/console.php`, `php scripts/node.php`, `php scripts/db.php`, `php scripts/server.php`, `php scripts/health.php`, `php scripts/github.php`, and any script that talks to containers, runtime, database, network, or GitHub.
+- `WA`: edit code, inspect files, run local git on the active branch, commit, and run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php ...` — the proxy relays backlog state to `WP` automatically.
+- Every developer backlog command must be prefixed exactly as `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php ...`.
+- Forbidden for `Developer`: `php scripts/console.php`, `php scripts/node.php`, `php scripts/db.php`, `php scripts/server.php`, `php scripts/health.php`, `php scripts/toolkit/github.php`, and any script that talks to containers, runtime, database, network, or GitHub.
 - Exception: `php scripts/migrate.php` (and `--generate`) is allowed to apply and generate Doctrine migrations. Run it from the `WA`. See [Commands](commands.md#create-a-new-migration) for details.
 - `php scripts/migrate.php --generate` runs entirely locally (no Docker, no `psql`): it uses PHP/PDO and `php bin/console` to manage and query the temporary database on `localhost:5432`. Any local execution error (PHP cannot connect to the database, or Doctrine failure) must be escalated immediately to the user. Report: the PHP DSN attempted, the working directory, the exact error output, and the action expected (e.g. start the Docker PostgreSQL service). Do not mask the blocker, retry silently, or let it be discovered by the reviewer.
 - `php scripts/setup.php install` runs Doctrine migrations via **host PHP CLI** (`php backend/bin/console doctrine:migrations:migrate --no-interaction`), not via `docker compose exec`. The db container must be up; the php container is not required (compatible with `server.php start --minimal`). DATABASE_URL is normalised automatically from `db:5432` to `localhost:5432`.
-- For frontend TypeScript validation, do not run raw `npx tsc`; use `php scripts/validate-files.php --with-types <changed-frontend-files>` so the same check is available to mechanical review.
+- For frontend TypeScript validation, do not run raw `npx tsc`; use `php scripts/toolkit/validate-files.php --with-types <changed-frontend-files>` so the same check is available to mechanical review.
 - If a command is not explicitly allowed for `Developer`, do not run it.
 
 ## Do Not
@@ -77,7 +77,7 @@ When a backlog command prints a protected read-only block with a title and an en
 Developer sessions are started by the operator with:
 
 ```
-php scripts/backlog-agent.php start <client> --developer [--code=<dXX>]
+php scripts/backlog/agent.php start <client> --developer [--code=<dXX>]
 ```
 
 Default model profile is `balanced+medium`. The operator may override it with `--tier=economy|balanced|premium`, `--effort=low|medium|high`, or `--model=<raw-name>`.
@@ -86,7 +86,7 @@ Default model profile is `balanced+medium`. The operator may override it with `-
 
 **Auto-pick at start:** when the developer has no active entry, `start` automatically calls `start` on the first queued task and injects that entry into the generated context. If the entry was concurrently claimed by another agent between the read and the mutation, `start` silently moves to the next candidate in the todo list — the retry is bounded by the list length and never blocks. If the developer already has an active entry (e.g. after a session disconnect), `start` resumes that entry without consuming anything from the todo queue.
 
-**Watch mode:** `php scripts/backlog-agent.php start <client> --developer --watch` keeps the launcher open until an unassigned `todo` entry is available. The wait line is rendered on one terminal line as `Watching for work...` with a spinner; the poll interval is 3 seconds by default and can be changed with `--watch-interval=<seconds>`. Claims still go through `start`, so the backlog lock and contention handling stay centralised in `backlog.php`; if another process wins the claim, watch silently returns to polling.
+**Watch mode:** `php scripts/backlog/agent.php start <client> --developer --watch` keeps the launcher open until an unassigned `todo` entry is available. The wait line is rendered on one terminal line as `Watching for work...` with a spinner; the poll interval is 3 seconds by default and can be changed with `--watch-interval=<seconds>`. Claims still go through `start`, so the backlog lock and contention handling stay centralised in `backlog.php`; if another process wins the claim, watch silently returns to polling.
 
 **Loop mode:** `--loop` implies `--watch`. After a clean client exit, the launcher forgets the previous cycle and watches again, including role/code allocation. If the client exits non-zero, the launcher exits non-zero instead of chaining another session.
 
@@ -117,9 +117,9 @@ The launcher spawns the AI client via the active **session driver** and records 
 
 `start --code=<dXX>` re-attaches to a detached tmux session. Re-attach is refused while the PHP wrapper is still alive or when the direct driver still has a live client process. See `doc/development/agent-workflow.md` for the full lifecycle and `last_seen_at` semantics.
 
-`php scripts/backlog-agent.php prune` (operator command, not part of the developer workflow) batch-cleans invalid entries from `agent-sessions.json`: launches never finalised, dead processes, and orphan worktrees. Pass `--dry-run` to preview or `--force` to also drop warning entries with a still-live process. See `doc/development/agent-workflow.md` for the full ruleset.
+`php scripts/backlog/agent.php prune` (operator command, not part of the developer workflow) batch-cleans invalid entries from `agent-sessions.json`: launches never finalised, dead processes, and orphan worktrees. Pass `--dry-run` to preview or `--force` to also drop warning entries with a still-live process. See `doc/development/agent-workflow.md` for the full ruleset.
 
-Run `php scripts/backlog-agent.php whoami` from inside the WA to confirm the session identity.
+Run `php scripts/backlog/agent.php whoami` from inside the WA to confirm the session identity.
 
 **Auto-stop on merge:** when `merge` completes successfully, the sessions of the developer and approving reviewer assigned to the merged entry are stopped automatically. The session that ran the command receives a deferred self-stop (~3 s delay) so it finishes printing its output before the tmux session closes. Sessions of absent roles (no recorded reviewer, no active session for a code) are silently skipped.
 
@@ -131,7 +131,7 @@ Run `php scripts/backlog-agent.php whoami` from inside the WA to confirm the ses
 
 ### `entry-create`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --feature=<slug> --type=<feat|fix|tech> --body-file=<path> [--task=<slug>] [--scope=<name>] [--position=<start|index|end>] [--index=<n>]`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php entry-create --feature=<slug> --type=<feat|fix|tech> --body-file=<path> [--task=<slug>] [--scope=<name>] [--position=<start|index|end>] [--index=<n>]`.
 2. By default the script appends the entry to the end of `todo:`.
 3. `--position=start` inserts at the start of `todo:`.
 4. `--position=index --index=<n>` inserts at the requested 1-based position and clamps out-of-range values to the start or the end.
@@ -144,28 +144,28 @@ Run `php scripts/backlog-agent.php whoami` from inside the WA to confirm the ses
 Examples:
 
 ```bash
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --feature=my-feature --type=feat --body-file=local/tmp/new-feature-task.md
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --feature=my-feature --task=my-task --type=tech --body-file=local/tmp/new-task.md
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --feature=my-feature --task=my-task --type=tech --scope=scripts --body-file=local/tmp/new-task.md
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-create --feature=my-feature --type=feat --body-file=local/tmp/new-feature-task.md --position=index --index=2
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php entry-create --feature=my-feature --type=feat --body-file=local/tmp/new-feature-task.md
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php entry-create --feature=my-feature --task=my-task --type=tech --body-file=local/tmp/new-task.md
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php entry-create --feature=my-feature --task=my-task --type=tech --scope=scripts --body-file=local/tmp/new-task.md
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php entry-create --feature=my-feature --type=feat --body-file=local/tmp/new-feature-task.md --position=index --index=2
 ```
 
 ### `entry-remove`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-remove <entry-ref>`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php entry-remove <entry-ref>`.
 2. The reference is the stable `<entry-ref>` shown by `list --stage=todo`.
 3. The script refuses an empty, unknown, or ambiguous reference; rename a colliding queued task or pass the full `<entry-ref>` to disambiguate.
 
 ### `rename`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php rename <new-text>`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php rename <new-text>`.
 2. The script updates the main text of the agent's active entry, whether it is a `kind=task` or a `kind=feature`.
 3. For `kind=task`, the corresponding contribution line inside the parent feature container is also updated to keep them in sync.
 4. The agent can only rename their own active entry.
 
 ### `entry-set-meta`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-set-meta <entry-ref> <key>=<value>`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php entry-set-meta <entry-ref> <key>=<value>`.
 2. `<entry-ref>` is required and must identify an active (in-progress) entry: a feature slug or a `feature/task` composite reference.
 3. Sets the named extra-metadata key on the targeted entry. Pass an empty value (`<key>=`) to clear the key.
 4. Allowed keys: `database`, `dependency-update`. Any other key is rejected.
@@ -176,11 +176,11 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 **Developer responsibility when adding a dependency:**
 - Run `composer install` (or `npm install`) in the WA during development — this is part of the commit.
 - Declare the scope with `entry-set-meta <entry-ref> dependency-update=<scopes>` in the same commit or before `review-request`.
-- Example: `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-set-meta my-feature dependency-update=composer-app`
+- Example: `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php entry-set-meta my-feature dependency-update=composer-app`
 
 ### `review-notes`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php review-notes [--agent=<code>] [<entry-ref>]`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php review-notes [--agent=<code>] [<entry-ref>]`.
 2. Either `--agent=<code>` or a positional reference is required; both can be combined to enforce ownership of the entry.
 3. The script reads the stored reviewer notes from `local/backlog-review.md` for the resolved entry without modifying any backlog state.
 4. The output is wrapped in a protected, read-only block: it starts with the literal title `Review notes - read only`, carries the documented warning sentence, encloses the notes themselves in a ```` ```review-notes ```` fenced block, and ends with the marker `REVIEW_NOTES_READ_ONLY_END`.
@@ -188,7 +188,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 
 ### `rework`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php rework [<entry-ref>]`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php rework [<entry-ref>]`.
 2. Without an explicit reference, the script resolves the single reworkable entry (task or feature) assigned to the agent. An entry is reworkable when its stage is `rejected` or `approved`.
 3. With an `<entry-ref>`, the script targets that entry. A plain task slug is not a stable entry reference.
 4. The script requires the entry stage to be `rejected` or `approved`, moves it back to `stage=development`, and reopens the entry branch in the agent `WA`. Stored review notes from `local/backlog-review.md` are displayed when the entry came from a rejection.
@@ -198,7 +198,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 
 ### `base-update`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php base-update <entry-ref>`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php base-update <entry-ref>`.
 2. Use this command after a rebase or after resolving a merge conflict to refresh the `base` SHA recorded in the backlog without editing the file manually.
 3. Pass the stable `<entry-ref>` for the entry. Never pass a bare task slug.
 4. Without `--base`, the automatic base is resolved as follows:
@@ -208,7 +208,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 
 ### `start`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php start [<entry-ref>] [--branch-type=<feat|fix|tech>] [--dry-run]`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php start [<entry-ref>] [--branch-type=<feat|fix|tech>] [--dry-run]`.
 2. The agent must have no active entry. If one exists, the script refuses and describes the required next step.
 3. Without a target, the script consumes the first queued entry implicitly. With an explicit `<entry-ref>` reference (the same shape shown by `list --stage=todo`), the script locates the matching queued entry by its `[feature-slug]` or `[feature-slug][task-slug]` prefix and refuses with a clear error when no queued entry matches.
 4. Automated workflows must always pass an explicit target; the implicit head form is reserved for interactive usage.
@@ -227,14 +227,14 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 
 ### `release`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php release [<entry-ref>]`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php release [<entry-ref>]`.
 2. The script returns the active feature or task to the start of `todo:` only when the branch is still clean and has no commit ahead of its recorded `base`. Works on a task or feature.
 3. A parent `kind=feature` cannot be released while child `kind=task` entries are still active for that feature.
 4. The script then removes the managed worktree and deletes the untouched local branch.
 
 ### `merge`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php merge <entry-ref>`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php merge <entry-ref>`.
 2. The script targets the explicit `<entry-ref>`.
 3. The script merges the child branch into the parent feature branch locally from the parent feature worktree or from a temporary merge worktree.
 4. The current task review stage does not gate this merge. `development`, `review`, `rejected`, and `approved` are all mergeable when the user explicitly asks for `merge`.
@@ -244,7 +244,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 
 ### `assign`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php assign --developer=<code> <entry-ref>`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php assign --developer=<code> <entry-ref>`.
 2. Works on both `kind=feature` and `kind=task` entries.
 3. Developer can only assign an unassigned entry to itself, or refresh an entry already assigned to itself.
 4. The script assigns the entry to that same agent and prepares the `WA`.
@@ -253,7 +253,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 
 ### `unassign`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php unassign --agent=<code> [<entry-ref>]`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php unassign --agent=<code> [<entry-ref>]`.
 2. Without an explicit reference, the script resolves the single active entry assigned to the agent (task or feature).
 3. With an `<entry-ref>`, the script targets that entry. A plain task slug is not a stable entry reference.
 4. `--developer=<code>` identifies the developer caller and must match the caller context; it is not a separate target selector.
@@ -263,17 +263,17 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 
 ### `feature-block`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php feature-block [<feature>]`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php feature-block [<feature>]`.
 2. The script marks the feature as blocked and keeps the current backlog section.
 
 ### `feature-unblock`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php feature-unblock [<feature>]`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php feature-unblock [<feature>]`.
 2. The script removes the blocked flag from the feature and updates the PR title when one exists.
 
 ### `list`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php list [--stage=<stage>] [--no-stage=<stage>] [--format=<format>] [--flat]`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php list [--stage=<stage>] [--no-stage=<stage>] [--format=<format>] [--flat]`.
 2. Without flags, prints all entries (todo queue + all active stages) grouped by stage with a header per stage.
 3. `--stage=<stage>` (repeatable, or CSV) filters to a positive selection of stages. `--no-stage=<stage>` (same syntax) excludes stages. Both flags are mutually exclusive.
 4. Allowed stage values: `todo`, `development`, `review`, `reviewing`, `approved`, `rejected`.
@@ -282,35 +282,35 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 
 ### `worktree-list`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-list`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php worktree-list`.
 2. The script lists worktrees under `.agent-worktrees/` with their cleanup state and recommended action.
 3. Worktrees outside `.agent-worktrees/` are reported separately for manual cleanup only.
 4. Use this command only when there is a cleanup need outside the normal workflow procedure.
 
 ### `worktree-clean`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-clean`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php worktree-clean`.
 2. The script removes only abandoned managed worktrees under `.agent-worktrees/` when they are safe to delete.
 3. Dirty, blocked, or external worktrees are left untouched and must be handled manually.
 
 ### `worktree-restore`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-restore --developer=<code>` or `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-restore <entry-ref>`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php worktree-restore --developer=<code>` or `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php worktree-restore <entry-ref>`.
 2. The script recreates or refreshes the managed worktree for the active feature or task recorded in backlog metadata without changing the workflow stage.
 3. Existing PHP vendors are validated with `scripts/vendor/autoload.php` and `backend/vendor/autoload.php`; when a witness is missing, the whole matching vendor directory is replaced from `WP`.
-4. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-restore --developer=<code> --force` to recreate the managed worktree completely; the script refuses `--force` when the existing worktree has local changes.
+4. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php worktree-restore --developer=<code> --force` to recreate the managed worktree completely; the script refuses `--force` when the existing worktree has local changes.
 5. Use this command when `.agent-worktrees/<developer>` was removed or when copied PHP runtime dependencies are incomplete while the backlog still has active development.
 
 ### `status`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php status --agent=<code>` or `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php status <entry-ref>`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php status --agent=<code>` or `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php status <entry-ref>`.
 2. The script prints the agent worktree state, the active task if any, the parent feature if any, and separate next actions for task and feature workflow.
 3. With `<entry-ref>`, the script resolves and displays the entry directly.
 4. Use this command to inspect the current active entry before running `review-request`.
 
 ### `review-request`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php review-request`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php review-request`.
 2. The script resolves the agent's single active entry automatically: if `kind=task`, submits the task for review; if `kind=feature`, submits the feature for review.
 3. For `kind=feature`, requires all child `kind=task` entries to have been merged locally first, and requires the agent to be assigned to the feature via `assign`.
 4. Before running the mechanical review, the script rebases the entry branch automatically: a `kind=feature` is rebased on `origin/main` (with `origin/main` refreshed first), a `kind=task` is rebased on its local parent feature branch.
@@ -323,7 +323,7 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 
 ### `submit-check`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php submit-check`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php submit-check`.
 2. The entry must be in `development` stage. The command refuses any other stage.
 3. No rebase is performed. The stage is never changed.
 4. The command runs the mechanical review script against the currently recorded `base` commit and saves the full report to `local/backlog-review-result.txt` in the WA. Open that file with Read for details.
@@ -348,8 +348,8 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 
 ### `next`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php list --stage=todo` and read the first entry's `<entry-ref>` (the `ref` value on each line).
-2. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php start <entry-ref>`. The explicit reference is required for agent-driven flows so that target selection is unambiguous and a concurrent agent cannot consume a different head between read and mutation.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php list --stage=todo` and read the first entry's `<entry-ref>` (the `ref` value on each line).
+2. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php start <entry-ref>`. The explicit reference is required for agent-driven flows so that target selection is unambiguous and a concurrent agent cannot consume a different head between read and mutation.
 3. Implement the feature scope on the branch checked out for that task.
 4. Inspect the local diff and fix issues in scope before moving on.
 5. Run self-challenge cycles per the Responsibilities rule; fix and re-challenge until a full pass yields no findings.
@@ -359,19 +359,19 @@ SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php entry-cr
 
 ### `submit`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php review-request`.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php review-request`.
 2. For `kind=feature`, this keyword still applies only after all child `kind=task` entries have already been merged locally, and after `assign` has been run to take integration ownership.
 
 ### `merge`
 
-1. If the active entry is `kind=task`, run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php merge <entry-ref>`.
+1. If the active entry is `kind=task`, run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php merge <entry-ref>`.
 2. This keyword merges the local task only on explicit user instruction; it is not implied by `submit`.
 
 ### `rework`
 
 1. Use this keyword in two scenarios: (a) after a reviewer rejection, and (b) after a merge conflict aborted `merge` on an approved entry.
 2. For scenario (a), the review feedback is given with the `rework` instruction. The `rework` command output prints the stored review notes directly; do not run `status` or read `local/backlog-review.md` before proceeding.
-3. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php rework [<entry-ref>]`.
+3. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php rework [<entry-ref>]`.
 4. Resume development on the same branch. Address the review feedback for scenario (a), or resolve the conflict for scenario (b).
 5. Run self-challenge cycles per the Responsibilities rule (same cadence as in `next`); fix and re-challenge until a full pass yields no findings, then report a brief summary to the user.
 6. Stop here. Do not run `submit` unless the user explicitly asks for it.
@@ -391,13 +391,13 @@ This keyword applies only when the active entry is in `development` stage. Refus
    4. Run `composer install` to align `vendor/` with the new lock.
    5. `git add composer.json composer.lock` and `git rebase --continue`.
    6. For `package-lock.json`, the equivalent is `npm install` (which regenerates the lock from the merged `package.json`).
-4. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php base-update <entry-ref>` to refresh `base`.
+4. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php base-update <entry-ref>` to refresh `base`.
 5. Stop. Do not run `submit` unless the user explicitly asks for it.
 
 ### `cleanup`
 
-1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-clean`.
-2. Use `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php worktree-list` only when you need a cleanup diagnostic outside the standard workflow.
+1. Run `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php worktree-clean`.
+2. Use `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php worktree-list` only when you need a cleanup diagnostic outside the standard workflow.
 
 ## Réouverture d'un WA selon le stage
 
@@ -425,12 +425,12 @@ Pour résoudre manuellement un rebase en conflit sans relancer le launcher :
 1. Résoudre les conflits dans les fichiers listés.
 2. `git rebase --continue` (ou `git rebase --abort` pour annuler).
 3. `git push --force-with-lease`.
-4. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php base-update <entry-ref>` pour rafraîchir `meta.base`.
+4. `SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php base-update <entry-ref>` pour rafraîchir `meta.base`.
 
 Pour vérifier ou déclencher le rebase manuellement depuis la ligne de commande :
 ```
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php rebase <slug>
-SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog.php rebase <slug> --dry-run
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php rebase <slug>
+SOMANAGER_ROLE=developer SOMANAGER_AGENT=<code> php scripts/backlog/backlog.php rebase <slug> --dry-run
 ```
 
 La commande `rebase` est l'outil de référence pour toute opération de rebase sur une entrée backlog : elle enchaîne fetch, rebase et push en un seul appel cohérent. Préférer cette commande aux commandes git directes.

@@ -3,7 +3,7 @@
 /**
  * @author Florent HAZARD <f.hazard@sowapps.com>
  */
-// Description: Run reusable sequential validation campaigns for scripts/backlog.php
+// Description: Run reusable sequential validation campaigns for scripts/backlog/backlog.php
 // Usage: php scripts/tests/test-backlog-workflow.php
 // Usage: php scripts/tests/test-backlog-workflow.php --campaign help
 // Usage: php scripts/tests/test-backlog-workflow.php --campaign scoped-task-lifecycle

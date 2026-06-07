@@ -1,6 +1,6 @@
 # Backlog Glossary
 
-Definitions of the terms and acronyms used by the local backlog tooling (`scripts/backlog.php`, `local/backlog-board.yaml`, `local/backlog-review.md`).
+Definitions of the terms and acronyms used by the local backlog tooling (`scripts/backlog/backlog.php`, `local/backlog-board.yaml`, `local/backlog-review.md`).
 
 Scope is limited to the local backlog. Application domain terms (Project, Module, Team, Skill, Workflow…) belong to [`functional/concepts.md`](../functional/concepts.md) and are intentionally excluded.
 

@@ -26,7 +26,7 @@ case "$WA_ROOT" in
 esac
 
 # Query entry stage via backlog.php (proxied to WP automatically by WorktreeScriptProxy)
-OUTPUT=$(SOMANAGER_ROLE="$ROLE" SOMANAGER_AGENT="$AGENT" php "$WA_ROOT/scripts/backlog.php" precommit-check 2>&1)
+OUTPUT=$(SOMANAGER_ROLE="$ROLE" SOMANAGER_AGENT="$AGENT" php "$WA_ROOT/scripts/backlog/backlog.php" precommit-check 2>&1)
 EXIT_CODE=$?
 
 if [ "$EXIT_CODE" -ne 0 ]; then
