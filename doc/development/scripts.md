@@ -664,7 +664,7 @@ php scripts/toolkit/validate-files.php --with-types --review-scope backend/src/S
 Cross-checks the CLI flags declared by each `AgentClientLauncher::requiredCliFlags()` against the local `<client> --help` output, so an upstream CLI removal (e.g. `claude` dropping `--cwd` in v2.x) is caught before it breaks a real agent launch.
 
 ```bash
-php scripts/validate-agent-launchers.php
+php scripts/backlog/validate-agent-launchers.php
 ```
 
 Rules:
