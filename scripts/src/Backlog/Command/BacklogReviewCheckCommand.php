@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\Backlog\Command;
 
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
-use Sowapps\SoManAgent\Script\Client\FilesystemClientInterface;
+use Sowapps\Toolkit\Client\FilesystemClientInterface;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogReviewBodyFormatter;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;

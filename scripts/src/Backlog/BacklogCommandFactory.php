@@ -7,23 +7,23 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Backlog;
 
-use Sowapps\SoManAgent\Script\Application;
-use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
+use Sowapps\Toolkit\Console;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPermissionService;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogReviewBodyFormatter;
-use Sowapps\SoManAgent\Script\Service\GitService;
-use Sowapps\SoManAgent\Script\Service\PullRequestService;
-use Sowapps\SoManAgent\Script\Client\ConsoleClient;
-use Sowapps\SoManAgent\Script\Client\GitClient;
-use Sowapps\SoManAgent\Script\Client\GitHub\GitHubClient;
-use Sowapps\SoManAgent\Script\Client\ProjectScriptClient;
-use Sowapps\SoManAgent\Script\TextSlugger;
-use Sowapps\SoManAgent\Script\Client\FilesystemClientInterface;
-use Sowapps\SoManAgent\Script\RetryPolicy;
+use Sowapps\Toolkit\Service\GitService;
+use Sowapps\Toolkit\Service\PullRequestService;
+use Sowapps\Toolkit\Client\ConsoleClient;
+use Sowapps\Toolkit\Client\GitClient;
+use Sowapps\Toolkit\Client\GitHub\GitHubClient;
+use Sowapps\Toolkit\Client\ProjectScriptClient;
+use Sowapps\Toolkit\TextSlugger;
+use Sowapps\Toolkit\Client\FilesystemClientInterface;
+use Sowapps\Toolkit\RetryPolicy;
 use Sowapps\SoManAgent\Script\Backlog\Command\BacklogFeatureMergeCommand;
 use Sowapps\SoManAgent\Script\Backlog\Command\BacklogFeatureTaskMergeCommand;
 use Sowapps\SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
@@ -65,7 +65,7 @@ use Sowapps\SoManAgent\Script\Backlog\Command\BacklogUserMergeCommand;
 use Sowapps\SoManAgent\Script\Backlog\Command\BacklogEntryRebaseCommand;
 use Sowapps\SoManAgent\Script\Backlog\Command\BacklogCommitGateCommand;
 use Sowapps\SoManAgent\Script\Backlog\Command\BacklogSubmitCheckCommand;
-use Sowapps\SoManAgent\Script\Client\FilesystemClient;
+use Sowapps\Toolkit\Client\FilesystemClient;
 
 /**
  * Factory for creating backlog commands with their specific dependencies.
@@ -74,7 +74,7 @@ use Sowapps\SoManAgent\Script\Client\FilesystemClient;
  */
 final class BacklogCommandFactory
 {
-    private Application $app;
+    private SoManAgentApplication $app;
     private Console $console;
     private bool $dryRun;
     private bool $verbose;
@@ -109,7 +109,7 @@ final class BacklogCommandFactory
     /**
      * Constructor.
      *
-     * @param Application $app The application instance
+     * @param SoManAgentApplication $app The application instance
      * @param Console $console The console instance
      * @param bool $dryRun Whether to run in dry-run mode
      * @param bool $verbose Whether to enable verbose logging
@@ -120,7 +120,7 @@ final class BacklogCommandFactory
      * @param SessionDriverInterface $sessionDriver Session driver for reviewer notification
      */
     public function __construct(
-        Application $app,
+        SoManAgentApplication $app,
         Console $console,
         bool $dryRun,
         bool $verbose,

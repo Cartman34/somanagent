@@ -7,10 +7,10 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Client\Test;
 
-use Sowapps\SoManAgent\Script\Client\ConsoleClient;
-use Sowapps\SoManAgent\Script\Application;
-use Sowapps\SoManAgent\Script\Client\GitClient;
-use Sowapps\SoManAgent\Script\RetryPolicy;
+use Sowapps\Toolkit\Client\ConsoleClient;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
+use Sowapps\Toolkit\Client\GitClient;
+use Sowapps\Toolkit\RetryPolicy;
 
 /**
  * Unit tests for {@see GitClient}.
@@ -60,7 +60,7 @@ final class GitClientTest
         $console = new ConsoleClient(
             $repo,
             false,
-            Application::getInstance(),
+            SoManAgentApplication::getInstance(),
             static function (string $message) use (&$logs): void {
                 $logs[] = $message;
             },

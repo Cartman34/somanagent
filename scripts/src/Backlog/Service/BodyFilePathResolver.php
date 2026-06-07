@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Backlog\Service;
 
-use Sowapps\SoManAgent\Script\Console;
+use Sowapps\Toolkit\Console;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 
 /**

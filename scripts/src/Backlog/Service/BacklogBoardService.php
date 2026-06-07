@@ -7,8 +7,8 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Backlog\Service;
 
-use Sowapps\SoManAgent\Script\TextSlugger;
-use Sowapps\SoManAgent\Script\Client\FilesystemClientInterface;
+use Sowapps\Toolkit\TextSlugger;
+use Sowapps\Toolkit\Client\FilesystemClientInterface;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Storage\BoardYamlStorage;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogReviewFile;

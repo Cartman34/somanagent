@@ -8,6 +8,8 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\Runner;
 
 use Sowapps\SoManAgent\Script\WorktreeScriptProxy;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
+use Sowapps\Toolkit\Runner\AbstractScriptRunner;
 
 /**
  * Migrate script runner.
@@ -59,11 +61,11 @@ final class MigrateRunner extends AbstractScriptRunner
         if (isset($options['generate'])) {
             $agentCode = $this->detectAgentCode();
             $boardRoot = $this->detectBoardRoot();
-            return (new MigrateGenerateService($this->app, $agentCode, $this->projectRoot, $boardRoot))->run();
+            return (new MigrateGenerateService(SoManAgentApplication::getInstance(), $agentCode, $this->projectRoot, $boardRoot))->run();
         }
 
         try {
-            return (new DoctrineRunner($this->app))->run(['migrate', ...$args]);
+            return (new DoctrineRunner(SoManAgentApplication::getInstance()))->run(['migrate', ...$args]);
         } catch (\RuntimeException $e) {
             $this->console->fail($e->getMessage());
         } catch (\InvalidArgumentException $e) {

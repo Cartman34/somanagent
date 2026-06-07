@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script;
 
+use Sowapps\Toolkit\Console;
+
 /**
  * Manages OpenCode CLI provider credentials with WSL as the source of truth and Docker as a synchronized runtime copy.
  */
@@ -25,7 +27,7 @@ final class OpenCodeAuthManager
      * Builds the manager around the WSL auth file and the Docker-side shared `.local` tree used by OpenCode.
      */
     public function __construct(
-        private readonly Application $app,
+        private readonly SoManAgentApplication $app,
         string $root,
     ) {
         $this->console = $app->console;

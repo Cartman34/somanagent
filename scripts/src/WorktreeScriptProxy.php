@@ -7,8 +7,9 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script;
 
-use Sowapps\SoManAgent\Script\Client\GitClient;
-use Sowapps\SoManAgent\Script\Client\ConsoleClient;
+use Sowapps\Toolkit\Client\GitClient;
+use Sowapps\Toolkit\Client\ConsoleClient;
+use Sowapps\Toolkit\RetryPolicy;
 
 /**
  * Detects whether the current script runs inside a git linked worktree
@@ -187,7 +188,7 @@ final class WorktreeScriptProxy
 
     private static function buildGitClient(): GitClient
     {
-        $app = Application::getInstance();
+        $app = SoManAgentApplication::getInstance();
         $consoleClient = new ConsoleClient('', false, $app, fn(string $message) => null);
 
         return new GitClient(

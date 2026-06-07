@@ -10,11 +10,11 @@ namespace Sowapps\SoManAgent\Script\Backlog\Test;
 use Sowapps\SoManAgent\Script\Backlog\Service\PostMergeSessionStopper;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use Sowapps\SoManAgent\Script\TextSlugger;
-use Sowapps\SoManAgent\Script\Client\FilesystemClient;
-use Sowapps\SoManAgent\Script\Console;
-use Sowapps\SoManAgent\Script\Client\ConsoleClient;
-use Sowapps\SoManAgent\Script\Application;
+use Sowapps\Toolkit\TextSlugger;
+use Sowapps\Toolkit\Client\FilesystemClient;
+use Sowapps\Toolkit\Console;
+use Sowapps\Toolkit\Client\ConsoleClient;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
 
 /**
  * Regression coverage for post-merge session stop target selection.
@@ -84,7 +84,7 @@ final class PostMergeSessionStopperTest
 
         return new BacklogPresenter(
             Console::getInstance(),
-            new ConsoleClient($projectRoot, false, Application::getInstance(), static function (string $_message): void {}),
+            new ConsoleClient($projectRoot, false, SoManAgentApplication::getInstance(), static function (string $_message): void {}),
             $boardService,
         );
     }

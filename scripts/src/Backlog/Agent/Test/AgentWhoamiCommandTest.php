@@ -9,9 +9,9 @@ namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
 
 use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AgentWhoamiCommand;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use Sowapps\SoManAgent\Script\TextSlugger;
-use Sowapps\SoManAgent\Script\Client\FilesystemClient;
-use Sowapps\SoManAgent\Script\Console;
+use Sowapps\Toolkit\TextSlugger;
+use Sowapps\Toolkit\Client\FilesystemClient;
+use Sowapps\Toolkit\Console;
 use Symfony\Component\Yaml\Yaml;
 
 /**

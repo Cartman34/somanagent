@@ -11,8 +11,8 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
 use Sowapps\SoManAgent\Script\Backlog\BacklogPaths;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use Sowapps\SoManAgent\Script\TextSlugger;
-use Sowapps\SoManAgent\Script\Client\FilesystemClient;
+use Sowapps\Toolkit\TextSlugger;
+use Sowapps\Toolkit\Client\FilesystemClient;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 
 /**

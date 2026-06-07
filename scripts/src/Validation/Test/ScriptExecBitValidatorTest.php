@@ -7,9 +7,9 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Validation\Test;
 
-use Sowapps\SoManAgent\Script\Validation\ScriptExecBitValidator;
-use Sowapps\SoManAgent\Script\Validation\GitIndexModeReader;
-use Sowapps\SoManAgent\Script\Validation\IndexModeReader;
+use Sowapps\Toolkit\Validation\ScriptExecBitValidator;
+use Sowapps\Toolkit\Validation\GitIndexModeReader;
+use Sowapps\Toolkit\Validation\IndexModeReader;
 
 /**
  * Unit tests for ScriptExecBitValidator.

@@ -10,12 +10,12 @@ namespace Sowapps\SoManAgent\Script\Backlog\Test;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Command\BacklogReviewNextCommand;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use Sowapps\SoManAgent\Script\TextSlugger;
-use Sowapps\SoManAgent\Script\Client\FilesystemClient;
+use Sowapps\Toolkit\TextSlugger;
+use Sowapps\Toolkit\Client\FilesystemClient;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
-use Sowapps\SoManAgent\Script\Console;
-use Sowapps\SoManAgent\Script\Client\ConsoleClient;
-use Sowapps\SoManAgent\Script\Application;
+use Sowapps\Toolkit\Console;
+use Sowapps\Toolkit\Client\ConsoleClient;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use Sowapps\SoManAgent\Script\Backlog\BacklogPaths;
 use Symfony\Component\Yaml\Yaml;
@@ -174,7 +174,7 @@ final class BacklogReviewNextCommandTest
     {
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         $command = new BacklogReviewNextCommand(
-            new BacklogPresenter(Console::getInstance(), new ConsoleClient($projectRoot, false, Application::getInstance(), static function (string $_message): void {}), $boardService),
+            new BacklogPresenter(Console::getInstance(), new ConsoleClient($projectRoot, false, SoManAgentApplication::getInstance(), static function (string $_message): void {}), $boardService),
             false,
             $projectRoot,
             $projectRoot . '/.agent-worktrees',

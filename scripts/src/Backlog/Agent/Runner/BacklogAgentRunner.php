@@ -42,14 +42,14 @@ use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 use Sowapps\SoManAgent\Script\Backlog\Service\EntryRebaseService;
-use Sowapps\SoManAgent\Script\Client\ConsoleClient;
-use Sowapps\SoManAgent\Script\Client\FilesystemClient;
-use Sowapps\SoManAgent\Script\Client\GitClient;
-use Sowapps\SoManAgent\Script\Client\ProjectScriptClient;
-use Sowapps\SoManAgent\Script\RetryPolicy;
-use Sowapps\SoManAgent\Script\Runner\AbstractScriptRunner;
-use Sowapps\SoManAgent\Script\Service\GitService;
-use Sowapps\SoManAgent\Script\TextSlugger;
+use Sowapps\Toolkit\Client\ConsoleClient;
+use Sowapps\Toolkit\Client\FilesystemClient;
+use Sowapps\Toolkit\Client\GitClient;
+use Sowapps\Toolkit\Client\ProjectScriptClient;
+use Sowapps\Toolkit\RetryPolicy;
+use Sowapps\Toolkit\Runner\AbstractScriptRunner;
+use Sowapps\Toolkit\Service\GitService;
+use Sowapps\Toolkit\TextSlugger;
 
 
 /**

@@ -9,6 +9,7 @@ namespace Sowapps\SoManAgent\Script\Runner;
 
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Yaml\Yaml;
+use Sowapps\Toolkit\Runner\AbstractScriptRunner;
 
 /**
  * Validates translation key declarations and source usages.

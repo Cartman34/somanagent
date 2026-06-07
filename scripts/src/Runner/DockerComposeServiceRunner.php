@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
-use Sowapps\SoManAgent\Script\Application;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
 
 /**
  * Runs commands inside a specific Docker Compose service.
@@ -15,11 +15,11 @@ use Sowapps\SoManAgent\Script\Application;
 final class DockerComposeServiceRunner
 {
     /**
-     * @param Application $app
+     * @param SoManAgentApplication $app
      * @param string $service Docker Compose service name (e.g. "php", "db")
      */
     public function __construct(
-        private readonly Application $app,
+        private readonly SoManAgentApplication $app,
         private readonly string $service,
     ) {
     }

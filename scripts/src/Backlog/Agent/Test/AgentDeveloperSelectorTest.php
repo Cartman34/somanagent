@@ -10,8 +10,8 @@ namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentDeveloperSelector;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use Sowapps\SoManAgent\Script\TextSlugger;
-use Sowapps\SoManAgent\Script\Client\FilesystemClient;
+use Sowapps\Toolkit\TextSlugger;
+use Sowapps\Toolkit\Client\FilesystemClient;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Symfony\Component\Yaml\Yaml;
 

@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Backlog\Agent\Client;
 
-use Sowapps\SoManAgent\Script\Console;
+use Sowapps\Toolkit\Console;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;

@@ -10,13 +10,13 @@ namespace Sowapps\SoManAgent\Script\Backlog\Test;
 use Sowapps\SoManAgent\Script\Backlog\BacklogPaths;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
-use Sowapps\SoManAgent\Script\Client\ConsoleClient;
-use Sowapps\SoManAgent\Script\Application;
+use Sowapps\Toolkit\Client\ConsoleClient;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use Sowapps\SoManAgent\Script\Client\GitClient;
-use Sowapps\SoManAgent\Script\RetryPolicy;
-use Sowapps\SoManAgent\Script\Client\ProjectScriptClient;
-use Sowapps\SoManAgent\Script\Client\FilesystemClient;
+use Sowapps\Toolkit\Client\GitClient;
+use Sowapps\Toolkit\RetryPolicy;
+use Sowapps\Toolkit\Client\ProjectScriptClient;
+use Sowapps\Toolkit\Client\FilesystemClient;
 
 /**
  * Unit coverage for managed worktree preparation.
@@ -388,7 +388,7 @@ final class BacklogWorktreeServiceTest
         $console = new ConsoleClient(
             $this->projectRoot,
             false,
-            Application::getInstance(),
+            SoManAgentApplication::getInstance(),
             static fn(string $message) => null,
         );
 

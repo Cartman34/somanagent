@@ -13,8 +13,8 @@ use Sowapps\SoManAgent\Script\Backlog\BacklogPaths;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AgentStartCommand;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogConfig;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use Sowapps\SoManAgent\Script\TextSlugger;
-use Sowapps\SoManAgent\Script\Client\FilesystemClient;
+use Sowapps\Toolkit\TextSlugger;
+use Sowapps\Toolkit\Client\FilesystemClient;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\AgentClientLauncherRegistry;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentCodeService;
@@ -23,11 +23,11 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentReviewerSelector;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentDeveloperSelector;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentLaunchPromptResolver;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
-use Sowapps\SoManAgent\Script\Application;
-use Sowapps\SoManAgent\Script\Client\ConsoleClient;
-use Sowapps\SoManAgent\Script\Client\GitClient;
-use Sowapps\SoManAgent\Script\RetryPolicy;
-use Sowapps\SoManAgent\Script\Client\ProjectScriptClient;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
+use Sowapps\Toolkit\Client\ConsoleClient;
+use Sowapps\Toolkit\Client\GitClient;
+use Sowapps\Toolkit\RetryPolicy;
+use Sowapps\Toolkit\Client\ProjectScriptClient;
 use Symfony\Component\Yaml\Yaml;
 
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeAgentClientLauncher;
@@ -583,7 +583,7 @@ final class AgentWatchModeTest
 
     private function buildWorktreeService(string $projectRoot, string $worktreesRoot, BacklogBoardService $boardService): BacklogWorktreeService
     {
-        $app = Application::getInstance();
+        $app = SoManAgentApplication::getInstance();
         $console = new ConsoleClient($projectRoot, false, $app, static function (string $message): void {});
         $git = new GitClient(false, $console, new RetryPolicy(0, 0));
 

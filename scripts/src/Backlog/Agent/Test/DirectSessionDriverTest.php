@@ -11,7 +11,7 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\InteractiveProcessRunner;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\DirectSessionDriver;
-use Sowapps\SoManAgent\Script\Console;
+use Sowapps\Toolkit\Console;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeInteractiveProcessRunner;

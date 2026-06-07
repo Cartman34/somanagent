@@ -8,16 +8,16 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\Backlog\Test;
 
 use Sowapps\SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
-use Sowapps\SoManAgent\Script\Application;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use Sowapps\SoManAgent\Script\TextSlugger;
-use Sowapps\SoManAgent\Script\Client\FilesystemClient;
-use Sowapps\SoManAgent\Script\RetryPolicy;
-use Sowapps\SoManAgent\Script\Client\ConsoleClient;
-use Sowapps\SoManAgent\Script\Client\GitClient;
-use Sowapps\SoManAgent\Script\Client\ProjectScriptClient;
+use Sowapps\Toolkit\TextSlugger;
+use Sowapps\Toolkit\Client\FilesystemClient;
+use Sowapps\Toolkit\RetryPolicy;
+use Sowapps\Toolkit\Client\ConsoleClient;
+use Sowapps\Toolkit\Client\GitClient;
+use Sowapps\Toolkit\Client\ProjectScriptClient;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
-use Sowapps\SoManAgent\Script\Console;
+use Sowapps\Toolkit\Console;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -403,7 +403,7 @@ final class BodyFilePathResolverTest
 
     private function makeResolver(string $worktreesRoot, string $boardPath): BodyFilePathResolver
     {
-        $app = Application::getInstance();
+        $app = SoManAgentApplication::getInstance();
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         $retryPolicy = new RetryPolicy();
         $consoleClient = new ConsoleClient('/tmp', false, $app, static fn(string $m) => null);

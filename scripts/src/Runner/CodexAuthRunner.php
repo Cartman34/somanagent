@@ -8,6 +8,8 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\Runner;
 
 use Sowapps\SoManAgent\Script\CodexAuthManager;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
+use Sowapps\Toolkit\Runner\AbstractScriptRunner;
 
 /**
  * Codex auth management script runner.
@@ -64,7 +66,7 @@ final class CodexAuthRunner extends AbstractScriptRunner
         $force = in_array('--force', $args, true);
 
         try {
-            $manager = new CodexAuthManager($this->app, $this->projectRoot);
+            $manager = new CodexAuthManager(SoManAgentApplication::getInstance(), $this->projectRoot);
 
             match ($command) {
                 'status' => $manager->showStatus(),

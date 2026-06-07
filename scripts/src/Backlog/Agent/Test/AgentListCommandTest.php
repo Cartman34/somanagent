@@ -13,9 +13,9 @@ use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Command\AgentListCommand;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use Sowapps\SoManAgent\Script\TextSlugger;
-use Sowapps\SoManAgent\Script\Client\FilesystemClient;
-use Sowapps\SoManAgent\Script\Console;
+use Sowapps\Toolkit\TextSlugger;
+use Sowapps\Toolkit\Client\FilesystemClient;
+use Sowapps\Toolkit\Console;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use Symfony\Component\Yaml\Yaml;
 

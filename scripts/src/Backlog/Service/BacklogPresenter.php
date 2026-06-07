@@ -7,8 +7,8 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Backlog\Service;
 
-use Sowapps\SoManAgent\Script\Console;
-use Sowapps\SoManAgent\Script\Client\ConsoleClient;
+use Sowapps\Toolkit\Console;
+use Sowapps\Toolkit\Client\ConsoleClient;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogMetaValue;
 use Sowapps\SoManAgent\Script\Backlog\Model\WorktreeClassification;

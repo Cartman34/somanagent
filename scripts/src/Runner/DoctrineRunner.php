@@ -7,8 +7,8 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
-use Sowapps\SoManAgent\Script\Console;
-use Sowapps\SoManAgent\Script\Application;
+use Sowapps\Toolkit\Console;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
 
 /**
  * Runs Doctrine commands (migrations, fixtures) and psql commands.
@@ -25,7 +25,7 @@ final class DoctrineRunner
      * Builds the database helper runners for PHP and PostgreSQL services.
      */
     public function __construct(
-        private readonly Application $app,
+        private readonly SoManAgentApplication $app,
     ) {
         $this->phpRunner = new DockerComposeServiceRunner($app, 'php');
         $this->dbRunner = new DockerComposeServiceRunner($app, 'db');

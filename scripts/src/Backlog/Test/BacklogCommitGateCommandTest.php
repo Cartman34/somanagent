@@ -9,13 +9,13 @@ namespace Sowapps\SoManAgent\Script\Backlog\Test;
 
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Command\BacklogCommitGateCommand;
-use Sowapps\SoManAgent\Script\Application;
-use Sowapps\SoManAgent\Script\Client\ConsoleClient;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
+use Sowapps\Toolkit\Client\ConsoleClient;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use Sowapps\SoManAgent\Script\TextSlugger;
-use Sowapps\SoManAgent\Script\Client\FilesystemClient;
+use Sowapps\Toolkit\TextSlugger;
+use Sowapps\Toolkit\Client\FilesystemClient;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
-use Sowapps\SoManAgent\Script\Console;
+use Sowapps\Toolkit\Console;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPermissionService;
 
 /**
@@ -161,7 +161,7 @@ final class BacklogCommitGateCommandTest
     {
         putenv("SOMANAGER_AGENT={$agentCode}");
 
-        $app = Application::getInstance();
+        $app = SoManAgentApplication::getInstance();
         $consoleClient = new ConsoleClient(
             $this->projectRoot,
             false,

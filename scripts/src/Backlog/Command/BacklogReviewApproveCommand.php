@@ -7,8 +7,8 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Backlog\Command;
 
-use Sowapps\SoManAgent\Script\Service\GitService;
-use Sowapps\SoManAgent\Script\Service\PullRequestService;
+use Sowapps\Toolkit\Service\GitService;
+use Sowapps\Toolkit\Service\PullRequestService;
 use Sowapps\SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;

@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
-use Sowapps\SoManAgent\Script\Application;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
 
 /**
  * Resolves reusable developer commands for the Node container.
@@ -21,7 +21,7 @@ final class NodeCommandRunner
     /**
      * Initialises the runner targeting the Node Docker Compose service.
      */
-    public function __construct(Application $app)
+    public function __construct(SoManAgentApplication $app)
     {
         $this->runner = new DockerComposeServiceRunner($app, 'node');
     }

@@ -7,8 +7,8 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\DevEnv\Installer;
 
-use Sowapps\SoManAgent\Script\ShellRunnerInterface;
-use Sowapps\SoManAgent\Script\Console;
+use Sowapps\Toolkit\ShellRunnerInterface;
+use Sowapps\Toolkit\Console;
 use Sowapps\SoManAgent\Script\DevEnv\CommandRunnerInterface;
 use Sowapps\SoManAgent\Script\DevEnv\SystemCommandRunner;
 

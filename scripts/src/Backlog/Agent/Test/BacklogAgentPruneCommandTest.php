@@ -9,7 +9,7 @@ namespace Sowapps\SoManAgent\Script\Backlog\Agent\Test;
 
 use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Command\BacklogAgentPruneCommand;
-use Sowapps\SoManAgent\Script\Console;
+use Sowapps\Toolkit\Console;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Model\AgentSession;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentClient;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;

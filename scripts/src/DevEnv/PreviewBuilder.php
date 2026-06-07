@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\DevEnv;
 
 use Sowapps\SoManAgent\Script\DevEnv\Installer\InstallerInterface;
-use Sowapps\SoManAgent\Script\Console;
+use Sowapps\Toolkit\Console;
 
 /**
  * Renders an InstallPlan as human-readable output.

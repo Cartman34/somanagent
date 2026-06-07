@@ -10,15 +10,15 @@ namespace Sowapps\SoManAgent\Script\Backlog\Test;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Service\EntryRebaseService;
-use Sowapps\SoManAgent\Script\Application;
-use Sowapps\SoManAgent\Script\Client\ConsoleClient;
-use Sowapps\SoManAgent\Script\Client\GitClient;
-use Sowapps\SoManAgent\Script\RetryPolicy;
-use Sowapps\SoManAgent\Script\Service\GitService;
-use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
+use Sowapps\Toolkit\Client\ConsoleClient;
+use Sowapps\Toolkit\Client\GitClient;
+use Sowapps\Toolkit\RetryPolicy;
+use Sowapps\Toolkit\Service\GitService;
+use Sowapps\Toolkit\Console;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use Sowapps\SoManAgent\Script\TextSlugger;
-use Sowapps\SoManAgent\Script\Client\FilesystemClient;
+use Sowapps\Toolkit\TextSlugger;
+use Sowapps\Toolkit\Client\FilesystemClient;
 
 /**
  * Integration tests for {@see EntryRebaseService} using real git repositories.
@@ -376,7 +376,7 @@ final class EntryRebaseServiceTest
      */
     private function buildServiceWithBoardService(string $projectRoot): array
     {
-        $app = Application::getInstance();
+        $app = SoManAgentApplication::getInstance();
         $consoleClient = new ConsoleClient($projectRoot, false, $app, static function (string $m): void {});
         $git = new GitClient(false, $consoleClient, new RetryPolicy(0, 0));
         $gitService = new GitService(false, Console::getInstance(), $git, static function (string $m): void {});

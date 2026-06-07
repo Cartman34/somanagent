@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script;
 
+use Sowapps\Toolkit\Console;
+
 /**
  * Manages Codex CLI authentication with WSL as the source of truth and Docker as a synchronized runtime copy.
  */
@@ -24,7 +26,7 @@ final class CodexAuthManager
      * Builds the manager around the WSL source directory and the Docker shared auth copy.
      */
     public function __construct(
-        private readonly Application $app,
+        private readonly SoManAgentApplication $app,
         string $root,
     ) {
         $this->console = $app->console;

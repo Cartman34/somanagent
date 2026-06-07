@@ -8,8 +8,9 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\Runner;
 
 use Sowapps\SoManAgent\Script\DevEnv\Installer\InstallerInterface;
-use Sowapps\SoManAgent\Script\LocalWorkingDirectories;
-use Sowapps\SoManAgent\Script\Client\FilesystemClient;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
+use Sowapps\Toolkit\LocalWorkingDirectories;
+use Sowapps\Toolkit\Client\FilesystemClient;
 use Sowapps\SoManAgent\Script\DevEnv\LockfileManager;
 use Sowapps\SoManAgent\Script\DevEnv\ManifestParser;
 use Sowapps\SoManAgent\Script\DevEnv\StateInspector;
@@ -33,6 +34,7 @@ use Sowapps\SoManAgent\Script\DevEnv\Installer\DockerInstaller;
 use Sowapps\SoManAgent\Script\DevEnv\Installer\SystemDepsInstaller;
 use Sowapps\SoManAgent\Script\DevEnv\Installer\ClientsInstaller;
 use Sowapps\SoManAgent\Script\DevEnv\Model\Manifest;
+use Sowapps\Toolkit\Runner\AbstractScriptRunner;
 
 /**
  * Setup orchestrator for the SoManAgent development environment.
@@ -219,7 +221,7 @@ final class SetupRunner extends AbstractScriptRunner
             $this->console->info('All host dependencies are already up to date.');
         }
 
-        (new ProjectDepsInstaller($this->app, $this->console, $this->projectRoot . '/backend'))->runProjectSteps();
+        (new ProjectDepsInstaller(SoManAgentApplication::getInstance(), $this->console, $this->projectRoot . '/backend'))->runProjectSteps();
 
         $this->console->line();
         $this->console->ok('Installation complete.');
@@ -1253,7 +1255,7 @@ final class SetupRunner extends AbstractScriptRunner
      */
     private function renderProjectStepsDryRun(): void
     {
-        $commands = (new ProjectDepsInstaller($this->app, $this->console, $this->projectRoot . '/backend'))->getSimulatedCommands();
+        $commands = (new ProjectDepsInstaller(SoManAgentApplication::getInstance(), $this->console, $this->projectRoot . '/backend'))->getSimulatedCommands();
         if ($commands === []) {
             return;
         }
@@ -1273,9 +1275,9 @@ final class SetupRunner extends AbstractScriptRunner
     private function buildInstallers(): array
     {
         return [
-            new DockerInstaller($this->app, $this->console),
-            new SystemDepsInstaller($this->app, $this->console),
-            new ClientsInstaller($this->app, $this->console),
+            new DockerInstaller(SoManAgentApplication::getInstance(), $this->console),
+            new SystemDepsInstaller(SoManAgentApplication::getInstance(), $this->console),
+            new ClientsInstaller(SoManAgentApplication::getInstance(), $this->console),
         ];
     }
 

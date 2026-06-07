@@ -7,12 +7,12 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Backlog\Command;
 
-use Sowapps\SoManAgent\Script\Service\PullRequestService;
+use Sowapps\Toolkit\Service\PullRequestService;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
-use Sowapps\SoManAgent\Script\Backlog\Enum\PullRequestTag;
+use Sowapps\Toolkit\Enum\PullRequestTag;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Enum\AgentRole;
 
 /**

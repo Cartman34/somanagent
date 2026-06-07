@@ -7,8 +7,8 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Backlog\Agent\Client;
 
-use Sowapps\SoManAgent\Script\Client\ProjectScriptClient;
-use Sowapps\SoManAgent\Script\Client\AppScript;
+use Sowapps\Toolkit\Client\ProjectScriptClient;
+use Sowapps\Toolkit\Client\AppScript;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Exception\EntryNotReservableException;
 
 /**

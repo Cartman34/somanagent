@@ -7,6 +7,9 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
+use Sowapps\Toolkit\Runner\AbstractScriptRunner;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
+
 /**
  * Database script runner.
  *
@@ -76,7 +79,7 @@ final class DbRunner extends AbstractScriptRunner
         }
 
         try {
-            $runner = new DoctrineRunner($this->app);
+            $runner = new DoctrineRunner(SoManAgentApplication::getInstance());
             return $runner->run($args);
         } catch (\InvalidArgumentException $e) {
             $this->console->fail($e->getMessage());

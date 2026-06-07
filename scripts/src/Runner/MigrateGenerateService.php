@@ -7,11 +7,11 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
-use Sowapps\SoManAgent\Script\Console;
-use Sowapps\SoManAgent\Script\Application;
+use Sowapps\Toolkit\Console;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use Sowapps\SoManAgent\Script\TextSlugger;
-use Sowapps\SoManAgent\Script\Client\FilesystemClient;
+use Sowapps\Toolkit\TextSlugger;
+use Sowapps\Toolkit\Client\FilesystemClient;
 
 /**
  * Runs doctrine:migrations:diff against a temporary isolated database.
@@ -45,13 +45,13 @@ final class MigrateGenerateService
     private readonly Console $console;
 
     /**
-     * @param Application $app
+     * @param SoManAgentApplication $app
      * @param string $agentCode Resolved agent code (e.g. "d04")
      * @param string $projectRoot Absolute path to the project root (WA or WP), used for lock files, .env and backend/
      * @param string $boardRoot Absolute path to the WP root where the canonical backlog board lives
      */
     public function __construct(
-        private readonly Application $app,
+        private readonly SoManAgentApplication $app,
         private readonly string $agentCode,
         private readonly string $projectRoot,
         private readonly string $boardRoot,

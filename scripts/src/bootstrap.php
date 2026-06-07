@@ -99,3 +99,11 @@ if (!is_file($vendorAutoload)) {
  * Normal scripts runtime starts here.
  */
 require_once $vendorAutoload;
+
+/**
+ * Pose the host application (singleton) so every runner reaches the toolkit and backlog capability
+ * layers through it. Runs once thanks to require_once.
+ */
+\Sowapps\Toolkit\Application\AbstractApplication::set(
+    new \Sowapps\SoManAgent\Script\SoManAgentApplication()
+);

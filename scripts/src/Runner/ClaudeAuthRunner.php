@@ -8,6 +8,8 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\Runner;
 
 use Sowapps\SoManAgent\Script\ClaudeAuthManager;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
+use Sowapps\Toolkit\Runner\AbstractScriptRunner;
 
 /**
  * Claude auth management script runner.
@@ -78,7 +80,7 @@ final class ClaudeAuthRunner extends AbstractScriptRunner
         }
 
         try {
-            $manager = new ClaudeAuthManager($this->app, $this->projectRoot);
+            $manager = new ClaudeAuthManager(SoManAgentApplication::getInstance(), $this->projectRoot);
 
             match ($command) {
                 'status' => $manager->showStatus(),

@@ -10,7 +10,7 @@ namespace Sowapps\SoManAgent\Script\Runner;
 use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\CampaignInterface;
 use Sowapps\SoManAgent\Script\Test\Backlog\BacklogScriptTestContext;
 use Sowapps\SoManAgent\Script\Test\Backlog\BacklogScriptTestDriver;
-use Sowapps\SoManAgent\Script\Client\ConsoleClient;
+use Sowapps\Toolkit\Client\ConsoleClient;
 use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\HelpCampaign;
 use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\BoardFormatNormalizationCampaign;
 use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\TaskCreateFormatsCampaign;
@@ -22,6 +22,7 @@ use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\PendingMigrationCampaign;
 use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\FeatureReviewLifecycleCampaign;
 use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\UserMergeCampaign;
 use Sowapps\SoManAgent\Script\Test\Backlog\Campaign\ListFlagsCampaign;
+use Sowapps\Toolkit\Runner\AbstractScriptRunner;
 
 /**
  * Runs sequential validation campaigns to test the backlog workflow script.

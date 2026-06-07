@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\DevEnv\Test;
 
 use Sowapps\SoManAgent\Script\DevEnv\Installer\ProjectDepsInstaller;
-use Sowapps\SoManAgent\Script\Console;
+use Sowapps\Toolkit\Console;
 
 /**
  * Unit tests for ProjectDepsInstaller.

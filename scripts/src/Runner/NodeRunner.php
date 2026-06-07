@@ -7,6 +7,9 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
+use Sowapps\Toolkit\Runner\AbstractScriptRunner;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
+
 /**
  * Node script runner.
  *
@@ -72,7 +75,7 @@ final class NodeRunner extends AbstractScriptRunner
         }
 
         try {
-            $runner = new NodeCommandRunner($this->app);
+            $runner = new NodeCommandRunner(SoManAgentApplication::getInstance());
             return $runner->run($args);
         } catch (\InvalidArgumentException $e) {
             $this->console->fail($e->getMessage());

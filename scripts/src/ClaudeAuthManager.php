@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script;
 
+use Sowapps\Toolkit\Console;
+
 /**
  * Manages Claude CLI authentication with WSL as the source of truth and Docker as a synchronized runtime copy.
  */
@@ -26,7 +28,7 @@ final class ClaudeAuthManager
      * Wires the shared application services and resolves the WSL/Docker auth paths.
      */
     public function __construct(
-        private readonly Application $app,
+        private readonly SoManAgentApplication $app,
         string $root,
     ) {
         $this->console = $app->console;

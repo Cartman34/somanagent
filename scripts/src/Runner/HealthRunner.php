@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
+use Sowapps\Toolkit\Runner\AbstractScriptRunner;
+
 /**
  * Health check script runner.
  *

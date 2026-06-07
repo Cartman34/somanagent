@@ -7,9 +7,9 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Backlog\Service;
 
-use Sowapps\SoManAgent\Script\Service\CommandHelpService;
+use Sowapps\Toolkit\Service\CommandHelpService;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCliOption;
-use Sowapps\SoManAgent\Script\Service\CommandParamHelp;
+use Sowapps\Toolkit\Service\CommandParamHelp;
 use RuntimeException;
 
 /**

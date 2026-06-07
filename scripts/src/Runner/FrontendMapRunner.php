@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
+use Sowapps\Toolkit\Runner\AbstractScriptRunner;
+
 /**
  * Outputs a map of the React frontend: routes, pages, and API clients.
  */

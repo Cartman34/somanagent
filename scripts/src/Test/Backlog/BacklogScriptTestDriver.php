@@ -7,16 +7,16 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Test\Backlog;
 
-use Sowapps\SoManAgent\Script\Client\ConsoleClient;
-use Sowapps\SoManAgent\Script\Console;
+use Sowapps\Toolkit\Client\ConsoleClient;
+use Sowapps\Toolkit\Console;
 use Sowapps\SoManAgent\Script\Backlog\Storage\BoardYamlStorage;
 use Sowapps\SoManAgent\Script\Backlog\Enum\BacklogCommandName;
 use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
-use Sowapps\SoManAgent\Script\Service\GitService;
+use Sowapps\Toolkit\Service\GitService;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use Sowapps\SoManAgent\Script\TextSlugger;
-use Sowapps\SoManAgent\Script\Client\FilesystemClient;
-use Sowapps\SoManAgent\Script\Client\GitHub\GitHubCommandName;
+use Sowapps\Toolkit\TextSlugger;
+use Sowapps\Toolkit\Client\FilesystemClient;
+use Sowapps\Toolkit\Client\GitHub\GitHubCommandName;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogConfig;
 use Symfony\Component\Yaml\Yaml;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;

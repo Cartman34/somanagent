@@ -8,6 +8,8 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\Runner;
 
 use Sowapps\SoManAgent\Script\OpenCodeAuthManager;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
+use Sowapps\Toolkit\Runner\AbstractScriptRunner;
 
 /**
  * OpenCode auth management script runner.
@@ -74,7 +76,7 @@ final class OpenCodeAuthRunner extends AbstractScriptRunner
         }
 
         try {
-            $manager = new OpenCodeAuthManager($this->app, $this->projectRoot);
+            $manager = new OpenCodeAuthManager(SoManAgentApplication::getInstance(), $this->projectRoot);
 
             match ($command) {
                 'status' => $manager->showStatus(),

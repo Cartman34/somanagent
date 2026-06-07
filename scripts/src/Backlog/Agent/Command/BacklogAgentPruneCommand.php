@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Backlog\Agent\Command;
 
-use Sowapps\SoManAgent\Script\Console;
+use Sowapps\Toolkit\Console;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Service\AgentSessionService;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\SessionDriverInterface;
 use Sowapps\SoManAgent\Script\Backlog\Agent\Client\ProcessSignaler;

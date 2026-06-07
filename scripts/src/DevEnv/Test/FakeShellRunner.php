@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\DevEnv\Test;
 
-use Sowapps\SoManAgent\Script\ShellRunnerInterface;
+use Sowapps\Toolkit\ShellRunnerInterface;
 
 /**
  * Fake shell runner for unit tests.

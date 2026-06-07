@@ -11,15 +11,15 @@ use Sowapps\SoManAgent\Script\Backlog\Model\BacklogBoard;
 use Sowapps\SoManAgent\Script\Backlog\Model\BoardEntry;
 use Sowapps\SoManAgent\Script\Backlog\Command\BacklogReviewApproveCommand;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use Sowapps\SoManAgent\Script\TextSlugger;
-use Sowapps\SoManAgent\Script\Client\FilesystemClient;
-use Sowapps\SoManAgent\Script\Service\GitService;
-use Sowapps\SoManAgent\Script\Service\PullRequestService;
+use Sowapps\Toolkit\TextSlugger;
+use Sowapps\Toolkit\Client\FilesystemClient;
+use Sowapps\Toolkit\Service\GitService;
+use Sowapps\Toolkit\Service\PullRequestService;
 use Sowapps\SoManAgent\Script\Backlog\Service\BodyFilePathResolver;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
-use Sowapps\SoManAgent\Script\Console;
-use Sowapps\SoManAgent\Script\Client\ConsoleClient;
-use Sowapps\SoManAgent\Script\Application;
+use Sowapps\Toolkit\Console;
+use Sowapps\Toolkit\Client\ConsoleClient;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -225,7 +225,7 @@ final class BacklogReviewApproveCommandTest
 
         return new BacklogPresenter(
             Console::getInstance(),
-            new ConsoleClient($projectRoot, false, Application::getInstance(), static function (string $_message): void {}),
+            new ConsoleClient($projectRoot, false, SoManAgentApplication::getInstance(), static function (string $_message): void {}),
             $boardService,
         );
     }

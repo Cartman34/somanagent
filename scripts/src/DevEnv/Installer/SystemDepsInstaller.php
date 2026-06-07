@@ -8,8 +8,8 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\DevEnv\Installer;
 
 use Sowapps\SoManAgent\Script\DevEnv\Model\LockEntry;
-use Sowapps\SoManAgent\Script\Application;
-use Sowapps\SoManAgent\Script\Console;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
+use Sowapps\Toolkit\Console;
 use Sowapps\SoManAgent\Script\DevEnv\PlannedDep;
 use Sowapps\SoManAgent\Script\DevEnv\Model\SideEffects;
 
@@ -23,11 +23,11 @@ use Sowapps\SoManAgent\Script\DevEnv\Model\SideEffects;
 final class SystemDepsInstaller implements InstallerInterface
 {
     /**
-     * @param Application $app Command runner
+     * @param SoManAgentApplication $app Command runner
      * @param Console $console Output helper
      */
     public function __construct(
-        private readonly Application $app,
+        private readonly SoManAgentApplication $app,
         private readonly Console $console,
     ) {
     }

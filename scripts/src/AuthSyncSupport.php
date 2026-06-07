@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script;
 
+use Sowapps\Toolkit\Console;
+
 /**
  * Provides the common filesystem and shell helpers used by CLI auth sync managers.
  */
@@ -18,7 +20,7 @@ final class AuthSyncSupport
      * Builds the helper around the shared script application and console instances.
      */
     public function __construct(
-        private readonly Application $app,
+        private readonly SoManAgentApplication $app,
         private readonly Console $console,
     ) {}
 

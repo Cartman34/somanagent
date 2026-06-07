@@ -9,13 +9,13 @@ namespace Sowapps\SoManAgent\Script\Backlog\Test;
 
 use Sowapps\SoManAgent\Script\Backlog\Model\EntryRebaseResult;
 use Sowapps\SoManAgent\Script\Backlog\Command\BacklogEntryRebaseCommand;
-use Sowapps\SoManAgent\Script\Application;
-use Sowapps\SoManAgent\Script\Client\ConsoleClient;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
+use Sowapps\Toolkit\Client\ConsoleClient;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogBoardService;
-use Sowapps\SoManAgent\Script\TextSlugger;
-use Sowapps\SoManAgent\Script\Client\FilesystemClient;
+use Sowapps\Toolkit\TextSlugger;
+use Sowapps\Toolkit\Client\FilesystemClient;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogPresenter;
-use Sowapps\SoManAgent\Script\Console;
+use Sowapps\Toolkit\Console;
 use Sowapps\SoManAgent\Script\Backlog\Service\BacklogWorktreeService;
 
 use Sowapps\SoManAgent\Script\Backlog\Agent\Test\Support\FakeEntryRebaseService;
@@ -315,7 +315,7 @@ final class EntryRebaseCommandTest
         FakeEntryRebaseService $rebaseService,
         ?string $worktreesRoot = null,
     ): BacklogEntryRebaseCommand {
-        $app = Application::getInstance();
+        $app = SoManAgentApplication::getInstance();
         $console = new ConsoleClient($dir, false, $app, static function (string $m): void {});
         $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
         $presenter = new BacklogPresenter(Console::getInstance(), $console, $boardService);
