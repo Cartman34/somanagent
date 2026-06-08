@@ -131,6 +131,7 @@ services:
   # Redis (Messenger transport queue)
   # ============================================================
   redis:
+    profiles: [minimal, full]
     build:
       context: ./docker/redis
       dockerfile: Dockerfile
@@ -153,6 +154,7 @@ services:
   # PostgreSQL
   # ============================================================
   db:
+    profiles: [minimal, full]
     build:
       context: ./docker/db
       dockerfile: Dockerfile

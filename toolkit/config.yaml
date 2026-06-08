@@ -67,6 +67,22 @@ translations:
     frontend: Sowapps\SoManAgent\Script\Validation\FrontendTranslationExtractor
     backend: Sowapps\SoManAgent\Script\Validation\BackendTranslationExtractor
 
+# Docker module (Sowapps\Toolkit\Docker): server (start/stop/status/health) + logs runners.
+# container_prefix = Compose project name ; default_profile = profile started by `server start`.
+docker:
+  container_prefix: somanagent_
+  default_profile: full
+  health:
+    checks:
+      - { type: postgres, dsn: 'pgsql:host=localhost;port=5432;dbname=somanagent', user: somanagent, password: somanagent }
+      - { type: redis, address: 'tcp://localhost:6379' }
+      - { type: http, name: API,     url: 'http://localhost:8080/api/health',         requires: nginx }
+      - { type: http, name: Mercure, url: 'http://localhost:8080/.well-known/mercure', requires: mercure }
+  banner: |
+    API  →  http://localhost:8080/api/health
+    UI   →  http://localhost:5173
+    DB   →  localhost:5432  (somanagent / somanagent)
+
 # Optional tool config-file overrides (binaries ship with the toolkit).
 # tools:
 #   phpstan:
