@@ -83,6 +83,19 @@ docker:
     UI   →  http://localhost:5173
     DB   →  localhost:5432  (somanagent / somanagent)
 
+# Symfony console module (Sowapps\Toolkit\Symfony): run bin/console inside the PHP Compose service.
+symfony:
+  service: php
+  console: php bin/console
+
+# Database module (Sowapps\Toolkit\Symfony db runner): psql + Doctrine inside Compose services.
+# Doctrine commands reuse the symfony section above.
+database:
+  service: db
+  psql:
+    user: somanagent
+    database: somanagent
+
 # Optional tool config-file overrides (binaries ship with the toolkit).
 # tools:
 #   phpstan:
