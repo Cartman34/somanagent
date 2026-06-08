@@ -3,6 +3,20 @@
 appName: somanagent
 appLabel: 'somanagent'
 
+# Project scopes: name -> directory prefixes (membership). Single source of the project's
+# areas, consumed by backlog (entry --scope=<name>) and by tooling. Tools that target a scope
+# accept either a scope name or a raw path.
+scopes:
+  backend:
+    - backend/
+  frontend:
+    - frontend/
+  scripts:
+    - scripts/
+  scripts-and-doc:
+    - scripts/
+    - doc/
+
 # Directories holding executable scripts (help, fix-permissions).
 scripts_dirs:
   - scripts/toolkit
