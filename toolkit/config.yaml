@@ -49,6 +49,24 @@ validations:
 validators:
   openapi-consistency: Sowapps\SoManAgent\Script\Validation\OpenApiConsistencyValidator
 
+# Symfony translation validation (Sowapps\Toolkit\Symfony): declared keys vs source usages.
+# catalog = where keys are declared; sources = where usages are scanned, each bound to extractors;
+# extractors = app-specific usage extractors (name -> FQCN, implementing the toolkit contract).
+translations:
+  catalog:
+    dir: backend/translations
+    locale: fr
+  sources:
+    - dirs: [frontend/src]
+      exts: [ts, tsx]
+      extractors: [frontend]
+    - dirs: [backend/src]
+      exts: [php]
+      extractors: [backend]
+  extractors:
+    frontend: Sowapps\SoManAgent\Script\Validation\FrontendTranslationExtractor
+    backend: Sowapps\SoManAgent\Script\Validation\BackendTranslationExtractor
+
 # Optional tool config-file overrides (binaries ship with the toolkit).
 # tools:
 #   phpstan:
