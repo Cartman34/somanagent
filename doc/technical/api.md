@@ -15,7 +15,7 @@ Maintenance rules for this file:
 - use `additionalProperties: false` for structured objects unless a free-form map is intentional
 - if a route is planned but not implemented yet, keep it in the spec only with `x-somanagent-implemented: false`
 - keep narrative business rules in `api.md`, but keep route-level contract details in `openapi.yaml`
-- run `php scripts/toolkit/validate-files.php ...` or `php scripts/review.php` after editing the spec so OpenAPI consistency stays enforced
+- run `php scripts/toolkit/validate-files.php ...` or `php scripts/backlog/review.php` after editing the spec so OpenAPI consistency stays enforced
 
 **Base URL** : `http://localhost:8080/api`
 **Format** : JSON

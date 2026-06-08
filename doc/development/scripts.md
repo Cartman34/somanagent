@@ -53,7 +53,6 @@ php scripts/toolkit/help.php migrate.php
 | `github.php` | PHP | GitHub CLI helper for PR creation, listing, view and merge |
 | `logs.php` | PHP | Display Docker logs |
 | `health.php` | PHP | Check application status |
-| `review.php` | PHP | Run mechanical review checks (French strings, PHPDoc, JSDoc, translations, targeted validation, PHPStan) |
 | `validate-files.php` | PHP | Run targeted backend/frontend validations for an explicit file list |
 | `validate-backend-tests.php` | PHP | Run isolated local PHPUnit checks for backend unit tests from WSL without Docker services |
 | `validate-agent-launchers.php` | PHP | Cross-check `AgentClientLauncher` CLI flags against the local binary `--help` output |
@@ -530,40 +529,6 @@ php scripts/health.php --url http://my-server:8080
 
 ---
 
-### `review.php`
-Runs mechanical checks on modified and untracked files. With `--base=<ref>`, it also checks files changed by commits between that base and `HEAD`. Designed to be used by AI agents during the `review` command, before manual inspection.
-
-Blockers (exit code 1):
-- French strings (accented characters) in `backend/src/` `.php` and `frontend/src/` `.ts/.tsx`
-- Missing PHPDoc on `public function` declarations in `backend/src/` (migrations excluded)
-- Missing JSDoc on export declarations in `frontend/src/` `.ts/.tsx`
-- Failing frontend TypeScript type-check when modified files include `frontend/src/` `.ts/.tsx`
-- Failing file validation for the review scope
-- Missing or unused translation keys
-- Failing dedicated PHPUnit tests mapped from modified `backend/src/Service/...` files
-- Failing PHPStan analysis for the backend and/or scripts scope when matching PHP source files are in review scope
-
-Informational (no exit code impact):
-- List of modified files
-- List of untracked files
-- List of committed files since `--base`, when provided
-- Modified backend services without a dedicated mapped PHPUnit test
-
-Limitations: only detects accented characters as French strings — complement with a manual diff review for unaccented French words (`Valider`, `Commenter`, etc.). JSDoc check covers export declarations only, not re-exports.
-
-Rules:
-- PHPDoc checks ignore unit-test support code under `backend/tests/` and backlog workflow tests under `scripts/src/Test/`
-- French strings are blocked in source files; backlog file-format labels must be written in English, for example `To do` and `Usage rules`
-
-The review flow skips container-backed validations that depend on local uncommitted environment files such as `.env`. Frontend TypeScript checking remains part of review through `php scripts/toolkit/validate-files.php --with-types --review-scope ...`, which runs the local `frontend` package script instead of raw `npx tsc`.
-
-```bash
-php scripts/review.php
-php scripts/review.php --base=HEAD~1
-```
-
----
-
 ### `phpunit.php`
 Runs PHPUnit using the dedicated configuration and binary for the requested scopes. By default all configured scopes are tested. Use `--scope=<name>` to restrict the scope.
 
@@ -631,7 +596,7 @@ For service-driven validation, the dedicated test mapping is `backend/src/Servic
 
 ```bash
 php scripts/validate-backend-tests.php backend/src/Service/AgentModelRecommendationPolicyResolver.php
-php scripts/validate-backend-tests.php backend/src/Service/VcsRepositoryUrlService.php scripts/review.php
+php scripts/validate-backend-tests.php backend/src/Service/VcsRepositoryUrlService.php
 php scripts/validate-backend-tests.php --all
 ```
 

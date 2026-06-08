@@ -186,7 +186,7 @@ Also check:
 - every declared scope item has a matching file change, and vice versa
 - callers of any changed method signature
 
-`php scripts/review.php` limitation:
+`php scripts/backlog/review.php` limitation:
 
 - it only detects accented French characters, so unaccented words such as `Valider`, `Annuler`, or `Titre` still require a manual diff scan
 
