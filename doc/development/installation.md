@@ -29,14 +29,14 @@ php scripts/setup.php update
 php scripts/setup.php install
 
 # 5. Start the dev environment
-php scripts/server.php start
+php scripts/toolkit/server.php start
 ```
 
 ### Step details
 
 - `setup.php update` queries each source declared in `scripts/resources/dependencies.yaml` (apt-cache, npm view, GitHub releases) and writes the resolved versions to `scripts/resources/dependencies.lock`.
 - `setup.php install` reads the lockfile and installs or upgrades host dependencies (PHP 8.4+ and extensions, Docker Engine + Compose plugin, git, tmux, AI clients `claude`/`codex`/`opencode`/`gemini`), then runs project-level steps (Composer, npm, Doctrine migrations via host PHP CLI). It also delegates backlog config preparation to `scripts/backlog/install.php` (the backlog package installer).
-- `server.php start` brings up Docker Compose services (`db`, `redis`, `php`, `worker`, `nginx`, `node`, `mercure`).
+- `scripts/toolkit/server.php start` brings up Docker Compose services (`db`, `redis`, `php`, `worker`, `nginx`, `node`, `mercure`).
 
 ### Lockfile is local-only on this project
 
@@ -57,22 +57,22 @@ Exit code `0` means everything is aligned. Exit code `1` reports missing, outdat
 ## Starting After Installation
 
 ```bash
-php scripts/server.php start            # full stack: db, redis, php, worker, nginx, node, mercure
-php scripts/server.php start --minimal  # db + redis only (lightweight, agents-on-host mode)
-php scripts/server.php stop
-php scripts/server.php restart
-php scripts/server.php status           # docker compose ps
-php scripts/server.php health           # native PHP probes (PDO / TCP socket), no pg_isready / redis-cli on host
+php scripts/toolkit/server.php start            # full stack: db, redis, php, worker, nginx, node, mercure
+php scripts/toolkit/server.php start minimal  # db + redis only (lightweight, agents-on-host mode)
+php scripts/toolkit/server.php stop
+php scripts/toolkit/server.php restart
+php scripts/toolkit/server.php status           # docker compose ps
+php scripts/toolkit/server.php health           # native PHP probes (PDO / TCP socket), no pg_isready / redis-cli on host
 ```
 
 ## Remote Server Setup (Agents on Host)
 
 For a remote dev server where AI agents run **on the host** rather than inside the `php` container:
 
-- Use `php scripts/server.php start --minimal` to keep only `db` and `redis` up. The rest of the stack (`php`, `worker`, `nginx`, `node`, `mercure`) stays stopped, reducing the memory and CPU footprint significantly.
+- Use `php scripts/toolkit/server.php start minimal` to keep only `db` and `redis` up. The rest of the stack (`php`, `worker`, `nginx`, `node`, `mercure`) stays stopped, reducing the memory and CPU footprint significantly.
 - Backend code, agent sessions, and project tooling run directly via host PHP/CLI. The database is reached at `localhost:5432`.
 - Doctrine migrations are executed via host PHP CLI (`php backend/bin/console doctrine:migrations:migrate --no-interaction`), not via `docker compose exec`, so they work in minimal mode as long as the `db` container is up. `DATABASE_URL` is normalised automatically from `db:5432` to `localhost:5432`.
-- `server.php health` performs its checks through PHP-native probes (PDO TCP connection for PostgreSQL, raw TCP socket + RESP `PING` for Redis, HTTP `file_get_contents` for nginx/mercure when the full profile is up). No `postgresql-client` or `redis-tools` package is added to the host manifest for this purpose.
+- `scripts/toolkit/server.php health` performs its checks through PHP-native probes (PDO TCP connection for PostgreSQL, raw TCP socket + RESP `PING` for Redis, HTTP `file_get_contents` for nginx/mercure when the full profile is up). No `postgresql-client` or `redis-tools` package is added to the host manifest for this purpose.
 
 ## URLs (Local Development)
 
@@ -86,7 +86,7 @@ For a remote dev server where AI agents run **on the host** rather than inside t
 ## Stopping the Environment
 
 ```bash
-php scripts/server.php stop
+php scripts/toolkit/server.php stop
 ```
 
 ## Docker Structure
@@ -103,7 +103,7 @@ The `docker-compose.yml` defines these services:
 | `mercure` | Mercure hub | — | `full` | Dedicated realtime transport |
 | `node` | Node 20 alpine | 5173 | `full` | Vite dev server |
 
-`server.php start` activates the `full` profile (everything). `server.php start --minimal` skips the `full` profile and starts only `db` and `redis`.
+`scripts/toolkit/server.php start` activates the `full` profile (everything). `scripts/toolkit/server.php start minimal` skips the `full` profile and starts only `db` and `redis`.
 
 ## Migrations
 
@@ -142,16 +142,16 @@ php scripts/db.php reset --fixtures
 ### Docker won't start
 
 ```bash
-php scripts/server.php status
-php scripts/logs.php php
-php scripts/logs.php worker
-php scripts/logs.php db
+php scripts/toolkit/server.php status
+php scripts/toolkit/logs.php php
+php scripts/toolkit/logs.php worker
+php scripts/toolkit/logs.php db
 ```
 
 ### Database connection error
 
 - Check that `DATABASE_URL` in `.env` resolves correctly. Inside the `php` container it points at `db:5432`; from host it must resolve to `localhost:5432` (handled automatically by `migrate.php` and `setup.php install`).
-- Wait a few seconds for PostgreSQL to finish starting up; `server.php health` will exit `0` once the DB is ready.
+- Wait a few seconds for PostgreSQL to finish starting up; `scripts/toolkit/server.php health` will exit `0` once the DB is ready.
 
 ### Migrations fail
 

@@ -84,7 +84,7 @@ php scripts/setup.php update
 php scripts/setup.php install
 
 # 4. Start the dev environment
-php scripts/server.php start
+php scripts/toolkit/server.php start
 
 # 5. Verify everything works
 php scripts/health.php

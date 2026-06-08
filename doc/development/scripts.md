@@ -38,21 +38,15 @@ php scripts/toolkit/help.php migrate.php
 | `backlog-agent.php` | PHP | Start and manage AI agent sessions in dedicated worktrees |
 | `worktree-info.php` | PHP | Display the git worktree context for the current script (linked vs main worktree, roots) |
 | `test-backlog-workflow.php` | PHP | Run reusable sequential validation campaigns for `backlog.php` on temporary backlog files |
-| `test-backlog-agent.php` | PHP | Run unit tests for backlog-agent.php classes |
-| `test-server.php` | PHP | Run tests for server.php |
-| `test-dev-env.php` | PHP | Run unit tests for the DevEnv manifest/lockfile/resolver/planner classes |
+| `test-backlog-agent.php` | PHP | Run unit tests for backlog-agent.php classes || `test-dev-env.php` | PHP | Run unit tests for the DevEnv manifest/lockfile/resolver/planner classes |
 | `test-setup.php` | PHP | Run subprocess integration tests for setup.php |
 | `test-validation.php` | PHP | Run unit tests for `scripts/src/Validation/` classes (ScriptExecBitValidator, ExecBitFixer, …) |
-| `setup.php` | PHP | Manage host-level dependencies and project setup (install, update, verify, uninstall, reset, status, dep-config) |
-| `server.php` | PHP | Manage Docker Compose services (start, stop, restart, status, health) |
-| `migrate.php` | PHP | Run Doctrine migrations |
+| `setup.php` | PHP | Manage host-level dependencies and project setup (install, update, verify, uninstall, reset, status, dep-config) || `migrate.php` | PHP | Run Doctrine migrations |
 | `console.php` | PHP | Run a Symfony command |
 | `node.php` | PHP | Run reusable commands inside the Node container |
 | `db.php` | PHP | Run database commands (PostgreSQL + Doctrine reset) |
 | `code-search.php` | PHP | Search a term across backend, frontend, scripts, doc, and YAML resource files |
-| `github.php` | PHP | GitHub CLI helper for PR creation, listing, view and merge |
-| `logs.php` | PHP | Display Docker logs |
-| `health.php` | PHP | Check application status |
+| `github.php` | PHP | GitHub CLI helper for PR creation, listing, view and merge || `health.php` | PHP | Check application status |
 | `validate-files.php` | PHP | Run targeted backend/frontend validations for an explicit file list |
 | `validate-backend-tests.php` | PHP | Run isolated local PHPUnit checks for backend unit tests from WSL without Docker services |
 | `validate-agent-launchers.php` | PHP | Cross-check `AgentClientLauncher` CLI flags against the local binary `--help` output |
@@ -312,7 +306,7 @@ Notes:
 - Lockfile is local: `scripts/resources/dependencies.lock` is **not committed** on this project — it stores per-host `pre_existing` state and side-effect paths. Each machine generates its own via `setup.php update`. `install` rejects an absent or sentinel lockfile (`generated_at: ~`).
 - Mutation subcommands (`update`, `install`, `uninstall`, `reset`) accept `--preview-only`, `--dry-run`, and `--force`. `--preview-only` and `--dry-run` are mutually exclusive. `--force` still prints the preview for traceability.
 - `dep-config` mutations are local and reversible (`unset`); no `--force` flag.
-- `install` runs Doctrine migrations via **host PHP CLI** (`php backend/bin/console doctrine:migrations:migrate --no-interaction`), not via `docker compose exec`. Requires the `db` container up; the `php` container is not required (compatible with `server.php start --minimal`). `DATABASE_URL` is normalised from `db:5432` to `localhost:5432` automatically.
+- `install` runs Doctrine migrations via **host PHP CLI** (`php backend/bin/console doctrine:migrations:migrate --no-interaction`), not via `docker compose exec`. Requires the `db` container up; the `php` container is not required (compatible with `scripts/toolkit/server.php start minimal`). `DATABASE_URL` is normalised from `db:5432` to `localhost:5432` automatically.
 - `verify`: `0` if aligned, `1` for missing/outdated/orphaned/unlocked deps. Run `setup.php update` first if deps appear unlocked.
 - `uninstall` policy chain: `--restore`/`--keep` flag > lockfile override (`dep-config`) > manifest per-dep `on_uninstall_pre_existing` > manifest default > framework default (`keep`).
 - `reset` is destructive: explicit confirmation required unless `--force`. Host dependencies (apt packages, npm clients) are **not** removed by `reset` — use `uninstall` for that.
@@ -320,37 +314,8 @@ Notes:
 
 ---
 
-### `server.php`
-Manages Docker Compose services for the development environment. Subcommand-based runner.
-
-Subcommands:
-- `start` — bring services up (full profile by default, `--minimal` for db + redis only)
-- `stop` — bring services down
-- `restart` — stop then start
-- `status` — `docker compose ps` for the project
-- `health` — health checks via native PHP probes (PDO / TCP socket / HTTP); no `pg_isready` or `redis-cli` required on the host
-
-Docker Compose profiles: `db` and `redis` have no profile (always started); `php`, `worker`, `nginx`, `node`, and `mercure` use the `full` profile.
-
-```bash
-php scripts/server.php help                  # show help (also displayed when no subcommand is passed)
-
-php scripts/server.php start                 # start all services (profile full)
-php scripts/server.php start --minimal       # start db + redis only
-php scripts/server.php start --preview-only  # show plan, no apply
-php scripts/server.php start --dry-run       # plan + simulated commands, no apply
-php scripts/server.php start --force         # apply without confirmation
-
-php scripts/server.php stop                  # stop all services
-php scripts/server.php restart               # stop then start
-php scripts/server.php status                # docker compose ps
-php scripts/server.php health                # native PHP probes (db via PDO, redis via TCP RESP PING, http via file_get_contents)
-```
-
-Notes:
-- Mutation subcommands (`start`, `stop`, `restart`) accept `--preview-only`, `--dry-run`, and `--force`. `--preview-only` and `--dry-run` are mutually exclusive.
-- `start --minimal` is the recommended mode for remote dev servers where AI agents run on the host: it keeps `db` and `redis` up while skipping the heavier `full`-profile services.
-- `health` deliberately depends only on PHP-native facilities (PDO, raw TCP socket, HTTP) so the host manifest does not need to ship `postgresql-client` or `redis-tools` for diagnostic purposes.
+### Docker environment — `server.php`, `logs.php`
+Provided by the toolkit portal, not by SMA — see the toolkit scripts reference [`scripts/toolkit/doc/maintaining/scripts.md`](../../scripts/toolkit/doc/maintaining/scripts.md): `server.php` (Docker Compose `start [<profile>]`/`stop`/`restart`/`status`/`health`, profile-driven) and `logs.php` (service logs). The host stack is configured under the `docker` section of `toolkit/config.yaml`.
 
 ---
 
@@ -502,20 +467,6 @@ Notes:
 - Requires `GITHUB_TOKEN` in `.env` and a detectable `origin` remote pointing to GitHub.
 - Use `php scripts/toolkit/github.php <command> --help` for per-command option details (e.g. `pr-merge --help`).
 - For backlog tasks started from a `[feature-slug][task-slug]` prefix, the local merge between the child task branch and the parent feature branch happens before any GitHub PR flow; `github.php` is only relevant once work is promoted back to a branch meant for remote review.
-
----
-
-### `logs.php`
-Displays a Docker container's logs in real time (tail -f).
-
-```bash
-php scripts/logs.php          # logs from the php container (default)
-php scripts/logs.php db       # PostgreSQL logs
-php scripts/logs.php node     # Vite logs
-php scripts/logs.php nginx    # Nginx logs
-```
-
-Use this script in priority instead of raw `docker logs` when the target container is supported.
 
 ---
 

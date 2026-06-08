@@ -23,7 +23,7 @@ php scripts/validate-backend-tests.php backend/src/Service/AgentModelRecommendat
 php scripts/validate-backend-tests.php --all
 php scripts/console.php cache:clear
 php scripts/node.php type-check
-php scripts/logs.php worker --tail 120
+php scripts/toolkit/logs.php worker --tail 120
 php scripts/db.php query "SELECT source, category, level, title, occurred_at FROM log_event ORDER BY occurred_at DESC LIMIT 20;"
 ```
 

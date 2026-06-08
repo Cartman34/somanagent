@@ -58,7 +58,7 @@ final class HealthRunner extends AbstractScriptRunner
             $this->console->ok("Application : {$app['app']} v{$app['version']} — reachable");
         } catch (\RuntimeException $e) {
             $this->console->line("  ❌ API unreachable: " . $e->getMessage());
-            $this->console->line('  → Start the stack with: php scripts/server.php start');
+            $this->console->line('  → Start the stack with: php scripts/toolkit/server.php start');
             return 1;
         }
 

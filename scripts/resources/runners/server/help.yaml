@@ -1,9 +1,0 @@
-description: 'Manage Docker Compose services for the development environment.'
-examples:
-  - 'php scripts/server.php start'
-  - 'php scripts/server.php start --minimal'
-  - 'php scripts/server.php stop'
-  - 'php scripts/server.php restart'
-  - 'php scripts/server.php status'
-  - 'php scripts/server.php health'
-  - 'php scripts/server.php help start'

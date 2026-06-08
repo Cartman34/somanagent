@@ -84,7 +84,7 @@ final class ProjectDepsInstaller
             }
             $this->console->ok('composer install done.');
         } else {
-            $this->console->warn('php container not running — skipping composer install. Run: php scripts/server.php start');
+            $this->console->warn('php container not running — skipping composer install. Run: php scripts/toolkit/server.php start');
         }
 
         if ($this->isContainerRunning('somanagent_node')) {
@@ -95,12 +95,12 @@ final class ProjectDepsInstaller
             }
             $this->console->ok('npm install done.');
         } else {
-            $this->console->warn('node container not running — skipping npm install. Run: php scripts/server.php start');
+            $this->console->warn('node container not running — skipping npm install. Run: php scripts/toolkit/server.php start');
         }
 
         if (!$this->isContainerRunning('somanagent_db')) {
             throw new \RuntimeException(
-                'db container is not running — start it with `php scripts/server.php start --minimal` or `php scripts/server.php start`',
+                'db container is not running — start it with `php scripts/toolkit/server.php start minimal` or `php scripts/toolkit/server.php start`',
             );
         }
 

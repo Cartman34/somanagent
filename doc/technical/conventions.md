@@ -401,7 +401,7 @@ Adapters implement the port. Selection is handled via `AgentPortRegistry` (Symfo
 When a project script already exists in `scripts/`, use it in priority over direct container commands.
 
 - prefer `php scripts/console.php cache:clear` over `docker exec ... bin/console cache:clear`
-- prefer `php scripts/logs.php worker` over raw `docker logs ...`
+- prefer `php scripts/toolkit/logs.php worker` over raw `docker logs ...`
 - prefer `php scripts/toolkit/validate-files.php --with-types <files>` for review-scoped frontend changes, and `php scripts/node.php type-check` for an explicit full frontend container type-check; do not run raw `npx tsc`
 - prefer `php scripts/db.php query "SELECT ..."` over a repeated `docker exec ... psql -c "SELECT ..."`
 
