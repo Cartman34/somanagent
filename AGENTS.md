@@ -3,7 +3,7 @@
 Single entrypoint for AI agents working on this repository. Read this file first; open other files only when the active task requires them.
 
 - **Common rules (all projects)** — conventions, working method, process discipline: `scripts/toolkit/doc/AGENTS-common.md`. They apply here and are not repeated below.
-- **Backlog workflow, roles, sessions, board/review** — `scripts/backlog/doc/` (`agent-developer.md`, `agent-reviewer.md`, `agent-manager.md`, `agent-workflow.md`, `backlog-glossary.md`). The backlog subsystem is the `sowapps/web-backlog` package.
+- **Backlog workflow, roles, sessions, board/review** — `scripts/backlog/doc/using/` (`agent-developer.md`, `agent-reviewer.md`, `agent-manager.md`, `agent-workflow.md`, `backlog-glossary.md`); architecture & ops under `scripts/backlog/doc/{developing,operating}/`. The backlog subsystem is the `sowapps/web-backlog` package.
 
 Pose the portals once (relative symlinks to sibling clones, not committed):
 `ln -s ../../web-toolkit/scripts/toolkit scripts/toolkit` and `ln -s ../../web-backlog/scripts/backlog scripts/backlog`
