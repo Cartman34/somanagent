@@ -118,7 +118,7 @@ php scripts/migrate.php --generate # generate a diff against a temp DB
 To inspect status:
 
 ```bash
-php scripts/console.php doctrine:migrations:status
+php scripts/toolkit/console.php doctrine:migrations:status
 ```
 
 > Note: `setup.php install` already runs Doctrine migrations during step 4 of the full installation, so `migrate.php` is only needed for ongoing schema work after the initial setup.
@@ -128,13 +128,13 @@ php scripts/console.php doctrine:migrations:status
 To create the example Web Development Team:
 
 ```bash
-php scripts/console.php somanagent:seed:web-team
+php scripts/toolkit/console.php somanagent:seed:web-team
 ```
 
 To fully recreate the local database and reload fixtures:
 
 ```bash
-php scripts/db.php reset --fixtures
+php scripts/toolkit/db.php reset --fixtures
 ```
 
 ## Troubleshooting
@@ -156,8 +156,8 @@ php scripts/toolkit/logs.php db
 ### Migrations fail
 
 ```bash
-php scripts/console.php doctrine:migrations:status
-php scripts/console.php doctrine:migrations:list
+php scripts/toolkit/console.php doctrine:migrations:status
+php scripts/toolkit/console.php doctrine:migrations:list
 ```
 
 If `setup.php install` fails on the migration step, check the message — it explicitly indicates whether the `db` container is missing or whether the connection itself failed.

@@ -65,7 +65,7 @@ final class HealthRunner extends AbstractScriptRunner
         $this->console->line();
         $this->console->step('Connector health via somanagent:health');
 
-        return $this->app->runCommand('php scripts/console.php somanagent:health');
+        return $this->app->runCommand('php scripts/toolkit/console.php somanagent:health');
     }
 
     /**

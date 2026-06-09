@@ -21,10 +21,10 @@ Use `doc/README.md` to find broader documentation. This file is only a short rec
 php backend/vendor/bin/phpunit --configuration backend/phpunit.dist.xml backend/tests/Unit/Service/AgentModelRecommendationPolicyResolverTest.php
 php scripts/validate-backend-tests.php backend/src/Service/AgentModelRecommendationPolicyResolver.php
 php scripts/validate-backend-tests.php --all
-php scripts/console.php cache:clear
+php scripts/toolkit/console.php cache:clear
 php scripts/node.php type-check
 php scripts/toolkit/logs.php worker --tail 120
-php scripts/db.php query "SELECT source, category, level, title, occurred_at FROM log_event ORDER BY occurred_at DESC LIMIT 20;"
+php scripts/toolkit/db.php query "SELECT source, category, level, title, occurred_at FROM log_event ORDER BY occurred_at DESC LIMIT 20;"
 ```
 
 ## Git Hooks

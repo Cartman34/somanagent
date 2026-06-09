@@ -87,7 +87,7 @@ final class StatusRunner extends AbstractScriptRunner
                         if (preg_match('/(\d+)/', $line, $m)) {
                             $count = (int) $m[1];
                             if (str_contains($line, 'New') && $count > 0) {
-                                $warn("{$count} pending migration(s) → php scripts/db.php migrate");
+                                $warn("{$count} pending migration(s) → php scripts/toolkit/db.php migrate");
                             } elseif (str_contains($line, 'New') && $count === 0) {
                                 $ok("No pending migrations.");
                             } else {

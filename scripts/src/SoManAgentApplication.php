@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script;
 
 use Sowapps\Backlog\Application\AbstractBacklogApplication;
+use Sowapps\SoManAgent\Script\SoManAgentServiceFactory;
 
 /**
  * SoManAgent host application.
@@ -18,6 +19,8 @@ use Sowapps\Backlog\Application\AbstractBacklogApplication;
  */
 final class SoManAgentApplication extends AbstractBacklogApplication
 {
+    private ?SoManAgentServiceFactory $hostServiceFactory = null;
+
     /**
      * Covariant accessor so consumers reach the posed host application with its concrete type.
      */
@@ -27,5 +30,13 @@ final class SoManAgentApplication extends AbstractBacklogApplication
         assert($application instanceof self);
 
         return $application;
+    }
+
+    /**
+     * Narrows the service factory covariantly to the host factory (complete inheritance chain).
+     */
+    public function getServiceFactory(): SoManAgentServiceFactory
+    {
+        return $this->hostServiceFactory ??= new SoManAgentServiceFactory($this);
     }
 }

@@ -47,7 +47,7 @@ Content-Type: application/json
 
 **Via the command**:
 ```bash
-php scripts/console.php somanagent:skill:import anthropics/code-reviewer
+php scripts/toolkit/console.php somanagent:skill:import anthropics/code-reviewer
 ```
 
 The skill is:

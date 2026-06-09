@@ -53,7 +53,7 @@ Content-Type: application/json
 SoManAgent includes a command to create the example team:
 
 ```bash
-php scripts/console.php somanagent:seed:web-team
+php scripts/toolkit/console.php somanagent:seed:web-team
 ```
 
 It creates the team with 6 roles:

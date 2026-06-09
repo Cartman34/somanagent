@@ -41,11 +41,7 @@ php scripts/toolkit/help.php migrate.php
 | `test-backlog-agent.php` | PHP | Run unit tests for backlog-agent.php classes || `test-dev-env.php` | PHP | Run unit tests for the DevEnv manifest/lockfile/resolver/planner classes |
 | `test-setup.php` | PHP | Run subprocess integration tests for setup.php |
 | `test-validation.php` | PHP | Run unit tests for `scripts/src/Validation/` classes (ScriptExecBitValidator, ExecBitFixer, …) |
-| `setup.php` | PHP | Manage host-level dependencies and project setup (install, update, verify, uninstall, reset, status, dep-config) || `migrate.php` | PHP | Run Doctrine migrations |
-| `console.php` | PHP | Run a Symfony command |
-| `node.php` | PHP | Run reusable commands inside the Node container |
-| `db.php` | PHP | Run database commands (PostgreSQL + Doctrine reset) |
-| `code-search.php` | PHP | Search a term across backend, frontend, scripts, doc, and YAML resource files |
+| `setup.php` | PHP | Manage host-level dependencies and project setup (install, update, verify, uninstall, reset, status, dep-config) || `migrate.php` | PHP | Run Doctrine migrations || `node.php` | PHP | Run reusable commands inside the Node container || `code-search.php` | PHP | Search a term across backend, frontend, scripts, doc, and YAML resource files |
 | `github.php` | PHP | GitHub CLI helper for PR creation, listing, view and merge || `health.php` | PHP | Check application status |
 | `validate-files.php` | PHP | Run targeted backend/frontend validations for an explicit file list |
 | `validate-backend-tests.php` | PHP | Run isolated local PHPUnit checks for backend unit tests from WSL without Docker services |
@@ -385,14 +381,8 @@ Use `login [provider]` to configure a provider in WSL, then sync the resulting a
 
 ---
 
-### `console.php`
-Runs any `bin/console` command in the PHP container.
-
-```bash
-php scripts/console.php cache:clear
-php scripts/console.php doctrine:migrations:status
-php scripts/console.php somanagent:seed:web-team
-```
+### Symfony console & database — `console.php`, `db.php`
+Provided by the toolkit portal, not by SMA — see the toolkit scripts reference [`scripts/toolkit/doc/maintaining/scripts.md`](../../scripts/toolkit/doc/maintaining/scripts.md): `console.php` (run `bin/console` in the configured Compose service) and `db.php` (psql + Doctrine). Configured via the `symfony` and `database` sections of `toolkit/config.yaml`.
 
 ---
 
@@ -407,25 +397,6 @@ php scripts/node.php shell
 ```
 
 Use this script in priority for repeated frontend container actions such as type-checking, builds, linting, tests, or an interactive shell.
-
----
-
-### `db.php`
-Runs database-related commands (PostgreSQL psql + Doctrine operations).
-
-```bash
-# PostgreSQL commands
-php scripts/db.php query "SELECT 1"
-php scripts/db.php exec -c "\\dt"
-php scripts/db.php shell
-
-# Database reset (recreate + migrations)
-php scripts/db.php reset
-php scripts/db.php reset --fixtures
-php scripts/db.php reset --fixtures --force
-```
-
-Use this script in priority for repeated local database inspection instead of raw `docker exec ... psql ...`.
 
 ---
 

@@ -809,7 +809,7 @@ final class SetupRunner extends AbstractScriptRunner
         $this->console->step('reset');
         $this->console->line();
         $this->console->line('  Reset plan:');
-        $this->console->line('    - Drop database (php scripts/db.php reset --force)');
+        $this->console->line('    - Drop database (php scripts/toolkit/db.php reset --force)');
         if (!$keepVolumes) {
             $this->console->line('    - Remove Docker volumes (docker compose down -v)');
         } else {
@@ -824,7 +824,7 @@ final class SetupRunner extends AbstractScriptRunner
 
         if ($this->dryRun) {
             $this->console->line('  [dry-run] Simulated commands:');
-            $this->console->line('    php scripts/db.php reset --force');
+            $this->console->line('    php scripts/toolkit/db.php reset --force');
             $this->console->line($keepVolumes ? '    docker compose down' : '    docker compose down -v');
             $this->console->line();
             $this->console->line('  [dry-run] No changes applied.');
@@ -838,7 +838,7 @@ final class SetupRunner extends AbstractScriptRunner
         }
 
         $this->console->info('Dropping database...');
-        $dbCmd = sprintf('php %s/scripts/db.php reset --force', escapeshellarg($this->projectRoot));
+        $dbCmd = sprintf('php %s/scripts/toolkit/db.php reset --force', escapeshellarg($this->projectRoot));
         $code = $this->app->runCommand($dbCmd);
         if ($code !== 0) {
             $this->console->warn(sprintf('Database drop failed (exit %d) — continuing with volume removal.', $code));
