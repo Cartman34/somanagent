@@ -1,6 +1,6 @@
 # Configuration
 
-> See also: [Adapters](adapters.md) · [Installation](../development/installation.md)
+> See also: [Adapters](adapters.md) · [Installation](../operating/installation.md)
 
 ## Environment Files
 

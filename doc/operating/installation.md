@@ -1,6 +1,6 @@
 # Installation and Getting Started
 
-> See also: [Configuration](../technical/configuration.md) · [System dependencies](../technical/system-dependencies.md) · [Scripts](scripts.md) · [Symfony Commands](commands.md)
+> See also: [Configuration](../operating/configuration.md) · [System dependencies](../operating/system-dependencies.md) · [Scripts](scripts.md) · [Symfony Commands](commands.md)
 
 ## Prerequisites
 
@@ -83,13 +83,9 @@ For a remote dev server where AI agents run **on the host** rather than inside t
 - **PostgreSQL**: `localhost:5432` (user: `somanagent`, password: `somanagent`)
 - **Redis**: `localhost:6379`
 
-## Stopping the Environment
-
-```bash
-php scripts/toolkit/server.php stop
-```
-
 ## Docker Structure
+
+TODO: Informations techniques, doit être dans un autre fichier qui peut être référencé
 
 The `docker-compose.yml` defines these services:
 
@@ -138,6 +134,8 @@ php scripts/toolkit/db.php reset --fixtures
 ```
 
 ## Troubleshooting
+
+TODO Déplacer dans le fichier de ce nom
 
 ### Docker won't start
 

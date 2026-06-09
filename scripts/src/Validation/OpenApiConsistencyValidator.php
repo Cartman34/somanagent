@@ -54,7 +54,7 @@ final class OpenApiConsistencyValidator implements FileValidator
     {
         require_once $this->projectRoot . '/backend/vendor/autoload.php';
 
-        $specificationPath = $this->projectRoot . '/doc/technical/openapi.yaml';
+        $specificationPath = $this->projectRoot . '/doc/developing/openapi.yaml';
         $controllerDirectory = $this->projectRoot . '/backend/src/Controller';
 
         if (!is_file($specificationPath)) {

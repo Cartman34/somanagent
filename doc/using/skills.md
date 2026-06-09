@@ -115,4 +115,4 @@ WorkflowStepAction → AgentAction(review.code)
 ```
 
 → See [Teams and Roles](teams-and-roles.md) for role skill management.
-→ See [Adapters](../technical/adapters.md) for the prompt injection mechanism.
+→ See [Adapters](../developing/adapters.md) for the prompt injection mechanism.

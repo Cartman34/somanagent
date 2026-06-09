@@ -24,7 +24,7 @@ use Sowapps\SoManAgent\ValueObject\PlanningTask;
  *     { "title": "...", "description": "...", "actionKey": "dev.frontend.implement", "priority": "medium", "dependsOn": [0] }
  *   ],
  *   "specUpdates": [
- *     { "file": "doc/technical/api.md", "note": "..." }
+ *     { "file": "doc/developing/api.md", "note": "..." }
  *   ]
  * }
  * ```

@@ -42,7 +42,7 @@ composers:
 validations:
   - match: "scripts/**/*.php"
     run: [php-syntax, exec-bit]
-  - match: "doc/technical/openapi.yaml"
+  - match: "doc/developing/openapi.yaml"
     run: [openapi-consistency]
 
 # App-specific validator registry (name -> FQCN). Built-ins need no entry here.

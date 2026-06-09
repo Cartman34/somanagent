@@ -235,7 +235,7 @@ Multiple agents can execute simultaneously without local resource contention.
 - PHPDoc is required on public PHP methods unless they are truly trivial, and on non-trivial private helpers.
 - JSDoc/TSDoc is required on exported TypeScript/React code and on non-trivial internal helpers.
 - When a Symfony method has both PHPDoc and attributes, keep the order: PHPDoc, attribute, method declaration.
-- For detailed conventions, read [`doc/technical/conventions.md`](doc/technical/conventions.md) only when needed.
+- For detailed conventions, read [`scripts/toolkit/doc/developing/conventions/README.md`](scripts/toolkit/doc/developing/conventions/README.md) only when needed.
 
 ## Runtime Notes
 
@@ -256,7 +256,7 @@ php scripts/logs.php worker --tail 120
 ## Related Documentation
 
 - [Agents (Local)](AGENTS.md)
-- [Agents Documentation](doc/functional/agents.md)
-- [Key Concepts](doc/functional/concepts.md)
-- [Teams and Roles](doc/functional/teams-and-roles.md)
-- [Adapters](doc/technical/adapters.md)
+- [Agents Documentation](doc/using/agents.md)
+- [Key Concepts](doc/using/concepts.md)
+- [Teams and Roles](doc/using/teams-and-roles.md)
+- [Adapters](doc/developing/adapters.md)

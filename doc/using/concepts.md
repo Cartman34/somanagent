@@ -163,7 +163,7 @@ A **Connector** defines *how* SoManAgent communicates with the AI.
 | `claude_api` | HTTP to api.anthropic.com | Server-side usage, without interface |
 | `claude_cli` | Local `claude` binary | Claude Code installed on the machine |
 
-→ See [Adapters](../technical/adapters.md) for technical details.
+→ See [Adapters](../developing/adapters.md) for technical details.
 
 ---
 

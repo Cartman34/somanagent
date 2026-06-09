@@ -1,6 +1,6 @@
 # AI Agents
 
-> See also: [Key Concepts](concepts.md) · [Teams and Roles](teams-and-roles.md) · [Adapters](../technical/adapters.md)
+> See also: [Key Concepts](concepts.md) · [Teams and Roles](teams-and-roles.md) · [Adapters](../developing/adapters.md)
 
 ## What is an agent?
 
@@ -113,7 +113,7 @@ When a story is dispatched for execution:
 6. Records the narrative history in `TicketLog` and the technical trace in `AgentTaskExecution`
 7. For `tech-planning` skill: parses JSON output, creates subtasks + dependency DAG, sets branch name
 
-→ See [Adapters](../technical/adapters.md) for implementation details.
+→ See [Adapters](../developing/adapters.md) for implementation details.
 
 ## Agent Runtime Status
 

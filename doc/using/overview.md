@@ -65,4 +65,4 @@ SoManAgent provides:
 - **Symfony commands** for automation
 
 → See [Key Concepts](concepts.md) for a precise definition of each term.
-→ See [Installation](../development/installation.md) to get started.
+→ See [Installation](../operating/installation.md) to get started.

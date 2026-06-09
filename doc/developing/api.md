@@ -9,7 +9,7 @@ The versioned HTTP contract for the API is maintained in [`openapi.yaml`](openap
 The spec may document a route ahead of its implementation, but any operation that is not yet delivered must be explicitly marked with `x-somanagent-implemented: false`.
 
 Maintenance rules for this file:
-- update `doc/technical/openapi.yaml` in the same change as any API route, request, response, parameter, or payload format change
+- update `doc/developing/openapi.yaml` in the same change as any API route, request, response, parameter, or payload format change
 - keep the file hand-written and readable; prefer explicit schemas over generated output
 - specify `required`, value formats, enums, and examples whenever they are needed to build usable example requests
 - use `additionalProperties: false` for structured objects unless a free-form map is intentional

@@ -56,7 +56,7 @@ Tu DOIS retourner un bloc JSON unique entre les balises \`\`\`json et \`\`\`. Au
   ],
   "specUpdates": [
     {
-      "file": "doc/technical/api.md",
+      "file": "doc/developing/api.md",
       "note": "Ajouter la documentation de l'endpoint POST /api/..."
     }
   ]

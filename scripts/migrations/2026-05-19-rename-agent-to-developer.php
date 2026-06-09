@@ -7,7 +7,7 @@
  *               of local/backlog/backlog-board.yaml.
  * Introduced:   2026-05-19
  * Remove after: All known WPs have been migrated and no operator runs a backlog.php version
- *               that still writes the `agent` key. Tracked in doc/development/migrations.md.
+ *               that still writes the `agent` key. Tracked in scripts/backlog/doc/operating/migrations.md.
  *
  * Behaviour:
  * - Reads local/backlog/backlog-board.yaml from the project root.

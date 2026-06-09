@@ -1,6 +1,6 @@
 # Ports and Adapters
 
-> See also: [Architecture](architecture.md) · [Configuration](configuration.md) · [AI Agents](../functional/agents.md)
+> See also: [Architecture](architecture.md) · [Configuration](configuration.md) · [AI Agents](../using/agents.md)
 
 ## Principle
 

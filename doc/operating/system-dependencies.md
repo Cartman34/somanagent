@@ -1,6 +1,6 @@
 # System Dependencies
 
-> See also: [Installation](../development/installation.md) · [Architecture](architecture.md) · [Configuration](configuration.md)
+> See also: [Installation](../operating/installation.md) · [Architecture](architecture.md) · [Configuration](configuration.md)
 
 Inventory of every host-level system dependency required to run the project. Application-level package dependencies (PHP via Composer, JavaScript via npm) are scoped in `backend/composer.json` and `frontend/package.json` and are not listed here.
 

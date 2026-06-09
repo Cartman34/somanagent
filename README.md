@@ -111,12 +111,12 @@ php scripts/health.php                  # full application and connector health
 
 | Document | Description |
 |---|---|
-| [Installation](doc/development/installation.md) | Full setup guide |
-| [Scripts Reference](doc/development/scripts.md) | All available `scripts/` commands |
-| [Architecture](doc/technical/architecture.md) | Code structure and conventions |
-| [Entities](doc/technical/entities.md) | Data model and relationships |
-| [REST API](doc/technical/api.md) | Complete API reference |
-| [Functional Overview](doc/functional/overview.md) | Concepts and how they relate |
+| [Installation](doc/operating/installation.md) | Full setup guide |
+| [Scripts Reference](doc/operating/scripts.md) | All available `scripts/` commands |
+| [Architecture](doc/developing/architecture.md) | Code structure and conventions |
+| [Entities](doc/developing/entities.md) | Data model and relationships |
+| [REST API](doc/developing/api.md) | Complete API reference |
+| [Functional Overview](doc/using/overview.md) | Concepts and how they relate |
 
 ---
 

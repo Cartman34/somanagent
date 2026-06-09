@@ -1,6 +1,6 @@
 # Fixtures
 
-> See also: [Installation](installation.md) · [Scripts](scripts.md) · [Workflows](../functional/workflows.md)
+> See also: [Installation](installation.md) · [Scripts](scripts.md) · [Workflows](../using/workflows.md)
 
 Fixtures are sample seed data used to bootstrap a predictable local environment for development and manual testing.
 

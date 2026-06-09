@@ -2,66 +2,55 @@
 
 **SoManAgent** (Squad of Managed Agents) is a web application for managing AI agent teams in software development.
 
-It lets you assemble generic AI agent teams, assign them roles and skills, then orchestrate them through workflows to produce code, perform reviews, generate tests, and more.
+Docs are organised **by activity** (Sowapps [documentation standard](../scripts/toolkit/doc/documenting/doc-standard.md)): `using/` (the product), `developing/` (the code), `operating/` (running it). Generic code conventions, architecture principles and the doc standard live in **web-toolkit** and are referenced, not duplicated; the backlog workflow lives in **web-backlog** (`scripts/backlog/doc/`).
 
 ---
 
-## Navigation
-
-### Functional documentation — understanding SoManAgent
+## using/ — what SoManAgent does (functional / business)
 
 | Document | Description |
 |---|---|
-| [Overview](functional/overview.md) | What SoManAgent is and what it does |
-| [Key concepts](functional/concepts.md) | Glossary: Project, Module, Team, Role, Agent, Skill, Workflow |
-| [Teams & roles](functional/teams-and-roles.md) | Creating and managing teams, defining roles |
-| [Skills](functional/skills.md) | Importing, creating and editing skills |
-| [AI Agents](functional/agents.md) | Configuring agents and their connectors |
-| [Workflows](functional/workflows.md) | Defining and running workflows |
-| [UI Usage Guidelines](functional/ui-usage-guidelines.md) | Shared rules for page structure, reusable components, and action hierarchy |
+| [using/overview.md](using/overview.md) | What SoManAgent is and what it does |
+| [using/concepts.md](using/concepts.md) | Glossary: Project, Module, Team, Role, Agent, Skill, Workflow |
+| [using/teams-and-roles.md](using/teams-and-roles.md) | Creating and managing teams, defining roles |
+| [using/skills.md](using/skills.md) | Importing, creating and editing skills |
+| [using/agents.md](using/agents.md) | Configuring agents and their connectors |
+| [using/workflows.md](using/workflows.md) | Defining and running workflows |
 
-### Technical documentation — understanding the code
-
-| Document | Description |
-|---|---|
-| [Architecture](technical/architecture.md) | Code structure, hexagonal architecture, data flow |
-| [Conventions](technical/conventions.md) | PHPDoc, JSDoc, translations, entity CSS classes, author header |
-| [Entities](technical/entities.md) | Data model, Doctrine entities and their relationships |
-| [REST API](technical/api.md) | API conventions, domain semantics, and how the OpenAPI contract is maintained |
-| [OpenAPI specification](technical/openapi.yaml) | Versioned machine-readable HTTP contract |
-| [Realtime Updates](technical/realtime.md) | Mercure architecture, event model, topics, and diagrams |
-| [Adapters](technical/adapters.md) | Hexagonal ports and their implementations |
-| [Configuration](technical/configuration.md) | Environment variables, .env file |
-| [System dependencies](technical/system-dependencies.md) | Host-level system dependencies required to run the project, with scope and purpose |
-| [Translations Strategy](technical/translations.md) | Conventions and migration strategy for translator-backed application messages |
-
-### Quick reference — which doc for which task
-
-| Task | Document |
-|---|---|
-| Adding or changing an API endpoint | [openapi.yaml](technical/openapi.yaml) and [api.md](technical/api.md) |
-| Adding a realtime subscription or publication | [realtime.md](technical/realtime.md) |
-| Adding or modifying a Doctrine entity | [entities.md](technical/entities.md) |
-| Applying a PHPDoc, JSDoc, or CSS class rule | [conventions.md](technical/conventions.md) |
-| Adding a translation key or migrating a French string | [translations.md](technical/translations.md) |
-| Configuring environment variables | [configuration.md](technical/configuration.md) |
-| Adding or upgrading a host system dependency | [system-dependencies.md](technical/system-dependencies.md) |
-| Adding or modifying a script in `scripts/` | [scripts.md](development/scripts.md) |
-| Writing or updating a local spec under `local/specs/` | [spec-conventions.md](development/spec-conventions.md) |
-| Understanding the hexagonal architecture | [architecture.md](technical/architecture.md) |
-| Designing or reviewing a UI screen | [ui-usage-guidelines.md](functional/ui-usage-guidelines.md) |
-
-### Development documentation — working on SoManAgent
+## developing/ — understanding and extending the code
 
 | Document | Description |
 |---|---|
-| [Installation](development/installation.md) | Prerequisites and full setup |
-| [Scripts](development/scripts.md) | Available scripts in `scripts/` |
-| [Spec conventions](development/spec-conventions.md) | Conventions for writing and maintaining local specs under `local/specs/` |
-| [Symfony commands](development/commands.md) | Available `bin/console` commands |
-| [Fixtures](development/fixtures.md) | Reference seed data and sample workflows |
-| [Troubleshooting](development/troubleshooting.md) | Quick local recovery notes and useful checks |
-| [Backlog (workflow, rôles, sessions, glossaire, scénarios de test)](../scripts/backlog/doc/) | Fournis par le package `sowapps/web-backlog` via le portail `scripts/backlog/doc/` |
+| [developing/architecture.md](developing/architecture.md) | Code structure, hexagonal architecture, data flow |
+| [developing/adapters.md](developing/adapters.md) | Hexagonal ports and their implementations |
+| [developing/entities.md](developing/entities.md) | Data model, Doctrine entities and relationships |
+| [developing/api.md](developing/api.md) | REST API conventions and the OpenAPI contract |
+| [developing/openapi.yaml](developing/openapi.yaml) | Versioned machine-readable HTTP contract |
+| [developing/realtime.md](developing/realtime.md) | Mercure architecture, event model, topics |
+| [developing/translations.md](developing/translations.md) | Translator-backed application messages |
+| [developing/ui-usage-guidelines.md](developing/ui-usage-guidelines.md) | UI page structure, reusable components, action hierarchy |
+| [developing/semantic-css.md](developing/semantic-css.md) | SoManAgent's semantic-CSS type registry (pattern in toolkit) |
+| [developing/static-analysis.md](developing/static-analysis.md) | PHPStan backend baseline (SoManAgent specifics) |
+| [developing/spec-maintenance.md](developing/spec-maintenance.md) | SoManAgent specifics for writing local specs |
+| [developing/fixtures.md](developing/fixtures.md) | Reference seed data and sample workflows |
+| [developing/diagrams/](developing/diagrams/) | PlantUML architecture diagrams |
+
+**Code conventions** are generic and live in the toolkit: [`scripts/toolkit/doc/developing/conventions/`](../scripts/toolkit/doc/developing/conventions/README.md) (php, scripts, js, css).
+
+## operating/ — running and maintaining the deployment
+
+| Document | Description |
+|---|---|
+| [operating/installation.md](operating/installation.md) | Prerequisites and full setup |
+| [operating/configuration.md](operating/configuration.md) | Environment variables, `.env` |
+| [operating/system-dependencies.md](operating/system-dependencies.md) | Host-level system dependencies |
+| [operating/scripts.md](operating/scripts.md) | Available scripts in `scripts/` |
+| [operating/commands.md](operating/commands.md) | Available `bin/console` commands |
+| [operating/troubleshooting.md](operating/troubleshooting.md) | Quick local recovery notes and useful checks |
+
+## Backlog (workflow, roles, sessions, glossary)
+
+Provided by the `sowapps/web-backlog` package via the portal [`scripts/backlog/doc/`](../scripts/backlog/doc/) (`using/` roles & workflow, `developing/` architecture, `operating/` migrations).
 
 ---
 
@@ -85,8 +74,7 @@ php scripts/toolkit/server.php start
 php scripts/health.php
 ```
 
-**API**: `http://localhost:8080/api/health`
-**UI**: `http://localhost:5173`
+**API**: `http://localhost:8080/api/health` — **UI**: `http://localhost:5173`
 
 ---
 
@@ -97,20 +85,12 @@ somanagent/
 ├── backend/          # PHP API (Symfony 7.2)
 ├── frontend/         # Web UI (React + TypeScript)
 ├── skills/           # Local skills (SKILL.md format)
-│   ├── imported/     # Imported from skills.sh
-│   └── custom/       # Created in SoManAgent
-├── scripts/          # Maintenance scripts
-└── doc/              # This documentation
+├── scripts/          # Maintenance scripts (+ toolkit/ and backlog/ portals)
+└── doc/              # This documentation (using/ developing/ operating/)
 ```
 
 ---
 
-## Documentation Maintenance
+## Documentation maintenance
 
-Update documentation in the **same commit** as the code change. Never defer it to a follow-up commit. Use the Quick reference table above to find which document to update.
-
-### Writing conventions
-
-- Write for readers with no context of the current development session. Avoid internal labels that only make sense during a refactoring (e.g. "unified command", "legacy form", "specialized wrapper").
-- Document what a command does, not how its implementation is structured or how it came to be.
-- Never reference implementation history in user-facing documentation.
+Update documentation in the **same commit** as the code change. See the toolkit's [doc-maintenance](../scripts/toolkit/doc/documenting/doc-maintenance.md) and the [documentation standard](../scripts/toolkit/doc/documenting/doc-standard.md) for how docs are organised and written.
