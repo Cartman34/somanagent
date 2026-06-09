@@ -147,7 +147,7 @@ Notes:
 - default profile is `developer=balanced+medium`, `reviewer=balanced+medium`, `manager=premium+medium`
 - `--model` bypasses tier model selection and is mutually exclusive with `--tier`; canonical effort still applies on clients that support effort
 - after a developer auto-pick or reviewer auto-claim, `start` sends the role prompt from the backlog package's launch-prompts resource as the initial user message; manager, reuse, and no-auto-pick paths send no launch prompt
-- when the generated context contains an active entry (developer) or a reviewing entry (reviewer), the `next`/`review` keyword is omitted from the User Keywords section and an inline `## Workflow` section is injected with the role-specific steps to follow; `doc/development/agent-developer.md` and `doc/development/agent-reviewer.md` are intentionally left unchanged so the keywords remain documented for non-backlog-agent sessions
+- when the generated context contains an active entry (developer) or a reviewing entry (reviewer), the `next`/`review` keyword is omitted from the User Keywords section and an inline `## Workflow` section is injected with the role-specific steps to follow; `scripts/backlog/doc/agent-developer.md` and `scripts/backlog/doc/agent-reviewer.md` are intentionally left unchanged so the keywords remain documented for non-backlog-agent sessions
 - `claude` uses `--model` and `--effort`; Claude Code documents aliases such as `haiku`, `sonnet`, and `opus`
 - `codex` uses `--model` and `--config model_reasoning_effort="<level>"`; Codex config documents `model_reasoning_effort`
 - `opencode` uses `--model provider/model`; the project mapping uses models listed by the local OpenCode provider cache
@@ -214,7 +214,7 @@ Notes:
 - the remote campaign creates a temporary PR base branch instead of targeting `main`
 - cleanup always runs in best effort and only acts on resources recorded by the test context
 - use `--keep-artifacts` to inspect test campaign artifacts after the run
-- detailed reusable campaign intent is documented in `doc/development/script-backlog-test-scenarios.md`
+- detailed reusable campaign intent is documented in `scripts/backlog/doc/script-backlog-test-scenarios.md`
 
 ---
 
