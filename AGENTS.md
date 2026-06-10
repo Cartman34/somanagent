@@ -11,7 +11,7 @@ Pose the portals once (relative symlinks to sibling clones, not committed):
 ## SoManAgent-specific rules
 
 - Work from `~/projects/somanagent` in the WSL native filesystem, never from `/mnt/c/...`.
-- In this repository, treat `rg` as unavailable by default unless the user explicitly says otherwise.
+- Use `rg` for local text/file searches. If `rg` is unavailable, stop and report the environment issue to the user instead of falling back silently.
 - `doc/README.md` is the documentation index — read it when project documentation is needed.
 - Product, architecture, workflow, exposure, and library-choice changes with meaningful tradeoffs require explicit user agreement before implementation.
 
