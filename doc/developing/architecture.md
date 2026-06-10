@@ -92,7 +92,7 @@ The grouping kicks in as soon as a family accumulates **three or more related cl
 
 Layout inside the cohesion folder stays flat — no further sub-hierarchy — unless there is a real need (multiple sub-domains, distinct categories like `Enum/` and `Service/` inside the same family). Examples:
 
-- `scripts/src/Client/GitHub/` holding `GitHubClient`, `GitHubClientInterface`, `GitHubCommandName`.
+- `scripts/src/Client/GitHub/` holding the low-level GitHub API client and related API value objects.
 - `scripts/src/Backlog/Agent/Service/` holding the agent-related services.
 - `scripts/src/Backlog/Command/` holding the backlog CLI commands.
 
