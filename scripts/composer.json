@@ -1,6 +1,8 @@
 {
     "name": "sowapps/somanagent-scripts",
     "type": "project",
+    "description": "Host-side scripts and tooling dependencies for SoManAgent.",
+    "license": "proprietary",
     "repositories": [
         {
             "type": "path",
