@@ -19,6 +19,7 @@ scopes:
 
 # Directories holding executable scripts (help, fix-permissions).
 scripts_dirs:
+  - scripts
   - scripts/toolkit
 
 # Filename globs whose exec bit is managed under scripts_dirs (fix-permissions).

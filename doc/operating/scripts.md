@@ -14,8 +14,8 @@ Project rule:
 Two equivalent forms are supported from the project root for any script that carries a shebang:
 
 ```bash
-php scripts/migrate.php          # explicit PHP interpreter
-./scripts/migrate.php            # rely on the script's shebang (#!/usr/bin/env php)
+php scripts/generate-migration.php          # explicit PHP interpreter
+./scripts/generate-migration.php            # rely on the script's shebang (#!/usr/bin/env php)
 ```
 
 Both work because every runnable script under `scripts/` declares a `#!/usr/bin/env php` (or equivalent) shebang **and** carries the exec bit in the git index. The exec bit is enforced by `scripts/toolkit/validate-files.php` at review time — see [Script Conventions / Executable Bit](scripts-conventions.md#executable-bit).
@@ -25,7 +25,7 @@ Both work because every runnable script under `scripts/` declares a `#!/usr/bin/
 php scripts/toolkit/help.php
 
 # See the help for a specific script
-php scripts/toolkit/help.php migrate.php
+php scripts/toolkit/help.php generate-migration.php
 ```
 
 ## Overview
@@ -39,9 +39,13 @@ php scripts/toolkit/help.php migrate.php
 | `worktree-info.php` | PHP | Display the git worktree context for the current script (linked vs main worktree, roots) |
 | `test-backlog-workflow.php` | PHP | Run reusable sequential validation campaigns for `backlog.php` on temporary backlog files |
 | `test-backlog-agent.php` | PHP | Run unit tests for backlog-agent.php classes || `test-dev-env.php` | PHP | Run unit tests for the DevEnv manifest/lockfile/resolver/planner classes |
+| `test-generate-migration.php` | PHP | Run unit tests for the generate-migration script helpers |
 | `test-setup.php` | PHP | Run subprocess integration tests for setup.php |
 | `test-validation.php` | PHP | Run unit tests for `scripts/src/Validation/` classes (ScriptExecBitValidator, ExecBitFixer, …) |
-| `setup.php` | PHP | Manage host-level dependencies and project setup (install, update, verify, uninstall, reset, status, dep-config) || `migrate.php` | PHP | Run Doctrine migrations || `node.php` | PHP | Run reusable commands inside the Node container || `code-search.php` | PHP | Search a term across backend, frontend, scripts, doc, and YAML resource files |
+| `setup.php` | PHP | Manage host-level dependencies and project setup (install, update, verify, uninstall, reset, status, dep-config) |
+| `generate-migration.php` | PHP | Generate a Doctrine migration using an isolated temporary database |
+| `node.php` | PHP | Run reusable commands inside the Node container |
+| `code-search.php` | PHP | Search a term across backend, frontend, scripts, doc, and YAML resource files |
 | `github.php` | PHP | GitHub CLI helper for PR creation, listing, view and merge || `health.php` | PHP | Check application status |
 | `validate-files.php` | PHP | Run targeted backend/frontend validations for an explicit file list |
 | `validate-backend-tests.php` | PHP | Run isolated local PHPUnit checks for backend unit tests from WSL without Docker services |
@@ -76,7 +80,7 @@ Displays the list of all scripts with their description and usage examples. Auto
 
 ```bash
 php scripts/toolkit/help.php              # list all scripts
-php scripts/toolkit/help.php migrate.php  # detail for one script
+php scripts/toolkit/help.php generate-migration.php  # detail for one script
 ```
 
 ---
@@ -247,6 +251,15 @@ Notes:
 
 ---
 
+### `test-generate-migration.php`
+Runs unit tests for the `generate-migration.php` pure helpers. No Docker or database required.
+
+```bash
+php scripts/tests/test-generate-migration.php
+```
+
+---
+
 ### `test-setup.php`
 Runs subprocess integration tests for `setup.php`. Spawns the script as a child process; no Docker or actual package installation required.
 
@@ -315,19 +328,22 @@ Provided by the toolkit portal, not by SMA — see the toolkit scripts reference
 
 ---
 
-### `migrate.php`
-Runs Doctrine migrations in the PHP container, or generates a new migration diff against an isolated temporary database.
+### `generate-migration.php`
+Generates a new Doctrine migration diff against an isolated temporary database.
 
 ```bash
-php scripts/migrate.php             # run migrations
-php scripts/migrate.php --dry-run   # simulate without applying
-php scripts/migrate.php --generate  # generate a migration diff using an isolated temp DB
+php scripts/generate-migration.php
 ```
 
-`--generate` creates a temporary database named `{agentCode}_migrate_gen`, applies all existing migrations on it, then runs `doctrine:migrations:diff`. The temporary database is dropped after the diff.
-When invoked from a WA, the agent code is derived from the worktree path. Outside a WA, `SOMANAGER_AGENT` is used as fallback.
+The script creates a temporary database named `{agentCode}_migrate_gen`, applies all existing migrations on it, then runs `doctrine:migrations:diff`. The temporary database is dropped after the diff. `SOMANAGER_AGENT` is required because it names the temporary database.
 
-`--generate` runs entirely locally without Docker or `psql`: it uses PHP/PDO to create and drop the temporary database on `localhost:5432`, and runs `php bin/console` from the checkout's `backend/` directory. The Docker PostgreSQL service must be running and accessible on `localhost:5432`. If the PHP/DB connection fails, the command exits with a structured error indicating the DSN, working directory, cause, and action expected.
+`generate-migration.php` runs entirely locally without `psql`: it uses PHP/PDO to create and drop the temporary database on `localhost:5432`, and runs `php backend/bin/console` from the checkout root. The Docker PostgreSQL service must be running and accessible on `localhost:5432`; `scripts/toolkit/server.php start minimal` is enough. If the PHP/DB connection fails, the command exits with a structured error indicating the DSN, working directory, cause, and action expected.
+
+Apply existing migrations with the toolkit DB wrapper:
+
+```bash
+php scripts/toolkit/db.php migrate
+```
 
 ---
 

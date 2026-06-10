@@ -103,12 +103,16 @@ The `docker-compose.yml` defines these services:
 
 ## Migrations
 
-Migrations live in `backend/migrations/`. Use the dedicated wrapper:
+Migrations live in `backend/migrations/`. Apply existing migrations with the toolkit DB wrapper:
 
 ```bash
-php scripts/migrate.php            # run migrations (host PHP CLI)
-php scripts/migrate.php --dry-run  # simulate without applying
-php scripts/migrate.php --generate # generate a diff against a temp DB
+php scripts/toolkit/db.php migrate
+```
+
+Generate a new migration with an isolated temporary database:
+
+```bash
+php scripts/generate-migration.php
 ```
 
 To inspect status:
@@ -117,7 +121,7 @@ To inspect status:
 php scripts/toolkit/console.php doctrine:migrations:status
 ```
 
-> Note: `setup.php install` already runs Doctrine migrations during step 4 of the full installation, so `migrate.php` is only needed for ongoing schema work after the initial setup.
+> Note: `setup.php install` already runs Doctrine migrations during step 4 of the full installation, so `scripts/toolkit/db.php migrate` is only needed for ongoing schema work after the initial setup.
 
 ## Sample Data
 
@@ -148,7 +152,7 @@ php scripts/toolkit/logs.php db
 
 ### Database connection error
 
-- Check that `DATABASE_URL` in `.env` resolves correctly. Inside the `php` container it points at `db:5432`; from host it must resolve to `localhost:5432` (handled automatically by `migrate.php` and `setup.php install`).
+- Check that `DATABASE_URL` in `.env` resolves correctly. Inside the `php` container it points at `db:5432`; from host it must resolve to `localhost:5432` (handled automatically by `generate-migration.php` and `setup.php install`).
 - Wait a few seconds for PostgreSQL to finish starting up; `scripts/toolkit/server.php health` will exit `0` once the DB is ready.
 
 ### Migrations fail

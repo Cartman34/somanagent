@@ -100,18 +100,16 @@ php scripts/toolkit/console.php doctrine:migrations:list
 
 ### Run Migrations
 ```bash
-php scripts/toolkit/console.php doctrine:migrations:migrate --no-interaction
-# or via the dedicated script:
-php scripts/migrate.php
+php scripts/toolkit/db.php migrate
 ```
 
 ### Create a New Migration
 ```bash
-php scripts/migrate.php --generate
+php scripts/generate-migration.php
 ```
 Generates a migration from the diff between the current entities and a temporary isolated database.
 The shared application database is never used as the diff target.
-When run from a WA, the agent code is detected automatically from the worktree path.
+`SOMANAGER_AGENT` is required because it names the temporary database.
 The temporary database is named `{agentCode}_migrate_gen` and is dropped after the diff.
 
 > **Do not use `php scripts/toolkit/console.php doctrine:migrations:diff` directly** — it diffs against

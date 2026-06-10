@@ -7,11 +7,11 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
-use Sowapps\Toolkit\Console;
 use Sowapps\SoManAgent\Script\SoManAgentApplication;
 use Sowapps\Backlog\Service\BacklogBoardService;
 use Sowapps\Toolkit\TextSlugger;
 use Sowapps\Toolkit\Client\FilesystemClient;
+use Sowapps\Toolkit\Console;
 
 /**
  * Runs doctrine:migrations:diff against a temporary isolated database.
@@ -21,12 +21,12 @@ use Sowapps\Toolkit\Client\FilesystemClient;
  * agent from running two concurrent generate operations.
  *
  * All database management (CREATE / DROP) uses PHP PDO connecting to localhost:5432.
- * Doctrine commands run locally via php bin/console from the project's backend/ directory.
+ * Doctrine commands run locally via php backend/bin/console from the project root.
  * No Docker or psql binary is involved. If the local PHP/DB path is unavailable the command
  * fails immediately with a clear structured error; there is no Docker fallback.
  *
  * Steps (each step name appears in the error when it fails):
- *   1. agent detection   — resolve the agent code from the WA path or env
+ *   1. agent detection   — resolve the agent code from the environment
  *   2. prerequisites     — verify PHP can connect to PostgreSQL on localhost:5432
  *   3. lock              — acquire the per-agent advisory lock
  *   4. initial cleanup   — drop any leftover temporary database from a prior run
@@ -36,7 +36,7 @@ use Sowapps\Toolkit\Client\FilesystemClient;
  *   8. doctrine diff     — run doctrine:migrations:diff against the temporary database
  *   9. final cleanup     — drop the temporary database, clear backlog meta, and release the lock
  */
-final class MigrateGenerateService
+final class GenerateMigrationService
 {
     private const LOCK_TIMEOUT_SECONDS = 30;
     private const PG_HOST = 'localhost';
@@ -67,7 +67,7 @@ final class MigrateGenerateService
     public function run(): int
     {
         $dbName   = $this->buildTempDbName($this->agentCode);
-        $lockPath = $this->projectRoot . '/local/tmp/migrate-gen-' . $this->agentCode . '.lock';
+        $lockPath = $this->projectRoot . '/local/tmp/generate-migration-' . $this->agentCode . '.lock';
 
         $this->console->info("Agent: {$this->agentCode}");
         $this->console->info("Temp DB: {$dbName}");
@@ -306,7 +306,7 @@ final class MigrateGenerateService
      */
     private function detectActiveEntryRef(string $agentCode): ?string
     {
-        $boardPath = $this->boardRoot . '/local/backlog/backlog-board.yaml';
+        $boardPath = $this->boardRoot . '/backlog/board.yaml';
         if (!is_file($boardPath)) {
             return null;
         }
@@ -411,7 +411,7 @@ final class MigrateGenerateService
     }
 
     /**
-     * Runs a Symfony console command from the project's backend/ directory with the given DATABASE_URL.
+     * Runs a Symfony console command from the project root with the given DATABASE_URL.
      *
      * Executed locally without Docker; requires PHP and the configured database to be available
      * on the local system. If either is missing the command exits non-zero with an error from the
@@ -421,14 +421,12 @@ final class MigrateGenerateService
      */
     private function runDoctrineCommand(string $subCommand, string $databaseUrl, array $extraArgs = []): int
     {
-        $backendDir = $this->projectRoot . '/backend';
-
         $extra = implode(' ', array_map('escapeshellarg', $extraArgs));
 
         return $this->app->runCommand(sprintf(
-            'cd %s && DATABASE_URL=%s php bin/console %s --no-interaction%s',
-            escapeshellarg($backendDir),
+            'DATABASE_URL=%s php %s %s --no-interaction%s',
             escapeshellarg($databaseUrl),
+            escapeshellarg($this->projectRoot . '/backend/bin/console'),
             escapeshellarg($subCommand),
             $extra !== '' ? ' ' . $extra : '',
         ));
