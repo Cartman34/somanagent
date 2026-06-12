@@ -43,7 +43,7 @@ Docs are organised **by activity** (Sowapps [documentation standard](../scripts/
 |---|---|
 | [operating/installation.md](operating/installation.md) | Prerequisites and full setup |
 | [operating/configuration.md](operating/configuration.md) | Environment variables, `.env` |
-| [operating/system-dependencies.md](operating/system-dependencies.md) | Host-level system dependencies |
+| [operating/system-requirements.md](operating/system-requirements.md) | Host-level system dependencies |
 | [operating/scripts.md](operating/scripts.md) | Available scripts in `scripts/` |
 | [operating/commands.md](operating/commands.md) | Available `bin/console` commands |
 | [operating/troubleshooting.md](operating/troubleshooting.md) | Quick local recovery notes and useful checks |
@@ -57,15 +57,16 @@ Provided by the `sowapps/web-backlog` package via the portal [`scripts/backlog/d
 ## Quick start
 
 ```bash
-# 1. Copy and configure the environment
+# 1. Install system dependencies — see doc/operating/system-requirements.md
+
+# 2. Copy and configure the environment
 cp .env.dist .env
 # Edit .env: CLAUDE_API_KEY, GITHUB_TOKEN, etc.
 
-# 2. Resolve host deps (write the local lockfile)
-php scripts/setup.php update
-
-# 3. Install host deps and run project setup
-php scripts/setup.php install
+# 3. Install scripts dependencies and wire packages
+php scripts/scripts-install.php
+php scripts/toolkit/install.php
+php scripts/backlog/install.php
 
 # 4. Start the dev environment
 php scripts/toolkit/server.php start

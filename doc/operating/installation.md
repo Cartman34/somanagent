@@ -1,15 +1,10 @@
 # Installation and Getting Started
 
-> See also: [Configuration](../operating/configuration.md) · [System dependencies](../operating/system-dependencies.md) · [Scripts](scripts.md) · [Symfony Commands](commands.md)
+> See also: [Configuration](configuration.md) · [System requirements](system-requirements.md) · [Scripts](scripts.md) · [Symfony Commands](commands.md)
 
 ## Prerequisites
 
-- **OS**: Ubuntu 22.04+ or 24.04+ (or another Debian-based distribution with `apt`).
-- **Privileges**: `sudo` access for host-level package installation.
-- **Network access**: Ubuntu repositories, `docker.com`, `ppa.launchpad.net`, npm registry, and the GitHub release API.
-- **Bootstrap PHP**: a working `php` binary on the host (any recent 8.x release is enough; `setup.php install` upgrades it to 8.4+ when needed). Check with `bash scripts/check-php.sh`.
-
-> **Docker Desktop is not required.** `setup.php` installs **Docker Engine + Compose plugin** directly from `docker.com` repositories on the host.
+Install all host-level dependencies listed in [System requirements](system-requirements.md) before proceeding.
 
 ## Full Installation (First Time)
 
@@ -20,39 +15,18 @@ cd somanagent
 
 # 2. Configure the environment
 cp .env.dist .env
-# Edit .env and set at minimum CLAUDE_API_KEY
+# Edit .env: CLAUDE_API_KEY, GITHUB_TOKEN, etc.
 
-# 3. Resolve host dependencies (generates the local lockfile)
-php scripts/setup.php update
+# 3. Install scripts dependencies
+php scripts/scripts-install.php
 
-# 4. Install host dependencies and run project setup
-php scripts/setup.php install
+# 4. Wire toolkit and backlog packages
+php scripts/toolkit/install.php
+php scripts/backlog/install.php
 
 # 5. Start the dev environment
 php scripts/toolkit/server.php start
 ```
-
-### Step details
-
-- `setup.php update` queries each source declared in `scripts/resources/dependencies.yaml` (apt-cache, npm view, GitHub releases) and writes the resolved versions to `scripts/resources/dependencies.lock`.
-- `setup.php install` reads the lockfile and installs or upgrades host dependencies (PHP 8.4+ and extensions, Docker Engine + Compose plugin, git, tmux, AI clients `claude`/`codex`/`opencode`/`gemini`), then runs project-level steps (Composer, npm, Doctrine migrations via host PHP CLI). It also delegates backlog config preparation to `scripts/backlog/install.php` (the backlog package installer).
-- `scripts/toolkit/server.php start` brings up Docker Compose services (`db`, `redis`, `php`, `worker`, `nginx`, `node`, `mercure`).
-
-### Lockfile is local-only on this project
-
-`scripts/resources/dependencies.lock` is **not committed** in this repository: it stores per-host `pre_existing` state and per-host absolute paths for side effects (apt repositories, GPG keys). Each machine generates its own lockfile by running `setup.php update`.
-
-`setup.php install` refuses to run when the lockfile is missing or has not been initialized (`generated_at: ~`), with the message *"lockfile not initialized — run 'php scripts/setup.php update' first"*.
-
-### Verify alignment
-
-After install or any system change you can compare system state, lockfile, and manifest without mutating anything:
-
-```bash
-php scripts/setup.php verify
-```
-
-Exit code `0` means everything is aligned. Exit code `1` reports missing, outdated, orphaned, or unlocked dependencies — usually fixed by re-running `setup.php update` followed by `setup.php install`.
 
 ## Starting After Installation
 
@@ -121,8 +95,6 @@ To inspect status:
 php scripts/toolkit/console.php doctrine:migrations:status
 ```
 
-> Note: `setup.php install` already runs Doctrine migrations during step 4 of the full installation, so `scripts/toolkit/db.php migrate` is only needed for ongoing schema work after the initial setup.
-
 ## Sample Data
 
 To create the example Web Development Team:
@@ -152,7 +124,7 @@ php scripts/toolkit/logs.php db
 
 ### Database connection error
 
-- Check that `DATABASE_URL` in `.env` resolves correctly. Inside the `php` container it points at `db:5432`; from host it must resolve to `localhost:5432` (handled automatically by `generate-migration.php` and `setup.php install`).
+- Check that `DATABASE_URL` in `.env` resolves correctly. Inside the `php` container it points at `db:5432`; from host it must resolve to `localhost:5432`.
 - Wait a few seconds for PostgreSQL to finish starting up; `scripts/toolkit/server.php health` will exit `0` once the DB is ready.
 
 ### Migrations fail
@@ -162,13 +134,7 @@ php scripts/toolkit/console.php doctrine:migrations:status
 php scripts/toolkit/console.php doctrine:migrations:list
 ```
 
-If `setup.php install` fails on the migration step, check the message — it explicitly indicates whether the `db` container is missing or whether the connection itself failed.
-
 ### API responds but Claude connectors are down
 
 - Check `CLAUDE_API_KEY` in `.env`.
-- For `claude_cli`: check that the `claude` binary is accessible in the PHP container (`php scripts/setup.php install` installs it on the host).
-
-### Lockfile errors on install
-
-If `setup.php install` complains about the lockfile not being initialized, run `php scripts/setup.php update` first to generate it. The lockfile is local-only and never committed.
+- For `claude_cli`: check that the `claude` binary is accessible in the PHP container.

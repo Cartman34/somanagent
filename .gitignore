@@ -15,7 +15,6 @@ backend/.env.*.local
 
 # === SCRIPTS ===
 scripts/vendor/
-scripts/resources/dependencies.lock
 # Portals: relative symlinks to sibling clones, posed locally (see AGENTS.md), not committed.
 scripts/toolkit
 scripts/backlog

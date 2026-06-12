@@ -16,7 +16,7 @@
 
 The backlog configuration is managed by the backlog package. `php scripts/backlog/install.php` materializes `backlog/config.yaml` from the package template if it does not already exist; existing local files are never overwritten, so local customizations are preserved across updates. The template and the canonical list of supported keys ship with the backlog package — see its documentation.
 
-If `local/backlog/config.yaml` is absent at runtime, backlog tooling raises an explicit error pointing to `php scripts/setup.php install`.
+If `local/backlog/config.yaml` is absent at runtime, backlog tooling raises an explicit error; run `php scripts/backlog/install.php` to materialize it.
 
 Keys absent from the local file (e.g. after the `.dist` gains a new key) fall back to hardcoded defaults defined in `BacklogConfig`. The fallback may differ from the `.dist` default when a more conservative value is appropriate for existing installs.
 

@@ -41,9 +41,7 @@ These scripts are owned by this project and documented below.
 
 | Script | Type | Role |
 |---|---|---|
-| `check-php.sh` | Bash | Check that PHP 8.4+ is installed |
 | `scripts-install.php` | PHP | Install the local Composer dependencies required by `scripts/` |
-| `setup.php` | PHP | Manage host-level dependencies and project setup (install, update, verify, uninstall, reset, status, dep-config) |
 | `generate-migration.php` | PHP | Generate a Doctrine migration using an isolated temporary database |
 | `node.php` | PHP | Run reusable commands inside the Node container |
 | `health.php` | PHP | Check application status |
@@ -57,16 +55,6 @@ These scripts are owned by this project and documented below.
 
 ## Script Details
 
-### `check-php.sh`
-Checks that PHP >= 8.4 is available in the PATH.
-
-```bash
-bash scripts/check-php.sh
-# ✓ PHP 8.4.5 detected
-```
-
----
-
 ### `scripts-install.php`
 Installs the local Composer dependencies required by `scripts/` (the PHPStan/Rector binaries and their extensions under `scripts/vendor`). Standalone by design: it does not use the scripts runner stack, so it works on a fresh checkout where `scripts/vendor/autoload.php` is still missing.
 
@@ -74,60 +62,6 @@ Installs the local Composer dependencies required by `scripts/` (the PHPStan/Rec
 php scripts/scripts-install.php
 php scripts/scripts-install.php --update
 ```
-
----
-
-### `setup.php`
-Manages host-level dependencies and the project setup. Subcommand-based runner.
-
-Subcommands:
-- `update` — re-resolve the manifest against available sources and write the lockfile
-- `install` — install or upgrade host dependencies from the lockfile, then run project setup (composer, npm, Doctrine migrations)
-- `verify` — compare system state, lockfile, and manifest without mutating (exit `0` aligned, `1` discrepancies)
-- `uninstall` — remove installed deps according to `pre_existing` flags and `on_uninstall_pre_existing` policy
-- `reset` — drop the database and remove Docker volumes (does **not** touch host deps or client binaries)
-- `status` — show manifest, lockfile, installed versions, Docker service status, last migration (no mutation)
-- `dep-config` — read/write per-dep overrides in the lockfile (`get`/`set`/`unset`)
-
-```bash
-php scripts/setup.php help                           # show help (also displayed when no subcommand is passed)
-php scripts/setup.php help <subcommand>              # detail one subcommand
-
-php scripts/setup.php update                         # resolve + write lockfile
-php scripts/setup.php update --preview-only          # resolution diff + plan, no apply
-php scripts/setup.php update --dry-run               # plan + simulated commands, no apply
-php scripts/setup.php update --force                 # apply without confirmation
-
-php scripts/setup.php install                        # apply lockfile + composer/npm/migrations
-php scripts/setup.php install --preview-only
-php scripts/setup.php install --dry-run
-php scripts/setup.php install --force
-
-php scripts/setup.php verify                         # alignment check, no mutation
-php scripts/setup.php status                         # full system / lockfile / docker overview, no mutation
-
-php scripts/setup.php uninstall                      # remove non-pre-existing deps
-php scripts/setup.php uninstall --restore            # one-shot: pre-existing deps downgrade to previous_version
-php scripts/setup.php uninstall --keep               # one-shot: pre-existing deps untouched
-
-php scripts/setup.php reset                          # drop DB + remove docker volumes (confirm prompt)
-php scripts/setup.php reset --keep-volumes           # stop containers but keep volumes
-php scripts/setup.php reset --force                  # skip confirmation
-
-php scripts/setup.php dep-config get claude
-php scripts/setup.php dep-config set claude on_uninstall_pre_existing restore
-php scripts/setup.php dep-config unset claude on_uninstall_pre_existing
-```
-
-Notes:
-- Lockfile is local: `scripts/resources/dependencies.lock` is **not committed** on this project — it stores per-host `pre_existing` state and side-effect paths. Each machine generates its own via `setup.php update`. `install` rejects an absent or sentinel lockfile (`generated_at: ~`).
-- Mutation subcommands (`update`, `install`, `uninstall`, `reset`) accept `--preview-only`, `--dry-run`, and `--force`. `--preview-only` and `--dry-run` are mutually exclusive. `--force` still prints the preview for traceability.
-- `dep-config` mutations are local and reversible (`unset`); no `--force` flag.
-- `install` runs Doctrine migrations via **host PHP CLI** (`php backend/bin/console doctrine:migrations:migrate --no-interaction`), not via `docker compose exec`. Requires the `db` container up; the `php` container is not required (compatible with `scripts/toolkit/server.php start minimal`). `DATABASE_URL` is normalised from `db:5432` to `localhost:5432` automatically.
-- `verify`: `0` if aligned, `1` for missing/outdated/orphaned/unlocked deps. Run `setup.php update` first if deps appear unlocked.
-- `uninstall` policy chain: `--restore`/`--keep` flag > lockfile override (`dep-config`) > manifest per-dep `on_uninstall_pre_existing` > manifest default > framework default (`keep`).
-- `reset` is destructive: explicit confirmation required unless `--force`. Host dependencies (apt packages, npm clients) are **not** removed by `reset` — use `uninstall` for that.
-- BLOCKED items (version below minimum with `on_existing_below_min: error`) make the command exit before the preview is shown.
 
 ---
 
