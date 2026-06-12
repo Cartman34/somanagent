@@ -311,7 +311,7 @@ final class GenerateMigrationService
             return null;
         }
 
-        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false);
+        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false, $this->app);
         $board        = $boardService->loadBoard($boardPath);
         $matches      = $boardService->findActiveEntriesByAgent($board, $agentCode);
 
