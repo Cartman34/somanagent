@@ -21,8 +21,6 @@ parameters:
         - ../backend/src
         - ../backend/tests
         - ../scripts/src
-    excludePaths:
-        - ../scripts/src/Validation/Test/Fixture
     bootstrapFiles:
         - ../backend/vendor/autoload.php
         - ../scripts/vendor/autoload.php

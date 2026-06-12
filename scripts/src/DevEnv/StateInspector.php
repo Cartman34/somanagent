@@ -55,6 +55,9 @@ final class StateInspector
      * Clears the internal version cache.
      *
      * Call this after installation to allow re-detection of updated versions.
+     *
+     * @api Currently unused by production code (its only caller was a removed test) but kept
+     *      intentionally: cache invalidation is needed once install re-detection is wired.
      */
     public function clearCache(): void
     {

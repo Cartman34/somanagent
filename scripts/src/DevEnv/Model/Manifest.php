@@ -23,6 +23,10 @@ final class Manifest
      * @param list<Dependency> $dependencies All declared dependencies in manifest order
      */
     public function __construct(
+        /**
+         * @api Manifest-level default policy, currently read only internally (its external reader
+         *      was a removed test). Kept intentionally as part of the manifest data model.
+         */
         public readonly string $onExistingBelowMin = self::DEFAULT_ON_EXISTING_BELOW_MIN,
         public readonly string $onUninstallPreExisting = self::DEFAULT_ON_UNINSTALL_PRE_EXISTING,
         public readonly array $dependencies = [],

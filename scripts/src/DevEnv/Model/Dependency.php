@@ -30,6 +30,11 @@ final class Dependency
         public readonly string $installer,
         public readonly string $package,
         public readonly array $sources,
+        /**
+         * @api Parsed from the manifest but not yet consumed by the installer (it hardcodes the
+         *      GPG handling). Kept intentionally; data-driven redesign to study:
+         *      local/specs/conception-devenv-apt-repo-installer.md
+         */
         public readonly ?string $gpg = null,
         public readonly ?string $onExistingBelowMin = null,
         public readonly ?string $onUninstallPreExisting = null,
