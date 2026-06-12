@@ -504,7 +504,7 @@
             "dist": {
                 "type": "path",
                 "url": "../../web-backlog",
-                "reference": "796783aeb502bc958dc35d9df78c8a1e4f9ad279"
+                "reference": "34039f94f5578c90f2add8235c594038e46f6f1d"
             },
             "require": {
                 "php": ">=8.4",
