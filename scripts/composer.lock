@@ -504,7 +504,7 @@
             "dist": {
                 "type": "path",
                 "url": "../../web-backlog",
-                "reference": "c941f899136f24615d1ddc4dd5dbc2431271e45f"
+                "reference": "796783aeb502bc958dc35d9df78c8a1e4f9ad279"
             },
             "require": {
                 "php": ">=8.4",
@@ -541,7 +541,7 @@
             "dist": {
                 "type": "path",
                 "url": "../../web-toolkit",
-                "reference": "90fb3be0b566e015dcff1b4da1c0c645f4ac8719"
+                "reference": "42f56b9e822caea4e5376a3336dd6e715d2ebc0e"
             },
             "require": {
                 "nikic/php-parser": "^5.7",
