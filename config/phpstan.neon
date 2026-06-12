@@ -21,7 +21,6 @@ parameters:
         - ../backend/src
         - ../backend/tests
         - ../scripts/src
-        - ../scripts/tests/test-backlog-agent.php
     excludePaths:
         - ../scripts/src/Validation/Test/Fixture
     bootstrapFiles:
