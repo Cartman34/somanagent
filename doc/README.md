@@ -34,6 +34,7 @@ It lets you assemble generic AI agent teams, assign them roles and skills, then 
 | [Configuration](technical/configuration.md) | Environment variables, .env file |
 | [System dependencies](technical/system-dependencies.md) | Host-level system dependencies required to run the project, with scope and purpose |
 | [Translations Strategy](technical/translations.md) | Conventions and migration strategy for translator-backed application messages |
+| [Skills Marketplace Strategy](technical/skills-marketplace.md) | Target model for publication, discovery and versioned skill installation |
 
 ### Quick reference — which doc for which task
 
