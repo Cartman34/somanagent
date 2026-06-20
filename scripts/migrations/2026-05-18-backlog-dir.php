@@ -8,7 +8,7 @@
  *               local/backlog-review.md  → local/backlog/backlog-review.md
  *               local/tmp/backlog.lock   → local/backlog/backlog.lock (lock is transient; not moved)
  * Introduced:   2026-05-18
- * Remove after: All WPs have been migrated and no operator is running a backlog.php version
+ * Remove after: All WPs have been migrated and no operator is running a board.php version
  *               that still expects the old paths. Tracked in scripts/backlog/doc/operating/migrations.md.
  *
  * Behaviour:

@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\Runner;
 
 use Sowapps\SoManAgent\Script\SoManAgentApplication;
-use Sowapps\Backlog\Service\BacklogBoardService;
+use Sowapps\Backlog\Service\BoardService;
 use Sowapps\Toolkit\TextSlugger;
 use Sowapps\Toolkit\Client\FilesystemClient;
 use Sowapps\Toolkit\Console;
@@ -266,8 +266,9 @@ final class GenerateMigrationService
             return;
         }
 
+        // TODO Build string from code constants/enum
         $code = $this->app->runCommand(sprintf(
-            'SOMANAGER_ROLE=developer SOMANAGER_AGENT=%s php scripts/backlog/backlog.php entry-set-meta %s %s',
+            'SOMANAGER_ROLE=developer SOMANAGER_AGENT=%s php scripts/backlog/board.php entry-set-meta %s %s',
             escapeshellarg($this->agentCode),
             escapeshellarg($entryRef),
             escapeshellarg('database=' . $dbName),
@@ -286,8 +287,9 @@ final class GenerateMigrationService
             return;
         }
 
+        // TODO Build string from code constants/enum
         $code = $this->app->runCommand(sprintf(
-            'SOMANAGER_ROLE=developer SOMANAGER_AGENT=%s php scripts/backlog/backlog.php entry-set-meta %s %s',
+            'SOMANAGER_ROLE=developer SOMANAGER_AGENT=%s php scripts/backlog/board.php entry-set-meta %s %s',
             escapeshellarg($this->agentCode),
             escapeshellarg($entryRef),
             escapeshellarg('database='),
@@ -311,7 +313,7 @@ final class GenerateMigrationService
             return null;
         }
 
-        $boardService = new BacklogBoardService(new TextSlugger(), new FilesystemClient(), false, $this->app);
+        $boardService = new BoardService(new TextSlugger(), new FilesystemClient(), false, $this->app);
         $board        = $boardService->loadBoard($boardPath);
         $matches      = $boardService->findActiveEntriesByAgent($board, $agentCode);
 
