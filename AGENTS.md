@@ -17,7 +17,7 @@ Pose the portals once (relative symlinks to sibling clones, not committed):
 
 ## Roles & backlog
 
-Use one active role only (`Developer`, `Reviewer`, or `Manager`); do not infer or mix roles from chat. Sessions are started by the operator with `php scripts/backlog/agent.php start <client> --developer|--reviewer|--manager`, which injects `SOMANAGER_ROLE` / `SOMANAGER_AGENT` / `SOMANAGER_CLIENT` / `SOMANAGER_WP`. Role rules, allowed commands, the workflow state machine and the local source of truth (board/review) live in `scripts/backlog/doc/`. Run backlog actions via `php scripts/backlog/board.php …`; never edit the backlog data files by hand when a command covers the action.
+Use one active role only (`Developer`, `Reviewer`, or `Manager`); do not infer or mix roles from chat. Sessions are started by the operator with `php scripts/backlog/agent.php start <client> --developer|--reviewer|--manager`, which injects `AGENT_ROLE` / `AGENT_CODE` / `AGENT_CLIENT` / `PROJECT_MAIN_WORKTREE`. Role rules, allowed commands, the workflow state machine and the local source of truth (board/review) live in `scripts/backlog/doc/`. Run backlog actions via `php scripts/backlog/board.php …`; never edit the backlog data files by hand when a command covers the action.
 
 ## Git
 

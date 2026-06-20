@@ -72,7 +72,7 @@ Generates a new Doctrine migration diff against an isolated temporary database.
 php scripts/generate-migration.php
 ```
 
-The script creates a temporary database named `{agentCode}_migrate_gen`, applies all existing migrations on it, then runs `doctrine:migrations:diff`. The temporary database is dropped after the diff. `SOMANAGER_AGENT` is required because it names the temporary database.
+The script creates a temporary database named `{agentCode}_migrate_gen`, applies all existing migrations on it, then runs `doctrine:migrations:diff`. The temporary database is dropped after the diff. `AGENT_CODE` is required because it names the temporary database.
 
 `generate-migration.php` runs entirely locally without `psql`: it uses PHP/PDO to create and drop the temporary database on `localhost:5432`, and runs `php backend/bin/console` from the checkout root. The Docker PostgreSQL service must be running and accessible on `localhost:5432`; `scripts/toolkit/server.php start minimal` is enough. If the PHP/DB connection fails, the command exits with a structured error indicating the DSN, working directory, cause, and action expected.
 

@@ -74,9 +74,9 @@ final class GenerateMigrationRunner extends AbstractScriptRunner
      */
     private function detectAgentCode(): string
     {
-        $fromEnv = trim((string) getenv('SOMANAGER_AGENT'));
+        $fromEnv = trim((string) getenv('AGENT_CODE'));
         if ($fromEnv === '') {
-            $this->console->fail('SOMANAGER_AGENT is required for generate-migration.');
+            $this->console->fail('AGENT_CODE is required for generate-migration.');
         }
 
         return $fromEnv;

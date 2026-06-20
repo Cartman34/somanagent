@@ -50,7 +50,7 @@
       "Bash(cat)",
       "Bash(xargs -I{} basename {})",
       "Bash(GIT_EDITOR=true git *)",
-      "Bash(SOMANAGER_ROLE=* SOMANAGER_AGENT=* php *)",
+      "Bash(AGENT_ROLE=* AGENT_CODE=* php *)",
       "Bash(tmux *)",
       "Bash(claude --version)",
       "Bash(echo \"exit=$?\")",

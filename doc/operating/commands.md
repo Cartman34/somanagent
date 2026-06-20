@@ -109,7 +109,7 @@ php scripts/generate-migration.php
 ```
 Generates a migration from the diff between the current entities and a temporary isolated database.
 The shared application database is never used as the diff target.
-`SOMANAGER_AGENT` is required because it names the temporary database.
+`AGENT_CODE` is required because it names the temporary database.
 The temporary database is named `{agentCode}_migrate_gen` and is dropped after the diff.
 
 > **Do not use `php scripts/toolkit/console.php doctrine:migrations:diff` directly** — it diffs against

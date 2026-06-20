@@ -268,7 +268,7 @@ final class GenerateMigrationService
 
         // TODO Build string from code constants/enum
         $code = $this->app->runCommand(sprintf(
-            'SOMANAGER_ROLE=developer SOMANAGER_AGENT=%s php scripts/backlog/board.php entry-set-meta %s %s',
+            'AGENT_ROLE=developer AGENT_CODE=%s php scripts/backlog/board.php entry-set-meta %s %s',
             escapeshellarg($this->agentCode),
             escapeshellarg($entryRef),
             escapeshellarg('database=' . $dbName),
@@ -289,7 +289,7 @@ final class GenerateMigrationService
 
         // TODO Build string from code constants/enum
         $code = $this->app->runCommand(sprintf(
-            'SOMANAGER_ROLE=developer SOMANAGER_AGENT=%s php scripts/backlog/board.php entry-set-meta %s %s',
+            'AGENT_ROLE=developer AGENT_CODE=%s php scripts/backlog/board.php entry-set-meta %s %s',
             escapeshellarg($this->agentCode),
             escapeshellarg($entryRef),
             escapeshellarg('database='),
