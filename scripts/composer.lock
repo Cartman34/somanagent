@@ -607,7 +607,7 @@
             "dist": {
                 "type": "path",
                 "url": "../../web-backlog",
-                "reference": "91abe6176fcde065481185da2341758536fc4ae4"
+                "reference": "467d74933245462fd428993ac0f61ed4ed377cc7"
             },
             "require": {
                 "php": ">=8.4",
@@ -645,7 +645,7 @@
             "dist": {
                 "type": "path",
                 "url": "../../web-toolkit",
-                "reference": "feeea3116b87e8839d4a3c7c72287a1199bba4dd"
+                "reference": "0f29035dd2abda1c87fd4cd4f6559719f8de88e0"
             },
             "require": {
                 "monolog/monolog": "^3.0",
@@ -677,7 +677,7 @@
             "license": [
                 "proprietary"
             ],
-            "description": "Generic script tooling: git/web layer (GitClient, GitHubService, PullRequestService) and script infrastructure (Application, Console, clients, retry, help).",
+            "description": "Generic script tooling for sowapps web applications",
             "transport-options": {
                 "symlink": true,
                 "relative": true
