@@ -12,5 +12,6 @@
 require_once __DIR__ . '/src/bootstrap.php';
 
 use Sowapps\SoManAgent\Script\Runner\NodeRunner;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
 
-(new NodeRunner())->handle($argv);
+SoManAgentApplication::getInstance()->getTransientLocator()->get(NodeRunner::class)->handle($argv);

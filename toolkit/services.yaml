@@ -20,3 +20,6 @@ services:
     resource: '../scripts/src/'
     exclude:
       - '../scripts/src/bootstrap.php'
+
+  # Inject the toolkit DockerCompose base type, resolved to the SoManAgent concrete context.
+  Sowapps\Toolkit\Docker\DockerCompose: '@Sowapps\SoManAgent\Script\Client\Docker\SoManAgentDockerCompose'
