@@ -9,5 +9,6 @@
 require_once __DIR__ . '/src/bootstrap.php';
 
 use Sowapps\SoManAgent\Script\Runner\GenerateMigrationRunner;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
 
-(new GenerateMigrationRunner())->handle($argv);
+SoManAgentApplication::getInstance()->getTransientLocator()->get(GenerateMigrationRunner::class)->handle($argv);

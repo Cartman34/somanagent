@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
+use Sowapps\Toolkit\Client\Console\ConsoleClientInterface;
 use Sowapps\Toolkit\Runner\AbstractScriptRunner;
 
 /**
@@ -17,6 +18,12 @@ use Sowapps\Toolkit\Runner\AbstractScriptRunner;
 final class HealthRunner extends AbstractScriptRunner
 {
     private const NAME = 'health';
+
+    public function __construct(
+        private readonly ConsoleClientInterface $consoleClient,
+    ) {
+        parent::__construct();
+    }
 
     protected function getName(): string
     {
@@ -65,7 +72,7 @@ final class HealthRunner extends AbstractScriptRunner
         $this->console->line();
         $this->console->step('Connector health via somanagent:health');
 
-        return $this->app->runCommand('php scripts/toolkit/console.php somanagent:health');
+        return $this->consoleClient->run('php scripts/toolkit/console.php somanagent:health')->getExitCode();
     }
 
     /**

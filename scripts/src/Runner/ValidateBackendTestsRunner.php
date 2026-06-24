@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
+use Sowapps\Toolkit\Client\Console\ConsoleClientInterface;
 use Sowapps\Toolkit\Runner\AbstractScriptRunner;
 
 /**
@@ -15,6 +16,12 @@ use Sowapps\Toolkit\Runner\AbstractScriptRunner;
 final class ValidateBackendTestsRunner extends AbstractScriptRunner
 {
     private const NAME = 'validate-backend-tests';
+
+    public function __construct(
+        private readonly ConsoleClientInterface $consoleClient,
+    ) {
+        parent::__construct();
+    }
 
     protected function getName(): string
     {
@@ -178,7 +185,7 @@ final class ValidateBackendTestsRunner extends AbstractScriptRunner
             $command .= ' ' . implode(' ', array_map('escapeshellarg', $testPaths));
         }
 
-        $exitCode = $this->app->runCommand($command);
+        $exitCode = $this->consoleClient->run($command)->getExitCode();
 
         return $exitCode === 0 ? 0 : 1;
     }

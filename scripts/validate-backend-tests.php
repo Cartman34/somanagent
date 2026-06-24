@@ -10,5 +10,6 @@
 require_once __DIR__ . '/src/bootstrap.php';
 
 use Sowapps\SoManAgent\Script\Runner\ValidateBackendTestsRunner;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
 
-(new ValidateBackendTestsRunner())->handle($argv);
+SoManAgentApplication::getInstance()->getTransientLocator()->get(ValidateBackendTestsRunner::class)->handle($argv);
