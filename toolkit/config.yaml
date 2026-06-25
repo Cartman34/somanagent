@@ -39,15 +39,18 @@ composers:
 
 # Validation rules (validate-files): file pattern -> validators (cumulative).
 # Built-in toolkit validators: php-syntax, exec-bit.
-# App-specific validators are declared under `validators` (name -> FQCN).
+# Every validator named here must be declared under `validators` (name -> FQCN), toolkit-shipped included.
 validations:
   - match: "scripts/**/*.php"
     run: [php-syntax, exec-bit]
   - match: "doc/developing/openapi.yaml"
     run: [openapi-consistency]
 
-# App-specific validator registry (name -> FQCN). Built-ins need no entry here.
+# Validator registry (name -> FQCN). Every name a `validations` rule references must be declared
+# here, including the toolkit-shipped validators: there is no implicit built-in set.
 validators:
+  php-syntax: Sowapps\Toolkit\Validation\PhpSyntaxValidator
+  exec-bit: Sowapps\Toolkit\Validation\ExecBitValidator
   openapi-consistency: Sowapps\SoManAgent\Script\Validation\OpenApiConsistencyValidator
 
 # Symfony translation validation (Sowapps\Toolkit\Symfony): declared keys vs source usages.
