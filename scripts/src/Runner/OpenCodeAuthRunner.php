@@ -7,22 +7,38 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
-use Sowapps\SoManAgent\Script\OpenCodeAuthManager;
-use Sowapps\SoManAgent\Script\SoManAgentApplication;
-use Sowapps\Toolkit\Runner\AbstractScriptRunner;
+use Sowapps\SoManAgent\Script\Client\Agent\AbstractAgentAuthManager;
+use Sowapps\SoManAgent\Script\Client\Agent\OpenCode\OpenCodeAuthManager;
 
 /**
  * OpenCode auth management script runner.
  *
  * Manages OpenCode provider credentials with WSL as the source of truth and syncs them to Docker.
+ * Accepts an optional provider positional argument forwarded to the login command.
  */
-final class OpenCodeAuthRunner extends AbstractScriptRunner
+final class OpenCodeAuthRunner extends AbstractAgentAuthRunner
 {
     private const NAME = 'opencode-auth';
+
+    public function __construct(
+        private readonly OpenCodeAuthManager $manager,
+    ) {
+        parent::__construct();
+    }
 
     protected function getName(): string
     {
         return self::NAME;
+    }
+
+    protected function getAgentLabel(): string
+    {
+        return 'OpenCode';
+    }
+
+    protected function getManager(): AbstractAgentAuthManager
+    {
+        return $this->manager;
     }
 
     protected function getDescription(): string
@@ -39,13 +55,6 @@ final class OpenCodeAuthRunner extends AbstractScriptRunner
         ];
     }
 
-    protected function getOptions(): array
-    {
-        return [
-            ['name' => '--force', 'description' => 'Force overwrite existing auth (sync) or re-authenticate (login)'],
-        ];
-    }
-
     protected function getUsageExamples(): array
     {
         return [
@@ -58,36 +67,17 @@ final class OpenCodeAuthRunner extends AbstractScriptRunner
     }
 
     /**
-     * Dispatches the requested OpenCode auth action to the manager.
+     * Captures the optional provider positional before delegating to the shared dispatch.
+     *
+     * @param list<string> $args
      */
     public function run(array $args): int
     {
-        $command = $args[0] ?? 'status';
-        $force = in_array('--force', $args, true);
-        $provider = null;
+        [$positional] = $this->parseArgs($args);
 
-        foreach (array_slice($args, 1) as $arg) {
-            if (str_starts_with($arg, '--')) {
-                continue;
-            }
+        // The provider is the optional positional after the command (e.g. "login openrouter").
+        $this->manager->setProvider($positional[1] ?? null);
 
-            $provider = $arg;
-            break;
-        }
-
-        try {
-            $manager = new OpenCodeAuthManager(SoManAgentApplication::getInstance(), $this->projectRoot);
-
-            match ($command) {
-                'status' => $manager->showStatus(),
-                'sync' => $manager->sync($force),
-                'login' => $manager->loginAndSync($provider, $force),
-                default => throw new \RuntimeException(sprintf('Unknown command "%s". Use status, sync, or login.', $command)),
-            };
-        } catch (\RuntimeException $e) {
-            $this->console->fail($e->getMessage());
-        }
-
-        return 0;
+        return parent::run($args);
     }
 }

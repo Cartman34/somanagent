@@ -11,5 +11,6 @@
 require_once __DIR__ . '/src/bootstrap.php';
 
 use Sowapps\SoManAgent\Script\Runner\CodexAuthRunner;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
 
-(new CodexAuthRunner())->handle($argv);
+SoManAgentApplication::getInstance()->getTransientLocator()->get(CodexAuthRunner::class)->handle($argv);

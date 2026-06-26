@@ -7,22 +7,37 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
-use Sowapps\SoManAgent\Script\CodexAuthManager;
-use Sowapps\SoManAgent\Script\SoManAgentApplication;
-use Sowapps\Toolkit\Runner\AbstractScriptRunner;
+use Sowapps\SoManAgent\Script\Client\Agent\AbstractAgentAuthManager;
+use Sowapps\SoManAgent\Script\Client\Agent\Codex\CodexAuthManager;
 
 /**
  * Codex auth management script runner.
  *
  * Manages Codex CLI auth with WSL as the source of truth and syncs it to Docker.
  */
-final class CodexAuthRunner extends AbstractScriptRunner
+final class CodexAuthRunner extends AbstractAgentAuthRunner
 {
     private const NAME = 'codex-auth';
+
+    public function __construct(
+        private readonly CodexAuthManager $manager,
+    ) {
+        parent::__construct();
+    }
 
     protected function getName(): string
     {
         return self::NAME;
+    }
+
+    protected function getAgentLabel(): string
+    {
+        return 'Codex';
+    }
+
+    protected function getManager(): AbstractAgentAuthManager
+    {
+        return $this->manager;
     }
 
     protected function getDescription(): string
@@ -39,13 +54,6 @@ final class CodexAuthRunner extends AbstractScriptRunner
         ];
     }
 
-    protected function getOptions(): array
-    {
-        return [
-            ['name' => '--force', 'description' => 'Force overwrite existing auth (sync) or re-authenticate (login)'],
-        ];
-    }
-
     protected function getUsageExamples(): array
     {
         return [
@@ -55,29 +63,5 @@ final class CodexAuthRunner extends AbstractScriptRunner
             'php scripts/codex-auth.php login',
             'php scripts/codex-auth.php login --force',
         ];
-    }
-
-    /**
-     * Dispatches the requested Codex auth action to the manager.
-     */
-    public function run(array $args): int
-    {
-        $command = $args[0] ?? 'status';
-        $force = in_array('--force', $args, true);
-
-        try {
-            $manager = new CodexAuthManager(SoManAgentApplication::getInstance(), $this->projectRoot);
-
-            match ($command) {
-                'status' => $manager->showStatus(),
-                'sync' => $manager->sync($force),
-                'login' => $manager->loginAndSync($force),
-                default => throw new \RuntimeException(sprintf('Unknown command "%s". Use status, sync, or login.', $command)),
-            };
-        } catch (\RuntimeException $e) {
-            $this->console->fail($e->getMessage());
-        }
-
-        return 0;
     }
 }
