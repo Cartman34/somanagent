@@ -15,6 +15,8 @@ backend/.env.*.local
 
 # === SCRIPTS ===
 scripts/vendor/
+# Toolkit DI container cache + runtime (ServiceContainerManager dumps to <root>/var/).
+/var/
 # Portals: relative symlinks to sibling clones, posed locally (see AGENTS.md), not committed.
 scripts/toolkit
 scripts/backlog
