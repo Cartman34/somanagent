@@ -6,7 +6,7 @@
  * Purpose:      Rename the `agent` key to `developer` in both `todo` and `active` sections
  *               of local/backlog/backlog-board.yaml.
  * Introduced:   2026-05-19
- * Remove after: All known WPs have been migrated and no operator runs a board.php version
+ * Remove after: All known Main Worktrees have been migrated and no operator runs a board.php version
  *               that still writes the `agent` key. Tracked in scripts/backlog/doc/operating/migrations.md.
  *
  * Behaviour:

@@ -35,7 +35,7 @@ The pre-commit hook (`scripts/githooks/pre-commit`) is activated once by running
 php scripts/scripts-install.php
 ```
 
-This sets `core.hooksPath = scripts/githooks` in the WP git config. All linked worktrees (agent WAs) inherit it automatically — no per-WA setup needed. On a fresh checkout, re-run `scripts-install.php` if the hook is not firing.
+This sets `core.hooksPath = scripts/githooks` in the Main Worktree git config. All linked worktrees (the Agent Worktrees) inherit it automatically — no per-worktree setup needed. On a fresh checkout, re-run `scripts-install.php` if the hook is not firing.
 
 ## Local PHPUnit
 

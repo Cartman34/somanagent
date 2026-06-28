@@ -102,7 +102,7 @@ final class GenerateMigrationRunner extends AbstractScriptRunner
                 '  PHP DSN: ' . $this->service->getSystemDsn(),
                 '  Working directory: ' . $this->service->getProjectRoot(),
                 '  Cause: ' . $e->getMessage(),
-                '  Action: ensure the Docker PostgreSQL service is running and accessible on localhost:5432 (e.g. run docker compose up -d db from WP).',
+                '  Action: ensure the Docker PostgreSQL service is running and accessible on localhost:5432 (e.g. run docker compose up -d db from Main Worktree).',
             ]));
         }
         $this->console->ok('PHP connected to local PostgreSQL successfully.');
