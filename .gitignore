@@ -73,3 +73,19 @@ desktop.ini
 /backlog/log
 /backlog/migrations.applied
 # <<< backlog
+
+# >>> toolkit-portal — managed block, do not edit between markers
+# toolkit portal: relative symlink to the sibling package public folder, posed locally, not committed.
+/scripts/toolkit
+# <<< toolkit-portal
+
+# >>> toolkit-hooks — managed block, do not edit between markers
+# toolkit/hooks/ content: hook symlinks posed by operator/provisioning, not committed. The directory itself (.gitkeep) is tracked.
+/toolkit/hooks/*
+!/toolkit/hooks/.gitkeep
+# <<< toolkit-hooks
+
+# >>> backlog-portal — managed block, do not edit between markers
+# backlog portal: relative symlink to the sibling package public folder, posed locally, not committed.
+/scripts/backlog
+# <<< backlog-portal

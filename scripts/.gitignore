@@ -1,0 +1,4 @@
+# >>> local-deps — managed block, do not edit between markers
+# Local sibling-package links (Composer path repositories) — machine-specific, posed by install, never committed.
+/local-deps
+# <<< local-deps
