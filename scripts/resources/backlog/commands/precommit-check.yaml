@@ -1,9 +1,0 @@
-description: 'Check whether the current agent session is allowed to commit (entry must be in development stage)'
-examples:
-  - 'SOMANAGER_ROLE=developer SOMANAGER_AGENT=d03 php scripts/backlog.php precommit-check'
-notes:
-  - 'Called internally by the managed worktree pre-commit hook. Not intended for direct use.'
-  - 'Reads SOMANAGER_AGENT from the environment to identify the active backlog entry.'
-  - 'Exits 0 when the active entry is in development stage. Exits non-zero with a descriptive message otherwise.'
-  - 'Fails safe: if no active entry is found or the stage cannot be determined, the commit is blocked.'
-  - 'Blocked stages and their recovery: review → wait for reviewer or run `rework`; reviewing → wait for reviewer; rejected → run `rework`; approved → run `rework` if changes are needed.'

@@ -99,3 +99,21 @@ if (!is_file($vendorAutoload)) {
  * Normal scripts runtime starts here.
  */
 require_once $vendorAutoload;
+
+/**
+ * Pose and start the host application (singleton): builds the DI container and runs initialization so
+ * every runner reaches the toolkit and backlog capability layers through it. Runs once thanks to
+ * require_once.
+ *
+ * - appRoot: the somanagent package root (holds toolkit/services.yaml and the container cache).
+ * - projectRoot: the operated project = the current working directory.
+ */
+$appRoot = dirname($scriptsDir);
+
+$projectRoot = getcwd();
+if ($projectRoot === false) {
+    fwrite(STDERR, "Cannot resolve the current working directory.\n");
+    exit(1);
+}
+
+(new \Sowapps\SoManAgent\Script\SoManAgentApplication())->start($appRoot, $projectRoot);

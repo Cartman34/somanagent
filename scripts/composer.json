@@ -1,7 +1,27 @@
 {
     "name": "sowapps/somanagent-scripts",
     "type": "project",
+    "description": "Host-side scripts and tooling dependencies for SoManAgent.",
+    "license": "proprietary",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "local-deps/web-toolkit",
+            "options": {
+                "symlink": true
+            }
+        },
+        {
+            "type": "path",
+            "url": "local-deps/web-backlog",
+            "options": {
+                "symlink": true
+            }
+        }
+    ],
     "require": {
+        "sowapps/web-toolkit": "@dev",
+        "sowapps/web-backlog": "@dev",
         "symfony/yaml": "^7.2",
         "phpstan/phpstan": "^2.1",
         "phpstan/phpstan-symfony": "^2.0",

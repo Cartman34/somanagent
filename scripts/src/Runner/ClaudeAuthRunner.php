@@ -7,20 +7,39 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
-use Sowapps\SoManAgent\Script\ClaudeAuthManager;
+use Sowapps\SoManAgent\Script\Client\Agent\AbstractAgentAuthManager;
+use Sowapps\SoManAgent\Script\Client\Agent\Claude\ClaudeAuthManager;
 
 /**
  * Claude auth management script runner.
  *
- * Manages Claude CLI auth with WSL as the source of truth and syncs it to Docker.
+ * Manages Claude CLI auth with WSL as the source of truth and syncs it to Docker. Beyond the shared
+ * status/sync/login dispatch, it owns the Claude-specific `test` command that exercises the FPM
+ * execution path through the HTTP API.
  */
-final class ClaudeAuthRunner extends AbstractScriptRunner
+final class ClaudeAuthRunner extends AbstractAgentAuthRunner
 {
     private const NAME = 'claude-auth';
+
+    public function __construct(
+        private readonly ClaudeAuthManager $manager,
+    ) {
+        parent::__construct();
+    }
 
     protected function getName(): string
     {
         return self::NAME;
+    }
+
+    protected function getAgentLabel(): string
+    {
+        return 'Claude';
+    }
+
+    protected function getManager(): AbstractAgentAuthManager
+    {
+        return $this->manager;
     }
 
     protected function getDescription(): string
@@ -62,35 +81,24 @@ final class ClaudeAuthRunner extends AbstractScriptRunner
     }
 
     /**
-     * Dispatches the requested Claude auth action to the manager, or runs the API test for the `test` command.
+     * Dispatches the requested Claude auth action, intercepting the Claude-specific `test` command.
+     *
+     * @param list<string> $args
      */
     public function run(array $args): int
     {
-        [$positional, $options] = $this->parseArgs(array_values($args));
+        [$positional, $options] = $this->parseArgs($args);
 
         $command = $positional[0] ?? 'status';
-        $force   = isset($options['force']);
-        $baseUrl = $this->getSingleOption($options, 'url') ?? 'http://localhost:8080';
-        $model   = $this->getSingleOption($options, 'model') ?? '';
 
         if ($command === 'test') {
+            $baseUrl = $this->getSingleOption($options, 'url') ?? 'http://localhost:8080';
+            $model = $this->getSingleOption($options, 'model') ?? '';
+
             return $this->runTest($baseUrl, $model !== '' ? $model : null);
         }
 
-        try {
-            $manager = new ClaudeAuthManager($this->app, $this->projectRoot);
-
-            match ($command) {
-                'status' => $manager->showStatus(),
-                'sync'   => $manager->sync($force),
-                'login'  => $manager->loginAndSync($force),
-                default  => throw new \RuntimeException(sprintf('Unknown command "%s". Use status, sync, login, or test.', $command)),
-            };
-        } catch (\RuntimeException $e) {
-            $this->console->fail($e->getMessage());
-        }
-
-        return 0;
+        return parent::run($args);
     }
 
     /**
@@ -113,7 +121,7 @@ final class ClaudeAuthRunner extends AbstractScriptRunner
             $data = $this->httpPost($url);
         } catch (\RuntimeException $e) {
             $this->console->line('  ❌ API unreachable: ' . $e->getMessage());
-            $this->console->line('  → Start the stack with: php scripts/server.php start');
+            $this->console->line('  → Start the stack with: php scripts/toolkit/server.php start');
             return 1;
         }
 

@@ -11,5 +11,6 @@
 require_once __DIR__ . '/src/bootstrap.php';
 
 use Sowapps\SoManAgent\Script\Runner\ClaudeAuthRunner;
+use Sowapps\SoManAgent\Script\SoManAgentApplication;
 
-(new ClaudeAuthRunner())->handle($argv);
+SoManAgentApplication::getInstance()->getTransientLocator()->get(ClaudeAuthRunner::class)->handle($argv);

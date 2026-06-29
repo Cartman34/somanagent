@@ -15,7 +15,8 @@ backend/.env.*.local
 
 # === SCRIPTS ===
 scripts/vendor/
-scripts/resources/dependencies.lock
+# Toolkit DI container cache + runtime (ServiceContainerManager dumps to <root>/var/).
+/var/
 # Portals: relative symlinks to sibling clones, posed locally (see AGENTS.md), not committed.
 scripts/toolkit
 scripts/backlog
@@ -60,3 +61,31 @@ desktop.ini
 
 # === Global ===
 !.gitkeep
+
+# >>> backlog — managed block, do not edit between markers
+# Local backlog files — never committed: config.yaml is tuned locally (no override system yet),
+# board/review/locks/logs/migrations are per-checkout runtime.
+/backlog/config.yaml
+/backlog/board.yaml
+/backlog/review.md
+/backlog/review-result.txt
+/backlog/lock
+/backlog/log
+/backlog/migrations.applied
+# <<< backlog
+
+# >>> toolkit-portal — managed block, do not edit between markers
+# toolkit portal: relative symlink to the sibling package public folder, posed locally, not committed.
+/scripts/toolkit
+# <<< toolkit-portal
+
+# >>> toolkit-hooks — managed block, do not edit between markers
+# toolkit/hooks/ content: hook symlinks posed by operator/provisioning, not committed. The directory itself (.gitkeep) is tracked.
+/toolkit/hooks/*
+!/toolkit/hooks/.gitkeep
+# <<< toolkit-hooks
+
+# >>> backlog-portal — managed block, do not edit between markers
+# backlog portal: relative symlink to the sibling package public folder, posed locally, not committed.
+/scripts/backlog
+# <<< backlog-portal

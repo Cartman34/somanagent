@@ -7,12 +7,21 @@ declare(strict_types=1);
 
 namespace Sowapps\SoManAgent\Script\Runner;
 
+use Sowapps\Toolkit\Client\Console\ConsoleClientInterface;
+use Sowapps\Toolkit\Runner\AbstractScriptRunner;
+
 /**
  * Runs targeted PHPUnit checks for modified backend services when a dedicated test exists.
  */
 final class ValidateBackendTestsRunner extends AbstractScriptRunner
 {
     private const NAME = 'validate-backend-tests';
+
+    public function __construct(
+        private readonly ConsoleClientInterface $consoleClient,
+    ) {
+        parent::__construct();
+    }
 
     protected function getName(): string
     {
@@ -168,7 +177,7 @@ final class ValidateBackendTestsRunner extends AbstractScriptRunner
      */
     private function runPhpUnit(array $testPaths = [], bool $runAll = false): int
     {
-        $command = 'SOMANAGENT_PHPUNIT_LOCAL=1 php scripts/phpunit.php';
+        $command = 'SOMANAGENT_PHPUNIT_LOCAL=1 php scripts/toolkit/phpunit.php';
 
         if ($runAll) {
             $command .= ' --scope=backend --suite ' . escapeshellarg(self::LOCAL_TEST_SUITE);
@@ -176,7 +185,7 @@ final class ValidateBackendTestsRunner extends AbstractScriptRunner
             $command .= ' ' . implode(' ', array_map('escapeshellarg', $testPaths));
         }
 
-        $exitCode = $this->app->runCommand($command);
+        $exitCode = $this->consoleClient->run($command)->getExitCode();
 
         return $exitCode === 0 ? 0 : 1;
     }

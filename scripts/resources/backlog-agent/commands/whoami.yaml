@@ -1,6 +1,0 @@
-description: 'Show identity and context for the current agent session (run from inside a WA).'
-examples:
-  - 'php scripts/backlog-agent.php whoami'
-notes:
-  - 'Reads SOMANAGER_AGENT, SOMANAGER_ROLE, and SOMANAGER_CLIENT from the environment.'
-  - 'Must be run from inside an active WA where those variables are set by the launcher.'

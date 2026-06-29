@@ -6,8 +6,8 @@
  * Purpose:      Convert the legacy local/backlog-board.md (markdown + pseudo-YAML meta block)
  *               into the new structured local/backlog-board.yaml format.
  * Introduced:   2026-05-17
- * Remove after: All known WAs have been regenerated against the YAML board and no operator
- *               needs to migrate a leftover .md board anymore. Tracked in doc/development/migrations.md.
+ * Remove after: All known Agent Worktrees have been regenerated against the YAML board and no operator
+ *               needs to migrate a leftover .md board anymore. Tracked in scripts/backlog/doc/operating/migrations.md.
  *
  * Behaviour:
  * - Reads local/backlog-board.md from the project root (where this script is invoked).

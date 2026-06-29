@@ -1,9 +1,0 @@
-description: 'List past CLI sessions for the worktree bound to an agent code.'
-options:
-  - name: '--code=<code>'
-    description: 'Agent code whose session history to list (required)'
-examples:
-  - 'php scripts/backlog-agent.php agent-history --code=d04'
-notes:
-  - '--code is required.'
-  - 'Reads past CLI sessions from the client-specific session store in the agent WA.'

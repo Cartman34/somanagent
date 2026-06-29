@@ -7,8 +7,8 @@
  * `php scripts/scripts-install.php` is enough to get automated fixes running,
  * without requiring the backend Docker environment.
  *
- * To run: php scripts/rector.php
- * To restrict scope: php scripts/rector.php --backend  |  php scripts/rector.php --scripts
+ * To run: php scripts/toolkit/rector.php
+ * To restrict scope: php scripts/toolkit/rector.php --backend  |  php scripts/toolkit/rector.php --scripts
  */
 
 declare(strict_types=1);

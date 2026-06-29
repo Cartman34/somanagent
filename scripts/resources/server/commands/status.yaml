@@ -1,5 +1,0 @@
-description: 'Show the current state of Docker Compose services.'
-examples:
-  - 'php scripts/server.php status'
-notes:
-  - 'Read-only. Delegates to docker compose ps.'

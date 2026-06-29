@@ -1,7 +1,0 @@
-description: 'Unified launcher for AI coding agents in managed worktrees.'
-examples:
-  - 'php scripts/backlog-agent.php start claude --developer'
-  - 'php scripts/backlog-agent.php start claude --developer --code=d04'
-  - 'php scripts/backlog-agent.php list'
-  - 'php scripts/backlog-agent.php stop --code=d04'
-  - 'php scripts/backlog-agent.php help start'
