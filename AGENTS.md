@@ -1,5 +1,7 @@
 # Agents
 
+> This is `AGENTS.md`; `CLAUDE.md` is a symlink to it.
+
 Single entrypoint for AI agents working on this repository. Read this file first; open other files only when the active task requires them.
 
 - **Common rules (all projects)** — conventions, working method, process discipline: `scripts/toolkit/doc/AGENTS-common.md`. They apply here and are not repeated below.
