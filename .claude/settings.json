@@ -1,61 +1,83 @@
 {
-  "permissions": {
-    "allow": [
-      "Write",
-      "Read",
-      "Edit",
-      "Glob",
-      "Grep",
-      "Search",
-      "Bash(docker --version)",
-      "Bash(docker compose:*)",
-      "Bash(php --version)",
-      "Bash(composer --version)",
-      "Bash(composer require:*)",
-      "Bash(where claude:*)",
-      "Bash(npm list:*)",
-      "Bash(wsl -l -v)",
-      "Bash(wsl php:*)",
-      "Bash(wsl bash:*)",
-      "Bash(/home/sowapps/projects/somanagent/**)",
-      "Search(/home/sowapps/projects/somanagent/**)",
-      "Read(/home/sowapps/projects/somanagent/**)",
-      "Write(/home/sowapps/projects/somanagent/**)",
-      "Edit(/home/sowapps/projects/somanagent/**)",
-      "Skill(update-config)",
-      "Skill(update-config:*)",
-      "Bash(ls *)",
-      "Bash(find *)",
-      "Bash(php *)",
-      "Bash(xargs ls:*)",
-      "Bash(curl *)",
-      "Bash(sed *)",
-      "Bash(git *)",
-      "Bash(gh *)",
-      "Bash(python3 *)",
-      "Bash(wc:*)",
-      "Bash(opencode --help)",
-      "Bash(sort *)",
-      "Bash(grep *)",
-      "Bash(awk *)",
-      "Bash(composer install *)",
-      "WebSearch",
-      "WebFetch(domain:developers.openai.com)",
-      "WebFetch(domain:opencode.ai)",
-      "WebFetch(domain:github.com)",
-      "WebFetch(domain:geminicli.com)",
-      "WebFetch(domain:google-gemini.github.io)",
-      "Bash(rm *)",
-      "Bash(xargs -I{} *)",
-      "Bash(cat)",
-      "Bash(xargs -I{} basename {})",
-      "Bash(GIT_EDITOR=true git *)",
-      "Bash(AGENT_ROLE=* AGENT_CODE=* php *)",
-      "Bash(tmux *)",
-      "Bash(claude --version)",
-      "Bash(echo \"exit=$?\")",
-      "Bash(bash *)",
-      "Bash(opencode run *)"
-    ]
-  }
+    "permissions": {
+        "allow": [
+            "Write",
+            "Read",
+            "Edit",
+            "Glob",
+            "Grep",
+            "Search",
+            "Bash(docker --version)",
+            "Bash(docker compose:*)",
+            "Bash(php --version)",
+            "Bash(composer --version)",
+            "Bash(composer require:*)",
+            "Bash(where claude:*)",
+            "Bash(npm list:*)",
+            "Bash(wsl -l -v)",
+            "Bash(wsl php:*)",
+            "Bash(wsl bash:*)",
+            "Bash(/home/sowapps/projects/somanagent/**)",
+            "Search(/home/sowapps/projects/somanagent/**)",
+            "Read(/home/sowapps/projects/somanagent/**)",
+            "Write(/home/sowapps/projects/somanagent/**)",
+            "Edit(/home/sowapps/projects/somanagent/**)",
+            "Skill(update-config)",
+            "Skill(update-config:*)",
+            "Bash(ls *)",
+            "Bash(find *)",
+            "Bash(php *)",
+            "Bash(xargs ls:*)",
+            "Bash(curl *)",
+            "Bash(sed *)",
+            "Bash(git *)",
+            "Bash(gh *)",
+            "Bash(python3 *)",
+            "Bash(wc:*)",
+            "Bash(opencode --help)",
+            "Bash(sort *)",
+            "Bash(grep *)",
+            "Bash(awk *)",
+            "Bash(composer install *)",
+            "WebSearch",
+            "WebFetch(domain:developers.openai.com)",
+            "WebFetch(domain:opencode.ai)",
+            "WebFetch(domain:github.com)",
+            "WebFetch(domain:geminicli.com)",
+            "WebFetch(domain:google-gemini.github.io)",
+            "Bash(rm *)",
+            "Bash(xargs -I{} *)",
+            "Bash(cat)",
+            "Bash(xargs -I{} basename {})",
+            "Bash(GIT_EDITOR=true git *)",
+            "Bash(AGENT_ROLE=* AGENT_CODE=* php *)",
+            "Bash(tmux *)",
+            "Bash(claude --version)",
+            "Bash(echo \"exit=$?\")",
+            "Bash(bash *)",
+            "Bash(opencode run *)"
+        ]
+    },
+    "hooks": {
+        "PreToolUse": [
+            {
+                "matcher": "Bash",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "php scripts/backlog/hooks/claude/bash-pre-tool-use.php"
+                    }
+                ]
+            },
+            {
+                "matcher": "Read|Edit|Write|NotebookEdit",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "php scripts/backlog/hooks/claude/file-pre-tool-use.php"
+                    }
+                ]
+            }
+        ]
+    }
 }

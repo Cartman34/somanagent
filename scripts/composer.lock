@@ -607,7 +607,7 @@
             "dist": {
                 "type": "path",
                 "url": "local-deps/web-backlog",
-                "reference": "2f502d002b0828502b551131dc2e4bfb20436d50"
+                "reference": "7d99711019dafe1a83a55debea9bf2841de8a0a1"
             },
             "require": {
                 "php": ">=8.4",
@@ -641,11 +641,11 @@
         },
         {
             "name": "sowapps/web-toolkit",
-            "version": "dev-tech/doc-volatile-references",
+            "version": "dev-main",
             "dist": {
                 "type": "path",
                 "url": "local-deps/web-toolkit",
-                "reference": "5a6e51ebfda497694ba03349649ee924a0967ea8"
+                "reference": "e18d002c4b7a0d9b3494264ee27668edca67fa39"
             },
             "require": {
                 "monolog/monolog": "^3.0",
@@ -660,6 +660,7 @@
             },
             "require-dev": {
                 "phpstan/phpstan": "^2.1",
+                "phpunit/phpunit": "^11.5",
                 "rector/rector": "^2.0",
                 "tomasvotruba/unused-public": "^2.2"
             },

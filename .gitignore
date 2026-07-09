@@ -67,6 +67,7 @@ desktop.ini
 # board/review/locks/logs/migrations are per-checkout runtime.
 /backlog/config.yaml
 /backlog/board.yaml
+/backlog/board/
 /backlog/review.md
 /backlog/review-result.txt
 /backlog/lock
