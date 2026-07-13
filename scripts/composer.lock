@@ -607,7 +607,7 @@
             "dist": {
                 "type": "path",
                 "url": "local-deps/web-backlog",
-                "reference": "7d99711019dafe1a83a55debea9bf2841de8a0a1"
+                "reference": "9c89af352fbb57ef98bd42e0a689ded43c6799a2"
             },
             "require": {
                 "php": ">=8.4",
@@ -645,7 +645,7 @@
             "dist": {
                 "type": "path",
                 "url": "local-deps/web-toolkit",
-                "reference": "e18d002c4b7a0d9b3494264ee27668edca67fa39"
+                "reference": "f1cf1a7003f5effbd66d74a2d7bcc41860161513"
             },
             "require": {
                 "monolog/monolog": "^3.0",
