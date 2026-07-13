@@ -38,11 +38,14 @@ composers:
   scripts: scripts
 
 # Validation rules (validate-files): file pattern -> validators (cumulative).
-# Built-in toolkit validators: php-syntax, exec-bit.
+# Toolkit-shipped validators: php-syntax, exec-bit, impure-unit-test, line-length, phpunit, phpstan, doc-links.
 # Every validator named here must be declared under `validators` (name -> FQCN), toolkit-shipped included.
 validations:
   - match: "scripts/**/*.php"
-    run: [php-syntax, exec-bit]
+    run: [php-syntax, exec-bit, line-length]
+  - match: "doc/**/*.md"
+    run: [line-length]
+  # doc-links non appliqué ici : il exige un composer.json à la racine (portail de doc), absent d'une app comme SMA (composer sous scripts/ et backend/). Reste déclaré dans le registre.
   - match: "doc/developing/openapi.yaml"
     run: [openapi-consistency]
 
@@ -51,6 +54,11 @@ validations:
 validators:
   php-syntax: Sowapps\Toolkit\Validation\PhpSyntaxValidator
   exec-bit: Sowapps\Toolkit\Validation\ExecBitValidator
+  impure-unit-test: Sowapps\Toolkit\Validation\ImpureUsageValidator
+  line-length: Sowapps\Toolkit\Validation\LineLengthValidator
+  phpunit: Sowapps\Toolkit\Validation\PhpUnitValidator
+  phpstan: Sowapps\Toolkit\Validation\PhpStanValidator
+  doc-links: Sowapps\Toolkit\Validation\DocLinkValidator
   openapi-consistency: Sowapps\SoManAgent\Script\Validation\OpenApiConsistencyValidator
 
 # Symfony translation validation (Sowapps\Toolkit\Symfony): declared keys vs source usages.
