@@ -8,7 +8,9 @@ declare(strict_types=1);
 namespace Sowapps\SoManAgent\Script\Validation;
 
 use Sowapps\SoManAgent\Script\Api\ControllerRouteCatalog;
+use Sowapps\Toolkit\Application\ProjectRootProvider;
 use Sowapps\Toolkit\Validation\FileValidator;
+use Sowapps\Toolkit\Validation\ValidationInput;
 use Sowapps\Toolkit\Validation\ValidationResult;
 use Symfony\Component\Yaml\Yaml;
 
@@ -28,15 +30,11 @@ final class OpenApiConsistencyValidator implements FileValidator
     private const DOCUMENTED_METHODS = ['get', 'post', 'put', 'patch', 'delete'];
 
     public function __construct(
-        private readonly string $projectRoot,
+        private readonly ProjectRootProvider $projectRootProvider,
         private readonly ControllerRouteCatalog $controllerRouteCatalog = new ControllerRouteCatalog(),
     ) {}
 
-    /**
-     * @param list<string> $files
-     * @param array<string, bool|string> $options
-     */
-    public function validate(array $files, array $options): ValidationResult
+    public function validate(ValidationInput $input): ValidationResult
     {
         $errors = $this->collectErrors();
 
@@ -52,10 +50,12 @@ final class OpenApiConsistencyValidator implements FileValidator
      */
     private function collectErrors(): array
     {
-        require_once $this->projectRoot . '/backend/vendor/autoload.php';
+        $projectRoot = $this->projectRootProvider->getCurrentProjectRoot();
 
-        $specificationPath = $this->projectRoot . '/doc/developing/openapi.yaml';
-        $controllerDirectory = $this->projectRoot . '/backend/src/Controller';
+        require_once $projectRoot . '/backend/vendor/autoload.php';
+
+        $specificationPath = $projectRoot . '/doc/developing/openapi.yaml';
+        $controllerDirectory = $projectRoot . '/backend/src/Controller';
 
         if (!is_file($specificationPath)) {
             return ["OpenAPI specification not found: $specificationPath"];

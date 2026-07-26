@@ -6,34 +6,9 @@ services:
     autowire: true
     autoconfigure: true
 
-  'Sowapps\Toolkit\':
-    resource: '../../web-toolkit/src/'
-    exclude:
-      - '../../web-toolkit/src/bootstrap.php'
-      # Consumable test doubles (FilesystemClientMock, FakeDockerComposeClient) ship under src/Test/
-      # but must stay out of service discovery: registering them adds a second implementation of the
-      # client interfaces, which breaks autowiring (the interface can no longer be aliased uniquely).
-      - '../../web-toolkit/src/Test/'
-
-  'Sowapps\Backlog\':
-    resource: '../../web-backlog/src/'
-    exclude:
-      - '../../web-backlog/src/bootstrap.php'
-      - '../../web-backlog/src/Test/'
-
-  # File-backed ConfigValues: lazy services built by the generic ConfigFactory from their dedicated
-  # converter. Declared explicitly so they are not treated as plain autowired services (their
-  # constructors take raw arrays, which autowiring cannot satisfy).
-  Sowapps\Backlog\Config\BoardArrayConverterInterface:
-    alias: Sowapps\Backlog\Config\BoardArrayConverter
-
-  Sowapps\Backlog\Config\AgentModelMapping:
-    factory: ['@Sowapps\Toolkit\Config\ConfigFactory', 'load']
-    arguments: ['@Sowapps\Backlog\Config\AgentModelMappingConverter']
-
-  Sowapps\Backlog\Config\AgentLaunchPrompts:
-    factory: ['@Sowapps\Toolkit\Config\ConfigFactory', 'load']
-    arguments: ['@Sowapps\Backlog\Config\AgentLaunchPromptsConverter']
+  # Toolkit and backlog service declarations (their package resources, config factories and the
+  # board converter alias) are inherited through the service inheritance chain from each package's
+  # own toolkit/services.yaml, host last. Only SoManAgent-specific wiring is declared here.
 
   'Sowapps\SoManAgent\Script\':
     resource: '../scripts/src/'
