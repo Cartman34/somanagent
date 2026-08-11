@@ -7,8 +7,8 @@ Single entrypoint for AI agents working on this repository. Read this file first
 - **Common rules (all projects)** — conventions, working method, process discipline: `scripts/toolkit/doc/AGENTS-common.md`. They apply here and are not repeated below.
 - **Backlog (board command, roles, workflow)** — see the shared common rules for how it works and how to use the `board` command; backlog architecture and ops live under
   `scripts/backlog/doc/developing/` and `scripts/backlog/doc/operating/`. The backlog subsystem is the `sowapps/web-backlog` package.
-
-Pose the portals once (relative symlinks to sibling clones, not committed): `ln -s ../../web-toolkit/scripts/toolkit scripts/toolkit` and `ln -s ../../web-backlog/scripts/backlog scripts/backlog`
+- **Portals** — `scripts/toolkit/` and `scripts/backlog/` are the portals through which this host reaches the packages' scripts and docs: gitignored symlinks to the sibling packages, posed by the
+  operator on Main Worktree, by provisioning in Agent Worktree.
 
 ## SoManAgent-specific rules
 
