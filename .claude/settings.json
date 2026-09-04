@@ -47,7 +47,7 @@
             "WebFetch(domain:google-gemini.github.io)",
             "Bash(rm *)",
             "Bash(xargs -I{} *)",
-            "Bash(cat)",
+            "Bash(cat *)",
             "Bash(xargs -I{} basename {})",
             "Bash(GIT_EDITOR=true git *)",
             "Bash(AGENT_ROLE=* AGENT_CODE=* php *)",
